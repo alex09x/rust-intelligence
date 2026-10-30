@@ -63,21 +63,12 @@ fn test_writer_reader_roundtrip() {
         is_macro_expansion: false,
     });
 
-    writer.add_type(RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 20,
-        start_col: 5,
-        end_line: 20,
-        end_col: 10,
-        type_name: "()".to_string(),
-    });
+    writer.add_type(RawType { file: "src/lib.rs".to_string(), start_line: 20, start_col: 5, end_line: 20, end_col: 10, type_name: "()".to_string() });
 
     assert_eq!(writer.unit_key(), Some("unit-xyz"));
     assert_eq!(writer.generation(), Some("gen-abc"));
     writer.get_or_insert_file("extra/file.rs");
-    assert!(writer
-        .indexed_files()
-        .contains(&"extra/file.rs".to_string()));
+    assert!(writer.indexed_files().contains(&"extra/file.rs".to_string()));
 
     // Test macro expansion definition (line 249)
     writer.add_definition(RawDefinition {

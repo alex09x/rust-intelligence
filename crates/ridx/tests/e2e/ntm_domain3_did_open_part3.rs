@@ -21,23 +21,10 @@ use std::collections::HashSet;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
-fn dispatch_did_open(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_open(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 

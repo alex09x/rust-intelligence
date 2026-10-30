@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,10 +77,18 @@ fn test_semantic_tokens_full_module_hierarchy() {
 
     let mut writer = IndexWriter::new("mod_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Mod, visibility: 1, is_macro_expansion: false,
-        name: "outer".to_string(), path: "mod_crate::outer".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 5, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Mod,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "outer".to_string(),
+        path: "mod_crate::outer".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 10,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "mod outer {}\n").unwrap();
@@ -110,16 +115,32 @@ fn test_semantic_tokens_full_same_line_multiple_tokens() {
 
     let mut writer = IndexWriter::new("sameline_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "sameline_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "sameline_crate::foo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "bar".to_string(), path: "sameline_crate::bar".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 15, end_line: 1, end_col: 18,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "bar".to_string(),
+        path: "sameline_crate::bar".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 15,
+        end_line: 1,
+        end_col: 18,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn foo() {} fn bar() {}\n").unwrap();
@@ -146,16 +167,32 @@ fn test_semantic_tokens_full_tokens_with_gap_lines() {
 
     let mut writer = IndexWriter::new("gap_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "top".to_string(), path: "gap_crate::top".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "top".to_string(),
+        path: "gap_crate::top".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "bottom".to_string(), path: "gap_crate::bottom".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 4, end_line: 5, end_col: 10,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "bottom".to_string(),
+        path: "gap_crate::bottom".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 5,
+        start_col: 4,
+        end_line: 5,
+        end_col: 10,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn top() {}\n\n\n\nfn bottom() {}\n").unwrap();
@@ -182,18 +219,34 @@ fn test_semantic_tokens_full_references_and_definitions_combined() {
 
     let mut writer = IndexWriter::new("ref_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "ref_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "ref_crate::target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 10,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 2, start_col: 5, end_line: 2, end_col: 11,
-        target_def_id: Some(1), target_path: "ref_crate::target".to_string(),
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 11,
+        target_def_id: Some(1),
+        target_path: "ref_crate::target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 4,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 4,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\nfn caller() { target(); }\n").unwrap();
@@ -220,18 +273,34 @@ fn test_semantic_tokens_full_overlapping_tokens_filtered() {
 
     let mut writer = IndexWriter::new("overlap_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "overlap_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "overlap_crate::foo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 10,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 1, start_col: 6, end_line: 1, end_col: 12,
-        target_def_id: Some(1), target_path: "overlap_crate::foo".to_string(),
+        start_line: 1,
+        start_col: 6,
+        end_line: 1,
+        end_col: 12,
+        target_def_id: Some(1),
+        target_path: "overlap_crate::foo".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 4,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 4,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn foobar() {}\n").unwrap();

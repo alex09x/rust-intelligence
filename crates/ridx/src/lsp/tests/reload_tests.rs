@@ -17,8 +17,7 @@ use std::io::Cursor;
 
 #[test]
 fn test_sync_reloaded_index_advances_compiled_baseline() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_sync_reload_baseline_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_sync_reload_baseline_{}", std::process::id()));
     let _ = std::fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let initial_content = "pub fn original() {}\n";
@@ -53,24 +52,13 @@ fn test_sync_reloaded_index_advances_compiled_baseline() {
     ws.set_workspace_root(Some(temp_dir.clone()));
     let mut overlay_mgr = crate::overlay::OverlayManager::new();
     let uri = format!("file://{}", src_file.display());
-    overlay_mgr.open_document(
-        &uri,
-        src_file.to_str().unwrap(),
-        1,
-        initial_content.to_string(),
-    );
-    assert!(!overlay_mgr
-        .get(src_file.to_str().unwrap())
-        .unwrap()
-        .is_dirty());
+    overlay_mgr.open_document(&uri, src_file.to_str().unwrap(), 1, initial_content.to_string());
+    assert!(!overlay_mgr.get(src_file.to_str().unwrap()).unwrap().is_dirty());
 
     // User edits document: now dirty
     let updated_content = "pub fn original() {}\npub fn updated() {}\n";
     overlay_mgr.update(src_file.to_str().unwrap(), 2, updated_content.to_string());
-    assert!(overlay_mgr
-        .get(src_file.to_str().unwrap())
-        .unwrap()
-        .is_dirty());
+    assert!(overlay_mgr.get(src_file.to_str().unwrap()).unwrap().is_dirty());
 
     // Save edited content to disk
     let _ = std::fs::write(&src_file, updated_content);
@@ -104,18 +92,14 @@ fn test_sync_reloaded_index_advances_compiled_baseline() {
     sync_reloaded_index(&mut ws, &mut overlay_mgr);
 
     // Overlay compiled baseline should now be advanced, so is_dirty() is false!
-    assert!(!overlay_mgr
-        .get(src_file.to_str().unwrap())
-        .unwrap()
-        .is_dirty());
+    assert!(!overlay_mgr.get(src_file.to_str().unwrap()).unwrap().is_dirty());
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_lsp_server_stream_cancellation_and_shutdown() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_lsp_stream_test_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_lsp_stream_test_{}", std::process::id()));
     let _ = std::fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let _ = std::fs::write(&src_file, "pub fn stream_fn() {}\n");
@@ -251,10 +235,7 @@ fn test_lsp_server_stream_cancellation_and_shutdown() {
     let mut out_early = Vec::new();
     let res_early = run_lsp_server_stream(Cursor::new(exit_early_input), &mut out_early, None);
     assert!(res_early.is_err());
-    assert!(res_early
-        .unwrap_err()
-        .to_string()
-        .contains("exit notification received before shutdown"));
+    assert!(res_early.unwrap_err().to_string().contains("exit notification received before shutdown"));
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
@@ -275,10 +256,7 @@ fn test_lsp_hover_inferred_type_and_signature_help_workspace() {
     writer.set_unit_key("unit-sig-1");
     writer.set_generation("gen-sig-1");
     let mut hashes = std::collections::HashMap::new();
-    hashes.insert(
-        file_str.clone(),
-        ridx_format::normalized_source_hash(code.as_bytes()),
-    );
+    hashes.insert(file_str.clone(), ridx_format::normalized_source_hash(code.as_bytes()));
     writer.set_file_hashes(hashes);
 
     // Definition for calculate with signature
@@ -298,14 +276,7 @@ fn test_lsp_hover_inferred_type_and_signature_help_workspace() {
     });
 
     // Inferred type at line 1, col 5 (over "fn", no definition)
-    writer.add_type(RawType {
-        file: file_str.clone(),
-        start_line: 1,
-        start_col: 5,
-        end_line: 1,
-        end_col: 7,
-        type_name: "fn() -> ()".to_string(),
-    });
+    writer.add_type(RawType { file: file_str.clone(), start_line: 1, start_col: 5, end_line: 1, end_col: 7, type_name: "fn() -> ()".to_string() });
 
     let mut out_f = std::fs::File::create(&index_file).unwrap();
     writer.write_to(&mut out_f).unwrap();
@@ -376,17 +347,11 @@ fn test_lsp_hover_inferred_type_and_signature_help_workspace() {
 
     let hover_resp = &responses[1];
     assert_eq!(hover_resp["id"], 10);
-    assert!(hover_resp["result"]["contents"]["value"]
-        .as_str()
-        .unwrap()
-        .contains("Type: fn() -> ()"));
+    assert!(hover_resp["result"]["contents"]["value"].as_str().unwrap().contains("Type: fn() -> ()"));
 
     let sig_resp = &responses[2];
     assert_eq!(sig_resp["id"], 11);
-    assert!(sig_resp["result"]["signatures"][0]["label"]
-        .as_str()
-        .unwrap()
-        .contains("fn(x: i32) -> i32"));
+    assert!(sig_resp["result"]["signatures"][0]["label"].as_str().unwrap().contains("fn(x: i32) -> i32"));
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }

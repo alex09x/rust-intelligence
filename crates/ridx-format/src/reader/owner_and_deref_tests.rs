@@ -74,14 +74,7 @@ fn test_v3_defs_by_owner_and_derefs_roundtrip() {
 
     // Add type with canonical owner
     writer.add_type_with_owner(
-        crate::writer::RawType {
-            file: "src/lib.rs".to_string(),
-            start_line: 30,
-            start_col: 5,
-            end_line: 30,
-            end_col: 15,
-            type_name: "MyStruct".to_string(),
-        },
+        crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 30, start_col: 5, end_line: 30, end_col: 15, type_name: "MyStruct".to_string() },
         Some("test_v3_crate::MyStruct".to_string()),
     );
 
@@ -100,23 +93,14 @@ fn test_v3_defs_by_owner_and_derefs_roundtrip() {
     // Verify find_definitions_by_owner
     let defs = reader.find_definitions_by_owner("test_v3_crate::MyStruct");
     assert_eq!(defs.len(), 2);
-    let names: Vec<&str> = defs
-        .iter()
-        .map(|d| reader.get_str(d.name_offset()))
-        .collect();
+    let names: Vec<&str> = defs.iter().map(|d| reader.get_str(d.name_offset())).collect();
     assert!(names.contains(&"do_work"));
     assert!(names.contains(&"count"));
 
     // Verify deref lookup
-    assert_eq!(
-        reader.find_deref_target("alloc::string::String"),
-        Some("core::primitive::str")
-    );
+    assert_eq!(reader.find_deref_target("alloc::string::String"), Some("core::primitive::str"));
     assert_eq!(reader.find_deref_target("core::primitive::str"), None);
-    assert_eq!(
-        reader.resolve_deref_chain("alloc::string::String", 3),
-        vec!["core::primitive::str"]
-    );
+    assert_eq!(reader.resolve_deref_chain("alloc::string::String", 3), vec!["core::primitive::str"]);
 
     // Verify type_entry_at
     let (ty, owner) = reader.type_entry_at("src/lib.rs", 30, 8).unwrap();
@@ -269,10 +253,7 @@ fn test_v2_backwards_compatibility() {
     assert_eq!(reader.header().derefs_count, 0);
     assert!(reader.defs_by_owner().is_empty());
     assert!(reader.deref_entries().is_empty());
-    assert_eq!(
-        reader.find_definitions_by_owner("anything"),
-        Vec::<&DefEntry>::new()
-    );
+    assert_eq!(reader.find_definitions_by_owner("anything"), Vec::<&DefEntry>::new());
     assert_eq!(reader.find_deref_target("anything"), None);
 }
 
@@ -286,14 +267,7 @@ fn test_v3_owner_matching_first_interned_string() {
     // "first_crate" is the first non-empty string interned in the pool.
     // Add a type whose owner is "first_crate".
     writer.add_type_with_owner(
-        crate::writer::RawType {
-            file: "src/lib.rs".to_string(),
-            start_line: 1,
-            start_col: 1,
-            end_line: 1,
-            end_col: 10,
-            type_name: "RootItem".to_string(),
-        },
+        crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 1, start_col: 1, end_line: 1, end_col: 10, type_name: "RootItem".to_string() },
         Some("first_crate".to_string()),
     );
 

@@ -22,36 +22,21 @@ impl PathIndex {
     /// Builds the path index from the current `WorkspaceIndex` state.
     pub fn build(ws: &WorkspaceIndex) -> Self {
         let mut canon_cache: HashMap<PathBuf, Option<PathBuf>> = HashMap::new();
-        let mut canon_of = |p: &Path| -> Option<PathBuf> {
-            canon_cache
-                .entry(p.to_path_buf())
-                .or_insert_with(|| p.canonicalize().ok())
-                .clone()
-        };
+        let mut canon_of = |p: &Path| -> Option<PathBuf> { canon_cache.entry(p.to_path_buf()).or_insert_with(|| p.canonicalize().ok()).clone() };
 
         let mut origins: Vec<OriginMeta> = Vec::new();
         let mut origin_map: HashMap<PathBuf, u32> = HashMap::new();
         let mut readers_meta: Vec<ReaderPathMeta> = Vec::with_capacity(ws.readers.len());
 
         for i in 0..ws.readers.len() {
-            let origin_path = ws
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(ws.workspace_root.as_deref())
-                .or(ws.root_dir.as_deref());
+            let origin_path = ws.source_roots.get(i).and_then(|r| r.as_deref()).or(ws.workspace_root.as_deref()).or(ws.root_dir.as_deref());
             let origin_id = origin_path.map(|op| {
                 if let Some(&id) = origin_map.get(op) {
                     return id;
                 }
                 let id = origins.len() as u32;
                 let raw = op.to_path_buf();
-                origins.push(OriginMeta {
-                    norm: normalize_path(&raw),
-                    canon: canon_of(&raw),
-                    has_dotdot: has_parent_dir(&raw),
-                    raw: raw.clone(),
-                });
+                origins.push(OriginMeta { norm: normalize_path(&raw), canon: canon_of(&raw), has_dotdot: has_parent_dir(&raw), raw: raw.clone() });
                 origin_map.insert(raw, id);
                 id
             });
@@ -76,10 +61,7 @@ impl PathIndex {
             }
         };
 
-        let mut intern = |entries: &mut Vec<UniquePathEntry>,
-                          origin_id: Option<u32>,
-                          entry_str: &str|
-         -> usize {
+        let mut intern = |entries: &mut Vec<UniquePathEntry>, origin_id: Option<u32>, entry_str: &str| -> usize {
             let key = (origin_id, entry_str.to_string());
             if let Some(&uid) = entry_map.get(&key) {
                 return uid as usize;
@@ -92,11 +74,7 @@ impl PathIndex {
             };
             let norm_entry = normalize_path(&entry_orig);
 
-            for k in [
-                PathBuf::from(entry_str),
-                entry_orig.clone(),
-                norm_entry.clone(),
-            ] {
+            for k in [PathBuf::from(entry_str), entry_orig.clone(), norm_entry.clone()] {
                 push_u(by_key.entry(k).or_default(), uid);
             }
             if let Some(oid) = origin_id {
@@ -104,10 +82,7 @@ impl PathIndex {
                 if let Ok(rel) = norm_entry.strip_prefix(&orig.norm) {
                     let nrel = normalize_path(rel);
                     if let Some(ref co) = orig.canon {
-                        push_u(
-                            by_key.entry(normalize_path(&co.join(&nrel))).or_default(),
-                            uid,
-                        );
+                        push_u(by_key.entry(normalize_path(&co.join(&nrel))).or_default(), uid);
                     }
                     push_u(by_key.entry(rel.to_path_buf()).or_default(), uid);
                     push_u(by_key.entry(nrel).or_default(), uid);
@@ -123,26 +98,13 @@ impl PathIndex {
                     }
                 }
             }
-            for fname in [entry_orig.file_name(), norm_entry.file_name()]
-                .into_iter()
-                .flatten()
-            {
+            for fname in [entry_orig.file_name(), norm_entry.file_name()].into_iter().flatten() {
                 push_u(by_file_name.entry(fname.to_os_string()).or_default(), uid);
             }
-            if has_parent_dir(&entry_orig)
-                && (entry_orig.file_name().is_none() || norm_entry.file_name().is_none())
-            {
+            if has_parent_dir(&entry_orig) && (entry_orig.file_name().is_none() || norm_entry.file_name().is_none()) {
                 push_u(&mut dotdot_uids, uid);
             }
-            entries.push(UniquePathEntry {
-                entry_str: key.1.clone(),
-                origin_id,
-                entry_orig,
-                norm_entry,
-                fs_meta: OnceLock::new(),
-                phase1: Vec::new(),
-                phase2: Vec::new(),
-            });
+            entries.push(UniquePathEntry { entry_str: key.1.clone(), origin_id, entry_orig, norm_entry, fs_meta: OnceLock::new(), phase1: Vec::new(), phase2: Vec::new() });
             entry_map.insert(key, uid);
             uid as usize
         };
@@ -153,16 +115,11 @@ impl PathIndex {
             for fid in 0..reader.files_count() {
                 let s = reader.get_file(fid);
                 if !s.is_empty() {
-                    if !s.contains('/')
-                        && !s.contains('\\')
-                        && !bare_reader_files.iter().any(|b| b == s)
-                    {
+                    if !s.contains('/') && !s.contains('\\') && !bare_reader_files.iter().any(|b| b == s) {
                         bare_reader_files.push(s.to_string());
                     }
                     let uid = intern(&mut entries, oid, s);
-                    entries[uid]
-                        .phase1
-                        .push((i as u32, fid, reader.file_source_hash(fid)));
+                    entries[uid].phase1.push((i as u32, fid, reader.file_source_hash(fid)));
                 }
             }
             if let Some(map) = ws.reader_file_hashes.get(i) {

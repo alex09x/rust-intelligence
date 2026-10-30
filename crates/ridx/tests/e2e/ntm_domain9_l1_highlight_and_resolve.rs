@@ -140,23 +140,10 @@ fn test_l1_document_highlight_compiled_struct_field_self_access() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_field", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_field",
-            "src/lib.rs",
-            "pub struct Point { pub «x»: i32 }\n",
-            DefKind::Field,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_field", "src/lib.rs", "pub struct Point { pub «x»: i32 }\n", DefKind::Field).unwrap();
     assert_eq!(ids.len(), 1);
 
-    ws.add_refs_to_def(
-        "pkg_field",
-        "src/lib.rs",
-        "pub struct Point { pub x: i32 }\nimpl Point { pub fn get_x(&self) -> i32 { self.«x» } }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_field", "src/lib.rs", "pub struct Point { pub x: i32 }\nimpl Point { pub fn get_x(&self) -> i32 { self.«x» } }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_field").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -350,14 +337,7 @@ fn test_l1_workspace_symbol_resolve_cross_shard_multi_crate() {
     ws.add_crate("crate_beta", "0.1.0").unwrap();
 
     let shard_a = ws.build_crate_index("crate_alpha").unwrap();
-    let (_, ids_b) = ws
-        .add_source_file_with_defs(
-            "crate_beta",
-            "src/lib.rs",
-            "pub struct «BetaService»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids_b) = ws.add_source_file_with_defs("crate_beta", "src/lib.rs", "pub struct «BetaService»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids_b.len(), 1);
     let shard_b = ws.build_crate_index("crate_beta").unwrap();
 

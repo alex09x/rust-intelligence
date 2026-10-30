@@ -63,11 +63,7 @@ fn test_indexer_cargo_config_and_driver() {
             let _ = fs::set_permissions(&mock_bin_driver, fs::Permissions::from_mode(0o755));
         }
         let orig_path = std::env::var("PATH").ok();
-        let new_path = format!(
-            "{}:{}",
-            mock_bin_dir.0.display(),
-            orig_path.as_deref().unwrap_or("")
-        );
+        let new_path = format!("{}:{}", mock_bin_dir.0.display(), orig_path.as_deref().unwrap_or(""));
         {
             let _path_guard = EnvGuard::set("PATH", &new_path);
             let found_which = find_driver_binary_internal(None);
@@ -88,11 +84,7 @@ fn test_indexer_cargo_config_and_driver() {
     let work_dir = temp.0.join("sample_pkg");
     fs::create_dir_all(&work_dir).unwrap();
     let manifest_file = work_dir.join("Cargo.toml");
-    fs::write(
-        &manifest_file,
-        "[package]\nname = \"pkg\"\nversion = \"0.1.0\"\n",
-    )
-    .unwrap();
+    fs::write(&manifest_file, "[package]\nname = \"pkg\"\nversion = \"0.1.0\"\n").unwrap();
 
     let custom_home = temp.0.join("custom_home");
     let dot_cargo_home = custom_home.join(".cargo");
@@ -113,10 +105,7 @@ fn test_indexer_cargo_config_and_driver() {
     }
 
     // Test extract_config_target with empty target and other keys (lines 148-149)
-    assert_eq!(
-        extract_config_target("[build]\njobs = 4\ntarget = ''\n"),
-        None
-    );
+    assert_eq!(extract_config_target("[build]\njobs = 4\ntarget = ''\n"), None);
 
     // Test collect_all_workspace_manifests with hidden dir (line 168)
     let hidden_dir = work_dir.join(".hidden_dir");
@@ -133,19 +122,14 @@ fn test_indexer_cargo_config_and_driver() {
     // Test compute_variant_id with multiple cargo configs where config_target is already Some (line 198)
     let sub_ws = work_dir.join("sub_ws");
     let _ = fs::create_dir_all(sub_ws.join(".cargo"));
-    fs::write(
-        sub_ws.join(".cargo/config.toml"),
-        "[build]\ntarget = 'x86_64-unknown-linux-gnu'\n",
-    )
-    .unwrap();
+    fs::write(sub_ws.join(".cargo/config.toml"), "[build]\ntarget = 'x86_64-unknown-linux-gnu'\n").unwrap();
     let v_multi_cfg = compute_variant_id("dev", None, None, None, false, false, &manifest_file);
     assert!(!v_multi_cfg.is_empty());
 
     // Test CARGO_BUILD_TARGET environment variable (lines 206-208)
     {
         let _target = EnvGuard::set("CARGO_BUILD_TARGET", "aarch64-unknown-linux-gnu");
-        let v_env_target =
-            compute_variant_id("dev", None, None, None, false, false, &manifest_file);
+        let v_env_target = compute_variant_id("dev", None, None, None, false, false, &manifest_file);
         assert!(!v_env_target.is_empty());
     }
 
@@ -180,9 +164,7 @@ fn test_indexer_cargo_config_and_driver() {
         driver_bin: None,
         capture_child_output: false,
     });
-    assert!(err_file
-        .unwrap_err()
-        .contains("is a file but not a Cargo.toml manifest"));
+    assert!(err_file.unwrap_err().contains("is a file but not a Cargo.toml manifest"));
 
     let empty_dir = new_test_dir("empty_dir_no_toml");
     let err_dir = try_run_indexing(IndexOptions {
@@ -198,9 +180,7 @@ fn test_indexer_cargo_config_and_driver() {
         driver_bin: None,
         capture_child_output: false,
     });
-    assert!(err_dir
-        .unwrap_err()
-        .contains("no Cargo.toml found in directory"));
+    assert!(err_dir.unwrap_err().contains("no Cargo.toml found in directory"));
 
     let err_nonexist = try_run_indexing(IndexOptions {
         path: PathBuf::from("/nonexistent/path/99999"),

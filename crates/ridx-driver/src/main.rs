@@ -64,17 +64,8 @@ struct IndexCallbacks {
 }
 
 impl Callbacks for IndexCallbacks {
-    fn after_analysis<'tcx>(
-        &mut self,
-        _compiler: &rustc_interface::interface::Compiler,
-        tcx: TyCtxt<'tcx>,
-    ) -> Compilation {
-        build_crate_index(
-            tcx,
-            &self.out_dir,
-            self.disambiguator.as_deref(),
-            &self.compiler_args,
-        );
+    fn after_analysis<'tcx>(&mut self, _compiler: &rustc_interface::interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        build_crate_index(tcx, &self.out_dir, self.disambiguator.as_deref(), &self.compiler_args);
         Compilation::Continue
     }
 }
@@ -96,12 +87,7 @@ impl Callbacks for NoopCallbacks {}
 pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
     let is_direct_version = args.len() == 2 && (args[1] == "--version" || args[1] == "-V");
     if is_direct_version || args.iter().any(|a| a == "--ridx-version") {
-        println!(
-            "ridx-driver {} (commit: {}, dirty: {})",
-            env!("CARGO_PKG_VERSION"),
-            env!("RIDX_BUILD_COMMIT"),
-            env!("RIDX_BUILD_DIRTY"),
-        );
+        println!("ridx-driver {} (commit: {}, dirty: {})", env!("CARGO_PKG_VERSION"), env!("RIDX_BUILD_COMMIT"), env!("RIDX_BUILD_DIRTY"),);
         return Ok(());
     }
 
@@ -132,62 +118,33 @@ pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
     }
 
     if args.iter().any(|a| a == "--ridx-version") {
-        println!(
-            "ridx-driver {} (commit: {}, dirty: {})",
-            env!("CARGO_PKG_VERSION"),
-            env!("RIDX_BUILD_COMMIT"),
-            env!("RIDX_BUILD_DIRTY")
-        );
+        println!("ridx-driver {} (commit: {}, dirty: {})", env!("CARGO_PKG_VERSION"), env!("RIDX_BUILD_COMMIT"), env!("RIDX_BUILD_DIRTY"));
         return Ok(());
     }
 
-    let is_query = args.iter().any(|a| {
-        a == "-vV"
-            || a == "-V"
-            || a == "--version"
-            || a == "-h"
-            || a == "--help"
-            || a == "--print"
-            || a.starts_with("--print=")
-    });
+    let is_query = args.iter().any(|a| a == "-vV" || a == "-V" || a == "--version" || a == "-h" || a == "--help" || a == "--print" || a.starts_with("--print="));
 
     if is_query {
-        let res = rustc_driver::catch_fatal_errors(|| {
-            rustc_driver::run_compiler(&args, &mut NoopCallbacks)
-        });
+        let res = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut NoopCallbacks));
         return res.map_err(|_| ());
     }
 
     // Skip build scripts
-    let crate_name_arg = args
-        .windows(2)
-        .find(|w| w[0] == "--crate-name")
-        .map(|w| w[1].as_str());
+    let crate_name_arg = args.windows(2).find(|w| w[0] == "--crate-name").map(|w| w[1].as_str());
     if crate_name_arg == Some("build_script_build") || crate_name_arg == Some("build_script_main") {
-        let res = rustc_driver::catch_fatal_errors(|| {
-            rustc_driver::run_compiler(&args, &mut NoopCallbacks)
-        });
+        let res = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut NoopCallbacks));
         return res.map_err(|_| ());
     }
 
-    let out_dir = std::env::var("RIDX_OUT_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("target/ridx"));
+    let out_dir = std::env::var("RIDX_OUT_DIR").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from("target/ridx"));
     let disambiguator = extract_target_disambiguator(&args);
 
-    let mut callbacks = IndexCallbacks {
-        out_dir,
-        disambiguator,
-        compiler_args: args.clone(),
-    };
+    let mut callbacks = IndexCallbacks { out_dir, disambiguator, compiler_args: args.clone() };
     run_with_callbacks(&args, &mut callbacks)
 }
 
 #[allow(clippy::result_unit_err)]
-pub fn run_with_callbacks<C: Callbacks + Send>(
-    args: &[String],
-    callbacks: &mut C,
-) -> Result<(), ()> {
+pub fn run_with_callbacks<C: Callbacks + Send>(args: &[String], callbacks: &mut C) -> Result<(), ()> {
     let res = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(args, callbacks));
     res.map_err(|_| ())
 }

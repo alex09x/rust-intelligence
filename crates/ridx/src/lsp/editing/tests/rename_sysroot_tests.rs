@@ -29,8 +29,7 @@ fn test_rename_workspace_symbol_with_sysroot_in_path() {
 
     let file_path = sysroot_dir.join("cas.rs");
     let file_str = file_path.to_str().unwrap().to_string();
-    let content =
-        "pub fn store() -> i32 {\n    42\n}\n\npub fn caller() -> i32 {\n    store()\n}\n";
+    let content = "pub fn store() -> i32 {\n    42\n}\n\npub fn caller() -> i32 {\n    store()\n}\n";
     fs::write(&file_path, content).unwrap();
 
     let variants_dir = ws_root.join("target/ridx/variants/dev");
@@ -81,11 +80,7 @@ fn test_rename_workspace_symbol_with_sysroot_in_path() {
         "target_kind": "lib",
         "is_dependency": false
     });
-    fs::write(
-        deps_dir.join("x.json"),
-        serde_json::to_string(&meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("x.json"), serde_json::to_string(&meta).unwrap()).unwrap();
 
     let manifest = json!({
         "version": "2.0",
@@ -95,11 +90,7 @@ fn test_rename_workspace_symbol_with_sysroot_in_path() {
         "variant_dir": "variants/dev",
         "workspace_root": ws_root.to_str().unwrap()
     });
-    fs::write(
-        ws_root.join("target/ridx/ridx_manifest.json"),
-        serde_json::to_string(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_root.join("target/ridx/ridx_manifest.json"), serde_json::to_string(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&ws_root).expect("open workspace");
 
@@ -118,14 +109,8 @@ fn test_rename_workspace_symbol_with_sysroot_in_path() {
 
     let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
     let edits = res.expect("Rename should succeed for workspace file containing /sysroot/ in path");
-    let changes = edits["changes"][&uri]
-        .as_array()
-        .expect("Changes for file must exist");
-    assert_eq!(
-        changes.len(),
-        2,
-        "Must produce exactly 2 edits (def and ref)"
-    );
+    let changes = edits["changes"][&uri].as_array().expect("Changes for file must exist");
+    assert_eq!(changes.len(), 2, "Must produce exactly 2 edits (def and ref)");
 }
 
 #[test]
@@ -175,11 +160,7 @@ fn test_rename_external_sysroot_symbol_rejected() {
         "target_kind": "bin",
         "is_dependency": false
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string(&app_meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string(&app_meta).unwrap()).unwrap();
 
     let manifest = json!({
         "version": "2.0",
@@ -189,11 +170,7 @@ fn test_rename_external_sysroot_symbol_rejected() {
         "variant_dir": "variants/dev",
         "workspace_root": ws_root.to_str().unwrap()
     });
-    fs::write(
-        ws_root.join("target/ridx/ridx_manifest.json"),
-        serde_json::to_string(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_root.join("target/ridx/ridx_manifest.json"), serde_json::to_string(&manifest).unwrap()).unwrap();
 
     let mut ws = WorkspaceIndex::open(&ws_root).expect("open workspace");
 
@@ -234,17 +211,8 @@ fn test_rename_external_sysroot_symbol_rejected() {
     });
 
     let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
-    assert!(
-        res.is_err(),
-        "Rename on external sysroot symbol must be rejected"
-    );
+    assert!(res.is_err(), "Rename on external sysroot symbol must be rejected");
     let err = res.unwrap_err();
-    assert_eq!(
-        err.code, -32803,
-        "Must return LSP error code -32803 (RequestFailed)"
-    );
-    assert_eq!(
-        err.message, "Cannot rename external symbol 'Vec'",
-        "Error message must specify Cannot rename external symbol 'Vec'"
-    );
+    assert_eq!(err.code, -32803, "Must return LSP error code -32803 (RequestFailed)");
+    assert_eq!(err.message, "Cannot rename external symbol 'Vec'", "Error message must specify Cannot rename external symbol 'Vec'");
 }

@@ -46,11 +46,9 @@ pub struct ScipIndex {
 impl ScipIndex {
     pub fn load_from_file(scip_path: &Path, workspace_root: &Path) -> Result<Self, String> {
         let t_start = Instant::now();
-        let bytes = std::fs::read(scip_path)
-            .map_err(|e| format!("Failed to read SCIP index {}: {}", scip_path.display(), e))?;
+        let bytes = std::fs::read(scip_path).map_err(|e| format!("Failed to read SCIP index {}: {}", scip_path.display(), e))?;
 
-        let index = Index::parse_from_bytes(&bytes)
-            .map_err(|e| format!("Failed to parse protobuf SCIP index: {}", e))?;
+        let index = Index::parse_from_bytes(&bytes).map_err(|e| format!("Failed to parse protobuf SCIP index: {}", e))?;
 
         let mut occurrences_by_line: OccurrenceMap = HashMap::new();
         let mut definitions = HashMap::new();
@@ -76,44 +74,25 @@ impl ScipIndex {
                 let symbol = occ.symbol.clone();
 
                 let is_def = (occ.symbol_roles & (SymbolRole::Definition as i32)) != 0;
-                let loc = ScipLocation {
-                    file: rel_path.clone(),
-                    line,
-                    col: start_col,
-                };
+                let loc = ScipLocation { file: rel_path.clone(), line, col: start_col };
 
                 if is_def {
                     definitions.insert(symbol.clone(), loc.clone());
                 } else {
-                    references
-                        .entry(symbol.clone())
-                        .or_default()
-                        .push(loc.clone());
+                    references.entry(symbol.clone()).or_default().push(loc.clone());
                 }
 
-                occurrences_by_line
-                    .entry((rel_path.clone(), line))
-                    .or_default()
-                    .push((start_col, end_col, symbol));
+                occurrences_by_line.entry((rel_path.clone(), line)).or_default().push((start_col, end_col, symbol));
             }
         }
 
         let load_time_micros = t_start.elapsed().as_micros();
 
-        Ok(Self {
-            workspace_root: workspace_root.to_path_buf(),
-            occurrences_by_line,
-            definitions,
-            references,
-            docs,
-            load_time_micros,
-        })
+        Ok(Self { workspace_root: workspace_root.to_path_buf(), occurrences_by_line, definitions, references, docs, load_time_micros })
     }
 
     pub fn find_symbol_at(&self, rel_file: &str, line: u32, col: u32) -> Option<&str> {
-        let occs = self
-            .occurrences_by_line
-            .get(&(rel_file.to_string(), line))?;
+        let occs = self.occurrences_by_line.get(&(rel_file.to_string(), line))?;
         for (start_c, end_c, sym) in occs {
             if col >= *start_c && col <= *end_c {
                 return Some(sym.as_str());
@@ -148,11 +127,7 @@ impl ScipIndex {
     }
 }
 
-pub fn run_scip_session(
-    scip_path: &Path,
-    workspace_root: &Path,
-    scenarios: &[SymmetricScenario],
-) -> Option<ServerMetrics> {
+pub fn run_scip_session(scip_path: &Path, workspace_root: &Path, scenarios: &[SymmetricScenario]) -> Option<ServerMetrics> {
     let scip_index = ScipIndex::load_from_file(scip_path, workspace_root).ok()?;
     let readiness_warmup_micros = scip_index.load_time_micros;
 
@@ -164,24 +139,14 @@ pub fn run_scip_session(
         let (file, line, col) = match &sc.location {
             Some((f, l, c)) => {
                 let p = Path::new(f);
-                let rel = if let Ok(stripped) = p.strip_prefix(workspace_root) {
-                    stripped.display().to_string()
-                } else {
-                    f.clone()
-                };
+                let rel = if let Ok(stripped) = p.strip_prefix(workspace_root) { stripped.display().to_string() } else { f.clone() };
                 (rel, l.saturating_sub(1), c.saturating_sub(1))
             }
             None => continue,
         };
 
         let mut iteration_latencies = Vec::with_capacity(3);
-        let mut last_res = ExternalLspResult {
-            found: false,
-            span: "Not found".to_string(),
-            count: 0,
-            latency_micros: 0,
-            rss_bytes: 0,
-        };
+        let mut last_res = ExternalLspResult { found: false, span: "Not found".to_string(), count: 0, latency_micros: 0, rss_bytes: 0 };
 
         for iter in 0..3 {
             let t_start = Instant::now();
@@ -189,26 +154,9 @@ pub fn run_scip_session(
                 "def" | "textDocument/definition" => {
                     if let Some(loc) = scip_index.goto_definition(&file, line, col) {
                         let full_path = workspace_root.join(&loc.file);
-                        ExternalLspResult {
-                            found: true,
-                            span: format!(
-                                "{}:{}:{}",
-                                full_path.display(),
-                                loc.line + 1,
-                                loc.col + 1
-                            ),
-                            count: 1,
-                            latency_micros: 0,
-                            rss_bytes: 0,
-                        }
+                        ExternalLspResult { found: true, span: format!("{}:{}:{}", full_path.display(), loc.line + 1, loc.col + 1), count: 1, latency_micros: 0, rss_bytes: 0 }
                     } else {
-                        ExternalLspResult {
-                            found: false,
-                            span: "Not found".to_string(),
-                            count: 0,
-                            latency_micros: 0,
-                            rss_bytes: 0,
-                        }
+                        ExternalLspResult { found: false, span: "Not found".to_string(), count: 0, latency_micros: 0, rss_bytes: 0 }
                     }
                 }
                 "refs" | "textDocument/references" => {
@@ -218,14 +166,7 @@ pub fn run_scip_session(
                         found: count > 0,
                         span: refs
                             .first()
-                            .map(|loc| {
-                                format!(
-                                    "{}:{}:{}",
-                                    workspace_root.join(&loc.file).display(),
-                                    loc.line + 1,
-                                    loc.col + 1
-                                )
-                            })
+                            .map(|loc| format!("{}:{}:{}", workspace_root.join(&loc.file).display(), loc.line + 1, loc.col + 1))
                             .unwrap_or_else(|| "Not found".to_string()),
                         count,
                         latency_micros: 0,
@@ -234,21 +175,9 @@ pub fn run_scip_session(
                 }
                 "hover" | "textDocument/hover" => {
                     let doc = scip_index.hover(&file, line, col);
-                    ExternalLspResult {
-                        found: doc.is_some(),
-                        span: doc.unwrap_or_else(|| "N/A".to_string()),
-                        count: 1,
-                        latency_micros: 0,
-                        rss_bytes: 0,
-                    }
+                    ExternalLspResult { found: doc.is_some(), span: doc.unwrap_or_else(|| "N/A".to_string()), count: 1, latency_micros: 0, rss_bytes: 0 }
                 }
-                _ => ExternalLspResult {
-                    found: false,
-                    span: "N/A".to_string(),
-                    count: 0,
-                    latency_micros: 0,
-                    rss_bytes: 0,
-                },
+                _ => ExternalLspResult { found: false, span: "N/A".to_string(), count: 0, latency_micros: 0, rss_bytes: 0 },
             };
             let lat = t_start.elapsed().as_micros();
             iteration_latencies.push(lat);

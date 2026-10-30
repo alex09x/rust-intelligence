@@ -63,9 +63,7 @@ fn test_symlink_parent_path_uses_filesystem_identity() {
         end_col: 10,
     });
     let ws_ridx = var_dir.join("00_ws.ridx");
-    writer_ws
-        .write_to(&mut BufWriter::new(File::create(&ws_ridx).unwrap()))
-        .unwrap();
+    writer_ws.write_to(&mut BufWriter::new(File::create(&ws_ridx).unwrap())).unwrap();
 
     // 2. Shard 01_ext.ridx embeds workspace/external/file.rs -> 222
     let mut writer_ext = IndexWriter::new("ext_crate", "0.1.0");
@@ -88,9 +86,7 @@ fn test_symlink_parent_path_uses_filesystem_identity() {
         end_col: 10,
     });
     let ext_ridx = var_dir.join("01_ext.ridx");
-    writer_ext
-        .write_to(&mut BufWriter::new(File::create(&ext_ridx).unwrap()))
-        .unwrap();
+    writer_ext.write_to(&mut BufWriter::new(File::create(&ext_ridx).unwrap())).unwrap();
 
     // 3. Manifest recording workspace_root
     let manifest_json = serde_json::json!({
@@ -109,49 +105,27 @@ fn test_symlink_parent_path_uses_filesystem_identity() {
         "total_types": 0,
         "dependency_shards": []
     });
-    fs::write(
-        ws_root.join("target/ridx/ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_root.join("target/ridx/ridx_manifest.json"), serde_json::to_string_pretty(&manifest_json).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&ws_root).expect("failed to open workspace");
 
     let query_path = ws_root.join("shortcut/../file.rs");
     if let Ok(canon_query) = query_path.canonicalize() {
-        assert_eq!(
-            canon_query,
-            ext_file.canonicalize().unwrap(),
-            "query path must canonicalize to external/file.rs"
-        );
+        assert_eq!(canon_query, ext_file.canonicalize().unwrap(), "query path must canonicalize to external/file.rs");
 
         // Absolute query through symlink/.. must resolve to ext_file (222), not ws_file (111)
         let hash = ws.source_hash_for_file(&query_path.display().to_string());
-        assert_eq!(
-            hash,
-            Some(222),
-            "source_hash_for_file must resolve filesystem identity across symlink/.."
-        );
+        assert_eq!(hash, Some(222), "source_hash_for_file must resolve filesystem identity across symlink/..");
 
         let mtime = ws.shard_mtime_for_file(&query_path.display().to_string());
-        assert!(
-            mtime.is_some(),
-            "shard_mtime_for_file must resolve filesystem identity across symlink/.."
-        );
+        assert!(mtime.is_some(), "shard_mtime_for_file must resolve filesystem identity across symlink/..");
 
         // Relative query through symlink/..
         let rel_hash = ws.source_hash_for_file("shortcut/../file.rs");
-        assert_eq!(
-            rel_hash,
-            Some(222),
-            "relative query through symlink/.. must match 222"
-        );
+        assert_eq!(rel_hash, Some(222), "relative query through symlink/.. must match 222");
 
         let rel_mtime = ws.shard_mtime_for_file("shortcut/../file.rs");
-        assert!(
-            rel_mtime.is_some(),
-            "relative query through symlink/.. must return mtime"
-        );
+        assert!(rel_mtime.is_some(), "relative query through symlink/.. must return mtime");
     }
 
     // Direct queries
@@ -203,9 +177,7 @@ fn test_relative_query_is_anchored_to_selected_workspace() {
         end_col: 10,
     });
     let dep_ridx = var_dir.join("00_dep.ridx");
-    writer_dep
-        .write_to(&mut BufWriter::new(File::create(&dep_ridx).unwrap()))
-        .unwrap();
+    writer_dep.write_to(&mut BufWriter::new(File::create(&dep_ridx).unwrap())).unwrap();
 
     // 2. Shard 01_ws.ridx embeds <ws_root>/src/lib.rs -> 222 (selected workspace)
     let mut writer_ws = IndexWriter::new("ws_crate", "0.1.0");
@@ -228,9 +200,7 @@ fn test_relative_query_is_anchored_to_selected_workspace() {
         end_col: 10,
     });
     let ws_ridx = var_dir.join("01_ws.ridx");
-    writer_ws
-        .write_to(&mut BufWriter::new(File::create(&ws_ridx).unwrap()))
-        .unwrap();
+    writer_ws.write_to(&mut BufWriter::new(File::create(&ws_ridx).unwrap())).unwrap();
 
     // 3. Manifest recording workspace_root and dependency shards
     let manifest_json = serde_json::json!({
@@ -260,11 +230,7 @@ fn test_relative_query_is_anchored_to_selected_workspace() {
             }
         ]
     });
-    fs::write(
-        ws_root.join("target/ridx/ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_root.join("target/ridx/ridx_manifest.json"), serde_json::to_string_pretty(&manifest_json).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&ws_root).expect("failed to open workspace");
 
@@ -287,15 +253,8 @@ fn test_relative_query_is_anchored_to_selected_workspace() {
 
     drop(guard);
 
-    assert_eq!(
-        res_rel,
-        Some(222),
-        "relative query must anchor to workspace_root (222) and not process cwd (111)"
-    );
-    assert!(
-        res_rel_mtime.is_some(),
-        "shard_mtime_for_file must return mtime of selected workspace shard"
-    );
+    assert_eq!(res_rel, Some(222), "relative query must anchor to workspace_root (222) and not process cwd (111)");
+    assert!(res_rel_mtime.is_some(), "shard_mtime_for_file must return mtime of selected workspace shard");
 
     // Absolute query for ws_file must also return 222
     let res_abs = ws.source_hash_for_file(&ws_file.display().to_string());

@@ -47,18 +47,12 @@ fn test_l2_multiroot_path_routing_longest_prefix() {
     // 1. Path under nested crate matches root_b (longest prefix)
     let nested_file = temp_b.join("src/lib.rs");
     let matched_nested = mr.find_workspace_for_path(&nested_file).unwrap();
-    assert_eq!(
-        matched_nested.readers().first().unwrap().crate_name(),
-        "nested_crate"
-    );
+    assert_eq!(matched_nested.readers().first().unwrap().crate_name(), "nested_crate");
 
     // 2. Path under top-level matches root_a
     let top_file = temp_a.join("src/lib.rs");
     let matched_top = mr.find_workspace_for_path(&top_file).unwrap();
-    assert_eq!(
-        matched_top.readers().first().unwrap().crate_name(),
-        "repo_crate"
-    );
+    assert_eq!(matched_top.readers().first().unwrap().crate_name(), "repo_crate");
 
     let _ = std::fs::remove_dir_all(&temp_a);
 }
@@ -72,11 +66,7 @@ fn test_l2_multiroot_cross_crate_navigation() {
     let mut conv = PositionConverter::new();
 
     // 1. Go to definition on `ExternalCoreService` in `let ext_svc = ExternalCoreService::new(42);`
-    let (ext_line, ext_col) = pos_in_file(
-        &app_lib,
-        "let ext_svc = ExternalCoreService::new(42);",
-        "ExternalCoreService",
-    );
+    let (ext_line, ext_col) = pos_in_file(&app_lib, "let ext_svc = ExternalCoreService::new(42);", "ExternalCoreService");
 
     let ext_req = json!({
         "params": {
@@ -89,11 +79,7 @@ fn test_l2_multiroot_cross_crate_navigation() {
     assert!(!ext_res.is_null(), "Definition for ExternalCoreService must resolve");
 
     // 2. Go to definition on local `CoreService` in `let local_svc = CoreService { local_val: 10 };`
-    let (local_line, local_col) = pos_in_file(
-        &app_lib,
-        "let local_svc = CoreService { local_val: 10 };",
-        "CoreService",
-    );
+    let (local_line, local_col) = pos_in_file(&app_lib, "let local_svc = CoreService { local_val: 10 };", "CoreService");
 
     let local_req = json!({
         "params": {
@@ -133,15 +119,7 @@ fn test_l2_multiroot_dynamic_workspace_folders() {
     });
     mr.handle_did_change_workspace_folders(&add_event);
     assert_eq!(mr.len(), 1);
-    assert_eq!(
-        mr.first_workspace()
-            .unwrap()
-            .readers()
-            .first()
-            .unwrap()
-            .crate_name(),
-        "crate_one"
-    );
+    assert_eq!(mr.first_workspace().unwrap().readers().first().unwrap().crate_name(), "crate_one");
 
     // 2. Add second folder and remove first
     let swap_event = json!({
@@ -154,15 +132,7 @@ fn test_l2_multiroot_dynamic_workspace_folders() {
     });
     mr.handle_did_change_workspace_folders(&swap_event);
     assert_eq!(mr.len(), 1);
-    assert_eq!(
-        mr.first_workspace()
-            .unwrap()
-            .readers()
-            .first()
-            .unwrap()
-            .crate_name(),
-        "crate_two"
-    );
+    assert_eq!(mr.first_workspace().unwrap().readers().first().unwrap().crate_name(), "crate_two");
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
@@ -181,19 +151,10 @@ fn test_l2_multiroot_symbols_search_across_crates() {
 
     let res = handle_workspace_symbol(&req, std::iter::once(ws), &mut conv);
     let items = res.as_array().expect("workspace symbols array");
-    assert!(
-        !items.is_empty(),
-        "Must find CoreService definitions across multi-crate workspace"
-    );
+    assert!(!items.is_empty(), "Must find CoreService definitions across multi-crate workspace");
 
-    let names: Vec<&str> = items
-        .iter()
-        .filter_map(|it| it["name"].as_str())
-        .collect();
-    assert!(
-        names.contains(&"CoreService"),
-        "Must contain CoreService in search results"
-    );
+    let names: Vec<&str> = items.iter().filter_map(|it| it["name"].as_str()).collect();
+    assert!(names.contains(&"CoreService"), "Must contain CoreService in search results");
 }
 
 #[test]

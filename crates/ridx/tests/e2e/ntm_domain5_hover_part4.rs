@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -90,10 +85,7 @@ fn test_hover_utf16_surrogate_column_offset() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn after_crab()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn after_crab()\n```");
 }
 
 #[test]
@@ -108,10 +100,7 @@ fn test_hover_tab_indented_fn_hovered() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn tab_function()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn tab_function()\n```");
 }
 
 #[test]

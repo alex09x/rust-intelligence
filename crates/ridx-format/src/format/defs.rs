@@ -22,13 +22,7 @@ pub struct Span {
 impl Span {
     #[inline]
     pub fn new(file_id: u32, start_line: u32, start_col: u32, end_line: u32, end_col: u32) -> Self {
-        Self {
-            file_id,
-            start_line,
-            start_col,
-            end_line,
-            end_col,
-        }
+        Self { file_id, start_line, start_col, end_line, end_col }
     }
 
     #[inline]

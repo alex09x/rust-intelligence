@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,24 +77,48 @@ fn test_type_hierarchy_supertypes_reference_based_enum_supertypes() {
 
     let mut writer = IndexWriter::new("refenum_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Action".to_string(), path: "refenum_crate::Action".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Action".to_string(),
+        path: "refenum_crate::Action".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 16,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "Command".to_string(), path: "refenum_crate::Command".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 28,
+        def_id: 2,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Command".to_string(),
+        path: "refenum_crate::Command".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 28,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 18, end_line: 4, end_col: 25,
-        target_def_id: Some(2), target_path: "refenum_crate::Command".to_string(),
+        start_line: 4,
+        start_col: 18,
+        end_line: 4,
+        end_col: 25,
+        target_def_id: Some(2),
+        target_path: "refenum_crate::Command".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 2, target_col: 1,
-        kind: DefKind::Enum, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 2,
+        target_col: 1,
+        kind: DefKind::Enum,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -128,19 +149,35 @@ fn test_type_hierarchy_supertypes_reference_without_matching_impl_line_ignored()
 
     let mut writer = IndexWriter::new("nonimplref_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Standalone".to_string(), path: "nonimplref_crate::Standalone".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Standalone".to_string(),
+        path: "nonimplref_crate::Standalone".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 21,
     });
     // Reference inside a function (not an impl line)
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 14, end_line: 4, end_col: 24,
-        target_def_id: Some(1), target_path: "nonimplref_crate::Standalone".to_string(),
+        start_line: 4,
+        start_col: 14,
+        end_line: 4,
+        end_col: 24,
+        target_def_id: Some(1),
+        target_path: "nonimplref_crate::Standalone".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Struct, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Struct,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -169,40 +206,88 @@ fn test_type_hierarchy_supertypes_consecutive_requests_different_structs() {
 
     let mut writer = IndexWriter::new("consec_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "TraitOne".to_string(), path: "consec_crate::TraitOne".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TraitOne".to_string(),
+        path: "consec_crate::TraitOne".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 18,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "TraitTwo".to_string(), path: "consec_crate::TraitTwo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 18,
+        def_id: 2,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TraitTwo".to_string(),
+        path: "consec_crate::TraitTwo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 18,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "TypeOne".to_string(), path: "consec_crate::TypeOne".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
+        def_id: 3,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TypeOne".to_string(),
+        path: "consec_crate::TypeOne".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "TypeTwo".to_string(), path: "consec_crate::TypeTwo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 17,
+        def_id: 4,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TypeTwo".to_string(),
+        path: "consec_crate::TypeTwo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 5, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TypeOne as TraitOne>".to_string(), path: "<TypeOne as TraitOne>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 6, start_col: 1, end_line: 6, end_col: 27,
+        def_id: 5,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<TypeOne as TraitOne>".to_string(),
+        path: "<TypeOne as TraitOne>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 6,
+        start_col: 1,
+        end_line: 6,
+        end_col: 27,
     });
     writer.add_definition(RawDefinition {
-        def_id: 6, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TypeTwo as TraitTwo>".to_string(), path: "<TypeTwo as TraitTwo>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 7, start_col: 1, end_line: 7, end_col: 27,
+        def_id: 6,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<TypeTwo as TraitTwo>".to_string(),
+        path: "<TypeTwo as TraitTwo>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 7,
+        start_col: 1,
+        end_line: 7,
+        end_col: 27,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -246,22 +331,46 @@ fn test_type_hierarchy_supertypes_self_as_trait_not_matched() {
 
     let mut writer = IndexWriter::new("roleinv_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "MyTrait".to_string(), path: "roleinv_crate::MyTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyTrait".to_string(),
+        path: "roleinv_crate::MyTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "MyTarget".to_string(), path: "roleinv_crate::MyTarget".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 18,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyTarget".to_string(),
+        path: "roleinv_crate::MyTarget".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 18,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<MyTarget as MyTrait>".to_string(), path: "<MyTarget as MyTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 28,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<MyTarget as MyTrait>".to_string(),
+        path: "<MyTarget as MyTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 28,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 

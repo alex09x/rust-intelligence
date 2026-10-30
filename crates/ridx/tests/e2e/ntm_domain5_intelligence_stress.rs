@@ -136,12 +136,7 @@ fn test_domain5_e2e_full_intelligence_stream() {
     fs::write(&src_file, code).unwrap();
 
     let mut builder = FixtureIndexBuilder::new("domain5_test", "0.1.0");
-    let (c, _ids) = builder.add_defs_with_ids(
-        code,
-        src_file.to_str().unwrap(),
-        "domain5_test",
-        DefKind::Fn,
-    );
+    let (c, _ids) = builder.add_defs_with_ids(code, src_file.to_str().unwrap(), "domain5_test", DefKind::Fn);
     let _ = fs::write(&src_file, c);
 
     let ridx_file = temp.path().join("index.ridx");
@@ -372,17 +367,9 @@ fn test_domain5_concurrent_intelligence_requests_stress() {
         assert!(r.is_some(), "Expected response for request {}", req_id);
         let resp = r.unwrap();
         if req_id == 115 {
-            assert_eq!(
-                resp["error"]["code"], -32800,
-                "Cancelled request 115 must yield code -32800 (RequestCancelled)"
-            );
+            assert_eq!(resp["error"]["code"], -32800, "Cancelled request 115 must yield code -32800 (RequestCancelled)");
         } else {
-            assert!(
-                resp["error"].is_null(),
-                "Non-cancelled request {} must succeed, got {:?}",
-                req_id,
-                resp["error"]
-            );
+            assert!(resp["error"].is_null(), "Non-cancelled request {} must succeed, got {:?}", req_id, resp["error"]);
         }
     }
 }

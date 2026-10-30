@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -89,10 +84,7 @@ fn test_signature_help_ref_mut_parameter_labels() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "buf: &mut Vec<u8>"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "buf: &mut Vec<u8>");
 }
 
 #[test]
@@ -107,10 +99,7 @@ fn test_signature_help_lifetime_parameter_labels() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "input: &'a str"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "input: &'a str");
 }
 
 #[test]
@@ -125,10 +114,7 @@ fn test_signature_help_impl_trait_parameter_labels() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "items: impl Iterator<Item = u32>"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "items: impl Iterator<Item = u32>");
 }
 
 #[test]
@@ -143,10 +129,7 @@ fn test_signature_help_dyn_trait_parameter_labels() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "task: &dyn Fn()"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "task: &dyn Fn()");
 }
 
 #[test]
@@ -161,14 +144,8 @@ fn test_signature_help_fn_pointer_parameter_labels() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "f: fn(i32) -> i32"
-    );
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "val: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "f: fn(i32) -> i32");
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "val: i32");
 }
 
 #[test]
@@ -184,10 +161,7 @@ fn test_signature_help_utf16_surrogate_in_call_line() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 0);
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn launch_target(count: u32)"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn launch_target(count: u32)");
 }
 
 #[test]
@@ -196,12 +170,7 @@ fn test_signature_help_four_arguments_progression() {
     let uri = "file:///tmp/sig_four.rs";
     open_test_file(&mut ov, uri, 1, "pub fn quad(a: i32, b: i32, c: i32, d: i32) {}\n");
 
-    for (args_str, expected_param) in [
-        ("quad(", 0),
-        ("quad(1, ", 1),
-        ("quad(1, 2, ", 2),
-        ("quad(1, 2, 3, ", 3),
-    ] {
+    for (args_str, expected_param) in [("quad(", 0), ("quad(1, ", 1), ("quad(1, 2, ", 2), ("quad(1, 2, 3, ", 3)] {
         let content = format!("pub fn quad(a: i32, b: i32, c: i32, d: i32) {{}}\nfn run() {{ {args_str} }}\n");
         open_test_file(&mut ov, uri, 2, &content);
         let col = 11 + args_str.len();
@@ -246,8 +215,5 @@ fn test_signature_help_preceding_text_large_buffer_handled() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn big_fn(size: usize)"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn big_fn(size: usize)");
 }

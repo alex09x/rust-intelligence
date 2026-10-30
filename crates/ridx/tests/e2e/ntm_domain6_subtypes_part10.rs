@@ -53,7 +53,6 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn new_multi(shards: Vec<PathBuf>) -> Self {
         let mut d = Self {
             lifecycle: LifecycleManager::new(),
@@ -70,14 +69,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -97,34 +91,54 @@ fn test_type_hierarchy_subtypes_multiple_workspaces_first_workspace_used() {
     let shard2 = dir2.join("index.ridx");
     let file1 = dir1.join("src/lib.rs");
     let file1_str = file1.to_str().unwrap().to_string();
-
     let mut writer1 = IndexWriter::new("ws1_sub_crate", "0.1.0");
     writer1.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "FirstWsTrait".to_string(), path: "ws1_sub_crate::FirstWsTrait".to_string(),
-        signature: None, file: file1_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "FirstWsTrait".to_string(),
+        path: "ws1_sub_crate::FirstWsTrait".to_string(),
+        signature: None,
+        file: file1_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer1.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "FirstWsImpl".to_string(), path: "ws1_sub_crate::FirstWsImpl".to_string(),
-        signature: None, file: file1_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 21,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "FirstWsImpl".to_string(),
+        path: "ws1_sub_crate::FirstWsImpl".to_string(),
+        signature: None,
+        file: file1_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 21,
     });
     writer1.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<FirstWsImpl as FirstWsTrait>".to_string(), path: "<FirstWsImpl as FirstWsTrait>".to_string(),
-        signature: None, file: file1_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 37,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<FirstWsImpl as FirstWsTrait>".to_string(),
+        path: "<FirstWsImpl as FirstWsTrait>".to_string(),
+        signature: None,
+        file: file1_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 37,
     });
     writer1.write_to(&mut File::create(&shard1).unwrap()).unwrap();
     std::fs::write(&file1, "trait FirstWsTrait {}\nstruct FirstWsImpl;\n\nimpl FirstWsTrait for FirstWsImpl {}\n").unwrap();
-
     let mut writer2 = IndexWriter::new("ws2_sub_crate", "0.1.0");
     writer2.write_to(&mut File::create(&shard2).unwrap()).unwrap();
-
     let mut dsp = TestDispatcher::new_multi(vec![shard1, shard2]);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 852, "method": "typeHierarchy/subtypes",
         "params": { "item": { "name": "FirstWsTrait", "kind": 11, "uri": to_uri(&file1) } }
@@ -145,32 +159,53 @@ fn test_type_hierarchy_subtypes_trait_name_with_generics_in_item() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("genitem_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "ParserTrait".to_string(), path: "genitem_sub_crate::ParserTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ParserTrait".to_string(),
+        path: "genitem_sub_crate::ParserTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "JsonParser".to_string(), path: "genitem_sub_crate::JsonParser".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 20,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "JsonParser".to_string(),
+        path: "genitem_sub_crate::JsonParser".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 20,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<JsonParser as ParserTrait>".to_string(), path: "<JsonParser as ParserTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 41,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<JsonParser as ParserTrait>".to_string(),
+        path: "<JsonParser as ParserTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 41,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait ParserTrait<T> {}\nstruct JsonParser;\n\nimpl ParserTrait<String> for JsonParser {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     // item.name has generic parameter "ParserTrait<String>" -> base "ParserTrait"
     let req = json!({
         "jsonrpc": "2.0", "id": 853, "method": "typeHierarchy/subtypes",
@@ -192,32 +227,53 @@ fn test_type_hierarchy_subtypes_struct_name_with_generics_in_result() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("resgen_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Codec".to_string(), path: "resgen_sub_crate::Codec".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Codec".to_string(),
+        path: "resgen_sub_crate::Codec".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 16,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "GenCodec".to_string(), path: "resgen_sub_crate::GenCodec".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 22,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "GenCodec".to_string(),
+        path: "resgen_sub_crate::GenCodec".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 22,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<GenCodec as Codec>".to_string(), path: "<GenCodec as Codec>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 36,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<GenCodec as Codec>".to_string(),
+        path: "<GenCodec as Codec>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 36,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait Codec {}\nstruct GenCodec<T>(T);\n\nimpl<T> Codec for GenCodec<T> {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 854, "method": "typeHierarchy/subtypes",
         "params": { "item": { "name": "Codec", "kind": 11, "uri": to_uri(&file) } }
@@ -238,44 +294,81 @@ fn test_type_hierarchy_subtypes_both_struct_and_enum_implementors() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("mix_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "MixedTrait".to_string(), path: "mix_sub_crate::MixedTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MixedTrait".to_string(),
+        path: "mix_sub_crate::MixedTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 21,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "StructImpl".to_string(), path: "mix_sub_crate::StructImpl".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 20,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "StructImpl".to_string(),
+        path: "mix_sub_crate::StructImpl".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 20,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "EnumImpl".to_string(), path: "mix_sub_crate::EnumImpl".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 23,
+        def_id: 3,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "EnumImpl".to_string(),
+        path: "mix_sub_crate::EnumImpl".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 23,
     });
     writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<StructImpl as MixedTrait>".to_string(), path: "<StructImpl as MixedTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 1, end_line: 5, end_col: 33,
+        def_id: 4,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<StructImpl as MixedTrait>".to_string(),
+        path: "<StructImpl as MixedTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 5,
+        start_col: 1,
+        end_line: 5,
+        end_col: 33,
     });
     writer.add_definition(RawDefinition {
-        def_id: 5, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<EnumImpl as MixedTrait>".to_string(), path: "<EnumImpl as MixedTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 6, start_col: 1, end_line: 6, end_col: 31,
+        def_id: 5,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<EnumImpl as MixedTrait>".to_string(),
+        path: "<EnumImpl as MixedTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 6,
+        start_col: 1,
+        end_line: 6,
+        end_col: 31,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait MixedTrait {}\nstruct StructImpl;\nenum EnumImpl { X, Y }\n\nimpl MixedTrait for StructImpl {}\nimpl MixedTrait for EnumImpl {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 855, "method": "typeHierarchy/subtypes",
         "params": { "item": { "name": "MixedTrait", "kind": 11, "uri": to_uri(&file) } }

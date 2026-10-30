@@ -179,10 +179,7 @@ fn test_flycheck_empty_diagnostics_clearing_payload() {
     });
 
     let diags = clear_payload["params"]["diagnostics"].as_array().unwrap();
-    assert!(
-        diags.is_empty(),
-        "Clearing payload must have empty diagnostics array"
-    );
+    assert!(diags.is_empty(), "Clearing payload must have empty diagnostics array");
 }
 
 #[test]
@@ -238,16 +235,7 @@ fn test_e2e_flycheck_e0425_preserved_after_did_change() {
         }
     });
     let mut out = Vec::new();
-    dispatch_lsp_message(
-        LspMessage::Client(init_req),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(init_req), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     let uri = "file:///tmp/dummy_workspace/src/lib.rs";
 
@@ -264,16 +252,7 @@ fn test_e2e_flycheck_e0425_preserved_after_did_change() {
         }
     });
     out.clear();
-    dispatch_lsp_message(
-        LspMessage::Client(open_msg),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(open_msg), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     // 3. Flycheck publishes E0425 via InternalDiagnostic
     let gen = lifecycle.flycheck.current_generation();
@@ -294,16 +273,7 @@ fn test_e2e_flycheck_e0425_preserved_after_did_change() {
         }
     });
     out.clear();
-    dispatch_lsp_message(
-        LspMessage::InternalDiagnostic(gen, flycheck_diag),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::InternalDiagnostic(gen, flycheck_diag), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     let pub_str = String::from_utf8_lossy(&out);
     assert!(pub_str.contains("E0425"));
@@ -320,23 +290,11 @@ fn test_e2e_flycheck_e0425_preserved_after_did_change() {
         }
     });
     out.clear();
-    dispatch_lsp_message(
-        LspMessage::Client(change_msg),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(change_msg), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     // 5. Verify E0425 is STILL in the latest publishDiagnostics notification
     let change_out_str = String::from_utf8_lossy(&out);
     assert!(change_out_str.contains("textDocument/publishDiagnostics"));
-    assert!(
-        change_out_str.contains("E0425"),
-        "E0425 must be preserved across didChange edits"
-    );
+    assert!(change_out_str.contains("E0425"), "E0425 must be preserved across didChange edits");
     assert!(change_out_str.contains("cannot find value `unknown_var`"));
 }

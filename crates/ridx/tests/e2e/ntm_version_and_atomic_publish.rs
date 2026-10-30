@@ -26,11 +26,7 @@ fn parse_framed_json(bytes: &[u8]) -> Vec<Value> {
     while let Some(pos) = rest.find("\r\n\r\n") {
         let body = &rest[pos + 4..];
         let len_header = &rest[..pos];
-        let len: usize = len_header
-            .lines()
-            .find_map(|l| l.strip_prefix("Content-Length: "))
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0);
+        let len: usize = len_header.lines().find_map(|l| l.strip_prefix("Content-Length: ")).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
         if body.len() >= len && len > 0 {
             if let Ok(val) = serde_json::from_str::<Value>(&body[..len]) {
                 out.push(val);
@@ -84,15 +80,7 @@ fn test_client_ack_does_not_rewrite_closed_file_on_disk() {
     });
 
     let mut cmd_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        cmd,
-        &mut cmd_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(cmd, &mut cmd_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let msgs = parse_framed_json(&cmd_out.into_inner());
     let apply_id = msgs[0]["id"].clone();
@@ -109,22 +97,11 @@ fn test_client_ack_does_not_rewrite_closed_file_on_disk() {
     });
 
     let mut ack_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        ack_msg,
-        &mut ack_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(ack_msg, &mut ack_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     // Verify disk content was NOT overwritten with stale server snapshot
     let current_disk = fs::read_to_string(&temp_file).unwrap();
-    assert_eq!(
-        current_disk, client_text,
-        "Server must not clobber client's file on ack"
-    );
+    assert_eq!(current_disk, client_text, "Server must not clobber client's file on ack");
 
     let _ = fs::remove_file(temp_file);
 }
@@ -140,18 +117,12 @@ fn test_atomic_write_preserves_file_permissions() {
         let orig_mode = 0o755;
         fs::set_permissions(&temp_file, fs::Permissions::from_mode(orig_mode)).unwrap();
 
-        let ok = commit_closed_writes_atomic(&[(
-            temp_file.to_str().unwrap().to_string(),
-            "updated script\n".to_string(),
-        )]);
+        let ok = commit_closed_writes_atomic(&[(temp_file.to_str().unwrap().to_string(), "updated script\n".to_string())]);
         assert!(ok, "Atomic commit must succeed");
 
         let meta = fs::metadata(&temp_file).unwrap();
         let current_mode = meta.permissions().mode() & 0o777;
-        assert_eq!(
-            current_mode, orig_mode,
-            "Atomic publish must preserve original file mode"
-        );
+        assert_eq!(current_mode, orig_mode, "Atomic publish must preserve original file mode");
 
         let _ = fs::remove_file(temp_file);
     }
@@ -169,23 +140,14 @@ fn test_atomic_write_preserves_symlink_referent() {
         let _ = fs::remove_file(&link_file);
         std::os::unix::fs::symlink(&target_file, &link_file).unwrap();
 
-        let ok = commit_closed_writes_atomic(&[(
-            link_file.to_str().unwrap().to_string(),
-            "modified target\n".to_string(),
-        )]);
+        let ok = commit_closed_writes_atomic(&[(link_file.to_str().unwrap().to_string(), "modified target\n".to_string())]);
         assert!(ok, "Atomic commit via symlink must succeed");
 
         let link_meta = fs::symlink_metadata(&link_file).unwrap();
-        assert!(
-            link_meta.file_type().is_symlink(),
-            "Link file must remain a symlink"
-        );
+        assert!(link_meta.file_type().is_symlink(), "Link file must remain a symlink");
 
         let target_content = fs::read_to_string(&target_file).unwrap();
-        assert_eq!(
-            target_content, "modified target\n",
-            "Referent file must receive the updated content"
-        );
+        assert_eq!(target_content, "modified target\n", "Referent file must receive the updated content");
 
         let _ = fs::remove_file(link_file);
         let _ = fs::remove_file(target_file);

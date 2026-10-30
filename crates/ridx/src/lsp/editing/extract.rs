@@ -14,12 +14,7 @@ use super::ident::{byte_offset_to_utf16_col, utf16_col_to_byte_offset};
 use serde_json::{json, Value};
 
 /// Computes the variable extraction action and edits for a selected range.
-pub fn try_extract_variable_action(
-    doc_text: &str,
-    uri: &str,
-    range: &Value,
-    doc_version: Option<i32>,
-) -> Option<Value> {
+pub fn try_extract_variable_action(doc_text: &str, uri: &str, range: &Value, doc_version: Option<i32>) -> Option<Value> {
     let sl = range["start"]["line"].as_u64()? as usize;
     let sc = range["start"]["character"].as_u64()? as usize;
     let el = range["end"]["line"].as_u64()? as usize;
@@ -35,11 +30,7 @@ pub fn try_extract_variable_action(
     let mut in_str = false;
     let mut in_comment = false;
     for (l_idx, line_str) in lines.iter().enumerate().take(sl + 1) {
-        let limit = if l_idx == sl {
-            sc.min(line_str.len())
-        } else {
-            line_str.len()
-        };
+        let limit = if l_idx == sl { sc.min(line_str.len()) } else { line_str.len() };
         let bytes = line_str.as_bytes();
         let mut j = 0;
         while j < limit {
@@ -122,20 +113,13 @@ pub fn try_extract_variable_action(
 
     for cur_l in (0..=sl).rev() {
         let cur_line = lines[cur_l];
-        let cur_limit = if cur_l == sl {
-            start_byte
-        } else {
-            cur_line.len()
-        };
+        let cur_limit = if cur_l == sl { start_byte } else { cur_line.len() };
         let slice = &cur_line[..cur_limit];
 
         let last_semi = slice.rfind(';');
         let last_close = slice.rfind('}');
         let last_open = slice.rfind('{');
-        let local_delim = [last_semi, last_close, last_open]
-            .into_iter()
-            .flatten()
-            .max();
+        let local_delim = [last_semi, last_close, last_open].into_iter().flatten().max();
 
         if let Some(d_idx) = local_delim {
             delim_info = Some((cur_l, d_idx));
@@ -183,46 +167,22 @@ pub fn try_extract_variable_action(
 
     let (insert_line, insert_col, new_text) = if let Some((dl, d_idx)) = delim_info {
         let mut after_delim = d_idx + 1;
-        while after_delim < lines[dl].len()
-            && lines[dl].as_bytes()[after_delim].is_ascii_whitespace()
-        {
+        while after_delim < lines[dl].len() && lines[dl].as_bytes()[after_delim].is_ascii_whitespace() {
             after_delim += 1;
         }
         if after_delim < lines[dl].len() {
             let col = byte_offset_to_utf16_col(lines[dl], after_delim) as u32;
-            (
-                dl as u32,
-                col,
-                format!("let {} = {}; ", var_name, expr.trim()),
-            )
+            (dl as u32, col, format!("let {} = {}; ", var_name, expr.trim()))
         } else if dl + 1 < lines.len() {
             let next_l = dl + 1;
-            let indent: String = lines[next_l]
-                .chars()
-                .take_while(|c| c.is_whitespace())
-                .collect();
-            (
-                next_l as u32,
-                0u32,
-                format!("{indent}let {} = {};\n", var_name, expr.trim()),
-            )
+            let indent: String = lines[next_l].chars().take_while(|c| c.is_whitespace()).collect();
+            (next_l as u32, 0u32, format!("{indent}let {} = {};\n", var_name, expr.trim()))
         } else {
-            (
-                dl as u32,
-                lines[dl].len() as u32,
-                format!("let {} = {}; ", var_name, expr.trim()),
-            )
+            (dl as u32, lines[dl].len() as u32, format!("let {} = {}; ", var_name, expr.trim()))
         }
     } else {
-        let indent: String = lines[sl]
-            .chars()
-            .take_while(|c| c.is_whitespace())
-            .collect();
-        (
-            sl as u32,
-            0u32,
-            format!("{indent}let {} = {};\n", var_name, expr.trim()),
-        )
+        let indent: String = lines[sl].chars().take_while(|c| c.is_whitespace()).collect();
+        (sl as u32, 0u32, format!("{indent}let {} = {};\n", var_name, expr.trim()))
     };
 
     let insert_edit = json!({

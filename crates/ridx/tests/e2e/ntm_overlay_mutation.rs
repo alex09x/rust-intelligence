@@ -36,15 +36,7 @@ fn send_lsp(
     index_path: Option<&PathBuf>,
 ) -> Value {
     let mut out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        cancelled,
-        index_path,
-    );
+    let _ = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, cancelled, index_path);
     let bytes = out.into_inner();
     if bytes.is_empty() {
         return Value::Null;
@@ -103,14 +95,7 @@ fn test_ntm_overlay_mutations_and_editing_pipeline() {
         &cancelled,
         Some(&index_dir),
     );
-    let _ = send_lsp(
-        json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }),
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let _ = send_lsp(json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }), &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
 
     // 2. didOpen
     let _ = send_lsp(
@@ -248,13 +233,6 @@ fn test_ntm_overlay_mutations_and_editing_pipeline() {
     );
 
     // 10. Shutdown
-    let sd = send_lsp(
-        json!({ "jsonrpc": "2.0", "id": 99, "method": "shutdown", "params": {} }),
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let sd = send_lsp(json!({ "jsonrpc": "2.0", "id": 99, "method": "shutdown", "params": {} }), &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(sd["id"], 99);
 }

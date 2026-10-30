@@ -31,14 +31,8 @@ use ridx_format::IndexReader;
 
 fn shards(arg: &Path) -> Vec<PathBuf> {
     if arg.is_dir() {
-        let mut found: Vec<PathBuf> = std::fs::read_dir(arg)
-            .map(|rd| {
-                rd.filter_map(Result::ok)
-                    .map(|e| e.path())
-                    .filter(|p| p.extension().is_some_and(|e| e == "ridx"))
-                    .collect()
-            })
-            .unwrap_or_default();
+        let mut found: Vec<PathBuf> =
+            std::fs::read_dir(arg).map(|rd| rd.filter_map(Result::ok).map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "ridx")).collect()).unwrap_or_default();
         found.sort();
         found
     } else {
@@ -54,10 +48,7 @@ fn main() {
     }
     for arg in &args {
         for shard in shards(Path::new(arg)) {
-            let name = shard
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default();
+            let name = shard.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             let reader = match IndexReader::open(&shard) {
                 Ok(r) => r,
                 Err(e) => {
@@ -68,9 +59,7 @@ fn main() {
             for id in 0..reader.files_count() {
                 let stored = reader.get_file(id);
                 println!("FILE\t{name}\t{stored}");
-                let has_parent_dir = Path::new(stored)
-                    .components()
-                    .any(|c| c == Component::ParentDir);
+                let has_parent_dir = Path::new(stored).components().any(|c| c == Component::ParentDir);
                 if has_parent_dir {
                     let resolved = normalize_path(Path::new(stored));
                     let resolved = resolved.to_string_lossy();

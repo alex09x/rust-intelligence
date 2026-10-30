@@ -69,12 +69,7 @@ fn redact_home_paths(s: &str) -> String {
     for prefix in &["/Users/", "/home/"] {
         while let Some(pos) = result.find(prefix) {
             let after = pos + prefix.len();
-            let end = result[after..]
-                .find(|c: char| {
-                    c == '/' || c == '>' || c == ',' || c == ')' || c == '}' || c.is_whitespace()
-                })
-                .map(|p| after + p)
-                .unwrap_or(result.len());
+            let end = result[after..].find(|c: char| c == '/' || c == '>' || c == ',' || c == ')' || c == '}' || c.is_whitespace()).map(|p| after + p).unwrap_or(result.len());
             result.replace_range(pos..end, "<user_dir>");
         }
     }
@@ -106,10 +101,7 @@ mod tests {
     #[test]
     fn test_sanitize_nested_iterators() {
         let input = "Map<Filter<Chars<'_>, {closure@/home/user/foo.rs:1:2}>, {closure@/home/ci/bar.rs:3:4}>";
-        assert_eq!(
-            sanitize_type_name(input),
-            "Map<Filter<Chars<'_>, {closure}>, {closure}>"
-        );
+        assert_eq!(sanitize_type_name(input), "Map<Filter<Chars<'_>, {closure}>, {closure}>");
     }
 
     #[test]
@@ -124,9 +116,6 @@ mod tests {
     #[test]
     fn test_sanitize_fallback_home_paths() {
         let input = "CustomType</home/user/some/path>";
-        assert_eq!(
-            sanitize_type_name(input),
-            "CustomType<<user_dir>/some/path>"
-        );
+        assert_eq!(sanitize_type_name(input), "CustomType<<user_dir>/some/path>");
     }
 }

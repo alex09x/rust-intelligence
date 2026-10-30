@@ -18,13 +18,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-fn make_reader_file(
-    temp_dir: &PathBuf,
-    crate_name: &str,
-    src_rel: &str,
-    src_code: &str,
-    defs: Vec<RawDefinition>,
-) -> PathBuf {
+fn make_reader_file(temp_dir: &PathBuf, crate_name: &str, src_rel: &str, src_code: &str, defs: Vec<RawDefinition>) -> PathBuf {
     let src_file = temp_dir.join(src_rel);
     if let Some(parent) = src_file.parent() {
         let _ = fs::create_dir_all(parent);
@@ -43,13 +37,7 @@ fn make_reader_file(
 
 #[test]
 fn test_multiline_and_generics_impl() {
-    let temp_dir = std::env::temp_dir().join(format!(
-        "ridx_test_multiline_impl_{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_multiline_impl_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
     let _ = fs::create_dir_all(&temp_dir);
 
     let code = r#"
@@ -135,13 +123,7 @@ impl<T: Clone + Send>
 
 #[test]
 fn test_same_named_types_reader_order_and_baseline_equivalence() {
-    let temp_dir = std::env::temp_dir().join(format!(
-        "ridx_test_same_named_{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_same_named_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
     let _ = fs::create_dir_all(&temp_dir);
 
     // Crate 1: bevy_render
@@ -192,13 +174,7 @@ fn test_same_named_types_reader_order_and_baseline_equivalence() {
             signature: None,
         },
     ];
-    make_reader_file(
-        &temp_dir,
-        "bevy_render",
-        "crate1/src/lib.rs",
-        code_1,
-        defs_1,
-    );
+    make_reader_file(&temp_dir, "bevy_render", "crate1/src/lib.rs", code_1, defs_1);
 
     // Crate 2: bevy_ui
     let code_2 = "pub trait Render { fn draw_ui(&self); }\npub struct Mesh;\nimpl Render for Mesh { fn draw_ui(&self) {} }\n";
@@ -263,33 +239,21 @@ fn test_same_named_types_reader_order_and_baseline_equivalence() {
     // Case 1: Oracle is called before handler
     let expected_sub_1 = baseline_handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
     let actual_sub_1 = handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
-    assert_eq!(
-        actual_sub_1, expected_sub_1,
-        "Subtypes output must match baseline oracle when oracle runs first"
-    );
+    assert_eq!(actual_sub_1, expected_sub_1, "Subtypes output must match baseline oracle when oracle runs first");
 
     let expected_super_1 = baseline_handle_type_hierarchy_supertypes(&super_req, Some(&ws));
     let actual_super_1 = handle_type_hierarchy_supertypes(&super_req, Some(&ws));
-    assert_eq!(
-        actual_super_1, expected_super_1,
-        "Supertypes output must match baseline oracle when oracle runs first"
-    );
+    assert_eq!(actual_super_1, expected_super_1, "Supertypes output must match baseline oracle when oracle runs first");
 
     // Case 2: On fresh workspace, handler is called before oracle
     let ws2 = WorkspaceIndex::open(&temp_dir).unwrap();
     let actual_sub_2 = handle_type_hierarchy_subtypes(&sub_req, Some(&ws2));
     let expected_sub_2 = baseline_handle_type_hierarchy_subtypes(&sub_req, Some(&ws2));
-    assert_eq!(
-        actual_sub_2, expected_sub_2,
-        "Subtypes output must match baseline oracle when handler runs first"
-    );
+    assert_eq!(actual_sub_2, expected_sub_2, "Subtypes output must match baseline oracle when handler runs first");
 
     let actual_super_2 = handle_type_hierarchy_supertypes(&super_req, Some(&ws2));
     let expected_super_2 = baseline_handle_type_hierarchy_supertypes(&super_req, Some(&ws2));
-    assert_eq!(
-        actual_super_2, expected_super_2,
-        "Supertypes output must match baseline oracle when handler runs first"
-    );
+    assert_eq!(actual_super_2, expected_super_2, "Supertypes output must match baseline oracle when handler runs first");
 }
 
 #[test]
@@ -316,28 +280,19 @@ fn test_cache_invalidation_on_generation_bump() {
 
     let table1 = get_or_build_impl_table(&ws);
     let table2 = get_or_build_impl_table(&ws);
-    assert!(
-        Arc::ptr_eq(&table1, &table2),
-        "Same generation must return cached Arc"
-    );
+    assert!(Arc::ptr_eq(&table1, &table2), "Same generation must return cached Arc");
 
     // Bump generation
     let new_gen = ws.bump_generation();
     assert_eq!(new_gen, 2);
 
     let table3 = get_or_build_impl_table(&ws);
-    assert!(
-        !Arc::ptr_eq(&table1, &table3),
-        "Bumped generation must re-build and return new Arc"
-    );
+    assert!(!Arc::ptr_eq(&table1, &table3), "Bumped generation must re-build and return new Arc");
 
     // Clear cache
     clear_impl_table_cache();
     let table4 = get_or_build_impl_table(&ws);
-    assert!(
-        !Arc::ptr_eq(&table3, &table4),
-        "Cleared cache must re-build and return new Arc"
-    );
+    assert!(!Arc::ptr_eq(&table3, &table4), "Cleared cache must re-build and return new Arc");
 }
 
 #[test]

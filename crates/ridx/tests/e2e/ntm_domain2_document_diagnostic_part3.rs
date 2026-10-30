@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> Value {
     Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -54,13 +49,7 @@ fn setup_initialized_server() -> (
     (mr, ov, lc, can)
 }
 
-fn send_diagnostic_req(
-    uri: &str,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<Value>>>,
-) -> Value {
+fn send_diagnostic_req(uri: &str, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
     let mut out = Vec::new();
     let req = json!({
         "jsonrpc": "2.0",

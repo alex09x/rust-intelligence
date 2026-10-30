@@ -31,15 +31,7 @@ fn dispatch_did_open_with_converter(
 ) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -260,14 +252,20 @@ fn test_did_open_replaces_previously_closed_file() {
 
     let _ = dispatch_did_open_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "fn f1() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr, None,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        None,
     );
     overlay_mgr.close_document(&file);
     assert_eq!(overlay_mgr.open_count(), 0);
 
     let (ok, _) = dispatch_did_open_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 2, "text": "fn f2() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr, None,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        None,
     );
 
     assert_eq!(ok, true);

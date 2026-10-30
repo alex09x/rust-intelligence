@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();

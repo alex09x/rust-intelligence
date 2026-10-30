@@ -140,19 +140,13 @@ fn test_workspace_open_edge_cases() {
     // 1. Directory with no .ridx files (lines 291-296)
     let empty_dir = new_test_dir("ws_no_ridx");
     let res = WorkspaceIndex::open(&empty_dir.0);
-    assert!(res
-        .unwrap_err()
-        .to_string()
-        .contains("No .ridx index files found"));
+    assert!(res.unwrap_err().to_string().contains("No .ridx index files found"));
 
     // 1b. Directory with only invalid .ridx files (lines 479-482)
     let corrupt_dir = new_test_dir("ws_all_corrupt");
     fs::write(corrupt_dir.0.join("bad.ridx"), b"bad").unwrap();
     let res_corrupt = WorkspaceIndex::open(&corrupt_dir.0);
-    assert!(res_corrupt
-        .unwrap_err()
-        .to_string()
-        .contains("Failed to open any valid"));
+    assert!(res_corrupt.unwrap_err().to_string().contains("Failed to open any valid"));
 
     // 3. Manifest with empty workspace_root (line 213) and empty active_variant_id (line 219)
     let ws_dir = new_test_dir("ws_legacy_manifest");
@@ -196,11 +190,7 @@ fn test_workspace_open_edge_cases() {
         ],
         "crates": []
     });
-    fs::write(
-        ws_dir.0.join("ridx_manifest.json"),
-        serde_json::to_string(&manifest_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_dir.0.join("ridx_manifest.json"), serde_json::to_string(&manifest_json).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&ws_dir.0).unwrap();
     assert_eq!(ws.readers.len(), 1);
@@ -215,14 +205,9 @@ fn test_workspace_open_edge_cases() {
     wv.write_to(&mut fv).unwrap();
     drop(fv);
     let mut v_manifest = manifest_json.clone();
-    v_manifest["extractor_version"] =
-        serde_json::Value::String(crate::format::EXTRACTOR_VERSION.to_string());
+    v_manifest["extractor_version"] = serde_json::Value::String(crate::format::EXTRACTOR_VERSION.to_string());
     v_manifest["workspace_root"] = serde_json::Value::String("".to_string());
-    fs::write(
-        v_dir.0.join("variant_manifest.json"),
-        serde_json::to_string(&v_manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(v_dir.0.join("variant_manifest.json"), serde_json::to_string(&v_manifest).unwrap()).unwrap();
     let ws_v = WorkspaceIndex::open(&v_dir.0).unwrap();
     assert_eq!(ws_v.readers.len(), 1);
     assert_eq!(ws_v.readers[0].crate_name(), "v_pkg");
@@ -251,16 +236,11 @@ fn test_workspace_open_edge_cases() {
     let _ = fs::create_dir_all(&v_empty_dir);
     let _ = fs::copy(&m_file, v_empty_dir.join("pkg.ridx"));
     let mut m_empty_ws = manifest_json.clone();
-    m_empty_ws["extractor_version"] =
-        serde_json::Value::String(crate::format::EXTRACTOR_VERSION.to_string());
+    m_empty_ws["extractor_version"] = serde_json::Value::String(crate::format::EXTRACTOR_VERSION.to_string());
     m_empty_ws["active_variant_id"] = serde_json::Value::String("var_empty".to_string());
     m_empty_ws["variant_dir"] = serde_json::Value::String("variants/var_empty".to_string());
     m_empty_ws["workspace_root"] = serde_json::Value::String("".to_string());
-    fs::write(
-        ws_m_dir.0.join("ridx_manifest.json"),
-        serde_json::to_string(&m_empty_ws).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_m_dir.0.join("ridx_manifest.json"), serde_json::to_string(&m_empty_ws).unwrap()).unwrap();
     let ws_m = WorkspaceIndex::open(&ws_m_dir.0).unwrap();
     assert_eq!(ws_m.workspace_root, Some(ws_m_dir.0.clone()));
 
@@ -282,8 +262,7 @@ fn test_workspace_open_edge_cases() {
     fs::write(&corrupt_file, b"NOT_A_VALID_RIDX").unwrap();
 
     let mut m_cache = manifest_json.clone();
-    m_cache["extractor_version"] =
-        serde_json::Value::String(crate::format::EXTRACTOR_VERSION.to_string());
+    m_cache["extractor_version"] = serde_json::Value::String(crate::format::EXTRACTOR_VERSION.to_string());
     m_cache["dependency_shards"] = serde_json::json!([
         {
             "name": "cached_dep",
@@ -323,16 +302,9 @@ fn test_workspace_open_edge_cases() {
         }
     ]);
     let _ = fs::remove_file(ws_m_dir.0.join("ridx_manifest.json"));
-    fs::write(
-        ws_m_dir.0.join("variant_manifest.json"),
-        serde_json::to_string(&m_cache).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_m_dir.0.join("variant_manifest.json"), serde_json::to_string(&m_cache).unwrap()).unwrap();
     let ws_cache = WorkspaceIndex::open(&ws_m_dir.0).unwrap();
-    assert!(ws_cache
-        .readers
-        .iter()
-        .any(|r| r.crate_name() == "cached_dep"));
+    assert!(ws_cache.readers.iter().any(|r| r.crate_name() == "cached_dep"));
     let _ = fs::remove_file(&cached_obj);
     std::env::remove_var("RIDX_CACHE_DIR");
 

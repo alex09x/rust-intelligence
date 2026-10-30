@@ -19,17 +19,7 @@ use std::process::Command;
 /// to primary cargo target kind (e.g. "lib", "bin", "bench", "test", "example", "custom-build").
 pub fn extract_target_kinds(manifest_path: &Path) -> HashMap<PathBuf, String> {
     let mut map = HashMap::new();
-    let Ok(output) = Command::new("cargo")
-        .args([
-            "metadata",
-            "--format-version",
-            "1",
-            "--no-deps",
-            "--manifest-path",
-        ])
-        .arg(manifest_path)
-        .output()
-    else {
+    let Ok(output) = Command::new("cargo").args(["metadata", "--format-version", "1", "--no-deps", "--manifest-path"]).arg(manifest_path).output() else {
         return map;
     };
     if !output.status.success() {
@@ -43,11 +33,7 @@ pub fn extract_target_kinds(manifest_path: &Path) -> HashMap<PathBuf, String> {
             if let Some(targets) = pkg.get("targets").and_then(|t| t.as_array()) {
                 for target in targets {
                     let src_path = target.get("src_path").and_then(|s| s.as_str());
-                    let kind = target
-                        .get("kind")
-                        .and_then(|k| k.as_array())
-                        .and_then(|arr| arr.first())
-                        .and_then(|k| k.as_str());
+                    let kind = target.get("kind").and_then(|k| k.as_array()).and_then(|arr| arr.first()).and_then(|k| k.as_str());
                     if let (Some(src), Some(k)) = (src_path, kind) {
                         let path = PathBuf::from(src);
                         let canon = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
@@ -63,12 +49,7 @@ pub fn extract_target_kinds(manifest_path: &Path) -> HashMap<PathBuf, String> {
 
 /// Discovers and validates all dependency and workspace shards from the variant's `.deps/` directory.
 /// Returns a tuple of `(dependency_shards, workspace_shards)`.
-pub fn collect_shards_from_deps_dir(
-    deps_dir: &Path,
-) -> (
-    Vec<ridx_format::DependencyShardInfo>,
-    Vec<ridx_format::DependencyShardInfo>,
-) {
+pub fn collect_shards_from_deps_dir(deps_dir: &Path) -> (Vec<ridx_format::DependencyShardInfo>, Vec<ridx_format::DependencyShardInfo>) {
     let mut dep_shards: Vec<ridx_format::DependencyShardInfo> = Vec::new();
     let mut ws_shards: Vec<ridx_format::DependencyShardInfo> = Vec::new();
 
@@ -85,8 +66,7 @@ pub fn collect_shards_from_deps_dir(
             let Ok(content) = fs::read(&path) else {
                 continue;
             };
-            let Ok(mut info) = serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
-            else {
+            let Ok(mut info) = serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content) else {
                 continue;
             };
 
@@ -100,8 +80,7 @@ pub fn collect_shards_from_deps_dir(
                             let gen_matches = if !sidecar_gen.is_empty() {
                                 sidecar_gen == bin_gen
                             } else if !info.file_hashes.is_empty() {
-                                let computed_digest =
-                                    ridx_format::compute_source_snapshot_digest(&info.file_hashes);
+                                let computed_digest = ridx_format::compute_source_snapshot_digest(&info.file_hashes);
                                 format!("{:016x}", computed_digest) == bin_gen
                             } else {
                                 false
@@ -115,11 +94,7 @@ pub fn collect_shards_from_deps_dir(
                         }
                         let embedded = r.embedded_file_hashes();
                         let sroot_path = info.source_root.as_deref().map(Path::new);
-                        ridx_format::merge_embedded_hashes_authoritative(
-                            &mut info.file_hashes,
-                            &embedded,
-                            sroot_path,
-                        );
+                        ridx_format::merge_embedded_hashes_authoritative(&mut info.file_hashes, &embedded, sroot_path);
                     }
                 }
                 if !dep_shards.iter().any(|d| d.unit_key == info.unit_key) {

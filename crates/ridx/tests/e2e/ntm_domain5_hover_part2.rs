@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -195,10 +190,7 @@ fn test_hover_type_alias_shows_type_definition() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\ntype MetricScore\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\ntype MetricScore\n```");
 }
 
 #[test]
@@ -214,10 +206,7 @@ fn test_hover_module_definition_shows_mod() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nmod engine\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nmod engine\n```");
 }
 
 #[test]
@@ -233,8 +222,5 @@ fn test_hover_union_definition_shows_union() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nunion RawPayload\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nunion RawPayload\n```");
 }

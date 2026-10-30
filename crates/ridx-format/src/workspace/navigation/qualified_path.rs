@@ -43,11 +43,7 @@ fn split_qualified(path: &str) -> Option<(usize, usize)> {
 
 /// A component that a crate can prefix: a path, not `&T`, `[T]`, `(A, B)` or `dyn`.
 fn is_path(component: &str) -> bool {
-    component
-        .chars()
-        .next()
-        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
-        && !component.starts_with("dyn ")
+    component.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_') && !component.starts_with("dyn ")
 }
 
 /// The spellings of the qualified `path` as a crate named `krate` that depends on the defining
@@ -66,11 +62,7 @@ pub(super) fn consumer_spellings(path: &str, krate: &str) -> Vec<String> {
         }
     };
     let mut out = Vec::new();
-    for (t, r) in [
-        (prefixed(ty), tr.to_string()),
-        (ty.to_string(), prefixed(tr)),
-        (prefixed(ty), prefixed(tr)),
-    ] {
+    for (t, r) in [(prefixed(ty), tr.to_string()), (ty.to_string(), prefixed(tr)), (prefixed(ty), prefixed(tr))] {
         let spelled = format!("<{t} as {r}{tail}");
         if spelled != path && !out.contains(&spelled) {
             out.push(spelled);
@@ -97,14 +89,8 @@ mod tests {
 
     #[test]
     fn nested_generics_and_arrows_do_not_end_the_type_early() {
-        let v = consumer_spellings(
-            "<Take<St> as futures_core::FusedStream>::is_terminated",
-            "tokio_stream",
-        );
-        assert_eq!(
-            v[0],
-            "<tokio_stream::Take<St> as futures_core::FusedStream>::is_terminated"
-        );
+        let v = consumer_spellings("<Take<St> as futures_core::FusedStream>::is_terminated", "tokio_stream");
+        assert_eq!(v[0], "<tokio_stream::Take<St> as futures_core::FusedStream>::is_terminated");
         let f = consumer_spellings("<Box<dyn Fn() -> u8> as Tr>::call", "k");
         assert_eq!(f[0], "<k::Box<dyn Fn() -> u8> as Tr>::call");
     }

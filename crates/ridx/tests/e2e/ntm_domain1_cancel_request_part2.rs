@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -65,13 +60,7 @@ fn dispatch_client<W: std::io::Write>(
     dispatch_lsp_message(LspMessage::Client(msg), out, lc, mr, ov, can, None)
 }
 
-fn send_cancel(
-    id: serde_json::Value,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn send_cancel(id: serde_json::Value, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut out = Vec::new();
     let msg = json!({
         "jsonrpc": "2.0",

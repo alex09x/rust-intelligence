@@ -72,10 +72,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -103,10 +100,18 @@ fn test_prepare_type_hierarchy_multi_root_workspace_routing() {
 
     let mut writer2 = IndexWriter::new("root2_crate", "0.1.0");
     writer2.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Root2Struct".to_string(), path: "root2_crate::Root2Struct".to_string(),
-        signature: Some("pub struct Root2Struct".to_string()), file: file2_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Root2Struct".to_string(),
+        path: "root2_crate::Root2Struct".to_string(),
+        signature: Some("pub struct Root2Struct".to_string()),
+        file: file2_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer2.write_to(&mut File::create(&shard2).unwrap()).unwrap();
     std::fs::write(&file2, "pub struct Root2Struct;\n").unwrap();
@@ -139,10 +144,18 @@ fn test_prepare_type_hierarchy_item_shape_exact_keys() {
 
     let mut writer = IndexWriter::new("shape_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "ShapeStruct".to_string(), path: "shape_crate::ShapeStruct".to_string(),
-        signature: Some("pub struct ShapeStruct".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 23,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ShapeStruct".to_string(),
+        path: "shape_crate::ShapeStruct".to_string(),
+        signature: Some("pub struct ShapeStruct".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 23,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct ShapeStruct;\n").unwrap();
@@ -184,10 +197,18 @@ fn test_prepare_type_hierarchy_nested_struct_in_submodule_file() {
 
     let mut writer = IndexWriter::new("submod_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "User".to_string(), path: "submod_crate::models::user::User".to_string(),
-        signature: Some("pub struct User".to_string()), file: file_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "User".to_string(),
+        path: "submod_crate::models::user::User".to_string(),
+        signature: Some("pub struct User".to_string()),
+        file: file_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 16,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct User;\n").unwrap();
@@ -219,16 +240,32 @@ fn test_prepare_type_hierarchy_consecutive_requests_different_types() {
 
     let mut writer = IndexWriter::new("consec_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "ItemAlpha".to_string(), path: "consec_crate::ItemAlpha".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ItemAlpha".to_string(),
+        path: "consec_crate::ItemAlpha".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 16,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "ItemBeta".to_string(), path: "consec_crate::ItemBeta".to_string(),
-        signature: None, file: lib_str,
-        start_line: 3, start_col: 1, end_line: 3, end_col: 15,
+        def_id: 2,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ItemBeta".to_string(),
+        path: "consec_crate::ItemBeta".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 15,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct ItemAlpha;\n\nenum ItemBeta {}\n").unwrap();
@@ -279,10 +316,18 @@ fn test_prepare_type_hierarchy_type_alias_with_complex_signature() {
     let sig = "pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>";
     let mut writer = IndexWriter::new("dyn_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-        name: "DynResult".to_string(), path: "dyn_crate::DynResult".to_string(),
-        signature: Some(sig.to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::TyAlias,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "DynResult".to_string(),
+        path: "dyn_crate::DynResult".to_string(),
+        signature: Some(sig.to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, format!("{};\n", sig)).unwrap();

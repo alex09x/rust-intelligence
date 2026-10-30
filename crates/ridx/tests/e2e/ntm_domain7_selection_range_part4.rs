@@ -30,12 +30,7 @@ fn to_uri(p: &Path) -> String {
 
 fn temp_file(tag: &str) -> PathBuf {
     let id = SEL_P4_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-        "ridx_sel_p4_{}_{}_{}.rs",
-        tag,
-        std::process::id(),
-        id
-    ))
+    std::env::temp_dir().join(format!("ridx_sel_p4_{}_{}_{}.rs", tag, std::process::id(), id))
 }
 
 struct TestDispatcher {
@@ -62,16 +57,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -102,16 +88,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -126,136 +104,60 @@ fn selection_ranges(
 fn test_selection_range_cursor_inside_nested_module() {
     let file = temp_file("mod");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp, &file,
-        "mod outer {\n    mod inner {\n        fn nested_fn() {\n            let k = 1;\n        }\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "mod outer {\n    mod inner {\n        fn nested_fn() {\n            let k = 1;\n        }\n    }\n}\n");
 
     // `k`, fn body, fn item (from its indented `fn`), inner mod block, outer mod block, file.
     let result = selection_ranges(&mut dsp, 401, &file, &[(3, 16)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (3, 16, 3, 17),
-            (2, 23, 4, 9),
-            (2, 8, 4, 9),
-            (1, 14, 5, 5),
-            (0, 10, 6, 1),
-            (0, 0, 7, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(3, 16, 3, 17), (2, 23, 4, 9), (2, 8, 4, 9), (1, 14, 5, 5), (0, 10, 6, 1), (0, 0, 7, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_trait_default_method() {
     let file = temp_file("trait");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "trait Greeter {\n    fn hello(&self) {\n        let msg = \"hi\";\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "trait Greeter {\n    fn hello(&self) {\n        let msg = \"hi\";\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, 402, &file, &[(2, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 12, 2, 15),
-            (1, 20, 3, 5),
-            (1, 4, 3, 5),
-            (0, 14, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 12, 2, 15), (1, 20, 3, 5), (1, 4, 3, 5), (0, 14, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_impl_block_method() {
     let file = temp_file("impl");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp, &file,
-        "struct Service;\nimpl Service {\n    fn run(&self) {\n        let active = true;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "struct Service;\nimpl Service {\n    fn run(&self) {\n        let active = true;\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, 403, &file, &[(3, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (3, 12, 3, 18),
-            (2, 18, 4, 5),
-            (2, 4, 4, 5),
-            (1, 13, 5, 1),
-            (0, 0, 6, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(3, 12, 3, 18), (2, 18, 4, 5), (2, 4, 4, 5), (1, 13, 5, 1), (0, 0, 6, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_closure_block() {
     let file = temp_file("closure");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn with_closure() {\n    let cb = || {\n        compute();\n    };\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn with_closure() {\n    let cb = || {\n        compute();\n    };\n}\n");
 
     let result = selection_ranges(&mut dsp, 404, &file, &[(2, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 8, 2, 15),
-            (1, 16, 3, 5),
-            (0, 18, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 8, 2, 15), (1, 16, 3, 5), (0, 18, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_const_item_block() {
     let file = temp_file("const");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn with_const() {\n    const LIMIT: i32 = {\n        100\n    };\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn with_const() {\n    const LIMIT: i32 = {\n        100\n    };\n}\n");
 
     // A number is not a token: the chain starts at the const initializer block.
     let result = selection_ranges(&mut dsp, 405, &file, &[(2, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 23, 3, 5),
-            (0, 16, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 23, 3, 5), (0, 16, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_loop_infinite() {
     let file = temp_file("loop");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn infinite() {\n    loop {\n        tick();\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn infinite() {\n    loop {\n        tick();\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, 406, &file, &[(2, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 8, 2, 12),
-            (1, 9, 3, 5),
-            (0, 14, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 8, 2, 12), (1, 9, 3, 5), (0, 14, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }

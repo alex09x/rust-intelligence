@@ -21,11 +21,7 @@ pub fn execute_query_command(command: super::args::Commands) {
             let (ws, target) = resolve_index_and_target(arg1, arg2);
             let start = Instant::now();
 
-            let res = if let Some((file, line, col)) = parse_location(&target) {
-                ws.find_definition_at(file, line, col)
-            } else {
-                ws.find_definition_by_path(&target)
-            };
+            let res = if let Some((file, line, col)) = parse_location(&target) { ws.find_definition_at(file, line, col) } else { ws.find_definition_by_path(&target) };
             let elapsed = start.elapsed();
 
             if json {
@@ -71,12 +67,7 @@ pub fn execute_query_command(command: super::args::Commands) {
                     }
                 }
                 None => {
-                    println!(
-                        "{} No definition found for {} [{:.1} µs]",
-                        "NotFound:".yellow().bold(),
-                        target,
-                        elapsed.as_micros()
-                    );
+                    println!("{} No definition found for {} [{:.1} µs]", "NotFound:".yellow().bold(), target, elapsed.as_micros());
                 }
             }
         }
@@ -87,10 +78,7 @@ pub fn execute_query_command(command: super::args::Commands) {
         Commands::TypeAt { arg1, arg2, json } => {
             let (ws, location) = resolve_index_and_target(arg1, arg2);
             let Some((file, line, col)) = parse_location(&location) else {
-                eprintln!(
-                    "{}: Location must be formatted as 'file_path:line:col'",
-                    "Error".red().bold()
-                );
+                eprintln!("{}: Location must be formatted as 'file_path:line:col'", "Error".red().bold());
                 #[cfg(not(test))]
                 std::process::exit(1);
                 #[cfg(test)]
@@ -113,25 +101,11 @@ pub fn execute_query_command(command: super::args::Commands) {
 
             match ty {
                 Some(t) => {
-                    println!(
-                        "{} Inferred type at {}:{}:{} [{:.1} µs]",
-                        "Type:".green().bold(),
-                        file,
-                        line,
-                        col,
-                        elapsed.as_micros()
-                    );
+                    println!("{} Inferred type at {}:{}:{} [{:.1} µs]", "Type:".green().bold(), file, line, col, elapsed.as_micros());
                     println!("  {}", t.cyan().bold());
                 }
                 None => {
-                    println!(
-                        "{} No type information found at {}:{}:{} [{:.1} µs]",
-                        "NotFound:".yellow().bold(),
-                        file,
-                        line,
-                        col,
-                        elapsed.as_micros()
-                    );
+                    println!("{} No type information found at {}:{}:{} [{:.1} µs]", "NotFound:".yellow().bold(), file, line, col, elapsed.as_micros());
                 }
             }
         }
@@ -139,10 +113,7 @@ pub fn execute_query_command(command: super::args::Commands) {
         Commands::Hover { arg1, arg2, json } => {
             let (ws, location) = resolve_index_and_target(arg1, arg2);
             let Some((file, line, col)) = parse_location(&location) else {
-                eprintln!(
-                    "{}: Location must be formatted as 'file_path:line:col'",
-                    "Error".red().bold()
-                );
+                eprintln!("{}: Location must be formatted as 'file_path:line:col'", "Error".red().bold());
                 #[cfg(not(test))]
                 std::process::exit(1);
                 #[cfg(test)]
@@ -184,21 +155,9 @@ pub fn execute_query_command(command: super::args::Commands) {
 
             match hover {
                 Some(h) => {
-                    println!(
-                        "{} Hover at {} [{:.1} µs]",
-                        "Hover:".green().bold(),
-                        location.cyan(),
-                        elapsed.as_micros()
-                    );
+                    println!("{} Hover at {} [{:.1} µs]", "Hover:".green().bold(), location.cyan(), elapsed.as_micros());
                     if let Some(ref d) = h.definition {
-                        println!(
-                            "  Definition : {} ({:?}) at {}:{}:{}",
-                            d.name.bold(),
-                            d.kind,
-                            d.resolved_path().display(),
-                            d.start_line,
-                            d.start_col
-                        );
+                        println!("  Definition : {} ({:?}) at {}:{}:{}", d.name.bold(), d.kind, d.resolved_path().display(), d.start_line, d.start_col);
                         println!("  Full Path  : {}", d.path.cyan());
                         if let Some(sig) = d.signature {
                             println!("  Signature  : {}", sig.yellow());
@@ -209,12 +168,7 @@ pub fn execute_query_command(command: super::args::Commands) {
                     }
                 }
                 None => {
-                    println!(
-                        "{} No hover information at {} [{:.1} µs]",
-                        "NotFound:".yellow().bold(),
-                        location,
-                        elapsed.as_micros()
-                    );
+                    println!("{} No hover information at {} [{:.1} µs]", "NotFound:".yellow().bold(), location, elapsed.as_micros());
                 }
             }
         }
@@ -245,42 +199,18 @@ pub fn execute_query_command(command: super::args::Commands) {
                 return;
             }
 
-            println!(
-                "{} {} symbol(s) matching '{}' across workspace [{:.1} µs]:",
-                "Found:".green().bold(),
-                matches.len(),
-                query.cyan(),
-                elapsed.as_micros()
-            );
+            println!("{} {} symbol(s) matching '{}' across workspace [{:.1} µs]:", "Found:".green().bold(), matches.len(), query.cyan(), elapsed.as_micros());
 
             for sym in matches.iter().take(50) {
                 let span = sym.span;
-                println!(
-                    "  [{}] [{:?}] {} — {}:{}:{}",
-                    sym.crate_name.dimmed(),
-                    sym.kind,
-                    sym.path.cyan(),
-                    sym.resolved_path().display(),
-                    span.start_line(),
-                    span.start_col()
-                );
+                println!("  [{}] [{:?}] {} — {}:{}:{}", sym.crate_name.dimmed(), sym.kind, sym.path.cyan(), sym.resolved_path().display(), span.start_line(), span.start_col());
                 if let Some(sig) = sym.signature {
                     println!("       sig: {}", sig.yellow());
                 }
             }
         }
 
-        Commands::Compare {
-            arg1,
-            arg2,
-            symbol,
-            scenarios,
-            ridx_cmd,
-            ra_cmd,
-            capability,
-            json,
-            scip_file,
-        } => {
+        Commands::Compare { arg1, arg2, symbol, scenarios, ridx_cmd, ra_cmd, capability, json, scip_file } => {
             super::compare_cmd::cmd_compare(super::compare_cmd::CompareArgs {
                 arg1,
                 arg2,

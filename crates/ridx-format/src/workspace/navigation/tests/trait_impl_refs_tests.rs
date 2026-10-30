@@ -175,35 +175,16 @@ fn test_container_scoped_trait_impl_references_do_not_cross_pollute_siblings() {
     // 1. Query references on `A::m` (line 6, col 8):
     // Must include call `a.m()` (line 13), and MUST NOT include `B::m` (line 10),
     // call `b.m()` (line 14), or `Trait::m` (line 2).
-    let refs_a = ws
-        .find_references_at("src/lib.rs", 6, 8)
-        .expect("references for A::m");
-    let lines_a: Vec<u32> = refs_a
-        .references
-        .iter()
-        .map(|r| r.span.start_line())
-        .collect();
-    assert_eq!(
-        lines_a,
-        vec![13],
-        "A::m references must include only call a.m() at line 13 without sibling impl B::m (10) or b.m() (14)"
-    );
+    let refs_a = ws.find_references_at("src/lib.rs", 6, 8).expect("references for A::m");
+    let lines_a: Vec<u32> = refs_a.references.iter().map(|r| r.span.start_line()).collect();
+    assert_eq!(lines_a, vec![13], "A::m references must include only call a.m() at line 13 without sibling impl B::m (10) or b.m() (14)");
 
     // 2. Query references on trait declaration `Trait::m` (line 2, col 8):
     // Must expand through container `deref_entries` to include A::m (6), B::m (10), a.m() (13), b.m() (14).
-    let refs_trait = ws
-        .find_references_at("src/lib.rs", 2, 8)
-        .expect("references for Trait::m");
-    let lines_trait: Vec<u32> = refs_trait
-        .references
-        .iter()
-        .map(|r| r.span.start_line())
-        .collect();
+    let refs_trait = ws.find_references_at("src/lib.rs", 2, 8).expect("references for Trait::m");
+    let lines_trait: Vec<u32> = refs_trait.references.iter().map(|r| r.span.start_line()).collect();
     for expected_line in [6, 10, 13, 14] {
-        assert!(
-            lines_trait.contains(&expected_line),
-            "Trait::m references must include line {expected_line}, got {lines_trait:?}"
-        );
+        assert!(lines_trait.contains(&expected_line), "Trait::m references must include line {expected_line}, got {lines_trait:?}");
     }
 }
 
@@ -213,11 +194,7 @@ fn test_field_vs_method_and_macro_callsite_reference_filtering() {
     let src_dir = test_dir.0.join("src");
     fs::create_dir_all(&src_dir).unwrap();
     let lib_rs = src_dir.join("lib.rs");
-    fs::write(
-        &lib_rs,
-        "pub struct Glob { pub glob: String }\nimpl Glob {\n    pub fn glob(&self) -> &str { &self.glob }\n}\n",
-    )
-    .unwrap();
+    fs::write(&lib_rs, "pub struct Glob { pub glob: String }\nimpl Glob {\n    pub fn glob(&self) -> &str { &self.glob }\n}\n").unwrap();
 
     let mut w = IndexWriter::new("globset", "0.1.0");
     w.set_unit_key("globset-unit");
@@ -313,13 +290,7 @@ fn test_field_vs_method_and_macro_callsite_reference_filtering() {
     let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
     ws.set_workspace_root(Some(test_dir.0.clone()));
 
-    let method_refs = ws
-        .find_references_at("src/lib.rs", 3, 12)
-        .expect("references for fn glob");
-    let method_lines: Vec<u32> = method_refs
-        .references
-        .iter()
-        .map(|r| r.span.start_line())
-        .collect();
+    let method_refs = ws.find_references_at("src/lib.rs", 3, 12).expect("references for fn glob");
+    let method_lines: Vec<u32> = method_refs.references.iter().map(|r| r.span.start_line()).collect();
     assert_eq!(method_lines, vec![10]);
 }

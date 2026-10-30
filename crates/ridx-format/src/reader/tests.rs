@@ -31,20 +31,10 @@ fn test_resolved_definition() {
 
     assert_eq!(def.resolved_path(), Path::new("/workspace/src/lib.rs"));
 
-    let abs_def = ResolvedDefinition {
-        file: "/absolute/path/src/lib.rs",
-        source_root: Some(Path::new("/other")),
-        ..def
-    };
-    assert_eq!(
-        abs_def.resolved_path(),
-        Path::new("/absolute/path/src/lib.rs")
-    );
+    let abs_def = ResolvedDefinition { file: "/absolute/path/src/lib.rs", source_root: Some(Path::new("/other")), ..def };
+    assert_eq!(abs_def.resolved_path(), Path::new("/absolute/path/src/lib.rs"));
 
-    let no_root_def = ResolvedDefinition {
-        source_root: None,
-        ..def
-    };
+    let no_root_def = ResolvedDefinition { source_root: None, ..def };
     assert_eq!(no_root_def.resolved_path(), Path::new("src/lib.rs"));
 }
 
@@ -96,8 +86,7 @@ fn test_check_section_errors() {
     assert!(err.to_string().contains("extends beyond file bounds"));
 
     // End offset overflow
-    let err =
-        check_section(1000, ((usize::MAX - 15) & !7) as u64, 2, 20, 8, "TestSec").unwrap_err();
+    let err = check_section(1000, ((usize::MAX - 15) & !7) as u64, 2, 20, 8, "TestSec").unwrap_err();
     assert!(err.to_string().contains("overflow"));
 }
 
@@ -130,10 +119,7 @@ fn test_reader_accessors_out_of_bounds() {
 
     // 1. get_str with invalid offset
     assert_eq!(reader.get_str(u32::MAX), "");
-    assert_eq!(
-        reader.get_str((reader.header.string_pool_len as u32).saturating_add(10)),
-        ""
-    );
+    assert_eq!(reader.get_str((reader.header.string_pool_len as u32).saturating_add(10)), "");
 
     // 2. get_file with invalid file_id
     assert_eq!(reader.get_file(u32::MAX), "");
@@ -148,17 +134,8 @@ fn test_reader_accessors_out_of_bounds() {
     assert!(reader.find_definition_at("nonexistent.rs", 1, 1).is_none());
 
     // Truncated buffer bounds checks (lines 165, 185, 204)
-    let dummy_hdr = Header {
-        string_pool_offset: 1000,
-        string_pool_len: 100,
-        files_offset: 2000,
-        files_count: 5,
-        ..reader.header
-    };
-    let dummy_reader = IndexReader {
-        buffer: vec![0u8; 100],
-        header: dummy_hdr,
-    };
+    let dummy_hdr = Header { string_pool_offset: 1000, string_pool_len: 100, files_offset: 2000, files_count: 5, ..reader.header };
+    let dummy_reader = IndexReader { buffer: vec![0u8; 100], header: dummy_hdr };
     assert_eq!(dummy_reader.get_str(5), "");
     assert_eq!(dummy_reader.get_file(0), "");
     assert_eq!(dummy_reader.file_source_hash(0), 0);

@@ -33,19 +33,10 @@ fn test_implementation_cross_crate_trait_implemented_in_downstream() {
     ws.add_crate("core_pkg", "0.1.0").unwrap();
     ws.add_crate("app_pkg", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("core_pkg", "src/lib.rs", "pub trait «CorePlugin»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("core_pkg", "src/lib.rs", "pub trait «CorePlugin»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
-    ws.add_source_file_with_impl_refs(
-        "app_pkg",
-        "src/lib.rs",
-        "use core_pkg::CorePlugin;\n«impl CorePlugin for App» {}\n",
-        "core_pkg",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("app_pkg", "src/lib.rs", "use core_pkg::CorePlugin;\n«impl CorePlugin for App» {}\n", "core_pkg", ids[0]).unwrap();
 
     ws.build_all_indices().unwrap();
     let index = WorkspaceIndex::open(ws.root_path()).unwrap();
@@ -68,9 +59,7 @@ fn test_implementation_cross_crate_three_shards_all_implementing() {
     ws.add_crate("backend_a", "0.1.0").unwrap();
     ws.add_crate("backend_b", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("api_pkg", "src/lib.rs", "pub trait «Backend»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("api_pkg", "src/lib.rs", "pub trait «Backend»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("backend_a", "src/lib.rs", "«impl Backend for ServiceA» {}\n", "api_pkg", ids[0]).unwrap();
@@ -99,9 +88,7 @@ fn test_implementation_cross_crate_three_shards_all_implementing() {
 fn test_implementation_clean_overlay_returns_accurate_locations() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i6_clean", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i6_clean", "src/lib.rs", "pub trait «CleanTrait»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i6_clean", "src/lib.rs", "pub trait «CleanTrait»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait CleanTrait;\n«impl CleanTrait for CleanStruct» {}\n";
@@ -127,9 +114,7 @@ fn test_implementation_clean_overlay_returns_accurate_locations() {
 fn test_implementation_dirty_overlay_abstained_returns_empty() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i6_dirty", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i6_dirty", "src/lib.rs", "pub trait «DirtyTrait»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i6_dirty", "src/lib.rs", "pub trait «DirtyTrait»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait DirtyTrait;\n«impl DirtyTrait for DirtyStruct» {}\n";
@@ -153,9 +138,7 @@ fn test_implementation_dirty_overlay_abstained_returns_empty() {
 fn test_implementation_overlay_on_different_file_preserves_target() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i6_diff", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i6_diff", "src/traits.rs", "pub trait «TargetTrait»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i6_diff", "src/traits.rs", "pub trait «TargetTrait»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("pkg_i6_diff", "src/impls.rs", "«impl TargetTrait for StructX» {}\n", "pkg_i6_diff", ids[0]).unwrap();
@@ -184,12 +167,8 @@ fn test_implementation_multiple_crates_same_trait_name_isolation() {
     ws.add_crate("crate_alpha", "0.1.0").unwrap();
     ws.add_crate("crate_beta", "0.1.0").unwrap();
 
-    let (_, ids_a) = ws
-        .add_source_file_with_defs("crate_alpha", "src/lib.rs", "pub trait «IsolatedTrait»;\n", DefKind::Trait)
-        .unwrap();
-    let (_, ids_b) = ws
-        .add_source_file_with_defs("crate_beta", "src/lib.rs", "pub trait «IsolatedTrait»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids_a) = ws.add_source_file_with_defs("crate_alpha", "src/lib.rs", "pub trait «IsolatedTrait»;\n", DefKind::Trait).unwrap();
+    let (_, ids_b) = ws.add_source_file_with_defs("crate_beta", "src/lib.rs", "pub trait «IsolatedTrait»;\n", DefKind::Trait).unwrap();
 
     ws.add_source_file_with_impl_refs("crate_alpha", "src/lib.rs", "pub trait IsolatedTrait;\n«impl IsolatedTrait for A» {}\n", "crate_alpha", ids_a[0]).unwrap();
     ws.add_source_file_with_impl_refs("crate_beta", "src/lib.rs", "pub trait IsolatedTrait;\n«impl IsolatedTrait for B» {}\n", "crate_beta", ids_b[0]).unwrap();
@@ -213,9 +192,7 @@ fn test_implementation_multiple_crates_downstream_blanket_impl() {
     ws.add_crate("lib_base", "0.1.0").unwrap();
     ws.add_crate("lib_ext", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("lib_base", "src/lib.rs", "pub trait «Extension»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("lib_base", "src/lib.rs", "pub trait «Extension»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("lib_ext", "src/lib.rs", "«impl<T> Extension for T» {}\n", "lib_base", ids[0]).unwrap();
@@ -238,9 +215,7 @@ fn test_implementation_multiple_crates_downstream_blanket_impl() {
 fn test_implementation_reexported_trait_implementation() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_reexp", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_reexp", "src/internal.rs", "pub trait «InternalTrait»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_reexp", "src/internal.rs", "pub trait «InternalTrait»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("pkg_reexp", "src/lib.rs", "pub use crate::internal::InternalTrait;\n«impl InternalTrait for ()» {}\n", "pkg_reexp", ids[0]).unwrap();
@@ -265,9 +240,7 @@ fn test_implementation_cross_crate_struct_inherent_in_downstream() {
     ws.add_crate("upstream_c", "0.1.0").unwrap();
     ws.add_crate("downstream_c", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("upstream_c", "src/lib.rs", "pub trait «ExportedContract»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("upstream_c", "src/lib.rs", "pub trait «ExportedContract»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("downstream_c", "src/lib.rs", "«impl ExportedContract for DownstreamHandler» {}\n", "upstream_c", ids[0]).unwrap();

@@ -148,28 +148,14 @@ fn test_refactor_cross_file_workspace_rename_execution() {
     let res = handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let changes = res["changes"].as_object().expect("changes object");
 
-    let def_edits = changes
-        .get(&def_uri)
-        .expect("edits for lib.rs")
-        .as_array()
-        .unwrap();
-    let caller_edits = changes
-        .get(&caller_uri)
-        .expect("edits for caller.rs")
-        .as_array()
-        .unwrap();
+    let def_edits = changes.get(&def_uri).expect("edits for lib.rs").as_array().unwrap();
+    let caller_edits = changes.get(&caller_uri).expect("edits for caller.rs").as_array().unwrap();
 
     let new_def_code = apply_text_edits(def_code, def_edits);
     let new_caller_code = apply_text_edits(caller_code, caller_edits);
 
-    assert_eq!(
-        new_def_code,
-        "pub fn sum_values(x: i32, y: i32) -> i32 {\n    x + y\n}\n"
-    );
-    assert_eq!(
-        new_caller_code,
-        "pub fn call() -> i32 {\n    test_pkg::sum_values(1, 2)\n}\n"
-    );
+    assert_eq!(new_def_code, "pub fn sum_values(x: i32, y: i32) -> i32 {\n    x + y\n}\n");
+    assert_eq!(new_caller_code, "pub fn call() -> i32 {\n    test_pkg::sum_values(1, 2)\n}\n");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -289,18 +275,9 @@ fn test_goto_def_and_rename_generic_type_param_t() {
         }
     });
     let goto_res = handle_definition(&goto_req, Some(&ws), &overlay_mgr, &mut conv);
-    assert_eq!(
-        goto_res["range"]["start"]["line"], 0,
-        "Goto-def must land on line 0"
-    );
-    assert_eq!(
-        goto_res["range"]["start"]["character"], 15,
-        "Goto-def on T must land on T identifier (character 15), NOT on function start"
-    );
-    assert_eq!(
-        goto_res["range"]["end"]["character"], 16,
-        "Goto-def on T must end at character 16"
-    );
+    assert_eq!(goto_res["range"]["start"]["line"], 0, "Goto-def must land on line 0");
+    assert_eq!(goto_res["range"]["start"]["character"], 15, "Goto-def on T must land on T identifier (character 15), NOT on function start");
+    assert_eq!(goto_res["range"]["end"]["character"], 16, "Goto-def on T must end at character 16");
 
     // 2. Verify Rename `T` -> `ItemTy`
     let rename_req = json!({
@@ -310,19 +287,13 @@ fn test_goto_def_and_rename_generic_type_param_t() {
             "newName": "ItemTy"
         }
     });
-    let rename_res =
-        handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
+    let rename_res = handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let changes = rename_res["changes"].as_object().expect("changes object");
     let def_edits = changes.get(&def_uri).expect("edits for lib.rs").as_array().unwrap();
 
     assert_eq!(def_edits.len(), 3, "All 3 occurrences of T must be renamed");
     let new_code = apply_text_edits(def_code, def_edits);
-    assert_eq!(
-        new_code,
-        "pub fn process<ItemTy: Clone>(item: ItemTy) -> ItemTy {\n    item.clone()\n}\n",
-        "Rename must preserve function name and replace all T with ItemTy"
-    );
+    assert_eq!(new_code, "pub fn process<ItemTy: Clone>(item: ItemTy) -> ItemTy {\n    item.clone()\n}\n", "Rename must preserve function name and replace all T with ItemTy");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
-

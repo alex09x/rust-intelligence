@@ -68,23 +68,8 @@ fn workspace(ref_path: &str) -> (tempfile::TempDir, WorkspaceIndex) {
     let root = dir.path().to_path_buf();
     let a = write_shard(dir.path(), "a", None);
     let b = write_shard(dir.path(), "b", Some(ref_path));
-    let infos = [("a", &a), ("b", &b)]
-        .map(|(n, p)| (p.clone(), Some(root.join(n)), Some(format!("unit_{n}"))));
-    let mut ws = create_test_workspace(
-        infos
-            .iter()
-            .map(|(p, r, u)| {
-                (
-                    p.as_path(),
-                    r.clone(),
-                    u.clone(),
-                    Some(TargetKind::Lib),
-                    false,
-                )
-            })
-            .collect(),
-        root.clone(),
-    );
+    let infos = [("a", &a), ("b", &b)].map(|(n, p)| (p.clone(), Some(root.join(n)), Some(format!("unit_{n}"))));
+    let mut ws = create_test_workspace(infos.iter().map(|(p, r, u)| (p.as_path(), r.clone(), u.clone(), Some(TargetKind::Lib), false)).collect(), root.clone());
     ws.reader_dependencies[1] = vec!["unit_a".to_string()];
     (dir, ws)
 }

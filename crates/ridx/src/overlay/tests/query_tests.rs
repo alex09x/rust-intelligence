@@ -109,33 +109,17 @@ fn test_find_global_symbol_definition_scope_and_items() {
 
     let file_a = "/workspace/src/main.rs";
     let code_a = "fn main() {\n    let config = 42;\n    config.x;\n}\n";
-    mgr.open_or_update(
-        "file:///workspace/src/main.rs",
-        file_a,
-        1,
-        code_a.to_string(),
-    );
+    mgr.open_or_update("file:///workspace/src/main.rs", file_a, 1, code_a.to_string());
 
     let file_b = "/workspace/src/utils.rs";
     let code_b = "pub fn config() {}\npub fn helper() {}\n";
-    mgr.open_or_update(
-        "file:///workspace/src/utils.rs",
-        file_b,
-        1,
-        code_b.to_string(),
-    );
+    mgr.open_or_update("file:///workspace/src/utils.rs", file_b, 1, code_b.to_string());
 
     // 1. Local variable `config` in main.rs must NOT jump to `fn config()` in utils.rs
-    assert_eq!(
-        mgr.find_global_symbol_definition(file_a, "config", None),
-        None
-    );
+    assert_eq!(mgr.find_global_symbol_definition(file_a, "config", None), None);
 
     // 2. Unqualified `helper` without module prefix must NOT jump across files
-    assert_eq!(
-        mgr.find_global_symbol_definition(file_a, "helper", None),
-        None
-    );
+    assert_eq!(mgr.find_global_symbol_definition(file_a, "helper", None), None);
 
     // 3. Qualified `utils::helper` MUST resolve to utils.rs
     let def_helper = mgr.find_global_symbol_definition(file_a, "helper", Some("utils"));
@@ -154,11 +138,7 @@ fn test_find_global_symbol_definition_scope_and_items() {
 fn test_find_definition_at_end_col_boundary() {
     let code = "fn test_sym() {}\n";
     let overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, code.to_string());
-    let sym = overlay
-        .symbols
-        .iter()
-        .find(|s| s.name == "test_sym")
-        .expect("symbol test_sym");
+    let sym = overlay.symbols.iter().find(|s| s.name == "test_sym").expect("symbol test_sym");
     let line = sym.start_line;
     let end_col = sym.end_col;
 

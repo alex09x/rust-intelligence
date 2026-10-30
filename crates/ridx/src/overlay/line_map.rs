@@ -32,49 +32,23 @@ impl LineMap {
             prefix += 1;
         }
         let mut suffix = 0;
-        while suffix < baseline.len() - prefix
-            && suffix < live.len() - prefix
-            && baseline[baseline.len() - 1 - suffix] == live[live.len() - 1 - suffix]
-        {
+        while suffix < baseline.len() - prefix && suffix < live.len() - prefix && baseline[baseline.len() - 1 - suffix] == live[live.len() - 1 - suffix] {
             suffix += 1;
         }
-        Self {
-            prefix,
-            suffix,
-            baseline_len: baseline.len(),
-            live_len: live.len(),
-        }
+        Self { prefix, suffix, baseline_len: baseline.len(), live_len: live.len() }
     }
 
     /// Live line (1-based) of a baseline line, `None` when the edit removed or changed it.
     pub fn to_live(&self, baseline_line: u32) -> Option<u32> {
-        Self::project(
-            baseline_line,
-            self.prefix,
-            self.suffix,
-            self.baseline_len,
-            self.live_len,
-        )
+        Self::project(baseline_line, self.prefix, self.suffix, self.baseline_len, self.live_len)
     }
 
     /// Baseline line (1-based) of a live line, `None` when the line is new or changed.
     pub fn to_baseline(&self, live_line: u32) -> Option<u32> {
-        Self::project(
-            live_line,
-            self.prefix,
-            self.suffix,
-            self.live_len,
-            self.baseline_len,
-        )
+        Self::project(live_line, self.prefix, self.suffix, self.live_len, self.baseline_len)
     }
 
-    fn project(
-        line: u32,
-        prefix: usize,
-        suffix: usize,
-        from_len: usize,
-        to_len: usize,
-    ) -> Option<u32> {
+    fn project(line: u32, prefix: usize, suffix: usize, from_len: usize, to_len: usize) -> Option<u32> {
         let idx = line.saturating_sub(1) as usize;
         if idx >= from_len {
             return None;

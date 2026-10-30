@@ -77,11 +77,7 @@ fn document_symbols_from_disk(file: &str, cache: &DocumentSymbolDiskCache) -> Va
 
 /// Handles `textDocument/documentSymbol` from the active `OverlayManager` buffer when open,
 /// or falls back to parsing the on-disk file with a `(path, mtime, len)` cache when closed.
-pub fn handle_document_symbol(
-    msg: &Value,
-    overlay_mgr: &OverlayManager,
-    _conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_document_symbol(msg: &Value, overlay_mgr: &OverlayManager, _conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     if uri.is_empty() {
         return json!([]);
@@ -99,10 +95,7 @@ pub fn handle_document_symbol(
 }
 
 #[cfg(test)]
-pub(crate) fn document_symbol_cache_hits_for(
-    overlay_mgr: &OverlayManager,
-    file_path: &str,
-) -> Option<usize> {
+pub(crate) fn document_symbol_cache_hits_for(overlay_mgr: &OverlayManager, file_path: &str) -> Option<usize> {
     overlay_mgr.doc_symbol_cache().hits_for(file_path)
 }
 

@@ -30,12 +30,7 @@ fn to_uri(p: &Path) -> String {
 
 fn temp_file(tag: &str) -> PathBuf {
     let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-        "ridx_sel_p3_{}_{}_{}.rs",
-        tag,
-        std::process::id(),
-        id
-    ))
+    std::env::temp_dir().join(format!("ridx_sel_p3_{}_{}_{}.rs", tag, std::process::id(), id))
 }
 
 struct TestDispatcher {
@@ -62,16 +57,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -102,16 +88,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -126,141 +104,61 @@ fn selection_ranges(
 fn test_selection_range_cursor_inside_match_arm_block() {
     let file = temp_file("match");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp, &file,
-        "fn eval(x: i32) {\n    match x {\n        1 => {\n            do_one();\n        }\n        _ => (),\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn eval(x: i32) {\n    match x {\n        1 => {\n            do_one();\n        }\n        _ => (),\n    }\n}\n");
 
     // `do_one`, arm block, match block, fn body, fn item, file.
     let result = selection_ranges(&mut dsp, 301, &file, &[(3, 14)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (3, 12, 3, 18),
-            (2, 13, 4, 9),
-            (1, 12, 6, 5),
-            (0, 16, 7, 1),
-            (0, 0, 7, 1),
-            (0, 0, 8, 0)
-        ])])
-    );
-    assert_eq!(
-        result[0]["parent"]["parent"]["parent"]["parent"]["parent"]["parent"],
-        Value::Null
-    );
+    assert_eq!(result, json!([chain(&[(3, 12, 3, 18), (2, 13, 4, 9), (1, 12, 6, 5), (0, 16, 7, 1), (0, 0, 7, 1), (0, 0, 8, 0)])]));
+    assert_eq!(result[0]["parent"]["parent"]["parent"]["parent"]["parent"]["parent"], Value::Null);
 }
 
 #[test]
 fn test_selection_range_cursor_inside_for_loop_block() {
     let file = temp_file("for");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn loop_test() {\n    for i in 0..10 {\n        let square = i * i;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn loop_test() {\n    for i in 0..10 {\n        let square = i * i;\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, 302, &file, &[(2, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 12, 2, 18),
-            (1, 19, 3, 5),
-            (0, 15, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 12, 2, 18), (1, 19, 3, 5), (0, 15, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_while_block() {
     let file = temp_file("while");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn while_test() {\n    while true {\n        step();\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn while_test() {\n    while true {\n        step();\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, 303, &file, &[(2, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 8, 2, 12),
-            (1, 15, 3, 5),
-            (0, 16, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 8, 2, 12), (1, 15, 3, 5), (0, 16, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_if_else_blocks() {
     let file = temp_file("ifelse");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp, &file,
-        "fn branch(cond: bool) {\n    if cond {\n        do_then();\n    } else {\n        do_else();\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn branch(cond: bool) {\n    if cond {\n        do_then();\n    } else {\n        do_else();\n    }\n}\n");
 
     // Cursor in the else branch: only the else block is an ancestor, not the if block.
     let result = selection_ranges(&mut dsp, 304, &file, &[(4, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (4, 8, 4, 15),
-            (3, 11, 5, 5),
-            (0, 22, 6, 1),
-            (0, 0, 6, 1),
-            (0, 0, 7, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(4, 8, 4, 15), (3, 11, 5, 5), (0, 22, 6, 1), (0, 0, 6, 1), (0, 0, 7, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_block_expression() {
     let file = temp_file("blockexpr");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn block_run() {\n    let block = {\n        perform();\n    };\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn block_run() {\n    let block = {\n        perform();\n    };\n}\n");
 
     let result = selection_ranges(&mut dsp, 305, &file, &[(2, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 8, 2, 15),
-            (1, 16, 3, 5),
-            (0, 15, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 8, 2, 15), (1, 16, 3, 5), (0, 15, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_inside_unsafe_block() {
     let file = temp_file("unsafe");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn unsafe_call() {\n    unsafe {\n        ptr_op();\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn unsafe_call() {\n    unsafe {\n        ptr_op();\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, 306, &file, &[(2, 10)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 8, 2, 14),
-            (1, 11, 3, 5),
-            (0, 17, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 8, 2, 14), (1, 11, 3, 5), (0, 17, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }

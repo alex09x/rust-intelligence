@@ -10,11 +10,11 @@
 
 //! End-to-end tests for `textDocument/codeAction` (Part 3: unused mut, multiple diagnostics, overlay/disk lifecycle, data payload).
 
-use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::dispatch::dispatch_lsp_message;
+use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::LspMessage;
-use ridx::overlay::OverlayManager;
 use ridx::lsp::workspace::MultiRootWorkspace;
+use ridx::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> Value {
     Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -54,7 +49,15 @@ fn setup_initialized_server() -> (
     (mr, ov, lc, can)
 }
 
-fn send_code_action(uri: &str, range: Value, ctx: Value, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
+fn send_code_action(
+    uri: &str,
+    range: Value,
+    ctx: Value,
+    mr: &mut MultiRootWorkspace,
+    ov: &mut OverlayManager,
+    lc: &mut LifecycleManager,
+    can: &Arc<Mutex<HashSet<Value>>>,
+) -> Value {
     let mut out = Vec::new();
     let req = json!({
         "jsonrpc": "2.0", "id": 100, "method": "textDocument/codeAction",
@@ -64,13 +67,7 @@ fn send_code_action(uri: &str, range: Value, ctx: Value, mr: &mut MultiRootWorks
     extract_response(&out)
 }
 
-fn send_code_action_req(
-    params: Value,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<Value>>>,
-) -> Value {
+fn send_code_action_req(params: Value, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
     let mut out = Vec::new();
     let req = json!({
         "jsonrpc": "2.0",

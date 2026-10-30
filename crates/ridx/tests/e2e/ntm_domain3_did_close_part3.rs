@@ -29,23 +29,10 @@ fn setup_server_with_doc(uri: &str, text: &str) -> (LifecycleManager, MultiRootW
     (lc, mr, om)
 }
 
-fn dispatch_did_close(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_close(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -63,21 +50,28 @@ fn test_did_close_full_lifecycle_open_change_save_close() {
             "jsonrpc": "2.0", "method": "textDocument/didChange",
             "params": { "textDocument": { "uri": uri, "version": 2 }, "contentChanges": [{ "text": "edited\n" }] }
         }),
-        &mut out1, &mut lc, &mut mr, &mut om, &cancelled, None,
+        &mut out1,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
     );
 
     // didSave
     let mut out2 = Cursor::new(Vec::new());
     let _ = dispatch_lsp_message(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut out2, &mut lc, &mut mr, &mut om, &cancelled, None,
+        &mut out2,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
     );
 
     // didClose
-    let (ok, _) = dispatch_did_close(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     assert_eq!(om.open_count(), 0);
@@ -97,13 +91,15 @@ fn test_did_close_open_change_close_without_save() {
             "jsonrpc": "2.0", "method": "textDocument/didChange",
             "params": { "textDocument": { "uri": uri, "version": 2 }, "contentChanges": [{ "text": "never saved\n" }] }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
     );
 
-    let (ok, _) = dispatch_did_close(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     assert_eq!(om.open_count(), 0);
@@ -125,10 +121,7 @@ fn test_did_close_sequential_closing_all_files() {
 
     for i in 1..=5 {
         let uri = format!("file:///tmp/close_all_{}.rs", i);
-        let (ok, _) = dispatch_did_close(
-            json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-            &mut lc, &mut mr, &mut om,
-        );
+        let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
         assert_eq!(ok, true);
     }
 
@@ -149,10 +142,7 @@ fn test_did_close_reverse_order_closing() {
 
     for i in (1..=3).rev() {
         let uri = format!("file:///tmp/rev_close_{}.rs", i);
-        let (ok, _) = dispatch_did_close(
-            json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-            &mut lc, &mut mr, &mut om,
-        );
+        let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
         assert_eq!(ok, true);
     }
 
@@ -164,10 +154,8 @@ fn test_did_close_does_not_affect_multi_root_workspaces() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc("file:///tmp/f.rs", "fn f() {}\n");
     let ws_count_before = mr.all_workspaces().count();
 
-    let (ok, _) = dispatch_did_close(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": "file:///tmp/f.rs" } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) =
+        dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": "file:///tmp/f.rs" } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     assert_eq!(mr.all_workspaces().count(), ws_count_before);
@@ -183,8 +171,14 @@ fn test_did_close_does_not_alter_cancelled_requests() {
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(cancelled.lock().unwrap().len(), 1);
@@ -204,7 +198,9 @@ fn test_did_close_notification_with_extra_client_data() {
                 "clientSessionId": 999
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -243,7 +239,9 @@ fn test_did_close_non_file_uri_scheme_safe() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": "inmemory://buffer-1" } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -255,10 +253,7 @@ fn test_did_close_relative_uri_fallback_safe() {
     let uri = "file://rel_doc.rs";
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "fn f() {}\n");
 
-    let (ok, _) = dispatch_did_close(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     assert_eq!(om.open_count(), 0);

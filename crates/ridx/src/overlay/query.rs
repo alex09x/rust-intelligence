@@ -10,9 +10,7 @@
 
 //! Symbol resolution, definition lookup, and identifier inspection for document overlays.
 
-use super::mapping::{
-    strip_leading_whitespace_and_comments, strip_trailing_whitespace_and_comments,
-};
+use super::mapping::{strip_leading_whitespace_and_comments, strip_trailing_whitespace_and_comments};
 use super::parser::{is_rust_ident_continue, is_rust_ident_start};
 use super::{DocumentOverlay, OverlayDefinition, OverlaySymbol};
 use ridx_format::DefKind;
@@ -83,13 +81,7 @@ impl DocumentOverlay {
             for sym in &self.symbols {
                 if sym.scope_id == sid && sym.name == ident {
                     let is_visible = match sym.kind {
-                        DefKind::Fn
-                        | DefKind::Struct
-                        | DefKind::Enum
-                        | DefKind::Trait
-                        | DefKind::TyAlias
-                        | DefKind::Const
-                        | DefKind::Mod => true,
+                        DefKind::Fn | DefKind::Struct | DefKind::Enum | DefKind::Trait | DefKind::TyAlias | DefKind::Const | DefKind::Mod => true,
                         _ => sym.scope_start_byte <= byte_pos,
                     };
                     if is_visible {
@@ -140,10 +132,7 @@ impl DocumentOverlay {
             let bytes = path_part.as_bytes();
             while start_pos > 0 {
                 let b = bytes[start_pos - 1];
-                if b == b"_"[0]
-                    || b.is_ascii_alphanumeric()
-                    || (start_pos >= 2 && &bytes[start_pos - 2..start_pos] == b"::")
-                {
+                if b == b"_"[0] || b.is_ascii_alphanumeric() || (start_pos >= 2 && &bytes[start_pos - 2..start_pos] == b"::") {
                     start_pos -= 1;
                 } else {
                     break;
@@ -165,11 +154,7 @@ impl DocumentOverlay {
             return None;
         }
         let line_start = self.line_starts[line_idx];
-        let line_end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
+        let line_end = if line_idx + 1 < self.line_starts.len() { self.line_starts[line_idx + 1] } else { self.text.len() };
         let line_text = &self.text[line_start..line_end];
         let col_byte = byte_pos.saturating_sub(line_start).min(line_text.len());
 
@@ -217,11 +202,7 @@ impl DocumentOverlay {
 
         if is_rust_ident_start(char_indices[start_i].1) {
             let start_b = char_indices[start_i].0;
-            let end_b = if end_i < char_indices.len() {
-                char_indices[end_i].0
-            } else {
-                line_text.len()
-            };
+            let end_b = if end_i < char_indices.len() { char_indices[end_i].0 } else { line_text.len() };
             Some((line_text[start_b..end_b].to_string(), start_b, end_b))
         } else {
             None
@@ -250,10 +231,7 @@ impl DocumentOverlay {
         // Iterate through all real code identifier tokens across the document
         for (line_1based, char_col) in find_document_matching_identifiers(&self.text, target_name) {
             if let Some(resolved) = self.find_definition_at(line_1based, char_col) {
-                if resolved.start_line == target_def.start_line
-                    && resolved.start_col == target_def.start_col
-                    && resolved.file == target_def.file
-                {
+                if resolved.start_line == target_def.start_line && resolved.start_col == target_def.start_col && resolved.file == target_def.file {
                     let end_col = char_col + target_name.chars().count() as u32;
                     let span = (line_1based, char_col, line_1based, end_col);
                     if !results.contains(&span) {

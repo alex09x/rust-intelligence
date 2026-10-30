@@ -21,11 +21,7 @@ use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
 /// Extracts the diagnostic-remapped source span for a compiler definition.
-pub fn extract_def_span(
-    tcx: TyCtxt<'_>,
-    did: DefId,
-    sysroot_src: Option<&Path>,
-) -> (String, u32, u32, u32, u32) {
+pub fn extract_def_span(tcx: TyCtxt<'_>, did: DefId, sysroot_src: Option<&Path>) -> (String, u32, u32, u32, u32) {
     let item_span = tcx.def_ident_span(did).unwrap_or_else(|| tcx.def_span(did));
     if !item_span.is_dummy() {
         let sm = tcx.sess.source_map();
@@ -33,31 +29,15 @@ pub fn extract_def_span(
         let hi = sm.lookup_char_pos(item_span.hi());
         let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
         let remapped = remap_sysroot_path(&raw_file, sysroot_src);
-        (
-            remapped,
-            lo.line as u32,
-            (lo.col.0 + 1) as u32,
-            hi.line as u32,
-            (hi.col.0 + 1) as u32,
-        )
+        (remapped, lo.line as u32, (lo.col.0 + 1) as u32, hi.line as u32, (hi.col.0 + 1) as u32)
     } else {
         (String::new(), 0, 0, 0, 0)
     }
 }
 
 /// Records a lightweight re-export alias in the target crate index without duplicating item bodies.
-pub fn record_reexport<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    did: DefId,
-    name_str: &str,
-    mod_path: &str,
-    sysroot_src: Option<&Path>,
-    writer: &mut IndexWriter,
-    total_definitions: &mut usize,
-) {
-    let canonical_path = rustc_middle::ty::print::with_no_visible_paths!(
-        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-    );
+pub fn record_reexport<'tcx>(tcx: TyCtxt<'tcx>, did: DefId, name_str: &str, mod_path: &str, sysroot_src: Option<&Path>, writer: &mut IndexWriter, total_definitions: &mut usize) {
+    let canonical_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
     let alias_path = format!("{mod_path}::{name_str}");
     let (file, s_line, s_col, e_line, e_col) = extract_def_span(tcx, did, sysroot_src);
     let kind = tcx.def_kind(did);
@@ -96,13 +76,8 @@ pub fn extract_trait_items<'tcx>(
     for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
         if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
             let super_did = trait_pred.trait_ref.def_id;
-            if super_did != did
-                && tcx.lang_items().sized_trait() != Some(super_did)
-                && !tcx.trait_is_auto(super_did)
-            {
-                let super_path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did))
-                );
+            if super_did != did && tcx.lang_items().sized_trait() != Some(super_did) && !tcx.trait_is_auto(super_did) {
+                let super_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did)));
                 if !super_path.starts_with("core::marker::") {
                     writer.add_deref(path.to_string(), super_path);
                     *total_derefs += 1;
@@ -127,33 +102,20 @@ pub fn extract_trait_items<'tcx>(
             continue;
         }
         let a_kind = tcx.def_kind(assoc_did);
-        let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
-        );
+        let a_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did)));
         let mut a_sig = match a_kind {
-            DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
-                &tcx.fn_sig(assoc_did).skip_binder().to_string(),
-            )),
+            DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(&tcx.fn_sig(assoc_did).skip_binder().to_string())),
             _ => None,
         };
         let mut a_owners = vec![path.to_string()];
         if a_kind == DefKind::AssocTy {
             let mut assoc_bounds = Vec::new();
             for (clause, _) in tcx.explicit_item_bounds(assoc_did).skip_binder() {
-                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder()
-                {
+                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
                     let bound_did = trait_pred.trait_ref.def_id;
-                    if tcx.lang_items().sized_trait() != Some(bound_did)
-                        && !tcx.trait_is_auto(bound_did)
-                    {
-                        let bound_path = rustc_middle::ty::print::with_no_visible_paths!(
-                            rustc_middle::ty::print::with_no_trimmed_paths!(
-                                tcx.def_path_str(bound_did)
-                            )
-                        );
-                        if !bound_path.starts_with("core::marker::")
-                            && !assoc_bounds.contains(&bound_path)
-                        {
+                    if tcx.lang_items().sized_trait() != Some(bound_did) && !tcx.trait_is_auto(bound_did) {
+                        let bound_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(bound_did)));
+                        if !bound_path.starts_with("core::marker::") && !assoc_bounds.contains(&bound_path) {
                             assoc_bounds.push(bound_path);
                         }
                     }
@@ -191,19 +153,12 @@ pub fn extract_trait_items<'tcx>(
     }
 }
 
-fn is_applicable_inherent_impl<'tcx>(
-    impl_ty: rustc_middle::ty::Ty<'tcx>,
-    ty: rustc_middle::ty::Ty<'tcx>,
-    adt_did: DefId,
-) -> bool {
+fn is_applicable_inherent_impl<'tcx>(impl_ty: rustc_middle::ty::Ty<'tcx>, ty: rustc_middle::ty::Ty<'tcx>, adt_did: DefId) -> bool {
     if impl_ty == ty {
         return true;
     }
     match (impl_ty.kind(), ty.kind()) {
-        (
-            rustc_middle::ty::TyKind::Adt(i_adt, i_args),
-            rustc_middle::ty::TyKind::Adt(t_adt, t_args),
-        ) => {
+        (rustc_middle::ty::TyKind::Adt(i_adt, i_args), rustc_middle::ty::TyKind::Adt(t_adt, t_args)) => {
             if i_adt.did() != adt_did || t_adt.did() != adt_did || i_args.len() != t_args.len() {
                 return false;
             }
@@ -236,9 +191,7 @@ pub fn extract_inherent_impl_items<'tcx>(
         DefKind::TyAlias => {
             let ty = tcx.type_of(did).skip_binder();
             if let Some(adt_def) = ty.ty_adt_def() {
-                let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(adt_def.did()))
-                );
+                let a_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(adt_def.did())));
                 let impls: Vec<DefId> = tcx
                     .inherent_impls(adt_def.did())
                     .iter()
@@ -274,13 +227,9 @@ pub fn extract_inherent_impl_items<'tcx>(
                 continue;
             }
             let a_kind = tcx.def_kind(assoc_did);
-            let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
-            );
+            let a_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did)));
             let a_sig = match a_kind {
-                DefKind::Fn => Some(sanitize_type_name(
-                    &tcx.fn_sig(assoc_did).skip_binder().to_string(),
-                )),
+                DefKind::Fn => Some(sanitize_type_name(&tcx.fn_sig(assoc_did).skip_binder().to_string())),
                 DefKind::AssocFn => Some(util::format_assoc_fn_sig(tcx, assoc_did)),
                 _ => None,
             };
@@ -334,9 +283,7 @@ pub fn extract_enum_variants<'tcx>(
             continue;
         }
         let v_name = variant.name.to_string();
-        let v_path = rustc_middle::ty::print::with_no_visible_paths!(
-            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(var_did))
-        );
+        let v_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(var_did)));
         let (v_file, v_sl, v_sc, v_el, v_ec) = extract_def_span(tcx, var_did, sysroot_src);
         writer.add_definition_with_owners(
             RawDefinition {

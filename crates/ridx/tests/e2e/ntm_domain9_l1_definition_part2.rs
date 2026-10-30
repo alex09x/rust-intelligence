@@ -41,23 +41,9 @@ fn test_l1_definition_cross_crate_two_shards() {
     ws.add_crate("core_pkg", "0.1.0").unwrap();
     ws.add_crate("app_pkg", "0.1.0").unwrap();
 
-    let (_, core_ids) = ws
-        .add_source_file_with_defs(
-            "core_pkg",
-            "src/lib.rs",
-            "pub struct «EngineCore»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, core_ids) = ws.add_source_file_with_defs("core_pkg", "src/lib.rs", "pub struct «EngineCore»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_foreign_def(
-        "app_pkg",
-        "src/lib.rs",
-        "use core_pkg::EngineCore;\npub fn run() { let _ = «EngineCore»; }\n",
-        "core_pkg",
-        core_ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_foreign_def("app_pkg", "src/lib.rs", "use core_pkg::EngineCore;\npub fn run() { let _ = «EngineCore»; }\n", "core_pkg", core_ids[0]).unwrap();
 
     ws.build_all_indices().unwrap();
     let index = WorkspaceIndex::open(ws.root_path()).unwrap();
@@ -81,18 +67,10 @@ fn test_l1_definition_target_file_in_dirty_overlay_mapped_live_range() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_target_ov", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_target_ov",
-            "src/models.rs",
-            "pub struct «Worker»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_target_ov", "src/models.rs", "pub struct «Worker»;\n", DefKind::Struct).unwrap();
 
     let caller_code = "mod models;\npub fn run() { let _ = models::«Worker»; }\n";
-    ws.add_refs_to_def("pkg_target_ov", "src/lib.rs", caller_code, ids[0])
-        .unwrap();
+    ws.add_refs_to_def("pkg_target_ov", "src/lib.rs", caller_code, ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_target_ov").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -126,18 +104,10 @@ fn test_l1_definition_target_file_dirty_overlay_definition_deleted_returns_null(
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_del_ov", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_del_ov",
-            "src/models.rs",
-            "pub struct «DeletedItem»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_del_ov", "src/models.rs", "pub struct «DeletedItem»;\n", DefKind::Struct).unwrap();
 
     let caller_code = "mod models;\npub fn run() { let _ = models::«DeletedItem»; }\n";
-    ws.add_refs_to_def("pkg_del_ov", "src/lib.rs", caller_code, ids[0])
-        .unwrap();
+    ws.add_refs_to_def("pkg_del_ov", "src/lib.rs", caller_code, ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_del_ov").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -176,16 +146,13 @@ fn test_l1_definition_utf16_multibyte_prefix_with_emoji() {
     // UTF-16 code units before RocketShip: 3 + 2 + 15 = 20 UTF-16 units
     // RocketShip has 10 chars -> end_col = 30
     let def_code = "/* 🚀 */ pub struct «RocketShip»;\n";
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_utf16_def", "src/lib.rs", def_code, DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_utf16_def", "src/lib.rs", def_code, DefKind::Struct).unwrap();
 
     // Line 1: "/* 🦀 */ pub fn launch() { let _ = «RocketShip»; }\n"
     // "/* " (3) + "🦀" (1 char, 2 UTF-16 units) + " */ pub fn launch() { let _ = " (30) = 34 chars -> start_col = 35
     // UTF-16 code units before RocketShip on line 1: 3 + 2 + 30 = 35 UTF-16 units (RocketShip is 35..45)
     let caller_code = "/* 🚀 */ pub struct RocketShip;\n/* 🦀 */ pub fn launch() { let _ = «RocketShip»; }\n";
-    ws.add_refs_to_def("pkg_utf16_def", "src/lib.rs", caller_code, ids[0])
-        .unwrap();
+    ws.add_refs_to_def("pkg_utf16_def", "src/lib.rs", caller_code, ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_utf16_def").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -210,23 +177,12 @@ fn test_l1_definition_same_named_symbol_in_two_crates_resolves_referenced_target
     ws.add_crate("zzz_target", "0.1.0").unwrap();
     ws.add_crate("consumer_pkg", "0.1.0").unwrap();
 
-    let (_, other_ids) = ws
-        .add_source_file_with_defs("aaa_other", "src/lib.rs", "pub struct «Config»;\n", DefKind::Struct)
-        .unwrap();
-    let (_, target_ids) = ws
-        .add_source_file_with_defs("zzz_target", "src/lib.rs", "pub struct «Config»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, other_ids) = ws.add_source_file_with_defs("aaa_other", "src/lib.rs", "pub struct «Config»;\n", DefKind::Struct).unwrap();
+    let (_, target_ids) = ws.add_source_file_with_defs("zzz_target", "src/lib.rs", "pub struct «Config»;\n", DefKind::Struct).unwrap();
     assert_eq!(other_ids.len(), 1);
     assert_eq!(target_ids.len(), 1);
 
-    ws.add_refs_to_foreign_def(
-        "consumer_pkg",
-        "src/lib.rs",
-        "use zzz_target::Config;\npub fn run() { let _ = «Config»; }\n",
-        "zzz_target",
-        target_ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_foreign_def("consumer_pkg", "src/lib.rs", "use zzz_target::Config;\npub fn run() { let _ = «Config»; }\n", "zzz_target", target_ids[0]).unwrap();
 
     ws.build_all_indices().unwrap();
     let index = WorkspaceIndex::open(ws.root_path()).unwrap();
@@ -250,18 +206,10 @@ fn test_l1_definition_modified_imports_skips_workspace_index() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_mod_imports", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_mod_imports",
-            "src/models.rs",
-            "pub struct «RemoteItem»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_mod_imports", "src/models.rs", "pub struct «RemoteItem»;\n", DefKind::Struct).unwrap();
 
     let caller_code = "mod models;\npub fn run() { let _ = models::«RemoteItem»; }\n";
-    ws.add_refs_to_def("pkg_mod_imports", "src/lib.rs", caller_code, ids[0])
-        .unwrap();
+    ws.add_refs_to_def("pkg_mod_imports", "src/lib.rs", caller_code, ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_mod_imports").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

@@ -53,26 +53,12 @@ impl TestDispatcher {
         });
         dispatch_lsp_message(init, &mut out, &mut lc, &mut mr, &mut ov, &can, None).unwrap();
 
-        Self {
-            lifecycle: lc,
-            multi_root: mr,
-            overlay_mgr: ov,
-            cancelled: can,
-            writer: Vec::new(),
-        }
+        Self { lifecycle: lc, multi_root: mr, overlay_mgr: ov, cancelled: can, writer: Vec::new() }
     }
 
     fn dispatch(&mut self, val: &Value) -> bool {
         self.writer.clear();
-        dispatch_lsp_message(
-            val.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        ).unwrap()
+        dispatch_lsp_message(val.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -254,4 +240,3 @@ fn test_linked_editing_range_did_change_delete_lines_shifts_ranges() {
     assert_eq!(ranges[0]["start"]["line"], 1);
     assert_eq!(ranges[1]["start"]["line"], 2);
 }
-

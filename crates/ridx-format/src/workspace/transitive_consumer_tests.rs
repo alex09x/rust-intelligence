@@ -18,13 +18,7 @@ use crate::writer::{IndexWriter, RawDefinition, RawReference};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-fn write_shard(
-    dir: &Path,
-    name: &str,
-    unit: &str,
-    with_def: bool,
-    call_in: Option<&str>,
-) -> PathBuf {
+fn write_shard(dir: &Path, name: &str, unit: &str, with_def: bool, call_in: Option<&str>) -> PathBuf {
     let path = dir.join(format!("{name}.ridx"));
     let mut w = IndexWriter::new(name, "0.1.0");
     w.set_unit_key(unit);
@@ -75,29 +69,9 @@ fn chain_workspace() -> (tempfile::TempDir, WorkspaceIndex) {
     let b = write_shard(dir.path(), "b", "unit_b", false, None);
     let c = write_shard(dir.path(), "c", "unit_c", false, Some("src/via_b.rs"));
     let d = write_shard(dir.path(), "d", "unit_d", false, Some("src/unrelated.rs"));
-    let unit = |name: &str, path: &PathBuf| {
-        (
-            path.as_path().to_path_buf(),
-            Some(root.join(name)),
-            Some(format!("unit_{name}")),
-        )
-    };
+    let unit = |name: &str, path: &PathBuf| (path.as_path().to_path_buf(), Some(root.join(name)), Some(format!("unit_{name}")));
     let infos = [("a", &a), ("b", &b), ("c", &c), ("d", &d)].map(|(n, p)| unit(n, p));
-    let mut ws = create_test_workspace(
-        infos
-            .iter()
-            .map(|(p, r, u)| {
-                (
-                    p.as_path(),
-                    r.clone(),
-                    u.clone(),
-                    Some(TargetKind::Lib),
-                    false,
-                )
-            })
-            .collect(),
-        root.clone(),
-    );
+    let mut ws = create_test_workspace(infos.iter().map(|(p, r, u)| (p.as_path(), r.clone(), u.clone(), Some(TargetKind::Lib), false)).collect(), root.clone());
     ws.reader_dependencies[1] = vec!["unit_a".to_string()];
     ws.reader_dependencies[2] = vec!["unit_b".to_string()];
     ws.reader_dependencies[3] = vec!["unit_other".to_string()];
@@ -130,23 +104,8 @@ fn sibling_build_workspace() -> (tempfile::TempDir, WorkspaceIndex) {
     let a2 = write_shard(&sub, "a", "unit_a2", true, None);
     let b = write_shard(dir.path(), "b", "unit_b", false, None);
     let c = write_shard(dir.path(), "c", "unit_c", false, Some("src/via_b.rs"));
-    let infos = [("a", &a), ("a2", &a2), ("b", &b), ("c", &c)]
-        .map(|(n, p)| (p.clone(), Some(root.join(n)), Some(format!("unit_{n}"))));
-    let mut ws = create_test_workspace(
-        infos
-            .iter()
-            .map(|(p, r, u)| {
-                (
-                    p.as_path(),
-                    r.clone(),
-                    u.clone(),
-                    Some(TargetKind::Lib),
-                    false,
-                )
-            })
-            .collect(),
-        root.clone(),
-    );
+    let infos = [("a", &a), ("a2", &a2), ("b", &b), ("c", &c)].map(|(n, p)| (p.clone(), Some(root.join(n)), Some(format!("unit_{n}"))));
+    let mut ws = create_test_workspace(infos.iter().map(|(p, r, u)| (p.as_path(), r.clone(), u.clone(), Some(TargetKind::Lib), false)).collect(), root.clone());
     ws.reader_dependencies[2] = vec!["unit_a2".to_string()];
     ws.reader_dependencies[3] = vec!["unit_b".to_string()];
     (dir, ws)

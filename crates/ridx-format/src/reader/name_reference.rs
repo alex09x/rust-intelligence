@@ -55,8 +55,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             return true;
         };
         let (span, def_span) = (r.span(), def.span());
-        let def_end_valid = (def_span.end_line(), def_span.end_col())
-            >= (def_span.start_line(), def_span.start_col());
+        let def_end_valid = (def_span.end_line(), def_span.end_col()) >= (def_span.start_line(), def_span.start_col());
         !(def_end_valid && span_strictly_inside(&def_span, &span))
     }
 
@@ -66,10 +65,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// a span whose end lies before its start contains nothing.
     pub fn may_enclose_definition(&self, r: &RefEntry) -> bool {
         let span = r.span();
-        let (start, end) = (
-            (span.start_line(), span.start_col()),
-            (span.end_line(), span.end_col()),
-        );
+        let (start, end) = ((span.start_line(), span.start_col()), (span.end_line(), span.end_col()));
         if end < start {
             return false;
         }
@@ -84,18 +80,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
 /// True when `inner` lies within `outer` in the same file and the two spans differ.
 pub(crate) fn span_strictly_inside(inner: &Span, outer: &Span) -> bool {
-    let (inner_start, inner_end) = (
-        (inner.start_line(), inner.start_col()),
-        (inner.end_line(), inner.end_col()),
-    );
-    let (outer_start, outer_end) = (
-        (outer.start_line(), outer.start_col()),
-        (outer.end_line(), outer.end_col()),
-    );
-    inner.file_id() == outer.file_id()
-        && outer_start <= inner_start
-        && inner_end <= outer_end
-        && (inner_start, inner_end) != (outer_start, outer_end)
+    let (inner_start, inner_end) = ((inner.start_line(), inner.start_col()), (inner.end_line(), inner.end_col()));
+    let (outer_start, outer_end) = ((outer.start_line(), outer.start_col()), (outer.end_line(), outer.end_col()));
+    inner.file_id() == outer.file_id() && outer_start <= inner_start && inner_end <= outer_end && (inner_start, inner_end) != (outer_start, outer_end)
 }
 
 #[cfg(test)]
@@ -112,14 +99,7 @@ mod tests {
         let name_wide = reader.find_innermost_ref_at("src/lib.rs", 7, 6).unwrap();
         let wider = reader.find_innermost_ref_at("src/lib.rs", 8, 6).unwrap();
         let invocation = reader.find_innermost_ref_at("src/lib.rs", 20, 1).unwrap();
-        assert_eq!(
-            (
-                reader.may_enclose_definition(name_wide),
-                reader.may_enclose_definition(wider),
-                reader.may_enclose_definition(invocation),
-            ),
-            (false, true, true)
-        );
+        assert_eq!((reader.may_enclose_definition(name_wide), reader.may_enclose_definition(wider), reader.may_enclose_definition(invocation),), (false, true, true));
         let _ = std::fs::remove_dir_all(dir);
     }
 }

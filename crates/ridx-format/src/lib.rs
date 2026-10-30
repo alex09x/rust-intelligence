@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Compiler-backed, mmap-indexed code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! # ridx-format
 //!
 //! Compact, zero-copy binary index format and reader/writer for Rust Intelligence.
@@ -77,14 +87,7 @@ mod tests {
         });
 
         // Add expression types (outer and inner)
-        writer.add_type(RawType {
-            file: "src/main.rs".to_string(),
-            start_line: 15,
-            start_col: 18,
-            end_line: 15,
-            end_col: 35,
-            type_name: "i32".to_string(),
-        });
+        writer.add_type(RawType { file: "src/main.rs".to_string(), start_line: 15, start_col: 18, end_line: 15, end_col: 35, type_name: "i32".to_string() });
 
         writer.add_type(RawType {
             file: "src/main.rs".to_string(),
@@ -104,16 +107,12 @@ mod tests {
         assert_eq!(reader.crate_version(), "0.1.0");
 
         // Verify definitions lookup by path
-        let def = reader
-            .find_definition_by_path("test_crate::math::calculate")
-            .expect("def not found");
+        let def = reader.find_definition_by_path("test_crate::math::calculate").expect("def not found");
         assert_eq!(reader.get_str(def.name_offset), "calculate");
         assert_eq!(reader.get_str(def.sig_offset), "fn(i32, i32) -> i32");
 
         // Verify go-to-definition at reference site
-        let target = reader
-            .find_definition_at("src/main.rs", 15, 20)
-            .expect("ref definition not found");
+        let target = reader.find_definition_at("src/main.rs", 15, 20).expect("ref definition not found");
         assert_eq!(target.name, "calculate");
         assert_eq!(target.path, "test_crate::math::calculate");
         assert_eq!(target.file, "src/math.rs");
@@ -127,14 +126,10 @@ mod tests {
         assert_eq!(refs[0].span.start_line, 15);
 
         // Verify type_at selects innermost type
-        let ty_inner = reader
-            .type_at("src/main.rs", 15, 22)
-            .expect("type not found");
+        let ty_inner = reader.type_at("src/main.rs", 15, 22).expect("type not found");
         assert_eq!(ty_inner, "i32");
 
-        let ty_outer = reader
-            .type_at("src/main.rs", 15, 10)
-            .expect("type not found");
+        let ty_outer = reader.type_at("src/main.rs", 15, 10).expect("type not found");
         assert_eq!(ty_outer, "std::result::Result<i32, String>");
     }
 

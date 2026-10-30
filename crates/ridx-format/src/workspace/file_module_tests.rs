@@ -77,10 +77,7 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
         paths: vec![dep_ridx, ws_ridx],
         mtimes: vec![None, None],
         source_roots: vec![None, None],
-        unit_keys: vec![
-            Some("dep_crate 0.1.0 (lib)".into()),
-            Some("ws_crate 0.1.0 (lib)".into()),
-        ],
+        unit_keys: vec![Some("dep_crate 0.1.0 (lib)".into()), Some("ws_crate 0.1.0 (lib)".into())],
         unit_match: UnitMatchIndex::default(),
         path_index: super::PathIndex::default(),
         target_kinds: vec![None, None],
@@ -111,30 +108,14 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
     // Index 1 (ws_crate) has /workspace/src/lib.rs.
     // Index 0 (dep_crate) has /deps/dep_crate/src/lib.rs, which does NOT match the anchored path.
     let indices = workspace.reader_indices_for_file("src/lib.rs");
-    assert_eq!(
-        indices,
-        vec![1],
-        "relative path 'src/lib.rs' must anchor to workspace root (/workspace/src/lib.rs) and match ws_crate (index 1), not dep_crate (index 0)"
-    );
+    assert_eq!(indices, vec![1], "relative path 'src/lib.rs' must anchor to workspace root (/workspace/src/lib.rs) and match ws_crate (index 1), not dep_crate (index 0)");
 
     let primary_idx = workspace.reader_index_for_file("src/lib.rs");
-    assert_eq!(
-        primary_idx,
-        Some(1),
-        "primary reader index must be ws_crate"
-    );
+    assert_eq!(primary_idx, Some(1), "primary reader index must be ws_crate");
 
     let cname = workspace.crate_name_for_file("src/lib.rs");
-    assert_eq!(
-        cname,
-        Some("ws_crate"),
-        "crate name for 'src/lib.rs' must be ws_crate"
-    );
+    assert_eq!(cname, Some("ws_crate"), "crate name for 'src/lib.rs' must be ws_crate");
 
     let target_1 = workspace.target_file_for_reader(1, "src/lib.rs");
-    assert_eq!(
-        target_1.as_deref(),
-        Some("/workspace/src/lib.rs"),
-        "ws_crate must resolve 'src/lib.rs' to workspace-anchored path"
-    );
+    assert_eq!(target_1.as_deref(), Some("/workspace/src/lib.rs"), "ws_crate must resolve 'src/lib.rs' to workspace-anchored path");
 }

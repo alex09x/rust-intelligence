@@ -21,8 +21,7 @@ static TEST_DIR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn setup_temp_workspace() -> (PathBuf, PathBuf) {
     let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_d2_cm_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_d2_cm_{}_{}", std::process::id(), id));
     let src_file = temp_dir.join("src/lib.rs");
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let _ = fs::write(&src_file, "pub fn example() {}\n");
@@ -65,12 +64,7 @@ fn test_parse_simple_compiler_error() {
 #[test]
 fn test_parse_compiler_warning_and_severities() {
     let (root, _) = setup_temp_workspace();
-    let severities = [
-        ("warning", 2),
-        ("note", 3),
-        ("help", 4),
-        ("unknown_level", 1),
-    ];
+    let severities = [("warning", 2), ("note", 3), ("help", 4), ("unknown_level", 1)];
 
     for (level, expected_sev) in severities {
         let raw = json!({
@@ -212,9 +206,7 @@ fn test_parse_related_information_secondary_spans() {
     });
 
     let (_, diag) = parse_compiler_message(&raw, &root).unwrap();
-    let rel = diag["relatedInformation"]
-        .as_array()
-        .expect("relatedInformation array");
+    let rel = diag["relatedInformation"].as_array().expect("relatedInformation array");
     assert_eq!(rel.len(), 1);
     assert_eq!(rel[0]["message"], "first mutable borrow occurs here");
     assert_eq!(rel[0]["location"]["range"]["start"]["line"], 7); // line 8 -> 7

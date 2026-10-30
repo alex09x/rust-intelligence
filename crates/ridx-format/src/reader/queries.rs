@@ -69,14 +69,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     pub fn resolve_ref_definition(&self, r: &RefEntry) -> ResolvedDefinition<'_> {
         let target_path = self.get_str(r.target_path_offset());
         if r.target_def_id() != u32::MAX {
-            let by_hash = self
-                .find_definition_by_path(target_path)
-                .filter(|d| d.def_id() == r.target_def_id());
-            if let Some(def) = by_hash.or_else(|| {
-                self.definitions()
-                    .iter()
-                    .find(|d| d.def_id() == r.target_def_id())
-            }) {
+            let by_hash = self.find_definition_by_path(target_path).filter(|d| d.def_id() == r.target_def_id());
+            if let Some(def) = by_hash.or_else(|| self.definitions().iter().find(|d| d.def_id() == r.target_def_id())) {
                 return self.def_to_resolved(def);
             }
         }
@@ -89,11 +83,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             path: target_path,
             kind: DefKind::from(r.kind),
             signature: None,
-            file: if !target_file.is_empty() {
-                target_file
-            } else {
-                "external"
-            },
+            file: if !target_file.is_empty() { target_file } else { "external" },
             start_line: r.target_line(),
             start_col: r.target_col(),
             end_line: r.target_line(),
@@ -141,8 +131,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             }
             while i < ref_hashes.len() && ref_hashes[i].hash() == hash {
                 let r = &refs[ref_hashes[i].index() as usize];
-                if self.get_str(r.target_path_offset()) == target_path && self.is_name_reference(r)
-                {
+                if self.get_str(r.target_path_offset()) == target_path && self.is_name_reference(r) {
                     results.push(r);
                 }
                 i += 1;
@@ -171,11 +160,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 break;
             }
             if let Some((_, best_size)) = best {
-                let min_size = if line > span.start_line() {
-                    (line - span.start_line()) as u64 * 80
-                } else {
-                    (col.saturating_sub(span.start_col()) as u64).min(80)
-                };
+                let min_size = if line > span.start_line() { (line - span.start_line()) as u64 * 80 } else { (col.saturating_sub(span.start_col()) as u64).min(80) };
                 if min_size > best_size {
                     break;
                 }
@@ -196,8 +181,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// Retrieves the inferred expression type at a cursor position `(file, line, col)`.
     /// When nested expressions overlap, selects the tightest (innermost) span.
     pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
-        self.find_innermost_type_entry(file, line, col)
-            .map(|e| self.get_str(e.type_offset()))
+        self.find_innermost_type_entry(file, line, col).map(|e| self.get_str(e.type_offset()))
     }
 
     /// Retrieves the inferred expression type and optional canonical owner path at `(file, line, col)`.
@@ -291,21 +275,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
     /// Finds a generic type parameter (`DefKind::TyParam`) in the specified file matching `name`
     /// whose enclosing item span contains `(line, col)`.
-    pub fn find_type_param_in_scope(
-        &self,
-        file: &str,
-        name: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<(&DefEntry, u32)> {
+    pub fn find_type_param_in_scope(&self, file: &str, name: &str, line: u32, col: u32) -> Option<(&DefEntry, u32)> {
         let file_id = self.find_file_id(file)?;
         let mut best: Option<(&DefEntry, u32, u64)> = None;
 
         for (idx, def) in self.definitions().iter().enumerate() {
-            if def.kind != DefKind::TyParam as u8
-                || def.span().file_id() != file_id
-                || self.get_str(def.name_offset()) != name
-            {
+            if def.kind != DefKind::TyParam as u8 || def.span().file_id() != file_id || self.get_str(def.name_offset()) != name {
                 continue;
             }
             if let Some(size) = self.check_type_param_scope(file_id, idx as u32, def, line, col) {
@@ -317,20 +292,10 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         best.map(|(d, idx, _)| (d, idx))
     }
 
-    pub(crate) fn check_type_param_scope(
-        &self,
-        file_id: u32,
-        idx: u32,
-        def: &DefEntry,
-        line: u32,
-        col: u32,
-    ) -> Option<u64> {
+    pub(crate) fn check_type_param_scope(&self, file_id: u32, idx: u32, def: &DefEntry, line: u32, col: u32) -> Option<u64> {
         if let Some((sl, sc, el, ec)) = self.type_param_scope(idx) {
-            if (line > sl || (line == sl && col >= sc)) && (line < el || (line == el && col <= ec))
-            {
-                return Some(
-                    ((el.saturating_sub(sl)) as u64) * 10_000 + ((ec.saturating_sub(sc)) as u64),
-                );
+            if (line > sl || (line == sl && col >= sc)) && (line < el || (line == el && col <= ec)) {
+                return Some(((el.saturating_sub(sl)) as u64) * 10_000 + ((ec.saturating_sub(sc)) as u64));
             }
         }
         let span = def.span();

@@ -19,20 +19,12 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-pub fn execute_pinned_ra_lsp(
-    ra_bin: &Path,
-    root: Option<&Path>,
-    capability: &str,
-    target: &str,
-    loc_opt: Option<(&str, u32, u32)>,
-) -> Option<ExternalLspResult> {
+pub fn execute_pinned_ra_lsp(ra_bin: &Path, root: Option<&Path>, capability: &str, target: &str, loc_opt: Option<(&str, u32, u32)>) -> Option<ExternalLspResult> {
     let mut cmd = Command::new(ra_bin);
     if let Some(r) = root {
         cmd.current_dir(r);
     }
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
     let mut child = cmd.spawn().ok()?;
     let pid = child.id();
@@ -84,22 +76,8 @@ pub fn execute_pinned_ra_lsp(
 
     // 3. Resolve target location
     let resolved_loc: Option<(String, u32, u32)> = if let Some((f, l, c)) = loc_opt {
-        Some((
-            resolve_file_uri(f, root),
-            l.saturating_sub(1),
-            c.saturating_sub(1),
-        ))
-    } else if matches!(
-        capability,
-        "def"
-            | "textDocument/definition"
-            | "refs"
-            | "textDocument/references"
-            | "hover"
-            | "textDocument/hover"
-            | "callers"
-            | "incomingCalls"
-    ) {
+        Some((resolve_file_uri(f, root), l.saturating_sub(1), c.saturating_sub(1)))
+    } else if matches!(capability, "def" | "textDocument/definition" | "refs" | "textDocument/references" | "hover" | "textDocument/hover" | "callers" | "incomingCalls") {
         let sym_req = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 10,
@@ -129,23 +107,22 @@ pub fn execute_pinned_ra_lsp(
                 });
                 send_lsp_msg(&mut stdin, &prep_req).ok()?;
                 let prep_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 20)?;
-                let final_resp =
-                    if let Some(items) = prep_resp.get("result").and_then(|r| r.as_array()) {
-                        if let Some(first_item) = items.first() {
-                            let inc_req = serde_json::json!({
-                                "jsonrpc": "2.0",
-                                "id": 21,
-                                "method": "callHierarchy/incomingCalls",
-                                "params": { "item": first_item }
-                            });
-                            send_lsp_msg(&mut stdin, &inc_req).ok()?;
-                            read_lsp_response_with_writer(&mut reader, &mut stdin, 21)?
-                        } else {
-                            prep_resp
-                        }
+                let final_resp = if let Some(items) = prep_resp.get("result").and_then(|r| r.as_array()) {
+                    if let Some(first_item) = items.first() {
+                        let inc_req = serde_json::json!({
+                            "jsonrpc": "2.0",
+                            "id": 21,
+                            "method": "callHierarchy/incomingCalls",
+                            "params": { "item": first_item }
+                        });
+                        send_lsp_msg(&mut stdin, &inc_req).ok()?;
+                        read_lsp_response_with_writer(&mut reader, &mut stdin, 21)?
                     } else {
                         prep_resp
-                    };
+                    }
+                } else {
+                    prep_resp
+                };
                 (final_resp, t_start.elapsed().as_micros())
             } else {
                 (serde_json::json!({ "result": null }), 0)
@@ -244,17 +221,8 @@ pub fn execute_pinned_ra_lsp(
     let _ = child.wait();
 
     if let Some(err) = resp.get("error") {
-        let msg = err
-            .get("message")
-            .and_then(|m| m.as_str())
-            .unwrap_or("JSON-RPC error");
-        return Some(ExternalLspResult {
-            found: false,
-            span: format!("Error ({msg})"),
-            count: 0,
-            latency_micros: latency,
-            rss_bytes: rss,
-        });
+        let msg = err.get("message").and_then(|m| m.as_str()).unwrap_or("JSON-RPC error");
+        return Some(ExternalLspResult { found: false, span: format!("Error ({msg})"), count: 0, latency_micros: latency, rss_bytes: rss });
     }
 
     parse_lsp_result(&resp, latency, rss)
@@ -272,10 +240,7 @@ pub fn extract_symbol_location(resp: &Value, target: &str) -> Option<(String, u3
         }
         if name == target_name {
             if let Some(tc) = target_container {
-                let container = item
-                    .get("containerName")
-                    .and_then(|c| c.as_str())
-                    .unwrap_or("");
+                let container = item.get("containerName").and_then(|c| c.as_str()).unwrap_or("");
                 return container == tc || container.ends_with(&format!("::{tc}"));
             }
             return true;

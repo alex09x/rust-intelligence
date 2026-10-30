@@ -12,9 +12,7 @@
 //! Tests formatting, rangeFormatting, onTypeFormatting, and linkedEditingRange.
 
 use super::l2_harness::{fixture_dir, get_or_index_l2_fixture, pos_in_file};
-use ridx::lsp::editing::format::{
-    find_crate_edition, handle_formatting, handle_on_type_formatting, handle_range_formatting,
-};
+use ridx::lsp::editing::format::{find_crate_edition, handle_formatting, handle_on_type_formatting, handle_range_formatting};
 use ridx::lsp::editing::linked::handle_linked_editing_range;
 use ridx::lsp::editing::rename::handle_rename;
 use ridx::lsp::navigation::references::handle_references;
@@ -24,11 +22,7 @@ use ridx_test_support::apply_text_edits;
 use serde_json::json;
 
 fn is_rustfmt_installed() -> bool {
-    std::process::Command::new("rustfmt")
-        .arg("--version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    std::process::Command::new("rustfmt").arg("--version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 #[test]
@@ -53,10 +47,7 @@ fn test_l2_formatting_full_and_idempotence() {
 
     let edits = handle_formatting(&req, &overlay_mgr);
     let edits_arr = edits.as_array().expect("edits array");
-    assert!(
-        !edits_arr.is_empty(),
-        "Unformatted code must produce formatting edits"
-    );
+    assert!(!edits_arr.is_empty(), "Unformatted code must produce formatting edits");
 
     let formatted = apply_text_edits(unformatted, edits_arr);
     assert_ne!(formatted, unformatted);
@@ -65,11 +56,7 @@ fn test_l2_formatting_full_and_idempotence() {
     // Verify idempotence: formatting formatted code produces 0 edits
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 2, formatted.clone());
     let second_edits = handle_formatting(&req, &overlay_mgr);
-    assert_eq!(
-        second_edits,
-        json!([]),
-        "Formatting already formatted code must be idempotent"
-    );
+    assert_eq!(second_edits, json!([]), "Formatting already formatted code must be idempotent");
 }
 
 #[test]
@@ -82,15 +69,7 @@ fn test_l2_range_formatting_scoped() {
     let file = fixture_dir("traits_and_generics").join("src/lib.rs");
     let uri = path_to_uri(file.to_str().unwrap());
 
-    let code = concat!(
-        "// line 0: clean\n",
-        "fn untouched( a : i32 ) -> i32 { a }\n",
-        "\n",
-        "fn target( x:i32 , y:i32 )->i32{\n",
-        "let z = x*y ;\n",
-        "z\n",
-        "}\n",
-    );
+    let code = concat!("// line 0: clean\n", "fn untouched( a : i32 ) -> i32 { a }\n", "\n", "fn target( x:i32 , y:i32 )->i32{\n", "let z = x*y ;\n", "z\n", "}\n",);
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, code.to_string());
 
     let req = json!({
@@ -106,20 +85,11 @@ fn test_l2_range_formatting_scoped() {
 
     let edits = handle_range_formatting(&req, &overlay_mgr);
     let edits_arr = edits.as_array().expect("range edits array");
-    assert!(
-        !edits_arr.is_empty(),
-        "Range formatting must format target function"
-    );
+    assert!(!edits_arr.is_empty(), "Range formatting must format target function");
 
     let result = apply_text_edits(code, edits_arr);
-    assert!(
-        result.contains("fn untouched( a : i32 ) -> i32 { a }"),
-        "Untouched line outside range must remain unchanged"
-    );
-    assert!(
-        result.contains("fn target(x: i32, y: i32) -> i32 {"),
-        "Target function in range must be formatted"
-    );
+    assert!(result.contains("fn untouched( a : i32 ) -> i32 { a }"), "Untouched line outside range must remain unchanged");
+    assert!(result.contains("fn target(x: i32, y: i32) -> i32 {"), "Target function in range must be formatted");
 }
 
 #[test]
@@ -147,10 +117,7 @@ fn test_l2_on_type_formatting_delegation() {
     let edits = handle_on_type_formatting(&req, &overlay_mgr);
     assert!(edits.is_array(), "onTypeFormatting returns edit array");
     let edits_arr = edits.as_array().unwrap();
-    assert!(
-        !edits_arr.is_empty(),
-        "Must produce edits on trigger character"
-    );
+    assert!(!edits_arr.is_empty(), "Must produce edits on trigger character");
 }
 
 #[test]
@@ -160,13 +127,7 @@ fn test_l2_linked_editing_range_local_bindings() {
     let file = fixture_dir("traits_and_generics").join("src/lib.rs");
     let uri = path_to_uri(file.to_str().unwrap());
 
-    let code = concat!(
-        "fn calculate_total() -> i32 {\n",
-        "    let amount = 100;\n",
-        "    let tax = amount * 2;\n",
-        "    amount + tax\n",
-        "}\n",
-    );
+    let code = concat!("fn calculate_total() -> i32 {\n", "    let amount = 100;\n", "    let tax = amount * 2;\n", "    amount + tax\n", "}\n",);
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, code.to_string());
 
     // 1. Linked editing on `amount` local binding (line 1, col 8)
@@ -180,10 +141,7 @@ fn test_l2_linked_editing_range_local_bindings() {
     let res = handle_linked_editing_range(&req, &overlay_mgr, &mut conv);
     if !res.is_null() {
         let ranges = res["ranges"].as_array().expect("ranges array");
-        assert!(
-            ranges.len() >= 2,
-            "Linked editing must return all local binding references"
-        );
+        assert!(ranges.len() >= 2, "Linked editing must return all local binding references");
         for r in ranges {
             assert!(r["start"]["line"].as_u64().is_some());
             assert!(r["start"]["character"].as_u64().is_some());
@@ -207,10 +165,7 @@ fn test_l2_linked_editing_range_local_bindings() {
 fn test_l2_edition_resolution() {
     let fixture_lib = fixture_dir("traits_and_generics").join("src/lib.rs");
     let edition = find_crate_edition(fixture_lib.to_str().unwrap());
-    assert!(
-        matches!(edition.as_str(), "2015" | "2018" | "2021" | "2024"),
-        "find_crate_edition must return a valid Rust edition: {edition}"
-    );
+    assert!(matches!(edition.as_str(), "2015" | "2018" | "2021" | "2024"), "find_crate_edition must return a valid Rust edition: {edition}");
 }
 
 #[test]
@@ -224,16 +179,8 @@ fn test_l2_cross_crate_reexport_references_and_rename() {
     let mut conv = PositionConverter::new();
 
     // 1. References on definition of `inner::Thing` in core_lib must include app_crate usage
-    let (def_line, def_col) = pos_in_file(
-        &core_file,
-        "pub mod inner {\n    pub struct Thing {",
-        "Thing",
-    );
-    let (other_line, _) = pos_in_file(
-        &core_file,
-        "pub mod other {\n    pub struct Thing {",
-        "Thing",
-    );
+    let (def_line, def_col) = pos_in_file(&core_file, "pub mod inner {\n    pub struct Thing {", "Thing");
+    let (other_line, _) = pos_in_file(&core_file, "pub mod other {\n    pub struct Thing {", "Thing");
 
     let ref_req = json!({
         "params": {
@@ -247,23 +194,12 @@ fn test_l2_cross_crate_reexport_references_and_rename() {
 
     let has_core_ref = arr.iter().any(|r| r["uri"] == core_uri);
     let has_app_ref = arr.iter().any(|r| r["uri"] == app_uri);
-    assert!(
-        has_core_ref,
-        "References must include core_lib definition/re-export: {arr:?}"
-    );
-    assert!(
-        has_app_ref,
-        "References across pub use must include app_crate usage: {arr:?}"
-    );
+    assert!(has_core_ref, "References must include core_lib definition/re-export: {arr:?}");
+    assert!(has_app_ref, "References across pub use must include app_crate usage: {arr:?}");
 
     // References must NOT conflate with other::Thing
-    let has_other_ref = arr.iter().any(|r| {
-        r["uri"] == core_uri && r["range"]["start"]["line"].as_u64() == Some(other_line as u64)
-    });
-    assert!(
-        !has_other_ref,
-        "References on inner::Thing must not match unrelated other::Thing: {arr:?}"
-    );
+    let has_other_ref = arr.iter().any(|r| r["uri"] == core_uri && r["range"]["start"]["line"].as_u64() == Some(other_line as u64));
+    assert!(!has_other_ref, "References on inner::Thing must not match unrelated other::Thing: {arr:?}");
 
     // 2. Rename on `inner::Thing` must edit both core_lib and app_crate, but NEVER other::Thing
     let rename_req = json!({
@@ -273,27 +209,15 @@ fn test_l2_cross_crate_reexport_references_and_rename() {
             "newName": "RenamedThing"
         }
     });
-    let rename_res = handle_rename(&rename_req, Some(ws), &overlay_mgr, &mut conv)
-        .expect("rename across pub use succeeds");
+    let rename_res = handle_rename(&rename_req, Some(ws), &overlay_mgr, &mut conv).expect("rename across pub use succeeds");
     let changes = rename_res["changes"].as_object().expect("changes map");
-    assert!(
-        changes.contains_key(&core_uri),
-        "Rename must edit core_lib: {changes:?}"
-    );
-    assert!(
-        changes.contains_key(&app_uri),
-        "Rename across pub use must edit app_crate: {changes:?}"
-    );
+    assert!(changes.contains_key(&core_uri), "Rename must edit core_lib: {changes:?}");
+    assert!(changes.contains_key(&app_uri), "Rename across pub use must edit app_crate: {changes:?}");
 
     // Ensure edits in core_lib do NOT touch other::Thing
     let core_edits = changes[&core_uri].as_array().expect("core_lib edits");
-    let edits_other = core_edits
-        .iter()
-        .any(|edit| edit["range"]["start"]["line"].as_u64() == Some(other_line as u64));
-    assert!(
-        !edits_other,
-        "Rename of inner::Thing must not edit other::Thing: {core_edits:?}"
-    );
+    let edits_other = core_edits.iter().any(|edit| edit["range"]["start"]["line"].as_u64() == Some(other_line as u64));
+    assert!(!edits_other, "Rename of inner::Thing must not edit other::Thing: {core_edits:?}");
 }
 
 #[test]
@@ -302,17 +226,9 @@ fn test_l2_reexport_unmerged_safety_refusal() {
 
     let dir = tempfile::tempdir().unwrap();
     let def_file = dir.path().join("lib.rs");
-    std::fs::write(
-        &def_file,
-        "pub mod inner { pub struct Thing; }\npub use inner::Thing;\n",
-    )
-    .unwrap();
+    std::fs::write(&def_file, "pub mod inner { pub struct Thing; }\npub use inner::Thing;\n").unwrap();
     let consumer_file = dir.path().join("main.rs");
-    std::fs::write(
-        &consumer_file,
-        "use my_lib::Thing;\nfn main() { let _ = Thing; }\n",
-    )
-    .unwrap();
+    std::fs::write(&consumer_file, "use my_lib::Thing;\nfn main() { let _ = Thing; }\n").unwrap();
 
     let def_file_str = def_file.to_str().unwrap().to_string();
     let consumer_file_str = consumer_file.to_str().unwrap().to_string();
@@ -378,9 +294,7 @@ fn test_l2_reexport_unmerged_safety_refusal() {
 #[test]
 fn test_l2_reexport_definition_resolution() {
     let ws = get_or_index_l2_fixture("multi_crate");
-    let def = ws
-        .find_definition_by_path("core_lib::Thing")
-        .expect("core_lib::Thing should resolve to definition");
+    let def = ws.find_definition_by_path("core_lib::Thing").expect("core_lib::Thing should resolve to definition");
     assert_eq!(def.name, "Thing");
     assert_eq!(def.path, "inner::Thing");
     assert_eq!(def.kind, ridx_format::DefKind::Struct);
@@ -389,9 +303,7 @@ fn test_l2_reexport_definition_resolution() {
 #[test]
 fn test_l2_std_collections_hashmap_lookup() {
     let ws = get_or_index_l2_fixture("multi_crate");
-    let def = ws
-        .find_definition_by_path("std::collections::HashMap")
-        .expect("std::collections::HashMap should resolve to struct definition");
+    let def = ws.find_definition_by_path("std::collections::HashMap").expect("std::collections::HashMap should resolve to struct definition");
     assert_eq!(def.name, "HashMap");
     assert!(!ws.search_symbols("HashMap").is_empty());
 }

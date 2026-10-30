@@ -20,16 +20,7 @@ use colored::*;
 
 pub fn run_cli(command: Commands) {
     match command {
-        Commands::Index {
-            path,
-            out_dir,
-            package,
-            release,
-            features,
-            no_default_features,
-            all_features,
-            target,
-        } => {
+        Commands::Index { path, out_dir, package, release, features, no_default_features, all_features, target } => {
             run_indexing(IndexOptions {
                 path,
                 out_dir_opt: out_dir,
@@ -53,10 +44,7 @@ pub fn run_cli(command: Commands) {
                 return;
             }
             if let Err(e) = lsp::run_lsp_server(index_path) {
-                eprintln!(
-                    "{}: LSP server exited with error: {e}",
-                    "Error".red().bold()
-                );
+                eprintln!("{}: LSP server exited with error: {e}", "Error".red().bold());
                 std::process::exit(1);
             }
         }

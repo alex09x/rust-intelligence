@@ -113,13 +113,7 @@ fn test_map_line_modified_middle_hunk_returns_none() {
 
 #[test]
 fn test_map_line_no_compiled_text_returns_none() {
-    let ov = DocumentOverlay::new_with_provenance(
-        "file:///test.rs",
-        "/test.rs",
-        1,
-        "line1\nline2\n".to_string(),
-        false,
-    );
+    let ov = DocumentOverlay::new_with_provenance("file:///test.rs", "/test.rs", 1, "line1\nline2\n".to_string(), false);
 
     assert_eq!(ov.map_line_to_compiled(1), None);
     assert_eq!(ov.map_line_to_compiled(2), None);
@@ -195,10 +189,7 @@ fn test_has_modified_imports_add_remove_change() {
     assert!(!ov.has_modified_imports());
 
     // Add import
-    ov.update(
-        2,
-        "use std::sync::Arc;\nuse std::rc::Rc;\nfn run() {}\n".to_string(),
-    );
+    ov.update(2, "use std::sync::Arc;\nuse std::rc::Rc;\nfn run() {}\n".to_string());
     assert!(ov.has_modified_imports());
 
     // Remove import
@@ -206,10 +197,7 @@ fn test_has_modified_imports_add_remove_change() {
     assert!(ov.has_modified_imports());
 
     // Only whitespace / comments
-    ov.update(
-        4,
-        "// comment\nuse std::sync::Arc;\nfn run() {}\n".to_string(),
-    );
+    ov.update(4, "// comment\nuse std::sync::Arc;\nfn run() {}\n".to_string());
     assert!(!ov.has_modified_imports());
 }
 
@@ -257,10 +245,7 @@ fn test_byte_offset_to_position_roundtrip() {
     for (b_idx, c) in text.char_indices() {
         let (l, ch) = ov.byte_offset_to_position(b_idx);
         let recovered = ov.position_to_byte_offset(l, ch);
-        assert_eq!(
-            recovered, b_idx,
-            "Failed roundtrip at byte {b_idx} (char '{c}'): got line {l}, char {ch}"
-        );
+        assert_eq!(recovered, b_idx, "Failed roundtrip at byte {b_idx} (char '{c}'): got line {l}, char {ch}");
     }
 }
 

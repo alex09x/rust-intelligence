@@ -16,9 +16,7 @@ use std::process::Command;
 
 pub fn get_server_version(cmd: &[String]) -> String {
     let bin = if cmd.first().map(|s| s.as_str()) == Some("taskset") {
-        cmd.iter()
-            .skip(1)
-            .find(|s| !s.starts_with('-') && Some(s.as_str()) != cmd.get(2).map(|x| x.as_str()))
+        cmd.iter().skip(1).find(|s| !s.starts_with('-') && Some(s.as_str()) != cmd.get(2).map(|x| x.as_str()))
     } else {
         cmd.first()
     };
@@ -32,11 +30,7 @@ pub fn get_server_version(cmd: &[String]) -> String {
     "unknown".to_string()
 }
 
-pub fn check_results_match(
-    res_a: Option<&ExternalLspResult>,
-    res_b: Option<&ExternalLspResult>,
-    capability: &str,
-) -> bool {
+pub fn check_results_match(res_a: Option<&ExternalLspResult>, res_b: Option<&ExternalLspResult>, capability: &str) -> bool {
     match (res_a, res_b) {
         (Some(a), Some(b)) => {
             if !a.found && !b.found {
@@ -55,11 +49,7 @@ pub fn check_results_match(
     }
 }
 
-pub fn check_results_match_line_level(
-    res_a: Option<&ExternalLspResult>,
-    res_b: Option<&ExternalLspResult>,
-    capability: &str,
-) -> bool {
+pub fn check_results_match_line_level(res_a: Option<&ExternalLspResult>, res_b: Option<&ExternalLspResult>, capability: &str) -> bool {
     match (res_a, res_b) {
         (Some(a), Some(b)) => {
             if !a.found && !b.found {
@@ -78,11 +68,7 @@ pub fn check_results_match_line_level(
     }
 }
 
-pub fn shutdown_lsp_server<R: std::io::BufRead, W: std::io::Write>(
-    reader: &mut R,
-    mut stdin: W,
-    mut child: std::process::Child,
-) -> u128 {
+pub fn shutdown_lsp_server<R: std::io::BufRead, W: std::io::Write>(reader: &mut R, mut stdin: W, mut child: std::process::Child) -> u128 {
     let t_start = std::time::Instant::now();
     let shutdown_req = serde_json::json!({
         "jsonrpc": "2.0",

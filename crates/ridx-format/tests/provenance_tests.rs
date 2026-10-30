@@ -57,9 +57,7 @@ fn test_source_hash_for_file_does_not_match_unrelated_basename() {
         end_col: 15,
     });
     let foo_ridx = var_dir.join("foo.ridx");
-    writer_foo
-        .write_to(&mut BufWriter::new(File::create(&foo_ridx).unwrap()))
-        .unwrap();
+    writer_foo.write_to(&mut BufWriter::new(File::create(&foo_ridx).unwrap())).unwrap();
 
     let meta_foo = serde_json::json!({
         "name": "foo",
@@ -71,11 +69,7 @@ fn test_source_hash_for_file_does_not_match_unrelated_basename() {
             "src/lib.rs": hash_foo
         }
     });
-    fs::write(
-        deps_dir.join("foo.json"),
-        serde_json::to_string_pretty(&meta_foo).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("foo.json"), serde_json::to_string_pretty(&meta_foo).unwrap()).unwrap();
 
     let mut writer_bar = IndexWriter::new("bar", "0.1.0");
     writer_bar.set_unit_key("unitBar");
@@ -94,9 +88,7 @@ fn test_source_hash_for_file_does_not_match_unrelated_basename() {
         end_col: 15,
     });
     let bar_ridx = var_dir.join("bar.ridx");
-    writer_bar
-        .write_to(&mut BufWriter::new(File::create(&bar_ridx).unwrap()))
-        .unwrap();
+    writer_bar.write_to(&mut BufWriter::new(File::create(&bar_ridx).unwrap())).unwrap();
 
     let meta_bar = serde_json::json!({
         "name": "bar",
@@ -108,11 +100,7 @@ fn test_source_hash_for_file_does_not_match_unrelated_basename() {
             "src/lib.rs": hash_bar
         }
     });
-    fs::write(
-        deps_dir.join("bar.json"),
-        serde_json::to_string_pretty(&meta_bar).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("bar.json"), serde_json::to_string_pretty(&meta_bar).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&var_dir).expect("failed to open workspace");
 
@@ -127,10 +115,7 @@ fn test_source_hash_for_file_does_not_match_unrelated_basename() {
     // An unrelated crate's lib.rs must NOT match either crate!
     let unrelated = test_dir.join("crates/unrelated/src/lib.rs");
     let res_unrelated = ws.source_hash_for_file(&unrelated.to_string_lossy());
-    assert_eq!(
-        res_unrelated, None,
-        "unrelated path must not match via basename"
-    );
+    assert_eq!(res_unrelated, None, "unrelated path must not match via basename");
 
     let _ = fs::remove_dir_all(&test_dir);
 }
@@ -159,9 +144,7 @@ fn test_stale_sidecar_unit_key_mismatch_rejected() {
         end_col: 15,
     });
     let ridx_file = test_dir.join("app.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap())).unwrap();
 
     // Sidecar has old unit_key ("unitOld")
     let meta = serde_json::json!({
@@ -173,11 +156,7 @@ fn test_stale_sidecar_unit_key_mismatch_rejected() {
             "src/lib.rs": 999999u64
         }
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&meta).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&ridx_file).expect("failed to open single shard");
     // Since sidecar unit_key ("unitOld") mismatches index unit_key ("unitNew"), sidecar metadata is discarded
@@ -214,9 +193,7 @@ fn test_sidecar_generation_mismatch_rejected() {
     });
 
     let index_path = test_dir.join("mycrate.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&index_path).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&index_path).unwrap())).unwrap();
 
     // Sidecar has mismatched generation "0000000000002222"
     let deps_dir = test_dir.join(".deps");
@@ -231,11 +208,7 @@ fn test_sidecar_generation_mismatch_rejected() {
         "extern_units": {},
         "file_hashes": {"src/lib.rs": 0x2222u64},
     });
-    fs::write(
-        deps_dir.join("mycrate.json"),
-        serde_json::to_string_pretty(&sidecar_info).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("mycrate.json"), serde_json::to_string_pretty(&sidecar_info).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("should open index");
     // Embedded hashes from index binary are retained!
@@ -269,11 +242,7 @@ fn test_dependency_manifest_cannot_override_embedded_generation() {
         end_line: 1,
         end_col: 10,
     });
-    writer_app
-        .write_to(&mut BufWriter::new(
-            File::create(var_dir.join("app.ridx")).unwrap(),
-        ))
-        .unwrap();
+    writer_app.write_to(&mut BufWriter::new(File::create(var_dir.join("app.ridx")).unwrap())).unwrap();
 
     // 2. Write dependency crate A1 with generation "new-generation" and embedded hash 111
     let dep_dir = test_dir.join("registry/a1");
@@ -299,9 +268,7 @@ fn test_dependency_manifest_cannot_override_embedded_generation() {
         end_col: 10,
     });
     let a1_ridx = dep_dir.join("a1.ridx");
-    writer_a1
-        .write_to(&mut BufWriter::new(File::create(&a1_ridx).unwrap()))
-        .unwrap();
+    writer_a1.write_to(&mut BufWriter::new(File::create(&a1_ridx).unwrap())).unwrap();
 
     // Verify reader reads 111
     let reader = ridx_format::IndexReader::open(&a1_ridx).unwrap();
@@ -338,22 +305,14 @@ fn test_dependency_manifest_cannot_override_embedded_generation() {
             }
         }]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_json).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
 
     // The embedded hash 111 must be preserved and authoritative! The stale manifest hash 222 must NOT override it!
     let a1_file = dep_dir.join("src/lib.rs");
     let res = ws.source_hash_for_file(&a1_file.to_string_lossy());
-    assert_eq!(
-        res,
-        Some(111),
-        "embedded hash 111 must be authoritative over stale manifest hash 222"
-    );
+    assert_eq!(res, Some(111), "embedded hash 111 must be authoritative over stale manifest hash 222");
 
     let _ = fs::remove_dir_all(&test_dir);
 }

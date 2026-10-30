@@ -25,11 +25,7 @@ pub fn open_scenario_documents<W: Write>(w: &mut W, root: &Path, scenarios: &[Sy
             let uri = resolve_file_uri(f, Some(root));
             if opened_uris.insert(uri.clone()) {
                 let p = Path::new(f);
-                let abs_path = if p.is_relative() {
-                    root.join(p)
-                } else {
-                    p.to_path_buf()
-                };
+                let abs_path = if p.is_relative() { root.join(p) } else { p.to_path_buf() };
                 if let Ok(content) = std::fs::read_to_string(&abs_path) {
                     let did_open = serde_json::json!({
                         "jsonrpc": "2.0",
@@ -54,14 +50,7 @@ pub fn open_scenario_documents<W: Write>(w: &mut W, root: &Path, scenarios: &[Sy
 /// For rust-analyzer: listens for `experimental/serverStatus` (`quiescent: true`) and answers
 /// incoming `window/workDoneProgress/create` requests.
 /// Returns the elapsed warmup time in microseconds.
-pub fn wait_for_server_readiness<R: BufRead, W: Write>(
-    server_name: &str,
-    reader: &mut R,
-    writer: &mut W,
-    root: &Path,
-    scenarios: &[SymmetricScenario],
-    timeout: Duration,
-) -> u128 {
+pub fn wait_for_server_readiness<R: BufRead, W: Write>(server_name: &str, reader: &mut R, writer: &mut W, root: &Path, scenarios: &[SymmetricScenario], timeout: Duration) -> u128 {
     let t_warmup_start = Instant::now();
 
     // 1. Open all scenario buffers
@@ -72,10 +61,7 @@ pub fn wait_for_server_readiness<R: BufRead, W: Write>(
         wait_for_rust_analyzer_quiescent(reader, writer, timeout);
     } else {
         // For ridx: send an initial symbol query to confirm responsiveness
-        let warmup_symbol = scenarios
-            .first()
-            .map(|s| s.target.as_str())
-            .unwrap_or("main");
+        let warmup_symbol = scenarios.first().map(|s| s.target.as_str()).unwrap_or("main");
         let warmup_req = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 99,
@@ -89,11 +75,7 @@ pub fn wait_for_server_readiness<R: BufRead, W: Write>(
     t_warmup_start.elapsed().as_micros()
 }
 
-pub fn wait_for_rust_analyzer_quiescent<R: BufRead, W: Write>(
-    reader: &mut R,
-    writer: &mut W,
-    timeout: Duration,
-) {
+pub fn wait_for_rust_analyzer_quiescent<R: BufRead, W: Write>(reader: &mut R, writer: &mut W, timeout: Duration) {
     let start = Instant::now();
     let mut probe_id = 9000i64;
     let mut last_probe = Instant::now();
@@ -127,11 +109,7 @@ pub fn wait_for_rust_analyzer_quiescent<R: BufRead, W: Write>(
 
             let method = msg.get("method").and_then(|m| m.as_str()).unwrap_or("");
             if method == "experimental/serverStatus" {
-                if let Some(quiescent) = msg
-                    .get("params")
-                    .and_then(|p| p.get("quiescent"))
-                    .and_then(|q| q.as_bool())
-                {
+                if let Some(quiescent) = msg.get("params").and_then(|p| p.get("quiescent")).and_then(|q| q.as_bool()) {
                     if quiescent {
                         break;
                     }

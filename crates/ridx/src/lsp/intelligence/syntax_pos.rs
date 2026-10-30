@@ -110,18 +110,11 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
             // Generic `<` is attached to an identifier (Option<), turbofish (::<),
             // or at the start of a type expression (<T as Trait>).
             // A comparison operator `<` has whitespace before it in expressions (a < b).
-            let is_generic = if i == 0
-                || bytes[i - 1].is_ascii_alphanumeric()
-                || bytes[i - 1] == b'_'
-                || (i >= 2 && &bytes[i - 2..i] == b"::")
-            {
+            let is_generic = if i == 0 || bytes[i - 1].is_ascii_alphanumeric() || bytes[i - 1] == b'_' || (i >= 2 && &bytes[i - 2..i] == b"::") {
                 true
             } else {
                 let before = prefix[..i].trim_end();
-                (before.ends_with(':') && !before.ends_with("::"))
-                    || before.ends_with("->")
-                    || before.ends_with("as")
-                    || before.ends_with("where")
+                (before.ends_with(':') && !before.ends_with("::")) || before.ends_with("->") || before.ends_with("as") || before.ends_with("where")
             };
 
             if is_generic {
@@ -160,20 +153,12 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
     // 4. Reference with or without mut
     let trimmed_p = prefix.trim();
     if trimmed_p.ends_with('&') || trimmed_p.ends_with("&mut") {
-        let amp_idx = if trimmed_p.ends_with("&mut") {
-            trimmed_p.len() - 4
-        } else {
-            trimmed_p.len() - 1
-        };
+        let amp_idx = if trimmed_p.ends_with("&mut") { trimmed_p.len() - 4 } else { trimmed_p.len() - 1 };
         let before_amp = trimmed_p[..amp_idx].trim_end();
         if (before_amp.ends_with(':') && !before_amp.ends_with("::")) || before_amp.ends_with("->") {
             return SyntaxPosition::Type;
         }
-        if before_amp.ends_with('=')
-            || before_amp.ends_with('(')
-            || before_amp.ends_with('[')
-            || before_amp.ends_with(',')
-        {
+        if before_amp.ends_with('=') || before_amp.ends_with('(') || before_amp.ends_with('[') || before_amp.ends_with(',') {
             return SyntaxPosition::ExprOrPat;
         }
     }
@@ -259,10 +244,7 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
         }
     }
 
-    if matches!(
-        last_word,
-        "if" | "match" | "return" | "while" | "for" | "unsafe"
-    ) {
+    if matches!(last_word, "if" | "match" | "return" | "while" | "for" | "unsafe") {
         return SyntaxPosition::ExprOrPat;
     }
 
@@ -313,10 +295,7 @@ mod tests {
         assert_eq!(classify_colon_position("world.trigger(&mut EventTriggerState::<E>::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("Foo::<T>::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("fn foo<T: Foo::<X>::"), SyntaxPosition::Type);
-        assert_eq!(
-            classify_colon_position("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>::"),
-            SyntaxPosition::ExprOrPat
-        );
+        assert_eq!(classify_colon_position("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("let x = <T as Tr>::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("<T as Tr>::"), SyntaxPosition::ExprOrPat);
 

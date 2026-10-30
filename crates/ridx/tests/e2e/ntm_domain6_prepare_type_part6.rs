@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,10 +77,18 @@ fn test_prepare_type_hierarchy_struct_with_signature_detail() {
 
     let mut writer = IndexWriter::new("sig_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "BufferPool".to_string(), path: "sig_crate::BufferPool".to_string(),
-        signature: Some("pub struct BufferPool<const N: usize>".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 36,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "BufferPool".to_string(),
+        path: "sig_crate::BufferPool".to_string(),
+        signature: Some("pub struct BufferPool<const N: usize>".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 36,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct BufferPool<const N: usize>;\n").unwrap();
@@ -116,10 +121,18 @@ fn test_prepare_type_hierarchy_generic_struct_definition() {
 
     let mut writer = IndexWriter::new("gen_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Wrapper".to_string(), path: "gen_crate::Wrapper".to_string(),
-        signature: Some("pub struct Wrapper<T: Clone>".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 28,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Wrapper".to_string(),
+        path: "gen_crate::Wrapper".to_string(),
+        signature: Some("pub struct Wrapper<T: Clone>".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 28,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct Wrapper<T: Clone> { val: T }\n").unwrap();
@@ -152,10 +165,18 @@ fn test_prepare_type_hierarchy_enum_with_variants_definition() {
 
     let mut writer = IndexWriter::new("var_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "OptionType".to_string(), path: "var_crate::OptionType".to_string(),
-        signature: Some("pub enum OptionType<T>".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "OptionType".to_string(),
+        path: "var_crate::OptionType".to_string(),
+        signature: Some("pub enum OptionType<T>".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub enum OptionType<T> { Some(T), None }\n").unwrap();
@@ -188,10 +209,18 @@ fn test_prepare_type_hierarchy_trait_with_associated_types() {
 
     let mut writer = IndexWriter::new("assoc_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "IteratorTrait".to_string(), path: "assoc_crate::IteratorTrait".to_string(),
-        signature: Some("pub trait IteratorTrait".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 23,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "IteratorTrait".to_string(),
+        path: "assoc_crate::IteratorTrait".to_string(),
+        signature: Some("pub trait IteratorTrait".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 23,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub trait IteratorTrait { type Item; }\n").unwrap();
@@ -224,10 +253,18 @@ fn test_prepare_type_hierarchy_public_vs_private_struct() {
 
     let mut writer = IndexWriter::new("priv_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 0, is_macro_expansion: false,
-        name: "InternalState".to_string(), path: "priv_crate::InternalState".to_string(),
-        signature: Some("struct InternalState".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "InternalState".to_string(),
+        path: "priv_crate::InternalState".to_string(),
+        signature: Some("struct InternalState".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct InternalState;\n").unwrap();

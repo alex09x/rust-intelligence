@@ -40,10 +40,18 @@ fn create_temp_shard_with_symbol(name: &str, sym_name: &str) -> TempShard {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: sym_name.to_string(), path: format!("{}::{}", name, sym_name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 10, start_col: 5, end_line: 10, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: sym_name.to_string(),
+        path: format!("{}::{}", name, sym_name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 5,
+        end_line: 10,
+        end_col: 15,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }

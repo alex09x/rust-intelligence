@@ -120,10 +120,7 @@ pub struct WorkspaceIndex {
 
 impl std::fmt::Debug for WorkspaceIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WorkspaceIndex")
-            .field("readers_count", &self.readers.len())
-            .field("workspace_root", &self.workspace_root)
-            .finish()
+        f.debug_struct("WorkspaceIndex").field("readers_count", &self.readers.len()).field("workspace_root", &self.workspace_root).finish()
     }
 }
 
@@ -135,8 +132,7 @@ impl WorkspaceIndex {
 
     /// Rebuilds the internal unit matching index after readers or extern units change.
     pub(crate) fn rebuild_unit_match(&mut self) {
-        self.unit_match =
-            UnitMatchIndex::build(&self.readers, &self.unit_keys, &self.reader_extern_units);
+        self.unit_match = UnitMatchIndex::build(&self.readers, &self.unit_keys, &self.reader_extern_units);
     }
 
     /// Bumps generation and rebuilds the internal file path provenance lookup index.
@@ -183,11 +179,7 @@ impl WorkspaceIndex {
 
     /// Aggregated statistics across all crates in the workspace.
     pub fn stats(&self) -> WorkspaceStats {
-        let mut stats = WorkspaceStats {
-            total_crates: self.readers.len(),
-            active_variant: self.active_variant_id.clone(),
-            ..Default::default()
-        };
+        let mut stats = WorkspaceStats { total_crates: self.readers.len(), active_variant: self.active_variant_id.clone(), ..Default::default() };
 
         for (i, reader) in self.readers.iter().enumerate() {
             let h = reader.header();
@@ -237,12 +229,7 @@ impl WorkspaceIndex {
     }
 
     /// Checks whether a target file, path, or unit key belongs to an external dependency or outside the workspace.
-    pub fn is_external_target(
-        &self,
-        target_file: &str,
-        target_path: &Path,
-        target_unit_key: Option<&str>,
-    ) -> bool {
+    pub fn is_external_target(&self, target_file: &str, target_path: &Path, target_unit_key: Option<&str>) -> bool {
         // 1. Explicit sentinel for external reference
         if target_file == "external" {
             return true;
@@ -261,10 +248,8 @@ impl WorkspaceIndex {
                 }
             }
             if self.manifest_path.is_some() {
-                let is_ws_member = self.unit_keys.iter().enumerate().any(|(i, key_opt)| {
-                    key_opt.as_deref() == Some(unit_key)
-                        && !self.reader_is_dependency.get(i).copied().unwrap_or(false)
-                });
+                let is_ws_member =
+                    self.unit_keys.iter().enumerate().any(|(i, key_opt)| key_opt.as_deref() == Some(unit_key) && !self.reader_is_dependency.get(i).copied().unwrap_or(false));
                 if !is_ws_member {
                     return true;
                 }

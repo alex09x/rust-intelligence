@@ -70,8 +70,7 @@ pub fn resolve_generic_param_owners(
         bounds
     } else {
         // Fallback: lexical scope parser (used for active overlay edits or unindexed files)
-        let scopes =
-            crate::lsp::intelligence::scope_cache::get_or_parse_file_scopes(file, overlay_text)?;
+        let scopes = crate::lsp::intelligence::scope_cache::get_or_parse_file_scopes(file, overlay_text)?;
         let cursor_byte = scopes.cursor_byte(line_1based, line_slice);
         let generics = scopes.find_generic_params_in_scope(cursor_byte);
         if generics.is_empty() {
@@ -110,28 +109,20 @@ pub fn resolve_generic_param_owners(
                         if let Some(sig) = def.signature {
                             for b in sig.split('+') {
                                 let trimmed = b.trim();
-                                if !trimmed.is_empty()
-                                    && !assoc_bounds.contains(&trimmed.to_string())
-                                {
+                                if !trimmed.is_empty() && !assoc_bounds.contains(&trimmed.to_string()) {
                                     assoc_bounds.push(trimmed.to_string());
                                 }
                             }
                         }
                         if assoc_bounds.is_empty() {
                             for owner in ws.find_owners_of_definition(&def) {
-                                if owner != target_path
-                                    && !assoc_bounds.contains(&owner.to_string())
-                                {
+                                if owner != target_path && !assoc_bounds.contains(&owner.to_string()) {
                                     assoc_bounds.push(owner.to_string());
                                 }
                             }
                         }
                         if assoc_bounds.is_empty() {
-                            assoc_bounds =
-                                crate::lsp::intelligence::scope_cache::get_or_resolve_assoc_bounds(
-                                    def.file,
-                                    def.start_line,
-                                );
+                            assoc_bounds = crate::lsp::intelligence::scope_cache::get_or_resolve_assoc_bounds(def.file, def.start_line);
                         }
                         for clean_bound in assoc_bounds {
                             if !next_traits.contains(&clean_bound) {

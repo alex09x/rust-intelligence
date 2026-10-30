@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -75,80 +70,56 @@ fn send_resolve_req(
 #[test]
 fn test_completion_resolve_integer_label_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": 12345 }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": 12345 }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_boolean_label_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": true }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": true }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_null_label_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": null }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": null }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_array_params_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!([{ "label": "item_in_array" }]),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!([{ "label": "item_in_array" }]), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_string_params_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!("raw_string_param"),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!("raw_string_param"), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_numeric_params_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!(42),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!(42), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_null_params_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        serde_json::Value::Null,
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(serde_json::Value::Null, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
 #[test]
 fn test_completion_resolve_boolean_params_rejected_error() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!(false),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!(false), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32602);
 }
 
@@ -163,7 +134,10 @@ fn test_completion_resolve_extra_unknown_fields_preserved() {
                 "score": 99
             }
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["x_custom_metadata"]["origin"], "compiler_pass");
     assert_eq!(val["result"]["x_custom_metadata"]["score"], 99);
@@ -177,11 +151,11 @@ fn test_completion_resolve_multiline_detail_formatted_cleanly() {
             "label": "ConfigStruct",
             "detail": "pub struct Config {\n    pub port: u16,\n    pub host: String,\n}"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "```rust\npub struct Config {\n    pub port: u16,\n    pub host: String,\n}\n```"
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "```rust\npub struct Config {\n    pub port: u16,\n    pub host: String,\n}\n```");
 }

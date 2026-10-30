@@ -32,14 +32,8 @@ fn test_reference_json_carries_span_file_and_macro_expansion_flag() {
     let plain = reference_json(&reference(false));
     assert_eq!(plain["crate"], "test_crate");
     assert_eq!(plain["file"], "/ws/test_crate/src/main.rs");
-    assert_eq!(
-        (plain["start_line"].as_u64(), plain["start_col"].as_u64()),
-        (Some(20), Some(5))
-    );
-    assert_eq!(
-        (plain["end_line"].as_u64(), plain["end_col"].as_u64()),
-        (Some(20), Some(12))
-    );
+    assert_eq!((plain["start_line"].as_u64(), plain["start_col"].as_u64()), (Some(20), Some(5)));
+    assert_eq!((plain["end_line"].as_u64(), plain["end_col"].as_u64()), (Some(20), Some(12)));
     assert_eq!(plain["kind"], "Fn");
     assert_eq!(plain["is_write"], false);
     assert_eq!(plain["is_macro_expansion"], false);

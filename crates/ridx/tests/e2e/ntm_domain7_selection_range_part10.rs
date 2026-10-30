@@ -40,8 +40,7 @@ impl Drop for TempShard {
 
 fn create_temp_shard(name: &str) -> TempShard {
     let id = SEL_COUNTER10.fetch_add(1, Ordering::Relaxed);
-    let dir =
-        std::env::temp_dir().join(format!("ridx_sel10_{}_{}_{}", name, std::process::id(), id));
+    let dir = std::env::temp_dir().join(format!("ridx_sel10_{}_{}_{}", name, std::process::id(), id));
     std::fs::create_dir_all(dir.join("src")).unwrap();
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
@@ -92,16 +91,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -132,16 +122,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: Value,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: Value, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -157,11 +139,7 @@ fn test_selection_range_cursor_between_functions() {
     let ts = create_temp_shard("between_fns");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn f1() {\n    let a = 1;\n}\n\nfn f2() {\n    let b = 2;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn f1() {\n    let a = 1;\n}\n\nfn f2() {\n    let b = 2;\n}\n");
 
     // The blank line between the items belongs to the file only.
     let result = selection_ranges(&mut dsp, json!(209), &file, &[(3, 0)]);
@@ -174,21 +152,9 @@ fn test_selection_range_nested_struct_impl_method() {
     let ts = create_temp_shard("struct_impl");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp, &file,
-        "struct Container {\n    val: i32,\n}\nimpl Container {\n    fn read(&self) -> i32 {\n        self.val\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "struct Container {\n    val: i32,\n}\nimpl Container {\n    fn read(&self) -> i32 {\n        self.val\n    }\n}\n");
 
     // Cursor between `self` and `.`: the receiver token, method body, method item, impl block, file.
     let result = selection_ranges(&mut dsp, json!(210), &file, &[(5, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (5, 8, 5, 12),
-            (4, 26, 6, 5),
-            (4, 4, 6, 5),
-            (3, 15, 7, 1),
-            (0, 0, 8, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(5, 8, 5, 12), (4, 26, 6, 5), (4, 4, 6, 5), (3, 15, 7, 1), (0, 0, 8, 0)])]));
 }

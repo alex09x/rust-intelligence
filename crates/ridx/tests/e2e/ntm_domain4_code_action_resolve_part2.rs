@@ -10,12 +10,12 @@
 
 //! End-to-end tests for `codeAction/resolve` (Part 2: parameter validation, existing edit validation, data error handling).
 
-use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::dispatch::dispatch_lsp_message;
 use ridx::lsp::error::INVALID_PARAMS;
+use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::LspMessage;
-use ridx::overlay::OverlayManager;
 use ridx::lsp::workspace::MultiRootWorkspace;
+use ridx::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -33,12 +33,7 @@ fn extract_response(out: &[u8]) -> Value {
     Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -55,13 +50,7 @@ fn setup_initialized_server() -> (
     (mr, ov, lc, can)
 }
 
-fn send_code_action_resolve_req(
-    params: Value,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<Value>>>,
-) -> Value {
+fn send_code_action_resolve_req(params: Value, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
     send_code_action_resolve_req_with_id(json!(100), params, mr, ov, lc, can)
 }
 
@@ -259,10 +248,7 @@ fn test_code_action_resolve_data_unknown_kind_rejected_code_32602() {
     });
     let res = send_code_action_resolve_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(res["error"]["code"], INVALID_PARAMS);
-    assert_eq!(
-        res["error"]["message"],
-        "Cannot resolve CodeAction with unknown data kind: 'unsupported.custom_refactor'"
-    );
+    assert_eq!(res["error"]["message"], "Cannot resolve CodeAction with unknown data kind: 'unsupported.custom_refactor'");
 }
 
 #[test]

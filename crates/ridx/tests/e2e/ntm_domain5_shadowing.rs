@@ -35,30 +35,15 @@ fn test_l2_completion_local_mod_shadows_sysroot() {
     });
 
     let res = handle_completion(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res.is_null(),
-        "Completion on local range:: must return items"
-    );
+    assert!(!res.is_null(), "Completion on local range:: must return items");
     let items = res["items"].as_array().expect("items must be array");
 
     let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
 
-    assert!(
-        labels.contains(&"RangeVisitor"),
-        "Must contain local RangeVisitor from mod range, got: {labels:?}"
-    );
-    assert!(
-        labels.contains(&"FIELDS"),
-        "Must contain local FIELDS from mod range, got: {labels:?}"
-    );
-    assert!(
-        !labels.contains(&"RangeInclusive"),
-        "Must NOT contain sysroot RangeInclusive (local mod range must shadow sysroot), got: {labels:?}"
-    );
-    assert!(
-        !labels.contains(&"legacy"),
-        "Must NOT contain sysroot legacy, got: {labels:?}"
-    );
+    assert!(labels.contains(&"RangeVisitor"), "Must contain local RangeVisitor from mod range, got: {labels:?}");
+    assert!(labels.contains(&"FIELDS"), "Must contain local FIELDS from mod range, got: {labels:?}");
+    assert!(!labels.contains(&"RangeInclusive"), "Must NOT contain sysroot RangeInclusive (local mod range must shadow sysroot), got: {labels:?}");
+    assert!(!labels.contains(&"legacy"), "Must NOT contain sysroot legacy, got: {labels:?}");
 }
 
 #[test]
@@ -70,11 +55,7 @@ fn test_l2_completion_sysroot_unshadowed_when_no_local_mod() {
     let mut conv = PositionConverter::new();
 
     // Query completion after `ops::` inside `remote_ops` (where `use core::ops;` is present)
-    let (line, col) = pos_in_file(
-        &lib_file,
-        "let _ = ops::Range { start: 0, end: 1 };",
-        "ops::",
-    );
+    let (line, col) = pos_in_file(&lib_file, "let _ = ops::Range { start: 0, end: 1 };", "ops::");
     let req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -87,14 +68,8 @@ fn test_l2_completion_sysroot_unshadowed_when_no_local_mod() {
     let items = res["items"].as_array().expect("items must be array");
     let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
 
-    assert!(
-        !labels.contains(&"RangeVisitor"),
-        "Must NOT contain RangeVisitor from unrelated local module, got: {labels:?}"
-    );
-    assert!(
-        labels.contains(&"Range"),
-        "Must contain Range from sysroot core::ops, got: {labels:?}"
-    );
+    assert!(!labels.contains(&"RangeVisitor"), "Must NOT contain RangeVisitor from unrelated local module, got: {labels:?}");
+    assert!(labels.contains(&"Range"), "Must contain Range from sysroot core::ops, got: {labels:?}");
 }
 
 #[test]
@@ -115,21 +90,12 @@ fn test_l2_completion_prelude_types_without_use() {
     });
 
     let res = handle_completion(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res.is_null(),
-        "Completion on Vec:: without use must return items"
-    );
+    assert!(!res.is_null(), "Completion on Vec:: without use must return items");
     let items = res["items"].as_array().expect("items must be array");
     let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
 
-    assert!(
-        labels.contains(&"new"),
-        "Vec:: completion must contain `new`, got: {labels:?}"
-    );
-    assert!(
-        labels.contains(&"with_capacity"),
-        "Vec:: completion must contain `with_capacity`, got: {labels:?}"
-    );
+    assert!(labels.contains(&"new"), "Vec:: completion must contain `new`, got: {labels:?}");
+    assert!(labels.contains(&"with_capacity"), "Vec:: completion must contain `with_capacity`, got: {labels:?}");
 
     // 2. Query completion after `String::` in `invoke_prelude_types`
     let (line2, col2) = pos_in_file(&lib_file, "let _ = String::from(\"hello\");", "String::");
@@ -141,22 +107,10 @@ fn test_l2_completion_prelude_types_without_use() {
     });
 
     let res2 = handle_completion(&req2, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res2.is_null(),
-        "Completion on String:: without use must return items"
-    );
+    assert!(!res2.is_null(), "Completion on String:: without use must return items");
     let items2 = res2["items"].as_array().expect("items must be array");
-    let labels2: Vec<&str> = items2
-        .iter()
-        .filter_map(|it| it["label"].as_str())
-        .collect();
+    let labels2: Vec<&str> = items2.iter().filter_map(|it| it["label"].as_str()).collect();
 
-    assert!(
-        labels2.contains(&"new"),
-        "String:: completion must contain `new`, got: {labels2:?}"
-    );
-    assert!(
-        labels2.contains(&"from_utf8"),
-        "String:: completion must contain `from_utf8`, got: {labels2:?}"
-    );
+    assert!(labels2.contains(&"new"), "String:: completion must contain `new`, got: {labels2:?}");
+    assert!(labels2.contains(&"from_utf8"), "String:: completion must contain `from_utf8`, got: {labels2:?}");
 }

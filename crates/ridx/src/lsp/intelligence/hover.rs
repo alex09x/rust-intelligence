@@ -16,12 +16,7 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
-pub fn handle_hover(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> LspResult<Value> {
+pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
     let line_1based = line_0based + 1;
 
@@ -38,24 +33,14 @@ pub fn handle_hover(
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
-                return Ok(format_hover_full(
-                    &hover,
-                    Some(ws),
-                    Some(overlay_mgr),
-                    Some(conv),
-                    Some(&file),
-                ));
+                return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file)));
             }
         }
     }
 
     // 2. Check overlay definition and inferred signature (for dirty buffers or when index has no info)
     if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
-        let hover_text = if let Some(sig) = def.signature {
-            format!("```rust\n{}\n```", sig)
-        } else {
-            format!("```rust\n{} {}\n```", def.kind.as_str(), def.name)
-        };
+        let hover_text = if let Some(sig) = def.signature { format!("```rust\n{}\n```", sig) } else { format!("```rust\n{} {}\n```", def.kind.as_str(), def.name) };
         return Ok(json!({
             "contents": {
                 "kind": "markdown",
@@ -70,13 +55,7 @@ pub fn handle_hover(
             if overlay.is_dirty() && !overlay.has_modified_imports() {
                 if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                     if let Some(hover) = ws.hover_at(&file, ml, mc) {
-                        return Ok(format_hover_full(
-                            &hover,
-                            Some(ws),
-                            Some(overlay_mgr),
-                            Some(conv),
-                            Some(&file),
-                        ));
+                        return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file)));
                     }
                 }
             }
@@ -87,10 +66,7 @@ pub fn handle_hover(
 }
 
 #[cfg(test)]
-pub(crate) fn format_hover(
-    hover: &ridx_format::WorkspaceHover,
-    ws: Option<&WorkspaceIndex>,
-) -> Value {
+pub(crate) fn format_hover(hover: &ridx_format::WorkspaceHover, ws: Option<&WorkspaceIndex>) -> Value {
     format_hover_full(hover, ws, None, None, None)
 }
 
@@ -106,15 +82,8 @@ pub(crate) fn format_hover_full(
         match d.kind {
             DefKind::Variant | DefKind::VariantCtor => {
                 if let Some((enum_path, _)) = d.path.rsplit_once("::") {
-                    let cname = d
-                        .reader_idx
-                        .and_then(|idx| ws.and_then(|w| w.readers().get(idx)))
-                        .map(|r| r.crate_name())
-                        .unwrap_or("");
-                    let full = if !cname.is_empty()
-                        && !enum_path.starts_with(&format!("{cname}::"))
-                        && enum_path != cname
-                    {
+                    let cname = d.reader_idx.and_then(|idx| ws.and_then(|w| w.readers().get(idx))).map(|r| r.crate_name()).unwrap_or("");
+                    let full = if !cname.is_empty() && !enum_path.starts_with(&format!("{cname}::")) && enum_path != cname {
                         format!("{cname}::{enum_path}")
                     } else {
                         enum_path.to_string()
@@ -144,9 +113,7 @@ pub(crate) fn format_hover_full(
                         blocks.push(format!("type {}: {sig}", d.name));
                     }
                 } else if let Some(ref mut c) = conv {
-                    if let Some(src_hdr) =
-                        super::hover_enrich::extract_source_decl_header(d, ws, overlay_mgr, c)
-                    {
+                    if let Some(src_hdr) = super::hover_enrich::extract_source_decl_header(d, ws, overlay_mgr, c) {
                         blocks.push(src_hdr);
                     } else {
                         blocks.push(format!("type {}", d.name));
@@ -163,23 +130,14 @@ pub(crate) fn format_hover_full(
                 }
             }
             DefKind::Mod => {
-                let mname = if d.name.is_empty() {
-                    d.reader_idx
-                        .and_then(|idx| ws.and_then(|w| w.readers().get(idx)))
-                        .map(|r| r.crate_name())
-                        .unwrap_or("")
-                } else {
-                    d.name
-                };
+                let mname = if d.name.is_empty() { d.reader_idx.and_then(|idx| ws.and_then(|w| w.readers().get(idx))).map(|r| r.crate_name()).unwrap_or("") } else { d.name };
                 blocks.push(format!("mod {mname}"));
             }
             _ => {
                 if let Some(sig) = d.signature {
                     blocks.push(format_signature(d.name, sig));
                 } else if let Some(ref mut c) = conv {
-                    if let Some(src_hdr) =
-                        super::hover_enrich::extract_source_decl_header(d, ws, overlay_mgr, c)
-                    {
+                    if let Some(src_hdr) = super::hover_enrich::extract_source_decl_header(d, ws, overlay_mgr, c) {
                         blocks.push(src_hdr);
                     } else {
                         blocks.push(format!("{} {}", d.kind.as_str(), d.name));
@@ -217,18 +175,12 @@ pub(crate) fn format_hover_full(
             }
         }
     }
-    let mut hover_text = blocks
-        .into_iter()
-        .map(|b| format!("```rust\n{b}\n```"))
-        .collect::<Vec<_>>()
-        .join("\n\n");
+    let mut hover_text = blocks.into_iter().map(|b| format!("```rust\n{b}\n```")).collect::<Vec<_>>().join("\n\n");
 
     if let Some(ref d) = hover.definition {
         let mut extra_sections = Vec::new();
         if let Some(ref mut c) = conv {
-            if let Some(doc) =
-                super::hover_enrich::extract_source_doc_comment(d, ws, overlay_mgr, c, cursor_file)
-            {
+            if let Some(doc) = super::hover_enrich::extract_source_doc_comment(d, ws, overlay_mgr, c, cursor_file) {
                 extra_sections.push(doc);
             }
         }
@@ -264,11 +216,7 @@ fn format_signature(name: &str, sig: &str) -> String {
 
     if let Some(rest) = s.strip_prefix("fn(") {
         let mut decl = format!("fn {name}(");
-        let normalized = rest
-            .replacen("&'a mut Self", "&mut self", 1)
-            .replacen("&mut Self", "&mut self", 1)
-            .replacen("&'a Self", "&self", 1)
-            .replacen("&Self", "&self", 1);
+        let normalized = rest.replacen("&'a mut Self", "&mut self", 1).replacen("&mut Self", "&mut self", 1).replacen("&'a Self", "&self", 1).replacen("&Self", "&self", 1);
         decl.push_str(&normalized);
         decl
     } else {

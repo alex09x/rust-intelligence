@@ -40,19 +40,11 @@ pub type LspResult<T = Value> = Result<T, LspError>;
 
 impl LspError {
     pub fn new(code: i32, message: impl Into<String>) -> Self {
-        Self {
-            code,
-            message: message.into(),
-            data: None,
-        }
+        Self { code, message: message.into(), data: None }
     }
 
     pub fn with_data(code: i32, message: impl Into<String>, data: Value) -> Self {
-        Self {
-            code,
-            message: message.into(),
-            data: Some(data),
-        }
+        Self { code, message: message.into(), data: Some(data) }
     }
 
     pub fn request_failed(message: impl Into<String>) -> Self {

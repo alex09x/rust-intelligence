@@ -10,9 +10,7 @@
 
 //! Asynchronous background flycheck and compiler diagnostics publisher.
 
-pub use super::compiler_message::{
-    find_ridx_driver, find_ridx_driver_with, parse_compiler_message,
-};
+pub use super::compiler_message::{find_ridx_driver, find_ridx_driver_with, parse_compiler_message};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
@@ -81,53 +79,29 @@ impl FlycheckState {
     }
 
     pub fn get_latest_diagnostics(&self, uri: &str) -> Vec<Value> {
-        self.latest_diagnostics
-            .lock()
-            .unwrap()
-            .get(uri)
-            .map(|c| c.items.clone())
-            .unwrap_or_default()
+        self.latest_diagnostics.lock().unwrap().get(uri).map(|c| c.items.clone()).unwrap_or_default()
     }
 
     pub fn get_diagnostic_baseline(&self, uri: &str) -> Option<String> {
-        self.latest_diagnostics
-            .lock()
-            .unwrap()
-            .get(uri)
-            .and_then(|c| c.baseline.clone())
+        self.latest_diagnostics.lock().unwrap().get(uri).and_then(|c| c.baseline.clone())
     }
 
     pub fn set_latest_diagnostics(&self, uri: &str, diags: Vec<Value>) {
         self.set_latest_diagnostics_with_baseline(uri, diags, None);
     }
 
-    pub fn set_latest_diagnostics_with_baseline(
-        &self,
-        uri: &str,
-        diags: Vec<Value>,
-        baseline: Option<String>,
-    ) {
+    pub fn set_latest_diagnostics_with_baseline(&self, uri: &str, diags: Vec<Value>, baseline: Option<String>) {
         let mut guard = self.latest_diagnostics.lock().unwrap();
         if diags.is_empty() {
             guard.remove(uri);
         } else {
-            let base = baseline
-                .or_else(|| std::fs::read_to_string(super::super::protocol::uri_to_path(uri)).ok());
-            guard.insert(
-                uri.to_string(),
-                CachedDiagnostic {
-                    items: diags,
-                    baseline: base,
-                },
-            );
+            let base = baseline.or_else(|| std::fs::read_to_string(super::super::protocol::uri_to_path(uri)).ok());
+            guard.insert(uri.to_string(), CachedDiagnostic { items: diags, baseline: base });
         }
     }
 
     pub fn mark_published(&self, uri: &str) {
-        self.active_diagnostic_uris
-            .lock()
-            .unwrap()
-            .insert(uri.to_string());
+        self.active_diagnostic_uris.lock().unwrap().insert(uri.to_string());
     }
 
     pub fn clear_published(&self, uri: &str) -> bool {
@@ -172,24 +146,14 @@ impl FlycheckState {
         let notifier = Arc::clone(&self.notifier);
         let generation = Arc::clone(&self.generation);
 
-        let handle = std::thread::Builder::new()
-            .name("flycheck-worker".into())
-            .spawn(move || {
-                let _ = run_check_internal(
-                    &root,
-                    my_gen,
-                    &generation,
-                    &running_child,
-                    &published_uris,
-                    &latest_diagnostics,
-                    |gen, notif| {
-                        if let Some(ref cb) = *notifier.lock().unwrap() {
-                            cb(gen, notif);
-                        }
-                        Ok(())
-                    },
-                );
+        let handle = std::thread::Builder::new().name("flycheck-worker".into()).spawn(move || {
+            let _ = run_check_internal(&root, my_gen, &generation, &running_child, &published_uris, &latest_diagnostics, |gen, notif| {
+                if let Some(ref cb) = *notifier.lock().unwrap() {
+                    cb(gen, notif);
+                }
+                Ok(())
             });
+        });
 
         if let Ok(h) = handle {
             let mut guard = self.worker_handle.lock().unwrap();
@@ -201,26 +165,16 @@ impl FlycheckState {
     /// Emits raw compiler messages directly to the test writer without overlay reconciliation.
     /// Production LSP workflows exclusively use `trigger_check`, routing through
     /// `InternalDiagnostic` and `publish_reconciled_diagnostics`.
-    pub fn run_check<W: std::io::Write>(
-        &self,
-        workspace_root: &Path,
-        writer: &mut W,
-    ) -> std::io::Result<usize> {
+    pub fn run_check<W: std::io::Write>(&self, workspace_root: &Path, writer: &mut W) -> std::io::Result<usize> {
         self.cancel();
         let my_gen = self.generation.load(Ordering::SeqCst);
         let running_child = Arc::clone(&self.running_child);
         let published_uris = Arc::clone(&self.published_uris);
         let generation = Arc::clone(&self.generation);
 
-        run_check_internal(
-            workspace_root,
-            my_gen,
-            &generation,
-            &running_child,
-            &published_uris,
-            &self.latest_diagnostics,
-            |_gen, notif| super::super::protocol::send_response(writer, &notif),
-        )
+        run_check_internal(workspace_root, my_gen, &generation, &running_child, &published_uris, &self.latest_diagnostics, |_gen, notif| {
+            super::super::protocol::send_response(writer, &notif)
+        })
     }
 }
 
@@ -241,16 +195,9 @@ where
     }
 
     let mut cmd = Command::new("cargo");
-    cmd.args([
-        "check",
-        "--message-format=json",
-        "--workspace",
-        "--all-targets",
-    ]);
+    cmd.args(["check", "--message-format=json", "--workspace", "--all-targets"]);
     cmd.current_dir(workspace_root);
-    cmd.stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+    cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null());
 
     #[cfg(unix)]
     {
@@ -298,10 +245,7 @@ where
         };
         if let Ok(val) = serde_json::from_str::<Value>(&line) {
             if val.get("reason").and_then(|r| r.as_str()) == Some("compiler-message") {
-                if let Some((uri, diag)) = val
-                    .get("message")
-                    .and_then(|m| parse_compiler_message(m, workspace_root))
-                {
+                if let Some((uri, diag)) = val.get("message").and_then(|m| parse_compiler_message(m, workspace_root)) {
                     let l_start = diag["range"]["start"]["line"].as_u64().unwrap_or(0);
                     let c_start = diag["range"]["start"]["character"].as_u64().unwrap_or(0);
                     let l_end = diag["range"]["end"]["line"].as_u64().unwrap_or(0);
@@ -336,10 +280,7 @@ where
     }
 
     let mut published_guard = published_uris.lock().unwrap();
-    let prev_published = published_guard
-        .get(workspace_root)
-        .cloned()
-        .unwrap_or_default();
+    let prev_published = published_guard.get(workspace_root).cloned().unwrap_or_default();
     let mut current_uris = HashSet::new();
 
     // 1. Publish new / updated diagnostics
@@ -377,13 +318,7 @@ where
         for (uri, diags) in &file_diagnostics {
             let path = super::super::protocol::uri_to_path(uri);
             let baseline = std::fs::read_to_string(&path).ok();
-            latest_guard.insert(
-                uri.clone(),
-                CachedDiagnostic {
-                    items: diags.clone(),
-                    baseline,
-                },
-            );
+            latest_guard.insert(uri.clone(), CachedDiagnostic { items: diags.clone(), baseline });
         }
         for old_uri in &prev_published {
             if !current_uris.contains(old_uri) {

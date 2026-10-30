@@ -59,11 +59,7 @@ fn truncate_at_body_delimiter(joined: &str) -> &str {
 fn matches_expected_decl_head(header: &str, kind_kw: &str, name: &str) -> bool {
     let mut words = header.split_whitespace().peekable();
     while let Some(&w) = words.peek() {
-        if w == "pub"
-            || w.starts_with("pub(")
-            || w.ends_with(')')
-            || matches!(w, "unsafe" | "async" | "const" | "auto" | "default")
-        {
+        if w == "pub" || w.starts_with("pub(") || w.ends_with(')') || matches!(w, "unsafe" | "async" | "const" | "auto" | "default") {
             words.next();
         } else {
             break;
@@ -78,31 +74,18 @@ fn matches_expected_decl_head(header: &str, kind_kw: &str, name: &str) -> bool {
     let Some(ident_tok) = words.next() else {
         return false;
     };
-    let clean_ident = ident_tok
-        .split(['<', '(', ':', '{', ';', '='])
-        .next()
-        .unwrap_or("")
-        .trim_start_matches("r#");
+    let clean_ident = ident_tok.split(['<', '(', ':', '{', ';', '=']).next().unwrap_or("").trim_start_matches("r#");
     clean_ident == name.trim_start_matches("r#")
 }
 
 #[inline]
-fn get_source_line<'a>(
-    file_str: &str,
-    line_no: u32,
-    overlay_mgr: Option<&'a OverlayManager>,
-    conv: &'a mut PositionConverter,
-) -> Option<&'a str> {
+fn get_source_line<'a>(file_str: &str, line_no: u32, overlay_mgr: Option<&'a OverlayManager>, conv: &'a mut PositionConverter) -> Option<&'a str> {
     if let Some(ov_mgr) = overlay_mgr {
         if let Some(ov) = ov_mgr.get(file_str) {
             let idx = line_no.saturating_sub(1) as usize;
             if idx < ov.line_starts.len() && !ov.text.is_empty() {
                 let start = ov.line_starts[idx];
-                let end = ov
-                    .line_starts
-                    .get(idx + 1)
-                    .copied()
-                    .unwrap_or(ov.text.len());
+                let end = ov.line_starts.get(idx + 1).copied().unwrap_or(ov.text.len());
                 return Some(ov.text[start..end].trim_end_matches(['\r', '\n']));
             }
             return None;
@@ -117,8 +100,7 @@ fn extract_doc_from_attr(attr: &str) -> Option<String> {
     let mut i = 0;
     while i + 3 < bytes.len() {
         if &bytes[i..i + 3] == b"doc" {
-            let prev_ok =
-                i == 0 || matches!(bytes[i - 1], b'[' | b'(' | b',' | b' ' | b'\t' | b'\n');
+            let prev_ok = i == 0 || matches!(bytes[i - 1], b'[' | b'(' | b',' | b' ' | b'\t' | b'\n');
             if prev_ok {
                 let mut j = i + 3;
                 while j < bytes.len() && bytes[j].is_ascii_whitespace() {
@@ -170,12 +152,8 @@ pub(crate) fn extract_source_decl_header(
         || d.is_macro_expansion
         || d.file.is_empty()
         || d.file == "external"
-        || d.reader_idx
-            .is_some_and(|idx| ws.is_some_and(|w| w.is_reader_external(idx)))
-        || !matches!(
-            d.kind,
-            DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TyAlias
-        )
+        || d.reader_idx.is_some_and(|idx| ws.is_some_and(|w| w.is_reader_external(idx)))
+        || !matches!(d.kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TyAlias)
     {
         return None;
     }
@@ -224,25 +202,14 @@ pub(crate) fn extract_source_doc_comment(
         || d.is_macro_expansion
         || d.file.is_empty()
         || d.file == "external"
-        || d.reader_idx
-            .is_some_and(|idx| ws.is_some_and(|w| w.is_reader_external(idx)))
-        || matches!(
-            d.kind,
-            DefKind::Local
-                | DefKind::TyParam
-                | DefKind::LifetimeParam
-                | DefKind::ConstParam
-                | DefKind::Use
-                | DefKind::Mod
-        )
+        || d.reader_idx.is_some_and(|idx| ws.is_some_and(|w| w.is_reader_external(idx)))
+        || matches!(d.kind, DefKind::Local | DefKind::TyParam | DefKind::LifetimeParam | DefKind::ConstParam | DefKind::Use | DefKind::Mod)
     {
         return None;
     }
     let resolved = d.resolved_path();
     let file_str = resolved.to_str().unwrap_or(d.file);
-    let file_ready = overlay_mgr.is_some_and(|om| om.get(file_str).is_some())
-        || conv.cache.contains_key(file_str)
-        || cursor_file == Some(file_str);
+    let file_ready = overlay_mgr.is_some_and(|om| om.get(file_str).is_some()) || conv.cache.contains_key(file_str) || cursor_file == Some(file_str);
     if !file_ready {
         return None;
     }
@@ -323,10 +290,7 @@ pub(crate) fn extract_source_doc_comment(
 }
 
 /// Formats the Provenance and direct-reference Blast Radius markdown block for `d`.
-pub(crate) fn format_provenance_and_blast_radius(
-    d: &ResolvedDefinition<'_>,
-    ws: &WorkspaceIndex,
-) -> Option<String> {
+pub(crate) fn format_provenance_and_blast_radius(d: &ResolvedDefinition<'_>, ws: &WorkspaceIndex) -> Option<String> {
     if d.path.is_empty() || d.kind == DefKind::Local {
         return None;
     }
@@ -334,23 +298,13 @@ pub(crate) fn format_provenance_and_blast_radius(
         if let Some(reader) = ws.readers().get(idx) {
             let cname = reader.crate_name();
             let cver = reader.crate_version();
-            let label = if !cver.is_empty() && cver != "0.0.0" {
-                format!("{cname} v{cver}")
-            } else {
-                cname.to_string()
-            };
+            let label = if !cver.is_empty() && cver != "0.0.0" { format!("{cname} v{cver}") } else { cname.to_string() };
             (label, ws.is_reader_external(idx))
         } else {
-            (
-                d.path.split("::").next().unwrap_or(d.path).to_string(),
-                false,
-            )
+            (d.path.split("::").next().unwrap_or(d.path).to_string(), false)
         }
     } else {
-        (
-            d.path.split("::").next().unwrap_or(d.path).to_string(),
-            false,
-        )
+        (d.path.split("::").next().unwrap_or(d.path).to_string(), false)
     };
 
     let loc_part = if !d.file.is_empty() && d.file != "external" && d.start_line > 0 {
@@ -362,11 +316,7 @@ pub(crate) fn format_provenance_and_blast_radius(
     };
 
     let blast = ws.direct_blast_radius(d);
-    let ref_word = if blast.direct_refs == 1 {
-        "reference"
-    } else {
-        "references"
-    };
+    let ref_word = if blast.direct_refs == 1 { "reference" } else { "references" };
     let file_word = if blast.files == 1 { "file" } else { "files" };
     let crate_word = if blast.crates == 1 { "crate" } else { "crates" };
 

@@ -20,18 +20,10 @@ fn test_run_indexing_on_sample_crate() {
     let _lock = lock_indexer_test();
     let test_dir = new_test_dir("ridx_run_index_test");
     let cargo_toml = test_dir.0.join("Cargo.toml");
-    fs::write(
-        &cargo_toml,
-        "[package]\nname = \"sample_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(&cargo_toml, "[package]\nname = \"sample_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let src_dir = test_dir.0.join("src");
     fs::create_dir_all(&src_dir).unwrap();
-    fs::write(
-        src_dir.join("lib.rs"),
-        "pub fn add(a: i32, b: i32) -> i32 { a + b }\n",
-    )
-    .unwrap();
+    fs::write(src_dir.join("lib.rs"), "pub fn add(a: i32, b: i32) -> i32 { a + b }\n").unwrap();
 
     if find_driver_binary().is_some() {
         let out = run_indexing(IndexOptions {
@@ -126,18 +118,10 @@ fn test_try_run_indexing_with_options_and_deps() {
     let _lock = lock_indexer_test();
     let test_dir = new_test_dir("ridx_opts_test");
     let cargo_toml = test_dir.0.join("Cargo.toml");
-    fs::write(
-            &cargo_toml,
-            "[package]\nname = \"opt_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[features]\nfeat_a = []\n",
-        )
-        .unwrap();
+    fs::write(&cargo_toml, "[package]\nname = \"opt_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[features]\nfeat_a = []\n").unwrap();
     let src_dir = test_dir.0.join("src");
     fs::create_dir_all(&src_dir).unwrap();
-    fs::write(
-        src_dir.join("lib.rs"),
-        "#[cfg(feature = \"feat_a\")]\npub fn feat() {}\n",
-    )
-    .unwrap();
+    fs::write(src_dir.join("lib.rs"), "#[cfg(feature = \"feat_a\")]\npub fn feat() {}\n").unwrap();
 
     if find_driver_binary().is_some() {
         let res = try_run_indexing(IndexOptions {
@@ -175,19 +159,13 @@ fn test_try_run_indexing_with_options_and_deps() {
             .ok()
             .and_then(|out| {
                 let s = String::from_utf8_lossy(&out.stdout);
-                s.lines()
-                    .find(|l| l.starts_with("host: "))
-                    .map(|l| l.trim_start_matches("host: ").trim().to_string())
+                s.lines().find(|l| l.starts_with("host: ")).map(|l| l.trim_start_matches("host: ").trim().to_string())
             })
             .unwrap_or_else(|| "x86_64-unknown-linux-gnu".to_string());
 
         let cargo_cfg_dir = test_dir.0.join(".cargo");
         fs::create_dir_all(&cargo_cfg_dir).unwrap();
-        fs::write(
-            cargo_cfg_dir.join("config.toml"),
-            format!("[build]\ntarget = \"{}\"\n", host_target),
-        )
-        .unwrap();
+        fs::write(cargo_cfg_dir.join("config.toml"), format!("[build]\ntarget = \"{}\"\n", host_target)).unwrap();
 
         let mock_shard_info = serde_json::json!({
             "name": "external_dep",
@@ -201,11 +179,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             "dependencies": ["dep_b"],
             "extern_units": { "dep_b": "unit_b" }
         });
-        fs::write(
-            deps_dir.join("external_dep.json"),
-            mock_shard_info.to_string(),
-        )
-        .unwrap();
+        fs::write(deps_dir.join("external_dep.json"), mock_shard_info.to_string()).unwrap();
 
         let mismatch_shard_info = serde_json::json!({
             "name": "mismatch_dep",
@@ -219,11 +193,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             "dependencies": ["dep_c"],
             "extern_units": { "dep_c": "unit_c" }
         });
-        fs::write(
-            deps_dir.join("mismatch_dep.json"),
-            mismatch_shard_info.to_string(),
-        )
-        .unwrap();
+        fs::write(deps_dir.join("mismatch_dep.json"), mismatch_shard_info.to_string()).unwrap();
 
         let hash_gen_shard_info = serde_json::json!({
             "name": "hash_gen_dep",
@@ -237,11 +207,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             "dependencies": [],
             "extern_units": {}
         });
-        fs::write(
-            deps_dir.join("hash_gen_dep.json"),
-            hash_gen_shard_info.to_string(),
-        )
-        .unwrap();
+        fs::write(deps_dir.join("hash_gen_dep.json"), hash_gen_shard_info.to_string()).unwrap();
 
         // Run again with matching options to cover dependency shard collection and validation logic
         let res2 = try_run_indexing(IndexOptions {
@@ -266,37 +232,18 @@ fn test_try_run_indexing_syntax_error() {
     let _lock = lock_indexer_test();
     let test_dir = new_test_dir("ridx_syntax_err_test");
     let cargo_toml = test_dir.0.join("Cargo.toml");
-    fs::write(
-        &cargo_toml,
-        "[package]\nname = \"syntax_err_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(&cargo_toml, "[package]\nname = \"syntax_err_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let src_dir = test_dir.0.join("src");
     fs::create_dir_all(&src_dir).unwrap();
-    fs::write(
-        src_dir.join("lib.rs"),
-        "pub fn broken() { invalid syntax here {{{ \n",
-    )
-    .unwrap();
+    fs::write(src_dir.join("lib.rs"), "pub fn broken() { invalid syntax here {{{ \n").unwrap();
 
     let driver_bin = find_driver_binary()
         .or_else(|| {
             let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
             let mut cmd = std::process::Command::new(cargo);
-            cmd.args([
-                "build",
-                "-p",
-                "ridx-driver",
-                "--bin",
-                "ridx-driver",
-                "--quiet",
-            ])
-            .current_dir(env!("CARGO_MANIFEST_DIR"));
+            cmd.args(["build", "-p", "ridx-driver", "--bin", "ridx-driver", "--quiet"]).current_dir(env!("CARGO_MANIFEST_DIR"));
             if std::env::var_os("CARGO_TARGET_DIR").is_none() {
-                if let Some(target_dir) = std::env::current_exe()
-                    .ok()
-                    .and_then(|exe| exe.parent()?.parent()?.parent().map(PathBuf::from))
-                {
+                if let Some(target_dir) = std::env::current_exe().ok().and_then(|exe| exe.parent()?.parent()?.parent().map(PathBuf::from)) {
                     cmd.env("CARGO_TARGET_DIR", target_dir);
                 }
             }
@@ -320,8 +267,7 @@ fn test_try_run_indexing_syntax_error() {
     });
     let err_msg = res.expect_err("indexing crate with syntax error must fail");
     assert!(
-        err_msg.contains("cargo check exited with status")
-            && err_msg.contains("unclosed delimiter"),
+        err_msg.contains("cargo check exited with status") && err_msg.contains("unclosed delimiter"),
         "expected cargo check failure with captured rustc stderr in err_msg, got: {err_msg}"
     );
 }
@@ -332,11 +278,7 @@ fn test_cargo_config_and_manifest_discovery() {
     let home_dir = test_dir.0.join("home");
     let home_cargo = home_dir.join(".cargo");
     fs::create_dir_all(&home_cargo).unwrap();
-    fs::write(
-        home_cargo.join("config"),
-        "[build]\ntarget = \"thumbv7m-none-eabi\"\n",
-    )
-    .unwrap();
+    fs::write(home_cargo.join("config"), "[build]\ntarget = \"thumbv7m-none-eabi\"\n").unwrap();
     std::env::set_var("CARGO_HOME", &home_cargo);
 
     let configs = find_cargo_configs(&test_dir.0);

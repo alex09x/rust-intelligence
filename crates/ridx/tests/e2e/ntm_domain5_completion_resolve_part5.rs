@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -75,10 +70,7 @@ fn send_resolve_req(
 #[test]
 fn test_completion_resolve_unicode_label_preserved() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "crab_🦀_special" }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "crab_🦀_special" }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["label"], "crab_🦀_special");
 }
 
@@ -90,13 +82,13 @@ fn test_completion_resolve_unicode_detail_formatted_in_markdown() {
             "label": "math_symbol",
             "detail": "pub fn alpha_beta_gamma(α: f64, β: f64) -> f64"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "```rust\npub fn alpha_beta_gamma(α: f64, β: f64) -> f64\n```"
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "```rust\npub fn alpha_beta_gamma(α: f64, β: f64) -> f64\n```");
 }
 
 #[test]
@@ -107,7 +99,10 @@ fn test_completion_resolve_escaped_newlines_in_data() {
             "label": "raw_markdown",
             "data": "line 1\r\nline 2\r\nline 3"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
     assert_eq!(val["result"]["documentation"]["value"], "line 1\r\nline 2\r\nline 3");
@@ -117,10 +112,7 @@ fn test_completion_resolve_escaped_newlines_in_data() {
 fn test_completion_resolve_numeric_kind_constants() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     for kind_id in [1, 2, 3, 5, 6, 7, 9, 10, 14, 22] {
-        let val = send_resolve_req(
-            json!({ "label": "item_kind", "kind": kind_id }),
-            &mut mr, &mut ov, &mut lc, &can,
-        );
+        let val = send_resolve_req(json!({ "label": "item_kind", "kind": kind_id }), &mut mr, &mut ov, &mut lc, &can);
         assert_eq!(val["result"]["kind"], kind_id);
     }
 }
@@ -128,10 +120,7 @@ fn test_completion_resolve_numeric_kind_constants() {
 #[test]
 fn test_completion_resolve_insert_text_mode_preserved() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "mode_item", "insertTextMode": 2 }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "mode_item", "insertTextMode": 2 }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["insertTextMode"], 2);
 }
 
@@ -146,7 +135,10 @@ fn test_completion_resolve_label_details_preserved() {
                 "description": "core::iter"
             }
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["labelDetails"]["detail"], " (from Iterator)");
     assert_eq!(val["result"]["labelDetails"]["description"], "core::iter");
@@ -160,7 +152,10 @@ fn test_completion_resolve_multiple_tags_deprecated_preserved() {
             "label": "old_method",
             "tags": [1]
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     let tags = val["result"]["tags"].as_array().expect("tags array");
     assert_eq!(tags.len(), 1);
@@ -175,7 +170,10 @@ fn test_completion_resolve_data_non_string_leaves_documentation_none() {
             "label": "structured_data_item",
             "data": { "crate": "serde", "version": "1.0" }
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert!(val["result"]["documentation"].is_null());
 }
@@ -213,9 +211,6 @@ fn test_completion_resolve_cancelled_request_returns_cancelled() {
         let mut guard = can.lock().unwrap();
         guard.insert(json!(20));
     }
-    let val = send_resolve_req(
-        json!({ "label": "cancelled_item" }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "cancelled_item" }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32800);
 }

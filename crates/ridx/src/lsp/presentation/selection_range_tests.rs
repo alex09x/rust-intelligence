@@ -39,12 +39,7 @@ struct TempTestDir {
 impl TempTestDir {
     fn new(prefix: &str) -> Self {
         let id = SEL_TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
-            "ridx_sel_closed_{}_{}_{}",
-            prefix,
-            std::process::id(),
-            id
-        ));
+        let path = std::env::temp_dir().join(format!("ridx_sel_closed_{}_{}_{}", prefix, std::process::id(), id));
         fs::create_dir_all(path.join("src")).unwrap();
         Self { path }
     }
@@ -87,14 +82,7 @@ fn test_selection_range_closed_file_lifecycle_open_change_close() {
 
     // 1. Closed file on disk returns exact nested SelectionRange chain.
     let closed_res = handle_selection_range(&req, &overlay_mgr);
-    let expected_disk_chain = json!([chain_from_ranges(&[
-        (3, 16, 3, 17),
-        (2, 17, 5, 9),
-        (1, 34, 8, 5),
-        (1, 4, 8, 5),
-        (0, 14, 9, 1),
-        (0, 0, 10, 0),
-    ])]);
+    let expected_disk_chain = json!([chain_from_ranges(&[(3, 16, 3, 17), (2, 17, 5, 9), (1, 34, 8, 5), (1, 4, 8, 5), (0, 14, 9, 1), (0, 0, 10, 0),])]);
     assert_eq!(closed_res, expected_disk_chain);
 
     // 2. Opening the document with identical text produces the exact same response.
@@ -112,15 +100,7 @@ fn test_selection_range_closed_file_lifecycle_open_change_close() {
         }
     });
     let live_res = handle_selection_range(&live_req, &overlay_mgr);
-    assert_eq!(
-        live_res,
-        json!([chain_from_ranges(&[
-            (0, 19, 0, 20),
-            (0, 13, 0, 27),
-            (0, 0, 0, 27),
-            (0, 0, 1, 0),
-        ])])
-    );
+    assert_eq!(live_res, json!([chain_from_ranges(&[(0, 19, 0, 20), (0, 13, 0, 27), (0, 0, 0, 27), (0, 0, 1, 0),])]));
 
     // 4. Closing the buffer via didClose falls back to the on-disk file again.
     overlay_mgr.close_document(file_str);
@@ -174,10 +154,7 @@ fn test_selection_range_closed_file_past_eol_and_past_eof() {
     });
 
     let closed_res = handle_selection_range(&req, &overlay_mgr);
-    let expected = json!([
-        chain_from_ranges(&[(0, 11, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]),
-        chain_from_ranges(&[(0, 0, 3, 0)]),
-    ]);
+    let expected = json!([chain_from_ranges(&[(0, 11, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]), chain_from_ranges(&[(0, 0, 3, 0)]),]);
     assert_eq!(closed_res, expected);
 
     overlay_mgr.open_document(&uri, file_str, 1, text.to_string());
@@ -207,13 +184,7 @@ fn test_selection_range_closed_file_crlf_and_non_ascii_utf16() {
     });
 
     let closed_res = handle_selection_range(&req, &overlay_mgr);
-    let expected = json!([chain_from_ranges(&[
-        (1, 24, 1, 29),
-        (1, 18, 1, 36),
-        (0, 14, 2, 1),
-        (0, 0, 2, 1),
-        (0, 0, 3, 0),
-    ])]);
+    let expected = json!([chain_from_ranges(&[(1, 24, 1, 29), (1, 18, 1, 36), (0, 14, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0),])]);
     assert_eq!(closed_res, expected);
 
     overlay_mgr.open_document(&uri, file_str, 1, text.to_string());
@@ -249,16 +220,7 @@ fn test_selection_range_closed_file_lifetimes_and_raw_strings() {
     });
 
     let res = handle_selection_range(&req, &overlay_mgr);
-    assert_eq!(
-        res,
-        json!([chain_from_ranges(&[
-            (5, 8, 5, 12),
-            (2, 36, 6, 5),
-            (2, 4, 6, 5),
-            (1, 20, 7, 1),
-            (0, 0, 8, 0),
-        ])])
-    );
+    assert_eq!(res, json!([chain_from_ranges(&[(5, 8, 5, 12), (2, 36, 6, 5), (2, 4, 6, 5), (1, 20, 7, 1), (0, 0, 8, 0),])]));
 }
 
 #[test]
@@ -268,12 +230,7 @@ fn test_selection_range_token_boundaries_raw_ident_lifetime_and_non_token() {
     let file_str = file_path.to_str().unwrap();
     let uri = path_to_uri(file_str);
 
-    let text = concat!(
-        "pub fn demo<'a>(r#type: &'a str) -> usize {\n",
-        "    let value = r#type.len() + 1;\n",
-        "    value\n",
-        "}\n",
-    );
+    let text = concat!("pub fn demo<'a>(r#type: &'a str) -> usize {\n", "    let value = r#type.len() + 1;\n", "    value\n", "}\n",);
     fs::write(&file_path, text).unwrap();
 
     let overlay_mgr = OverlayManager::new();
@@ -303,31 +260,24 @@ fn test_selection_range_token_boundaries_raw_ident_lifetime_and_non_token() {
     let arr = res.as_array().expect("selectionRange array");
     assert_eq!(arr.len(), 14);
 
-    let value_range =
-        json!({ "start": { "line": 1, "character": 8 }, "end": { "line": 1, "character": 13 } });
+    let value_range = json!({ "start": { "line": 1, "character": 8 }, "end": { "line": 1, "character": 13 } });
     for (idx, item) in arr[0..3].iter().enumerate() {
         assert_eq!(item["range"], value_range, "value idx={idx}");
     }
 
-    let raw_ident_range =
-        json!({ "start": { "line": 1, "character": 16 }, "end": { "line": 1, "character": 22 } });
+    let raw_ident_range = json!({ "start": { "line": 1, "character": 16 }, "end": { "line": 1, "character": 22 } });
     for (idx, item) in arr[3..7].iter().enumerate() {
         assert_eq!(item["range"], raw_ident_range, "r#type idx={idx}");
     }
 
-    let lifetime_range =
-        json!({ "start": { "line": 0, "character": 12 }, "end": { "line": 0, "character": 14 } });
+    let lifetime_range = json!({ "start": { "line": 0, "character": 12 }, "end": { "line": 0, "character": 14 } });
     for (idx, item) in arr[7..10].iter().enumerate() {
         assert_eq!(item["range"], lifetime_range, "'a idx={idx}");
     }
 
-    let body_range =
-        json!({ "start": { "line": 0, "character": 42 }, "end": { "line": 3, "character": 1 } });
+    let body_range = json!({ "start": { "line": 0, "character": 42 }, "end": { "line": 3, "character": 1 } });
     for (idx, item) in arr[10..14].iter().enumerate() {
-        assert_eq!(
-            item["range"], body_range,
-            "whitespace/punctuation must not emit token range (idx={idx})"
-        );
+        assert_eq!(item["range"], body_range, "whitespace/punctuation must not emit token range (idx={idx})");
     }
 }
 
@@ -359,13 +309,5 @@ fn test_selection_range_fn_with_outer_attr_and_doc_comment() {
     });
 
     let res = handle_selection_range(&req, &overlay_mgr);
-    assert_eq!(
-        res,
-        json!([chain_from_ranges(&[
-            (6, 4, 6, 5),
-            (5, 35, 7, 1),
-            (2, 0, 7, 1),
-            (0, 0, 8, 0),
-        ])])
-    );
+    assert_eq!(res, json!([chain_from_ranges(&[(6, 4, 6, 5), (5, 35, 7, 1), (2, 0, 7, 1), (0, 0, 8, 0),])]));
 }

@@ -52,16 +52,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -75,10 +66,7 @@ impl TestDispatcher {
 #[test]
 fn test_color_workflow_document_color_then_presentation() {
     let mut dsp = TestDispatcher::new();
-    let file = std::env::temp_dir().join(format!(
-        "ridx_color_p5_flow_{}.rs",
-        COLOR_P5_COUNTER.fetch_add(1, Ordering::Relaxed)
-    ));
+    let file = std::env::temp_dir().join(format!("ridx_color_p5_flow_{}.rs", COLOR_P5_COUNTER.fetch_add(1, Ordering::Relaxed)));
 
     let open_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didOpen",

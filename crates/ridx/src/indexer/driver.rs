@@ -29,14 +29,9 @@ pub fn find_driver_binary_internal(exe: Option<&Path>) -> Option<PathBuf> {
     if let Some(exe) = exe {
         let mut cur = exe.parent();
         while let Some(dir) = cur {
-            for sub in [
-                "ridx-driver",
-                "debug/ridx-driver",
-                "release/ridx-driver",
-                "target/debug/ridx-driver",
-                "target/release/ridx-driver",
-                "target/llvm-cov-target/debug/ridx-driver",
-            ] {
+            for sub in
+                ["ridx-driver", "debug/ridx-driver", "release/ridx-driver", "target/debug/ridx-driver", "target/release/ridx-driver", "target/llvm-cov-target/debug/ridx-driver"]
+            {
                 let candidate = dir.join(sub);
                 if candidate.is_file() {
                     return candidate.canonicalize().ok();

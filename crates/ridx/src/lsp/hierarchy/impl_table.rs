@@ -149,24 +149,13 @@ impl ImplTable {
             let target_id = intern_str(&mut names, &mut name_to_id, target_base);
 
             let impl_idx = impls.len() as u32;
-            impls.push(CompactImpl {
-                trait_id,
-                target_id,
-                file_id,
-                line: start_line,
-            });
+            impls.push(CompactImpl { trait_id, target_id, file_id, line: start_line });
 
             let target_short = target_base.rsplit("::").next().unwrap_or(target_base);
             let trait_short = trait_base.rsplit("::").next().unwrap_or(trait_base);
 
-            by_target_short
-                .entry(target_short.into())
-                .or_default()
-                .push(impl_idx);
-            by_trait_short
-                .entry(trait_short.into())
-                .or_default()
-                .push(impl_idx);
+            by_target_short.entry(target_short.into()).or_default().push(impl_idx);
+            by_trait_short.entry(trait_short.into()).or_default().push(impl_idx);
         }
 
         let mut by_file_line: Vec<(u64, u32, u32)> = Vec::with_capacity(extra_impl_lines.len());
@@ -225,13 +214,7 @@ impl ImplTable {
         }
     }
 
-    pub fn find_supertypes(
-        &self,
-        ws: &WorkspaceIndex,
-        query_name: &str,
-        seen: &mut HashSet<String>,
-        results: &mut Vec<Value>,
-    ) {
+    pub fn find_supertypes(&self, ws: &WorkspaceIndex, query_name: &str, seen: &mut HashSet<String>, results: &mut Vec<Value>) {
         let name_base = query_name.split('<').next().unwrap_or(query_name).trim();
         let short = name_base.rsplit("::").next().unwrap_or(name_base);
 
@@ -239,32 +222,19 @@ impl ImplTable {
             for &idx in candidate_indices {
                 let imp = &self.impls[idx as usize];
                 let target_str = &self.names[imp.target_id as usize];
-                if target_str.as_ref() == name_base
-                    || target_str.ends_with(&format!("::{name_base}"))
-                {
+                if target_str.as_ref() == name_base || target_str.ends_with(&format!("::{name_base}")) {
                     let trait_str = &self.names[imp.trait_id as usize];
                     if !seen.insert(trait_str.to_string()) {
                         continue;
                     }
-                    let def_val = self.resolve_trait_def(
-                        ws,
-                        trait_str,
-                        &self.files[imp.file_id as usize],
-                        imp.line,
-                    );
+                    let def_val = self.resolve_trait_def(ws, trait_str, &self.files[imp.file_id as usize], imp.line);
                     results.push(def_val);
                 }
             }
         }
     }
 
-    pub fn find_subtypes(
-        &self,
-        ws: &WorkspaceIndex,
-        query_name: &str,
-        seen: &mut HashSet<String>,
-        results: &mut Vec<Value>,
-    ) {
+    pub fn find_subtypes(&self, ws: &WorkspaceIndex, query_name: &str, seen: &mut HashSet<String>, results: &mut Vec<Value>) {
         let name_base = query_name.split('<').next().unwrap_or(query_name).trim();
         let short = name_base.rsplit("::").next().unwrap_or(name_base);
 
@@ -272,62 +242,30 @@ impl ImplTable {
             for &idx in candidate_indices {
                 let imp = &self.impls[idx as usize];
                 let trait_str = &self.names[imp.trait_id as usize];
-                if trait_str.as_ref() == name_base || trait_str.ends_with(&format!("::{name_base}"))
-                {
+                if trait_str.as_ref() == name_base || trait_str.ends_with(&format!("::{name_base}")) {
                     let target_str = &self.names[imp.target_id as usize];
                     if !seen.insert(target_str.to_string()) {
                         continue;
                     }
-                    let def_val = self.resolve_target_def(
-                        ws,
-                        target_str,
-                        &self.files[imp.file_id as usize],
-                        imp.line,
-                    );
+                    let def_val = self.resolve_target_def(ws, target_str, &self.files[imp.file_id as usize], imp.line);
                     results.push(def_val);
                 }
             }
         }
     }
 
-    pub fn find_type_def<'a>(
-        &self,
-        ws: &'a WorkspaceIndex,
-        query: &str,
-        expected_mask: u8,
-    ) -> Option<ridx_format::WorkspaceSymbol<'a>> {
+    pub fn find_type_def<'a>(&self, ws: &'a WorkspaceIndex, query: &str, expected_mask: u8) -> Option<ridx_format::WorkspaceSymbol<'a>> {
         super::type_index::find_in_type_index(&self.type_defs, ws, query, expected_mask)
     }
 
-    pub(crate) fn resolve_trait_def(
-        &self,
-        ws: &WorkspaceIndex,
-        tr: &str,
-        file: &Path,
-        line: u32,
-    ) -> Value {
-        resolve_def(&self.trait_defs, tr, 11, file, line, || {
-            self.find_type_def(ws, tr, super::type_index::KIND_TRAIT)
-                .map(|t| super::def_cache::make_cached_def(&t, 11))
-        })
+    pub(crate) fn resolve_trait_def(&self, ws: &WorkspaceIndex, tr: &str, file: &Path, line: u32) -> Value {
+        resolve_def(&self.trait_defs, tr, 11, file, line, || self.find_type_def(ws, tr, super::type_index::KIND_TRAIT).map(|t| super::def_cache::make_cached_def(&t, 11)))
     }
 
-    pub(crate) fn resolve_target_def(
-        &self,
-        ws: &WorkspaceIndex,
-        tgt: &str,
-        file: &Path,
-        line: u32,
-    ) -> Value {
+    pub(crate) fn resolve_target_def(&self, ws: &WorkspaceIndex, tgt: &str, file: &Path, line: u32) -> Value {
         resolve_def(&self.target_defs, tgt, 23, file, line, || {
-            self.find_type_def(
-                ws,
-                tgt,
-                super::type_index::KIND_STRUCT | super::type_index::KIND_ENUM,
-            )
-            .map(|t| {
-                super::def_cache::make_cached_def(&t, crate::lsp::protocol::lsp_symbol_kind(t.kind))
-            })
+            self.find_type_def(ws, tgt, super::type_index::KIND_STRUCT | super::type_index::KIND_ENUM)
+                .map(|t| super::def_cache::make_cached_def(&t, crate::lsp::protocol::lsp_symbol_kind(t.kind)))
         })
     }
 
@@ -350,12 +288,7 @@ impl ImplTable {
         None
     }
 
-    pub fn get_or_parse_fallback_line(
-        &self,
-        file_path: &str,
-        line_1based: u32,
-        fallback: (Option<String>, Option<String>),
-    ) -> (Option<String>, Option<String>) {
+    pub fn get_or_parse_fallback_line(&self, file_path: &str, line_1based: u32, fallback: (Option<String>, Option<String>)) -> (Option<String>, Option<String>) {
         if let Some((tr, tgt)) = self.find_impl_by_file_line(file_path, line_1based) {
             self.fallback_cache.record_hit();
             return (Some(tr.to_string()), Some(tgt.to_string()));
@@ -364,8 +297,7 @@ impl ImplTable {
             self.fallback_cache.record_hit();
             return fallback;
         }
-        self.fallback_cache
-            .get_or_parse(file_path, line_1based, fallback)
+        self.fallback_cache.get_or_parse(file_path, line_1based, fallback)
     }
 
     pub fn get_fallback_results(&self, name: &str, is_supertype: bool) -> Option<Vec<Value>> {
@@ -373,8 +305,7 @@ impl ImplTable {
     }
 
     pub fn insert_fallback_results(&self, name: &str, is_supertype: bool, results: Vec<Value>) {
-        self.fallback_cache
-            .insert_fallback_results(name, is_supertype, results);
+        self.fallback_cache.insert_fallback_results(name, is_supertype, results);
     }
 }
 

@@ -19,11 +19,7 @@ use std::io::Cursor;
 fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
     static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let id_num = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir = std::env::temp_dir().join(format!(
-        "ridx_stream_stage8_{}_{}",
-        std::process::id(),
-        id_num
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_stream_stage8_{}_{}", std::process::id(), id_num));
     let _ = std::fs::remove_dir_all(&temp_dir);
     std::fs::create_dir_all(&temp_dir).unwrap();
 
@@ -37,10 +33,7 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
     writer.set_unit_key("unit-test-1");
     writer.set_generation("gen-test-1");
     let mut hashes = std::collections::HashMap::new();
-    hashes.insert(
-        file_str.clone(),
-        ridx_format::normalized_source_hash(code.as_bytes()),
-    );
+    hashes.insert(file_str.clone(), ridx_format::normalized_source_hash(code.as_bytes()));
     writer.set_file_hashes(hashes);
 
     writer.add_definition(RawDefinition {
@@ -101,14 +94,7 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
         is_write: false,
         is_macro_expansion: false,
     });
-    writer.add_type(RawType {
-        file: file_str.clone(),
-        start_line: 4,
-        start_col: 22,
-        end_line: 4,
-        end_col: 23,
-        type_name: "i32".to_string(),
-    });
+    writer.add_type(RawType { file: file_str.clone(), start_line: 4, start_col: 22, end_line: 4, end_col: 23, type_name: "i32".to_string() });
 
     let mut out_file = std::fs::File::create(&index_file).unwrap();
     writer.write_to(&mut out_file).unwrap();
@@ -118,32 +104,40 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
     let mut input = Vec::new();
 
     // 0. Request before initialize -> returns -32002 Server not initialized
-    input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "id": 999, "method": "textDocument/hover", "params": {} }),
-    ));
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 999, "method": "textDocument/hover", "params": {} })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "workspaceFolders": [ { "uri": format!("file://{}", temp_dir.to_str().unwrap()), "name": "test_ws" } ], "capabilities": {} } })));
     input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }),
+        &json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "workspaceFolders": [ { "uri": format!("file://{}", temp_dir.to_str().unwrap()), "name": "test_ws" } ], "capabilities": {} } }),
     ));
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} })));
 
     // Cancel request -> returns -32800 Request cancelled
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": 55 } })));
     input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": 55 } }),
+        &json!({ "jsonrpc": "2.0", "id": 55, "method": "textDocument/definition", "params": { "textDocument": { "uri": &doc_uri }, "position": { "line": 3, "character": 12 } } }),
     ));
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 55, "method": "textDocument/definition", "params": { "textDocument": { "uri": &doc_uri }, "position": { "line": 3, "character": 12 } } })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWorkspaceFolders", "params": { "event": { "added": [{ "uri": format!("file://{}", temp_dir.to_str().unwrap()), "name": "ws2" }], "removed": [] } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWorkspaceFolders", "params": { "event": { "added": [{ "uri": format!("file://{}", temp_dir.to_str().unwrap()), "name": "ws2" }], "removed": [] } } }),
+    ));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": doc_uri, "languageId": "rust", "version": 1, "text": code } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": doc_uri, "languageId": "rust", "version": 1, "text": code } } }),
+    ));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "textDocument/didChange", "params": { "textDocument": { "uri": doc_uri, "version": 2 }, "contentChanges": [{ "text": code }] } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "method": "textDocument/didChange", "params": { "textDocument": { "uri": doc_uri, "version": 2 }, "contentChanges": [{ "text": code }] } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": doc_uri } } })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 10, "method": "textDocument/definition", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 10, "method": "textDocument/definition", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } }),
+    ));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 11, "method": "textDocument/declaration", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 11, "method": "textDocument/declaration", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 12, "method": "textDocument/typeDefinition", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } })));
 
@@ -157,13 +151,19 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 17, "method": "workspaceSymbol/resolve", "params": { "name": "calculate", "kind": 12 } })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 18, "method": "textDocument/hover", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 18, "method": "textDocument/hover", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } }),
+    ));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 19, "method": "textDocument/completion", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 19, "method": "textDocument/completion", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 20, "method": "completionItem/resolve", "params": { "label": "calculate" } })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 21, "method": "textDocument/signatureHelp", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 4, "character": 9 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 21, "method": "textDocument/signatureHelp", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 4, "character": 9 } } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 22, "method": "textDocument/formatting", "params": { "textDocument": { "uri": doc_uri }, "options": { "tabSize": 4, "insertSpaces": true } } })));
 
@@ -186,7 +186,9 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 31, "method": "textDocument/selectionRange", "params": { "textDocument": { "uri": doc_uri }, "positions": [{ "line": 3, "character": 12 }] } })));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 32, "method": "textDocument/documentLink", "params": { "textDocument": { "uri": doc_uri } } })));
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 33, "method": "documentLink/resolve", "params": { "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 10 } }, "target": "https://example.com" } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 33, "method": "documentLink/resolve", "params": { "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 10 } }, "target": "https://example.com" } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 34, "method": "textDocument/semanticTokens/full", "params": { "textDocument": { "uri": doc_uri } } })));
 
@@ -202,7 +204,9 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 41, "method": "textDocument/diagnostic", "params": { "textDocument": { "uri": doc_uri } } })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 42, "method": "textDocument/moniker", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 42, "method": "textDocument/moniker", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 3, "character": 12 } } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 43, "method": "workspace/executeCommand", "params": { "command": "cargo.reload" } })));
 
@@ -241,9 +245,7 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 63, "method": "workspace/willDeleteFiles", "params": { "files": [{ "uri": doc_uri }] } })));
 
-    input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "method": "$/setTrace", "params": { "value": "verbose" } }),
-    ));
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "$/setTrace", "params": { "value": "verbose" } })));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "workspace/didChangeConfiguration", "params": { "settings": {} } })));
 
@@ -253,17 +255,15 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "window/workDoneProgress/cancel", "params": { "token": "tok" } })));
 
-    input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "id": 50, "method": "custom/nonExistentMethod", "params": {} }),
-    ));
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 50, "method": "custom/nonExistentMethod", "params": {} })));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": doc_uri } } })));
 
-    input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "id": 51, "method": "shutdown", "params": null }),
-    ));
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 51, "method": "shutdown", "params": null })));
 
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 52, "method": "textDocument/hover", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 0, "character": 0 } } })));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 52, "method": "textDocument/hover", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 0, "character": 0 } } }),
+    ));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "exit" })));
 
@@ -323,21 +323,12 @@ fn test_find_declaration_ident_col_empty_target_and_lifetimes() {
     use ridx_format::DefKind;
 
     // Must not infinite loop on empty target_name
-    assert_eq!(
-        find_declaration_ident_col("pub fn foo() {}", "", DefKind::Fn),
-        None
-    );
+    assert_eq!(find_declaration_ident_col("pub fn foo() {}", "", DefKind::Fn), None);
 
     // Test with lifetime in signature
     let line = "pub fn bar<'a, T: 'a>(val: &'a T) -> &'a T";
-    assert_eq!(
-        find_declaration_ident_col(line, "bar", DefKind::Fn),
-        Some(8)
-    );
-    assert_eq!(
-        find_declaration_ident_col(line, "nonexistent", DefKind::Fn),
-        None
-    );
+    assert_eq!(find_declaration_ident_col(line, "bar", DefKind::Fn), Some(8));
+    assert_eq!(find_declaration_ident_col(line, "nonexistent", DefKind::Fn), None);
 }
 
 #[test]
@@ -362,15 +353,7 @@ fn test_dispatch_cancel_request_notification() {
         "method": "$/cancelRequest",
         "params": {}
     });
-    let res = dispatch_lsp_message(
-        LspMessage::Client(cancel_no_id),
-        &mut out,
-        &mut lc,
-        &mut mr,
-        &mut ov,
-        &can,
-        None,
-    );
+    let res = dispatch_lsp_message(LspMessage::Client(cancel_no_id), &mut out, &mut lc, &mut mr, &mut ov, &can, None);
     assert!(res.unwrap());
     assert_eq!(out, b"");
     assert_eq!(*can.lock().unwrap(), HashSet::new());
@@ -381,15 +364,7 @@ fn test_dispatch_cancel_request_notification() {
         "method": "$/cancelRequest",
         "params": { "id": 42 }
     });
-    let res = dispatch_lsp_message(
-        LspMessage::Client(cancel_with_id),
-        &mut out,
-        &mut lc,
-        &mut mr,
-        &mut ov,
-        &can,
-        None,
-    );
+    let res = dispatch_lsp_message(LspMessage::Client(cancel_with_id), &mut out, &mut lc, &mut mr, &mut ov, &can, None);
     assert!(res.unwrap());
     assert_eq!(out, b"");
     assert_eq!(*can.lock().unwrap(), HashSet::from([json!(42)]));

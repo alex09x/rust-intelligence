@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_shutdown_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_shutdown_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -90,10 +85,7 @@ fn test_shutdown_rejects_workspace_diagnostic_code_32600() {
 
 #[test]
 fn test_shutdown_rejects_execute_command_code_32600() {
-    assert_rejected_with_32600(
-        "workspace/executeCommand",
-        json!({ "command": "rust-intelligence.apply", "arguments": [] }),
-    );
+    assert_rejected_with_32600("workspace/executeCommand", json!({ "command": "rust-intelligence.apply", "arguments": [] }));
 }
 
 #[test]

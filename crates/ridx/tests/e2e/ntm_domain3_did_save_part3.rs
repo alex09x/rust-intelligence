@@ -29,23 +29,10 @@ fn setup_server_with_doc(uri: &str, text: &str) -> (LifecycleManager, MultiRootW
     (lc, mr, om)
 }
 
-fn dispatch_did_save(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_save(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -60,7 +47,9 @@ fn test_did_save_routes_to_correct_workspace_root() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -79,7 +68,9 @@ fn test_did_save_with_windows_uri() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -99,7 +90,9 @@ fn test_did_save_with_url_encoded_space_uri() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -119,7 +112,9 @@ fn test_did_save_with_nested_subdirectory_path() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -139,7 +134,9 @@ fn test_did_save_empty_uri_handled_safely() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": "" } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -160,7 +157,9 @@ fn test_did_save_preserves_compiled_text_when_present() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -184,7 +183,9 @@ fn test_did_save_preserves_provenance_flag() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -207,7 +208,9 @@ fn test_did_save_after_close_document_is_safe_noop() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -228,7 +231,9 @@ fn test_did_save_crlf_document_preserves_crlf_in_disk_text() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -249,7 +254,9 @@ fn test_did_save_unicode_document_preserves_unicode_in_disk_text() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);

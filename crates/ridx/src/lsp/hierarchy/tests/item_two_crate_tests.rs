@@ -41,8 +41,7 @@ fn def(id: u32, name: &str, path: &str, line: u32, col: u32, file: &str) -> RawD
 fn shard(dir: &Path, stem: &str, krate: &str, unit: &str, deps: &[&str], w: IndexWriter) {
     let mut w = w;
     w.set_unit_key(unit);
-    w.write_to(&mut fs::File::create(dir.join(format!("{stem}.ridx"))).unwrap())
-        .unwrap();
+    w.write_to(&mut fs::File::create(dir.join(format!("{stem}.ridx"))).unwrap()).unwrap();
     fs::create_dir_all(dir.join(".deps")).unwrap();
     let info = serde_json::json!({ "name": krate, "version": "0.1.0", "unit_key": unit,
         "dependencies": deps });
@@ -60,11 +59,7 @@ fn workspace(b_first: bool, second_build: bool, b_dep: &str) -> (PathBuf, Worksp
     fs::write(&a_file, "pub fn f() {}\n").unwrap();
     fs::write(&b_file, "fn g() {\n    a::f();\n}\n").unwrap();
     let (a, b) = (a_file.to_str().unwrap(), b_file.to_str().unwrap());
-    let (b_stem, a_stem) = if b_first {
-        ("a_b", "b_a")
-    } else {
-        ("b_b", "a_a")
-    };
+    let (b_stem, a_stem) = if b_first { ("a_b", "b_a") } else { ("b_b", "a_a") };
 
     let build = |unit: &str| {
         let mut w = IndexWriter::new("a", "0.1.0");

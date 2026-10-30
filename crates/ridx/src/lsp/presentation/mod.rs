@@ -66,10 +66,7 @@ pub fn handle_document_link(msg: &Value, overlay_mgr: &OverlayManager) -> Value 
         let mut start_idx = 0;
         while let Some(pos) = line[start_idx..].find("https://") {
             let abs_pos = start_idx + pos;
-            let end_pos = line[abs_pos..]
-                .find(|c: char| c.is_whitespace() || c == ')' || c == '>' || c == ']' || c == '"')
-                .map(|p| abs_pos + p)
-                .unwrap_or(line.len());
+            let end_pos = line[abs_pos..].find(|c: char| c.is_whitespace() || c == ')' || c == '>' || c == ']' || c == '"').map(|p| abs_pos + p).unwrap_or(line.len());
 
             let url = &line[abs_pos..end_pos];
             let start_char = line[..abs_pos].encode_utf16().count() as u32;
@@ -94,12 +91,7 @@ pub fn handle_document_link_resolve(msg: &Value) -> Value {
     msg.get("params").cloned().unwrap_or(Value::Null)
 }
 
-pub fn handle_moniker(
-    msg: &Value,
-    _workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_moniker(msg: &Value, _workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
@@ -136,11 +128,7 @@ pub fn handle_text_document_content(msg: &Value, overlay_mgr: &OverlayManager) -
     let uri = msg["params"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
 
-    let text = if let Some(overlay) = overlay_mgr.get(&file) {
-        overlay.text.clone()
-    } else {
-        std::fs::read_to_string(&file).unwrap_or_default()
-    };
+    let text = if let Some(overlay) = overlay_mgr.get(&file) { overlay.text.clone() } else { std::fs::read_to_string(&file).unwrap_or_default() };
 
     json!({ "text": text })
 }

@@ -42,10 +42,7 @@ fn test_l2_hover_on_inferred_vec() {
     let res = handle_hover(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res.is_null(), "Hover on inferred vec must return result");
     let val = res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("Vec<u8>"),
-        "Hover on vec![1u8] must contain Vec<u8>, got: {val}"
-    );
+    assert!(val.contains("Vec<u8>"), "Hover on vec![1u8] must contain Vec<u8>, got: {val}");
 }
 
 #[test]
@@ -56,11 +53,7 @@ fn test_l2_hover_on_assoc_type_extract() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (line, col) = pos_in_file(
-        &lib_file,
-        "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()",
-        "extract",
-    );
+    let (line, col) = pos_in_file(&lib_file, "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()", "extract");
     let req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -71,10 +64,7 @@ fn test_l2_hover_on_assoc_type_extract() {
     let res = handle_hover(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res.is_null(), "Hover on c.extract() must return result");
     let val = res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("i32"),
-        "Hover on c.extract() must resolve inferred return type i32 via Item = i32, got: {val}"
-    );
+    assert!(val.contains("i32"), "Hover on c.extract() must resolve inferred return type i32 via Item = i32, got: {val}");
 }
 
 #[test]
@@ -97,10 +87,7 @@ fn test_l2_hover_on_generic_trait_method() {
     let res = handle_hover(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res.is_null(), "Hover on g.greet() must return result");
     let val = res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("fn(&'a Self) -> &'static str") || val.contains("fn greet"),
-        "Hover on generic g.greet() must show trait method signature, got: {val}"
-    );
+    assert!(val.contains("fn(&'a Self) -> &'static str") || val.contains("fn greet"), "Hover on generic g.greet() must show trait method signature, got: {val}");
 }
 
 #[test]
@@ -123,23 +110,15 @@ fn test_l2_inlay_hint_utf16_with_emoji() {
     });
 
     let res = handle_inlay_hint(&req, Some(ws), &overlay_mgr).unwrap();
-    let hints = res
-        .as_array()
-        .expect("Inlay hints response must be an array");
+    let hints = res.as_array().expect("Inlay hints response must be an array");
 
-    let p_hint = hints
-        .iter()
-        .find(|h| h["label"].as_str().unwrap_or("").contains("Point"))
-        .expect("Must find inlay hint for Point");
+    let p_hint = hints.iter().find(|h| h["label"].as_str().unwrap_or("").contains("Point")).expect("Must find inlay hint for Point");
 
     assert_eq!(p_hint["position"]["line"], line);
     // Line content: `    /* 🦀 */ let p = make_point(1, 2);`
     // UTF-16 code units: 4 (spaces) + 3 ('/* ') + 2 (🦀) + 4 (' */ ') + 4 ('let ') + 1 ('p') = 18
     let char_pos = p_hint["position"]["character"].as_u64().unwrap() as u32;
-    assert_eq!(
-        char_pos, 18,
-        "Inlay hint must be positioned at character 18 in UTF-16"
-    );
+    assert_eq!(char_pos, 18, "Inlay hint must be positioned at character 18 in UTF-16");
     assert_eq!(p_hint["label"], ": Point");
 }
 
@@ -162,29 +141,18 @@ fn test_l2_completion_receiver_isolation() {
     });
 
     let res = handle_completion(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    let items = res["items"]
-        .as_array()
-        .expect("Completion items must be an array");
+    let items = res["items"].as_array().expect("Completion items must be an array");
 
-    let execute_item = items
-        .iter()
-        .find(|item| item["label"] == "execute")
-        .expect("execute method must be suggested for ext_svc.");
+    let execute_item = items.iter().find(|item| item["label"] == "execute").expect("execute method must be suggested for ext_svc.");
 
     // Detail must reference core_lib, NOT app_crate
     let detail = execute_item["detail"].as_str().unwrap();
-    assert!(
-        detail.contains("core_lib") || detail.contains("CoreService"),
-        "Completion detail must belong to core_lib, got: {detail}"
-    );
+    assert!(detail.contains("core_lib") || detail.contains("CoreService"), "Completion detail must belong to core_lib, got: {detail}");
 
     // Verify cross-crate receiver isolation: no app_crate methods are leaked
     for item in items {
         let det = item["detail"].as_str().unwrap_or("");
-        assert!(
-            !det.contains("app_crate"),
-            "Local app_crate method must not leak into ext_svc. completion: {det}"
-        );
+        assert!(!det.contains("app_crate"), "Local app_crate method must not leak into ext_svc. completion: {det}");
     }
 }
 
@@ -206,30 +174,13 @@ fn test_l2_completion_generic_trait_bound() {
     });
 
     let res = handle_completion(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    let items = res["items"]
-        .as_array()
-        .expect("Completion items must be an array");
+    let items = res["items"].as_array().expect("Completion items must be an array");
 
-    let greet_item = items
-        .iter()
-        .find(|item| item["label"] == "greet")
-        .expect("greet method must be suggested for g. where G: Greeter");
-    assert!(
-        greet_item["detail"].as_str().unwrap().contains("Greeter"),
-        "Detail should mention Greeter trait"
-    );
+    let greet_item = items.iter().find(|item| item["label"] == "greet").expect("greet method must be suggested for g. where G: Greeter");
+    assert!(greet_item["detail"].as_str().unwrap().contains("Greeter"), "Detail should mention Greeter trait");
 
-    let default_greet_item = items
-        .iter()
-        .find(|item| item["label"] == "default_greet")
-        .expect("default_greet method must be suggested for g. where G: Greeter");
-    assert!(
-        default_greet_item["detail"]
-            .as_str()
-            .unwrap()
-            .contains("Greeter"),
-        "Detail should mention Greeter trait"
-    );
+    let default_greet_item = items.iter().find(|item| item["label"] == "default_greet").expect("default_greet method must be suggested for g. where G: Greeter");
+    assert!(default_greet_item["detail"].as_str().unwrap().contains("Greeter"), "Detail should mention Greeter trait");
 }
 
 #[test]
@@ -249,26 +200,16 @@ fn test_l2_signature_help_cross_crate_and_trait() {
         }
     });
     let res_new = handle_signature_help(&req_new, Some(ws_multi), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res_new.is_null(),
-        "Signature help for ExternalCoreService::new must be found"
-    );
+    assert!(!res_new.is_null(), "Signature help for ExternalCoreService::new must be found");
     let sig_new = res_new["signatures"][0]["label"].as_str().unwrap();
-    assert!(
-        sig_new.contains("fn(u32) -> CoreService") || sig_new.contains("pub fn new"),
-        "Expected CoreService::new signature, got: {sig_new}"
-    );
+    assert!(sig_new.contains("fn(u32) -> CoreService") || sig_new.contains("pub fn new"), "Expected CoreService::new signature, got: {sig_new}");
 
     // 2. Trait method call: `c.extract()`
     let ws_trait = get_or_index_l2_fixture("traits_and_generics");
     let trait_file = fixture_dir("traits_and_generics").join("src/lib.rs");
     let trait_uri = path_to_uri(trait_file.to_str().unwrap());
 
-    let (line_ext, col_ext) = pos_in_file(
-        &trait_file,
-        "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()",
-        ")",
-    );
+    let (line_ext, col_ext) = pos_in_file(&trait_file, "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()", ")");
     let req_ext = json!({
         "params": {
             "textDocument": { "uri": &trait_uri },
@@ -276,10 +217,7 @@ fn test_l2_signature_help_cross_crate_and_trait() {
         }
     });
     let res_ext = handle_signature_help(&req_ext, Some(ws_trait), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res_ext.is_null(),
-        "Signature help for c.extract() must be found"
-    );
+    assert!(!res_ext.is_null(), "Signature help for c.extract() must be found");
     let sig_ext = res_ext["signatures"][0]["label"].as_str().unwrap();
     assert!(
         sig_ext.contains("Container>::Item")
@@ -298,19 +236,10 @@ fn test_l2_signature_help_cross_crate_and_trait() {
             "position": { "line": line_greet, "character": col_greet }
         }
     });
-    let res_greet =
-        handle_signature_help(&req_greet, Some(ws_trait), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res_greet.is_null(),
-        "Signature help for g.greet() must be found"
-    );
+    let res_greet = handle_signature_help(&req_greet, Some(ws_trait), &overlay_mgr, &mut conv).unwrap();
+    assert!(!res_greet.is_null(), "Signature help for g.greet() must be found");
     let sig_greet = res_greet["signatures"][0]["label"].as_str().unwrap();
-    assert!(
-        sig_greet.contains("fn(&self)")
-            || sig_greet.contains("fn(&'a Self)")
-            || sig_greet.contains("fn greet"),
-        "Expected Greeter::greet signature, got: {sig_greet}"
-    );
+    assert!(sig_greet.contains("fn(&self)") || sig_greet.contains("fn(&'a Self)") || sig_greet.contains("fn greet"), "Expected Greeter::greet signature, got: {sig_greet}");
 }
 
 #[test]
@@ -359,24 +288,10 @@ fn test_l2_completion_latency_benchmark() {
     let colon_p50 = colon_latencies[50];
     let colon_p95 = colon_latencies[95];
 
-    eprintln!(
-        "BENCHMARK_COMPLETION_DOT: p50={:?}, p95={:?}",
-        dot_p50, dot_p95
-    );
-    eprintln!(
-        "BENCHMARK_COMPLETION_COLON: p50={:?}, p95={:?}",
-        colon_p50, colon_p95
-    );
+    eprintln!("BENCHMARK_COMPLETION_DOT: p50={:?}, p95={:?}", dot_p50, dot_p95);
+    eprintln!("BENCHMARK_COMPLETION_COLON: p50={:?}, p95={:?}", colon_p50, colon_p95);
 
     // Enforce sub-5ms latency for scoped completions (<100µs measured)
-    assert!(
-        dot_p50.as_micros() < 5000,
-        "Dot completion p50 must be under 5ms, got {:?}",
-        dot_p50
-    );
-    assert!(
-        colon_p50.as_micros() < 5000,
-        "Colon completion p50 must be under 5ms, got {:?}",
-        colon_p50
-    );
+    assert!(dot_p50.as_micros() < 5000, "Dot completion p50 must be under 5ms, got {:?}", dot_p50);
+    assert!(colon_p50.as_micros() < 5000, "Colon completion p50 must be under 5ms, got {:?}", colon_p50);
 }

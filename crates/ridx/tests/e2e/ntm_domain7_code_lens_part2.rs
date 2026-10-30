@@ -44,10 +44,18 @@ fn create_temp_shard(name: &str) -> TempShard {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_fn".to_string(), path: format!("{}::target_fn", name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_fn".to_string(),
+        path: format!("{}::target_fn", name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 13,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -80,14 +88,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -102,7 +105,6 @@ fn test_code_lens_resolve_with_zero_references() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 771, "method": "codeLens/resolve",
         "params": {
@@ -125,24 +127,39 @@ fn test_code_lens_resolve_with_single_reference() {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new("one_ref_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_fn".to_string(), path: "one_ref_crate::target_fn".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_fn".to_string(),
+        path: "one_ref_crate::target_fn".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 13,
     });
     writer.add_reference(RawReference {
         file: "src/lib.rs".to_string(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 14,
-        target_def_id: Some(1), target_path: "one_ref_crate::target_fn".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 14,
+        target_def_id: Some(1),
+        target_path: "one_ref_crate::target_fn".to_string(),
         target_file: Some("src/lib.rs".to_string()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let file = dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\nfn caller() {\n    target_fn();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 772, "method": "codeLens/resolve",
         "params": {
@@ -163,32 +180,55 @@ fn test_code_lens_resolve_with_multiple_references() {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new("two_ref_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_fn".to_string(), path: "two_ref_crate::target_fn".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_fn".to_string(),
+        path: "two_ref_crate::target_fn".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 13,
     });
     writer.add_reference(RawReference {
         file: "src/lib.rs".to_string(),
-        start_line: 3, start_col: 5, end_line: 3, end_col: 14,
-        target_def_id: Some(1), target_path: "two_ref_crate::target_fn".to_string(),
+        start_line: 3,
+        start_col: 5,
+        end_line: 3,
+        end_col: 14,
+        target_def_id: Some(1),
+        target_path: "two_ref_crate::target_fn".to_string(),
         target_file: Some("src/lib.rs".to_string()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.add_reference(RawReference {
         file: "src/lib.rs".to_string(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 14,
-        target_def_id: Some(1), target_path: "two_ref_crate::target_fn".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 14,
+        target_def_id: Some(1),
+        target_path: "two_ref_crate::target_fn".to_string(),
         target_file: Some("src/lib.rs".to_string()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let file = dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\nfn c() {\n    target_fn();\n    target_fn();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 773, "method": "codeLens/resolve",
         "params": {
@@ -207,7 +247,6 @@ fn test_code_lens_resolve_plural_title_formatting() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 774, "method": "codeLens/resolve",
         "params": {
@@ -230,7 +269,6 @@ fn test_code_lens_resolve_singular_title_formatting() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 775, "method": "codeLens/resolve",
         "params": {
@@ -249,7 +287,6 @@ fn test_code_lens_resolve_overlay_dirty_mapped_coords() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let open_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didOpen",
         "params": {
@@ -257,7 +294,6 @@ fn test_code_lens_resolve_overlay_dirty_mapped_coords() {
         }
     });
     assert!(dsp.dispatch(&open_msg));
-
     let req = json!({
         "jsonrpc": "2.0", "id": 776, "method": "codeLens/resolve",
         "params": {
@@ -275,7 +311,6 @@ fn test_code_lens_resolve_overlay_dirty_mapped_coords() {
 fn test_code_lens_resolve_missing_data_returns_unchanged() {
     let ts = create_temp_shard("missing_data");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 777, "method": "codeLens/resolve",
         "params": {
@@ -286,7 +321,6 @@ fn test_code_lens_resolve_missing_data_returns_unchanged() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 777);
     assert_eq!(resp["result"]["range"]["start"]["line"], 0);
-
     // Positive control query by resolving lens with valid data
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
@@ -308,7 +342,6 @@ fn test_code_lens_resolve_echoes_numeric_id() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 888111, "method": "codeLens/resolve",
         "params": {
@@ -329,7 +362,6 @@ fn test_code_lens_resolve_echoes_string_id() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": "lens-resolve-string-id", "method": "codeLens/resolve",
         "params": {
@@ -350,7 +382,6 @@ fn test_code_lens_resolve_roundtrip_from_code_lens_request() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target_fn() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let lens_req = json!({
         "jsonrpc": "2.0", "id": 780, "method": "textDocument/codeLens",
         "params": { "textDocument": { "uri": to_uri(&file) } }
@@ -358,7 +389,6 @@ fn test_code_lens_resolve_roundtrip_from_code_lens_request() {
     assert!(dsp.dispatch(&lens_req));
     let lens_resp = dsp.parse_response();
     let raw_lens = &lens_resp["result"][0];
-
     let resolve_req = json!({
         "jsonrpc": "2.0", "id": 781, "method": "codeLens/resolve",
         "params": raw_lens

@@ -50,7 +50,6 @@ fn test_will_save_batch_interleaved_with_did_change() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "initial\n");
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
     let file = uri_to_path(uri);
-
     // 1. willSave
     let mut out1 = Cursor::new(Vec::new());
     let ok1 = dispatch_lsp_message(
@@ -59,10 +58,15 @@ fn test_will_save_batch_interleaved_with_did_change() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out1, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out1,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok1, true);
-
     // 2. didChange
     let mut out2 = Cursor::new(Vec::new());
     let ok2 = dispatch_lsp_message(
@@ -74,10 +78,15 @@ fn test_will_save_batch_interleaved_with_did_change() {
                 "contentChanges": [{ "text": "modified\n" }]
             }
         }),
-        &mut out2, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out2,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok2, true);
-
     // 3. willSave again
     let mut out3 = Cursor::new(Vec::new());
     let ok3 = dispatch_lsp_message(
@@ -86,10 +95,15 @@ fn test_will_save_batch_interleaved_with_did_change() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out3, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out3,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok3, true);
-
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "modified\n");
     assert_eq!(overlay.version, 2);
@@ -100,7 +114,6 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
     let uri = "file:///tmp/interleaved_wait_until.rs";
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "alpha\n");
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     // 1. willSaveWaitUntil
     let mut out1 = Cursor::new(Vec::new());
     let ok1 = dispatch_lsp_message(
@@ -110,12 +123,17 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out1, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out1,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok1, true);
     let resp1 = extract_response(&out1.into_inner());
     assert_eq!(resp1["result"], json!([]));
-
     // 2. didChange
     let mut out2 = Cursor::new(Vec::new());
     let ok2 = dispatch_lsp_message(
@@ -127,10 +145,15 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
                 "contentChanges": [{ "text": "beta\n" }]
             }
         }),
-        &mut out2, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out2,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok2, true);
-
     // 3. willSaveWaitUntil
     let mut out3 = Cursor::new(Vec::new());
     let ok3 = dispatch_lsp_message(
@@ -140,8 +163,14 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out3, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out3,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok3, true);
     let resp3 = extract_response(&out3.into_inner());
     assert_eq!(resp3["result"], json!([]));
@@ -153,7 +182,6 @@ fn test_will_save_empty_uri_safe() {
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -161,9 +189,14 @@ fn test_will_save_empty_uri_safe() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": "" }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     assert_eq!(out.into_inner().len(), 0);
 }
@@ -176,7 +209,6 @@ fn test_will_save_wait_until_empty_uri_safe() {
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -185,9 +217,14 @@ fn test_will_save_wait_until_empty_uri_safe() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": "" }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
@@ -199,7 +236,6 @@ fn test_will_save_null_params_safe() {
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -207,9 +243,14 @@ fn test_will_save_null_params_safe() {
             "method": "textDocument/willSave",
             "params": null
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     assert_eq!(out.into_inner().len(), 0);
 }
@@ -222,7 +263,6 @@ fn test_will_save_wait_until_null_params_safe() {
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -231,9 +271,14 @@ fn test_will_save_wait_until_null_params_safe() {
             "method": "textDocument/willSaveWaitUntil",
             "params": null
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
@@ -246,7 +291,6 @@ fn test_will_save_large_document_overlay_preserved() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, &text);
     let file = uri_to_path(uri);
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -254,9 +298,14 @@ fn test_will_save_large_document_overlay_preserved() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text.len(), text.len());
@@ -270,7 +319,6 @@ fn test_will_save_wait_until_large_document_overlay_preserved() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, &text);
     let file = uri_to_path(uri);
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -279,9 +327,14 @@ fn test_will_save_wait_until_large_document_overlay_preserved() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
@@ -294,7 +347,6 @@ fn test_will_save_multi_root_routing_intact() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc("file:///tmp/doc.rs", "fn f() {}\n");
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
     let ws_count_before = mr.all_workspaces().count();
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -302,9 +354,14 @@ fn test_will_save_multi_root_routing_intact() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": "file:///tmp/doc.rs" }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     assert_eq!(mr.all_workspaces().count(), ws_count_before);
 }
@@ -314,7 +371,6 @@ fn test_will_save_wait_until_preserves_multi_root_routing() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc("file:///tmp/doc.rs", "fn f() {}\n");
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
     let ws_count_before = mr.all_workspaces().count();
-
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({
@@ -323,9 +379,14 @@ fn test_will_save_wait_until_preserves_multi_root_routing() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": "file:///tmp/doc.rs" }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
-
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));

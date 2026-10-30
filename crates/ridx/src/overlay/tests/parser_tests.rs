@@ -131,17 +131,7 @@ fn test_overlay_parser_raw_idents_unions_and_const_fn() {
     let mut parser = OverlayParser::new(code, &ls);
     parser.parse();
     let names: Vec<&str> = parser.symbols.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(
-        names,
-        vec![
-            "compute_const",
-            "FloatOrInt",
-            "test_raw",
-            "r#type",
-            "r#match",
-            "r#yield"
-        ]
-    );
+    assert_eq!(names, vec!["compute_const", "FloatOrInt", "test_raw", "r#type", "r#match", "r#yield"]);
 }
 
 #[test]
@@ -153,37 +143,16 @@ fn test_overlay_parser_lifetimes_and_static_do_not_swallow_or_emit_keywords() {
     let ls_static = crate::overlay::mapping::compute_line_starts(static_only);
     let mut p_static = OverlayParser::new(static_only, &ls_static);
     p_static.parse();
-    let static_syms: Vec<(&str, DefKind)> = p_static
-        .symbols
-        .iter()
-        .map(|s| (s.name.as_str(), s.kind))
-        .collect();
+    let static_syms: Vec<(&str, DefKind)> = p_static.symbols.iter().map(|s| (s.name.as_str(), s.kind)).collect();
     assert_eq!(static_syms, vec![("T", DefKind::Const)]);
 
     // 2. Combined `'static` + `'a` lifetime parameters + `->` return type arrow
-    let code = concat!(
-        "pub const T: &'static str = \"x\";\n",
-        "pub fn f<'a>(s: &'a str) -> &'a str { let _ = 1; if let Some(v) = Some(2) { let _w = v; } s }\n",
-    );
+    let code = concat!("pub const T: &'static str = \"x\";\n", "pub fn f<'a>(s: &'a str) -> &'a str { let _ = 1; if let Some(v) = Some(2) { let _w = v; } s }\n",);
     let ls = crate::overlay::mapping::compute_line_starts(code);
     let mut parser = OverlayParser::new(code, &ls);
     parser.parse();
-    let syms: Vec<(&str, DefKind)> = parser
-        .symbols
-        .iter()
-        .map(|s| (s.name.as_str(), s.kind))
-        .collect();
-    assert_eq!(
-        syms,
-        vec![
-            ("T", DefKind::Const),
-            ("f", DefKind::Fn),
-            ("s", DefKind::Local),
-            ("_", DefKind::Local),
-            ("Some", DefKind::Local),
-            ("_w", DefKind::Local),
-        ]
-    );
+    let syms: Vec<(&str, DefKind)> = parser.symbols.iter().map(|s| (s.name.as_str(), s.kind)).collect();
+    assert_eq!(syms, vec![("T", DefKind::Const), ("f", DefKind::Fn), ("s", DefKind::Local), ("_", DefKind::Local), ("Some", DefKind::Local), ("_w", DefKind::Local),]);
 }
 
 #[test]
@@ -202,11 +171,7 @@ fn test_overlay_parser_raw_strings_escaped_quotes_and_return_arrows() {
     let ls = crate::overlay::mapping::compute_line_starts(code);
     let mut parser = OverlayParser::new(code, &ls);
     parser.parse();
-    let syms: Vec<(&str, DefKind)> = parser
-        .symbols
-        .iter()
-        .map(|s| (s.name.as_str(), s.kind))
-        .collect();
+    let syms: Vec<(&str, DefKind)> = parser.symbols.iter().map(|s| (s.name.as_str(), s.kind)).collect();
     assert_eq!(
         syms,
         vec![
@@ -231,10 +196,7 @@ fn test_overlay_parser_records_comment_and_literal_opaque_spans() {
     parser.parse();
 
     // `// note`, `"a // b"`, `/* c */`, `'x'`, `r#"{"#`; lifetimes are tokens, not literals.
-    assert_eq!(
-        parser.opaque,
-        vec![(27, 34), (47, 55), (57, 64), (74, 77), (87, 93)]
-    );
+    assert_eq!(parser.opaque, vec![(27, 34), (47, 55), (57, 64), (74, 77), (87, 93)]);
     assert_eq!(&code[27..34], "// note");
     assert_eq!(&code[47..55], "\"a // b\"");
     assert_eq!(&code[57..64], "/* c */");
@@ -266,22 +228,10 @@ fn test_overlay_parser_fn_item_start_covers_attributes_and_attached_comments() {
     let mut parser = OverlayParser::new(code, &line_starts);
     parser.parse();
 
-    let fn_scopes: Vec<(usize, usize, usize)> = parser
-        .scopes
-        .iter()
-        .filter_map(|s| s.body_start_byte.map(|b| (s.sel_start_byte, b, s.end_byte)))
-        .collect();
+    let fn_scopes: Vec<(usize, usize, usize)> = parser.scopes.iter().filter_map(|s| s.body_start_byte.map(|b| (s.sel_start_byte, b, s.end_byte))).collect();
     // a: doc comment and both attributes attached; b: blank line detaches `// far away`;
     // c: a code line with a trailing block comment is not trivia; d: starts after `{`.
-    assert_eq!(
-        fn_scopes,
-        vec![
-            (0, 76, 78),
-            (93, 100, 102),
-            (129, 136, 138),
-            (148, 155, 157)
-        ]
-    );
+    assert_eq!(fn_scopes, vec![(0, 76, 78), (93, 100, 102), (129, 136, 138), (148, 155, 157)]);
     assert_eq!(&code[148..150], "fn");
     assert_eq!(&code[76..78], "{}");
 }

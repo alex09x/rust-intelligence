@@ -241,11 +241,7 @@ fn setup_test_index(temp_dir: &Path) -> (WorkspaceIndex, PathBuf) {
 fn test_incoming_calls_trait_impl_no_cross_pollution() {
     static TRAIT_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let id = TRAIT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir = std::env::temp_dir().join(format!(
-        "ridx_test_call_trait_{}_{}",
-        std::process::id(),
-        id
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_call_trait_{}_{}", std::process::id(), id));
 
     let (ws, src_file) = setup_test_index(&temp_dir);
     let overlay_mgr = OverlayManager::new();
@@ -265,19 +261,11 @@ fn test_incoming_calls_trait_impl_no_cross_pollution() {
         }
     });
 
-    let incoming =
-        handle_call_hierarchy_incoming_calls(&incoming_req, Some(&ws), &overlay_mgr, &mut conv);
+    let incoming = handle_call_hierarchy_incoming_calls(&incoming_req, Some(&ws), &overlay_mgr, &mut conv);
     let arr = incoming.as_array().expect("incoming calls array");
-    let caller_names: Vec<&str> = arr
-        .iter()
-        .filter_map(|item| item["from"]["name"].as_str())
-        .collect();
+    let caller_names: Vec<&str> = arr.iter().filter_map(|item| item["from"]["name"].as_str()).collect();
 
-    assert_eq!(
-        caller_names,
-        vec!["call_a"],
-        "expected only direct call_a to <TypeA as Default>::default, got {caller_names:?}"
-    );
+    assert_eq!(caller_names, vec!["call_a"], "expected only direct call_a to <TypeA as Default>::default, got {caller_names:?}");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -296,11 +284,7 @@ fn test_incoming_calls_trait_impl_no_cross_pollution() {
 fn test_incoming_calls_trait_generic_calls_not_returned() {
     static TRAIT_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let id = TRAIT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir = std::env::temp_dir().join(format!(
-        "ridx_test_call_trait_lim_{}_{}",
-        std::process::id(),
-        id
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_call_trait_lim_{}_{}", std::process::id(), id));
 
     let (ws, src_file) = setup_test_index(&temp_dir);
     let overlay_mgr = OverlayManager::new();
@@ -320,13 +304,9 @@ fn test_incoming_calls_trait_generic_calls_not_returned() {
             }
         }
     });
-    let incoming_impl =
-        handle_call_hierarchy_incoming_calls(&req_impl, Some(&ws), &overlay_mgr, &mut conv);
+    let incoming_impl = handle_call_hierarchy_incoming_calls(&req_impl, Some(&ws), &overlay_mgr, &mut conv);
     let arr_impl = incoming_impl.as_array().expect("incoming calls array");
-    let callers_impl: Vec<&str> = arr_impl
-        .iter()
-        .filter_map(|item| item["from"]["name"].as_str())
-        .collect();
+    let callers_impl: Vec<&str> = arr_impl.iter().filter_map(|item| item["from"]["name"].as_str()).collect();
 
     assert_eq!(callers_impl, vec!["call_a"]);
     assert!(!callers_impl.contains(&"call_trait"));
@@ -345,13 +325,9 @@ fn test_incoming_calls_trait_generic_calls_not_returned() {
             }
         }
     });
-    let incoming_trait =
-        handle_call_hierarchy_incoming_calls(&req_trait, Some(&ws), &overlay_mgr, &mut conv);
+    let incoming_trait = handle_call_hierarchy_incoming_calls(&req_trait, Some(&ws), &overlay_mgr, &mut conv);
     let arr_trait = incoming_trait.as_array().expect("incoming calls array");
-    let callers_trait: Vec<&str> = arr_trait
-        .iter()
-        .filter_map(|item| item["from"]["name"].as_str())
-        .collect();
+    let callers_trait: Vec<&str> = arr_trait.iter().filter_map(|item| item["from"]["name"].as_str()).collect();
 
     assert_eq!(callers_trait, vec!["call_trait"]);
 

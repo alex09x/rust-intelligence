@@ -14,21 +14,14 @@ use super::client::extract_symbol_location;
 use super::query_runner::execute_scenario_query;
 use super::session_helpers::{check_results_match, get_server_version};
 use super::transport::*;
-use super::types::{
-    ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario,
-};
+use super::types::{ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario};
 use std::collections::HashMap;
 use std::io::BufReader;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-pub fn run_server_session(
-    server_name: &str,
-    cmd_args: &[String],
-    root: &Path,
-    scenarios: &[SymmetricScenario],
-) -> Option<ServerMetrics> {
+pub fn run_server_session(server_name: &str, cmd_args: &[String], root: &Path, scenarios: &[SymmetricScenario]) -> Option<ServerMetrics> {
     if cmd_args.is_empty() {
         return None;
     }
@@ -40,9 +33,7 @@ pub fn run_server_session(
         cmd.args(&cmd_args[1..]);
     }
     cmd.current_dir(root);
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
     let mut child = cmd.spawn().ok()?;
     let pid = child.id();
@@ -96,14 +87,7 @@ pub fn run_server_session(
     let spawn_and_init_micros = t_init_start.elapsed().as_micros();
 
     // 2. Readiness / Warmup: open scenario documents and wait for server readiness
-    let readiness_warmup_micros = super::warmup::wait_for_server_readiness(
-        server_name,
-        &mut reader,
-        &mut stdin,
-        root,
-        scenarios,
-        std::time::Duration::from_secs(120),
-    );
+    let readiness_warmup_micros = super::warmup::wait_for_server_readiness(server_name, &mut reader, &mut stdin, root, scenarios, std::time::Duration::from_secs(120));
 
     // 3. Run Scenarios
     let mut query_latencies_micros = HashMap::new();
@@ -116,12 +100,8 @@ pub fn run_server_session(
     let stop_sampler = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let cargo_spawned = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let max_rss = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_mem.rss_bytes));
-    let max_anon = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
-        initial_mem.rss_anon_bytes,
-    ));
-    let max_file = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
-        initial_mem.rss_file_bytes,
-    ));
+    let max_anon = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_mem.rss_anon_bytes));
+    let max_file = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_mem.rss_file_bytes));
     let max_fds = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_fds));
     let max_threads = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_threads));
     let initial_ridx_fds = super::system::get_process_ridx_fd_count(pid);
@@ -163,21 +143,10 @@ pub fn run_server_session(
     for sc in scenarios {
         req_id += 1;
         let resolved_loc: Option<(String, u32, u32)> = if let Some((f, l, c)) = &sc.location {
-            Some((
-                resolve_file_uri(f, Some(root)),
-                l.saturating_sub(1),
-                c.saturating_sub(1),
-            ))
+            Some((resolve_file_uri(f, Some(root)), l.saturating_sub(1), c.saturating_sub(1)))
         } else if matches!(
             sc.capability.as_str(),
-            "def"
-                | "textDocument/definition"
-                | "refs"
-                | "textDocument/references"
-                | "hover"
-                | "textDocument/hover"
-                | "callers"
-                | "incomingCalls"
+            "def" | "textDocument/definition" | "refs" | "textDocument/references" | "hover" | "textDocument/hover" | "callers" | "incomingCalls"
         ) {
             let sym_id = req_id;
             req_id += 1;
@@ -189,9 +158,7 @@ pub fn run_server_session(
             });
             let _ = send_lsp_msg(&mut stdin, &sym_req);
             let sym_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, sym_id);
-            sym_resp
-                .as_ref()
-                .and_then(|r| extract_symbol_location(r, &sc.target))
+            sym_resp.as_ref().and_then(|r| extract_symbol_location(r, &sc.target))
         } else {
             None
         };
@@ -206,37 +173,16 @@ pub fn run_server_session(
 
         for iter in 0..3 {
             let t_query_start = Instant::now();
-            let mut resp = execute_scenario_query(
-                &mut reader,
-                &mut stdin,
-                req_id,
-                &sc.capability,
-                &sc.target,
-                resolved_loc.as_ref(),
-            );
-            let is_cancelled = resp
-                .as_ref()
-                .and_then(|r| r.get("error"))
-                .and_then(|e| e.get("code"))
-                .and_then(|c| c.as_i64())
-                == Some(-32801);
+            let mut resp = execute_scenario_query(&mut reader, &mut stdin, req_id, &sc.capability, &sc.target, resolved_loc.as_ref());
+            let is_cancelled = resp.as_ref().and_then(|r| r.get("error")).and_then(|e| e.get("code")).and_then(|c| c.as_i64()) == Some(-32801);
             if is_cancelled {
                 std::thread::sleep(std::time::Duration::from_millis(25));
                 req_id += 1;
-                resp = execute_scenario_query(
-                    &mut reader,
-                    &mut stdin,
-                    req_id,
-                    &sc.capability,
-                    &sc.target,
-                    resolved_loc.as_ref(),
-                );
+                resp = execute_scenario_query(&mut reader, &mut stdin, req_id, &sc.capability, &sc.target, resolved_loc.as_ref());
             }
             let lat = t_query_start.elapsed().as_micros();
             iteration_latencies.push(lat);
-            let has_err = last_resp
-                .as_ref()
-                .is_none_or(|r: &serde_json::Value| r.get("error").is_some());
+            let has_err = last_resp.as_ref().is_none_or(|r: &serde_json::Value| r.get("error").is_some());
             if iter == 0 || has_err {
                 last_resp = resp;
             }
@@ -256,15 +202,13 @@ pub fn run_server_session(
             cold_latency
         };
 
-        let lsp_res = last_resp
-            .and_then(|r| parse_lsp_result(&r, warm_latency, 0))
-            .unwrap_or_else(|| ExternalLspResult {
-                found: false,
-                span: "Query failed or timed out".to_string(),
-                count: 0,
-                latency_micros: warm_latency,
-                rss_bytes: 0,
-            });
+        let lsp_res = last_resp.and_then(|r| parse_lsp_result(&r, warm_latency, 0)).unwrap_or_else(|| ExternalLspResult {
+            found: false,
+            span: "Query failed or timed out".to_string(),
+            count: 0,
+            latency_micros: warm_latency,
+            rss_bytes: 0,
+        });
 
         query_cold_latencies_micros.insert(sc.name.clone(), cold_latency);
         query_latencies_micros.insert(sc.name.clone(), warm_latency);
@@ -314,8 +258,7 @@ pub fn run_symmetric_comparison(
 ) -> Option<SymmetricComparisonSummary> {
     let ridx_metrics = run_server_session("ridx", ridx_cmd, root, scenarios)?;
     let ra_metrics = run_server_session("rust-analyzer", ra_cmd, root, scenarios)?;
-    let scip_metrics =
-        scip_path.and_then(|p| super::scip_loader::run_scip_session(p, root, scenarios));
+    let scip_metrics = scip_path.and_then(|p| super::scip_loader::run_scip_session(p, root, scenarios));
 
     let mut scenario_matches = HashMap::new();
     let mut scenario_matches_line_level = HashMap::new();
@@ -324,23 +267,13 @@ pub fn run_symmetric_comparison(
     for sc in scenarios {
         let r_res = ridx_metrics.query_results.get(&sc.name);
         let ra_res = ra_metrics.query_results.get(&sc.name);
-        let s_res = scip_metrics
-            .as_ref()
-            .and_then(|m| m.query_results.get(&sc.name));
+        let s_res = scip_metrics.as_ref().and_then(|m| m.query_results.get(&sc.name));
 
         if let Some(mut_spec) = &sc.mutation {
             let r_corr = super::mutation::verify_mutation(r_res, mut_spec);
             let ra_corr = super::mutation::verify_mutation(ra_res, mut_spec);
-            let r_lat = ridx_metrics
-                .query_latencies_micros
-                .get(&sc.name)
-                .copied()
-                .unwrap_or(0);
-            let ra_lat = ra_metrics
-                .query_latencies_micros
-                .get(&sc.name)
-                .copied()
-                .unwrap_or(0);
+            let r_lat = ridx_metrics.query_latencies_micros.get(&sc.name).copied().unwrap_or(0);
+            let ra_lat = ra_metrics.query_latencies_micros.get(&sc.name).copied().unwrap_or(0);
             mutation_verifications.insert(
                 sc.name.clone(),
                 super::types::MutationVerification {
@@ -353,19 +286,10 @@ pub fn run_symmetric_comparison(
             );
         }
 
-        scenario_matches.insert(
-            sc.name.clone(),
-            check_results_match(r_res, ra_res, &sc.capability),
-        );
-        scenario_matches_line_level.insert(
-            sc.name.clone(),
-            super::session_helpers::check_results_match_line_level(r_res, ra_res, &sc.capability),
-        );
+        scenario_matches.insert(sc.name.clone(), check_results_match(r_res, ra_res, &sc.capability));
+        scenario_matches_line_level.insert(sc.name.clone(), super::session_helpers::check_results_match_line_level(r_res, ra_res, &sc.capability));
         if let Some(scip_r) = s_res {
-            scip_matches.insert(
-                sc.name.clone(),
-                check_results_match(Some(scip_r), ra_res, &sc.capability),
-            );
+            scip_matches.insert(sc.name.clone(), check_results_match(Some(scip_r), ra_res, &sc.capability));
         }
     }
 

@@ -28,22 +28,10 @@ fn make_ws_query(query: &str) -> Value {
 fn test_l1_workspace_symbol_cross_crate_same_name() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("crate_alpha", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "crate_alpha",
-        "src/lib.rs",
-        "pub fn «shared_function»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("crate_alpha", "src/lib.rs", "pub fn «shared_function»() {}\n", DefKind::Fn).unwrap();
 
     ws.add_crate("crate_beta", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "crate_beta",
-        "src/lib.rs",
-        "pub fn «shared_function»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("crate_beta", "src/lib.rs", "pub fn «shared_function»() {}\n", DefKind::Fn).unwrap();
 
     let shard_a = ws.build_crate_index("crate_alpha").unwrap();
     let index_a = WorkspaceIndex::open(&shard_a).unwrap();
@@ -61,18 +49,8 @@ fn test_l1_workspace_symbol_cross_crate_same_name() {
     assert_eq!(items[1]["name"], "shared_function");
     assert_eq!(items[1]["containerName"], "crate_beta");
 
-    let uri_a = path_to_uri(
-        ws.file_path("crate_alpha", "src/lib.rs")
-            .unwrap()
-            .to_str()
-            .unwrap(),
-    );
-    let uri_b = path_to_uri(
-        ws.file_path("crate_beta", "src/lib.rs")
-            .unwrap()
-            .to_str()
-            .unwrap(),
-    );
+    let uri_a = path_to_uri(ws.file_path("crate_alpha", "src/lib.rs").unwrap().to_str().unwrap());
+    let uri_b = path_to_uri(ws.file_path("crate_beta", "src/lib.rs").unwrap().to_str().unwrap());
     assert_eq!(items[0]["location"]["uri"], uri_a);
     assert_eq!(items[0]["location"]["range"]["start"]["line"], 0);
     assert_eq!(items[0]["location"]["range"]["start"]["character"], 7);
@@ -91,16 +69,14 @@ fn test_l1_workspace_symbol_cap_100_across_shards() {
     for i in 0..60 {
         code_first.push_str(&format!("pub fn «item_{i:02}»() {{}}\n"));
     }
-    ws.add_source_file_with_defs("crate_first", "src/lib.rs", &code_first, DefKind::Fn)
-        .unwrap();
+    ws.add_source_file_with_defs("crate_first", "src/lib.rs", &code_first, DefKind::Fn).unwrap();
 
     ws.add_crate("crate_second", "0.1.0").unwrap();
     let mut code_second = String::new();
     for i in 0..60 {
         code_second.push_str(&format!("pub fn «item_{i:02}»() {{}}\n"));
     }
-    ws.add_source_file_with_defs("crate_second", "src/lib.rs", &code_second, DefKind::Fn)
-        .unwrap();
+    ws.add_source_file_with_defs("crate_second", "src/lib.rs", &code_second, DefKind::Fn).unwrap();
 
     let shard_1 = ws.build_crate_index("crate_first").unwrap();
     let index_1 = WorkspaceIndex::open(&shard_1).unwrap();
@@ -114,14 +90,8 @@ fn test_l1_workspace_symbol_cap_100_across_shards() {
 
     // Total must be capped at 100
     assert_eq!(items.len(), 100, "Workspace symbols must cap at exactly 100");
-    let count_first = items
-        .iter()
-        .filter(|s| s["containerName"] == "crate_first")
-        .count();
-    let count_second = items
-        .iter()
-        .filter(|s| s["containerName"] == "crate_second")
-        .count();
+    let count_first = items.iter().filter(|s| s["containerName"] == "crate_first").count();
+    let count_second = items.iter().filter(|s| s["containerName"] == "crate_second").count();
     assert_eq!(count_first, 60, "First crate definitions must be exhausted");
     assert_eq!(count_second, 40, "Second crate must provide remaining 40 to cap");
 }
@@ -130,13 +100,7 @@ fn test_l1_workspace_symbol_cap_100_across_shards() {
 fn test_l1_workspace_symbol_path_matching() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_path_match", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_path_match",
-        "src/actions.rs",
-        "pub fn «action_handler»() {}\npub fn «action_fallback»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_path_match", "src/actions.rs", "pub fn «action_handler»() {}\npub fn «action_fallback»() {}\n", DefKind::Fn).unwrap();
 
     let shard = ws.build_crate_index("pkg_path_match").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -147,10 +111,7 @@ fn test_l1_workspace_symbol_path_matching() {
     let res_crate = handle_workspace_symbol(&req_crate, std::iter::once(&index), &mut conv);
     let items_crate = res_crate.as_array().expect("items list");
     assert_eq!(items_crate.len(), 2);
-    let names: Vec<&str> = items_crate
-        .iter()
-        .filter_map(|s| s["name"].as_str())
-        .collect();
+    let names: Vec<&str> = items_crate.iter().filter_map(|s| s["name"].as_str()).collect();
     assert_eq!(names, vec!["action_handler", "action_fallback"]);
 
     // Query with qualified path separator (matches only via path)
@@ -168,13 +129,7 @@ fn test_l1_workspace_symbol_path_matching() {
 fn test_l1_workspace_symbol_non_ascii_german_query() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_german", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_german",
-        "src/lib.rs",
-        "pub fn «grüßen»() {}\npub fn «groß»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_german", "src/lib.rs", "pub fn «grüßen»() {}\npub fn «groß»() {}\n", DefKind::Fn).unwrap();
 
     let shard = ws.build_crate_index("pkg_german").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -197,13 +152,7 @@ fn test_l1_workspace_symbol_utf16_location_with_emoji_prefix() {
     ws.add_crate("pkg_crab", "0.1.0").unwrap();
     // 2 crabs in comment: each crab takes 2 UTF-16 code units (surrogate pair)
     // "/* 🦀🦀 */ pub fn " = 3 + 4 + 4 + 7 = 18 UTF-16 code units
-    ws.add_source_file_with_defs(
-        "pkg_crab",
-        "src/lib.rs",
-        "/* 🦀🦀 */ pub fn «crab_handler»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_crab", "src/lib.rs", "/* 🦀🦀 */ pub fn «crab_handler»() {}\n", DefKind::Fn).unwrap();
 
     let shard = ws.build_crate_index("pkg_crab").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -252,13 +201,7 @@ fn test_l1_workspace_symbol_resolve_already_populated() {
 fn test_l1_workspace_symbol_resolve_exact_match_priority() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_priority", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_priority",
-        "src/lib.rs",
-        "pub fn «task_runner»() {}\npub fn «task»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_priority", "src/lib.rs", "pub fn «task_runner»() {}\npub fn «task»() {}\n", DefKind::Fn).unwrap();
 
     let shard = ws.build_crate_index("pkg_priority").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -285,20 +228,8 @@ fn test_l1_workspace_symbol_resolve_exact_match_priority() {
 fn test_l1_workspace_symbol_typaram_excluded() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_typaram", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_typaram",
-        "src/lib.rs",
-        "pub fn «run_generic»() {}\n",
-        DefKind::Fn,
-    )
-    .unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_typaram",
-        "src/types.rs",
-        "pub struct Holder<«T»>(T);\n",
-        DefKind::TyParam,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_typaram", "src/lib.rs", "pub fn «run_generic»() {}\n", DefKind::Fn).unwrap();
+    ws.add_source_file_with_defs("pkg_typaram", "src/types.rs", "pub struct Holder<«T»>(T);\n", DefKind::TyParam).unwrap();
 
     let shard = ws.build_crate_index("pkg_typaram").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

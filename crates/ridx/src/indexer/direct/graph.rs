@@ -14,26 +14,15 @@ use super::WorkspaceCrateEntry;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Builds direct dependency and reverse-dependency (rdep) graphs among workspace targets.
-pub fn build_workspace_dependency_graphs(
-    workspace_crates: &[WorkspaceCrateEntry],
-) -> (
-    HashMap<String, HashSet<String>>,
-    HashMap<String, HashSet<String>>,
-) {
+pub fn build_workspace_dependency_graphs(workspace_crates: &[WorkspaceCrateEntry]) -> (HashMap<String, HashSet<String>>, HashMap<String, HashSet<String>>) {
     // Map exported crate names to their providing library target_ids
     let mut providers_by_name: HashMap<String, HashSet<String>> = HashMap::new();
     for (target_id, crate_name, args, ..) in workspace_crates {
         let is_lib = !args.contains(&"--test".to_string());
         if is_lib {
-            providers_by_name
-                .entry(crate_name.clone())
-                .or_default()
-                .insert(target_id.clone());
+            providers_by_name.entry(crate_name.clone()).or_default().insert(target_id.clone());
             let norm = crate_name.replace('-', "_");
-            providers_by_name
-                .entry(norm)
-                .or_default()
-                .insert(target_id.clone());
+            providers_by_name.entry(norm).or_default().insert(target_id.clone());
         }
     }
 
@@ -43,11 +32,7 @@ pub fn build_workspace_dependency_graphs(
     for (target_id, _cname, args, ..) in workspace_crates {
         let mut deps = HashSet::new();
         for i in 0..args.len() {
-            let ext_val = if args[i] == "--extern" && i + 1 < args.len() {
-                Some(args[i + 1].as_str())
-            } else {
-                args[i].strip_prefix("--extern=")
-            };
+            let ext_val = if args[i] == "--extern" && i + 1 < args.len() { Some(args[i + 1].as_str()) } else { args[i].strip_prefix("--extern=") };
             if let Some(val) = ext_val {
                 let dep_name = val.split(['=', ':']).next().unwrap_or(val).trim();
                 let clean_name = dep_name.rsplit(':').next().unwrap_or(dep_name);
@@ -57,10 +42,7 @@ pub fn build_workspace_dependency_graphs(
                     for pid in provider_ids {
                         if pid != target_id {
                             deps.insert(pid.clone());
-                            rdeps_of
-                                .entry(pid.clone())
-                                .or_default()
-                                .insert(target_id.clone());
+                            rdeps_of.entry(pid.clone()).or_default().insert(target_id.clone());
                         }
                     }
                 }
@@ -73,24 +55,15 @@ pub fn build_workspace_dependency_graphs(
 }
 
 /// Computes a topological ordering of `crates` such that dependencies run before dependents.
-pub fn topo_sort_crates(
-    crates: &HashSet<String>,
-    dependencies_of: &HashMap<String, HashSet<String>>,
-) -> Option<Vec<String>> {
+pub fn topo_sort_crates(crates: &HashSet<String>, dependencies_of: &HashMap<String, HashSet<String>>) -> Option<Vec<String>> {
     let mut in_degree: HashMap<String, usize> = HashMap::new();
     for c in crates {
         let deps = dependencies_of.get(c);
-        let count = deps
-            .map(|ds| ds.iter().filter(|d| crates.contains(*d)).count())
-            .unwrap_or(0);
+        let count = deps.map(|ds| ds.iter().filter(|d| crates.contains(*d)).count()).unwrap_or(0);
         in_degree.insert(c.clone(), count);
     }
 
-    let mut queue: VecDeque<String> = in_degree
-        .iter()
-        .filter(|(_, &deg)| deg == 0)
-        .map(|(c, _)| c.clone())
-        .collect();
+    let mut queue: VecDeque<String> = in_degree.iter().filter(|(_, &deg)| deg == 0).map(|(c, _)| c.clone()).collect();
 
     let mut result = Vec::new();
     while let Some(c) = queue.pop_front() {

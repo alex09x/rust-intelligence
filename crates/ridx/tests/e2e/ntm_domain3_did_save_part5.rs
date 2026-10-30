@@ -30,23 +30,10 @@ fn setup_server_with_doc(uri: &str, text: &str) -> (LifecycleManager, MultiRootW
     (lc, mr, om)
 }
 
-fn dispatch_did_save(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_save(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -61,10 +48,7 @@ fn test_did_save_sequential_batch_across_ten_files() {
         let file = uri_to_path(&uri);
         om.open_with_provenance(&uri, &file, 1, format!("fn f{}() {{}}\n", i), true);
 
-        let (ok, _) = dispatch_did_save(
-            json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-            &mut lc, &mut mr, &mut om,
-        );
+        let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
         assert!(ok);
         assert_eq!(om.get(&file).unwrap().disk_text, Some(format!("fn f{}() {{}}\n", i)));
     }
@@ -82,7 +66,9 @@ fn test_did_save_non_file_uri_scheme_safe() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": "untitled:Untitled-1" } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert!(ok);
@@ -100,7 +86,9 @@ fn test_did_save_relative_path_fallback_safe() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert!(ok);
@@ -114,10 +102,7 @@ fn test_did_save_preserves_line_starts_on_nested_scopes() {
     let file = uri_to_path(uri);
     let line_starts_before = om.get(&file).unwrap().line_starts.len();
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
@@ -131,10 +116,7 @@ fn test_did_save_preserves_symbol_locations() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, code);
     let file = uri_to_path(uri);
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert!(ok);
     let sym = &om.get(&file).unwrap().symbols[0];
@@ -155,10 +137,7 @@ fn test_did_save_preserves_document_open_paths() {
 
     let paths_before = om.open_file_paths();
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri1 } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri1 } } }), &mut lc, &mut mr, &mut om);
 
     assert!(ok);
     assert_eq!(om.open_file_paths(), paths_before);
@@ -176,10 +155,7 @@ fn test_did_save_when_flycheck_already_running() {
     lc.flycheck.trigger_check(&temp_dir);
     assert_eq!(lc.flycheck.current_generation(), 1);
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     let _ = fs::remove_dir_all(&temp_dir);
     assert!(ok);
@@ -197,10 +173,7 @@ fn test_did_save_with_root_containing_cargo_workspace() {
 
     let (mut lc, mut mr, mut om) = setup_server_with_doc(&uri, "pub fn member_fn() {}\n");
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     let _ = fs::remove_dir_all(&temp_dir);
     assert!(ok);

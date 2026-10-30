@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -162,12 +157,7 @@ fn test_completion_invoked_trigger_kind_supported() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["calculate"]);
 }
 

@@ -17,12 +17,7 @@ use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 
-pub fn handle_completion(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> LspResult<Value> {
+pub fn handle_completion(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
     let line_1based = line_0based + 1;
 
@@ -64,15 +59,9 @@ pub fn handle_completion(
     } else if let Some(scopes) = super::scope_cache::get_or_parse_file_scopes(&file, None) {
         let line_idx = line_0based as usize;
         let line_start = scopes.line_starts.get(line_idx).copied().unwrap_or(0);
-        let next_start = scopes
-            .line_starts
-            .get(line_idx + 1)
-            .copied()
-            .unwrap_or(scopes.text.len());
+        let next_start = scopes.line_starts.get(line_idx + 1).copied().unwrap_or(scopes.text.len());
         let line = &scopes.text[line_start..next_start];
-        line.chars()
-            .take(col_1based.saturating_sub(1) as usize)
-            .collect()
+        line.chars().take(col_1based.saturating_sub(1) as usize).collect()
     } else {
         String::new()
     };
@@ -107,8 +96,7 @@ pub fn handle_completion(
                 overlay_text: overlay_opt.map(|o| o.text.as_str()),
                 is_dirty,
             };
-            if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx)
-            {
+            if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx) {
                 return Ok(json!({
                     "isIncomplete": false,
                     "items": owner_items
@@ -116,8 +104,7 @@ pub fn handle_completion(
             }
 
             // Fallback path: streaming symbol traversal with early-stopping and early-exit
-            let (fallback_items, is_capped) =
-                super::fallback_completion::try_fallback_completion(ws, &owner_ctx, overlay_opt);
+            let (fallback_items, is_capped) = super::fallback_completion::try_fallback_completion(ws, &owner_ctx, overlay_opt);
             return Ok(json!({
                 "isIncomplete": is_capped,
                 "items": fallback_items
@@ -157,11 +144,7 @@ pub fn handle_completion(
                 continue;
             }
 
-            let is_in_scope = if s.scope_id == 0 {
-                true
-            } else {
-                active_scope_ids.contains(&s.scope_id) && s.decl_start_byte <= cursor_byte
-            };
+            let is_in_scope = if s.scope_id == 0 { true } else { active_scope_ids.contains(&s.scope_id) && s.decl_start_byte <= cursor_byte };
 
             if is_in_scope && seen_names.insert(s.name.clone()) {
                 items.push(json!({
@@ -177,11 +160,7 @@ pub fn handle_completion(
     let mut is_capped = false;
     if let Some(ws) = workspace {
         let current_crate = ws.crate_name_for_file(&file);
-        let ws_symbols = if prefix.is_empty() {
-            ws.search_local_symbols(&prefix)
-        } else {
-            ws.search_symbols(&prefix)
-        };
+        let ws_symbols = if prefix.is_empty() { ws.search_local_symbols(&prefix) } else { ws.search_symbols(&prefix) };
 
         for s in ws_symbols {
             if s.kind == ridx_format::DefKind::Local {
@@ -201,12 +180,7 @@ pub fn handle_completion(
             // Filter out nested helpers inside functions, methods, or closures using owner kind
             if let Some((parent_path, _)) = s.path.rsplit_once("::") {
                 if let Some(parent_def) = ws.find_definition_by_path(parent_path) {
-                    if matches!(
-                        parent_def.kind,
-                        ridx_format::DefKind::Fn
-                            | ridx_format::DefKind::AssocFn
-                            | ridx_format::DefKind::Closure
-                    ) {
+                    if matches!(parent_def.kind, ridx_format::DefKind::Fn | ridx_format::DefKind::AssocFn | ridx_format::DefKind::Closure) {
                         continue;
                     }
                 }
@@ -226,19 +200,9 @@ pub fn handle_completion(
 
                 let is_same_module = is_same_file || is_symbol_in_current_module(&file, s.file);
 
-                let auto_import_edit = if is_same_module {
-                    None
-                } else {
-                    overlay_opt.and_then(|ov| {
-                        super::auto_import::compute_auto_import_edit(&ov.text, &import_path)
-                    })
-                };
+                let auto_import_edit = if is_same_module { None } else { overlay_opt.and_then(|ov| super::auto_import::compute_auto_import_edit(&ov.text, &import_path)) };
 
-                let detail = if let Some(sig) = s.signature {
-                    sig.to_string()
-                } else {
-                    s.path.to_string()
-                };
+                let detail = if let Some(sig) = s.signature { sig.to_string() } else { s.path.to_string() };
 
                 let mut item = json!({
                     "label": s.name,
@@ -269,23 +233,14 @@ pub fn handle_completion(
 }
 
 pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
-    let params = msg
-        .get("params")
-        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    let params = msg.get("params").ok_or_else(|| LspError::invalid_params("Missing params object"))?;
     if !params.is_object() {
-        return Err(LspError::invalid_params(
-            "Params must be a CompletionItem object",
-        ));
+        return Err(LspError::invalid_params("Params must be a CompletionItem object"));
     }
 
-    let label = params
-        .get("label")
-        .and_then(|l| l.as_str())
-        .ok_or_else(|| LspError::invalid_params("CompletionItem must contain a label"))?;
+    let label = params.get("label").and_then(|l| l.as_str()).ok_or_else(|| LspError::invalid_params("CompletionItem must contain a label"))?;
     if label.is_empty() {
-        return Err(LspError::invalid_params(
-            "CompletionItem label cannot be empty",
-        ));
+        return Err(LspError::invalid_params("CompletionItem label cannot be empty"));
     }
 
     let mut resolved = params.clone();
@@ -306,15 +261,6 @@ pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
 }
 
 fn is_symbol_in_current_module(cur_file: &str, sym_file: &str) -> bool {
-    let (p_cur, p_sym) = (
-        std::path::Path::new(cur_file),
-        std::path::Path::new(sym_file),
-    );
-    p_cur == p_sym
-        || (p_cur.parent() == p_sym.parent()
-            && p_cur.parent().is_some()
-            && p_cur
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .is_some_and(|s| s == "mod" || s == "lib"))
+    let (p_cur, p_sym) = (std::path::Path::new(cur_file), std::path::Path::new(sym_file));
+    p_cur == p_sym || (p_cur.parent() == p_sym.parent() && p_cur.parent().is_some() && p_cur.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s == "mod" || s == "lib"))
 }

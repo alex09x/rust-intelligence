@@ -29,23 +29,10 @@ fn setup_server_with_doc(uri: &str, text: &str) -> (LifecycleManager, MultiRootW
     (lc, mr, om)
 }
 
-fn dispatch_did_save(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_save(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -57,19 +44,13 @@ fn test_did_save_interleaved_between_changes() {
 
     // change v2
     om.apply_content_changes(&file, 2, &[json!({ "text": "change v2\n" })]);
-    let (ok1, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok1, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
     assert_eq!(ok1, true);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("change v2\n".to_string()));
 
     // change v3
     om.apply_content_changes(&file, 3, &[json!({ "text": "change v3\n" })]);
-    let (ok2, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok2, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
     assert_eq!(ok2, true);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("change v3\n".to_string()));
 }
@@ -91,14 +72,17 @@ fn test_did_save_full_sync_then_save() {
                 "contentChanges": [{ "text": "full sync replacement\n" }]
             }
         }),
-        &mut out1, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out1,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok1, true);
 
-    let (ok2, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok2, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
     assert_eq!(ok2, true);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("full sync replacement\n".to_string()));
 }
@@ -110,10 +94,7 @@ fn test_did_save_large_file_preserves_full_content() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, &text);
     let file = uri_to_path(uri);
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
@@ -127,10 +108,7 @@ fn test_did_save_empty_file_preserves_empty_content() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "");
     let file = uri_to_path(uri);
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
@@ -143,10 +121,7 @@ fn test_did_save_does_not_modify_open_count() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "fn f() {}\n");
 
     assert_eq!(om.open_count(), 1);
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
     assert_eq!(ok, true);
     assert_eq!(om.open_count(), 1);
@@ -159,10 +134,7 @@ fn test_did_save_reconcile_with_disk_after_save() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, code);
     let file = uri_to_path(uri);
 
-    let (ok, _) = dispatch_did_save(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
     assert_eq!(ok, true);
 
     let hash = ridx_format::normalized_source_hash(code.as_bytes());
@@ -202,7 +174,9 @@ fn test_did_save_with_extra_client_metadata() {
                 "customClientState": { "saveType": "auto", "triggeredBy": "user" }
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -219,8 +193,14 @@ fn test_did_save_does_not_affect_cancelled_requests() {
     let mut out = Cursor::new(Vec::new());
     let ok = dispatch_lsp_message(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(cancelled.lock().unwrap().len(), 1);

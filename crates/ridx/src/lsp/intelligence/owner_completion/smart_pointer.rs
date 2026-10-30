@@ -67,18 +67,9 @@ mod tests {
 
     #[test]
     fn test_extract_smart_pointer_inner_type() {
-        assert_eq!(
-            extract_smart_pointer_inner_type("Box<dyn MyTrait>"),
-            Some("MyTrait")
-        );
-        assert_eq!(
-            extract_smart_pointer_inner_type("alloc::sync::Arc<Foo, Global>"),
-            Some("Foo")
-        );
-        assert_eq!(
-            extract_smart_pointer_inner_type("Rc<Bar<i32>>"),
-            Some("Bar<i32>")
-        );
+        assert_eq!(extract_smart_pointer_inner_type("Box<dyn MyTrait>"), Some("MyTrait"));
+        assert_eq!(extract_smart_pointer_inner_type("alloc::sync::Arc<Foo, Global>"), Some("Foo"));
+        assert_eq!(extract_smart_pointer_inner_type("Rc<Bar<i32>>"), Some("Bar<i32>"));
         assert_eq!(extract_smart_pointer_inner_type("Box<>"), None);
         assert_eq!(extract_smart_pointer_inner_type("NotGeneric"), None);
     }

@@ -27,27 +27,15 @@ fn disk_cache_path(explicit_cache_dir: Option<&Path>) -> PathBuf {
     } else if let Ok(cd) = std::env::var("RIDX_CACHE_DIR") {
         PathBuf::from(cd).join("driver_hash.cache")
     } else if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home)
-            .join(".cache")
-            .join("ridx")
-            .join("v3")
-            .join("driver_hash.cache")
+        PathBuf::from(home).join(".cache").join("ridx").join("v3").join("driver_hash.cache")
     } else {
-        std::env::temp_dir()
-            .join("ridx")
-            .join("v3")
-            .join("driver_hash.cache")
+        std::env::temp_dir().join("ridx").join("v3").join("driver_hash.cache")
     }
 }
 
 fn file_sig(meta: &fs::Metadata) -> (u64, u64, u64) {
     let len = meta.len();
-    let mtime_secs = meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+    let mtime_secs = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs()).unwrap_or(0);
     #[cfg(unix)]
     let ino = std::os::unix::fs::MetadataExt::ino(meta);
     #[cfg(not(unix))]
@@ -55,13 +43,7 @@ fn file_sig(meta: &fs::Metadata) -> (u64, u64, u64) {
     (len, mtime_secs, ino)
 }
 
-fn lookup_disk_cache(
-    explicit_cache_dir: Option<&Path>,
-    p_str: &str,
-    len: u64,
-    mtime_secs: u64,
-    ino: u64,
-) -> Option<u64> {
+fn lookup_disk_cache(explicit_cache_dir: Option<&Path>, p_str: &str, len: u64, mtime_secs: u64, ino: u64) -> Option<u64> {
     let cp = disk_cache_path(explicit_cache_dir);
     let content = fs::read_to_string(&cp).ok()?;
     for line in content.lines() {
@@ -81,14 +63,7 @@ fn lookup_disk_cache(
     None
 }
 
-fn append_disk_cache(
-    explicit_cache_dir: Option<&Path>,
-    p_str: &str,
-    len: u64,
-    mtime_secs: u64,
-    ino: u64,
-    hash: u64,
-) {
+fn append_disk_cache(explicit_cache_dir: Option<&Path>, p_str: &str, len: u64, mtime_secs: u64, ino: u64, hash: u64) {
     let cp = disk_cache_path(explicit_cache_dir);
     if let Some(parent) = cp.parent() {
         let _ = fs::create_dir_all(parent);
@@ -118,11 +93,7 @@ fn append_disk_cache(
 
     if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&cp) {
         use std::io::Write;
-        let _ = writeln!(
-            f,
-            "{}\t{}\t{}\t{}\t{:016x}",
-            p_str, len, mtime_secs, ino, hash
-        );
+        let _ = writeln!(f, "{}\t{}\t{}\t{}\t{:016x}", p_str, len, mtime_secs, ino, hash);
     }
 }
 
@@ -148,9 +119,7 @@ fn hash_file_cached_with(p: &Path, explicit_cache_dir: Option<&Path>) -> Option<
     // 2. Persistent disk cache check (persists across cargo RUSTC_WRAPPER invocations)
     let (file_len, mtime_secs, ino) = file_sig(&meta);
     let p_str = p.to_string_lossy();
-    if let Some(disk_hash) =
-        lookup_disk_cache(explicit_cache_dir, &p_str, file_len, mtime_secs, ino)
-    {
+    if let Some(disk_hash) = lookup_disk_cache(explicit_cache_dir, &p_str, file_len, mtime_secs, ino) {
         if let Ok(mut guard) = DRIVER_HASH_CACHE.write() {
             let map = guard.get_or_insert_with(HashMap::new);
             map.insert(p.to_path_buf(), (len, mtime, disk_hash));
@@ -203,10 +172,7 @@ pub fn get_driver_hash() -> u64 {
 }
 
 /// Computes or retrieves cached driver hash with optional explicit binary path and cache directory injection.
-pub fn get_driver_hash_with(
-    explicit_driver_bin: Option<&Path>,
-    explicit_cache_dir: Option<&Path>,
-) -> u64 {
+pub fn get_driver_hash_with(explicit_driver_bin: Option<&Path>, explicit_cache_dir: Option<&Path>) -> u64 {
     if let Ok(override_val) = std::env::var("RIDX_DRIVER_HASH") {
         let trimmed = override_val.trim();
         if let Ok(val) = u64::from_str_radix(trimmed.trim_start_matches("0x"), 16) {
@@ -257,14 +223,7 @@ mod tests {
     fn test_append_disk_cache_compaction_preserves_latest() {
         let temp_dir = tempfile::tempdir().unwrap();
         for i in 0..70 {
-            append_disk_cache(
-                Some(temp_dir.path()),
-                "/test/bin",
-                100,
-                200 + i,
-                300,
-                0x0123456789abcdef + i,
-            );
+            append_disk_cache(Some(temp_dir.path()), "/test/bin", 100, 200 + i, 300, 0x0123456789abcdef + i);
         }
 
         let res = lookup_disk_cache(Some(temp_dir.path()), "/test/bin", 100, 269, 300);

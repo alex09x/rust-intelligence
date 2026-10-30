@@ -164,14 +164,7 @@ fn test_document_symbol_const_fn_declaration() {
     assert_eq!(items[0]["detail"], "fn eval_constant() -> i32");
 }
 
-fn sym_item(
-    name: &str,
-    kind: u32,
-    line: u32,
-    start_char: u32,
-    end_char: u32,
-    detail: Option<&str>,
-) -> serde_json::Value {
+fn sym_item(name: &str, kind: u32, line: u32, start_char: u32, end_char: u32, detail: Option<&str>) -> serde_json::Value {
     let range = json!({
         "start": { "line": line, "character": start_char },
         "end": { "line": line, "character": end_char }
@@ -196,8 +189,7 @@ fn test_document_symbol_unopened_file_matches_opened_file_exact_json() {
     use std::io::Cursor;
     use std::sync::{Arc, Mutex};
 
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_doc_sym_unopened_eq_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_doc_sym_unopened_eq_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let src_file = temp_dir.join("lib.rs");
     let file_str = src_file.to_str().unwrap().to_string();
@@ -234,8 +226,7 @@ fn test_document_symbol_unopened_file_matches_opened_file_exact_json() {
         None,
     );
     let raw_closed = String::from_utf8(out_closed.into_inner()).unwrap();
-    let resp_closed: Value =
-        serde_json::from_str(raw_closed.split("\r\n\r\n").nth(1).unwrap()).unwrap();
+    let resp_closed: Value = serde_json::from_str(raw_closed.split("\r\n\r\n").nth(1).unwrap()).unwrap();
     let symbols_closed = resp_closed["result"].clone();
 
     let mut out_open = Cursor::new(Vec::new());
@@ -271,25 +262,20 @@ fn test_document_symbol_unopened_file_matches_opened_file_exact_json() {
         None,
     );
     let raw_opened = String::from_utf8(out_opened.into_inner()).unwrap();
-    let resp_opened: Value =
-        serde_json::from_str(raw_opened.split("\r\n\r\n").nth(1).unwrap()).unwrap();
+    let resp_opened: Value = serde_json::from_str(raw_opened.split("\r\n\r\n").nth(1).unwrap()).unwrap();
     let symbols_opened = resp_opened["result"].clone();
     let _ = std::fs::remove_dir_all(&temp_dir);
 
     let opened_arr = symbols_opened.as_array().expect("opened symbols array");
     assert_eq!(opened_arr.len(), 7);
-    assert_eq!(
-        symbols_closed, symbols_opened,
-        "documentSymbol without didOpen must equal documentSymbol after didOpen with identical text"
-    );
+    assert_eq!(symbols_closed, symbols_opened, "documentSymbol without didOpen must equal documentSymbol after didOpen with identical text");
 }
 
 #[test]
 fn test_document_symbol_closed_to_open_modified_to_closed_disk_fallback() {
     use ridx::lsp::protocol::path_to_uri;
 
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_doc_sym_lifecycle_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_doc_sym_lifecycle_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let src_file = temp_dir.join("mod_item.rs");
     let file_str = src_file.to_str().unwrap().to_string();
@@ -301,32 +287,11 @@ fn test_document_symbol_closed_to_open_modified_to_closed_disk_fallback() {
     let req = json!({ "params": { "textDocument": { "uri": &uri } } });
 
     let res_before_open = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    assert_eq!(
-        res_before_open,
-        json!([sym_item(
-            "disk_only",
-            12,
-            0,
-            7,
-            16,
-            Some("fn disk_only() -> u32")
-        )])
-    );
+    assert_eq!(res_before_open, json!([sym_item("disk_only", 12, 0, 7, 16, Some("fn disk_only() -> u32"))]));
 
-    overlay_mgr.open_document(
-        &uri,
-        &file_str,
-        1,
-        "pub struct LiveBufferItem;\npub fn live_fn() {}\n".to_string(),
-    );
+    overlay_mgr.open_document(&uri, &file_str, 1, "pub struct LiveBufferItem;\npub fn live_fn() {}\n".to_string());
     let res_while_open = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    assert_eq!(
-        res_while_open,
-        json!([
-            sym_item("LiveBufferItem", 23, 0, 11, 25, None),
-            sym_item("live_fn", 12, 1, 7, 14, Some("fn live_fn()"))
-        ])
-    );
+    assert_eq!(res_while_open, json!([sym_item("LiveBufferItem", 23, 0, 11, 25, None), sym_item("live_fn", 12, 1, 7, 14, Some("fn live_fn()"))]));
 
     overlay_mgr.close_document(&file_str);
     let res_after_close = handle_document_symbol(&req, &overlay_mgr, &mut conv);
@@ -339,8 +304,7 @@ fn test_document_symbol_closed_to_open_modified_to_closed_disk_fallback() {
 fn test_document_symbol_disk_cache_invalidates_after_disk_write_and_delete() {
     use ridx::lsp::protocol::path_to_uri;
 
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_doc_sym_cache_inval_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_doc_sym_cache_inval_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let src_file = temp_dir.join("cached.rs");
     let file_str = src_file.to_str().unwrap().to_string();
@@ -353,39 +317,18 @@ fn test_document_symbol_disk_cache_invalidates_after_disk_write_and_delete() {
 
     let res_v1_cold = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let res_v1_warm = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    let expected_v1 = json!([sym_item(
-        "first_disk_fn",
-        12,
-        0,
-        7,
-        20,
-        Some("fn first_disk_fn()")
-    )]);
+    let expected_v1 = json!([sym_item("first_disk_fn", 12, 0, 7, 20, Some("fn first_disk_fn()"))]);
     assert_eq!(res_v1_cold, expected_v1);
     assert_eq!(res_v1_warm, expected_v1);
 
-    std::fs::write(
-        &src_file,
-        "pub fn first_disk_fn() {}\npub struct AddedOnDisk;\n",
-    )
-    .unwrap();
+    std::fs::write(&src_file, "pub fn first_disk_fn() {}\npub struct AddedOnDisk;\n").unwrap();
     let res_v2 = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    assert_eq!(
-        res_v2,
-        json!([
-            sym_item("first_disk_fn", 12, 0, 7, 20, Some("fn first_disk_fn()")),
-            sym_item("AddedOnDisk", 23, 1, 11, 22, None)
-        ])
-    );
+    assert_eq!(res_v2, json!([sym_item("first_disk_fn", 12, 0, 7, 20, Some("fn first_disk_fn()")), sym_item("AddedOnDisk", 23, 1, 11, 22, None)]));
 
     std::fs::remove_file(&src_file).unwrap();
     let res_deleted = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let dir_uri = path_to_uri(temp_dir.to_str().unwrap());
-    let res_dir = handle_document_symbol(
-        &json!({ "params": { "textDocument": { "uri": dir_uri } } }),
-        &overlay_mgr,
-        &mut conv,
-    );
+    let res_dir = handle_document_symbol(&json!({ "params": { "textDocument": { "uri": dir_uri } } }), &overlay_mgr, &mut conv);
     let _ = std::fs::remove_dir_all(&temp_dir);
 
     assert_eq!(res_deleted, json!([]));

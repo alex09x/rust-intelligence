@@ -35,16 +35,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
 
     let (work_dir, manifest_path) = if path.is_file() {
         if path.file_name().and_then(|s| s.to_str()) != Some("Cargo.toml") {
-            return Err(format!(
-                "target path {:?} is a file but not a Cargo.toml manifest.",
-                path
-            ));
+            return Err(format!("target path {:?} is a file but not a Cargo.toml manifest.", path));
         }
         let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-        let dir = canon
-            .parent()
-            .unwrap_or_else(|| Path::new("/"))
-            .to_path_buf();
+        let dir = canon.parent().unwrap_or_else(|| Path::new("/")).to_path_buf();
         (dir, canon)
     } else if path.is_dir() {
         let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
@@ -63,18 +57,13 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             if d.is_absolute() {
                 d
             } else {
-                std::env::current_dir()
-                    .unwrap_or_else(|_| PathBuf::from("."))
-                    .join(d)
+                std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join(d)
             }
         }
         None => work_dir.join("target/ridx"),
     };
     if let Err(e) = fs::create_dir_all(&base_out_dir) {
-        return Err(format!(
-            "failed to create output directory {:?}: {e}",
-            base_out_dir
-        ));
+        return Err(format!("failed to create output directory {:?}: {e}", base_out_dir));
     }
     let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
 
@@ -86,23 +75,12 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     };
 
     let profile_name = if release { "release" } else { "dev" };
-    let variant_id = compute_variant_id(
-        profile_name,
-        target.as_deref(),
-        package.as_deref(),
-        features.as_deref(),
-        no_default_features,
-        all_features,
-        &manifest_path,
-    );
+    let variant_id = compute_variant_id(profile_name, target.as_deref(), package.as_deref(), features.as_deref(), no_default_features, all_features, &manifest_path);
 
     let variant_rel_dir = format!("variants/{}", variant_id);
     let variant_out_dir = base_out_dir.join(&variant_rel_dir);
     if let Err(e) = fs::create_dir_all(&variant_out_dir) {
-        return Err(format!(
-            "failed to create variant directory {:?}: {e}",
-            variant_out_dir
-        ));
+        return Err(format!("failed to create variant directory {:?}: {e}", variant_out_dir));
     }
     let variant_out_dir = variant_out_dir.canonicalize().unwrap_or(variant_out_dir);
 
@@ -110,35 +88,13 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
     let _ = fs::create_dir_all(&cargo_target_dir);
 
-    eprintln!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-    eprintln!(
-        "  {} {}",
-        "RIDX Workspace Indexer:".bold(),
-        work_dir.display().to_string().cyan()
-    );
-    eprintln!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-    eprintln!(
-        "  Work Directory : {}",
-        work_dir.display().to_string().green()
-    );
-    eprintln!(
-        "  Manifest Path  : {}",
-        manifest_path.display().to_string().green()
-    );
-    eprintln!(
-        "  Driver Binary  : {}",
-        driver_bin.display().to_string().green()
-    );
-    eprintln!(
-        "  Index Output   : {}",
-        variant_out_dir.display().to_string().green()
-    );
+    eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    eprintln!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
+    eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    eprintln!("  Work Directory : {}", work_dir.display().to_string().green());
+    eprintln!("  Manifest Path  : {}", manifest_path.display().to_string().green());
+    eprintln!("  Driver Binary  : {}", driver_bin.display().to_string().green());
+    eprintln!("  Index Output   : {}", variant_out_dir.display().to_string().green());
     eprintln!("  Active Variant : {}", variant_id.cyan().bold());
     eprintln!("  Build Profile  : {}", profile_name.cyan());
     if let Some(ref feats) = features {
@@ -153,10 +109,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     if let Some(ref tgt) = target {
         eprintln!("  Target Triple  : {}", tgt.cyan());
     }
-    let cache_dir = opts
-        .cache_dir
-        .clone()
-        .unwrap_or_else(ridx_format::resolve_cache_dir);
+    let cache_dir = opts.cache_dir.clone().unwrap_or_else(ridx_format::resolve_cache_dir);
     let _ = fs::create_dir_all(cache_dir.join("objects"));
 
     let ld_path = super::cargo::compute_sysroot_ld_path();
@@ -250,10 +203,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             if tail_joined.is_empty() {
                 return Err(format!("cargo check exited with status {}", output.status));
             }
-            return Err(format!(
-                "cargo check exited with status {}\n{}",
-                output.status, tail_joined
-            ));
+            return Err(format!("cargo check exited with status {}\n{}", output.status, tail_joined));
         }
     } else {
         let status = match cmd.status() {
@@ -272,10 +222,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let ws = match WorkspaceIndex::open(&variant_out_dir) {
         Ok(w) => w,
         Err(e) => {
-            return Err(format!(
-                "failed to open generated variant index {:?}: {e}",
-                variant_out_dir
-            ));
+            return Err(format!("failed to open generated variant index {:?}: {e}", variant_out_dir));
         }
     };
 
@@ -301,12 +248,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
     let effective_target = target.or(env_target).or(config_target);
 
-    let sysroot_cas_key = super::manifest::resolve_sysroot_cas_key(
-        &deps_dir,
-        &manifest_file,
-        &driver_bin,
-        effective_target.as_deref(),
-    );
+    let sysroot_cas_key = super::manifest::resolve_sysroot_cas_key(&deps_dir, &manifest_file, &driver_bin, effective_target.as_deref());
 
     publish_manifest(ManifestParams {
         variant_id: &variant_id,
@@ -327,12 +269,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         sysroot_cas_key: sysroot_cas_key.as_deref(),
     })?;
 
-    eprintln!(
-        "\n{} Indexed workspace in {:.2} s (active variant: {})",
-        "Success:".green().bold(),
-        elapsed.as_secs_f64(),
-        variant_id.cyan().bold()
-    );
+    eprintln!("\n{} Indexed workspace in {:.2} s (active variant: {})", "Success:".green().bold(), elapsed.as_secs_f64(), variant_id.cyan().bold());
 
     eprintln!(
         "Indexed {} crate(s), {} total definitions, {} references, {} types ({:.2} KB total index size)",
@@ -344,17 +281,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     );
 
     if !dep_shards.is_empty() {
-        eprintln!(
-            "Linked {} external dependency shard(s) from global cache",
-            dep_shards.len().to_string().cyan().bold()
-        );
+        eprintln!("Linked {} external dependency shard(s) from global cache", dep_shards.len().to_string().cyan().bold());
     }
 
-    Ok(PublishedVariant {
-        base_out_dir,
-        variant_out_dir,
-        variant_id,
-    })
+    Ok(PublishedVariant { base_out_dir, variant_out_dir, variant_id })
 }
 
 pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {

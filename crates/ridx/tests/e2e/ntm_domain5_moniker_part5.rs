@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -143,13 +138,16 @@ fn test_moniker_response_is_json_array() {
     open_test_file(&mut ov, uri, 1, "fn dummy() {}\n");
 
     let res = send_moniker_req(uri, 0, 3, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(res["result"], json!([
-        {
-            "identifier": "/tmp/m_arr.rs::dummy",
-            "scheme": "rust",
-            "unique": "project"
-        }
-    ]));
+    assert_eq!(
+        res["result"],
+        json!([
+            {
+                "identifier": "/tmp/m_arr.rs::dummy",
+                "scheme": "rust",
+                "unique": "project"
+            }
+        ])
+    );
 }
 
 #[test]

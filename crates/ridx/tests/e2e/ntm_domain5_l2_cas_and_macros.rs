@@ -39,14 +39,8 @@ fn test_l2_macro_expansion_no_synthetic_bindings() {
     let pl_res = handle_hover(&pl_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     if !pl_res.is_null() {
         let val = pl_res["contents"]["value"].as_str().unwrap();
-        assert!(
-            !val.contains("Arguments"),
-            "Hover on println! must NOT leak compiler-synthetic Arguments binding, got: {val}"
-        );
-        assert!(
-            !val.contains("ArgumentV1"),
-            "Hover on println! must NOT leak ArgumentV1 binding, got: {val}"
-        );
+        assert!(!val.contains("Arguments"), "Hover on println! must NOT leak compiler-synthetic Arguments binding, got: {val}");
+        assert!(!val.contains("ArgumentV1"), "Hover on println! must NOT leak ArgumentV1 binding, got: {val}");
     }
 
     // 2. Verify hover on `vec` in `let v = vec![1u8];`
@@ -61,10 +55,7 @@ fn test_l2_macro_expansion_no_synthetic_bindings() {
     let vec_res = handle_hover(&vec_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     if !vec_res.is_null() {
         let val = vec_res["contents"]["value"].as_str().unwrap();
-        assert!(
-            !val.contains("temp_vec"),
-            "Hover on vec! must NOT leak internal temp_vec binding, got: {val}"
-        );
+        assert!(!val.contains("temp_vec"), "Hover on vec! must NOT leak internal temp_vec binding, got: {val}");
     }
 
     // 3. Verify user binding `v` retains exact inferred type Vec<u8>
@@ -79,10 +70,7 @@ fn test_l2_macro_expansion_no_synthetic_bindings() {
     let v_res = handle_hover(&v_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!v_res.is_null(), "Hover on binding v must return result");
     let val = v_res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("Vec<u8>"),
-        "Hover on user binding v must resolve to Vec<u8>, got: {val}"
-    );
+    assert!(val.contains("Vec<u8>"), "Hover on user binding v must resolve to Vec<u8>, got: {val}");
 }
 
 #[test]
@@ -97,20 +85,11 @@ fn test_l2_cas_portability_and_closure_sanitization() {
                 let ty_str = reader.get_str(type_entry.type_offset());
 
                 // Assert zero leakage of home directory or absolute paths
-                assert!(
-                    !ty_str.contains("/home/") && !ty_str.contains("/Users/"),
-                    "Type string in {ws_name} reader {i} leaked absolute path: {ty_str}"
-                );
+                assert!(!ty_str.contains("/home/") && !ty_str.contains("/Users/"), "Type string in {ws_name} reader {i} leaked absolute path: {ty_str}");
 
                 // Assert closures are normalized without span path coordinates
-                assert!(
-                    !ty_str.contains("{closure@"),
-                    "Type string in {ws_name} reader {i} contains unsanitized closure span: {ty_str}"
-                );
-                assert!(
-                    !ty_str.contains("{async fn body@"),
-                    "Type string in {ws_name} reader {i} contains unsanitized async span: {ty_str}"
-                );
+                assert!(!ty_str.contains("{closure@"), "Type string in {ws_name} reader {i} contains unsanitized closure span: {ty_str}");
+                assert!(!ty_str.contains("{async fn body@"), "Type string in {ws_name} reader {i} contains unsanitized async span: {ty_str}");
             }
         }
     }
@@ -162,25 +141,11 @@ fn test_l2_rich_type_completion_latency_benchmark() {
     let pt_p50 = pt_latencies[50];
     let pt_p95 = pt_latencies[95];
 
-    eprintln!(
-        "BENCHMARK_COMPLETION_ITERATOR: p50={:?}, p95={:?}",
-        it_p50, it_p95
-    );
-    eprintln!(
-        "BENCHMARK_COMPLETION_POINT: p50={:?}, p95={:?}",
-        pt_p50, pt_p95
-    );
+    eprintln!("BENCHMARK_COMPLETION_ITERATOR: p50={:?}, p95={:?}", it_p50, it_p95);
+    eprintln!("BENCHMARK_COMPLETION_POINT: p50={:?}, p95={:?}", pt_p50, pt_p95);
 
-    assert!(
-        it_p50.as_micros() < 5000,
-        "Iterator completion p50 must be under 5ms, got {:?}",
-        it_p50
-    );
-    assert!(
-        pt_p50.as_micros() < 5000,
-        "Point completion p50 must be under 5ms, got {:?}",
-        pt_p50
-    );
+    assert!(it_p50.as_micros() < 5000, "Iterator completion p50 must be under 5ms, got {:?}", it_p50);
+    assert!(pt_p50.as_micros() < 5000, "Point completion p50 must be under 5ms, got {:?}", pt_p50);
 }
 
 #[test]
@@ -226,10 +191,7 @@ fn test_l2_generic_param_completion_in_fn_and_impl_body() {
     // 1. Function body: call_generic<G: Greeter>
     let (g_line, g_col) = pos_in_file(&lib_file, "let _ = G::default_greet;", "G::");
     let g_param = ws.find_type_param_in_scope("src/lib.rs", "G", g_line + 1, g_col + 1);
-    assert!(
-        g_param.is_some(),
-        "Generic parameter 'G' must be in scope inside call_generic fn body"
-    );
+    assert!(g_param.is_some(), "Generic parameter 'G' must be in scope inside call_generic fn body");
     let g_def = g_param.unwrap();
     assert_eq!(g_def.name, "G");
     assert_eq!(g_def.signature, Some("Greeter"));
@@ -242,28 +204,14 @@ fn test_l2_generic_param_completion_in_fn_and_impl_body() {
         }
     });
     let g_res = handle_completion(&g_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    let g_items: Vec<&str> = g_res["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|it| it["label"].as_str())
-        .collect();
-    assert!(
-        g_items.contains(&"greet"),
-        "Completion on G:: in fn body must include 'greet', got: {g_items:?}"
-    );
-    assert!(
-        g_items.contains(&"default_greet"),
-        "Completion on G:: in fn body must include 'default_greet', got: {g_items:?}"
-    );
+    let g_items: Vec<&str> = g_res["items"].as_array().unwrap().iter().filter_map(|it| it["label"].as_str()).collect();
+    assert!(g_items.contains(&"greet"), "Completion on G:: in fn body must include 'greet', got: {g_items:?}");
+    assert!(g_items.contains(&"default_greet"), "Completion on G:: in fn body must include 'default_greet', got: {g_items:?}");
 
     // 2. Impl body: impl<W: Greeter> Wrapper<W>
     let (w_line, w_col) = pos_in_file(&lib_file, "let _ = W::default_greet;", "W::");
     let w_param = ws.find_type_param_in_scope("src/lib.rs", "W", w_line + 1, w_col + 1);
-    assert!(
-        w_param.is_some(),
-        "Generic parameter 'W' must be in scope inside Wrapper<W> impl body"
-    );
+    assert!(w_param.is_some(), "Generic parameter 'W' must be in scope inside Wrapper<W> impl body");
     let w_def = w_param.unwrap();
     assert_eq!(w_def.name, "W");
     assert_eq!(w_def.signature, Some("Greeter"));
@@ -276,18 +224,7 @@ fn test_l2_generic_param_completion_in_fn_and_impl_body() {
         }
     });
     let w_res = handle_completion(&w_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    let w_items: Vec<&str> = w_res["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|it| it["label"].as_str())
-        .collect();
-    assert!(
-        w_items.contains(&"greet"),
-        "Completion on W:: in impl body must include 'greet', got: {w_items:?}"
-    );
-    assert!(
-        w_items.contains(&"default_greet"),
-        "Completion on W:: in impl body must include 'default_greet', got: {w_items:?}"
-    );
+    let w_items: Vec<&str> = w_res["items"].as_array().unwrap().iter().filter_map(|it| it["label"].as_str()).collect();
+    assert!(w_items.contains(&"greet"), "Completion on W:: in impl body must include 'greet', got: {w_items:?}");
+    assert!(w_items.contains(&"default_greet"), "Completion on W:: in impl body must include 'default_greet', got: {w_items:?}");
 }

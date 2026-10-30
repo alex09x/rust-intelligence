@@ -57,10 +57,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -103,18 +100,34 @@ fn test_code_lens_resolve_location_range_and_uri() {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new("loc_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "loc_crate::target".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "loc_crate::target".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_reference(RawReference {
         file: "src/lib.rs".to_string(),
-        start_line: 3, start_col: 5, end_line: 3, end_col: 11,
-        target_def_id: Some(1), target_path: "loc_crate::target".to_string(),
+        start_line: 3,
+        start_col: 5,
+        end_line: 3,
+        end_col: 11,
+        target_def_id: Some(1),
+        target_path: "loc_crate::target".to_string(),
         target_file: Some("src/lib.rs".to_string()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let file = dir.join("src/lib.rs");

@@ -64,9 +64,7 @@ fn colliding_workspace() -> (PathBuf, WorkspaceIndex) {
     let mut other = IndexWriter::new("other", "0.1.0");
     other.set_unit_key("other-lib");
     other.add_definition(def(1, "test", "test", 1, 8, o));
-    other
-        .write_to(&mut fs::File::create(dir.join("a_other.ridx")).unwrap())
-        .unwrap();
+    other.write_to(&mut fs::File::create(dir.join("a_other.ridx")).unwrap()).unwrap();
 
     let mut test_de = IndexWriter::new("test_de", "0.0.0");
     test_de.set_unit_key("test_de-test");
@@ -88,32 +86,19 @@ fn colliding_workspace() -> (PathBuf, WorkspaceIndex) {
         is_write: false,
         is_macro_expansion: false,
     });
-    test_de
-        .write_to(&mut fs::File::create(dir.join("b_test_de.ridx")).unwrap())
-        .unwrap();
+    test_de.write_to(&mut fs::File::create(dir.join("b_test_de.ridx")).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&dir).unwrap();
     assert_eq!(ws.readers().len(), 2);
     (dir, ws)
 }
 
-pub(super) fn incoming_callers(
-    ws: &WorkspaceIndex,
-    file: &PathBuf,
-    line0: u64,
-    char0: u64,
-) -> Vec<(String, Vec<u64>)> {
+pub(super) fn incoming_callers(ws: &WorkspaceIndex, file: &PathBuf, line0: u64, char0: u64) -> Vec<(String, Vec<u64>)> {
     incoming_callers_of(ws, "test", file, line0, char0)
 }
 
 /// The callers of the item `name` whose name sits at `(line0, char0)` of `file`.
-pub(super) fn incoming_callers_of(
-    ws: &WorkspaceIndex,
-    name: &str,
-    file: &PathBuf,
-    line0: u64,
-    char0: u64,
-) -> Vec<(String, Vec<u64>)> {
+pub(super) fn incoming_callers_of(ws: &WorkspaceIndex, name: &str, file: &PathBuf, line0: u64, char0: u64) -> Vec<(String, Vec<u64>)> {
     let uri = path_to_uri(file.to_str().unwrap());
     let pos = json!({ "line": line0, "character": char0 });
     let req = json!({ "params": { "item": { "name": name, "kind": 12, "uri": uri,
@@ -125,12 +110,7 @@ pub(super) fn incoming_callers_of(
         .unwrap()
         .iter()
         .map(|it| {
-            let lines = it["fromRanges"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|r| r["start"]["line"].as_u64().unwrap())
-                .collect();
+            let lines = it["fromRanges"].as_array().unwrap().iter().map(|r| r["start"]["line"].as_u64().unwrap()).collect();
             (it["from"]["name"].as_str().unwrap().to_string(), lines)
         })
         .collect();
@@ -149,9 +129,6 @@ fn the_item_of_a_test_target_with_a_bare_path_finds_its_callers() {
 #[test]
 fn the_same_named_item_of_the_other_shard_has_no_callers() {
     let (dir, ws) = colliding_workspace();
-    assert_eq!(
-        incoming_callers(&ws, &dir.join("other/src/lib.rs"), 0, 7),
-        vec![]
-    );
+    assert_eq!(incoming_callers(&ws, &dir.join("other/src/lib.rs"), 0, 7), vec![]);
     let _ = fs::remove_dir_all(dir);
 }

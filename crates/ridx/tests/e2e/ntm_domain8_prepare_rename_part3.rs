@@ -55,15 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -85,10 +77,18 @@ fn test_prepare_rename_index_struct_definition_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "MyStruct".to_string(), path: "test_crate::MyStruct".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyStruct".to_string(),
+        path: "test_crate::MyStruct".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 16,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct MyStruct {\n    val: i32,\n}\n").unwrap();
@@ -122,10 +122,18 @@ fn test_prepare_rename_index_fn_definition_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "compute_sum".to_string(), path: "test_crate::compute_sum".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "compute_sum".to_string(),
+        path: "test_crate::compute_sum".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 15,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn compute_sum(a: i32, b: i32) -> i32 { a + b }\n").unwrap();
@@ -159,10 +167,18 @@ fn test_prepare_rename_index_enum_definition_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "State".to_string(), path: "test_crate::State".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 6, end_line: 1, end_col: 11,
+        def_id: 1,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "State".to_string(),
+        path: "test_crate::State".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 6,
+        end_line: 1,
+        end_col: 11,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "enum State { On, Off }\n").unwrap();
@@ -196,10 +212,18 @@ fn test_prepare_rename_index_trait_definition_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Renderable".to_string(), path: "test_crate::Renderable".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 7, end_line: 1, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Renderable".to_string(),
+        path: "test_crate::Renderable".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 7,
+        end_line: 1,
+        end_col: 17,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub trait Renderable {}\n").unwrap();
@@ -232,10 +256,18 @@ fn test_prepare_rename_index_type_alias_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-        name: "IntList".to_string(), path: "test_crate::IntList".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 6, end_line: 1, end_col: 13,
+        def_id: 1,
+        kind: DefKind::TyAlias,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "IntList".to_string(),
+        path: "test_crate::IntList".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 6,
+        end_line: 1,
+        end_col: 13,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "type IntList = Vec<i32>;\n").unwrap();
@@ -267,10 +299,18 @@ fn test_prepare_rename_index_const_definition_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Const, visibility: 1, is_macro_expansion: false,
-        name: "MAX_CAP".to_string(), path: "test_crate::MAX_CAP".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 7, end_line: 1, end_col: 14,
+        def_id: 1,
+        kind: DefKind::Const,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MAX_CAP".to_string(),
+        path: "test_crate::MAX_CAP".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 7,
+        end_line: 1,
+        end_col: 14,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "const MAX_CAP: usize = 1024;\n").unwrap();

@@ -33,15 +33,10 @@ pub struct ManifestParams<'a> {
 }
 
 pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
-    let config_hashes =
-        crate::indexer::direct::config::compute_workspace_config_hashes(params.work_dir);
+    let config_hashes = crate::indexer::direct::config::compute_workspace_config_hashes(params.work_dir);
 
     let prev_gen = if params.manifest_file.exists() {
-        fs::read(params.manifest_file)
-            .ok()
-            .and_then(|bytes| serde_json::from_slice::<ridx_format::VariantManifest>(&bytes).ok())
-            .map(|m| m.generation)
-            .unwrap_or(0)
+        fs::read(params.manifest_file).ok().and_then(|bytes| serde_json::from_slice::<ridx_format::VariantManifest>(&bytes).ok()).map(|m| m.generation).unwrap_or(0)
     } else {
         0
     };
@@ -90,22 +85,14 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
     let _ = fs::write(&variant_manifest_file, &serialized);
 
     // Write to temp file then rename for atomic manifest swap
-    let tmp_manifest = params
-        .base_out_dir
-        .join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
+    let tmp_manifest = params.base_out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
     if let Err(e) = fs::write(&tmp_manifest, serialized) {
-        return Err(format!(
-            "failed to write temporary variant manifest {:?}: {e}",
-            tmp_manifest
-        ));
+        return Err(format!("failed to write temporary variant manifest {:?}: {e}", tmp_manifest));
     }
 
     if let Err(e) = fs::rename(&tmp_manifest, params.manifest_file) {
         let _ = fs::remove_file(&tmp_manifest);
-        return Err(format!(
-            "failed to publish active variant manifest {:?}: {e}",
-            params.manifest_file
-        ));
+        return Err(format!("failed to publish active variant manifest {:?}: {e}", params.manifest_file));
     }
 
     Ok(())
@@ -116,12 +103,7 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
 ///    Cross-checks against `.deps/*.json` sidecars in `deps_dir`, warning on divergence.
 /// 2. Fallback: inspects `.deps/*.json` sidecar files in the variant directory, failing closed if keys conflict.
 /// 3. Fallback: reads `sysroot_cas_key` from the existing manifest file.
-pub fn resolve_sysroot_cas_key(
-    deps_dir: &Path,
-    manifest_file: &Path,
-    driver_bin: &Path,
-    target: Option<&str>,
-) -> Option<String> {
+pub fn resolve_sysroot_cas_key(deps_dir: &Path, manifest_file: &Path, driver_bin: &Path, target: Option<&str>) -> Option<String> {
     // 1. Authoritative: query active driver binary directly
     let mut cmd = std::process::Command::new(driver_bin);
     cmd.arg("--sysroot-cas-key");
@@ -181,11 +163,7 @@ pub fn resolve_sysroot_cas_key(
     }
 
     if driver_sidecar_mismatch {
-        eprintln!(
-            "warning: sysroot_cas_key mismatch between driver ({:?}) and sidecars in {}",
-            driver_key,
-            deps_dir.display()
-        );
+        eprintln!("warning: sysroot_cas_key mismatch between driver ({:?}) and sidecars in {}", driver_key, deps_dir.display());
     }
 
     if let Some(dk) = driver_key {

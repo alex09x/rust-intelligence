@@ -56,14 +56,7 @@ fn raw_def(id: u32, kind: DefKind, path: &str, file: &str, (l, sc, ec): Span3) -
 }
 
 fn add_ty_span(w: &mut IndexWriter, f: &str, (sl, sc, el, ec): Span4, ty: &str, own: Option<&str>) {
-    let raw = RawType {
-        file: f.to_string(),
-        start_line: sl,
-        start_col: sc,
-        end_line: el,
-        end_col: ec,
-        type_name: ty.to_string(),
-    };
+    let raw = RawType { file: f.to_string(), start_line: sl, start_col: sc, end_line: el, end_col: ec, type_name: ty.to_string() };
     w.add_type_with_owner(raw, own.map(str::to_string));
 }
 
@@ -116,8 +109,7 @@ fn setup_compound_workspace() -> (PathBuf, WorkspaceIndex, String, String, Strin
         "pub fn test_ty_param<T: BoundTrait>(x: T) {}\n",
     );
     fs::write(&app_lib, app_code).unwrap();
-    let core_code =
-        "pub enum Option<T> { None, Some(T) }\npub enum Result<T, E> { Ok(T), Err(E) }\n";
+    let core_code = "pub enum Option<T> { None, Some(T) }\npub enum Result<T, E> { Ok(T), Err(E) }\n";
     fs::write(&core_lib, core_code).unwrap();
     fs::write(&alloc_lib, "pub struct Box<T>(T);\n").unwrap();
 
@@ -126,38 +118,16 @@ fn setup_compound_workspace() -> (PathBuf, WorkspaceIndex, String, String, Strin
     let alloc_s = alloc_lib.to_str().unwrap();
 
     let mut cw = IndexWriter::new("core", "1.0.0");
-    cw.add_definition(raw_def(
-        1,
-        Enum,
-        "core::option::Option",
-        core_s,
-        (1, 10, 16),
-    ));
-    cw.add_definition(raw_def(
-        2,
-        Enum,
-        "core::result::Result",
-        core_s,
-        (2, 10, 16),
-    ));
+    cw.add_definition(raw_def(1, Enum, "core::option::Option", core_s, (1, 10, 16)));
+    cw.add_definition(raw_def(2, Enum, "core::result::Result", core_s, (2, 10, 16)));
     save_ridx(&mut cw, root.join("00_core.ridx"));
 
     let mut aw = IndexWriter::new("alloc", "1.0.0");
-    aw.add_definition(raw_def(
-        1,
-        Struct,
-        "alloc::boxed::Box",
-        alloc_s,
-        (1, 12, 15),
-    ));
+    aw.add_definition(raw_def(1, Struct, "alloc::boxed::Box", alloc_s, (1, 12, 15)));
     save_ridx(&mut aw, root.join("01_alloc.ridx"));
 
     let mut w = IndexWriter::new("app", "0.1.0");
-    for (id, k, p, sp) in [
-        (10, Struct, "app::Foo", (1, 12, 15)),
-        (11, Struct, "app::Wrapper", (2, 12, 19)),
-        (12, Trait, "app::BoundTrait", (3, 11, 21)),
-    ] {
+    for (id, k, p, sp) in [(10, Struct, "app::Foo", (1, 12, 15)), (11, Struct, "app::Wrapper", (2, 12, 19)), (12, Trait, "app::BoundTrait", (3, 11, 21))] {
         w.add_definition(raw_def(id, k, p, app_s, sp));
     }
     let tp_def = raw_def(13, TyParam, "app::test_ty_param::T", app_s, (6, 22, 23));
@@ -177,11 +147,7 @@ fn setup_compound_workspace() -> (PathBuf, WorkspaceIndex, String, String, Strin
     save_ridx(&mut w, root.join("02_app.ridx"));
 
     let ws = WorkspaceIndex::open(&root).unwrap();
-    let uris = (
-        format!("file://{app_s}"),
-        format!("file://{core_s}"),
-        format!("file://{alloc_s}"),
-    );
+    let uris = (format!("file://{app_s}"), format!("file://{core_s}"), format!("file://{alloc_s}"));
     (root, ws, uris.0, uris.1, uris.2)
 }
 
@@ -258,31 +224,18 @@ fn write_src(root: &Path, rel: &str, content: &str) -> String {
 fn test_typedef_multi_crate_same_name_config_uses_owner_path() {
     let root = next_temp_dir("typedef_multi_config");
     let a_s = write_src(&root, "crate_a/src/lib.rs", "pub struct Config;\n");
-    let b_s = write_src(
-        &root,
-        "crate_b/src/lib.rs",
-        "// crate_b\npub struct Config;\n",
-    );
+    let b_s = write_src(&root, "crate_b/src/lib.rs", "// crate_b\npub struct Config;\n");
     let c_src = "pub fn init(cfg: crate_b::Config, cfg2: crate_b::Config) {}\n";
     let c_s = write_src(&root, "crate_c/src/lib.rs", c_src);
 
-    for (idx_f, cr, p, f_s, l) in [
-        ("00_crate_a.ridx", "crate_a", "crate_a::Config", &a_s, 1),
-        ("01_crate_b.ridx", "crate_b", "crate_b::Config", &b_s, 2),
-    ] {
+    for (idx_f, cr, p, f_s, l) in [("00_crate_a.ridx", "crate_a", "crate_a::Config", &a_s, 1), ("01_crate_b.ridx", "crate_b", "crate_b::Config", &b_s, 2)] {
         let mut w = IndexWriter::new(cr, "0.1.0");
         w.add_definition(raw_def(1, Struct, p, f_s, (l, 12, 18)));
         save_ridx(&mut w, root.join(idx_f));
     }
 
     let mut wc = IndexWriter::new("crate_c", "0.1.0");
-    add_ty(
-        &mut wc,
-        &c_s,
-        (1, 13, 16),
-        "Config",
-        Some("crate_b::Config"),
-    );
+    add_ty(&mut wc, &c_s, (1, 13, 16), "Config", Some("crate_b::Config"));
     add_ty(&mut wc, &c_s, (1, 35, 39), "crate_b::Config", None);
     save_ridx(&mut wc, root.join("02_crate_c.ridx"));
 
@@ -336,10 +289,7 @@ fn test_typedef_qualified_path_and_self_override_enclosing_result() {
     add_ref(&mut w, &f_s, (5, 19, 5, 29), cm_tgt, Struct, false);
     add_ref(&mut w, &f_s, (8, 17, 8, 27), cm_tgt, Struct, false);
     add_ty(&mut w, &f_s, (7, 25, 26), "A", None);
-    let (res_ty, res_own) = (
-        "stream_test::Result<(), stream_test::MyError>",
-        Some("stream_test::Result"),
-    );
+    let (res_ty, res_own) = ("stream_test::Result<(), stream_test::MyError>", Some("stream_test::Result"));
     add_ty_span(&mut w, &f_s, (7, 54, 10, 6), res_ty, res_own);
     save_ridx(&mut w, root.join("00_stream_test.ridx"));
 
@@ -356,26 +306,15 @@ fn test_typedef_qualified_path_and_self_override_enclosing_result() {
 fn test_typedef_homonymous_crate_prefers_reachable_extern_unit() {
     let root = next_temp_dir("typedef_dep_unit");
     let lib_s = write_src(&root, "lib_arena/src/lib.rs", "pub struct Arena;\n");
-    let reg_s = write_src(
-        &root,
-        "reg_arena/src/lib.rs",
-        "// registry\npub struct Arena;\n",
-    );
-    let app_s = write_src(
-        &root,
-        "app/src/lib.rs",
-        "pub fn use_arena(a: la_arena::Arena) {}\n",
-    );
+    let reg_s = write_src(&root, "reg_arena/src/lib.rs", "// registry\npub struct Arena;\n");
+    let app_s = write_src(&root, "app/src/lib.rs", "pub fn use_arena(a: la_arena::Arena) {}\n");
     let deps_dir = root.join(".deps");
     let _ = fs::create_dir_all(&deps_dir);
 
     const M_LIB: &str = r#"{"name":"la_arena","unit_key":"uk_lib_arena","is_dependency":false}"#;
     const M_REG: &str = r#"{"name":"la_arena","unit_key":"uk_reg_arena","is_dependency":true}"#;
     const M_APP: &str = r#"{"name":"app","unit_key":"uk_app","is_dependency":false,"extern_units":{"la_arena":"uk_reg_arena"}}"#;
-    for (stem, ver, uk, f_s, l, m_json) in [
-        ("00_la_arena_lib", "0.3.0", "uk_lib_arena", &lib_s, 1, M_LIB),
-        ("01_la_arena_reg", "0.3.1", "uk_reg_arena", &reg_s, 2, M_REG),
-    ] {
+    for (stem, ver, uk, f_s, l, m_json) in [("00_la_arena_lib", "0.3.0", "uk_lib_arena", &lib_s, 1, M_LIB), ("01_la_arena_reg", "0.3.1", "uk_reg_arena", &reg_s, 2, M_REG)] {
         let mut w = IndexWriter::new("la_arena", ver);
         w.set_unit_key(uk);
         w.add_definition(raw_def(1, Struct, "la_arena::Arena", f_s, (l, 12, 17)));

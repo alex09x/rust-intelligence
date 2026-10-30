@@ -21,13 +21,7 @@ use serde_json::json;
 fn test_workspace_symbol_exact_prefix_query() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("crate_items", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "crate_items",
-        "src/lib.rs",
-        "pub struct «PrefixAlpha»;\npub struct «PrefixBeta»;\npub struct «OtherGamma»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("crate_items", "src/lib.rs", "pub struct «PrefixAlpha»;\npub struct «PrefixBeta»;\npub struct «OtherGamma»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -46,13 +40,7 @@ fn test_workspace_symbol_exact_prefix_query() {
 fn test_workspace_symbol_suffix_matching() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_suffix", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_suffix",
-        "src/lib.rs",
-        "pub struct «TaskHandler»;\npub struct «RequestHandler»;\npub struct «WorkerService»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_suffix", "src/lib.rs", "pub struct «TaskHandler»;\npub struct «RequestHandler»;\npub struct «WorkerService»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -71,13 +59,8 @@ fn test_workspace_symbol_suffix_matching() {
 fn test_workspace_symbol_substring_matching_middle() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_substr", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_substr",
-        "src/lib.rs",
-        "pub struct «AwesomeBuilderRecord»;\npub struct «SimpleBuilder»;\npub struct «OtherItem»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_substr", "src/lib.rs", "pub struct «AwesomeBuilderRecord»;\npub struct «SimpleBuilder»;\npub struct «OtherItem»;\n", DefKind::Struct)
+        .unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -96,13 +79,7 @@ fn test_workspace_symbol_substring_matching_middle() {
 fn test_workspace_symbol_case_insensitive_uppercase_query() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_case_up", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_case_up",
-        "src/lib.rs",
-        "pub struct «UserAccount»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_case_up", "src/lib.rs", "pub struct «UserAccount»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -120,13 +97,7 @@ fn test_workspace_symbol_case_insensitive_uppercase_query() {
 fn test_workspace_symbol_case_insensitive_lowercase_query() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_case_low", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_case_low",
-        "src/lib.rs",
-        "pub const «GLOBAL_TIMEOUT»: u64 = 30;\n",
-        DefKind::Const,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_case_low", "src/lib.rs", "pub const «GLOBAL_TIMEOUT»: u64 = 30;\n", DefKind::Const).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -179,13 +150,7 @@ fn test_workspace_symbol_empty_workspace_returns_empty() {
 fn test_workspace_symbol_no_matches_returns_empty_array() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_nomatch", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_nomatch",
-        "src/lib.rs",
-        "pub struct «TargetFoo»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_nomatch", "src/lib.rs", "pub struct «TargetFoo»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 

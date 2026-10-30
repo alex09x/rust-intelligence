@@ -265,21 +265,8 @@ fn test_l1_document_highlight_multi_line_references() {
         .map(|item| {
             let start = &item["range"]["start"];
             let end = &item["range"]["end"];
-            (
-                start["line"].as_u64().unwrap(),
-                start["character"].as_u64().unwrap(),
-                end["character"].as_u64().unwrap(),
-            )
+            (start["line"].as_u64().unwrap(), start["character"].as_u64().unwrap(), end["character"].as_u64().unwrap())
         })
         .collect();
-    assert_eq!(
-        ranges,
-        vec![
-            (1, 12, 17),
-            (2, 4, 9),
-            (3, 7, 12),
-            (4, 8, 13),
-            (6, 19, 24),
-        ]
-    );
+    assert_eq!(ranges, vec![(1, 12, 17), (2, 4, 9), (3, 7, 12), (4, 8, 13), (6, 19, 24),]);
 }

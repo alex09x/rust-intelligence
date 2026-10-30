@@ -29,23 +29,10 @@ fn setup_server_with_doc(uri: &str, text: &str) -> (LifecycleManager, MultiRootW
     (lc, mr, om)
 }
 
-fn dispatch_did_close(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_close(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -62,7 +49,9 @@ fn test_did_close_removes_overlay_from_manager() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -90,7 +79,9 @@ fn test_did_close_reduces_open_count_by_one() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": "file:///tmp/multi_close_2.rs" } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -117,7 +108,9 @@ fn test_did_close_open_file_paths_excludes_closed_file() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": uri2 } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -135,7 +128,9 @@ fn test_did_close_returns_ok_true() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -152,7 +147,9 @@ fn test_did_close_produces_no_stdout_output() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -171,7 +168,9 @@ fn test_did_close_unopened_document_returns_ok_true() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": "file:///tmp/never_opened.rs" } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -184,16 +183,10 @@ fn test_did_close_already_closed_document_is_idempotent() {
     let uri = "file:///tmp/double_close.rs";
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "fn f() {}\n");
 
-    let (ok1, _) = dispatch_did_close(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok1, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
     assert_eq!(ok1, true);
 
-    let (ok2, _) = dispatch_did_close(
-        json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om,
-    );
+    let (ok2, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
     assert_eq!(ok2, true);
     assert_eq!(om.open_count(), 0);
 }
@@ -210,7 +203,9 @@ fn test_did_close_empty_params_safe() {
             "method": "textDocument/didClose",
             "params": {}
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -229,7 +224,9 @@ fn test_did_close_missing_uri_safe() {
             "method": "textDocument/didClose",
             "params": { "textDocument": {} }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -248,7 +245,9 @@ fn test_did_close_null_params_safe() {
             "method": "textDocument/didClose",
             "params": null
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);

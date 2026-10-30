@@ -71,10 +71,7 @@ fn test_completion_resolve_preserves_existing_documentation() {
         }
     });
     let res = handle_completion_resolve(&req).unwrap();
-    assert_eq!(
-        res["documentation"]["value"].as_str().unwrap(),
-        "Existing documentation for User struct"
-    );
+    assert_eq!(res["documentation"]["value"].as_str().unwrap(), "Existing documentation for User struct");
 }
 
 #[test]

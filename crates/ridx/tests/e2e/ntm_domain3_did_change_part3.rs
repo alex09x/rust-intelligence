@@ -29,23 +29,10 @@ fn setup_open_doc(uri: &str, initial_text: &str) -> (LifecycleManager, MultiRoot
     (lifecycle, multi_root, overlay_mgr)
 }
 
-fn dispatch_did_change(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_change(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -79,7 +66,9 @@ fn test_did_change_multiple_changes_in_single_notification() {
                 ]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -117,7 +106,9 @@ fn test_did_change_sequential_inserts_in_single_line() {
                 ]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -140,7 +131,9 @@ fn test_did_change_version_increment_from_client() {
                 "contentChanges": [{ "text": "fn f2() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -163,7 +156,9 @@ fn test_did_change_version_zero_increments_internal_version() {
                 "contentChanges": [{ "text": "fn f_new() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -186,7 +181,9 @@ fn test_did_change_negative_version_increments_internal_version() {
                 "contentChanges": [{ "text": "fn f_neg() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -210,7 +207,9 @@ fn test_did_change_content_hash_updates_after_edit() {
                 "contentChanges": [{ "text": "fn hash_modified() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -240,7 +239,9 @@ fn test_did_change_line_starts_recalculated_after_newline_insert() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -270,7 +271,9 @@ fn test_did_change_line_starts_recalculated_after_newline_delete() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -301,7 +304,9 @@ fn test_did_change_utf16_surrogate_pair_column_offset() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -331,7 +336,9 @@ fn test_did_change_multibyte_utf8_char_offset() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);

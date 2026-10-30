@@ -50,11 +50,7 @@ pub(crate) fn hash_directory_contents(dir: &Path) -> Option<u64> {
             for entry in rd.flatten() {
                 let p = entry.path();
                 if p.is_file() {
-                    let rel = p
-                        .strip_prefix(base)
-                        .unwrap_or(&p)
-                        .to_string_lossy()
-                        .to_string();
+                    let rel = p.strip_prefix(base).unwrap_or(&p).to_string_lossy().to_string();
                     let hash = fs::read(&p).map(|b| ridx_format::fnv1a_64(&b)).unwrap_or(0);
                     list.push((rel, hash));
                 } else if p.is_dir() {
@@ -78,13 +74,7 @@ pub(crate) fn hash_file_contents(path: &Path) -> Option<u64> {
     Some(ridx_format::fnv1a_64(&bytes))
 }
 
-pub(crate) fn compute_dependency_unit_key(
-    crate_name: &str,
-    crate_version: &str,
-    disambiguator: Option<&str>,
-    manifest_dir: Option<&Path>,
-    compiler_args: &[String],
-) -> String {
+pub(crate) fn compute_dependency_unit_key(crate_name: &str, crate_version: &str, disambiguator: Option<&str>, manifest_dir: Option<&Path>, compiler_args: &[String]) -> String {
     let mut key_str = format!(
         "{}:{}:{}:v{}:ext{}:drv={:016x}",
         crate_name,

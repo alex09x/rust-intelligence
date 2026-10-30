@@ -32,12 +32,7 @@ fn safe_slice(text: &str, raw_start: usize, raw_end: usize) -> &str {
     }
 }
 
-pub fn handle_signature_help(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> LspResult<Value> {
+pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
     let line_1based = line_0based + 1;
 
@@ -61,11 +56,7 @@ pub fn handle_signature_help(
                 byte_pos += line.len() + 1;
             } else if idx == line_0based as usize {
                 let col_idx = col_1based.saturating_sub(1) as usize;
-                let col_bytes = line
-                    .chars()
-                    .take(col_idx)
-                    .map(|c| c.len_utf8())
-                    .sum::<usize>();
+                let col_bytes = line.chars().take(col_idx).map(|c| c.len_utf8()).sum::<usize>();
                 byte_pos += col_bytes;
                 break;
             }
@@ -113,11 +104,7 @@ pub fn handle_signature_help(
                     angle_depth -= 1;
                 }
             }
-            ',' if paren_depth == 0
-                && bracket_depth == 0
-                && brace_depth == 0
-                && angle_depth == 0 =>
-            {
+            ',' if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 && angle_depth == 0 => {
                 active_param += 1;
             }
             _ => {}
@@ -152,9 +139,7 @@ pub fn handle_signature_help(
     }
 
     let mut name_start = name_end;
-    while name_start > 0
-        && (chars[name_start - 1] == '_' || chars[name_start - 1].is_alphanumeric())
-    {
+    while name_start > 0 && (chars[name_start - 1] == '_' || chars[name_start - 1].is_alphanumeric()) {
         name_start -= 1;
     }
 
@@ -193,8 +178,7 @@ pub fn handle_signature_help(
         while qual_end > 0 && chars[qual_end - 1].is_whitespace() {
             qual_end -= 1;
         }
-        let is_colon_call =
-            qual_end >= 2 && chars[qual_end - 1] == ':' && chars[qual_end - 2] == ':';
+        let is_colon_call = qual_end >= 2 && chars[qual_end - 1] == ':' && chars[qual_end - 2] == ':';
         let is_dot_call = qual_end >= 1 && chars[qual_end - 1] == '.';
 
         if is_colon_call || is_dot_call {
@@ -204,11 +188,7 @@ pub fn handle_signature_help(
                 qual_tok_end -= 1;
             }
             let mut qual_tok_start = qual_tok_end;
-            while qual_tok_start > 0
-                && (chars[qual_tok_start - 1] == '_'
-                    || chars[qual_tok_start - 1].is_alphanumeric()
-                    || chars[qual_tok_start - 1] == ':')
-            {
+            while qual_tok_start > 0 && (chars[qual_tok_start - 1] == '_' || chars[qual_tok_start - 1].is_alphanumeric() || chars[qual_tok_start - 1] == ':') {
                 qual_tok_start -= 1;
             }
             if qual_tok_start < qual_tok_end {

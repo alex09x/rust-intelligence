@@ -18,15 +18,7 @@ use std::fs::File;
 use std::path::PathBuf;
 
 #[allow(clippy::type_complexity)]
-fn build_mock_workspace_with_kinds(
-    readers_info: Vec<(
-        &std::path::Path,
-        Option<PathBuf>,
-        Option<String>,
-        Option<TargetKind>,
-    )>,
-    ws_root: PathBuf,
-) -> WorkspaceIndex {
+fn build_mock_workspace_with_kinds(readers_info: Vec<(&std::path::Path, Option<PathBuf>, Option<String>, Option<TargetKind>)>, ws_root: PathBuf) -> WorkspaceIndex {
     let mut readers = Vec::new();
     let mut paths = Vec::new();
     let mut mtimes = Vec::new();
@@ -113,18 +105,8 @@ fn test_target_kind_routing_prefers_lib_over_benches_and_examples() {
     // Bench comes first in reader array; lib comes second
     let ws = build_mock_workspace_with_kinds(
         vec![
-            (
-                &bench_ridx,
-                Some(ecs_root.clone()),
-                Some("bevy_ecs 0.15.0 (bench)".into()),
-                Some(TargetKind::Bench),
-            ),
-            (
-                &lib_ridx,
-                Some(ecs_root.clone()),
-                Some("bevy_ecs 0.15.0 (lib)".into()),
-                Some(TargetKind::Lib),
-            ),
+            (&bench_ridx, Some(ecs_root.clone()), Some("bevy_ecs 0.15.0 (bench)".into()), Some(TargetKind::Bench)),
+            (&lib_ridx, Some(ecs_root.clone()), Some("bevy_ecs 0.15.0 (lib)".into()), Some(TargetKind::Lib)),
         ],
         ws_root,
     );
@@ -156,11 +138,7 @@ fn test_loaded_file_metadata_extracts_manifest_dir_and_target_kind() {
         },
         "compiler_args": ["rustc", "crates/my_crate/src/lib.rs", "--crate-type", "lib"]
     });
-    std::fs::write(
-        deps_dir.join("my_crate.json"),
-        serde_json::to_vec(&sidecar_json).unwrap(),
-    )
-    .unwrap();
+    std::fs::write(deps_dir.join("my_crate.json"), serde_json::to_vec(&sidecar_json).unwrap()).unwrap();
 
     let ridx_file = temp_dir.path().join("my_crate.ridx");
     let mut writer = IndexWriter::new("my_crate", "0.1.0");
@@ -169,19 +147,9 @@ fn test_loaded_file_metadata_extracts_manifest_dir_and_target_kind() {
     drop(f);
 
     let empty_hashes = HashMap::new();
-    let meta = WorkspaceIndex::load_file_metadata(
-        &ridx_file,
-        temp_dir.path(),
-        "my_crate",
-        "uk_my_crate",
-        "",
-        &empty_hashes,
-    );
+    let meta = WorkspaceIndex::load_file_metadata(&ridx_file, temp_dir.path(), "my_crate", "uk_my_crate", "", &empty_hashes);
 
-    assert_eq!(
-        meta.source_root,
-        Some(PathBuf::from("/repo/crates/my_crate"))
-    );
+    assert_eq!(meta.source_root, Some(PathBuf::from("/repo/crates/my_crate")));
     assert_eq!(meta.target_kind, Some(TargetKind::Lib));
     assert!(!meta.is_dependency);
 }
@@ -216,30 +184,10 @@ fn test_candidate_reader_indices_filters_inaccessible_non_lib_targets() {
 
     let ws = build_mock_workspace_with_kinds(
         vec![
-            (
-                &ecs_lib_ridx,
-                Some(PathBuf::from("/repo/crates/bevy_ecs")),
-                None,
-                Some(TargetKind::Lib),
-            ),
-            (
-                &ecs_bench_ridx,
-                Some(PathBuf::from("/repo/crates/bevy_ecs")),
-                None,
-                Some(TargetKind::Bench),
-            ),
-            (
-                &app_lib_ridx,
-                Some(PathBuf::from("/repo/crates/bevy_app")),
-                None,
-                Some(TargetKind::Lib),
-            ),
-            (
-                &render_bench_ridx,
-                Some(PathBuf::from("/repo/crates/bevy_render")),
-                None,
-                Some(TargetKind::Bench),
-            ),
+            (&ecs_lib_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Lib)),
+            (&ecs_bench_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Bench)),
+            (&app_lib_ridx, Some(PathBuf::from("/repo/crates/bevy_app")), None, Some(TargetKind::Lib)),
+            (&render_bench_ridx, Some(PathBuf::from("/repo/crates/bevy_render")), None, Some(TargetKind::Bench)),
         ],
         PathBuf::from("/repo"),
     );
@@ -250,10 +198,7 @@ fn test_candidate_reader_indices_filters_inaccessible_non_lib_targets() {
     assert!(candidates.contains(&2), "Must contain bevy_app (own lib)");
     assert!(candidates.contains(&0), "Must contain bevy_ecs (other lib)");
     assert!(!candidates.contains(&1), "Must NOT contain bevy_ecs bench");
-    assert!(
-        !candidates.contains(&3),
-        "Must NOT contain bevy_render bench"
-    );
+    assert!(!candidates.contains(&3), "Must NOT contain bevy_render bench");
 }
 
 #[test]
@@ -308,41 +253,18 @@ fn test_find_definitions_by_owner_for_file_blocks_benchmark_leakage() {
 
     let ws = build_mock_workspace_with_kinds(
         vec![
-            (
-                &ecs_lib_ridx,
-                Some(PathBuf::from("/repo/crates/bevy_ecs")),
-                None,
-                Some(TargetKind::Lib),
-            ),
-            (
-                &ecs_bench_ridx,
-                Some(PathBuf::from("/repo/crates/bevy_ecs")),
-                None,
-                Some(TargetKind::Bench),
-            ),
+            (&ecs_lib_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Lib)),
+            (&ecs_bench_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Bench)),
         ],
         PathBuf::from("/repo"),
     );
 
     // Query from lib file (/repo/crates/bevy_ecs/src/world.rs):
-    let defs = ws.find_definitions_by_owner_for_file(
-        "/repo/crates/bevy_ecs/src/world.rs",
-        "change_detection",
-    );
-    assert!(
-        defs.is_empty(),
-        "Benchmark symbols must NOT leak to library file queries"
-    );
+    let defs = ws.find_definitions_by_owner_for_file("/repo/crates/bevy_ecs/src/world.rs", "change_detection");
+    assert!(defs.is_empty(), "Benchmark symbols must NOT leak to library file queries");
 
     // Query from inside the benchmark file (/repo/crates/bevy_ecs/benches/change_detection.rs):
-    let bench_defs = ws.find_definitions_by_owner_for_file(
-        "/repo/crates/bevy_ecs/benches/change_detection.rs",
-        "change_detection",
-    );
-    assert_eq!(
-        bench_defs.len(),
-        1,
-        "Benchmark file must see its own definitions"
-    );
+    let bench_defs = ws.find_definitions_by_owner_for_file("/repo/crates/bevy_ecs/benches/change_detection.rs", "change_detection");
+    assert_eq!(bench_defs.len(), 1, "Benchmark file must see its own definitions");
     assert_eq!(bench_defs[0].name, "ChaCha8Rng");
 }

@@ -46,9 +46,7 @@ fn test_workspace_relative_path_not_rebased_to_member_twice() {
         end_col: 17,
     });
     let app_ridx = var_dir.join("app.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap())).unwrap();
 
     let app_meta = serde_json::json!({
         "name": "app",
@@ -58,11 +56,7 @@ fn test_workspace_relative_path_not_rebased_to_member_twice() {
         "source_root": member_dir.display().to_string(),
         "is_dependency": false
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&app_meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&app_meta).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&var_dir).expect("failed to open workspace");
     let symbols = ws.search_symbols("hello");
@@ -103,9 +97,7 @@ fn test_single_shard_reload_refreshes_metadata_and_hashes() {
         end_col: 15,
     });
     let ridx_file = test_dir.join("app.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap())).unwrap();
 
     let meta = serde_json::json!({
         "name": "app",
@@ -117,11 +109,7 @@ fn test_single_shard_reload_refreshes_metadata_and_hashes() {
             "src/lib.rs": 100u64
         }
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&meta).unwrap()).unwrap();
 
     let mut ws = WorkspaceIndex::open(&ridx_file).expect("failed to open single shard");
     assert_eq!(ws.source_hash_for_file("src/lib.rs"), Some(100));
@@ -138,11 +126,7 @@ fn test_single_shard_reload_refreshes_metadata_and_hashes() {
             "src/lib.rs": 200u64
         }
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&meta_updated).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&meta_updated).unwrap()).unwrap();
     // Re-write ridx_file with later mtime
     let mut writer2 = IndexWriter::new("app", "0.1.0");
     writer2.set_unit_key("unitApp");
@@ -160,9 +144,7 @@ fn test_single_shard_reload_refreshes_metadata_and_hashes() {
         end_line: 1,
         end_col: 15,
     });
-    writer2
-        .write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap()))
-        .unwrap();
+    writer2.write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap())).unwrap();
 
     let reloaded = ws.reload_if_modified().expect("reload failed");
     assert!(reloaded, "expected reload_if_modified to return true");
@@ -196,9 +178,7 @@ fn test_null_local_source_root_resolves_via_workspace_root() {
         end_col: 15,
     });
     let app_ridx = var_dir.join("app.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap())).unwrap();
 
     let manifest = serde_json::json!({
         "version": "2.0",
@@ -210,16 +190,10 @@ fn test_null_local_source_root_resolves_via_workspace_root() {
         "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev"
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
-    let def = ws
-        .find_definition_by_path("app::foo")
-        .expect("should find definition");
+    let def = ws.find_definition_by_path("app::foo").expect("should find definition");
 
     let resolved = def.resolved_path();
     assert_eq!(resolved, test_dir.join("crates/app/src/lib.rs"));

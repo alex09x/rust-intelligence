@@ -112,11 +112,7 @@ impl WorkspaceIndex {
             }
 
             let current_mtime = fs::metadata(&p).and_then(|m| m.modified()).ok();
-            let current_meta_mtime = self
-                .meta_paths
-                .get(i)
-                .and_then(|p| p.as_ref())
-                .and_then(|p| fs::metadata(p).and_then(|m| m.modified()).ok());
+            let current_meta_mtime = self.meta_paths.get(i).and_then(|p| p.as_ref()).and_then(|p| fs::metadata(p).and_then(|m| m.modified()).ok());
             let index_changed = current_mtime != self.mtimes[i];
             let meta_changed = current_meta_mtime != self.meta_mtimes.get(i).copied().flatten();
 
@@ -124,20 +120,10 @@ impl WorkspaceIndex {
                 if let Ok(new_reader) = IndexReader::open(&p) {
                     self.readers[i] = new_reader;
                     self.mtimes[i] = current_mtime;
-                    let meta_dir = self
-                        .root_dir
-                        .clone()
-                        .or_else(|| p.parent().map(PathBuf::from));
+                    let meta_dir = self.root_dir.clone().or_else(|| p.parent().map(PathBuf::from));
                     if let Some(dir) = meta_dir {
                         let embedded = self.readers[i].embedded_file_hashes();
-                        let meta = Self::load_file_metadata(
-                            &p,
-                            &dir,
-                            self.readers[i].crate_name(),
-                            self.readers[i].unit_key(),
-                            self.readers[i].generation(),
-                            &embedded,
-                        );
+                        let meta = Self::load_file_metadata(&p, &dir, self.readers[i].crate_name(), self.readers[i].unit_key(), self.readers[i].generation(), &embedded);
                         if let Some(sr) = self.source_roots.get_mut(i) {
                             *sr = meta.source_root;
                         }
@@ -170,20 +156,10 @@ impl WorkspaceIndex {
                     changed = true;
                 }
             } else if meta_changed {
-                let meta_dir = self
-                    .root_dir
-                    .clone()
-                    .or_else(|| p.parent().map(PathBuf::from));
+                let meta_dir = self.root_dir.clone().or_else(|| p.parent().map(PathBuf::from));
                 if let Some(dir) = meta_dir {
                     let embedded = self.readers[i].embedded_file_hashes();
-                    let meta = Self::load_file_metadata(
-                        &p,
-                        &dir,
-                        self.readers[i].crate_name(),
-                        self.readers[i].unit_key(),
-                        self.readers[i].generation(),
-                        &embedded,
-                    );
+                    let meta = Self::load_file_metadata(&p, &dir, self.readers[i].crate_name(), self.readers[i].unit_key(), self.readers[i].generation(), &embedded);
                     if let Some(sr) = self.source_roots.get_mut(i) {
                         *sr = meta.source_root;
                     }
@@ -220,11 +196,7 @@ impl WorkspaceIndex {
 
         // 2. If loaded from directory, check for new .ridx files
         if let Some(dir) = self.root_dir.clone() {
-            let existing_set: std::collections::HashSet<PathBuf> = self
-                .paths
-                .iter()
-                .map(|p| fs::canonicalize(p).unwrap_or_else(|_| p.clone()))
-                .collect();
+            let existing_set: std::collections::HashSet<PathBuf> = self.paths.iter().map(|p| fs::canonicalize(p).unwrap_or_else(|_| p.clone())).collect();
 
             let mut all_files = Vec::new();
             if dir.is_dir() {
@@ -237,20 +209,9 @@ impl WorkspaceIndex {
                     if let Ok(reader) = IndexReader::open(&file_path) {
                         let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
                         let embedded = reader.embedded_file_hashes();
-                        let meta = Self::load_file_metadata(
-                            &file_path,
-                            &dir,
-                            reader.crate_name(),
-                            reader.unit_key(),
-                            reader.generation(),
-                            &embedded,
-                        );
+                        let meta = Self::load_file_metadata(&file_path, &dir, reader.crate_name(), reader.unit_key(), reader.generation(), &embedded);
                         if let Some(ref uk) = meta.unit_key {
-                            if self
-                                .unit_keys
-                                .iter()
-                                .any(|existing_uk| existing_uk.as_deref() == Some(uk))
-                            {
+                            if self.unit_keys.iter().any(|existing_uk| existing_uk.as_deref() == Some(uk)) {
                                 continue;
                             }
                         }
@@ -290,16 +251,11 @@ impl WorkspaceIndex {
         }
         let p = Path::new(file_path);
         if let Ok(canon) = p.canonicalize() {
-            if self
-                .last_reloaded_files
-                .contains(&canon.to_string_lossy().to_string())
-            {
+            if self.last_reloaded_files.contains(&canon.to_string_lossy().to_string()) {
                 return true;
             }
         }
-        self.last_reloaded_files
-            .iter()
-            .any(|rf| rf == file_path || rf.ends_with(file_path) || file_path.ends_with(rf))
+        self.last_reloaded_files.iter().any(|rf| rf == file_path || rf.ends_with(file_path) || file_path.ends_with(rf))
     }
 
     pub(super) fn record_reloaded_reader_files(&mut self, idx: usize) {
@@ -309,16 +265,10 @@ impl WorkspaceIndex {
             for fid in 0..header.files_count {
                 let f = reader.get_file(fid);
                 if !f.is_empty() {
-                    let full = if let Some(root) = source_root {
-                        crate::format::join_resolving_overlap(root, Path::new(f))
-                    } else {
-                        PathBuf::from(f)
-                    };
-                    self.last_reloaded_files
-                        .insert(full.to_string_lossy().to_string());
+                    let full = if let Some(root) = source_root { crate::format::join_resolving_overlap(root, Path::new(f)) } else { PathBuf::from(f) };
+                    self.last_reloaded_files.insert(full.to_string_lossy().to_string());
                     if let Ok(canon) = full.canonicalize() {
-                        self.last_reloaded_files
-                            .insert(canon.to_string_lossy().to_string());
+                        self.last_reloaded_files.insert(canon.to_string_lossy().to_string());
                     }
                     self.last_reloaded_files.insert(f.to_string());
                 }

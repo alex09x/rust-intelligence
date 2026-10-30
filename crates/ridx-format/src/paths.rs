@@ -26,10 +26,7 @@ pub fn normalize_path(path: &Path) -> PathBuf {
             Component::ParentDir => {
                 if let Some(Component::Normal(_)) = components.last() {
                     components.pop();
-                } else if !components
-                    .iter()
-                    .any(|comp| matches!(comp, Component::RootDir | Component::Prefix(_)))
-                {
+                } else if !components.iter().any(|comp| matches!(comp, Component::RootDir | Component::Prefix(_))) {
                     components.push(c);
                 }
             }

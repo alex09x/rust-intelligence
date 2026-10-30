@@ -53,12 +53,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -81,9 +76,7 @@ fn test_type_definition_cross_crate_dependency() {
     ws.add_crate("dep_crate", "0.1.0").unwrap();
     ws.add_crate("app_crate", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("dep_crate", "src/lib.rs", "pub struct «ServiceConfig»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("dep_crate", "src/lib.rs", "pub struct «ServiceConfig»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("app_crate", "src/lib.rs", "pub fn start() { let cfg = 0; }\n").unwrap();
@@ -108,9 +101,7 @@ fn test_type_definition_cross_crate_reexport() {
     ws.add_crate("core_backend", "0.1.0").unwrap();
     ws.add_crate("client_fe", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("core_backend", "src/lib.rs", "pub struct «DatabasePool»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("core_backend", "src/lib.rs", "pub struct «DatabasePool»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("client_fe", "src/lib.rs", "pub fn connect() { let pool = 0; }\n").unwrap();

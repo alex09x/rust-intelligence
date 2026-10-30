@@ -23,10 +23,7 @@ pub struct OverlayManager {
 
 impl OverlayManager {
     pub fn new() -> Self {
-        Self {
-            overlays: HashMap::new(),
-            doc_symbol_cache: DocumentSymbolDiskCache::new(),
-        }
+        Self { overlays: HashMap::new(), doc_symbol_cache: DocumentSymbolDiskCache::new() }
     }
 
     pub(crate) fn doc_symbol_cache(&self) -> &DocumentSymbolDiskCache {
@@ -43,12 +40,7 @@ impl OverlayManager {
         }
     }
 
-    pub fn apply_content_changes(
-        &mut self,
-        file_path: &str,
-        version: i32,
-        changes: &[serde_json::Value],
-    ) -> bool {
+    pub fn apply_content_changes(&mut self, file_path: &str, version: i32, changes: &[serde_json::Value]) -> bool {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             existing.apply_content_changes(version, changes);
             true
@@ -78,12 +70,7 @@ impl OverlayManager {
     }
 
     #[allow(dead_code)]
-    pub fn apply_incremental_change(
-        &mut self,
-        file_path: &str,
-        version: i32,
-        changes: &[serde_json::Value],
-    ) -> bool {
+    pub fn apply_incremental_change(&mut self, file_path: &str, version: i32, changes: &[serde_json::Value]) -> bool {
         self.apply_content_changes(file_path, version, changes)
     }
 
@@ -99,14 +86,7 @@ impl OverlayManager {
         self.close(file_path);
     }
 
-    pub fn open_with_provenance(
-        &mut self,
-        uri: &str,
-        file_path: &str,
-        version: i32,
-        text: String,
-        is_compiled: bool,
-    ) {
+    pub fn open_with_provenance(&mut self, uri: &str, file_path: &str, version: i32, text: String, is_compiled: bool) {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             existing.update(version, text);
             if is_compiled {
@@ -115,33 +95,19 @@ impl OverlayManager {
                 existing.compiled_text = None;
             }
         } else {
-            let overlay =
-                DocumentOverlay::new_with_provenance(uri, file_path, version, text, is_compiled);
+            let overlay = DocumentOverlay::new_with_provenance(uri, file_path, version, text, is_compiled);
             self.overlays.insert(file_path.to_string(), overlay);
         }
     }
 
-    pub fn open_with_source_hash(
-        &mut self,
-        uri: &str,
-        file_path: &str,
-        version: i32,
-        text: String,
-        expected_hash: Option<u64>,
-    ) {
+    pub fn open_with_source_hash(&mut self, uri: &str, file_path: &str, version: i32, text: String, expected_hash: Option<u64>) {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             let disk_text = std::fs::read_to_string(file_path).ok();
             existing.update(version, text);
-            existing.compiled_text = super::resolve_compiled_text(
-                existing.content_hash,
-                &existing.text,
-                disk_text.as_deref(),
-                expected_hash,
-            );
+            existing.compiled_text = super::resolve_compiled_text(existing.content_hash, &existing.text, disk_text.as_deref(), expected_hash);
             existing.disk_text = disk_text;
         } else {
-            let overlay =
-                DocumentOverlay::new_with_source_hash(uri, file_path, version, text, expected_hash);
+            let overlay = DocumentOverlay::new_with_source_hash(uri, file_path, version, text, expected_hash);
             self.overlays.insert(file_path.to_string(), overlay);
         }
     }
@@ -171,12 +137,7 @@ impl OverlayManager {
         self.overlays.get_mut(file_path)
     }
 
-    pub fn find_definition_at(
-        &self,
-        file_path: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<OverlayDefinition> {
+    pub fn find_definition_at(&self, file_path: &str, line: u32, col: u32) -> Option<OverlayDefinition> {
         let overlay = self.overlays.get(file_path)?;
         overlay.find_definition_at(line, col)
     }
@@ -185,18 +146,10 @@ impl OverlayManager {
         self.overlays.get(file_path).map(|o| o.document_symbols())
     }
 
-    pub fn find_global_symbol_definition(
-        &self,
-        current_file: &str,
-        ident: &str,
-        path_prefix: Option<&str>,
-    ) -> Option<OverlayDefinition> {
+    pub fn find_global_symbol_definition(&self, current_file: &str, ident: &str, path_prefix: Option<&str>) -> Option<OverlayDefinition> {
         // If the current file has a local declaration for this ident, it must not jump elsewhere.
         if let Some(current_ov) = self.overlays.get(current_file) {
-            let has_local_binding = current_ov
-                .symbols
-                .iter()
-                .any(|s| s.name == ident && matches!(s.kind, DefKind::Local | DefKind::Field));
+            let has_local_binding = current_ov.symbols.iter().any(|s| s.name == ident && matches!(s.kind, DefKind::Local | DefKind::Field));
             if has_local_binding {
                 return None;
             }
@@ -208,15 +161,7 @@ impl OverlayManager {
                 if sym.name == ident {
                     let is_item_level = matches!(
                         sym.kind,
-                        DefKind::Fn
-                            | DefKind::Struct
-                            | DefKind::Enum
-                            | DefKind::Trait
-                            | DefKind::TyAlias
-                            | DefKind::Const
-                            | DefKind::Static
-                            | DefKind::Mod
-                            | DefKind::Macro
+                        DefKind::Fn | DefKind::Struct | DefKind::Enum | DefKind::Trait | DefKind::TyAlias | DefKind::Const | DefKind::Static | DefKind::Mod | DefKind::Macro
                     );
                     if is_item_level {
                         candidates.push((file_path, sym));
@@ -230,11 +175,7 @@ impl OverlayManager {
         }
 
         if let Some(prefix) = path_prefix {
-            let normalized_prefix = prefix
-                .trim_start_matches("crate::")
-                .trim_start_matches("super::")
-                .trim_start_matches("self::")
-                .replace("::", "/");
+            let normalized_prefix = prefix.trim_start_matches("crate::").trim_start_matches("super::").trim_start_matches("self::").replace("::", "/");
 
             if normalized_prefix.is_empty() {
                 return None;
@@ -242,10 +183,7 @@ impl OverlayManager {
 
             for (file_path, sym) in &candidates {
                 let p = file_path.replace(std::path::MAIN_SEPARATOR, "/");
-                if p.ends_with(&format!("{}.rs", normalized_prefix))
-                    || p.ends_with(&format!("{}/mod.rs", normalized_prefix))
-                    || p.contains(&format!("/{}", normalized_prefix))
-                {
+                if p.ends_with(&format!("{}.rs", normalized_prefix)) || p.ends_with(&format!("{}/mod.rs", normalized_prefix)) || p.contains(&format!("/{}", normalized_prefix)) {
                     return Some(sym.to_definition(file_path));
                 }
             }
@@ -275,9 +213,7 @@ impl OverlayManager {
 
     #[allow(dead_code)]
     pub fn map_compiled_line_to_live(&self, file_path: &str, compiled_line: u32) -> Option<u32> {
-        self.overlays
-            .get(file_path)?
-            .map_compiled_line_to_live(compiled_line)
+        self.overlays.get(file_path)?.map_compiled_line_to_live(compiled_line)
     }
 
     #[allow(dead_code)]
@@ -322,12 +258,7 @@ mod tests {
 
         // open_or_update
         mgr.open_or_update(uri, file, 3, "fn main() { let x = 3; }\n".to_string());
-        mgr.open_or_update(
-            "file:///tmp/other.rs",
-            "/tmp/other.rs",
-            1,
-            "fn other() {}\n".to_string(),
-        );
+        mgr.open_or_update("file:///tmp/other.rs", "/tmp/other.rs", 1, "fn other() {}\n".to_string());
         assert_eq!(mgr.open_count(), 2);
 
         // rename
@@ -365,8 +296,7 @@ mod tests {
         mgr.reconcile_with_disk(file, hash);
         mgr.reconcile_with_disk(file, 9999);
 
-        let real_tmp =
-            std::env::temp_dir().join(format!("ridx_mgr_disk_test_{}.rs", std::process::id()));
+        let real_tmp = std::env::temp_dir().join(format!("ridx_mgr_disk_test_{}.rs", std::process::id()));
         std::fs::write(&real_tmp, b"pub fn disk_fn() {}").unwrap();
         let real_tmp_str = real_tmp.to_string_lossy().to_string();
         mgr.open_with_provenance("uri_disk", &real_tmp_str, 1, "overlay".to_string(), false);

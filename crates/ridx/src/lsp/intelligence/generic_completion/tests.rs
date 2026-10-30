@@ -188,11 +188,7 @@ fn test_resolve_generic_param_owners_from_driver_data() {
         "manifest_path": temp_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    std::fs::write(
-        temp_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    std::fs::write(temp_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&temp_dir).unwrap();
 
@@ -207,8 +203,7 @@ fn test_resolve_generic_param_owners_from_driver_data() {
     assert_eq!(owners_open, Some(vec!["test_crate::MyTrait".to_string()]), "Open clean buffer should use driver fast path");
 
     // 3. Chained F::Assoc:: query from driver data
-    let owners_assoc =
-        resolve_generic_param_owners(&ws, "src/lib.rs", 25, "    F::Assoc::", None, false, "F::Assoc");
+    let owners_assoc = resolve_generic_param_owners(&ws, "src/lib.rs", 25, "    F::Assoc::", None, false, "F::Assoc");
     assert!(owners_assoc.is_some(), "F::Assoc:: should resolve from index");
     assert_eq!(owners_assoc.unwrap(), vec!["test_crate::BoundTrait".to_string()]);
 
@@ -325,11 +320,7 @@ fn test_resolve_generic_param_owners_impl_and_method_generics() {
         "manifest_path": temp_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    std::fs::write(
-        temp_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    std::fs::write(temp_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&temp_dir).unwrap();
 
@@ -341,42 +332,24 @@ fn test_resolve_generic_param_owners_impl_and_method_generics() {
     // 1. Inside method `fn f` at line 18:
     // a) Query `T::` (from enclosing impl<T: Tr>)
     let res_t = resolve_generic_param_owners(&ws, "src/lib.rs", 18, "        T::", Some(corrupt_buffer), false, "T");
-    assert_eq!(
-        res_t,
-        Some(vec!["test_crate::Tr".to_string()]),
-        "impl generic T must resolve from driver path when document buffer is clean"
-    );
+    assert_eq!(res_t, Some(vec!["test_crate::Tr".to_string()]), "impl generic T must resolve from driver path when document buffer is clean");
 
     // b) Query `M::` (from enclosing fn f<M: MethodTr>)
     let res_m = resolve_generic_param_owners(&ws, "src/lib.rs", 18, "        M::", Some(corrupt_buffer), false, "M");
-    assert_eq!(
-        res_m,
-        Some(vec!["test_crate::MethodTr".to_string()]),
-        "method generic M must resolve from driver path when document buffer is clean"
-    );
+    assert_eq!(res_m, Some(vec!["test_crate::MethodTr".to_string()]), "method generic M must resolve from driver path when document buffer is clean");
 
     // 2. Outside method `fn f`, but inside `impl` at line 30:
     // a) Query `T::` -> still in scope
     let res_t_impl = resolve_generic_param_owners(&ws, "src/lib.rs", 30, "    T::", Some(corrupt_buffer), false, "T");
-    assert_eq!(
-        res_t_impl,
-        Some(vec!["test_crate::Tr".to_string()]),
-        "impl generic T must remain in scope across the entire impl body"
-    );
+    assert_eq!(res_t_impl, Some(vec!["test_crate::Tr".to_string()]), "impl generic T must remain in scope across the entire impl body");
 
     // b) Query `M::` -> method generic M is out of scope outside fn f
     let res_m_out = resolve_generic_param_owners(&ws, "src/lib.rs", 30, "    M::", Some(corrupt_buffer), false, "M");
-    assert_eq!(
-        res_m_out, None,
-        "method generic M must NOT be in scope outside the method"
-    );
+    assert_eq!(res_m_out, None, "method generic M must NOT be in scope outside the method");
 
     // 3. Negative check: if buffer is dirty (is_dirty = true), driver path is bypassed and lexer fails on corrupt buffer
     let res_dirty = resolve_generic_param_owners(&ws, "src/lib.rs", 18, "        T::", Some(corrupt_buffer), true, "T");
-    assert_eq!(
-        res_dirty, None,
-        "dirty buffer must bypass driver path and attempt lexer, returning None on non-lexical buffer"
-    );
+    assert_eq!(res_dirty, None, "dirty buffer must bypass driver path and attempt lexer, returning None on non-lexical buffer");
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }

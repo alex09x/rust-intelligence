@@ -27,7 +27,6 @@ use std::sync::{Arc, Mutex};
 
 static INC_COUNTER_P10: AtomicU64 = AtomicU64::new(2000);
 
-
 fn to_uri(p: &Path) -> String {
     path_to_uri(p.to_str().unwrap())
 }
@@ -57,10 +56,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -82,24 +78,48 @@ fn test_call_hierarchy_incoming_calls_from_ranges_match_source_call_coordinates(
 
     let mut writer = IndexWriter::new("coords_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "coords_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "coords_crate::target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller".to_string(), path: "coords_crate::caller".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "caller".to_string(),
+        path: "coords_crate::caller".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 7,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 11,
-        target_def_id: Some(1), target_path: "coords_crate::target".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 11,
+        target_def_id: Some(1),
+        target_path: "coords_crate::target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\n\nfn caller() {\n    target();\n}\n").unwrap();
@@ -138,24 +158,48 @@ fn test_call_hierarchy_incoming_calls_response_shape_exact_fields() {
 
     let mut writer = IndexWriter::new("shape_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "shape_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "shape_crate::target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller".to_string(), path: "shape_crate::caller".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "caller".to_string(),
+        path: "shape_crate::caller".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 7,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 11,
-        target_def_id: Some(1), target_path: "shape_crate::target".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 11,
+        target_def_id: Some(1),
+        target_path: "shape_crate::target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\n\nfn caller() {\n    target();\n}\n").unwrap();
@@ -197,24 +241,48 @@ fn test_call_hierarchy_incoming_calls_nested_inside_block() {
 
     let mut writer = IndexWriter::new("nested_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "nested_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "nested_crate::target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "outer".to_string(), path: "nested_crate::outer".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 6,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "outer".to_string(),
+        path: "nested_crate::outer".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 6,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 5, start_col: 9, end_line: 5, end_col: 15,
-        target_def_id: Some(1), target_path: "nested_crate::target".to_string(),
+        start_line: 5,
+        start_col: 9,
+        end_line: 5,
+        end_col: 15,
+        target_def_id: Some(1),
+        target_path: "nested_crate::target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\n\nfn outer() {\n    {\n        target();\n    }\n}\n").unwrap();
@@ -249,24 +317,48 @@ fn test_call_hierarchy_incoming_calls_macro_call_site_reference() {
 
     let mut writer = IndexWriter::new("expr_site_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "expr_site_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "expr_site_crate::target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "expr_caller".to_string(), path: "expr_site_crate::expr_caller".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 15,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "expr_caller".to_string(),
+        path: "expr_site_crate::expr_caller".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 15,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 13, end_line: 4, end_col: 19,
-        target_def_id: Some(1), target_path: "expr_site_crate::target".to_string(),
+        start_line: 4,
+        start_col: 13,
+        end_line: 4,
+        end_col: 19,
+        target_def_id: Some(1),
+        target_path: "expr_site_crate::target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() -> i32 { 42 }\n\nfn expr_caller() {\n    let _ = target();\n}\n").unwrap();

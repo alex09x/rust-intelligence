@@ -114,24 +114,18 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(stats.total_types, 1);
 
     // 4. Test find_definition_by_path across crates
-    let def_a = ws
-        .find_definition_by_path("crate_a::types::TypeA")
-        .expect("should find TypeA in crate_a");
+    let def_a = ws.find_definition_by_path("crate_a::types::TypeA").expect("should find TypeA in crate_a");
     assert_eq!(def_a.name, "TypeA");
     assert_eq!(def_a.file, "crates/crate_a/src/types.rs");
     assert_eq!(def_a.start_line, 10);
     assert_eq!(def_a.end_line, 15);
 
-    let def_b = ws
-        .find_definition_by_path("crate_b::use_a")
-        .expect("should find use_a in crate_b");
+    let def_b = ws.find_definition_by_path("crate_b::use_a").expect("should find use_a in crate_b");
     assert_eq!(def_b.name, "use_a");
     assert_eq!(def_b.signature, Some("fn(TypeA)"));
 
     // 5. Test cross-crate go-to-definition at cursor site in crate_b
-    let cross_def = ws
-        .find_definition_at("crates/crate_b/src/lib.rs", 12, 12)
-        .expect("should resolve cross-crate reference to TypeA");
+    let cross_def = ws.find_definition_at("crates/crate_b/src/lib.rs", 12, 12).expect("should resolve cross-crate reference to TypeA");
     assert_eq!(cross_def.name, "TypeA");
     assert_eq!(cross_def.path, "crate_a::types::TypeA");
     assert_eq!(cross_def.file, "crates/crate_a/src/types.rs");
@@ -147,9 +141,7 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(refs[0].span.start_line(), 12);
 
     // 7. Test type_at
-    let ty = ws
-        .type_at("crates/crate_b/src/lib.rs", 12, 13)
-        .expect("should find inferred type");
+    let ty = ws.type_at("crates/crate_b/src/lib.rs", 12, 13).expect("should find inferred type");
     assert_eq!(ty, "crate_a::types::TypeA");
 
     // 8. Test workspace-wide search_symbols
@@ -159,9 +151,7 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(matches[0].crate_name, "crate_a");
 
     // 9. Test find_references_at cursor location in crate_b
-    let loc_refs = ws
-        .find_references_at("crates/crate_b/src/lib.rs", 12, 12)
-        .expect("should find references at cursor");
+    let loc_refs = ws.find_references_at("crates/crate_b/src/lib.rs", 12, 12).expect("should find references at cursor");
     assert_eq!(loc_refs.target_symbol, "TypeA");
     assert_eq!(loc_refs.target_end_line, 15);
     assert_eq!(loc_refs.target_end_col, 2);
@@ -169,16 +159,11 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(loc_refs.references[0].crate_name, "crate_b");
 
     // 10. Test hover_at skipping redundant type_at on resolved Struct while type_at still works
-    let hover = ws
-        .hover_at("crates/crate_b/src/lib.rs", 12, 12)
-        .expect("should get hover");
+    let hover = ws.hover_at("crates/crate_b/src/lib.rs", 12, 12).expect("should get hover");
     assert!(hover.definition.is_some());
     assert_eq!(hover.definition.unwrap().name, "TypeA");
     assert!(hover.inferred_type.is_none());
-    assert_eq!(
-        ws.type_at("crates/crate_b/src/lib.rs", 12, 12),
-        Some("crate_a::types::TypeA")
-    );
+    assert_eq!(ws.type_at("crates/crate_b/src/lib.rs", 12, 12), Some("crate_a::types::TypeA"));
 
     let _ = fs::remove_dir_all(&ws_dir);
 }
@@ -224,11 +209,7 @@ fn test_variant_aware_workspace_and_reload() {
         "total_refs": 0,
         "total_types": 0,
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest1).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest1).unwrap()).unwrap();
 
     // 3. Open workspace
     let mut ws = WorkspaceIndex::open(&base_dir).expect("should open variant workspace");
@@ -274,11 +255,7 @@ fn test_variant_aware_workspace_and_reload() {
         "total_refs": 0,
         "total_types": 0,
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest2).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest2).unwrap()).unwrap();
 
     // 6. Reload workspace index
     let changed = ws.reload_if_modified().expect("reload should succeed");
@@ -286,9 +263,7 @@ fn test_variant_aware_workspace_and_reload() {
     assert_eq!(ws.active_variant_id(), Some("var2"));
     assert_eq!(ws.stats().active_variant.as_deref(), Some("var2"));
     assert!(ws.find_definition_by_path("crate_a::func_var1").is_none());
-    let def2 = ws
-        .find_definition_by_path("crate_a::func_var2")
-        .expect("should find func_var2 in var2");
+    let def2 = ws.find_definition_by_path("crate_a::func_var2").expect("should find func_var2 in var2");
     assert_eq!(def2.signature, Some("fn() -> i32"));
 
     let _ = fs::remove_dir_all(&base_dir);
@@ -307,11 +282,7 @@ fn test_missing_active_variant_returns_not_found() {
         "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     // Put a legacy .ridx file in base_dir to ensure it is NOT loaded as a fallback
     let mut writer = IndexWriter::new("legacy_crate", "0.0.1");
@@ -320,10 +291,7 @@ fn test_missing_active_variant_returns_not_found() {
 
     // WorkspaceIndex::open must return NotFound, not succeed by falling back to legacy.ridx
     let res = WorkspaceIndex::open(&base_dir);
-    assert!(
-        res.is_err(),
-        "should fail to open when active variant directory does not exist"
-    );
+    assert!(res.is_err(), "should fail to open when active variant directory does not exist");
     assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::NotFound);
 
     let _ = fs::remove_dir_all(&base_dir);
@@ -361,22 +329,8 @@ fn test_hover_at_skips_type_at_for_struct_and_keeps_for_fn() {
         end_line: 2,
         end_col: 20,
     });
-    writer.add_type(RawType {
-        type_name: "crate_h::MyStruct".to_string(),
-        file: "src/lib.rs".to_string(),
-        start_line: 1,
-        start_col: 1,
-        end_line: 1,
-        end_col: 20,
-    });
-    writer.add_type(RawType {
-        type_name: "u32".to_string(),
-        file: "src/lib.rs".to_string(),
-        start_line: 2,
-        start_col: 1,
-        end_line: 2,
-        end_col: 20,
-    });
+    writer.add_type(RawType { type_name: "crate_h::MyStruct".to_string(), file: "src/lib.rs".to_string(), start_line: 1, start_col: 1, end_line: 1, end_col: 20 });
+    writer.add_type(RawType { type_name: "u32".to_string(), file: "src/lib.rs".to_string(), start_line: 2, start_col: 1, end_line: 2, end_col: 20 });
     let f = File::create(base_dir.join("crate_h.ridx")).unwrap();
     writer.write_to(&mut BufWriter::new(f)).unwrap();
 

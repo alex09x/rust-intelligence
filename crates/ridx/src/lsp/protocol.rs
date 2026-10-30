@@ -77,9 +77,7 @@ pub fn percent_decode(s: &str) -> String {
     let mut i = 0;
     while i < bytes.len() {
         if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let Ok(byte) =
-                u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16)
-            {
+            if let Ok(byte) = u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16) {
                 decoded.push(byte);
                 i += 3;
                 continue;
@@ -108,10 +106,7 @@ pub fn percent_encode_path(s: &str) -> String {
 }
 
 pub fn uri_to_path(uri: &str) -> String {
-    let stripped = uri
-        .strip_prefix("file://localhost")
-        .or_else(|| uri.strip_prefix("file://"))
-        .unwrap_or(uri);
+    let stripped = uri.strip_prefix("file://localhost").or_else(|| uri.strip_prefix("file://")).unwrap_or(uri);
     percent_decode(stripped)
 }
 
@@ -139,9 +134,7 @@ pub struct PositionConverter {
 
 impl PositionConverter {
     pub fn new() -> Self {
-        Self {
-            cache: HashMap::new(),
-        }
+        Self { cache: HashMap::new() }
     }
 
     pub fn invalidate(&mut self, file: &str) {
@@ -177,23 +170,14 @@ impl PositionConverter {
             None
         } else {
             let start = line_starts[line_idx];
-            let end = if line_idx + 1 < line_starts.len() {
-                line_starts[line_idx + 1]
-            } else {
-                content.len()
-            };
+            let end = if line_idx + 1 < line_starts.len() { line_starts[line_idx + 1] } else { content.len() };
             let slice = &content[start..end];
             Some(slice.trim_end_matches(['\r', '\n']))
         }
     }
 
     /// Converts 1-based char column (1-indexed code points) to LSP 0-based character (UTF-16 code units).
-    pub fn char_col_to_utf16_col(
-        &mut self,
-        file: &str,
-        line_1based: u32,
-        char_col_1based: u32,
-    ) -> u32 {
+    pub fn char_col_to_utf16_col(&mut self, file: &str, line_1based: u32, char_col_1based: u32) -> u32 {
         if char_col_1based <= 1 {
             return 0;
         }
@@ -215,12 +199,7 @@ impl PositionConverter {
     }
 
     /// Converts LSP 0-based character (UTF-16 code units) to 1-based char column (1-indexed code points).
-    pub fn utf16_col_to_char_col(
-        &mut self,
-        file: &str,
-        line_1based: u32,
-        utf16_col_0based: u32,
-    ) -> u32 {
+    pub fn utf16_col_to_char_col(&mut self, file: &str, line_1based: u32, utf16_col_0based: u32) -> u32 {
         if utf16_col_0based == 0 {
             return 1;
         }
@@ -263,14 +242,7 @@ pub fn send_log_message<W: Write>(writer: &mut W, msg_type: i32, message: &str) 
 }
 
 #[allow(dead_code)]
-pub fn send_work_done_progress<W: Write>(
-    writer: &mut W,
-    token: &Value,
-    kind: &str,
-    title: Option<&str>,
-    message: Option<&str>,
-    percentage: Option<u32>,
-) -> io::Result<()> {
+pub fn send_work_done_progress<W: Write>(writer: &mut W, token: &Value, kind: &str, title: Option<&str>, message: Option<&str>, percentage: Option<u32>) -> io::Result<()> {
     let mut value = serde_json::json!({
         "kind": kind
     });
@@ -379,15 +351,7 @@ mod tests {
         assert!(buf2.starts_with(b"Content-Length: "));
 
         let mut buf3 = Vec::new();
-        send_work_done_progress(
-            &mut buf3,
-            &serde_json::json!("token-1"),
-            "report",
-            Some("Indexing"),
-            Some("Working..."),
-            Some(50),
-        )
-        .unwrap();
+        send_work_done_progress(&mut buf3, &serde_json::json!("token-1"), "report", Some("Indexing"), Some("Working..."), Some(50)).unwrap();
         assert!(buf3.starts_with(b"Content-Length: "));
     }
 }

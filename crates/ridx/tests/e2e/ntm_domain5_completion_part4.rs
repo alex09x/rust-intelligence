@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -81,12 +76,7 @@ fn send_completion_req(
 fn test_completion_path_separator_double_colon() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_double_colon.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "mod network { pub fn connect() {} }\nfn main() { network:: }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "mod network { pub fn connect() {} }\nfn main() { network:: }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -103,12 +93,7 @@ fn test_completion_path_separator_double_colon() {
 fn test_completion_self_parameter_method_lookup() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_self_param.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "struct Service;\nimpl Service {\n    fn helper(&self) {}\n    fn action(&self) {\n        self.\n    }\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "struct Service;\nimpl Service {\n    fn helper(&self) {}\n    fn action(&self) {\n        self.\n    }\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -124,12 +109,7 @@ fn test_completion_self_parameter_method_lookup() {
 fn test_completion_enum_variant_scope() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_enum_scope.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "enum Status { Active, Inactive }\nfn check() { let s = Status::Active; }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "enum Status { Active, Inactive }\nfn check() { let s = Status::Active; }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -145,12 +125,7 @@ fn test_completion_enum_variant_scope() {
 fn test_completion_struct_field_completion() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_struct_field.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "struct Config { timeout_seconds: u32, retry_attempts: usize }\nfn test(c: Config) { let _ = c.tim; }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "struct Config { timeout_seconds: u32, retry_attempts: usize }\nfn test(c: Config) { let _ = c.tim; }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -166,12 +141,7 @@ fn test_completion_struct_field_completion() {
 fn test_completion_trait_method_suggestion() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_trait_suggestion.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "trait Worker { fn perform_work(&self); }\nfn do_job<W: Worker>(w: &W) { w.per; }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "trait Worker { fn perform_work(&self); }\nfn do_job<W: Worker>(w: &W) { w.per; }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -187,12 +157,7 @@ fn test_completion_trait_method_suggestion() {
 fn test_completion_tuple_index_access() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_tuple_idx.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn pair() -> (i32, String) { (1, \"one\".into()) }\nfn inspect() { let p = pair(); let _ = p.0; }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn pair() -> (i32, String) { (1, \"one\".into()) }\nfn inspect() { let p = pair(); let _ = p.0; }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -208,12 +173,7 @@ fn test_completion_tuple_index_access() {
 fn test_completion_items_have_sort_text_or_label() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_sort_text.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn foo() { let var_one = 1; let var_two = 2; var_ }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn foo() { let var_one = 1; let var_two = 2; var_ }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -230,12 +190,7 @@ fn test_completion_items_have_sort_text_or_label() {
 fn test_completion_insert_text_format_plain_or_snippet() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_insert_text_fmt.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn example() { let candidate = 42; cand }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn example() { let candidate = 42; cand }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -255,12 +210,7 @@ fn test_completion_insert_text_format_plain_or_snippet() {
 fn test_completion_items_unique_labels_within_scope() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_unique_labels.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn unique_check() { let identifier = 1; iden }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn unique_check() { let identifier = 1; iden }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -281,12 +231,7 @@ fn test_completion_items_unique_labels_within_scope() {
 fn test_completion_client_filter_text_matches_label() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_filter_text.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn filter_test() { let my_sample_identifier = 1; my_s }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn filter_test() { let my_sample_identifier = 1; my_s }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },

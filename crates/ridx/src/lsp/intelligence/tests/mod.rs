@@ -35,15 +35,10 @@ static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 pub fn setup_test_intelligence() -> (PathBuf, WorkspaceIndex, OverlayManager, PositionConverter) {
     let test_id = TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir = std::env::temp_dir().join(format!(
-        "ridx_test_intel_{}_{}",
-        std::process::id(),
-        test_id
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_intel_{}_{}", std::process::id(), test_id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
-    let code =
-        "pub fn calculate(a: i32, b: i32) -> i32 { a + b }\npub struct User { pub id: u64 }\n";
+    let code = "pub fn calculate(a: i32, b: i32) -> i32 { a + b }\npub struct User { pub id: u64 }\n";
     let _ = fs::write(&src_file, code);
 
     let src_path_str = src_file.to_str().unwrap().to_string();
@@ -91,22 +86,8 @@ pub fn setup_test_intelligence() -> (PathBuf, WorkspaceIndex, OverlayManager, Po
         signature: None,
     });
 
-    writer.add_type(RawType {
-        file: src_path_str.clone(),
-        start_line: 1,
-        start_col: 8,
-        end_line: 1,
-        end_col: 11,
-        type_name: "fn(i32, i32) -> i32".to_string(),
-    });
-    writer.add_type(RawType {
-        file: src_path_str,
-        start_line: 1,
-        start_col: 30,
-        end_line: 1,
-        end_col: 35,
-        type_name: "i32".to_string(),
-    });
+    writer.add_type(RawType { file: src_path_str.clone(), start_line: 1, start_col: 8, end_line: 1, end_col: 11, type_name: "fn(i32, i32) -> i32".to_string() });
+    writer.add_type(RawType { file: src_path_str, start_line: 1, start_col: 30, end_line: 1, end_col: 35, type_name: "i32".to_string() });
 
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();

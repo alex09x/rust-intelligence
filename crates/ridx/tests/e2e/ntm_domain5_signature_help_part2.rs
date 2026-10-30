@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -119,10 +114,7 @@ fn test_signature_help_turbofish_function_call() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn collect_data<T>(seed: T) -> Vec<T>"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn collect_data<T>(seed: T) -> Vec<T>");
     assert_eq!(res["result"]["activeParameter"], 0);
 }
 
@@ -138,10 +130,7 @@ fn test_signature_help_whitespace_between_callee_and_paren() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn spaced(x: u32)"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn spaced(x: u32)");
     assert_eq!(res["result"]["activeParameter"], 0);
 }
 
@@ -158,10 +147,7 @@ fn test_signature_help_multiline_call_arguments() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "host: &str"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "host: &str");
 }
 
 #[test]

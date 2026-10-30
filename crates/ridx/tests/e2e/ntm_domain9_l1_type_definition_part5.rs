@@ -38,9 +38,7 @@ fn assert_range(range: &Value, start_line: u32, start_col: u32, end_line: u32, e
 fn test_type_definition_cross_file_submodule() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_1", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_1", "src/sub/types.rs", "pub struct «SubModuleType»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_1", "src/sub/types.rs", "pub struct «SubModuleType»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_1", "src/lib.rs", "pub fn use_sub() { let obj = 1; }\n").unwrap();
@@ -63,9 +61,7 @@ fn test_type_definition_cross_file_submodule() {
 fn test_type_definition_cross_file_parent_module() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_2", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_2", "src/lib.rs", "pub struct «ParentType»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_2", "src/lib.rs", "pub struct «ParentType»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_2", "src/nested/child.rs", "pub fn child_fn() { let v = 1; }\n").unwrap();
@@ -88,9 +84,7 @@ fn test_type_definition_cross_file_parent_module() {
 fn test_type_definition_deeply_nested_module_path() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_3", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_3", "src/a/b/c.rs", "pub struct «DeepModel»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_3", "src/a/b/c.rs", "pub struct «DeepModel»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_3", "src/lib.rs", "pub fn root() { let d = 1; }\n").unwrap();
@@ -113,9 +107,7 @@ fn test_type_definition_deeply_nested_module_path() {
 fn test_type_definition_with_clean_overlay() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_4", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_4", "src/lib.rs", "pub struct «OverlayCleanType»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_4", "src/lib.rs", "pub struct «OverlayCleanType»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_4", "src/main.rs", "pub fn main() { let val = 1; }\n").unwrap();
@@ -142,9 +134,7 @@ fn test_type_definition_with_clean_overlay() {
 fn test_type_definition_generic_type_argument_target() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_5", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_5", "src/types.rs", "pub struct «CustomElement»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_5", "src/types.rs", "pub struct «CustomElement»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_5", "src/lib.rs", "pub fn list() { let elem = 0; }\n").unwrap();
@@ -167,9 +157,7 @@ fn test_type_definition_generic_type_argument_target() {
 fn test_type_definition_option_inner_type_string() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_6", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_6", "src/types.rs", "pub struct «AppOption»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_6", "src/types.rs", "pub struct «AppOption»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_6", "src/lib.rs", "pub fn opt() { let opt_val = 0; }\n").unwrap();
@@ -192,9 +180,7 @@ fn test_type_definition_option_inner_type_string() {
 fn test_type_definition_result_inner_type_string() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_7", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_7", "src/types.rs", "pub struct «AppResult»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_7", "src/types.rs", "pub struct «AppResult»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_7", "src/lib.rs", "pub fn res() { let res_val = 0; }\n").unwrap();
@@ -217,9 +203,7 @@ fn test_type_definition_result_inner_type_string() {
 fn test_type_definition_vector_inner_type_string() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_8", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_8", "src/types.rs", "pub struct «ItemRecord»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_8", "src/types.rs", "pub struct «ItemRecord»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_8", "src/lib.rs", "pub fn vec() { let rec = 0; }\n").unwrap();
@@ -242,9 +226,7 @@ fn test_type_definition_vector_inner_type_string() {
 fn test_type_definition_reference_type_deref_target() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_9", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_9", "src/res.rs", "pub struct «BorrowedResource»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_9", "src/res.rs", "pub struct «BorrowedResource»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_9", "src/lib.rs", "pub fn borrow_fn() { let r = 0; }\n").unwrap();
@@ -267,9 +249,7 @@ fn test_type_definition_reference_type_deref_target() {
 fn test_type_definition_mut_reference_target() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_t5_10", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_t5_10", "src/res.rs", "pub struct «MutableResource»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_t5_10", "src/res.rs", "pub struct «MutableResource»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file("pkg_t5_10", "src/lib.rs", "pub fn mut_fn() { let m = 0; }\n").unwrap();

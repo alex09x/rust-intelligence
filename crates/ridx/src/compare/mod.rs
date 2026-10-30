@@ -37,19 +37,14 @@ pub use transport::*;
 pub use def_refs::{compare_definition, compare_references};
 pub use hover_syms::{compare_callers, compare_hover, compare_symbols};
 pub use system::{
-    get_current_process_rss_bytes, get_process_memory_details, get_process_rss_bytes,
-    get_process_rss_bytes_fallback_ps, get_rust_analyzer_rss_bytes, print_comparison,
+    get_current_process_rss_bytes, get_process_memory_details, get_process_rss_bytes, get_process_rss_bytes_fallback_ps, get_rust_analyzer_rss_bytes, print_comparison,
     print_comparison_summary, ProcessMemoryDetails,
 };
 pub use types::{CapabilityKind, ComparisonResult};
 
 use ridx_format::WorkspaceIndex;
 
-pub fn compare_capability(
-    workspace: &WorkspaceIndex,
-    capability: CapabilityKind,
-    target: &str,
-) -> Vec<ComparisonResult> {
+pub fn compare_capability(workspace: &WorkspaceIndex, capability: CapabilityKind, target: &str) -> Vec<ComparisonResult> {
     match capability {
         CapabilityKind::Def => vec![compare_definition(workspace, target)],
         CapabilityKind::Refs => vec![compare_references(workspace, target)],

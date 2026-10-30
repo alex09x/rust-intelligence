@@ -22,24 +22,12 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
 
     // 1. Query local RIDX memory-mapped index
     let t_ridx = Instant::now();
-    let ridx_def = if let Some((file, line, col)) = loc_opt {
-        workspace.find_definition_at(file, line, col)
-    } else {
-        workspace.find_definition_by_path(target)
-    };
+    let ridx_def = if let Some((file, line, col)) = loc_opt { workspace.find_definition_at(file, line, col) } else { workspace.find_definition_by_path(target) };
     let ridx_latency = t_ridx.elapsed().as_micros();
     let ridx_rss_bytes = get_current_process_rss_bytes();
 
     let (ridx_found, ridx_span) = match ridx_def {
-        Some(def) => (
-            true,
-            format!(
-                "{}:{}:{}",
-                def.resolved_path().display(),
-                def.start_line,
-                def.start_col
-            ),
-        ),
+        Some(def) => (true, format!("{}:{}:{}", def.resolved_path().display(), def.start_line, def.start_col)),
         None => (false, "Not found".to_string()),
     };
 
@@ -68,10 +56,7 @@ pub fn compare_references(workspace: &WorkspaceIndex, target: &str) -> Compariso
     // 1. Query local RIDX memory-mapped index
     let t_ridx = Instant::now();
     let refs = if let Some((file, line, col)) = loc_opt {
-        workspace
-            .find_references_at(file, line, col)
-            .map(|lr| lr.references)
-            .unwrap_or_default()
+        workspace.find_references_at(file, line, col).map(|lr| lr.references).unwrap_or_default()
     } else {
         workspace.find_references(target)
     };
@@ -80,13 +65,7 @@ pub fn compare_references(workspace: &WorkspaceIndex, target: &str) -> Compariso
     let ridx_count = refs.len();
     let ridx_found = ridx_count > 0;
     let ridx_span = if ridx_found {
-        format!(
-            "{} refs (first: {}:{}:{})",
-            ridx_count,
-            refs[0].resolved_path().display(),
-            refs[0].span.start_line(),
-            refs[0].span.start_col()
-        )
+        format!("{} refs (first: {}:{}:{})", ridx_count, refs[0].resolved_path().display(), refs[0].span.start_line(), refs[0].span.start_col())
     } else {
         "0 refs".to_string()
     };

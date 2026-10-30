@@ -10,12 +10,12 @@
 
 //! End-to-end tests for `codeAction/resolve` (Part 3: staleness/version conflict safety -32801, cancellation, and disk fallback).
 
-use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::dispatch::dispatch_lsp_message;
 use ridx::lsp::error::CONTENT_MODIFIED;
+use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::LspMessage;
-use ridx::overlay::OverlayManager;
 use ridx::lsp::workspace::MultiRootWorkspace;
+use ridx::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::fs;
@@ -34,12 +34,7 @@ fn extract_response(out: &[u8]) -> Value {
     Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -56,13 +51,7 @@ fn setup_initialized_server() -> (
     (mr, ov, lc, can)
 }
 
-fn send_code_action_resolve_req(
-    params: Value,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<Value>>>,
-) -> Value {
+fn send_code_action_resolve_req(params: Value, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
     send_code_action_resolve_req_with_id(json!(100), params, mr, ov, lc, can)
 }
 
@@ -126,10 +115,7 @@ fn test_code_action_resolve_overlay_version_mismatch_rejected_content_modified_3
     });
     let res = send_code_action_resolve_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(res["error"]["code"], CONTENT_MODIFIED);
-    assert_eq!(
-        res["error"]["message"],
-        "Document 'file:///tmp/version_mismatch.rs' was modified since code action was computed (version 3 != expected 2)"
-    );
+    assert_eq!(res["error"]["message"], "Document 'file:///tmp/version_mismatch.rs' was modified since code action was computed (version 3 != expected 2)");
 }
 
 #[test]
@@ -221,10 +207,7 @@ fn test_code_action_resolve_disk_content_hash_mismatch_rejected_32801() {
     });
     let res = send_code_action_resolve_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(res["error"]["code"], CONTENT_MODIFIED);
-    assert_eq!(
-        res["error"]["message"],
-        format!("Document '{uri}' on disk was modified since code action was computed")
-    );
+    assert_eq!(res["error"]["message"], format!("Document '{uri}' on disk was modified since code action was computed"));
 }
 
 #[test]

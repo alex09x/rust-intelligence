@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -75,20 +70,14 @@ fn send_resolve_req(
 #[test]
 fn test_completion_resolve_sort_text_preserved() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "sorted_fn", "sortText": "0001" }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "sorted_fn", "sortText": "0001" }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["sortText"], "0001");
 }
 
 #[test]
 fn test_completion_resolve_preselect_preserved() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "preselected_fn", "preselect": true }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "preselected_fn", "preselect": true }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["preselect"], true);
 }
 
@@ -100,13 +89,13 @@ fn test_completion_resolve_detail_without_data_produces_codeblock() {
             "label": "generic_fn",
             "detail": "pub fn foo<T: Clone>(x: T) -> Result<T, ()>"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "```rust\npub fn foo<T: Clone>(x: T) -> Result<T, ()>\n```"
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "```rust\npub fn foo<T: Clone>(x: T) -> Result<T, ()>\n```");
 }
 
 #[test]
@@ -117,13 +106,13 @@ fn test_completion_resolve_data_string_not_wrapped_in_codeblock() {
             "label": "markdown_doc_item",
             "data": "# Section Header\nDetailed explanation."
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "# Section Header\nDetailed explanation."
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "# Section Header\nDetailed explanation.");
 }
 
 #[test]
@@ -135,13 +124,13 @@ fn test_completion_resolve_both_detail_and_data_detail_takes_precedence() {
             "detail": "pub struct Dual;",
             "data": "fallback documentation"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "```rust\npub struct Dual;\n```"
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "```rust\npub struct Dual;\n```");
 }
 
 #[test]
@@ -156,13 +145,13 @@ fn test_completion_resolve_plain_text_existing_documentation_preserved() {
                 "value": "This is raw documentation text."
             }
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "plaintext");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "This is raw documentation text."
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "This is raw documentation text.");
 }
 
 #[test]
@@ -174,12 +163,12 @@ fn test_completion_resolve_string_existing_documentation_preserved() {
             "detail": "fn ignored()",
             "documentation": "String doc format without object wrapper"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
-    assert_eq!(
-        val["result"]["documentation"],
-        "String doc format without object wrapper"
-    );
+    assert_eq!(val["result"]["documentation"], "String doc format without object wrapper");
 }
 
 #[test]
@@ -191,7 +180,10 @@ fn test_completion_resolve_null_detail_falls_back_to_data() {
             "detail": null,
             "data": "Fallback markdown text"
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
     assert_eq!(val["result"]["documentation"]["value"], "Fallback markdown text");
@@ -205,7 +197,10 @@ fn test_completion_resolve_empty_detail_produces_empty_codeblock() {
             "label": "empty_detail_item",
             "detail": ""
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
     assert_eq!(val["result"]["documentation"]["value"], "```rust\n\n```");
@@ -214,9 +209,6 @@ fn test_completion_resolve_empty_detail_produces_empty_codeblock() {
 #[test]
 fn test_completion_resolve_whitespace_only_label_preserved() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "   " }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "   " }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["label"], "   ");
 }

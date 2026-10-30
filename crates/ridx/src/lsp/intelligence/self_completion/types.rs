@@ -13,14 +13,8 @@
 /// Lexical scope context for `Self::` resolution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EnclosingScope {
-    Impl {
-        trait_name: Option<String>,
-        type_name: String,
-    },
-    Trait {
-        trait_name: String,
-        supertraits: Vec<String>,
-    },
+    Impl { trait_name: Option<String>, type_name: String },
+    Trait { trait_name: String, supertraits: Vec<String> },
     Other,
 }
 
@@ -86,8 +80,7 @@ pub fn find_keyword(s: &str, kw: &str) -> Option<usize> {
         if depth == 0 && &bytes[i..i + kw_bytes.len()] == kw_bytes {
             let prev_ok = i == 0 || (!bytes[i - 1].is_ascii_alphanumeric() && bytes[i - 1] != b'_');
             let next_pos = i + kw_bytes.len();
-            let next_ok = next_pos == bytes.len()
-                || (!bytes[next_pos].is_ascii_alphanumeric() && bytes[next_pos] != b'_');
+            let next_ok = next_pos == bytes.len() || (!bytes[next_pos].is_ascii_alphanumeric() && bytes[next_pos] != b'_');
             if prev_ok && next_ok {
                 return Some(i);
             }

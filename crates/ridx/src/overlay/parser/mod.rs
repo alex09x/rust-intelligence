@@ -54,18 +54,13 @@ pub(crate) fn skip_string_or_char_literal(text: &str, pos: &mut usize) -> bool {
     let b = bytes[*pos];
 
     // Raw string r"..." / r#"..."# or byte/C raw string br"..." / cr"..."
-    let raw_start =
-        if b == b'r' && *pos + 1 < len && (bytes[*pos + 1] == b'"' || bytes[*pos + 1] == b'#') {
-            Some(*pos + 1)
-        } else if (b == b'b' || b == b'c')
-            && *pos + 2 < len
-            && bytes[*pos + 1] == b'r'
-            && (bytes[*pos + 2] == b'"' || bytes[*pos + 2] == b'#')
-        {
-            Some(*pos + 2)
-        } else {
-            None
-        };
+    let raw_start = if b == b'r' && *pos + 1 < len && (bytes[*pos + 1] == b'"' || bytes[*pos + 1] == b'#') {
+        Some(*pos + 1)
+    } else if (b == b'b' || b == b'c') && *pos + 2 < len && bytes[*pos + 1] == b'r' && (bytes[*pos + 2] == b'"' || bytes[*pos + 2] == b'#') {
+        Some(*pos + 2)
+    } else {
+        None
+    };
     if let Some(mut h_idx) = raw_start {
         let mut hashes = 0usize;
         while h_idx < len && bytes[h_idx] == b'#' {
@@ -75,10 +70,7 @@ pub(crate) fn skip_string_or_char_literal(text: &str, pos: &mut usize) -> bool {
         if h_idx < len && bytes[h_idx] == b'"' {
             let mut i = h_idx + 1;
             while i < len {
-                if bytes[i] == b'"'
-                    && i + hashes < len
-                    && (0..hashes).all(|k| bytes[i + 1 + k] == b'#')
-                {
+                if bytes[i] == b'"' && i + hashes < len && (0..hashes).all(|k| bytes[i + 1 + k] == b'#') {
                     *pos = i + 1 + hashes;
                     return true;
                 }
@@ -125,11 +117,7 @@ pub(crate) fn skip_string_or_char_literal(text: &str, pos: &mut usize) -> bool {
         }
 
         // Lifetime `'ident` / `'r#ident` or standalone `'`
-        let mut k = if text[j..].starts_with("r#") {
-            j + 2
-        } else {
-            j
-        };
+        let mut k = if text[j..].starts_with("r#") { j + 2 } else { j };
         if let Some(first_char) = text[k..].chars().next() {
             if is_rust_ident_start(first_char) {
                 k += first_char.len_utf8();
@@ -163,14 +151,7 @@ pub(crate) struct OverlayParser<'a> {
 
 impl<'a> OverlayParser<'a> {
     pub(crate) fn new(text: &'a str, line_starts: &'a [usize]) -> Self {
-        Self {
-            text,
-            line_starts,
-            scopes: Vec::new(),
-            symbols: Vec::new(),
-            pending_fn_scope: None,
-            opaque: Vec::new(),
-        }
+        Self { text, line_starts, scopes: Vec::new(), symbols: Vec::new(), pending_fn_scope: None, opaque: Vec::new() }
     }
 
     pub(crate) fn byte_to_char_line_col(&self, byte_offset: usize) -> (u32, u32) {
@@ -192,14 +173,7 @@ impl<'a> OverlayParser<'a> {
         let mut pos = 0;
 
         // Root scope
-        self.scopes.push(Scope {
-            id: 0,
-            parent: None,
-            start_byte: 0,
-            end_byte: len,
-            sel_start_byte: 0,
-            body_start_byte: None,
-        });
+        self.scopes.push(Scope { id: 0, parent: None, start_byte: 0, end_byte: len, sel_start_byte: 0, body_start_byte: None });
 
         let mut scope_stack = vec![0];
 
@@ -228,14 +202,7 @@ impl<'a> OverlayParser<'a> {
                 } else {
                     let new_id = self.scopes.len();
                     let parent = scope_stack.last().copied();
-                    self.scopes.push(Scope {
-                        id: new_id,
-                        parent,
-                        start_byte: pos,
-                        end_byte: len,
-                        sel_start_byte: pos,
-                        body_start_byte: None,
-                    });
+                    self.scopes.push(Scope { id: new_id, parent, start_byte: pos, end_byte: len, sel_start_byte: pos, body_start_byte: None });
                     new_id
                 };
                 scope_stack.push(sid);
@@ -373,11 +340,7 @@ impl<'a> OverlayParser<'a> {
             return None;
         }
         let start = *pos;
-        let mut cur = if is_raw {
-            *pos + 2
-        } else {
-            *pos + first_char.len_utf8()
-        };
+        let mut cur = if is_raw { *pos + 2 } else { *pos + first_char.len_utf8() };
         while cur < self.text.len() {
             let c = self.text[cur..].chars().next().unwrap();
             if is_rust_ident_continue(c) {

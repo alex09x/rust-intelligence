@@ -50,14 +50,7 @@ pub struct ParsedFixture {
 /// Markers are stripped simultaneously, ensuring neither offsets the coordinates
 /// of the other.
 pub fn parse_fixture(fixture: &str) -> ParsedFixture {
-    assert!(
-        !fixture
-            .as_bytes()
-            .windows(2)
-            .any(|w| w[0] == b'\r' && w[1] != b'\n')
-            && !fixture.ends_with('\r'),
-        "Lone CR ('\\r' without '\\n') is not supported in test fixtures"
-    );
+    assert!(!fixture.as_bytes().windows(2).any(|w| w[0] == b'\r' && w[1] != b'\n') && !fixture.ends_with('\r'), "Lone CR ('\\r' without '\\n') is not supported in test fixtures");
     let mut clean_text = String::with_capacity(fixture.len());
     let mut cursor: Option<CursorPos> = None;
     let mut spans = Vec::new();
@@ -75,12 +68,7 @@ pub fn parse_fixture(fixture: &str) -> ParsedFixture {
 
         if ch == '$' && fixture[byte_idx..].starts_with("$0") {
             assert!(cursor.is_none(), "Fixture contains multiple $0 markers");
-            cursor = Some(CursorPos {
-                line: cur_line,
-                col_char: cur_col_char,
-                col_utf16: cur_col_utf16,
-                byte_offset: clean_text.len(),
-            });
+            cursor = Some(CursorPos { line: cur_line, col_char: cur_col_char, col_utf16: cur_col_utf16, byte_offset: clean_text.len() });
             i += 2; // Skip '$' and '0'
             continue;
         }
@@ -92,8 +80,7 @@ pub fn parse_fixture(fixture: &str) -> ParsedFixture {
         }
 
         if ch == '»' {
-            let (start_line, start_col_char, start_col_utf16, start_byte) =
-                open_stack.pop().expect("Unmatched closing span marker '»'");
+            let (start_line, start_col_char, start_col_utf16, start_byte) = open_stack.pop().expect("Unmatched closing span marker '»'");
             let end_byte = clean_text.len();
             let text = clean_text[start_byte..end_byte].to_string();
             spans.push(AnnotatedSpan {
@@ -129,19 +116,13 @@ pub fn parse_fixture(fixture: &str) -> ParsedFixture {
 
     assert!(open_stack.is_empty(), "Unmatched opening span marker '«'");
 
-    ParsedFixture {
-        clean_text,
-        cursor,
-        spans,
-    }
+    ParsedFixture { clean_text, cursor, spans }
 }
 
 /// Convenience parser for fixtures containing only a `$0` cursor marker.
 pub fn parse_cursor(fixture: &str) -> CursorPos {
     let parsed = parse_fixture(fixture);
-    parsed
-        .cursor
-        .expect("Fixture must contain a $0 cursor marker")
+    parsed.cursor.expect("Fixture must contain a $0 cursor marker")
 }
 
 /// Convenience parser for fixtures containing only `«...»` span annotations.

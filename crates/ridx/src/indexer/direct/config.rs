@@ -19,14 +19,7 @@ use std::time::SystemTime;
 /// Computes FNV-1a 64-bit content hashes of workspace configuration files (Cargo.toml, Cargo.lock, build.rs, .cargo/config*).
 pub fn compute_workspace_config_hashes(work_dir: &Path) -> HashMap<String, u64> {
     let mut hashes = HashMap::new();
-    let root_files = [
-        "Cargo.toml",
-        "Cargo.lock",
-        "rust-toolchain",
-        "rust-toolchain.toml",
-        ".cargo/config",
-        ".cargo/config.toml",
-    ];
+    let root_files = ["Cargo.toml", "Cargo.lock", "rust-toolchain", "rust-toolchain.toml", ".cargo/config", ".cargo/config.toml"];
     for rel in &root_files {
         let p = work_dir.join(rel);
         if p.is_file() {
@@ -66,15 +59,9 @@ pub fn compute_workspace_config_hashes(work_dir: &Path) -> HashMap<String, u64> 
 
 /// Checks if any build configuration files or build options were modified since the last index.
 /// Returns Some(manifest_mtime) if configuration is unchanged, or None to fall back to Cargo.
-pub fn verify_build_config_unchanged(
-    work_dir: &Path,
-    base_out_dir: &Path,
-    opts: &IndexOptions,
-) -> Option<SystemTime> {
+pub fn verify_build_config_unchanged(work_dir: &Path, base_out_dir: &Path, opts: &IndexOptions) -> Option<SystemTime> {
     let manifest_file = base_out_dir.join("ridx_manifest.json");
-    let manifest_mtime = fs::metadata(&manifest_file)
-        .ok()
-        .and_then(|m| m.modified().ok())?;
+    let manifest_mtime = fs::metadata(&manifest_file).ok().and_then(|m| m.modified().ok())?;
 
     let manifest_bytes = match fs::read(&manifest_file) {
         Ok(b) => b,
@@ -93,14 +80,8 @@ pub fn verify_build_config_unchanged(
 
     // Check build options match previously published manifest
     let p_feat = val.get("features").and_then(|v| v.as_str());
-    let p_nodef = val
-        .get("no_default_features")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let p_allfeat = val
-        .get("all_features")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
+    let p_nodef = val.get("no_default_features").and_then(|v| v.as_bool()).unwrap_or(false);
+    let p_allfeat = val.get("all_features").and_then(|v| v.as_bool()).unwrap_or(false);
     let p_target = val.get("target").and_then(|v| v.as_str());
     let p_pkg = val.get("package_filter").and_then(|v| v.as_str());
 
@@ -110,9 +91,7 @@ pub fn verify_build_config_unchanged(
         || opts.target.as_deref() != p_target
         || opts.package.as_deref() != p_pkg
     {
-        eprintln!(
-            "[ridx-direct] fallback to Cargo: build options (features/target/package) changed"
-        );
+        eprintln!("[ridx-direct] fallback to Cargo: build options (features/target/package) changed");
         return None;
     }
 
@@ -146,10 +125,7 @@ pub fn verify_build_config_unchanged(
                 if let Ok(meta) = fs::metadata(cf) {
                     if let Ok(mtime) = meta.modified() {
                         if mtime > manifest_mtime {
-                            eprintln!(
-                                "[ridx-direct] fallback to Cargo: config file mtime newer than manifest: {}",
-                                cf.display()
-                            );
+                            eprintln!("[ridx-direct] fallback to Cargo: config file mtime newer than manifest: {}", cf.display());
                             return None;
                         }
                     }
@@ -164,11 +140,7 @@ pub fn verify_build_config_unchanged(
 /// Recursively checks if any `.rs` file in crate root (src, tests, benches, examples, build.rs) is not in `tracked`.
 /// Distinguishes existing platform/feature-conditional files (whose mtime <= manifest_mtime) from newly added untracked files.
 /// Returns true if an untracked `.rs` file was found (triggering fallback to Cargo).
-pub fn has_untracked_rs_files(
-    crate_dir: &Path,
-    tracked: &HashSet<String>,
-    manifest_mtime: SystemTime,
-) -> bool {
+pub fn has_untracked_rs_files(crate_dir: &Path, tracked: &HashSet<String>, manifest_mtime: SystemTime) -> bool {
     let subdirs = ["src", "tests", "benches", "examples"];
     for sub in &subdirs {
         let dir = crate_dir.join(sub);
@@ -184,21 +156,9 @@ pub fn has_untracked_rs_files(
                         stack.push(p);
                     } else if p.extension().and_then(|s| s.to_str()) == Some("rs") {
                         let p_str = p.display().to_string();
-                        let canon_str = p
-                            .canonicalize()
-                            .map(|cp| cp.display().to_string())
-                            .unwrap_or_else(|_| p_str.clone());
-                        let rel_str = p
-                            .strip_prefix(crate_dir)
-                            .ok()
-                            .map(|r| r.display().to_string());
-                        if !tracked.contains(&p_str)
-                            && !tracked.contains(&canon_str)
-                            && !rel_str
-                                .as_ref()
-                                .map(|r| tracked.contains(r))
-                                .unwrap_or(false)
-                        {
+                        let canon_str = p.canonicalize().map(|cp| cp.display().to_string()).unwrap_or_else(|_| p_str.clone());
+                        let rel_str = p.strip_prefix(crate_dir).ok().map(|r| r.display().to_string());
+                        if !tracked.contains(&p_str) && !tracked.contains(&canon_str) && !rel_str.as_ref().map(|r| tracked.contains(r)).unwrap_or(false) {
                             // If file existed on disk before the current manifest was generated,
                             // it was present during the last Cargo run and excluded via cfg (e.g. #[cfg(windows)] or #[cfg(feature = "...")]).
                             // Only treat files created or modified after the manifest was generated as new untracked files.
@@ -209,10 +169,7 @@ pub fn has_untracked_rs_files(
                                     }
                                 }
                             }
-                            eprintln!(
-                                "[ridx-direct] fallback to Cargo: untracked .rs file found: {}",
-                                p.display()
-                            );
+                            eprintln!("[ridx-direct] fallback to Cargo: untracked .rs file found: {}", p.display());
                             return true;
                         }
                     }
@@ -224,21 +181,9 @@ pub fn has_untracked_rs_files(
     let build_rs = crate_dir.join("build.rs");
     if build_rs.is_file() {
         let p_str = build_rs.display().to_string();
-        let canon_str = build_rs
-            .canonicalize()
-            .map(|cp| cp.display().to_string())
-            .unwrap_or_else(|_| p_str.clone());
-        let rel_str = build_rs
-            .strip_prefix(crate_dir)
-            .ok()
-            .map(|r| r.display().to_string());
-        if !tracked.contains(&p_str)
-            && !tracked.contains(&canon_str)
-            && !rel_str
-                .as_ref()
-                .map(|r| tracked.contains(r))
-                .unwrap_or(false)
-        {
+        let canon_str = build_rs.canonicalize().map(|cp| cp.display().to_string()).unwrap_or_else(|_| p_str.clone());
+        let rel_str = build_rs.strip_prefix(crate_dir).ok().map(|r| r.display().to_string());
+        if !tracked.contains(&p_str) && !tracked.contains(&canon_str) && !rel_str.as_ref().map(|r| tracked.contains(r)).unwrap_or(false) {
             if let Ok(meta) = fs::metadata(&build_rs) {
                 if let Ok(mtime) = meta.modified() {
                     if mtime <= manifest_mtime {
@@ -246,10 +191,7 @@ pub fn has_untracked_rs_files(
                     }
                 }
             }
-            eprintln!(
-                "[ridx-direct] fallback to Cargo: untracked build.rs found: {}",
-                build_rs.display()
-            );
+            eprintln!("[ridx-direct] fallback to Cargo: untracked build.rs found: {}", build_rs.display());
             return true;
         }
     }
@@ -281,16 +223,9 @@ mod tests {
         assert!(hashes1.contains_key("crates/sub/build.rs"));
 
         // Mutate sub/build.rs
-        fs::write(
-            sub.join("build.rs"),
-            "fn main() { println!(\"changed\"); }\n",
-        )
-        .unwrap();
+        fs::write(sub.join("build.rs"), "fn main() { println!(\"changed\"); }\n").unwrap();
         let hashes2 = compute_workspace_config_hashes(&tmp);
-        assert_ne!(
-            hashes1.get("crates/sub/build.rs"),
-            hashes2.get("crates/sub/build.rs")
-        );
+        assert_ne!(hashes1.get("crates/sub/build.rs"), hashes2.get("crates/sub/build.rs"));
         assert_ne!(hashes1, hashes2);
 
         let _ = fs::remove_dir_all(&tmp);

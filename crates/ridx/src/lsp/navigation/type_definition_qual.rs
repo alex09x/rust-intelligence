@@ -10,9 +10,7 @@
 
 //! Qualified-path, `Self::Assoc`, and macro/raw-string filters for `textDocument/typeDefinition`.
 
-use super::type_definition::{
-    is_primitive_or_builtin, is_type_def_kind, peel_type_modifiers, strip_generics, FileReaderCtx,
-};
+use super::type_definition::{is_primitive_or_builtin, is_type_def_kind, peel_type_modifiers, strip_generics, FileReaderCtx};
 use super::type_definition_lookup::lookup_type_by_path;
 use crate::lsp::protocol::PositionConverter;
 use ridx_format::{DefKind, DefKind::*, IndexReader, RefEntry, WorkspaceIndex};
@@ -49,11 +47,7 @@ pub(super) fn is_use_statement_line(line_str: &str) -> bool {
 ///
 /// When the innermost `RefEntry` at the cursor is not a single identifier token and matches one of
 /// these expansion targets, `typeDefinition` returns `null` rather than the synthetic macro helper.
-pub(super) fn is_enclosing_macro_or_raw_string(
-    ctx: &[FileReaderCtx<'_>],
-    line_str: &str,
-    col_1based: u32,
-) -> bool {
+pub(super) fn is_enclosing_macro_or_raw_string(ctx: &[FileReaderCtx<'_>], line_str: &str, col_1based: u32) -> bool {
     if line_str.trim_start().starts_with("//") || is_inside_raw_string(line_str, col_1based) {
         return true;
     }
@@ -67,10 +61,7 @@ pub(super) fn is_enclosing_macro_or_raw_string(
         let kind = DefKind::from(r.kind);
         let target_path = c.reader.get_str(r.target_path_offset());
         let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
-        if is_type_def_kind(kind)
-            || matches!(kind, Variant | VariantCtor)
-            || matches!(target_name, "must_use" | "panic" | "panic_fmt")
-        {
+        if is_type_def_kind(kind) || matches!(kind, Variant | VariantCtor) || matches!(target_name, "must_use" | "panic" | "panic_fmt") {
             return true;
         }
     }
@@ -79,11 +70,7 @@ pub(super) fn is_enclosing_macro_or_raw_string(
 
 /// Checks whether `r` covers a single identifier token (either matching `target_name.len()` or the
 /// `Self` keyword when `target_path` was resolved to the concrete implementing type).
-pub(super) fn is_single_token_ref<B: AsRef<[u8]>>(
-    reader: &IndexReader<B>,
-    r: &RefEntry,
-    line_str: &str,
-) -> bool {
+pub(super) fn is_single_token_ref<B: AsRef<[u8]>>(reader: &IndexReader<B>, r: &RefEntry, line_str: &str) -> bool {
     let span = r.span();
     if span.start_line() != span.end_line() {
         return false;
@@ -91,8 +78,7 @@ pub(super) fn is_single_token_ref<B: AsRef<[u8]>>(
     let target_path = reader.get_str(r.target_path_offset());
     let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
     let width = span.end_col().saturating_sub(span.start_col()) as usize;
-    width == target_name.len()
-        || token_slice(line_str, span.start_col(), span.end_col()) == Some("Self")
+    width == target_name.len() || token_slice(line_str, span.start_col(), span.end_col()) == Some("Self")
 }
 
 fn token_slice(line_str: &str, start_col_1based: u32, end_col_1based: u32) -> Option<&str> {
@@ -103,23 +89,13 @@ fn token_slice(line_str: &str, start_col_1based: u32, end_col_1based: u32) -> Op
     }
     let mut chars = line_str.char_indices();
     let (start_byte, _) = chars.nth(start_idx)?;
-    let end_byte = chars
-        .nth(end_idx - start_idx - 1)
-        .map_or(line_str.len(), |(b, _)| b);
+    let end_byte = chars.nth(end_idx - start_idx - 1).map_or(line_str.len(), |(b, _)| b);
     line_str.get(start_byte..end_byte)
 }
 
-pub(super) fn should_prefer_def_at(
-    ctx: &[FileReaderCtx<'_>],
-    (line, col): (u32, u32),
-    line_str: &str,
-) -> bool {
-    let qual = extract_qualified_path(line_str, col).filter(|(p, _, _)| {
-        p.contains("::")
-            && p.rsplit("::")
-                .next()
-                .is_some_and(|last| last.starts_with(|c: char| c.is_ascii_uppercase()))
-    });
+pub(super) fn should_prefer_def_at(ctx: &[FileReaderCtx<'_>], (line, col): (u32, u32), line_str: &str) -> bool {
+    let qual =
+        extract_qualified_path(line_str, col).filter(|(p, _, _)| p.contains("::") && p.rsplit("::").next().is_some_and(|last| last.starts_with(|c: char| c.is_ascii_uppercase())));
     for c in ctx {
         let Some(entry) = c.inner_type else {
             continue;
@@ -129,11 +105,7 @@ pub(super) fn should_prefer_def_at(
             return true;
         }
         if let Some((_, p_sc, p_ec)) = qual {
-            if span.start_line() < line
-                || span.end_line() > line
-                || span.start_col() < p_sc
-                || span.end_col() > p_ec
-            {
+            if span.start_line() < line || span.end_line() > line || span.start_col() < p_sc || span.end_col() > p_ec {
                 return true;
             }
         }
@@ -150,9 +122,7 @@ pub(super) fn resolve_qualified_path_fallback(
     conv: &mut PositionConverter,
 ) -> Option<Value> {
     if let Some((ty, own)) = type_entry {
-        if strip_generics(peel_type_modifiers(ty)) == "str"
-            || own.is_some_and(|o| strip_generics(peel_type_modifiers(o)) == "str")
-        {
+        if strip_generics(peel_type_modifiers(ty)) == "str" || own.is_some_and(|o| strip_generics(peel_type_modifiers(o)) == "str") {
             return None;
         }
     }
@@ -186,16 +156,12 @@ pub(super) fn resolve_qualified_path_fallback(
             }
             let kind = DefKind::from(r.kind);
             if matches!(kind, Struct | StructCtor | Enum | Union | Trait) {
-                if let Some(loc) =
-                    lookup_type_by_path(ws, file_readers, file, target_path, true, conv)
-                {
+                if let Some(loc) = lookup_type_by_path(ws, file_readers, file, target_path, true, conv) {
                     return Some(loc);
                 }
             } else if matches!(kind, Variant | VariantCtor) {
                 if let Some((enum_path, _)) = target_path.rsplit_once("::") {
-                    if let Some(loc) =
-                        lookup_type_by_path(ws, file_readers, file, enum_path, true, conv)
-                    {
+                    if let Some(loc) = lookup_type_by_path(ws, file_readers, file, enum_path, true, conv) {
                         return Some(loc);
                     }
                 }
@@ -204,9 +170,7 @@ pub(super) fn resolve_qualified_path_fallback(
     }
 
     if qual_path.starts_with("Self::") {
-        let same_line_ty = ctx
-            .iter()
-            .any(|c| c.inner_type.is_some_and(|e| e.span().start_line() == line));
+        let same_line_ty = ctx.iter().any(|c| c.inner_type.is_some_and(|e| e.span().start_line() == line));
         if !same_line_ty {
             return resolve_self_type_in_impl(ws, file_readers, ctx, file, line, conv);
         }
@@ -214,14 +178,7 @@ pub(super) fn resolve_qualified_path_fallback(
     None
 }
 
-fn resolve_self_type_in_impl(
-    ws: &WorkspaceIndex,
-    file_readers: &[usize],
-    ctx: &[FileReaderCtx<'_>],
-    file: &str,
-    line: u32,
-    conv: &mut PositionConverter,
-) -> Option<Value> {
+fn resolve_self_type_in_impl(ws: &WorkspaceIndex, file_readers: &[usize], ctx: &[FileReaderCtx<'_>], file: &str, line: u32, conv: &mut PositionConverter) -> Option<Value> {
     for c in ctx {
         let Some(def) = ws.find_enclosing_impl_or_trait_def(c.idx, c.file_id, line) else {
             continue;
@@ -235,15 +192,10 @@ fn resolve_self_type_in_impl(
             continue;
         }
         let owner_part = match def_kind {
-            AssocFn | AssocTy | AssocConst => {
-                def_path.rsplit_once("::").map_or(def_path, |(p, _)| p)
-            }
+            AssocFn | AssocTy | AssocConst => def_path.rsplit_once("::").map_or(def_path, |(p, _)| p),
             _ => def_path,
         };
-        let cands: Vec<&str> = owner_part
-            .strip_prefix('<')
-            .and_then(|s| s.strip_suffix('>'))
-            .map_or_else(|| vec![owner_part], |inner| inner.split(" as ").collect());
+        let cands: Vec<&str> = owner_part.strip_prefix('<').and_then(|s| s.strip_suffix('>')).map_or_else(|| vec![owner_part], |inner| inner.split(" as ").collect());
         for cand_ty in cands {
             let base = strip_generics(peel_type_modifiers(cand_ty));
             if !base.is_empty() && !is_primitive_or_builtin(base) {
@@ -258,9 +210,7 @@ fn resolve_self_type_in_impl(
 
 fn extract_qualified_path(line_str: &str, col_1based: u32) -> Option<(&str, u32, u32)> {
     let chars: Vec<(usize, char)> = line_str.char_indices().collect();
-    let idx = (col_1based as usize)
-        .checked_sub(1)
-        .filter(|&i| i < chars.len())?;
+    let idx = (col_1based as usize).checked_sub(1).filter(|&i| i < chars.len())?;
     let is_id = |c: char| c.is_ascii_alphanumeric() || c == '_';
     if !is_id(chars[idx].1) && chars[idx].1 != ':' {
         return None;
@@ -285,15 +235,8 @@ fn extract_qualified_path(line_str: &str, col_1based: u32) -> Option<(&str, u32,
             break;
         }
     }
-    let (start_byte, end_byte) = (
-        chars[start].0,
-        chars.get(end).map_or(line_str.len(), |&(b, _)| b),
-    );
-    Some((
-        &line_str[start_byte..end_byte],
-        (start as u32) + 1,
-        (end as u32) + 1,
-    ))
+    let (start_byte, end_byte) = (chars[start].0, chars.get(end).map_or(line_str.len(), |&(b, _)| b));
+    Some((&line_str[start_byte..end_byte], (start as u32) + 1, (end as u32) + 1))
 }
 
 /// Single-line lexical check for raw string literals (`r"..."`, `r#"..."#`).
@@ -316,10 +259,7 @@ fn is_inside_raw_string(line_str: &str, col_1based: u32) -> bool {
                 let mut k = j + 1;
                 let mut end_byte = bytes.len();
                 while k < bytes.len() {
-                    if bytes[k] == b'"'
-                        && k + hashes < bytes.len()
-                        && bytes[k + 1..k + 1 + hashes].iter().all(|&b| b == b'#')
-                    {
+                    if bytes[k] == b'"' && k + hashes < bytes.len() && bytes[k + 1..k + 1 + hashes].iter().all(|&b| b == b'#') {
                         end_byte = k + 1 + hashes;
                         break;
                     }

@@ -16,12 +16,7 @@ fn test_fixture_builder_unicode_geometry() {
     // "/* 🦀 */ fn «test»() {}"
     // Chars before «test»: "/* " (3) + "🦀" (1) + " */ fn " (7) = 11 chars.
     // 1-based column for driver = 11 + 1 = 12.
-    let clean = builder.add_defs_from_fixture(
-        "/* 🦀 */ fn «test»() {}",
-        "/src/lib.rs",
-        "unicode_test",
-        DefKind::Fn,
-    );
+    let clean = builder.add_defs_from_fixture("/* 🦀 */ fn «test»() {}", "/src/lib.rs", "unicode_test", DefKind::Fn);
     assert_eq!(clean, "/* 🦀 */ fn test() {}");
 
     let temp = tempfile::tempdir().unwrap();
@@ -43,20 +38,11 @@ fn test_fixture_builder_unicode_geometry() {
 #[test]
 fn test_fixture_builder_auto_linked_references() {
     let mut builder = FixtureIndexBuilder::new("link_test", "0.1.0");
-    let (clean_lib, def_ids) = builder.add_defs_with_ids(
-        "pub fn «compute»() {}",
-        "/src/lib.rs",
-        "link_test",
-        DefKind::Fn,
-    );
+    let (clean_lib, def_ids) = builder.add_defs_with_ids("pub fn «compute»() {}", "/src/lib.rs", "link_test", DefKind::Fn);
     assert_eq!(clean_lib, "pub fn compute() {}");
     assert_eq!(def_ids.len(), 1);
 
-    let clean_caller = builder.add_refs_to_def(
-        "fn main() { link_test::«compute»(); }",
-        "/src/main.rs",
-        def_ids[0],
-    );
+    let clean_caller = builder.add_refs_to_def("fn main() { link_test::«compute»(); }", "/src/main.rs", def_ids[0]);
     assert_eq!(clean_caller, "fn main() { link_test::compute(); }");
 
     let temp = tempfile::tempdir().unwrap();
@@ -76,12 +62,7 @@ fn test_fixture_builder_auto_linked_references() {
 #[test]
 fn test_fixture_builder_defs_and_self_refs() {
     let mut builder = FixtureIndexBuilder::new("self_ref_test", "0.1.0");
-    let (clean, def_ids) = builder.add_defs_and_self_refs(
-        "pub struct «Config» { val: i32 }",
-        "/src/lib.rs",
-        "self_ref_test",
-        DefKind::Struct,
-    );
+    let (clean, def_ids) = builder.add_defs_and_self_refs("pub struct «Config» { val: i32 }", "/src/lib.rs", "self_ref_test", DefKind::Struct);
     assert_eq!(clean, "pub struct Config { val: i32 }");
     assert_eq!(def_ids.len(), 1);
 
@@ -107,9 +88,7 @@ fn test_synthetic_workspace_coordinates() {
     ws.add_crate("core_pkg", "0.1.0").unwrap();
 
     let code = "/* 🦀 */ pub fn «grüßen»() {}\n";
-    let (clean, def_ids) = ws
-        .add_source_file_with_defs("core_pkg", "src/lib.rs", code, DefKind::Fn)
-        .unwrap();
+    let (clean, def_ids) = ws.add_source_file_with_defs("core_pkg", "src/lib.rs", code, DefKind::Fn).unwrap();
 
     assert_eq!(clean, "/* 🦀 */ pub fn grüßen() {}\n");
     assert_eq!(def_ids.len(), 1);
@@ -153,23 +132,10 @@ fn test_synthetic_workspace_foreign_references() {
     ws.add_crate("provider_pkg", "0.1.0").unwrap();
     ws.add_crate("consumer_pkg", "0.1.0").unwrap();
 
-    let (_, def_ids) = ws
-        .add_source_file_with_defs(
-            "provider_pkg",
-            "src/lib.rs",
-            "pub struct «ExportedCore»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, def_ids) = ws.add_source_file_with_defs("provider_pkg", "src/lib.rs", "pub struct «ExportedCore»;\n", DefKind::Struct).unwrap();
 
     let clean = ws
-        .add_refs_to_foreign_def(
-            "consumer_pkg",
-            "src/lib.rs",
-            "use provider_pkg::ExportedCore;\npub fn run() { let _ = «ExportedCore»; }\n",
-            "provider_pkg",
-            def_ids[0],
-        )
+        .add_refs_to_foreign_def("consumer_pkg", "src/lib.rs", "use provider_pkg::ExportedCore;\npub fn run() { let _ = «ExportedCore»; }\n", "provider_pkg", def_ids[0])
         .unwrap();
 
     assert!(clean.contains("let _ = ExportedCore;"));
@@ -179,9 +145,6 @@ fn test_synthetic_workspace_foreign_references() {
     let refs = reader.references();
     assert_eq!(refs.len(), 1);
     assert_eq!(refs[0].target_def_id, def_ids[0]);
-    assert_eq!(
-        reader.get_str(refs[0].target_path_offset),
-        "provider_pkg::ExportedCore"
-    );
+    assert_eq!(reader.get_str(refs[0].target_path_offset), "provider_pkg::ExportedCore");
     assert_eq!(refs[0].kind, DefKind::Struct as u8);
 }

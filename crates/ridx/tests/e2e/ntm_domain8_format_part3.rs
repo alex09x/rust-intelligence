@@ -30,11 +30,7 @@ fn to_uri(p: &Path) -> String {
 }
 
 fn is_rustfmt_installed() -> bool {
-    std::process::Command::new("rustfmt")
-        .arg("--version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    std::process::Command::new("rustfmt").arg("--version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 struct TestDispatcher {
@@ -61,26 +57,12 @@ impl TestDispatcher {
         });
         dispatch_lsp_message(init, &mut out, &mut lc, &mut mr, &mut ov, &can, None).unwrap();
 
-        Self {
-            lifecycle: lc,
-            multi_root: mr,
-            overlay_mgr: ov,
-            cancelled: can,
-            writer: Vec::new(),
-        }
+        Self { lifecycle: lc, multi_root: mr, overlay_mgr: ov, cancelled: can, writer: Vec::new() }
     }
 
     fn dispatch(&mut self, val: &Value) -> bool {
         self.writer.clear();
-        dispatch_lsp_message(
-            val.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        ).unwrap()
+        dispatch_lsp_message(val.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {

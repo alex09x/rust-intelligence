@@ -46,10 +46,18 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_str = lib_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "MyStruct".to_string(), path: format!("{}::MyStruct", name),
-        signature: Some("pub struct MyStruct".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyStruct".to_string(),
+        path: format!("{}::MyStruct", name),
+        signature: Some("pub struct MyStruct".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 18,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -84,10 +92,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -208,16 +213,32 @@ fn test_prepare_type_hierarchy_multiple_types_selection() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("multi_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "FirstType".to_string(), path: "multi_crate::FirstType".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "FirstType".to_string(),
+        path: "multi_crate::FirstType".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "SecondType".to_string(), path: "multi_crate::SecondType".to_string(),
-        signature: None, file: lib_str,
-        start_line: 3, start_col: 1, end_line: 3, end_col: 11,
+        def_id: 2,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "SecondType".to_string(),
+        path: "multi_crate::SecondType".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 11,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct FirstType;\n\nenum SecondType { A, B }\n").unwrap();

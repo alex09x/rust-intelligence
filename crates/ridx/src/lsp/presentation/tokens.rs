@@ -80,15 +80,9 @@ pub fn defkind_to_token(kind: DefKind) -> (u32, u32) {
 }
 
 fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
-    tokens.sort_by(|a, b| {
-        a.line
-            .cmp(&b.line)
-            .then_with(|| a.length.cmp(&b.length))
-            .then_with(|| a.col.cmp(&b.col))
-    });
+    tokens.sort_by(|a, b| a.line.cmp(&b.line).then_with(|| a.length.cmp(&b.length)).then_with(|| a.col.cmp(&b.col)));
 
-    let mut by_line: std::collections::BTreeMap<u32, Vec<RawToken>> =
-        std::collections::BTreeMap::new();
+    let mut by_line: std::collections::BTreeMap<u32, Vec<RawToken>> = std::collections::BTreeMap::new();
     for tok in tokens {
         by_line.entry(tok.line).or_default().push(tok);
     }
@@ -114,12 +108,7 @@ fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
     result
 }
 
-pub fn collect_raw_tokens(
-    file: &str,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Vec<RawToken> {
+pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Vec<RawToken> {
     let mut tokens = Vec::new();
     let overlay_opt = overlay_mgr.get(file);
 
@@ -129,18 +118,10 @@ pub fn collect_raw_tokens(
             if sym.start_line == sym.end_line {
                 let line_0based = sym.start_line.saturating_sub(1);
                 let col_0based = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
-                let length = overlay
-                    .char_col_to_utf16_col(sym.end_line, sym.end_col)
-                    .saturating_sub(col_0based);
+                let length = overlay.char_col_to_utf16_col(sym.end_line, sym.end_col).saturating_sub(col_0based);
                 if length > 0 {
                     let (token_type, token_modifiers) = defkind_to_token(sym.kind);
-                    tokens.push(RawToken {
-                        line: line_0based,
-                        col: col_0based,
-                        length,
-                        token_type,
-                        token_modifiers,
-                    });
+                    tokens.push(RawToken { line: line_0based, col: col_0based, length, token_type, token_modifiers });
                 }
             }
         }
@@ -158,12 +139,8 @@ pub fn collect_raw_tokens(
             if let Some(file_id) = reader.find_file_id(target.as_ref()) {
                 for def in reader.definitions() {
                     if def.span.file_id == file_id && def.span.start_line == def.span.end_line {
-                        let (sl, sc, length) = if let Some(overlay) =
-                            overlay_opt.filter(|o| o.is_dirty())
-                        {
-                            if let Some((live_l, live_c)) = overlay
-                                .map_compiled_to_live(def.span.start_line, def.span.start_col)
-                            {
+                        let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
+                            if let Some((live_l, live_c)) = overlay.map_compiled_to_live(def.span.start_line, def.span.start_col) {
                                 let span_len = def.span.end_col.saturating_sub(def.span.start_col);
                                 let l0 = live_l.saturating_sub(1);
                                 let c0 = overlay.char_col_to_utf16_col(live_l, live_c);
@@ -174,43 +151,22 @@ pub fn collect_raw_tokens(
                             }
                         } else {
                             let sl = def.span.start_line.saturating_sub(1);
-                            let sc = conv.char_col_to_utf16_col(
-                                file,
-                                def.span.start_line,
-                                def.span.start_col,
-                            );
-                            let ec = conv.char_col_to_utf16_col(
-                                file,
-                                def.span.end_line,
-                                def.span.end_col,
-                            );
+                            let sc = conv.char_col_to_utf16_col(file, def.span.start_line, def.span.start_col);
+                            let ec = conv.char_col_to_utf16_col(file, def.span.end_line, def.span.end_col);
                             (sl, sc, ec.saturating_sub(sc))
                         };
 
                         if length > 0 {
                             let (tt, tm) = defkind_to_token(DefKind::from(def.kind));
-                            tokens.push(RawToken {
-                                line: sl,
-                                col: sc,
-                                length,
-                                token_type: tt,
-                                token_modifiers: tm,
-                            });
+                            tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: tm });
                         }
                     }
                 }
 
                 for rf in reader.references() {
-                    if rf.span.file_id == file_id
-                        && !rf.is_macro_expansion()
-                        && rf.span.start_line == rf.span.end_line
-                    {
-                        let (sl, sc, length) = if let Some(overlay) =
-                            overlay_opt.filter(|o| o.is_dirty())
-                        {
-                            if let Some((live_l, live_c)) =
-                                overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col)
-                            {
+                    if rf.span.file_id == file_id && !rf.is_macro_expansion() && rf.span.start_line == rf.span.end_line {
+                        let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
+                            if let Some((live_l, live_c)) = overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col) {
                                 let span_len = rf.span.end_col.saturating_sub(rf.span.start_col);
                                 let l0 = live_l.saturating_sub(1);
                                 let c0 = overlay.char_col_to_utf16_col(live_l, live_c);
@@ -221,25 +177,14 @@ pub fn collect_raw_tokens(
                             }
                         } else {
                             let sl = rf.span.start_line.saturating_sub(1);
-                            let sc = conv.char_col_to_utf16_col(
-                                file,
-                                rf.span.start_line,
-                                rf.span.start_col,
-                            );
-                            let ec =
-                                conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
+                            let sc = conv.char_col_to_utf16_col(file, rf.span.start_line, rf.span.start_col);
+                            let ec = conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
                             (sl, sc, ec.saturating_sub(sc))
                         };
 
                         if length > 0 {
                             let (tt, _) = defkind_to_token(DefKind::from(rf.kind));
-                            tokens.push(RawToken {
-                                line: sl,
-                                col: sc,
-                                length,
-                                token_type: tt,
-                                token_modifiers: 0,
-                            });
+                            tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: 0 });
                         }
                     }
                 }
@@ -257,19 +202,9 @@ pub fn encode_tokens_delta(tokens: &[RawToken]) -> Vec<u32> {
 
     for tok in tokens {
         let delta_line = tok.line.saturating_sub(prev_line);
-        let delta_col = if delta_line == 0 {
-            tok.col.saturating_sub(prev_col)
-        } else {
-            tok.col
-        };
+        let delta_col = if delta_line == 0 { tok.col.saturating_sub(prev_col) } else { tok.col };
 
-        data.extend_from_slice(&[
-            delta_line,
-            delta_col,
-            tok.length,
-            tok.token_type,
-            tok.token_modifiers,
-        ]);
+        data.extend_from_slice(&[delta_line, delta_col, tok.length, tok.token_type, tok.token_modifiers]);
         prev_line = tok.line;
         prev_col = tok.col;
     }
@@ -278,12 +213,7 @@ pub fn encode_tokens_delta(tokens: &[RawToken]) -> Vec<u32> {
 }
 
 /// Handles `textDocument/semanticTokens/full` requests.
-pub fn handle_semantic_tokens_full(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_semantic_tokens_full(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
 
@@ -305,12 +235,7 @@ pub fn handle_semantic_tokens_full(
 }
 
 /// Handles `textDocument/semanticTokens/full/delta` requests.
-pub fn handle_semantic_tokens_delta(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_semantic_tokens_delta(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let prev_id = msg["params"]["previousResultId"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
@@ -331,18 +256,12 @@ pub fn handle_semantic_tokens_delta(
 
         // Find common prefix and suffix
         let mut prefix = 0;
-        while prefix < cached_data.len()
-            && prefix < new_data.len()
-            && cached_data[prefix] == new_data[prefix]
-        {
+        while prefix < cached_data.len() && prefix < new_data.len() && cached_data[prefix] == new_data[prefix] {
             prefix += 1;
         }
 
         let mut suffix = 0;
-        while suffix < cached_data.len() - prefix
-            && suffix < new_data.len() - prefix
-            && cached_data[cached_data.len() - 1 - suffix] == new_data[new_data.len() - 1 - suffix]
-        {
+        while suffix < cached_data.len() - prefix && suffix < new_data.len() - prefix && cached_data[cached_data.len() - 1 - suffix] == new_data[new_data.len() - 1 - suffix] {
             suffix += 1;
         }
 
@@ -370,26 +289,14 @@ pub fn handle_semantic_tokens_delta(
 }
 
 /// Handles `textDocument/semanticTokens/range` requests.
-pub fn handle_semantic_tokens_range(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_semantic_tokens_range(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
-    let start_line = msg["params"]["range"]["start"]["line"]
-        .as_u64()
-        .unwrap_or(0) as u32;
-    let end_line = msg["params"]["range"]["end"]["line"]
-        .as_u64()
-        .unwrap_or(u32::MAX as u64) as u32;
+    let start_line = msg["params"]["range"]["start"]["line"].as_u64().unwrap_or(0) as u32;
+    let end_line = msg["params"]["range"]["end"]["line"].as_u64().unwrap_or(u32::MAX as u64) as u32;
 
     let raw_tokens = collect_raw_tokens(&file, workspace, overlay_mgr, conv);
-    let in_range: Vec<RawToken> = raw_tokens
-        .into_iter()
-        .filter(|t| t.line >= start_line && t.line <= end_line)
-        .collect();
+    let in_range: Vec<RawToken> = raw_tokens.into_iter().filter(|t| t.line >= start_line && t.line <= end_line).collect();
 
     let data = encode_tokens_delta(&in_range);
     json!({ "data": data })

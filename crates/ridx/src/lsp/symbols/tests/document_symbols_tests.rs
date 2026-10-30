@@ -16,8 +16,7 @@ use serde_json::json;
 fn test_document_symbols_opened_file_finds_all_kinds() {
     let mut h = setup_test_symbols();
     let code = "pub fn my_symbol() {}\npub struct MyStruct;\npub enum MyEnum {}\npub trait MyTrait {}\npub const MY_CONST: usize = 42;\n";
-    h.overlay_mgr
-        .open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
 
     let req = json!({
         "params": {
@@ -54,8 +53,7 @@ fn test_document_symbols_unopened_file_returns_empty() {
 #[test]
 fn test_document_symbols_empty_file_returns_empty() {
     let mut h = setup_test_symbols();
-    h.overlay_mgr
-        .open_document(&h.uri, h.src_file.to_str().unwrap(), 1, String::new());
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, String::new());
 
     let req = json!({
         "params": {
@@ -72,8 +70,7 @@ fn test_document_symbols_empty_file_returns_empty() {
 fn test_document_symbols_comments_only_file_returns_empty() {
     let mut h = setup_test_symbols();
     let code = "// Just a comment\n/* Block comment */\n/// Doc comment without symbol\n";
-    h.overlay_mgr
-        .open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
 
     let req = json!({
         "params": {
@@ -90,8 +87,7 @@ fn test_document_symbols_comments_only_file_returns_empty() {
 fn test_document_symbols_selection_range_and_range() {
     let mut h = setup_test_symbols();
     let code = "fn compute_score() -> u32 { 100 }\n";
-    h.overlay_mgr
-        .open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
 
     let req = json!({
         "params": {
@@ -114,8 +110,7 @@ fn test_document_symbols_selection_range_and_range() {
 fn test_document_symbols_detail_signature() {
     let mut h = setup_test_symbols();
     let code = "pub fn add(a: i32, b: i32) -> i32 { a + b }\n";
-    h.overlay_mgr
-        .open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
 
     let req = json!({
         "params": {
@@ -128,10 +123,7 @@ fn test_document_symbols_detail_signature() {
     // Function plus its two parameters
     assert_eq!(items.len(), 3);
 
-    let fn_sym = items
-        .iter()
-        .find(|s| s["name"] == "add")
-        .expect("add function symbol");
+    let fn_sym = items.iter().find(|s| s["name"] == "add").expect("add function symbol");
     let detail = fn_sym["detail"].as_str();
     assert!(detail.is_some());
     assert!(detail.unwrap().contains("add"));
@@ -141,12 +133,7 @@ fn test_document_symbols_detail_signature() {
 fn test_document_symbols_overlay_update_reflection() {
     let mut h = setup_test_symbols();
     let initial_code = "pub fn first_fn() {}\n";
-    h.overlay_mgr.open_document(
-        &h.uri,
-        h.src_file.to_str().unwrap(),
-        1,
-        initial_code.to_string(),
-    );
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, initial_code.to_string());
 
     let req = json!({
         "params": {
@@ -161,8 +148,7 @@ fn test_document_symbols_overlay_update_reflection() {
 
     // Modify document through overlay
     let updated_code = "pub fn second_fn() {}\npub fn third_fn() {}\n";
-    h.overlay_mgr
-        .update(h.src_file.to_str().unwrap(), 2, updated_code.to_string());
+    h.overlay_mgr.update(h.src_file.to_str().unwrap(), 2, updated_code.to_string());
 
     let res2 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     let items2 = res2.as_array().unwrap();
@@ -176,8 +162,7 @@ fn test_document_symbols_utf16_multibyte_offsets() {
     let mut h = setup_test_symbols();
     // Line with unicode emojis before symbol
     let code = "// 🦀🚀🌟\npub fn with_emoji_prefix() {}\n";
-    h.overlay_mgr
-        .open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, code.to_string());
 
     let req = json!({
         "params": {
@@ -210,18 +195,8 @@ fn test_document_symbols_multiple_documents_isolated() {
     let file_b = h.temp_dir.join("src/other.rs");
     let uri_b = format!("file://{}", file_b.to_str().unwrap());
 
-    h.overlay_mgr.open_document(
-        &h.uri,
-        h.src_file.to_str().unwrap(),
-        1,
-        "pub fn doc_a() {}\n".to_string(),
-    );
-    h.overlay_mgr.open_document(
-        &uri_b,
-        file_b.to_str().unwrap(),
-        1,
-        "pub fn doc_b() {}\n".to_string(),
-    );
+    h.overlay_mgr.open_document(&h.uri, h.src_file.to_str().unwrap(), 1, "pub fn doc_a() {}\n".to_string());
+    h.overlay_mgr.open_document(&uri_b, file_b.to_str().unwrap(), 1, "pub fn doc_b() {}\n".to_string());
 
     let req_a = json!({ "params": { "textDocument": { "uri": &h.uri } } });
     let res_a = handle_document_symbol(&req_a, &h.overlay_mgr, &mut h.conv);
@@ -248,18 +223,12 @@ fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
     // 1. First closed-file request parses from disk and populates the cache (hits == 0).
     let res_closed_1 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     assert_eq!(res_closed_1.as_array().unwrap().len(), 6);
-    assert_eq!(
-        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
-        Some(0)
-    );
+    assert_eq!(document_symbol_cache_hits_for(&h.overlay_mgr, file_str), Some(0));
 
     // 2. Second closed-file request on unchanged disk file hits the (path, mtime, len) cache.
     let res_closed_2 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     assert_eq!(res_closed_1, res_closed_2);
-    assert_eq!(
-        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
-        Some(1)
-    );
+    assert_eq!(document_symbol_cache_hits_for(&h.overlay_mgr, file_str), Some(1));
 
     // 3. Opening the document with identical text produces the exact same JSON array.
     h.overlay_mgr.open_document(&h.uri, file_str, 1, disk_code);
@@ -268,35 +237,23 @@ fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
 
     // 4. Close the document and modify the file on disk -> cache invalidates (hits resets to 0).
     h.overlay_mgr.close_document(file_str);
-    std::fs::write(
-        &h.src_file,
-        "pub fn disk_updated_fn(x: usize) -> usize { x }\n",
-    )
-    .unwrap();
+    std::fs::write(&h.src_file, "pub fn disk_updated_fn(x: usize) -> usize { x }\n").unwrap();
     let res_updated = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     let updated_items = res_updated.as_array().unwrap();
     assert_eq!(updated_items.len(), 2);
     assert_eq!(updated_items[0]["name"], "disk_updated_fn");
-    assert_eq!(
-        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
-        Some(0)
-    );
+    assert_eq!(document_symbol_cache_hits_for(&h.overlay_mgr, file_str), Some(0));
 
     // 5. Deleting the file on disk evicts the cache entry and returns [].
     std::fs::remove_file(&h.src_file).unwrap();
     let res_deleted = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     assert_eq!(res_deleted, json!([]));
-    assert_eq!(
-        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
-        None
-    );
+    assert_eq!(document_symbol_cache_hits_for(&h.overlay_mgr, file_str), None);
 }
 
 #[test]
 fn test_document_symbol_cache_isolated_between_overlay_managers() {
-    use crate::lsp::symbols::document_symbol::{
-        document_symbol_cache_hits_for, document_symbol_cache_len,
-    };
+    use crate::lsp::symbols::document_symbol::{document_symbol_cache_hits_for, document_symbol_cache_len};
 
     let h = setup_test_symbols();
     let file_a_str = h.src_file.to_str().unwrap();

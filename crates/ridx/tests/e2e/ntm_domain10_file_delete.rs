@@ -45,10 +45,18 @@ fn create_temp_shard_with_symbol(name: &str, sym_name: &str) -> TempShard {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: sym_name.to_string(), path: format!("{}::{}", name, sym_name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 10, start_col: 5, end_line: 10, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: sym_name.to_string(),
+        path: format!("{}::{}", name, sym_name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 5,
+        end_line: 10,
+        end_col: 15,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -69,8 +77,10 @@ struct TestDispatcher {
 impl TestDispatcher {
     fn new(shard: PathBuf) -> Self {
         let mut d = Self {
-            lifecycle: LifecycleManager::new(), multi_root: MultiRootWorkspace::new(),
-            overlay_mgr: OverlayManager::new(), cancelled: Arc::new(Mutex::new(HashSet::new())),
+            lifecycle: LifecycleManager::new(),
+            multi_root: MultiRootWorkspace::new(),
+            overlay_mgr: OverlayManager::new(),
+            cancelled: Arc::new(Mutex::new(HashSet::new())),
             writer: Vec::new(),
         };
         assert!(d.multi_root.add_root(shard));
@@ -81,10 +91,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &serde_json::Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> serde_json::Value {

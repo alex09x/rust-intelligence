@@ -19,26 +19,18 @@ use rustc_middle::ty::TyCtxt;
 /// - Dynamic trait objects (`dyn Trait`) -> principal trait path string
 /// - Generic type parameters (`T: Trait`) -> primary bounded trait path string via `predicates_of` / `param_env`
 /// - Primitives and builtins (`str`, `slice`, `bool`, integer/float primitives)
-pub fn resolve_owner_from_ty<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ty: rustc_middle::ty::Ty<'tcx>,
-    param_env: Option<rustc_middle::ty::ParamEnv<'tcx>>,
-) -> Option<String> {
+pub fn resolve_owner_from_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>, param_env: Option<rustc_middle::ty::ParamEnv<'tcx>>) -> Option<String> {
     let peeled = ty.peel_refs();
     if let Some(adt_def) = peeled.ty_adt_def() {
         let did = adt_def.did();
-        let path = rustc_middle::ty::print::with_no_visible_paths!(
-            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-        );
+        let path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
         return Some(path);
     }
     match peeled.kind() {
         rustc_middle::ty::TyKind::Dynamic(predicates, ..) => {
             if let Some(principal) = predicates.principal() {
                 let did = principal.def_id();
-                let path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-                );
+                let path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
                 return Some(path);
             }
         }
@@ -75,11 +67,7 @@ pub fn resolve_owner_from_ty<'tcx>(
 ///
 /// Iterates trait predicate clauses bounding `param_ty`, filtering out `Sized` and auto-traits (`Send`, `Sync`, `Unpin`).
 /// Prioritizes workspace/dependency traits over standard sysroot crates and traits declaring associated items/methods.
-pub fn resolve_owner_from_param<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_ty: rustc_middle::ty::ParamTy,
-    param_env: rustc_middle::ty::ParamEnv<'tcx>,
-) -> Option<String> {
+pub fn resolve_owner_from_param<'tcx>(tcx: TyCtxt<'tcx>, param_ty: rustc_middle::ty::ParamTy, param_env: rustc_middle::ty::ParamEnv<'tcx>) -> Option<String> {
     let mut candidate_traits = Vec::new();
 
     for clause in param_env.caller_bounds() {
@@ -88,14 +76,10 @@ pub fn resolve_owner_from_param<'tcx>(
             if let rustc_middle::ty::TyKind::Param(p) = self_ty.kind() {
                 if p.index == param_ty.index {
                     let trait_did = trait_pred.trait_ref.def_id;
-                    if tcx.lang_items().sized_trait() == Some(trait_did)
-                        || tcx.trait_is_auto(trait_did)
-                    {
+                    if tcx.lang_items().sized_trait() == Some(trait_did) || tcx.trait_is_auto(trait_did) {
                         continue;
                     }
-                    let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
-                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(trait_did))
-                    );
+                    let trait_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(trait_did)));
                     if trait_path.starts_with("core::marker::") {
                         continue;
                     }
@@ -112,8 +96,7 @@ pub fn resolve_owner_from_param<'tcx>(
     // Prioritize non-sysroot domain traits (e.g. `serde::de::Visitor` over `core::fmt::Debug`)
     // and traits with declared methods/items.
     candidate_traits.sort_by_key(|&(did, ref path)| {
-        let is_sysroot =
-            path.starts_with("core::") || path.starts_with("alloc::") || path.starts_with("std::");
+        let is_sysroot = path.starts_with("core::") || path.starts_with("alloc::") || path.starts_with("std::");
         let has_items = !tcx.associated_item_def_ids(did).is_empty();
         (is_sysroot, !has_items)
     });

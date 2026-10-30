@@ -76,29 +76,16 @@ fn test_hover_trait_full_signature_docs_provenance_and_blast_radius() {
     });
     let res = handle_hover(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let val = res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("pub trait Deserialize<'de>: Sized"),
-        "expected full trait signature with lifetime and supertrait, got: {val}"
-    );
-    assert!(
-        val.contains("A data structure that can be deserialized."),
-        "expected extracted doc comment across multi-line attribute, got: {val}"
-    );
-    assert!(
-        val.contains("**Provenance:** `serde_core::de::Deserialize` · crate `serde_core v1.0.228` (`src/lib.rs:7`)"),
-        "expected provenance footer, got: {val}"
-    );
-    assert!(
-        val.contains("**Blast Radius:** 1 direct reference across 1 file in 1 crate"),
-        "expected blast radius footer, got: {val}"
-    );
+    assert!(val.contains("pub trait Deserialize<'de>: Sized"), "expected full trait signature with lifetime and supertrait, got: {val}");
+    assert!(val.contains("A data structure that can be deserialized."), "expected extracted doc comment across multi-line attribute, got: {val}");
+    assert!(val.contains("**Provenance:** `serde_core::de::Deserialize` · crate `serde_core v1.0.228` (`src/lib.rs:7`)"), "expected provenance footer, got: {val}");
+    assert!(val.contains("**Blast Radius:** 1 direct reference across 1 file in 1 crate"), "expected blast radius footer, got: {val}");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_blast_radius_deduplicates_file_across_shards_and_groups_package_targets() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_hover_blast_dedup_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_hover_blast_dedup_{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp_dir);
     let ridx_dir = temp_dir.join("target/ridx");
     let _ = fs::create_dir_all(&ridx_dir);
@@ -138,9 +125,7 @@ fn test_blast_radius_deduplicates_file_across_shards_and_groups_package_targets(
         is_write: false,
         is_macro_expansion: false,
     });
-    w_lib
-        .write_to(&mut fs::File::create(ridx_dir.join("my_pkg-lib.ridx")).unwrap())
-        .unwrap();
+    w_lib.write_to(&mut fs::File::create(ridx_dir.join("my_pkg-lib.ridx")).unwrap()).unwrap();
 
     // Shard 2: unit-test target where `src/other.rs` is file_id = 0 and `src/lib.rs` is file_id = 1,
     // plus a second reference in `src/lib.rs` at line 25.
@@ -178,33 +163,21 @@ fn test_blast_radius_deduplicates_file_across_shards_and_groups_package_targets(
         is_write: false,
         is_macro_expansion: false,
     });
-    w_test
-        .write_to(&mut fs::File::create(ridx_dir.join("my_pkg-test.ridx")).unwrap())
-        .unwrap();
+    w_test.write_to(&mut fs::File::create(ridx_dir.join("my_pkg-test.ridx")).unwrap()).unwrap();
 
     let mut ws = WorkspaceIndex::open(&temp_dir).unwrap();
     ws.set_workspace_root(Some(temp_dir.clone()));
     let def = ws.find_definition_at("src/lib.rs", 1, 14).unwrap();
     let blast = ws.direct_blast_radius(&def);
-    assert_eq!(
-        blast.direct_refs, 2,
-        "duplicate ref at line 10 must be counted once"
-    );
-    assert_eq!(
-        blast.files, 1,
-        "src/lib.rs across two shards with different file_ids must be counted once"
-    );
-    assert_eq!(
-        blast.crates, 1,
-        "lib and unit-test targets of the same package must be counted as 1 crate"
-    );
+    assert_eq!(blast.direct_refs, 2, "duplicate ref at line 10 must be counted once");
+    assert_eq!(blast.files, 1, "src/lib.rs across two shards with different file_ids must be counted once");
+    assert_eq!(blast.crates, 1, "lib and unit-test targets of the same package must be counted as 1 crate");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_hover_doc_comments_with_cfg_attr_doc_and_derive() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_hover_cfg_attr_doc_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_hover_cfg_attr_doc_{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp_dir);
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
@@ -231,9 +204,7 @@ fn test_hover_doc_comments_with_cfg_attr_doc_and_derive() {
         signature: None,
     });
     let ridx_file = temp_dir.join("serde_attr.ridx");
-    writer
-        .write_to(&mut fs::File::create(&ridx_file).unwrap())
-        .unwrap();
+    writer.write_to(&mut fs::File::create(&ridx_file).unwrap()).unwrap();
 
     let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
     ws.set_workspace_root(Some(temp_dir.clone()));

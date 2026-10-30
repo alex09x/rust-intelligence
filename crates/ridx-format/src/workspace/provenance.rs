@@ -51,12 +51,7 @@ pub(crate) fn path_traverses_symlink_parent(path: &Path) -> bool {
 /// Resolves real filesystem identity for both entry and request before any lexical collapse,
 /// guaranteeing that lexical collapse never overrides known unequal canonical paths.
 #[cfg(test)]
-pub(crate) fn file_entry_matches(
-    entry_str: &str,
-    reader_origin: Option<&Path>,
-    req_path: &Path,
-    req_canon: Option<&Path>,
-) -> bool {
+pub(crate) fn file_entry_matches(entry_str: &str, reader_origin: Option<&Path>, req_path: &Path, req_canon: Option<&Path>) -> bool {
     if entry_str.is_empty() {
         return false;
     }
@@ -85,11 +80,7 @@ pub(crate) fn file_entry_matches(
     // 2. Resolve canonical identities on the filesystem before any lexical collapse
     use super::path_index_tests::oracle::cached_canonicalize;
     let entry_canon = cached_canonicalize(&entry_orig);
-    let effective_req_canon = req_canon.map(Path::to_path_buf).or_else(|| {
-        req_path
-            .is_absolute()
-            .then(|| cached_canonicalize(req_path))?
-    });
+    let effective_req_canon = req_canon.map(Path::to_path_buf).or_else(|| req_path.is_absolute().then(|| cached_canonicalize(req_path))?);
 
     // 3. Authoritative filesystem identity comparison
     if let (Some(ref c_entry), Some(ref c_req)) = (&entry_canon, &effective_req_canon) {

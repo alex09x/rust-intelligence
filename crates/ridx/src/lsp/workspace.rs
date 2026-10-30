@@ -72,11 +72,7 @@ impl MultiRootWorkspace {
             norm_path.clone()
         };
 
-        if self
-            .roots
-            .iter()
-            .any(|(p, _)| p == &root_dir || p == &norm_path)
-        {
+        if self.roots.iter().any(|(p, _)| p == &root_dir || p == &norm_path) {
             return false;
         }
 
@@ -94,11 +90,7 @@ impl MultiRootWorkspace {
             if p == &norm_path || p == path {
                 return false;
             }
-            if ws.paths().iter().any(|ip| {
-                ip == path
-                    || ip == &norm_path
-                    || ip.canonicalize().map(|c| c == norm_path).unwrap_or(false)
-            }) {
+            if ws.paths().iter().any(|ip| ip == path || ip == &norm_path || ip.canonicalize().map(|c| c == norm_path).unwrap_or(false)) {
                 return false;
             }
             true
@@ -107,9 +99,7 @@ impl MultiRootWorkspace {
     }
 
     pub fn find_workspace_for_path(&self, file_path: &Path) -> Option<&WorkspaceIndex> {
-        let canon = file_path
-            .canonicalize()
-            .unwrap_or_else(|_| file_path.to_path_buf());
+        let canon = file_path.canonicalize().unwrap_or_else(|_| file_path.to_path_buf());
         let mut best_match: Option<(usize, &WorkspaceIndex)> = None;
 
         for (root, ws) in &self.roots {
@@ -125,9 +115,7 @@ impl MultiRootWorkspace {
             }
         }
 
-        best_match
-            .map(|(_, ws)| ws)
-            .or_else(|| self.roots.first().map(|(_, ws)| ws))
+        best_match.map(|(_, ws)| ws).or_else(|| self.roots.first().map(|(_, ws)| ws))
     }
 
     pub fn first_workspace(&self) -> Option<&WorkspaceIndex> {
@@ -185,13 +173,7 @@ impl MultiRootWorkspace {
             .get("data")
             .and_then(|d| d.get("uri"))
             .and_then(|u| u.as_str())
-            .or_else(|| {
-                msg["params"]
-                    .get("edit")
-                    .and_then(|e| e.get("changes"))
-                    .and_then(|c| c.as_object())
-                    .and_then(|m| m.keys().next().map(|s| s.as_str()))
-            });
+            .or_else(|| msg["params"].get("edit").and_then(|e| e.get("changes")).and_then(|c| c.as_object()).and_then(|m| m.keys().next().map(|s| s.as_str())));
         uri.and_then(|u| {
             let p = super::protocol::uri_to_path(u);
             self.find_workspace_for_path(Path::new(&p))
@@ -200,33 +182,20 @@ impl MultiRootWorkspace {
 
     pub fn check_file_provenance(&self, file: &str, text: &str) -> bool {
         let text_hash = ridx_format::normalized_source_hash(text.as_bytes());
-        self.find_workspace_for_path(Path::new(file))
-            .and_then(|ws| ws.source_hash_for_file(file))
-            == Some(text_hash)
+        self.find_workspace_for_path(Path::new(file)).and_then(|ws| ws.source_hash_for_file(file)) == Some(text_hash)
     }
 
     pub fn source_hash_for_file(&self, file: &str) -> Option<u64> {
-        self.find_workspace_for_path(Path::new(file))
-            .and_then(|ws| ws.source_hash_for_file(file))
+        self.find_workspace_for_path(Path::new(file)).and_then(|ws| ws.source_hash_for_file(file))
     }
 
-    pub fn handle_file_event(
-        &mut self,
-        method: &str,
-        msg: &Value,
-        overlay_mgr: &mut crate::overlay::OverlayManager,
-        conv: &mut super::protocol::PositionConverter,
-    ) {
+    pub fn handle_file_event(&mut self, method: &str, msg: &Value, overlay_mgr: &mut crate::overlay::OverlayManager, conv: &mut super::protocol::PositionConverter) {
         if method == "workspace/didRenameFiles" {
             if let Some(files) = msg["params"]["files"].as_array() {
                 for op in files {
                     let old_uri = op["oldUri"].as_str().unwrap_or("");
                     let new_uri = op["newUri"].as_str().unwrap_or("");
-                    overlay_mgr.rename(
-                        &super::protocol::uri_to_path(old_uri),
-                        new_uri,
-                        &super::protocol::uri_to_path(new_uri),
-                    );
+                    overlay_mgr.rename(&super::protocol::uri_to_path(old_uri), new_uri, &super::protocol::uri_to_path(new_uri));
                 }
             }
         } else if method == "workspace/didDeleteFiles" {
@@ -255,9 +224,7 @@ mod tests {
         assert!(mr.is_empty());
         assert_eq!(mr.len(), 0);
         assert!(mr.first_workspace().is_none());
-        assert!(mr
-            .find_workspace_for_path(Path::new("/non/existent"))
-            .is_none());
+        assert!(mr.find_workspace_for_path(Path::new("/non/existent")).is_none());
     }
 
     #[test]
@@ -338,9 +305,7 @@ mod tests {
         // Test handle_did_change_workspace_folders missing fields
         mr.handle_did_change_workspace_folders(&json!({ "params": {} }));
         mr.handle_did_change_workspace_folders(&json!({ "params": { "event": { "added": [] } } }));
-        mr.handle_did_change_workspace_folders(
-            &json!({ "params": { "event": { "removed": [] } } }),
-        );
+        mr.handle_did_change_workspace_folders(&json!({ "params": { "event": { "removed": [] } } }));
 
         // Remove root
         assert!(mr.remove_root(&sub_ridx));

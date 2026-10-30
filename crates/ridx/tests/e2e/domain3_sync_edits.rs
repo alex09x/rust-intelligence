@@ -30,29 +30,15 @@ impl Drop for CleanupDir {
     }
 }
 
-fn dispatch_msg(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) {
+fn dispatch_msg(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let _ = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
 }
 
 #[test]
 fn test_did_change_full_content_sync() {
-    let mut overlay =
-        DocumentOverlay::new("file:///test.rs", "/test.rs", 1, "initial text".to_string());
+    let mut overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, "initial text".to_string());
     assert_eq!(overlay.version, 1);
     assert_eq!(overlay.text, "initial text");
 
@@ -236,21 +222,14 @@ fn test_did_change_unopened_document_implicit_open() {
     );
 
     let file_str = file_path.to_str().unwrap();
-    let ov = overlay_mgr
-        .get(file_str)
-        .expect("overlay must be opened implicitly");
+    let ov = overlay_mgr.get(file_str).expect("overlay must be opened implicitly");
     assert_eq!(ov.text, "fn from_implicit_open() {}\n");
     assert_eq!(ov.version, 1);
 }
 
 #[test]
 fn test_did_change_reparses_symbols_and_scopes() {
-    let mut overlay = DocumentOverlay::new(
-        "file:///test.rs",
-        "/test.rs",
-        1,
-        "fn first() {}\n".to_string(),
-    );
+    let mut overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, "fn first() {}\n".to_string());
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "first");
 

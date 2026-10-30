@@ -30,23 +30,10 @@ impl Drop for CleanupDir {
     }
 }
 
-fn dispatch_msg(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) {
+fn dispatch_msg(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let _ = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
 }
 
 #[test]
@@ -169,11 +156,7 @@ fn test_did_save_triggers_flycheck() {
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let _guard = CleanupDir(temp_dir.clone());
 
-    fs::write(
-        temp_dir.join("Cargo.toml"),
-        "[package]\nname = \"dummy\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(temp_dir.join("Cargo.toml"), "[package]\nname = \"dummy\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let lib_rs = temp_dir.join("src/lib.rs");
     fs::write(&lib_rs, "pub fn check_me() {}\n").unwrap();
     let uri = path_to_uri(lib_rs.to_str().unwrap());
@@ -214,26 +197,17 @@ fn test_overlay_manager_open_count_and_file_paths() {
 
     overlay_mgr.close_document("/f2.rs");
     assert_eq!(overlay_mgr.open_count(), 2);
-    assert!(!overlay_mgr
-        .open_file_paths()
-        .contains(&"/f2.rs".to_string()));
+    assert!(!overlay_mgr.open_file_paths().contains(&"/f2.rs".to_string()));
 }
 
 #[test]
 fn test_overlay_rename_document_path() {
     let mut overlay_mgr = OverlayManager::new();
-    overlay_mgr.open_document(
-        "file:///old/path.rs",
-        "/old/path.rs",
-        1,
-        "fn renamed() {}".to_string(),
-    );
+    overlay_mgr.open_document("file:///old/path.rs", "/old/path.rs", 1, "fn renamed() {}".to_string());
 
     overlay_mgr.rename("/old/path.rs", "file:///new/path.rs", "/new/path.rs");
     assert!(overlay_mgr.get("/old/path.rs").is_none());
-    let new_ov = overlay_mgr
-        .get("/new/path.rs")
-        .expect("must exist under new path");
+    let new_ov = overlay_mgr.get("/new/path.rs").expect("must exist under new path");
     assert_eq!(new_ov.uri, "file:///new/path.rs");
     assert_eq!(new_ov.text, "fn renamed() {}");
 }

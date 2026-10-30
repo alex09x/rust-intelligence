@@ -42,9 +42,7 @@ fn test_references_scoped_to_exact_dependency_version_with_same_coordinates() {
         end_line: 12,
         end_col: 2,
     });
-    writer_a1
-        .write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap()))
-        .unwrap();
+    writer_a1.write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap())).unwrap();
 
     // 2. Dependency shard A2: crate "a" v2.0.0, unitA2, ALSO defines a::Thing at line 10 in src/lib.rs!
     let mut writer_a2 = IndexWriter::new("a", "2.0.0");
@@ -63,9 +61,7 @@ fn test_references_scoped_to_exact_dependency_version_with_same_coordinates() {
         end_line: 12,
         end_col: 2,
     });
-    writer_a2
-        .write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap()))
-        .unwrap();
+    writer_a2.write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap())).unwrap();
 
     // 3. Consumer crate C: references a::Thing at line 4 (target_unit = unitA1)
     // and a::Thing at line 8 (target_unit = unitA2)
@@ -104,9 +100,7 @@ fn test_references_scoped_to_exact_dependency_version_with_same_coordinates() {
         is_macro_expansion: false,
     });
     let c_ridx = var_dir.join("c.ridx");
-    writer_c
-        .write_to(&mut BufWriter::new(File::create(&c_ridx).unwrap()))
-        .unwrap();
+    writer_c.write_to(&mut BufWriter::new(File::create(&c_ridx).unwrap())).unwrap();
 
     let c_meta = serde_json::json!({
         "name": "c",
@@ -119,11 +113,7 @@ fn test_references_scoped_to_exact_dependency_version_with_same_coordinates() {
             "a2": "unitA2"
         }
     });
-    fs::write(
-        deps_dir.join("c.json"),
-        serde_json::to_string_pretty(&c_meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("c.json"), serde_json::to_string_pretty(&c_meta).unwrap()).unwrap();
 
     let manifest = serde_json::json!({
         "version": "2.0",
@@ -153,11 +143,7 @@ fn test_references_scoped_to_exact_dependency_version_with_same_coordinates() {
             }
         ]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
 
@@ -195,11 +181,7 @@ fn test_same_named_consumer_definition_and_references() {
         end_line: 12,
         end_col: 2,
     });
-    writer_a1
-        .write_to(&mut BufWriter::new(
-            File::create(test_dir.join("a1.ridx")).unwrap(),
-        ))
-        .unwrap();
+    writer_a1.write_to(&mut BufWriter::new(File::create(test_dir.join("a1.ridx")).unwrap())).unwrap();
 
     // Crate A2: unit_key = "A2", crate_name = "a", depends on A1!
     let mut writer_a2 = IndexWriter::new("a", "2.0.0");
@@ -234,11 +216,7 @@ fn test_same_named_consumer_definition_and_references() {
         target_line: 10,
         target_col: 0,
     });
-    writer_a2
-        .write_to(&mut BufWriter::new(
-            File::create(test_dir.join("a2.ridx")).unwrap(),
-        ))
-        .unwrap();
+    writer_a2.write_to(&mut BufWriter::new(File::create(test_dir.join("a2.ridx")).unwrap())).unwrap();
 
     // Publish metadata for both
     let deps_dir = test_dir.join(".deps");
@@ -252,11 +230,7 @@ fn test_same_named_consumer_definition_and_references() {
         "extern_units": {},
         "file_hashes": {},
     });
-    fs::write(
-        deps_dir.join("a1.json"),
-        serde_json::to_string_pretty(&meta_a1).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("a1.json"), serde_json::to_string_pretty(&meta_a1).unwrap()).unwrap();
 
     let meta_a2 = serde_json::json!({
         "name": "a",
@@ -267,30 +241,20 @@ fn test_same_named_consumer_definition_and_references() {
         "extern_units": {},
         "file_hashes": {},
     });
-    fs::write(
-        deps_dir.join("a2.json"),
-        serde_json::to_string_pretty(&meta_a2).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("a2.json"), serde_json::to_string_pretty(&meta_a2).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("should open workspace");
     assert_eq!(ws.crate_count(), 2);
 
     // 1. Definition lookup at reference in A2 should resolve to A1, NOT be treated as local to A2
-    let def = ws
-        .find_definition_at("crates/a2/src/lib.rs", 6, 11)
-        .expect("should resolve definition");
+    let def = ws.find_definition_at("crates/a2/src/lib.rs", 6, 11).expect("should resolve definition");
     assert_eq!(def.name, "Item");
     assert_eq!(def.unit_key, Some("A1"));
     assert_eq!(def.file, "crates/a1/src/lib.rs");
 
     // 2. References lookup for a::Item in A1 should find reference in consumer A2
     let refs = ws.find_references_for_unit("a::Item", Some("A1"));
-    assert_eq!(
-        refs.len(),
-        1,
-        "A2 should not be skipped as a same-named consumer"
-    );
+    assert_eq!(refs.len(), 1, "A2 should not be skipped as a same-named consumer");
     assert_eq!(refs[0].file, "crates/a2/src/lib.rs");
     assert_eq!(refs[0].unit_key, Some("A2"));
 

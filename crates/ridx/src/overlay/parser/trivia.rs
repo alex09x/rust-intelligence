@@ -61,11 +61,7 @@ impl<'a> OverlayParser<'a> {
 
     fn line_slice_no_eol(&self, line_idx: usize) -> &'a str {
         let start = self.line_starts[line_idx];
-        let end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
+        let end = if line_idx + 1 < self.line_starts.len() { self.line_starts[line_idx + 1] } else { self.text.len() };
         self.text[start..end].trim_end_matches(['\r', '\n'])
     }
 
@@ -145,8 +141,7 @@ impl<'a> OverlayParser<'a> {
                 }
                 continue;
             }
-            if s.is_empty() || s.starts_with("//!") || s.starts_with("/*!") || s.starts_with("#![")
-            {
+            if s.is_empty() || s.starts_with("//!") || s.starts_with("/*!") || s.starts_with("#![") {
                 break;
             }
             if s.starts_with("//") {

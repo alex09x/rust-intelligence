@@ -34,12 +34,7 @@ fn test_inlay_hint_missing_or_empty_uri() {
             }
         }
     });
-    assert_eq!(
-        handle_inlay_hint(&req_missing, Some(&ws), &overlay_mgr)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_inlay_hint(&req_missing, Some(&ws), &overlay_mgr).unwrap_err().code, INVALID_PARAMS);
 
     let req_empty = json!({
         "params": {
@@ -50,12 +45,7 @@ fn test_inlay_hint_missing_or_empty_uri() {
             }
         }
     });
-    assert_eq!(
-        handle_inlay_hint(&req_empty, Some(&ws), &overlay_mgr)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_inlay_hint(&req_empty, Some(&ws), &overlay_mgr).unwrap_err().code, INVALID_PARAMS);
 }
 
 #[test]
@@ -69,12 +59,7 @@ fn test_inlay_hint_missing_range_or_boundaries() {
             "textDocument": { "uri": &uri }
         }
     });
-    assert_eq!(
-        handle_inlay_hint(&req_no_range, Some(&ws), &overlay_mgr)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_inlay_hint(&req_no_range, Some(&ws), &overlay_mgr).unwrap_err().code, INVALID_PARAMS);
 
     let req_no_start = json!({
         "params": {
@@ -84,12 +69,7 @@ fn test_inlay_hint_missing_range_or_boundaries() {
             }
         }
     });
-    assert_eq!(
-        handle_inlay_hint(&req_no_start, Some(&ws), &overlay_mgr)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_inlay_hint(&req_no_start, Some(&ws), &overlay_mgr).unwrap_err().code, INVALID_PARAMS);
 }
 
 #[test]
@@ -103,14 +83,7 @@ fn test_inlay_hint_let_without_type_produces_hint() {
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_inlay", "0.1.0");
-    writer.add_type(RawType {
-        file: src_str.clone(),
-        start_line: 2,
-        start_col: 9,
-        end_line: 2,
-        end_col: 15,
-        type_name: "i32".to_string(),
-    });
+    writer.add_type(RawType { file: src_str.clone(), start_line: 2, start_col: 9, end_line: 2, end_col: 15, type_name: "i32".to_string() });
 
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();
@@ -154,14 +127,7 @@ fn test_inlay_hint_let_with_explicit_type_no_hint() {
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_inlay_exp", "0.1.0");
-    writer.add_type(RawType {
-        file: src_str.clone(),
-        start_line: 2,
-        start_col: 9,
-        end_line: 2,
-        end_col: 15,
-        type_name: "i32".to_string(),
-    });
+    writer.add_type(RawType { file: src_str.clone(), start_line: 2, start_col: 9, end_line: 2, end_col: 15, type_name: "i32".to_string() });
 
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();
@@ -200,14 +166,7 @@ fn test_inlay_hint_let_mut_identifier_position() {
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_inlay_mut", "0.1.0");
-    writer.add_type(RawType {
-        file: src_str.clone(),
-        start_line: 2,
-        start_col: 13,
-        end_line: 2,
-        end_col: 20,
-        type_name: "u32".to_string(),
-    });
+    writer.add_type(RawType { file: src_str.clone(), start_line: 2, start_col: 13, end_line: 2, end_col: 20, type_name: "u32".to_string() });
 
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();
@@ -249,30 +208,9 @@ fn test_inlay_hint_range_filtering() {
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_inlay_rf", "0.1.0");
-    writer.add_type(RawType {
-        file: src_str.clone(),
-        start_line: 2,
-        start_col: 9,
-        end_line: 2,
-        end_col: 10,
-        type_name: "i32".to_string(),
-    });
-    writer.add_type(RawType {
-        file: src_str.clone(),
-        start_line: 3,
-        start_col: 9,
-        end_line: 3,
-        end_col: 10,
-        type_name: "i32".to_string(),
-    });
-    writer.add_type(RawType {
-        file: src_str.clone(),
-        start_line: 4,
-        start_col: 9,
-        end_line: 4,
-        end_col: 10,
-        type_name: "i32".to_string(),
-    });
+    writer.add_type(RawType { file: src_str.clone(), start_line: 2, start_col: 9, end_line: 2, end_col: 10, type_name: "i32".to_string() });
+    writer.add_type(RawType { file: src_str.clone(), start_line: 3, start_col: 9, end_line: 3, end_col: 10, type_name: "i32".to_string() });
+    writer.add_type(RawType { file: src_str.clone(), start_line: 4, start_col: 9, end_line: 4, end_col: 10, type_name: "i32".to_string() });
 
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();
@@ -305,20 +243,14 @@ fn test_inlay_hint_range_filtering() {
 #[test]
 fn test_inlay_hint_resolve_validation_and_enrichment() {
     let req_missing = json!({});
-    assert_eq!(
-        handle_inlay_hint_resolve(&req_missing).unwrap_err().code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_inlay_hint_resolve(&req_missing).unwrap_err().code, INVALID_PARAMS);
 
     let req_no_label = json!({
         "params": {
             "position": { "line": 1, "character": 10 }
         }
     });
-    assert_eq!(
-        handle_inlay_hint_resolve(&req_no_label).unwrap_err().code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_inlay_hint_resolve(&req_no_label).unwrap_err().code, INVALID_PARAMS);
 
     let req_valid = json!({
         "params": {

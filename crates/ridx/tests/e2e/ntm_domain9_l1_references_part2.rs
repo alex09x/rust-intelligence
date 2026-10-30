@@ -50,22 +50,9 @@ fn test_l1_references_missing_context_or_key_defaults_to_include_decl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_def_ctx", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_def_ctx",
-            "src/lib.rs",
-            "pub struct «DefaultContextTarget»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_def_ctx", "src/lib.rs", "pub struct «DefaultContextTarget»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_def_ctx",
-        "src/lib.rs",
-        "pub struct DefaultContextTarget;\npub fn run() { let _ = «DefaultContextTarget»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_def_ctx", "src/lib.rs", "pub struct DefaultContextTarget;\npub fn run() { let _ = «DefaultContextTarget»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_def_ctx").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -74,30 +61,15 @@ fn test_l1_references_missing_context_or_key_defaults_to_include_decl() {
     let uri = ws.file_uri("pkg_def_ctx", "src/lib.rs").unwrap();
 
     // 1. Query omitting context entirely
-    let res_no_ctx = handle_references(
-        &make_pos_req(&uri, 0, 11),
-        Some(&index),
-        &overlay_mgr,
-        &mut conv,
-    );
+    let res_no_ctx = handle_references(&make_pos_req(&uri, 0, 11), Some(&index), &overlay_mgr, &mut conv);
     let items_no_ctx = res_no_ctx.as_array().expect("references list");
 
     // 2. Query with explicit includeDeclaration: true
-    let res_true = handle_references(
-        &make_ref_req(&uri, 0, 11, true),
-        Some(&index),
-        &overlay_mgr,
-        &mut conv,
-    );
+    let res_true = handle_references(&make_ref_req(&uri, 0, 11, true), Some(&index), &overlay_mgr, &mut conv);
     let items_true = res_true.as_array().expect("references list");
 
     // 3. Query with explicit includeDeclaration: false
-    let res_false = handle_references(
-        &make_ref_req(&uri, 0, 11, false),
-        Some(&index),
-        &overlay_mgr,
-        &mut conv,
-    );
+    let res_false = handle_references(&make_ref_req(&uri, 0, 11, false), Some(&index), &overlay_mgr, &mut conv);
     let items_false = res_false.as_array().expect("references list");
 
     // 4. Query with context: {} without includeDeclaration key
@@ -131,32 +103,13 @@ fn test_l1_references_reexport_via_use_same_crate() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_reexport", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_reexport",
-            "src/inner.rs",
-            "pub struct «Worker»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_reexport", "src/inner.rs", "pub struct «Worker»;\n", DefKind::Struct).unwrap();
 
     // lib.rs re-exports Worker from inner module
-    ws.add_refs_to_def(
-        "pkg_reexport",
-        "src/lib.rs",
-        "pub mod inner;\npub use inner::«Worker»;\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_reexport", "src/lib.rs", "pub mod inner;\npub use inner::«Worker»;\n", ids[0]).unwrap();
 
     // app.rs uses Worker
-    ws.add_refs_to_def(
-        "pkg_reexport",
-        "src/app.rs",
-        "use crate::Worker;\npub fn start() { let _ = «Worker»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_reexport", "src/app.rs", "use crate::Worker;\npub fn start() { let _ = «Worker»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_reexport").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -196,24 +149,10 @@ fn test_l1_references_cross_crate_two_shards() {
     ws.add_crate("crate_core", "0.1.0").unwrap();
     ws.add_crate("crate_consumer", "0.1.0").unwrap();
 
-    let (_, ids_core) = ws
-        .add_source_file_with_defs(
-            "crate_core",
-            "src/lib.rs",
-            "pub struct «ServiceConfig»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids_core) = ws.add_source_file_with_defs("crate_core", "src/lib.rs", "pub struct «ServiceConfig»;\n", DefKind::Struct).unwrap();
 
     // Crate consumer implements or references ServiceConfig across crate boundaries
-    ws.add_source_file_with_impl_refs(
-        "crate_consumer",
-        "src/lib.rs",
-        "use crate_core::ServiceConfig;\nimpl «ServiceConfig» {}\n",
-        "crate_core",
-        ids_core[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("crate_consumer", "src/lib.rs", "use crate_core::ServiceConfig;\nimpl «ServiceConfig» {}\n", "crate_core", ids_core[0]).unwrap();
 
     let _ = ws.build_crate_index("crate_core").unwrap();
     let _ = ws.build_crate_index("crate_consumer").unwrap();
@@ -244,22 +183,9 @@ fn test_l1_references_trait_method_indexed_refs() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_trait_method", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_trait_method",
-            "src/lib.rs",
-            "pub trait Storage {\n    fn «save»(&self) -> bool;\n}\n",
-            DefKind::AssocFn,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_trait_method", "src/lib.rs", "pub trait Storage {\n    fn «save»(&self) -> bool;\n}\n", DefKind::AssocFn).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_trait_method",
-        "src/client.rs",
-        "use crate::Storage;\npub fn do_save<T: Storage>(s: &T) { s.«save»(); }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_trait_method", "src/client.rs", "use crate::Storage;\npub fn do_save<T: Storage>(s: &T) { s.«save»(); }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_trait_method").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -284,23 +210,10 @@ fn test_l1_references_utf16_multibyte_prefix_columns() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_utf16", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_utf16",
-            "src/lib.rs",
-            "pub struct «Rocket»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_utf16", "src/lib.rs", "pub struct «Rocket»;\n", DefKind::Struct).unwrap();
 
     // 4-byte UTF-8 emoji (\u{1F680}) has 2 UTF-16 code units; prefix length is 35 UTF-16 units.
-    ws.add_refs_to_def(
-        "pkg_utf16",
-        "src/lib.rs",
-        "pub struct Rocket;\n/* \u{1F680} */ pub fn launch() { let _ = «Rocket»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_utf16", "src/lib.rs", "pub struct Rocket;\n/* \u{1F680} */ pub fn launch() { let _ = «Rocket»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_utf16").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

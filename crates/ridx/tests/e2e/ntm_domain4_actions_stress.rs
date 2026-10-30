@@ -103,8 +103,7 @@ fn test_domain4_pre_initialize_requests_rejected_with_32002() {
 #[test]
 fn test_domain4_real_l2_external_dependency_rejection() {
     let cargo_manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let ext_service_path = cargo_manifest_dir
-        .join("tests/fixtures/_vendor/.cargo/registry/src/ext_service-0.5.0/src/lib.rs");
+    let ext_service_path = cargo_manifest_dir.join("tests/fixtures/_vendor/.cargo/registry/src/ext_service-0.5.0/src/lib.rs");
 
     if !ext_service_path.exists() {
         // Path safety guard
@@ -116,12 +115,7 @@ fn test_domain4_real_l2_external_dependency_rejection() {
     fs::write(&local_file, "fn main() {}\n").unwrap();
 
     let mut builder = FixtureIndexBuilder::new("app", "0.1.0");
-    let (code, _def_ids) = builder.add_defs_with_ids(
-        "fn main() {}\n",
-        local_file.to_str().unwrap(),
-        "app",
-        DefKind::Fn,
-    );
+    let (code, _def_ids) = builder.add_defs_with_ids("fn main() {}\n", local_file.to_str().unwrap(), "app", DefKind::Fn);
     let _ = fs::write(&local_file, code);
 
     let ridx_file = temp.path().join("app.ridx");
@@ -141,9 +135,7 @@ fn test_domain4_real_l2_external_dependency_rejection() {
             "context": { "only": ["source.organizeImports"], "diagnostics": [] }
         }
     });
-    let err_action =
-        ridx::lsp::editing::actions::handle_code_action(&req_action, Some(&ws), &overlay_mgr)
-            .unwrap_err();
+    let err_action = ridx::lsp::editing::actions::handle_code_action(&req_action, Some(&ws), &overlay_mgr).unwrap_err();
     assert_eq!(err_action.code, REQUEST_FAILED);
     assert!(err_action.message.contains("external dependency"));
 
@@ -159,12 +151,7 @@ fn test_domain4_real_l2_external_dependency_rejection() {
             }
         }
     });
-    let err_resolve = ridx::lsp::editing::actions::handle_code_action_resolve(
-        &req_resolve,
-        Some(&ws),
-        &overlay_mgr,
-    )
-    .unwrap_err();
+    let err_resolve = ridx::lsp::editing::actions::handle_code_action_resolve(&req_resolve, Some(&ws), &overlay_mgr).unwrap_err();
     assert_eq!(err_resolve.code, REQUEST_FAILED);
     assert!(err_resolve.message.contains("external dependency"));
 }
@@ -271,10 +258,7 @@ fn test_domain4_stream_code_action_did_change_resolve_conflict() {
 
     // Response id:20 (codeAction/resolve) must fail with ContentModified (-32801)
     let resp_resolve = responses.iter().find(|r| r["id"] == 20).expect("resolve resp");
-    assert_eq!(
-        resp_resolve["error"]["code"], CONTENT_MODIFIED,
-        "Resolving stale action after didChange must emit ContentModified error (-32801)"
-    );
+    assert_eq!(resp_resolve["error"]["code"], CONTENT_MODIFIED, "Resolving stale action after didChange must emit ContentModified error (-32801)");
 }
 
 #[test]

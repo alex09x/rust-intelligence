@@ -37,6 +37,72 @@ impl Drop for TempShard {
     }
 }
 
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rdef(
+    id: u32,
+    kind: DefKind,
+    vis: u8,
+    mac: bool,
+    name: impl Into<String>,
+    path: impl Into<String>,
+    sig: Option<String>,
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+) -> RawDefinition {
+    RawDefinition {
+        def_id: id,
+        kind,
+        visibility: vis,
+        is_macro_expansion: mac,
+        name: name.into(),
+        path: path.into(),
+        signature: sig,
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+    }
+}
+
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rref(
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+    td: Option<u32>,
+    tp: impl Into<String>,
+    tf: Option<String>,
+    tu: Option<String>,
+    tl: u32,
+    tc: u32,
+    kind: DefKind,
+    w: bool,
+    m: bool,
+) -> RawReference {
+    RawReference {
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+        target_def_id: td,
+        target_path: tp.into(),
+        target_file: tf,
+        target_unit: tu,
+        target_line: tl,
+        target_col: tc,
+        kind,
+        is_write: w,
+        is_macro_expansion: m,
+    }
+}
+
 fn create_temp_shard(name: &str) -> TempShard {
     let id = SUPER_P2_COUNTER.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("ridx_super_p2_{}_{}_{}", name, std::process::id(), id));
@@ -45,24 +111,9 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_file = dir.join("src/lib.rs");
     let lib_str = lib_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: format!("{}::Greeter", name),
-        signature: Some("pub trait Greeter".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Robot".to_string(), path: format!("{}::Robot", name),
-        signature: Some("pub struct Robot".to_string()), file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Robot as Greeter>".to_string(), path: "<Robot as Greeter>".to_string(),
-        signature: Some("impl Greeter for Robot".to_string()), file: lib_str,
-        start_line: 5, start_col: 1, end_line: 7, end_col: 2,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Greeter", format!("{}::Greeter", name), Some("pub trait Greeter".to_string()), &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "Robot", format!("{}::Robot", name), Some("pub struct Robot".to_string()), &lib_str, 3, 1, 3, 17));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<Robot as Greeter>", "<Robot as Greeter>", Some("impl Greeter for Robot".to_string()), lib_str, 5, 1, 7, 2));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
 }
@@ -94,14 +145,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -119,28 +165,12 @@ fn test_type_hierarchy_supertypes_enum_implementation() {
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("enum_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Describable".to_string(), path: "enum_crate::Describable".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "Status".to_string(), path: "enum_crate::Status".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Status as Describable>".to_string(), path: "<Status as Describable>".to_string(),
-        signature: None, file: lib_str,
-        start_line: 5, start_col: 1, end_line: 5, end_col: 35,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Describable", "enum_crate::Describable", None, &lib_str, 1, 1, 1, 22));
+    writer.add_definition(rdef(2, DefKind::Enum, 1, false, "Status", "enum_crate::Status", None, &lib_str, 3, 1, 3, 18));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<Status as Describable>", "<Status as Describable>", None, lib_str, 5, 1, 5, 35));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "trait Describable {}\n\nenum Status { Ok, Err }\n\nimpl Describable for Status {}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 706, "method": "typeHierarchy/supertypes",
         "params": {
@@ -163,34 +193,13 @@ fn test_type_hierarchy_supertypes_deduplication_across_blocks() {
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("dedup_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: "dedup_crate::Greeter".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Robot".to_string(), path: "dedup_crate::Robot".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Robot as Greeter>".to_string(), path: "<Robot as Greeter>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 1, end_line: 5, end_col: 25,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Robot as Greeter>".to_string(), path: "<Robot as Greeter>".to_string(),
-        signature: None, file: lib_str,
-        start_line: 7, start_col: 1, end_line: 7, end_col: 25,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Greeter", "dedup_crate::Greeter", None, &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "Robot", "dedup_crate::Robot", None, &lib_str, 3, 1, 3, 17));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<Robot as Greeter>", "<Robot as Greeter>", None, &lib_str, 5, 1, 5, 25));
+    writer.add_definition(rdef(4, DefKind::Impl, 1, false, "<Robot as Greeter>", "<Robot as Greeter>", None, lib_str, 7, 1, 7, 25));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "trait Greeter {}\n\nstruct Robot;\n\nimpl Greeter for Robot {}\n\nimpl Greeter for Robot {}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 707, "method": "typeHierarchy/supertypes",
         "params": {
@@ -213,31 +222,13 @@ fn test_type_hierarchy_supertypes_reference_based_impl_resolution() {
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("ref_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: "ref_crate::Greeter".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Robot".to_string(), path: "ref_crate::Robot".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Greeter", "ref_crate::Greeter", None, &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "Robot", "ref_crate::Robot", None, &lib_str, 3, 1, 3, 17));
     // Add reference on Robot at line 5 (in `impl Greeter for Robot`)
-    writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 5, start_col: 18, end_line: 5, end_col: 23,
-        target_def_id: Some(2), target_path: "ref_crate::Robot".to_string(),
-        target_file: Some(lib_str),
-        target_unit: None, target_line: 3, target_col: 1,
-        kind: DefKind::Struct, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_reference(rref(&lib_str, 5, 18, 5, 23, Some(2), "ref_crate::Robot", Some(lib_str.clone()), None, 3, 1, DefKind::Struct, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "trait Greeter {}\n\nstruct Robot;\n\nimpl Greeter for Robot {}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 708, "method": "typeHierarchy/supertypes",
         "params": {
@@ -260,28 +251,12 @@ fn test_type_hierarchy_supertypes_fallback_path_when_file_read_fails() {
     let nonexistent_file = dir.join("src/nonexistent.rs");
     let lib_str = nonexistent_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("fb_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: "fb_crate::Greeter".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Robot".to_string(), path: "fb_crate::Robot".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Robot as Greeter>".to_string(), path: "<Robot as Greeter>".to_string(),
-        signature: None, file: lib_str,
-        start_line: 5, start_col: 1, end_line: 7, end_col: 2,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Greeter", "fb_crate::Greeter", None, &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "Robot", "fb_crate::Robot", None, &lib_str, 3, 1, 3, 17));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<Robot as Greeter>", "<Robot as Greeter>", None, lib_str, 5, 1, 7, 2));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     // Do NOT create nonexistent.rs on disk — fallback parsing extracts Greeter from path
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 709, "method": "typeHierarchy/supertypes",
         "params": {
@@ -301,7 +276,6 @@ fn test_type_hierarchy_supertypes_dispatcher_echoes_numeric_id() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "trait Greeter {}\n\nstruct Robot;\n\nimpl Greeter for Robot {}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 654321, "method": "typeHierarchy/supertypes",
         "params": {

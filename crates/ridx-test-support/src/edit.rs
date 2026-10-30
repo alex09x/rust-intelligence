@@ -30,10 +30,7 @@ pub fn utf16_col_to_char_slice(line: &str, utf16_col: usize) -> (String, String)
     if utf16_count < utf16_col {
         split_byte = line.len();
     }
-    (
-        line[..split_byte].to_string(),
-        line[split_byte..].to_string(),
-    )
+    (line[..split_byte].to_string(), line[split_byte..].to_string())
 }
 
 /// Converts an LSP Position (0-indexed line and UTF-16 character) to an exact byte offset.
@@ -51,10 +48,7 @@ pub fn position_to_byte_offset(content: &str, line: u32, character_utf16: u32) -
                 return byte_idx;
             }
             if cur_col_utf16 > character_utf16 {
-                panic!(
-                    "position_to_byte_offset: character {} lands inside a surrogate pair (multi-code-unit character) on line {}",
-                    character_utf16, line
-                );
+                panic!("position_to_byte_offset: character {} lands inside a surrogate pair (multi-code-unit character) on line {}", character_utf16, line);
             }
             if ch == '\r' || ch == '\n' {
                 return byte_idx;
@@ -74,18 +68,11 @@ pub fn position_to_byte_offset(content: &str, line: u32, character_utf16: u32) -
 
     if cur_line == line || (cur_line == line + 1 && target_line_reached) {
         if cur_line == line && cur_col_utf16 > character_utf16 {
-            panic!(
-                "position_to_byte_offset: character {} lands inside a surrogate pair (multi-code-unit character) on line {}",
-                character_utf16, line
-            );
+            panic!("position_to_byte_offset: character {} lands inside a surrogate pair (multi-code-unit character) on line {}", character_utf16, line);
         }
         content.len()
     } else {
-        panic!(
-            "position_to_byte_offset out of bounds: line {} requested, but file has {} lines",
-            line,
-            cur_line + 1
-        );
+        panic!("position_to_byte_offset out of bounds: line {} requested, but file has {} lines", line, cur_line + 1);
     }
 }
 
@@ -114,12 +101,7 @@ pub fn apply_text_edits(content: &str, edits: &[Value]) -> String {
 
             let s_byte = position_to_byte_offset(content, s_line, s_char);
             let e_byte = position_to_byte_offset(content, e_line, e_char);
-            assert!(
-                s_byte <= e_byte,
-                "TextEdit start position ({}) is after end position ({})",
-                s_byte,
-                e_byte
-            );
+            assert!(s_byte <= e_byte, "TextEdit start position ({}) is after end position ({})", s_byte, e_byte);
             (s_byte, e_byte, new_text, idx)
         })
         .collect();
@@ -131,10 +113,7 @@ pub fn apply_text_edits(content: &str, edits: &[Value]) -> String {
         let (s1, e1, _, idx1) = &window[0];
         let (s2, _, _, idx2) = &window[1];
         if *s2 < *e1 {
-            panic!(
-                "LSP 3.17 Violation: Overlapping TextEdits disallowed! Edit {} (bytes {}..{}) overlaps with edit {} (byte start {})",
-                idx1, s1, e1, idx2, s2
-            );
+            panic!("LSP 3.17 Violation: Overlapping TextEdits disallowed! Edit {} (bytes {}..{}) overlaps with edit {} (byte start {})", idx1, s1, e1, idx2, s2);
         }
     }
 
@@ -142,11 +121,7 @@ pub fn apply_text_edits(content: &str, edits: &[Value]) -> String {
     // For same start position, sort larger ranges (end desc) first so that
     // text shifts do not invalidate the coordinates of zero-width inserts.
     // For identical spans, sort by original index desc to preserve array insertion order.
-    parsed.sort_by(|a, b| {
-        b.0.cmp(&a.0)
-            .then_with(|| b.1.cmp(&a.1))
-            .then_with(|| b.3.cmp(&a.3))
-    });
+    parsed.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| b.1.cmp(&a.1)).then_with(|| b.3.cmp(&a.3)));
 
     let mut result = content.to_string();
     for (s_byte, e_byte, new_text, _) in parsed {
@@ -157,19 +132,12 @@ pub fn apply_text_edits(content: &str, edits: &[Value]) -> String {
 }
 
 /// Applies an LSP `WorkspaceEdit` strictly across a map of file URI -> content.
-pub fn apply_workspace_edit(
-    files: &HashMap<String, String>,
-    edit: &Value,
-) -> HashMap<String, String> {
+pub fn apply_workspace_edit(files: &HashMap<String, String>, edit: &Value) -> HashMap<String, String> {
     apply_workspace_edit_with_versions(files, edit, None)
 }
 
 /// Applies an LSP `WorkspaceEdit` strictly, validating document versions if provided.
-pub fn apply_workspace_edit_with_versions(
-    files: &HashMap<String, String>,
-    edit: &Value,
-    expected_versions: Option<&HashMap<String, i64>>,
-) -> HashMap<String, String> {
+pub fn apply_workspace_edit_with_versions(files: &HashMap<String, String>, edit: &Value, expected_versions: Option<&HashMap<String, i64>>) -> HashMap<String, String> {
     let mut updated = files.clone();
 
     // LSP 3.17: If documentChanges is present, it must be preferred over changes.
@@ -184,24 +152,14 @@ pub fn apply_workspace_edit_with_versions(
                     "rename" => {
                         let old_uri = doc["oldUri"].as_str().expect("rename.oldUri");
                         let new_uri = doc["newUri"].as_str().expect("rename.newUri");
-                        let content = updated.remove(old_uri).unwrap_or_else(|| {
-                            panic!(
-                                "apply_workspace_edit: rename oldUri '{}' not found",
-                                old_uri
-                            )
-                        });
+                        let content = updated.remove(old_uri).unwrap_or_else(|| panic!("apply_workspace_edit: rename oldUri '{}' not found", old_uri));
                         updated.insert(new_uri.to_string(), content);
                     }
                     "delete" => {
                         let uri = doc["uri"].as_str().expect("delete.uri");
-                        updated.remove(uri).unwrap_or_else(|| {
-                            panic!("apply_workspace_edit: delete uri '{}' not found", uri)
-                        });
+                        updated.remove(uri).unwrap_or_else(|| panic!("apply_workspace_edit: delete uri '{}' not found", uri));
                     }
-                    other => panic!(
-                        "apply_workspace_edit: unsupported documentChange kind '{}'",
-                        other
-                    ),
+                    other => panic!("apply_workspace_edit: unsupported documentChange kind '{}'", other),
                 }
             } else if let Some(text_doc) = doc.get("textDocument") {
                 let uri = text_doc["uri"].as_str().expect("textDocument.uri");
@@ -209,40 +167,22 @@ pub fn apply_workspace_edit_with_versions(
                     if let Some(exp_ver) = exp_map.get(uri) {
                         let actual_ver = text_doc.get("version").and_then(|v| v.as_i64());
                         if actual_ver != Some(*exp_ver) {
-                            panic!(
-                                "apply_workspace_edit: version mismatch for URI '{}': expected {:?}, got {:?}",
-                                uri, exp_ver, actual_ver
-                            );
+                            panic!("apply_workspace_edit: version mismatch for URI '{}': expected {:?}, got {:?}", uri, exp_ver, actual_ver);
                         }
                     }
                 }
                 let edits_arr = doc["edits"].as_array().expect("documentChanges.edits");
-                let content = updated.get(uri).unwrap_or_else(|| {
-                    panic!(
-                        "apply_workspace_edit: URI '{}' not found in workspace (available: {:?})",
-                        uri,
-                        files.keys()
-                    )
-                });
+                let content = updated.get(uri).unwrap_or_else(|| panic!("apply_workspace_edit: URI '{}' not found in workspace (available: {:?})", uri, files.keys()));
                 let new_content = apply_text_edits(content, edits_arr);
                 updated.insert(uri.to_string(), new_content);
             } else {
-                panic!(
-                    "apply_workspace_edit: malformed documentChange item: {:?}",
-                    doc
-                );
+                panic!("apply_workspace_edit: malformed documentChange item: {:?}", doc);
             }
         }
     } else if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
         for (uri, edits) in changes {
             let edits_arr = edits.as_array().expect("changes[uri] must be an array");
-            let content = updated.get(uri).unwrap_or_else(|| {
-                panic!(
-                    "apply_workspace_edit: URI '{}' not found in workspace (available: {:?})",
-                    uri,
-                    files.keys()
-                )
-            });
+            let content = updated.get(uri).unwrap_or_else(|| panic!("apply_workspace_edit: URI '{}' not found in workspace (available: {:?})", uri, files.keys()));
             let new_content = apply_text_edits(content, edits_arr);
             updated.insert(uri.clone(), new_content);
         }

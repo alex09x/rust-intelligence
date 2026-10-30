@@ -35,8 +35,7 @@ pub mod tests;
 
 #[allow(unused_imports)]
 pub use {
-    dispatch::*, editing::*, error::*, handlers::*, hierarchy::*, intelligence::*, lifecycle::*,
-    navigation::*, params::*, presentation::*, protocol::*, symbols::*, workspace::*,
+    dispatch::*, editing::*, error::*, handlers::*, hierarchy::*, intelligence::*, lifecycle::*, navigation::*, params::*, presentation::*, protocol::*, symbols::*, workspace::*,
 };
 
 use ridx_format::WorkspaceIndex;
@@ -46,10 +45,7 @@ use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-pub(crate) fn sync_reloaded_index(
-    ws: &mut WorkspaceIndex,
-    overlay_mgr: &mut crate::overlay::OverlayManager,
-) -> bool {
+pub(crate) fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) -> bool {
     if let Ok(true) = ws.reload_manifest_if_modified() {
         for file in overlay_mgr.open_file_paths() {
             if let Ok(content) = std::fs::read_to_string(&file) {
@@ -73,11 +69,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 }
 
 /// Runs the LSP server over arbitrary reader and writer streams.
-pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
-    mut reader: R,
-    mut writer: W,
-    index_path: Option<PathBuf>,
-) -> io::Result<()> {
+pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: R, mut writer: W, index_path: Option<PathBuf>) -> io::Result<()> {
     let mut multi_root = MultiRootWorkspace::new();
     if let Some(ref p) = index_path {
         multi_root.add_root(p.clone());
@@ -99,49 +91,47 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
     });
     let cancelled_reader = Arc::clone(&cancelled_requests);
 
-    std::thread::Builder::new()
-        .name("lsp-reader".into())
-        .spawn(move || loop {
-            let mut content_length: Option<usize> = None;
-            let mut header_line = String::new();
+    std::thread::Builder::new().name("lsp-reader".into()).spawn(move || loop {
+        let mut content_length: Option<usize> = None;
+        let mut header_line = String::new();
 
-            loop {
-                header_line.clear();
-                let bytes_read = match reader.read_line(&mut header_line) {
-                    Ok(b) => b,
-                    Err(_) => return,
-                };
-                if bytes_read == 0 {
-                    return;
-                }
-                let trimmed = header_line.trim_end_matches(['\r', '\n']);
-                if trimmed.is_empty() {
-                    break;
-                }
-                if let Some(len_str) = trimmed.strip_prefix("Content-Length:") {
-                    content_length = len_str.trim().parse::<usize>().ok();
-                }
-            }
-
-            let Some(len) = content_length else {
-                continue;
+        loop {
+            header_line.clear();
+            let bytes_read = match reader.read_line(&mut header_line) {
+                Ok(b) => b,
+                Err(_) => return,
             };
-
-            let mut body_buf = vec![0u8; len];
-            if reader.read_exact(&mut body_buf).is_err() {
+            if bytes_read == 0 {
                 return;
             }
-
-            if let Ok(msg) = serde_json::from_slice::<Value>(&body_buf) {
-                if msg["method"] == "$/cancelRequest" {
-                    let id_raw = msg["params"]["id"].clone();
-                    cancelled_reader.lock().unwrap().insert(id_raw);
-                }
-                if tx.send(msg).is_err() {
-                    return;
-                }
+            let trimmed = header_line.trim_end_matches(['\r', '\n']);
+            if trimmed.is_empty() {
+                break;
             }
-        })?;
+            if let Some(len_str) = trimmed.strip_prefix("Content-Length:") {
+                content_length = len_str.trim().parse::<usize>().ok();
+            }
+        }
+
+        let Some(len) = content_length else {
+            continue;
+        };
+
+        let mut body_buf = vec![0u8; len];
+        if reader.read_exact(&mut body_buf).is_err() {
+            return;
+        }
+
+        if let Ok(msg) = serde_json::from_slice::<Value>(&body_buf) {
+            if msg["method"] == "$/cancelRequest" {
+                let id_raw = msg["params"]["id"].clone();
+                cancelled_reader.lock().unwrap().insert(id_raw);
+            }
+            if tx.send(msg).is_err() {
+                return;
+            }
+        }
+    })?;
 
     loop {
         while let Ok((gen, diag)) = rx_diag.try_recv() {

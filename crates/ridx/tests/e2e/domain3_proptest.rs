@@ -66,21 +66,8 @@ fn get_valid_cols_for_line(content: &str, target_line: u32) -> Vec<u32> {
 #[test]
 fn test_proptest_random_incremental_edits_vs_oracle() {
     let mut rng = Rng::new(0xABCD1234F00D);
-    let snippets = [
-        "let x = 1;\n",
-        "fn calc() {}\n",
-        "42",
-        "/* comment */\n",
-        "foo_bar",
-        "\n\n",
-        "🦀",
-        "grüßen",
-        "\r\n",
-        "δ",
-        "/* 🦀 */\r\n",
-        "fn test_δ() -> bool { true }\r\n",
-        "",
-    ];
+    let snippets =
+        ["let x = 1;\n", "fn calc() {}\n", "42", "/* comment */\n", "foo_bar", "\n\n", "🦀", "grüßen", "\r\n", "δ", "/* 🦀 */\r\n", "fn test_δ() -> bool { true }\r\n", ""];
 
     let initial_templates = [
         "fn initial() {\n    let start = 0;\n}\n",
@@ -92,12 +79,7 @@ fn test_proptest_random_incremental_edits_vs_oracle() {
     for round in 0..50 {
         let initial = initial_templates[round % initial_templates.len()];
         let mut oracle_text = initial.to_string();
-        let mut overlay = DocumentOverlay::new(
-            format!("file:///test_{round}.rs"),
-            format!("/test_{round}.rs"),
-            1,
-            oracle_text.clone(),
-        );
+        let mut overlay = DocumentOverlay::new(format!("file:///test_{round}.rs"), format!("/test_{round}.rs"), 1, oracle_text.clone());
 
         for step in 0..10 {
             let num_lines = oracle_text.matches('\n').count() + 1;
@@ -105,11 +87,7 @@ fn test_proptest_random_incremental_edits_vs_oracle() {
             let el = rng.gen_range(sl as usize, num_lines) as u32;
 
             let start_cols = get_valid_cols_for_line(&oracle_text, sl);
-            let end_cols = if el == sl {
-                start_cols.clone()
-            } else {
-                get_valid_cols_for_line(&oracle_text, el)
-            };
+            let end_cols = if el == sl { start_cols.clone() } else { get_valid_cols_for_line(&oracle_text, el) };
 
             let sc_idx = rng.gen_range(0, start_cols.len());
             let sc = start_cols[sc_idx];
@@ -136,10 +114,7 @@ fn test_proptest_random_incremental_edits_vs_oracle() {
             oracle_text = apply_text_edits(&oracle_text, std::slice::from_ref(&edit));
             overlay.apply_content_changes(step + 2, std::slice::from_ref(&edit));
 
-            assert_eq!(
-                overlay.text, oracle_text,
-                "Mismatch on round {round}, step {step}: edit={edit:?}"
-            );
+            assert_eq!(overlay.text, oracle_text, "Mismatch on round {round}, step {step}: edit={edit:?}");
         }
     }
 }
@@ -147,48 +122,26 @@ fn test_proptest_random_incremental_edits_vs_oracle() {
 #[test]
 fn test_proptest_mapping_never_panics_on_arbitrary_inputs() {
     let mut rng = Rng::new(0xCAFEBABEDEAD);
-    let words = [
-        "alpha", "beta", "gamma", "delta", "fn", "struct", "let", "impl",
-    ];
+    let words = ["alpha", "beta", "gamma", "delta", "fn", "struct", "let", "impl"];
 
     for _ in 0..2000 {
         let num_lines_live = rng.gen_range(0, 25);
         let num_lines_comp = rng.gen_range(0, 25);
 
-        let live_text: String = (0..num_lines_live)
-            .map(|_| format!("{}\n", words[rng.gen_range(0, words.len())]))
-            .collect();
-        let comp_text: String = (0..num_lines_comp)
-            .map(|_| format!("{}\n", words[rng.gen_range(0, words.len())]))
-            .collect();
+        let live_text: String = (0..num_lines_live).map(|_| format!("{}\n", words[rng.gen_range(0, words.len())])).collect();
+        let comp_text: String = (0..num_lines_comp).map(|_| format!("{}\n", words[rng.gen_range(0, words.len())])).collect();
 
         let mut ov = DocumentOverlay::new("file:///p.rs", "/p.rs", 1, live_text);
         ov.advance_compiled_baseline(comp_text);
 
         // Test boundary queries: 0, 1, len, out-of-range, and huge u32
-        let test_lines = [
-            0,
-            1,
-            2,
-            num_lines_live as u32,
-            (num_lines_live + 5) as u32,
-            99999,
-            u32::MAX,
-        ];
+        let test_lines = [0, 1, 2, num_lines_live as u32, (num_lines_live + 5) as u32, 99999, u32::MAX];
         for &l in &test_lines {
             let _ = ov.map_line_to_compiled(l);
             let _ = ov.map_live_to_compiled(l, 0);
         }
 
-        let test_comp_lines = [
-            0,
-            1,
-            2,
-            num_lines_comp as u32,
-            (num_lines_comp + 5) as u32,
-            99999,
-            u32::MAX,
-        ];
+        let test_comp_lines = [0, 1, 2, num_lines_comp as u32, (num_lines_comp + 5) as u32, 99999, u32::MAX];
         for &cl in &test_comp_lines {
             let _ = ov.map_compiled_line_to_live(cl);
             let _ = ov.map_compiled_to_live(cl, 0);
@@ -205,12 +158,8 @@ fn test_proptest_mapping_monotonicity_invariant() {
         let count_live = rng.gen_range(2, 15);
         let count_comp = rng.gen_range(2, 15);
 
-        let live: String = (0..count_live)
-            .map(|_| lines_pool[rng.gen_range(0, lines_pool.len())])
-            .collect();
-        let comp: String = (0..count_comp)
-            .map(|_| lines_pool[rng.gen_range(0, lines_pool.len())])
-            .collect();
+        let live: String = (0..count_live).map(|_| lines_pool[rng.gen_range(0, lines_pool.len())]).collect();
+        let comp: String = (0..count_comp).map(|_| lines_pool[rng.gen_range(0, lines_pool.len())]).collect();
 
         let mut ov = DocumentOverlay::new("file:///p.rs", "/p.rs", 1, live);
         ov.advance_compiled_baseline(comp);
@@ -219,10 +168,7 @@ fn test_proptest_mapping_monotonicity_invariant() {
         for live_line in 1..=count_live as u32 {
             if let Some(comp_line) = ov.map_line_to_compiled(live_line) {
                 if let Some(prev) = prev_comp {
-                    assert!(
-                        comp_line > prev,
-                        "Monotonicity violation: live {live_line} mapped to {comp_line}, but previous was {prev}"
-                    );
+                    assert!(comp_line > prev, "Monotonicity violation: live {live_line} mapped to {comp_line}, but previous was {prev}");
                 }
                 prev_comp = Some(comp_line);
             }
@@ -266,9 +212,7 @@ fn test_proptest_mapping_roundtrip_bijectivity() {
         // Lines in prefix
         for l in 1..=prefix_count {
             let cl = ov.map_line_to_compiled(l as u32).expect("prefix must map");
-            let roundtrip = ov
-                .map_compiled_line_to_live(cl)
-                .expect("prefix must roundtrip");
+            let roundtrip = ov.map_compiled_line_to_live(cl).expect("prefix must roundtrip");
             assert_eq!(roundtrip, l as u32);
         }
 
@@ -277,9 +221,7 @@ fn test_proptest_mapping_roundtrip_bijectivity() {
         for s_idx in 1..=suffix_count {
             let l = (live_line_count + s_idx) as u32;
             let cl = ov.map_line_to_compiled(l).expect("suffix must map");
-            let roundtrip = ov
-                .map_compiled_line_to_live(cl)
-                .expect("suffix must roundtrip");
+            let roundtrip = ov.map_compiled_line_to_live(cl).expect("suffix must roundtrip");
             assert_eq!(roundtrip, l);
         }
     }
@@ -288,16 +230,7 @@ fn test_proptest_mapping_roundtrip_bijectivity() {
 #[test]
 fn test_proptest_multibyte_random_edits_utf8_validity() {
     let mut rng = Rng::new(0x424299991212);
-    let multibyte_tokens = [
-        "🦀",
-        "🚀",
-        "grüßen",
-        "nordic_å",
-        "λ",
-        "日本語",
-        "Rust",
-        " // 💡\n",
-    ];
+    let multibyte_tokens = ["🦀", "🚀", "grüßen", "nordic_å", "λ", "日本語", "Rust", " // 💡\n"];
 
     let mut text = String::from("fn unicode_test() {\n");
     for _ in 0..10 {
@@ -321,9 +254,6 @@ fn test_proptest_multibyte_random_edits_utf8_validity() {
 
         // Assert text remains valid UTF-8 and line starts are properly computed
         assert!(std::str::from_utf8(ov.text.as_bytes()).is_ok());
-        assert_eq!(
-            ov.line_starts,
-            ridx::overlay::mapping::compute_line_starts(&ov.text)
-        );
+        assert_eq!(ov.line_starts, ridx::overlay::mapping::compute_line_starts(&ov.text));
     }
 }

@@ -38,27 +38,17 @@ fn file_scope_cache() -> &'static RwLock<ScopeCacheMap> {
 }
 
 /// Retrieves or parses `FileScopeData` for a given file and optional overlay text.
-pub fn get_or_parse_file_scopes(
-    file: &str,
-    overlay_text: Option<&str>,
-) -> Option<Arc<FileScopeData>> {
+pub fn get_or_parse_file_scopes(file: &str, overlay_text: Option<&str>) -> Option<Arc<FileScopeData>> {
     let key = if let Some(text) = overlay_text {
         let mut h: u64 = 0xcbf29ce484222325;
         for &b in text.as_bytes() {
             h ^= b as u64;
             h = h.wrapping_mul(0x100000001b3);
         }
-        FileCacheKey::Overlay {
-            path: file.to_string(),
-            full_hash: h,
-        }
+        FileCacheKey::Overlay { path: file.to_string(), full_hash: h }
     } else {
         let meta = Path::new(file).metadata().ok()?;
-        FileCacheKey::Disk {
-            path: file.to_string(),
-            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
-            len: meta.len(),
-        }
+        FileCacheKey::Disk { path: file.to_string(), mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH), len: meta.len() }
     };
 
     let cache = file_scope_cache();
@@ -70,11 +60,7 @@ pub fn get_or_parse_file_scopes(
         }
     }
 
-    let text_arc: Arc<str> = if let Some(text) = overlay_text {
-        Arc::from(text)
-    } else {
-        Arc::from(std::fs::read_to_string(file).ok()?)
-    };
+    let text_arc: Arc<str> = if let Some(text) = overlay_text { Arc::from(text) } else { Arc::from(std::fs::read_to_string(file).ok()?) };
 
     let parsed = Arc::new(parse_file_scopes(text_arc));
 
@@ -97,33 +83,18 @@ fn file_traits_cache() -> &'static RwLock<FileTraitsCacheMap> {
 }
 
 /// Retrieves or collects referenced traits in `file` using scope cache.
-pub fn get_or_collect_file_referenced_traits(
-    ws: &WorkspaceIndex,
-    file: &str,
-    overlay_text: Option<&str>,
-) -> Arc<HashSet<String>> {
+pub fn get_or_collect_file_referenced_traits(ws: &WorkspaceIndex, file: &str, overlay_text: Option<&str>) -> Arc<HashSet<String>> {
     let key = if let Some(text) = overlay_text {
         let mut h: u64 = 0xcbf29ce484222325;
         for &b in text.as_bytes() {
             h ^= b as u64;
             h = h.wrapping_mul(0x100000001b3);
         }
-        FileCacheKey::Overlay {
-            path: file.to_string(),
-            full_hash: h,
-        }
+        FileCacheKey::Overlay { path: file.to_string(), full_hash: h }
     } else if let Ok(meta) = Path::new(file).metadata() {
-        FileCacheKey::Disk {
-            path: file.to_string(),
-            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
-            len: meta.len(),
-        }
+        FileCacheKey::Disk { path: file.to_string(), mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH), len: meta.len() }
     } else {
-        FileCacheKey::Disk {
-            path: file.to_string(),
-            mtime: SystemTime::UNIX_EPOCH,
-            len: 0,
-        }
+        FileCacheKey::Disk { path: file.to_string(), mtime: SystemTime::UNIX_EPOCH, len: 0 }
     };
 
     let ws_fingerprint = {
@@ -131,10 +102,7 @@ pub fn get_or_collect_file_referenced_traits(
         h ^= ws.readers().len() as u64;
         h = h.wrapping_mul(0x100000001b3);
         if let Some(mt) = ws.shard_mtime_for_file(file) {
-            let nanos = mt
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_nanos();
+            let nanos = mt.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_nanos();
             h ^= nanos as u64;
             h = h.wrapping_mul(0x100000001b3);
             h ^= (nanos >> 64) as u64;
@@ -158,10 +126,7 @@ pub fn get_or_collect_file_referenced_traits(
         if let Some((cached_key, cached_fp, traits)) = guard.get(file) {
             if *cached_key == key && *cached_fp == ws_fingerprint {
                 if let Some(t) = t_traits0 {
-                    eprintln!(
-                        "[RIDX_PROFILE_TRAITS] hit=true us={}",
-                        t.elapsed().as_micros()
-                    );
+                    eprintln!("[RIDX_PROFILE_TRAITS] hit=true us={}", t.elapsed().as_micros());
                 }
                 return Arc::clone(traits);
             }
@@ -174,17 +139,11 @@ pub fn get_or_collect_file_referenced_traits(
         if guard.len() >= 64 {
             guard.clear();
         }
-        guard.insert(
-            file.to_string(),
-            (key, ws_fingerprint, Arc::clone(&collected)),
-        );
+        guard.insert(file.to_string(), (key, ws_fingerprint, Arc::clone(&collected)));
     }
 
     if let Some(t) = t_traits0 {
-        eprintln!(
-            "[RIDX_PROFILE_TRAITS] hit=false us={}",
-            t.elapsed().as_micros()
-        );
+        eprintln!("[RIDX_PROFILE_TRAITS] hit=false us={}", t.elapsed().as_micros());
     }
 
     collected
@@ -238,11 +197,7 @@ pub fn workspace_deref_fingerprint(ws: &WorkspaceIndex) -> u64 {
 }
 
 /// Retrieves or computes the autoderef chain for `owner` up to `max_depth` across workspace readers.
-pub fn get_or_resolve_deref_chain(
-    ws: &WorkspaceIndex,
-    owner: &str,
-    max_depth: usize,
-) -> Arc<[DerefChainItem]> {
+pub fn get_or_resolve_deref_chain(ws: &WorkspaceIndex, owner: &str, max_depth: usize) -> Arc<[DerefChainItem]> {
     let ws_fp = workspace_deref_fingerprint(ws);
     let cache = deref_chain_cache();
 
@@ -257,13 +212,8 @@ pub fn get_or_resolve_deref_chain(
     let raw_targets = ws.resolve_deref_chain(owner, max_depth);
     let mut resolved = Vec::with_capacity(raw_targets.len());
     for target in raw_targets {
-        let is_trait = ws
-            .find_definition_by_path(target)
-            .is_some_and(|d| d.kind == ridx_format::DefKind::Trait);
-        resolved.push(DerefChainItem {
-            target: target.to_string(),
-            is_trait,
-        });
+        let is_trait = ws.find_definition_by_path(target).is_some_and(|d| d.kind == ridx_format::DefKind::Trait);
+        resolved.push(DerefChainItem { target: target.to_string(), is_trait });
     }
     let arc_resolved: Arc<[DerefChainItem]> = Arc::from(resolved);
 
@@ -271,10 +221,7 @@ pub fn get_or_resolve_deref_chain(
         if guard.len() >= 512 {
             guard.clear();
         }
-        guard.insert(
-            (owner.to_string(), max_depth),
-            (ws_fp, Arc::clone(&arc_resolved)),
-        );
+        guard.insert((owner.to_string(), max_depth), (ws_fp, Arc::clone(&arc_resolved)));
     }
 
     arc_resolved

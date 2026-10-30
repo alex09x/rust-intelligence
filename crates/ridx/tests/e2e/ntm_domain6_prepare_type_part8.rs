@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,10 +77,18 @@ fn test_prepare_type_hierarchy_dirty_overlay_suppresses_workspace_index() {
 
     let mut writer = IndexWriter::new("dirty_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "OldStruct".to_string(), path: "dirty_crate::OldStruct".to_string(),
-        signature: None, file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "OldStruct".to_string(),
+        path: "dirty_crate::OldStruct".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 16,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct OldStruct;\n").unwrap();
@@ -131,10 +136,18 @@ fn test_prepare_type_hierarchy_clean_overlay_retains_on_disk_struct() {
 
     let mut writer = IndexWriter::new("clean_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "DiskStruct".to_string(), path: "clean_crate::DiskStruct".to_string(),
-        signature: Some("pub struct DiskStruct".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "DiskStruct".to_string(),
+        path: "clean_crate::DiskStruct".to_string(),
+        signature: Some("pub struct DiskStruct".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct DiskStruct;\n").unwrap();

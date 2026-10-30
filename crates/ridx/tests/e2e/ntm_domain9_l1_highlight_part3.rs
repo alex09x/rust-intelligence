@@ -218,4 +218,3 @@ fn test_document_highlight_fn_two_parameters_distinct() {
     assert_eq!(arr[1]["range"]["start"]["line"], 1);
     assert_eq!(arr[2]["range"]["start"]["line"], 2);
 }
-

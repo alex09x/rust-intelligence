@@ -49,12 +49,7 @@ pub struct BlastRadiusIndex {
 #[inline]
 fn fnv1a_64_concat(prefix: &str, sep: &str, suffix: &str) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
-    for &b in prefix
-        .as_bytes()
-        .iter()
-        .chain(sep.as_bytes())
-        .chain(suffix.as_bytes())
-    {
+    for &b in prefix.as_bytes().iter().chain(sep.as_bytes()).chain(suffix.as_bytes()) {
         hash ^= b as u64;
         hash = hash.wrapping_mul(0x100000001b3);
     }
@@ -72,11 +67,7 @@ fn hash_with_kind(base_hash: u64, kind: DefKind) -> u64 {
 
 /// Normalizes a shard file string to a canonical workspace-relative path so that the same file
 /// indexed across multiple compilation targets (`lib`, `lib-test`, integration tests) shares one key.
-pub(crate) fn normalize_workspace_file_key(
-    ws: &WorkspaceIndex,
-    reader_idx: usize,
-    r_file: &str,
-) -> String {
+pub(crate) fn normalize_workspace_file_key(ws: &WorkspaceIndex, reader_idx: usize, r_file: &str) -> String {
     let ws_root = ws.workspace_root.as_deref().or(ws.root_dir.as_deref());
     let sroot = ws.source_roots.get(reader_idx).and_then(|r| r.as_deref());
     let p = Path::new(r_file);
@@ -91,11 +82,7 @@ pub(crate) fn normalize_workspace_file_key(
     if let (Some(sr), Some(root)) = (sroot, ws_root) {
         if let Ok(sr_rel) = sr.strip_prefix(root) {
             if !sr_rel.as_os_str().is_empty() && !p.starts_with(sr_rel) {
-                return sr_rel
-                    .join(p)
-                    .to_string_lossy()
-                    .trim_start_matches("./")
-                    .to_string();
+                return sr_rel.join(p).to_string_lossy().trim_start_matches("./").to_string();
             }
         }
     }
@@ -104,11 +91,7 @@ pub(crate) fn normalize_workspace_file_key(
 
 /// Derives the Cargo package identifier for a normalized workspace file path, grouping `lib`,
 /// unit tests, `build.rs`, examples, benches, and `tests/*.rs` integration targets under one package.
-pub(crate) fn package_key_for_file(
-    ws: &WorkspaceIndex,
-    reader_idx: usize,
-    norm_file: &str,
-) -> String {
+pub(crate) fn package_key_for_file(ws: &WorkspaceIndex, reader_idx: usize, norm_file: &str) -> String {
     for marker in ["/src/", "/tests/", "/benches/", "/examples/"] {
         if let Some(pos) = norm_file.find(marker) {
             if pos > 0 {
@@ -121,12 +104,7 @@ pub(crate) fn package_key_for_file(
             return prefix.to_string();
         }
     }
-    if norm_file.starts_with("src/")
-        || norm_file.starts_with("tests/")
-        || norm_file.starts_with("benches/")
-        || norm_file.starts_with("examples/")
-        || norm_file == "build.rs"
-    {
+    if norm_file.starts_with("src/") || norm_file.starts_with("tests/") || norm_file.starts_with("benches/") || norm_file.starts_with("examples/") || norm_file == "build.rs" {
         return "<root>".to_string();
     }
     if let Some(sr) = ws.source_roots.get(reader_idx).and_then(|r| r.as_deref()) {
@@ -189,16 +167,10 @@ impl BlastRadiusIndex {
                     let width = s.end_col().saturating_sub(s.start_col());
                     let clean_name = name.strip_prefix("r#").unwrap_or(name);
                     let name_chars = clean_name.chars().count() as u32;
-                    if r.is_macro_expansion()
-                        && width != name_chars
-                        && width != name.chars().count() as u32
-                    {
+                    if r.is_macro_expansion() && width != name_chars && width != name.chars().count() as u32 {
                         continue;
                     }
-                    if !r.is_macro_expansion()
-                        && width == name_chars + 2
-                        && !is_raw_ident_keyword(clean_name)
-                    {
+                    if !r.is_macro_expansion() && width == name_chars + 2 && !is_raw_ident_keyword(clean_name) {
                         continue;
                     }
                 }
@@ -208,23 +180,14 @@ impl BlastRadiusIndex {
                 let Some(&(g_fid, g_pid)) = file_map.get(s.file_id() as usize) else {
                     continue;
                 };
-                let loc_key = ((g_fid as u64) << 36)
-                    | (((s.start_line() as u64) & 0xFFFFF) << 16)
-                    | (((s.start_col() as u64) & 0xFF) << 8)
-                    | ((s.end_col() as u64) & 0xFF);
+                let loc_key = ((g_fid as u64) << 36) | (((s.start_line() as u64) & 0xFFFFF) << 16) | (((s.start_col() as u64) & 0xFF) << 8) | ((s.end_col() as u64) & 0xFF);
 
-                let has_crate_prefix = raw_target
-                    .strip_prefix(cname)
-                    .and_then(|rest| rest.strip_prefix("::"))
-                    .is_some();
+                let has_crate_prefix = raw_target.strip_prefix(cname).and_then(|rest| rest.strip_prefix("::")).is_some();
                 let base_hash = if has_crate_prefix {
                     fnv1a_64(raw_target.as_bytes())
                 } else {
                     let first_seg = raw_target.split("::").next().unwrap_or(raw_target);
-                    if r.target_def_id() == u32::MAX
-                        && raw_target.contains("::")
-                        && known_crates.contains(first_seg)
-                    {
+                    if r.target_def_id() == u32::MAX && raw_target.contains("::") && known_crates.contains(first_seg) {
                         fnv1a_64(raw_target.as_bytes())
                     } else {
                         fnv1a_64_concat(cname, "::", raw_target)
@@ -233,20 +196,10 @@ impl BlastRadiusIndex {
 
                 if r_kind == DefKind::Other {
                     for k in [DefKind::Struct, DefKind::Field] {
-                        entries.push(RawBlastEntry {
-                            key_hash: hash_with_kind(base_hash, k),
-                            loc_key,
-                            file_id: g_fid,
-                            pkg_id: g_pid,
-                        });
+                        entries.push(RawBlastEntry { key_hash: hash_with_kind(base_hash, k), loc_key, file_id: g_fid, pkg_id: g_pid });
                     }
                 } else {
-                    entries.push(RawBlastEntry {
-                        key_hash: hash_with_kind(base_hash, r_kind),
-                        loc_key,
-                        file_id: g_fid,
-                        pkg_id: g_pid,
-                    });
+                    entries.push(RawBlastEntry { key_hash: hash_with_kind(base_hash, r_kind), loc_key, file_id: g_fid, pkg_id: g_pid });
                 }
             }
         }
@@ -273,14 +226,7 @@ impl BlastRadiusIndex {
                 }
                 idx += 1;
             }
-            counts.insert(
-                kh,
-                DirectBlastRadius {
-                    direct_refs,
-                    files: files_set.len(),
-                    crates: pkgs_set.len(),
-                },
-            );
+            counts.insert(kh, DirectBlastRadius { direct_refs, files: files_set.len(), crates: pkgs_set.len() });
         }
 
         Self { counts }
@@ -300,15 +246,8 @@ impl WorkspaceIndex {
         if def.path.is_empty() || def.kind == DefKind::Local {
             return DirectBlastRadius::default();
         }
-        let target_crate = def
-            .reader_idx
-            .and_then(|idx| self.readers.get(idx))
-            .map(|r| r.crate_name())
-            .unwrap_or_else(|| def.path.split("::").next().unwrap_or(def.path));
-        let local_path = def
-            .path
-            .strip_prefix(&format!("{target_crate}::"))
-            .unwrap_or(def.path);
+        let target_crate = def.reader_idx.and_then(|idx| self.readers.get(idx)).map(|r| r.crate_name()).unwrap_or_else(|| def.path.split("::").next().unwrap_or(def.path));
+        let local_path = def.path.strip_prefix(&format!("{target_crate}::")).unwrap_or(def.path);
         let global_path = format!("{target_crate}::{local_path}");
         if self.path_index.is_current(self) {
             return self.path_index.blast_radius.lookup(&global_path, def.kind);
@@ -316,16 +255,13 @@ impl WorkspaceIndex {
 
         let disambiguate_line = def.reader_idx.is_some_and(|t| {
             let r = &self.readers[t];
-            r.has_multiple_definitions_at_path(def.path)
-                || r.has_multiple_definitions_at_path(local_path)
-                || r.has_multiple_definitions_at_path(&global_path)
+            r.has_multiple_definitions_at_path(def.path) || r.has_multiple_definitions_at_path(local_path) || r.has_multiple_definitions_at_path(&global_path)
         });
 
         let ref_target = ReferenceTarget {
             kind: Some(def.kind),
             name: Some(def.name),
-            coords: (!def.file.is_empty() && def.start_line > 0)
-                .then(|| (def.file.to_string(), def.file.to_string(), def.start_line)),
+            coords: (!def.file.is_empty() && def.start_line > 0).then(|| (def.file.to_string(), def.file.to_string(), def.start_line)),
             disambiguate_line,
         };
 
@@ -338,25 +274,15 @@ impl WorkspaceIndex {
                 continue;
             }
             let cname = reader.crate_name();
-            let queries: &[&str] = if cname == target_crate && local_path != global_path {
-                &[local_path, global_path.as_str()]
-            } else {
-                &[global_path.as_str()]
-            };
+            let queries: &[&str] = if cname == target_crate && local_path != global_path { &[local_path, global_path.as_str()] } else { &[global_path.as_str()] };
             for &q in queries {
                 for r in reader.find_references(q) {
                     if !matches_reference_target(reader, r, &ref_target) {
                         continue;
                     }
                     let s = r.span();
-                    let norm_f =
-                        normalize_workspace_file_key(self, i, reader.get_file(s.file_id()));
-                    if seen_refs.insert((
-                        norm_f.clone(),
-                        s.start_line(),
-                        s.start_col(),
-                        s.end_col(),
-                    )) {
+                    let norm_f = normalize_workspace_file_key(self, i, reader.get_file(s.file_id()));
+                    if seen_refs.insert((norm_f.clone(), s.start_line(), s.start_col(), s.end_col())) {
                         let pkg_k = package_key_for_file(self, i, &norm_f);
                         files.insert(norm_f);
                         crates.insert(pkg_k);
@@ -365,10 +291,6 @@ impl WorkspaceIndex {
             }
         }
 
-        DirectBlastRadius {
-            direct_refs: seen_refs.len(),
-            files: files.len(),
-            crates: crates.len(),
-        }
+        DirectBlastRadius { direct_refs: seen_refs.len(), files: files.len(), crates: crates.len() }
     }
 }

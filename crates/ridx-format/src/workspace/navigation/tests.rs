@@ -107,14 +107,7 @@ fn test_navigation_comprehensive() {
         is_macro_expansion: false,
     });
 
-    writer.add_type(RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 10,
-        start_col: 1,
-        end_line: 10,
-        end_col: 9,
-        type_name: "fn()".to_string(),
-    });
+    writer.add_type(RawType { file: "src/lib.rs".to_string(), start_line: 10, start_col: 1, end_line: 10, end_col: 9, type_name: "fn()".to_string() });
 
     let mut file = File::create(&index_path).unwrap();
     writer.write_to(&mut file).unwrap();

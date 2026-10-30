@@ -20,28 +20,16 @@ pub fn handle_diagnostic(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     handle_diagnostic_with_flycheck(msg, overlay_mgr, None)
 }
 
-pub fn handle_diagnostic_with_flycheck(
-    msg: &Value,
-    overlay_mgr: &OverlayManager,
-    flycheck: Option<&super::flycheck::FlycheckState>,
-) -> Value {
+pub fn handle_diagnostic_with_flycheck(msg: &Value, overlay_mgr: &OverlayManager, flycheck: Option<&super::flycheck::FlycheckState>) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let syntax_res = publish_syntax_diagnostics(msg, overlay_mgr);
-    let h_items = syntax_res["items"]
-        .as_array()
-        .map(|a| a.as_slice())
-        .unwrap_or(&[]);
+    let h_items = syntax_res["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
     if let Some(fc) = flycheck {
         let auth_items = fc.get_latest_diagnostics(uri);
         let file = uri_to_path(uri);
         let live_text = overlay_mgr.get(&file).map_or("", |ov| ov.text.as_str());
         let baseline = fc.get_diagnostic_baseline(uri);
-        let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(
-            &auth_items,
-            baseline.as_deref(),
-            live_text,
-            uri,
-        );
+        let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(&auth_items, baseline.as_deref(), live_text, uri);
         let merged = super::reconcile::reconcile_diagnostics(h_items, &mapped_auth);
         json!({ "kind": "full", "items": merged })
     } else {
@@ -142,10 +130,7 @@ pub fn handle_document_diagnostic_text(doc_text: &str) -> Value {
                         line_0based += 1;
                         line_start_byte = i + 1;
                     }
-                    if bytes[i] == b'"'
-                        && i + hashes < n
-                        && (0..hashes).all(|k| bytes[i + 1 + k] == b'#')
-                    {
+                    if bytes[i] == b'"' && i + hashes < n && (0..hashes).all(|k| bytes[i + 1 + k] == b'#') {
                         i += 1 + hashes;
                         closed = true;
                         break;
@@ -228,16 +213,8 @@ pub fn handle_document_diagnostic_text(doc_text: &str) -> Value {
         }
 
         // Code character
-        if b == b'l'
-            && bytes[i..].starts_with(b"let ")
-            && (i == line_start_byte
-                || bytes[i - 1].is_ascii_whitespace()
-                || bytes[i - 1] == b';'
-                || bytes[i - 1] == b'{')
-        {
-            if let Some(diag) =
-                check_let_type_mismatch(bytes, i, doc_text, line_0based, line_start_byte)
-            {
+        if b == b'l' && bytes[i..].starts_with(b"let ") && (i == line_start_byte || bytes[i - 1].is_ascii_whitespace() || bytes[i - 1] == b';' || bytes[i - 1] == b'{') {
+            if let Some(diag) = check_let_type_mismatch(bytes, i, doc_text, line_0based, line_start_byte) {
                 items.push(diag);
             }
         }
@@ -326,13 +303,7 @@ pub fn handle_document_diagnostic_text(doc_text: &str) -> Value {
     })
 }
 
-fn check_let_type_mismatch(
-    bytes: &[u8],
-    i: usize,
-    doc_text: &str,
-    line_0based: u32,
-    line_start_byte: usize,
-) -> Option<Value> {
+fn check_let_type_mismatch(bytes: &[u8], i: usize, doc_text: &str, line_0based: u32, line_start_byte: usize) -> Option<Value> {
     let stmt_bytes = &bytes[i..];
     let semi_pos = stmt_bytes.iter().position(|&x| x == b';')?;
     let stmt_str = std::str::from_utf8(&stmt_bytes[..semi_pos]).ok()?;
@@ -345,10 +316,7 @@ fn check_let_type_mismatch(
         Some("&str")
     } else if rhs == "true" || rhs == "false" {
         Some("bool")
-    } else if !rhs.is_empty()
-        && (rhs.chars().all(|c| c.is_ascii_digit() || c == '_')
-            || (rhs.starts_with('-') && rhs[1..].chars().all(|c| c.is_ascii_digit() || c == '_')))
-    {
+    } else if !rhs.is_empty() && (rhs.chars().all(|c| c.is_ascii_digit() || c == '_') || (rhs.starts_with('-') && rhs[1..].chars().all(|c| c.is_ascii_digit() || c == '_'))) {
         Some("{integer}")
     } else {
         None
@@ -356,20 +324,8 @@ fn check_let_type_mismatch(
 
     let is_mismatch = matches!(
         (expected_ty, found_ty),
-        (
-            "u8" | "u16"
-                | "u32"
-                | "u64"
-                | "u128"
-                | "usize"
-                | "i8"
-                | "i16"
-                | "i32"
-                | "i64"
-                | "i128"
-                | "isize",
-            Some("&str" | "bool"),
-        ) | ("&str" | "String", Some("{integer}" | "bool"))
+        ("u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize", Some("&str" | "bool"),)
+            | ("&str" | "String", Some("{integer}" | "bool"))
             | ("bool", Some("&str" | "{integer}"))
     );
 

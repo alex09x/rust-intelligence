@@ -26,6 +26,71 @@ use std::sync::{Arc, Mutex};
 
 static INC_COUNTER_P9: AtomicU64 = AtomicU64::new(1900);
 
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rdef(
+    id: u32,
+    kind: DefKind,
+    vis: u8,
+    mac: bool,
+    name: impl Into<String>,
+    path: impl Into<String>,
+    sig: Option<String>,
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+) -> RawDefinition {
+    RawDefinition {
+        def_id: id,
+        kind,
+        visibility: vis,
+        is_macro_expansion: mac,
+        name: name.into(),
+        path: path.into(),
+        signature: sig,
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+    }
+}
+
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rref(
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+    td: Option<u32>,
+    tp: impl Into<String>,
+    tf: Option<String>,
+    tu: Option<String>,
+    tl: u32,
+    tc: u32,
+    kind: DefKind,
+    w: bool,
+    m: bool,
+) -> RawReference {
+    RawReference {
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+        target_def_id: td,
+        target_path: tp.into(),
+        target_file: tf,
+        target_unit: tu,
+        target_line: tl,
+        target_col: tc,
+        kind,
+        is_write: w,
+        is_macro_expansion: m,
+    }
+}
 
 fn to_uri(p: &Path) -> String {
     path_to_uri(p.to_str().unwrap())
@@ -54,14 +119,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -81,7 +141,6 @@ fn test_call_hierarchy_incoming_calls_zero_line_zero_col_callee() {
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "// empty file\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 686, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -106,18 +165,11 @@ fn test_call_hierarchy_incoming_calls_callee_line_beyond_file_end() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("beyond_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "beyond_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "target", "beyond_crate::target", None, &lib_str, 1, 1, 1, 7));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 687, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -142,52 +194,16 @@ fn test_call_hierarchy_incoming_calls_consecutive_requests_different_callees() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("consec_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "dest_a".to_string(), path: "consec_crate::dest_a".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "dest_b".to_string(), path: "consec_crate::dest_b".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller_for_a".to_string(), path: "consec_crate::caller_for_a".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 1, end_line: 5, end_col: 13,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller_for_b".to_string(), path: "consec_crate::caller_for_b".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 9, start_col: 1, end_line: 9, end_col: 13,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 6, start_col: 5, end_line: 6, end_col: 11,
-        target_def_id: Some(1), target_path: "consec_crate::dest_a".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 10, start_col: 5, end_line: 10, end_col: 11,
-        target_def_id: Some(2), target_path: "consec_crate::dest_b".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 3, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "dest_a", "consec_crate::dest_a", None, &lib_str, 1, 1, 1, 7));
+    writer.add_definition(rdef(2, DefKind::Fn, 1, false, "dest_b", "consec_crate::dest_b", None, &lib_str, 3, 1, 3, 7));
+    writer.add_definition(rdef(3, DefKind::Fn, 1, false, "caller_for_a", "consec_crate::caller_for_a", None, &lib_str, 5, 1, 5, 13));
+    writer.add_definition(rdef(4, DefKind::Fn, 1, false, "caller_for_b", "consec_crate::caller_for_b", None, &lib_str, 9, 1, 9, 13));
+    writer.add_reference(rref(&lib_str, 6, 5, 6, 11, Some(1), "consec_crate::dest_a", Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
+    writer.add_reference(rref(&lib_str, 10, 5, 10, 11, Some(2), "consec_crate::dest_b", Some(lib_str.clone()), None, 3, 1, DefKind::Fn, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn dest_a() {}\n\nfn dest_b() {}\n\nfn caller_for_a() {\n    dest_a();\n}\n\nfn caller_for_b() {\n    dest_b();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req_a = json!({
         "jsonrpc": "2.0", "id": 691, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -204,7 +220,6 @@ fn test_call_hierarchy_incoming_calls_consecutive_requests_different_callees() {
     let calls_a = resp_a["result"].as_array().unwrap();
     assert_eq!(calls_a.len(), 1);
     assert_eq!(calls_a[0]["from"]["name"], "caller_for_a");
-
     let req_b = json!({
         "jsonrpc": "2.0", "id": 692, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -231,32 +246,13 @@ fn test_call_hierarchy_incoming_calls_caller_at_eof() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("eof_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "eof_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "eof_caller".to_string(), path: "eof_crate::eof_caller".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 11,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 11,
-        target_def_id: Some(1), target_path: "eof_crate::target".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "target", "eof_crate::target", None, &lib_str, 1, 1, 1, 7));
+    writer.add_definition(rdef(2, DefKind::Fn, 1, false, "eof_caller", "eof_crate::eof_caller", None, &lib_str, 3, 1, 3, 11));
+    writer.add_reference(rref(&lib_str, 4, 5, 4, 11, Some(1), "eof_crate::target", Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\n\nfn eof_caller() {\n    target(); }").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 693, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -283,46 +279,15 @@ fn test_call_hierarchy_incoming_calls_direct_caller_only_no_transitive() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("chain_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "fn_c".to_string(), path: "chain_crate::fn_c".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 5,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "fn_b".to_string(), path: "chain_crate::fn_b".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 5,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "fn_a".to_string(), path: "chain_crate::fn_a".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 7, start_col: 1, end_line: 7, end_col: 5,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 9,
-        target_def_id: Some(1), target_path: "chain_crate::fn_c".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 8, start_col: 5, end_line: 8, end_col: 9,
-        target_def_id: Some(2), target_path: "chain_crate::fn_b".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 3, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "fn_c", "chain_crate::fn_c", None, &lib_str, 1, 1, 1, 5));
+    writer.add_definition(rdef(2, DefKind::Fn, 1, false, "fn_b", "chain_crate::fn_b", None, &lib_str, 3, 1, 3, 5));
+    writer.add_definition(rdef(3, DefKind::Fn, 1, false, "fn_a", "chain_crate::fn_a", None, &lib_str, 7, 1, 7, 5));
+    writer.add_reference(rref(&lib_str, 4, 5, 4, 9, Some(1), "chain_crate::fn_c", Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
+    writer.add_reference(rref(&lib_str, 8, 5, 8, 9, Some(2), "chain_crate::fn_b", Some(lib_str.clone()), None, 3, 1, DefKind::Fn, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn fn_c() {}\n\nfn fn_b() {\n    fn_c();\n}\n\nfn fn_a() {\n    fn_b();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 694, "method": "callHierarchy/incomingCalls",
         "params": {

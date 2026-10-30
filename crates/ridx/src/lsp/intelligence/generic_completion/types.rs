@@ -21,16 +21,10 @@ pub struct GenericParam {
 
 impl GenericParam {
     pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            bounds: Vec::new(),
-        }
+        Self { name: name.into(), bounds: Vec::new() }
     }
 
     pub fn with_bounds(name: impl Into<String>, bounds: Vec<String>) -> Self {
-        Self {
-            name: name.into(),
-            bounds,
-        }
+        Self { name: name.into(), bounds }
     }
 }

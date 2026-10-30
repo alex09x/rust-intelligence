@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -90,10 +85,7 @@ fn test_hover_fn_definition_shows_signature() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn calculate_area(width: u32, height: u32) -> u64\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn calculate_area(width: u32, height: u32) -> u64\n```");
 }
 
 #[test]
@@ -109,10 +101,7 @@ fn test_hover_struct_definition_shows_struct_name() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nstruct GeoCoordinate\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nstruct GeoCoordinate\n```");
 }
 
 #[test]
@@ -128,10 +117,7 @@ fn test_hover_enum_definition_shows_enum_name() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nenum NetworkProtocol\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nenum NetworkProtocol\n```");
 }
 
 #[test]
@@ -147,10 +133,7 @@ fn test_hover_trait_definition_shows_trait_name() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\ntrait StreamDecoder\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\ntrait StreamDecoder\n```");
 }
 
 #[test]
@@ -166,10 +149,7 @@ fn test_hover_const_definition_shows_const() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nconst BUFFER_CAPACITY\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nconst BUFFER_CAPACITY\n```");
 }
 
 #[test]
@@ -185,10 +165,7 @@ fn test_hover_static_definition_shows_static() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nstatic GLOBAL_EPOCH\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nstatic GLOBAL_EPOCH\n```");
 }
 
 #[test]

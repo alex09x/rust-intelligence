@@ -59,10 +59,7 @@ fn test_collect_ridx_files_depth_bounding_and_exclusions() {
     let mut collected = Vec::new();
     collect_ridx_files(root, &mut collected).unwrap();
 
-    let names: Vec<String> = collected
-        .iter()
-        .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
-        .collect();
+    let names: Vec<String> = collected.iter().map(|p| p.file_name().unwrap().to_string_lossy().to_string()).collect();
 
     assert!(names.contains(&"root.ridx".to_string()));
     assert!(names.contains(&"lvl1.ridx".to_string()));

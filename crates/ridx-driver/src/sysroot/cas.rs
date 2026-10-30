@@ -39,14 +39,9 @@ pub fn compute_sysroot_cas_key(tcx: TyCtxt<'_>) -> String {
 
 /// Ensures sysroot shards (`core.ridx`, `alloc.ridx`, `std.ridx`) are indexed and cached
 /// in `~/.cache/ridx/v3/sysroot/<cas_key>/`. Uses atomic rename into CAS cache directory.
-pub fn ensure_sysroot_indexed<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    sysroot_src: Option<&Path>,
-) -> Vec<(String, SysrootExtractStats)> {
+pub fn ensure_sysroot_indexed<'tcx>(tcx: TyCtxt<'tcx>, sysroot_src: Option<&Path>) -> Vec<(String, SysrootExtractStats)> {
     let cas_key = compute_sysroot_cas_key(tcx);
-    let cache_dir = ridx_format::resolve_cache_dir()
-        .join("sysroot")
-        .join(&cas_key);
+    let cache_dir = ridx_format::resolve_cache_dir().join("sysroot").join(&cas_key);
     let _ = fs::create_dir_all(&cache_dir);
 
     // Clean up orphaned temporary files from crashed processes
@@ -92,9 +87,7 @@ pub fn ensure_sysroot_indexed<'tcx>(
                 if writer.write_to(&mut buf_writer).is_ok() {
                     drop(buf_writer);
                     if fs::rename(&tmp_path, &target_path).is_ok() {
-                        stats.index_bytes = fs::metadata(&target_path)
-                            .map(|m| m.len() as usize)
-                            .unwrap_or(0);
+                        stats.index_bytes = fs::metadata(&target_path).map(|m| m.len() as usize).unwrap_or(0);
                         results.push((crate_name.to_string(), stats));
                     } else {
                         let _ = fs::remove_file(&tmp_path);

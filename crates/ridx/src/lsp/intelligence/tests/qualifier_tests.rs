@@ -84,10 +84,7 @@ fn test_completion_root_crate_qualifier_core_cell() {
     });
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items.iter().any(|it| it["label"] == "cell"),
-        "Should complete cell after core::"
-    );
+    assert!(items.iter().any(|it| it["label"] == "cell"), "Should complete cell after core::");
 
     // 2. Completion after core::cell:: returns Cell
     let code_cell = "fn main() {\n    core::cell::\n}\n";
@@ -100,10 +97,7 @@ fn test_completion_root_crate_qualifier_core_cell() {
     });
     let res_cell = handle_completion(&req_cell, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items_cell = res_cell["items"].as_array().unwrap();
-    assert!(
-        items_cell.iter().any(|it| it["label"] == "Cell"),
-        "Should complete Cell after core::cell::"
-    );
+    assert!(items_cell.iter().any(|it| it["label"] == "Cell"), "Should complete Cell after core::cell::");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -191,27 +185,18 @@ fn test_completion_dep_crate_qualifier_with_synthetic_span() {
 
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items
-            .iter()
-            .any(|it| it["label"] == "forward_to_deserialize_any"),
-        "Should complete dep_lib items without falling into synthetic span or enclosing module"
-    );
+    assert!(items.iter().any(|it| it["label"] == "forward_to_deserialize_any"), "Should complete dep_lib items without falling into synthetic span or enclosing module");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_multi_target_use_import_and_foreign_use_guard() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_multi_target_qual_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_multi_target_qual_{}", std::process::id()));
     let app_dir = temp_dir.join("app_crate");
     let _ = fs::create_dir_all(app_dir.join("src"));
     let src_file = app_dir.join("src/system.rs");
-    let _ = fs::write(
-        &src_file,
-        "use crate::schedule::Schedule;\nfn test() { Schedule::default(); }\n",
-    );
+    let _ = fs::write(&src_file, "use crate::schedule::Schedule;\nfn test() { Schedule::default(); }\n");
     let src_path = src_file.to_str().unwrap().to_string();
 
     // 1. Foreign dependency crate `async_dep` with bare `Use` at root
@@ -263,11 +248,7 @@ fn test_multi_target_use_import_and_foreign_use_guard() {
             kind: DefKind::Struct,
             visibility: 0,
             is_macro_expansion: false,
-            file: app_dir
-                .join("src/schedule.rs")
-                .to_str()
-                .unwrap()
-                .to_string(),
+            file: app_dir.join("src/schedule.rs").to_str().unwrap().to_string(),
             name: "Schedule".to_string(),
             start_line: 1,
             start_col: 1,
@@ -330,10 +311,7 @@ fn test_multi_target_use_import_and_foreign_use_guard() {
     // find the `use` declaration in target 1, and resolve to `app_crate::schedule::Schedule`
     // instead of mistakenly picking `async_dep`'s foreign bare `Use`.
     let res = ws.resolve_qualifier(&src_path, "Schedule");
-    assert!(
-        res.is_some(),
-        "Should resolve Schedule via multi-target unit scan"
-    );
+    assert!(res.is_some(), "Should resolve Schedule via multi-target unit scan");
     let resolved = res.unwrap();
     assert_eq!(resolved.name, "Schedule");
     assert_eq!(resolved.path, "app_crate::schedule::Schedule");

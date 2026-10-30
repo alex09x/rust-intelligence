@@ -45,10 +45,7 @@ fn test_case_9_line_shift_definition_and_references() {
     let file_str = lib_file.to_str().unwrap();
     overlay_mgr.open_with_provenance(&uri, file_str, 2, shifted_text.clone(), false);
     // Baseline is compiled original_text
-    overlay_mgr
-        .get_mut(file_str)
-        .unwrap()
-        .advance_compiled_baseline(original_text.clone());
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text.clone());
 
     // 1. Definition query on shifted `Robot` in `call_concrete(r: &Robot)`
     let (cur_line, cur_col) = pos_in_str(&shifted_text, "call_concrete(r: &Robot)", "Robot");
@@ -60,10 +57,7 @@ fn test_case_9_line_shift_definition_and_references() {
     });
 
     let def_res = handle_definition(&def_req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "Must resolve definition despite line shift"
-    );
+    assert!(!def_res.is_null(), "Must resolve definition despite line shift");
     assert_eq!(def_res["uri"], uri);
 
     // Target range must point to shifted `pub struct Robot;` line in live buffer!
@@ -85,22 +79,10 @@ fn test_case_9_line_shift_definition_and_references() {
     assert!(!refs.is_empty(), "Must find references on shifted line");
 
     // All reference ranges in the overlay file must be shifted to match live buffer positions
-    let actual_set: BTreeSet<(u64, u64)> = refs
-        .iter()
-        .map(|r| {
-            (
-                r["range"]["start"]["line"].as_u64().unwrap(),
-                r["range"]["start"]["character"].as_u64().unwrap(),
-            )
-        })
-        .collect();
+    let actual_set: BTreeSet<(u64, u64)> = refs.iter().map(|r| (r["range"]["start"]["line"].as_u64().unwrap(), r["range"]["start"]["character"].as_u64().unwrap())).collect();
 
-    let expected_patterns = [
-        ("pub struct Robot;", "Robot"),
-        ("impl Greeter for Robot {", "Robot"),
-        ("pub fn call_concrete(r: &Robot)", "Robot"),
-        ("pub fn call_default(r: &Robot)", "Robot"),
-    ];
+    let expected_patterns =
+        [("pub struct Robot;", "Robot"), ("impl Greeter for Robot {", "Robot"), ("pub fn call_concrete(r: &Robot)", "Robot"), ("pub fn call_default(r: &Robot)", "Robot")];
     let expected_set: BTreeSet<(u64, u64)> = expected_patterns
         .iter()
         .map(|(line_pattern, target)| {
@@ -109,10 +91,7 @@ fn test_case_9_line_shift_definition_and_references() {
         })
         .collect();
 
-    assert_eq!(
-        actual_set, expected_set,
-        "All references must be shifted to match live buffer positions"
-    );
+    assert_eq!(actual_set, expected_set, "All references must be shifted to match live buffer positions");
 }
 
 #[test]
@@ -125,24 +104,14 @@ fn test_case_10_stale_rename_overlay_resolution() {
 
     let original_text = fs::read_to_string(&lib_file).unwrap();
     // Rename call_default to invoke_default_greeting in live overlay
-    let modified_text = original_text.replace(
-        "pub fn call_default(r: &Robot) -> &'static str {",
-        "pub fn invoke_default_greeting(r: &Robot) -> &'static str {",
-    );
+    let modified_text = original_text.replace("pub fn call_default(r: &Robot) -> &'static str {", "pub fn invoke_default_greeting(r: &Robot) -> &'static str {");
 
     let file_str = lib_file.to_str().unwrap();
     overlay_mgr.open_with_provenance(&uri, file_str, 2, modified_text.clone(), false);
-    overlay_mgr
-        .get_mut(file_str)
-        .unwrap()
-        .advance_compiled_baseline(original_text);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text);
 
     // Query definition of new name `invoke_default_greeting`
-    let (cur_line, cur_col) = pos_in_str(
-        &modified_text,
-        "pub fn invoke_default_greeting",
-        "invoke_default_greeting",
-    );
+    let (cur_line, cur_col) = pos_in_str(&modified_text, "pub fn invoke_default_greeting", "invoke_default_greeting");
     let def_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -151,10 +120,7 @@ fn test_case_10_stale_rename_overlay_resolution() {
     });
 
     let def_res = handle_definition(&def_req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "Overlay must resolve freshly renamed symbol locally"
-    );
+    assert!(!def_res.is_null(), "Overlay must resolve freshly renamed symbol locally");
     assert_eq!(def_res["range"]["start"]["line"], cur_line);
     assert_eq!(def_res["range"]["start"]["character"], cur_col);
 }
@@ -174,16 +140,9 @@ fn test_case_11_new_symbol_in_live_buffer() {
 
     let file_str = lib_file.to_str().unwrap();
     overlay_mgr.open_with_provenance(&uri, file_str, 2, modified_text.clone(), false);
-    overlay_mgr
-        .get_mut(file_str)
-        .unwrap()
-        .advance_compiled_baseline(original_text);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text);
 
-    let (cur_line, cur_col) = pos_in_str(
-        &modified_text,
-        "pub fn new_helper_calculator",
-        "new_helper_calculator",
-    );
+    let (cur_line, cur_col) = pos_in_str(&modified_text, "pub fn new_helper_calculator", "new_helper_calculator");
     let def_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -192,10 +151,7 @@ fn test_case_11_new_symbol_in_live_buffer() {
     });
 
     let def_res = handle_definition(&def_req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "Must resolve definition of newly added symbol in live overlay"
-    );
+    assert!(!def_res.is_null(), "Must resolve definition of newly added symbol in live overlay");
     assert_eq!(def_res["range"]["start"]["line"], cur_line);
     assert_eq!(def_res["range"]["start"]["character"], cur_col);
 }
@@ -216,15 +172,9 @@ fn test_staleness_index_reload_resyncs_overlay() {
     assert!(ov.is_dirty());
 
     // Advance compiled baseline to match edited text (simulating post-build index publication)
-    overlay_mgr
-        .get_mut(file_str)
-        .unwrap()
-        .advance_compiled_baseline(edited_text.clone());
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(edited_text.clone());
     let ov_after = overlay_mgr.get(file_str).unwrap();
-    assert!(
-        !ov_after.is_dirty(),
-        "Overlay should be clean after baseline advance"
-    );
+    assert!(!ov_after.is_dirty(), "Overlay should be clean after baseline advance");
     assert_eq!(ov_after.map_line_to_compiled(1), Some(1));
 }
 
@@ -269,15 +219,11 @@ fn test_staleness_definition_in_modified_hunk_abstains() {
 
     let original_text = fs::read_to_string(&lib_file).unwrap();
     // Replace the body of call_concrete with completely different tokens
-    let modified_text =
-        original_text.replace("r.greet()", "42 * 999 /* completely modified hunk */");
+    let modified_text = original_text.replace("r.greet()", "42 * 999 /* completely modified hunk */");
 
     let file_str = lib_file.to_str().unwrap();
     overlay_mgr.open_with_provenance(&uri, file_str, 2, modified_text.clone(), false);
-    overlay_mgr
-        .get_mut(file_str)
-        .unwrap()
-        .advance_compiled_baseline(original_text);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text);
 
     // Query on line inside the modified hunk
     let (cur_line, cur_col) = pos_in_str(&modified_text, "42 * 999", "999");
@@ -289,10 +235,7 @@ fn test_staleness_definition_in_modified_hunk_abstains() {
     });
 
     let def_res = handle_definition(&def_req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        def_res.is_null(),
-        "Must abstain rather than return stale compiled definition inside modified hunk"
-    );
+    assert!(def_res.is_null(), "Must abstain rather than return stale compiled definition inside modified hunk");
 }
 
 #[test]
@@ -309,18 +252,12 @@ fn test_case_9_line_shift_after_did_save_without_reindex() {
 
     let file_str = lib_file.to_str().unwrap();
     overlay_mgr.open_with_provenance(&uri, file_str, 2, shifted_text.clone(), false);
-    overlay_mgr
-        .get_mut(file_str)
-        .unwrap()
-        .advance_compiled_baseline(original_text);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text);
 
     // didSave occurs: saves document to disk without re-indexing
     overlay_mgr.save_document(file_str);
 
-    assert!(
-        overlay_mgr.get(file_str).unwrap().is_dirty(),
-        "Buffer must remain dirty relative to index compiled_text after didSave without reindex"
-    );
+    assert!(overlay_mgr.get(file_str).unwrap().is_dirty(), "Buffer must remain dirty relative to index compiled_text after didSave without reindex");
 
     // Definition query on shifted `Robot` in `call_concrete(r: &Robot)`
     let (cur_line, cur_col) = pos_in_str(&shifted_text, "call_concrete(r: &Robot)", "Robot");
@@ -332,10 +269,7 @@ fn test_case_9_line_shift_after_did_save_without_reindex() {
     });
 
     let def_res = handle_definition(&def_req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "Must resolve definition after save without reindex"
-    );
+    assert!(!def_res.is_null(), "Must resolve definition after save without reindex");
 
     let (expected_line, expected_col) = pos_in_str(&shifted_text, "pub struct Robot;", "Robot");
     assert_eq!(def_res["range"]["start"]["line"], expected_line);

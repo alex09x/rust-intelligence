@@ -39,10 +39,7 @@ mod tests {
     #[test]
     fn test_std_path_candidates_with_std() {
         let candidates = std_path_candidates("std::vec::Vec");
-        assert_eq!(
-            candidates,
-            vec!["std::vec::Vec", "core::vec::Vec", "alloc::vec::Vec"]
-        );
+        assert_eq!(candidates, vec!["std::vec::Vec", "core::vec::Vec", "alloc::vec::Vec"]);
     }
 
     #[test]
@@ -85,15 +82,11 @@ mod tests {
         let ws = WorkspaceIndex::open(&ridx_path).unwrap();
 
         // 1. Direct canonical query
-        let def1 = ws
-            .find_definition_by_path("alloc::vec::Vec")
-            .expect("found alloc::vec::Vec");
+        let def1 = ws.find_definition_by_path("alloc::vec::Vec").expect("found alloc::vec::Vec");
         assert_eq!(def1.name, "Vec");
 
         // 2. Query mapped from std::
-        let def2 = ws
-            .find_definition_by_path("std::vec::Vec")
-            .expect("found std::vec::Vec via std mapping");
+        let def2 = ws.find_definition_by_path("std::vec::Vec").expect("found std::vec::Vec via std mapping");
         assert_eq!(def2.name, "Vec");
         assert_eq!(def2.path, "alloc::vec::Vec");
 

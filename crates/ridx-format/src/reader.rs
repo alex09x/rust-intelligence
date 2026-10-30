@@ -82,24 +82,15 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     pub fn from_buffer(buffer: B) -> io::Result<Self> {
         let bytes = buffer.as_ref();
         if (bytes.as_ptr() as usize) % 8 != 0 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Buffer base pointer must be 8-byte aligned for zero-copy RIDX reading",
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Buffer base pointer must be 8-byte aligned for zero-copy RIDX reading"));
         }
         if bytes.len() < std::mem::size_of::<HeaderV2>() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "File too small for RIDX header",
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "File too small for RIDX header"));
         }
 
         let magic: [u8; 4] = bytes[0..4].try_into().unwrap();
         if magic != MAGIC {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Invalid RIDX magic: {:?}", magic),
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Invalid RIDX magic: {:?}", magic)));
         }
 
         let version = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
@@ -107,10 +98,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             2 => Header::from_le_v2(&bytes[..std::mem::size_of::<HeaderV2>()]),
             CURRENT_VERSION => {
                 if bytes.len() < std::mem::size_of::<Header>() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "File too small for RIDX header",
-                    ));
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "File too small for RIDX header"));
                 }
                 let mut header_buf = [0u8; std::mem::size_of::<Header>()];
                 header_buf.copy_from_slice(&bytes[..std::mem::size_of::<Header>()]);
@@ -118,10 +106,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 raw_header.from_le()
             }
             _ => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Unsupported RIDX version: {}", version),
-                ));
+                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported RIDX version: {}", version)));
             }
         };
 
@@ -190,11 +175,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start >= max_end {
             return "";
         }
-        let end = bytes[start..max_end]
-            .iter()
-            .position(|&b| b == 0)
-            .map(|p| start + p)
-            .unwrap_or(max_end);
+        let end = bytes[start..max_end].iter().position(|&b| b == 0).map(|p| start + p).unwrap_or(max_end);
 
         std::str::from_utf8(&bytes[start..end]).unwrap_or("")
     }
@@ -204,17 +185,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if file_id >= self.header.files_count {
             return "";
         }
-        let offset_in_file_table = (self.header.files_offset as usize)
-            + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
+        let offset_in_file_table = (self.header.files_offset as usize) + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
         let bytes = self.bytes();
         if offset_in_file_table + std::mem::size_of::<crate::format::FileEntry>() > bytes.len() {
             return "";
         }
-        let str_offset = u32::from_le_bytes(
-            bytes[offset_in_file_table..offset_in_file_table + 4]
-                .try_into()
-                .unwrap(),
-        );
+        let str_offset = u32::from_le_bytes(bytes[offset_in_file_table..offset_in_file_table + 4].try_into().unwrap());
         self.get_str(str_offset)
     }
 
@@ -223,17 +199,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if file_id >= self.header.files_count {
             return 0;
         }
-        let offset_in_file_table = (self.header.files_offset as usize)
-            + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
+        let offset_in_file_table = (self.header.files_offset as usize) + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
         let bytes = self.bytes();
         if offset_in_file_table + std::mem::size_of::<crate::format::FileEntry>() > bytes.len() {
             return 0;
         }
-        u64::from_le_bytes(
-            bytes[offset_in_file_table + 8..offset_in_file_table + 16]
-                .try_into()
-                .unwrap(),
-        )
+        u64::from_le_bytes(bytes[offset_in_file_table + 8..offset_in_file_table + 16].try_into().unwrap())
     }
 
     /// Returns all source file provenance hashes embedded directly inside this index shard.
@@ -279,9 +250,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const HashIndexEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const HashIndexEntry, count) }
     }
 
     /// Slice of all references in the index (sorted by source span).
@@ -308,9 +277,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const HashIndexEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const HashIndexEntry, count) }
     }
 
     /// Slice of all expression types in the index (sorted by source span).
@@ -341,9 +308,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const OwnerIndexEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const OwnerIndexEntry, count) }
     }
 
     /// Slice of all deref entries in the index (sorted by source_type_hash).

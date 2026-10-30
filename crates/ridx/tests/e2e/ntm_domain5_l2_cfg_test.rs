@@ -28,11 +28,7 @@ fn test_l2_goto_definition_inside_cfg_test_struct() {
     let mut conv = PositionConverter::new();
 
     // Query goto-definition on `LocalTestHelper` instantiation site inside `sample_unit_test`
-    let (cur_line, cur_col) = pos_in_file(
-        &lib_file,
-        "let helper = LocalTestHelper { multiplier: 3 };",
-        "LocalTestHelper",
-    );
+    let (cur_line, cur_col) = pos_in_file(&lib_file, "let helper = LocalTestHelper { multiplier: 3 };", "LocalTestHelper");
     let req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -41,10 +37,7 @@ fn test_l2_goto_definition_inside_cfg_test_struct() {
     });
 
     let res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !res.is_null(),
-        "Must find definition for struct defined inside #[cfg(test)] module"
-    );
+    assert!(!res.is_null(), "Must find definition for struct defined inside #[cfg(test)] module");
     assert_eq!(res["uri"], uri);
 
     let (def_line, def_col) = pos_in_file(&lib_file, "struct LocalTestHelper {", "LocalTestHelper");
@@ -70,17 +63,10 @@ fn test_l2_goto_definition_inside_cfg_test_method() {
     });
 
     let res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !res.is_null(),
-        "Must find definition for method defined inside #[cfg(test)] module"
-    );
+    assert!(!res.is_null(), "Must find definition for method defined inside #[cfg(test)] module");
     assert_eq!(res["uri"], uri);
 
-    let (def_line, def_col) = pos_in_file(
-        &lib_file,
-        "pub fn compute(&self, val: i32) -> i32 {",
-        "compute",
-    );
+    let (def_line, def_col) = pos_in_file(&lib_file, "pub fn compute(&self, val: i32) -> i32 {", "compute");
     assert_eq!(res["range"]["start"]["line"], def_line);
     assert_eq!(res["range"]["start"]["character"], def_col);
 }
@@ -94,11 +80,7 @@ fn test_l2_hover_inside_cfg_test_struct() {
     let mut conv = PositionConverter::new();
 
     // Query hover on local variable `helper` typed as `LocalTestHelper`
-    let (cur_line, cur_col) = pos_in_file(
-        &lib_file,
-        "let res = helper.compute(10);",
-        "helper",
-    );
+    let (cur_line, cur_col) = pos_in_file(&lib_file, "let res = helper.compute(10);", "helper");
     let req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -107,15 +89,9 @@ fn test_l2_hover_inside_cfg_test_struct() {
     });
 
     let res = handle_hover(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res.is_null(),
-        "Hover on variable inside #[cfg(test)] must return result"
-    );
+    assert!(!res.is_null(), "Hover on variable inside #[cfg(test)] must return result");
     let val = res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("LocalTestHelper"),
-        "Hover on helper must contain LocalTestHelper, got: {val}"
-    );
+    assert!(val.contains("LocalTestHelper"), "Hover on helper must contain LocalTestHelper, got: {val}");
 }
 
 #[test]
@@ -136,13 +112,7 @@ fn test_l2_hover_inside_cfg_test_method() {
     });
 
     let res = handle_hover(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        !res.is_null(),
-        "Hover on method inside #[cfg(test)] must return result"
-    );
+    assert!(!res.is_null(), "Hover on method inside #[cfg(test)] must return result");
     let val = res["contents"]["value"].as_str().unwrap();
-    assert!(
-        val.contains("compute") && val.contains("i32"),
-        "Hover on compute() must show signature with compute and i32, got: {val}"
-    );
+    assert!(val.contains("compute") && val.contains("i32"), "Hover on compute() must show signature with compute and i32, got: {val}");
 }

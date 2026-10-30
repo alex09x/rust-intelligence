@@ -56,10 +56,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -83,18 +80,34 @@ fn test_prepare_type_hierarchy_cross_file_reference_to_struct() {
 
     let mut writer = IndexWriter::new("ref_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "TargetStruct".to_string(), path: "ref_crate::TargetStruct".to_string(),
-        signature: Some("pub struct TargetStruct".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 23,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TargetStruct".to_string(),
+        path: "ref_crate::TargetStruct".to_string(),
+        signature: Some("pub struct TargetStruct".to_string()),
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 23,
     });
     writer.add_reference(RawReference {
         file: main_str.clone(),
-        start_line: 1, start_col: 5, end_line: 1, end_col: 17,
-        target_def_id: Some(1), target_path: "ref_crate::TargetStruct".to_string(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 17,
+        target_def_id: Some(1),
+        target_path: "ref_crate::TargetStruct".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Struct, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Struct,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub struct TargetStruct;\n").unwrap();
@@ -131,18 +144,34 @@ fn test_prepare_type_hierarchy_cross_file_reference_to_enum() {
 
     let mut writer = IndexWriter::new("ref_enum_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "TargetEnum".to_string(), path: "ref_enum_crate::TargetEnum".to_string(),
-        signature: Some("pub enum TargetEnum".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
+        def_id: 1,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TargetEnum".to_string(),
+        path: "ref_enum_crate::TargetEnum".to_string(),
+        signature: Some("pub enum TargetEnum".to_string()),
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 21,
     });
     writer.add_reference(RawReference {
         file: main_str.clone(),
-        start_line: 1, start_col: 5, end_line: 1, end_col: 15,
-        target_def_id: Some(1), target_path: "ref_enum_crate::TargetEnum".to_string(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 15,
+        target_def_id: Some(1),
+        target_path: "ref_enum_crate::TargetEnum".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Enum, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Enum,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub enum TargetEnum { A, B }\n").unwrap();
@@ -179,18 +208,34 @@ fn test_prepare_type_hierarchy_cross_file_reference_to_trait() {
 
     let mut writer = IndexWriter::new("ref_trait_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "TargetTrait".to_string(), path: "ref_trait_crate::TargetTrait".to_string(),
-        signature: Some("pub trait TargetTrait".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TargetTrait".to_string(),
+        path: "ref_trait_crate::TargetTrait".to_string(),
+        signature: Some("pub trait TargetTrait".to_string()),
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.add_reference(RawReference {
         file: main_str.clone(),
-        start_line: 1, start_col: 5, end_line: 1, end_col: 16,
-        target_def_id: Some(1), target_path: "ref_trait_crate::TargetTrait".to_string(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 16,
+        target_def_id: Some(1),
+        target_path: "ref_trait_crate::TargetTrait".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Trait, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Trait,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub trait TargetTrait {}\n").unwrap();
@@ -227,18 +272,34 @@ fn test_prepare_type_hierarchy_cross_file_reference_to_type_alias() {
 
     let mut writer = IndexWriter::new("ref_alias_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-        name: "TargetAlias".to_string(), path: "ref_alias_crate::TargetAlias".to_string(),
-        signature: Some("pub type TargetAlias = i64".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::TyAlias,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TargetAlias".to_string(),
+        path: "ref_alias_crate::TargetAlias".to_string(),
+        signature: Some("pub type TargetAlias = i64".to_string()),
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.add_reference(RawReference {
         file: main_str.clone(),
-        start_line: 1, start_col: 5, end_line: 1, end_col: 16,
-        target_def_id: Some(1), target_path: "ref_alias_crate::TargetAlias".to_string(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 16,
+        target_def_id: Some(1),
+        target_path: "ref_alias_crate::TargetAlias".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::TyAlias, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::TyAlias,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub type TargetAlias = i64;\n").unwrap();
@@ -275,18 +336,34 @@ fn test_prepare_type_hierarchy_reference_to_function_returns_empty() {
 
     let mut writer = IndexWriter::new("ref_fn_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_func".to_string(), path: "ref_fn_crate::target_func".to_string(),
-        signature: Some("pub fn target_func()".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_func".to_string(),
+        path: "ref_fn_crate::target_func".to_string(),
+        signature: Some("pub fn target_func()".to_string()),
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
     });
     writer.add_reference(RawReference {
         file: main_str.clone(),
-        start_line: 1, start_col: 5, end_line: 1, end_col: 16,
-        target_def_id: Some(1), target_path: "ref_fn_crate::target_func".to_string(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 16,
+        target_def_id: Some(1),
+        target_path: "ref_fn_crate::target_func".to_string(),
         target_file: Some(lib_str),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub fn target_func() {}\n").unwrap();

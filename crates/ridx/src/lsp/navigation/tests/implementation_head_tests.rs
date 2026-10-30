@@ -72,26 +72,15 @@ fn a_trait_used_by_an_impl_header_is_not_implemented_by_it() {
     for (line, col) in [(1, 6), (2, 14), (3, 9), (4, 17)] {
         w.add_reference(reference(u, t, line, col));
     }
-    w.write_to(&mut fs::File::create(dir.join("t.ridx")).unwrap())
-        .unwrap();
+    w.write_to(&mut fs::File::create(dir.join("t.ridx")).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&dir).unwrap();
     let req = json!({"params": {
         "textDocument": { "uri": path_to_uri(t) },
         "position": { "line": 0, "character": 10 }
     }});
-    let res = handle_implementation(
-        &req,
-        Some(&ws),
-        &OverlayManager::new(),
-        &mut PositionConverter::new(),
-    );
-    let mut lines: Vec<u64> = res
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|l| l["range"]["start"]["line"].as_u64().unwrap())
-        .collect();
+    let res = handle_implementation(&req, Some(&ws), &OverlayManager::new(), &mut PositionConverter::new());
+    let mut lines: Vec<u64> = res.as_array().unwrap().iter().map(|l| l["range"]["start"]["line"].as_u64().unwrap()).collect();
     lines.sort();
     assert_eq!(lines, vec![0]);
     let _ = fs::remove_dir_all(&dir);

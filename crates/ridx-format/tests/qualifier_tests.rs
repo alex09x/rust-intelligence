@@ -134,9 +134,7 @@ fn test_resolve_qualifier_glob_import() {
         end_col: 2,
     });
     let mut core_buf = Vec::new();
-    core_writer
-        .write_to(&mut Cursor::new(&mut core_buf))
-        .unwrap();
+    core_writer.write_to(&mut Cursor::new(&mut core_buf)).unwrap();
     fs::write(target_dir.join("core.ridx"), core_buf).unwrap();
 
     // 2. Build user crate:
@@ -255,10 +253,7 @@ fn test_resolve_qualifier_glob_import() {
 
     // 2. Query in src/worker.rs with "fmt::Display" -> resolves to core::fmt::Display
     let res2 = ws.resolve_qualifier("src/worker.rs", "fmt::Display");
-    assert!(
-        res2.is_some(),
-        "fmt::Display should resolve via glob import"
-    );
+    assert!(res2.is_some(), "fmt::Display should resolve via glob import");
     assert_eq!(res2.unwrap().path, "core::fmt::Display");
 
     // 3. Query in src/de/impls.rs with "Error" (no super:: prefix) -> resolves via use super::*; to test_crate::de::Error

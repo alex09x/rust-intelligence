@@ -70,11 +70,7 @@ impl LensText<'_> {
             return 0;
         }
         match self.line(file, line_1based) {
-            Some(line) if !line.is_ascii() => line
-                .chars()
-                .take(char_col_1based as usize - 1)
-                .map(|c| c.len_utf16() as u32)
-                .sum(),
+            Some(line) if !line.is_ascii() => line.chars().take(char_col_1based as usize - 1).map(|c| c.len_utf16() as u32).sum(),
             _ => char_col_1based - 1,
         }
     }
@@ -85,24 +81,14 @@ impl LensText<'_> {
 /// this come from macro expansions whose span is the whole invocation, from proc macros that reuse
 /// the span of a user token for a generated item, or from a file edited since it was indexed; the
 /// text is the one the columns are converted against, so range and check agree.
-fn range_spells_name(
-    text: &mut LensText,
-    file: &str,
-    (start_line, start_col): (u32, u32),
-    (end_line, end_col): (u32, u32),
-    name: &str,
-) -> bool {
+fn range_spells_name(text: &mut LensText, file: &str, (start_line, start_col): (u32, u32), (end_line, end_col): (u32, u32), name: &str) -> bool {
     if end_line != start_line || start_col == 0 || end_col <= start_col {
         return false;
     }
     let Some(line) = text.line(file, start_line) else {
         return false;
     };
-    let spelled: String = line
-        .chars()
-        .skip((start_col - 1) as usize)
-        .take((end_col - start_col) as usize)
-        .collect();
+    let spelled: String = line.chars().skip((start_col - 1) as usize).take((end_col - start_col) as usize).collect();
     spelled == name || (spelled.strip_prefix("r#") == Some(name))
 }
 
@@ -132,41 +118,19 @@ fn index_lenses<'a>(ws: &'a WorkspaceIndex, file: &str, text: &mut LensText) -> 
             continue;
         };
         for def in r.definitions() {
-            if def.span.file_id != fid
-                || !LENS_KINDS.contains(&DefKind::from(def.kind))
-                || def.is_macro_expansion()
-            {
+            if def.span.file_id != fid || !LENS_KINDS.contains(&DefKind::from(def.kind)) || def.is_macro_expansion() {
                 continue;
             }
             let name = r.get_str(def.name_offset);
-            if name.is_empty()
-                || !range_spells_name(
-                    text,
-                    file,
-                    (def.span.start_line, def.span.start_col),
-                    (def.span.end_line, def.span.end_col),
-                    name,
-                )
-            {
+            if name.is_empty() || !range_spells_name(text, file, (def.span.start_line, def.span.start_col), (def.span.end_line, def.span.end_col), name) {
                 continue;
             }
             let utf16_start = text.utf16_col(file, def.span.start_line, def.span.start_col);
             let utf16_end = text.utf16_col(file, def.span.end_line, def.span.end_col);
-            if !seen.insert((
-                def.span.start_line.saturating_sub(1),
-                utf16_start,
-                utf16_end,
-                name,
-            )) {
+            if !seen.insert((def.span.start_line.saturating_sub(1), utf16_start, utf16_end, name)) {
                 continue;
             }
-            out.push(IndexLens {
-                line: def.span.start_line,
-                start_col: def.span.start_col,
-                utf16_start,
-                utf16_end,
-                name,
-            });
+            out.push(IndexLens { line: def.span.start_line, start_col: def.span.start_col, utf16_start, utf16_end, name });
         }
     }
     out
@@ -197,17 +161,8 @@ fn lens_json(uri: &str, lens: &IndexLens, line_1based: u32) -> Value {
 /// file. A lens whose line the edit removed or changed has no counterpart in the live buffer and
 /// is dropped; the lines that map are textually identical, so columns and names stay valid. The
 /// `data` coordinates are live, as `codeLens/resolve` expects.
-fn open_file_lenses(
-    ws: &WorkspaceIndex,
-    file: &str,
-    uri: &str,
-    overlay: &DocumentOverlay,
-) -> Vec<Value> {
-    let Some(baseline) = overlay
-        .compiled_text
-        .as_deref()
-        .or(overlay.disk_text.as_deref())
-    else {
+fn open_file_lenses(ws: &WorkspaceIndex, file: &str, uri: &str, overlay: &DocumentOverlay) -> Vec<Value> {
+    let Some(baseline) = overlay.compiled_text.as_deref().or(overlay.disk_text.as_deref()) else {
         return Vec::new();
     };
     let lenses = index_lenses(ws, file, &mut LensText::Lines(baseline.lines().collect()));
@@ -215,19 +170,11 @@ fn open_file_lenses(
         return lenses.iter().map(|l| lens_json(uri, l, l.line)).collect();
     }
     let map = LineMap::new(baseline, &overlay.text);
-    lenses
-        .iter()
-        .filter_map(|l| map.to_live(l.line).map(|live| lens_json(uri, l, live)))
-        .collect()
+    lenses.iter().filter_map(|l| map.to_live(l.line).map(|live| lens_json(uri, l, live))).collect()
 }
 
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
-pub fn handle_code_lens(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_code_lens(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let Some(ws) = workspace else {
@@ -235,26 +182,14 @@ pub fn handle_code_lens(
     };
     let lenses = match overlay_mgr.get(&file) {
         Some(overlay) => open_file_lenses(ws, &file, uri, overlay),
-        None => index_lenses(ws, &file, &mut LensText::Disk(conv))
-            .iter()
-            .map(|l| lens_json(uri, l, l.line))
-            .collect(),
+        None => index_lenses(ws, &file, &mut LensText::Disk(conv)).iter().map(|l| lens_json(uri, l, l.line)).collect(),
     };
     json!(lenses)
 }
 
 /// Handles `codeLens/resolve` requests, computing references on demand.
-pub fn handle_code_lens_resolve(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
-    let mut lens = msg
-        .get("params")
-        .cloned()
-        .or_else(|| msg.as_object().map(|_| msg.clone()))
-        .unwrap_or(Value::Null);
+pub fn handle_code_lens_resolve(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
+    let mut lens = msg.get("params").cloned().or_else(|| msg.as_object().map(|_| msg.clone())).unwrap_or(Value::Null);
 
     let data = lens.get("data").cloned().unwrap_or(Value::Null);
     let uri = data["uri"].as_str().unwrap_or("");
@@ -282,20 +217,16 @@ pub fn handle_code_lens_resolve(
                     let r_path = r.resolved_path();
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     let r_uri = path_to_uri(r_str);
-                    let (live_sl, live_sc) =
-                        if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
-                            rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
-                                .unwrap_or((r.span.start_line(), r.span.start_col()))
-                        } else {
-                            (r.span.start_line(), r.span.start_col())
-                        };
-                    let (live_el, live_ec) =
-                        if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
-                            rov.map_compiled_to_live(r.span.end_line(), r.span.end_col())
-                                .unwrap_or((r.span.end_line(), r.span.end_col()))
-                        } else {
-                            (r.span.end_line(), r.span.end_col())
-                        };
+                    let (live_sl, live_sc) = if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
+                        rov.map_compiled_to_live(r.span.start_line(), r.span.start_col()).unwrap_or((r.span.start_line(), r.span.start_col()))
+                    } else {
+                        (r.span.start_line(), r.span.start_col())
+                    };
+                    let (live_el, live_ec) = if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
+                        rov.map_compiled_to_live(r.span.end_line(), r.span.end_col()).unwrap_or((r.span.end_line(), r.span.end_col()))
+                    } else {
+                        (r.span.end_line(), r.span.end_col())
+                    };
                     let sc = conv.char_col_to_utf16_col(r_str, live_sl, live_sc);
                     let ec = conv.char_col_to_utf16_col(r_str, live_el, live_ec);
                     locations.push(json!({
@@ -311,11 +242,7 @@ pub fn handle_code_lens_resolve(
     }
 
     let count = locations.len();
-    let title = if count > 0 {
-        format!("{count} reference{}", if count == 1 { "" } else { "s" })
-    } else {
-        format!("References: {name}")
-    };
+    let title = if count > 0 { format!("{count} reference{}", if count == 1 { "" } else { "s" }) } else { format!("References: {name}") };
 
     let sl = line_1based.saturating_sub(1);
     let sc = conv.char_col_to_utf16_col(&file, line_1based, col_1based);

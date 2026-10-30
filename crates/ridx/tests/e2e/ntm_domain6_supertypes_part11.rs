@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,34 +77,74 @@ fn test_type_hierarchy_supertypes_multiple_impls_different_traits_ordered() {
 
     let mut writer = IndexWriter::new("order_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "AlphaTrait".to_string(), path: "order_crate::AlphaTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "AlphaTrait".to_string(),
+        path: "order_crate::AlphaTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "BetaTrait".to_string(), path: "order_crate::BetaTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 19,
+        def_id: 2,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "BetaTrait".to_string(),
+        path: "order_crate::BetaTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 19,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "DualType".to_string(), path: "order_crate::DualType".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 18,
+        def_id: 3,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "DualType".to_string(),
+        path: "order_crate::DualType".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 18,
     });
     writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<DualType as AlphaTrait>".to_string(), path: "<DualType as AlphaTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 1, end_line: 5, end_col: 30,
+        def_id: 4,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<DualType as AlphaTrait>".to_string(),
+        path: "<DualType as AlphaTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 5,
+        start_col: 1,
+        end_line: 5,
+        end_col: 30,
     });
     writer.add_definition(RawDefinition {
-        def_id: 5, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<DualType as BetaTrait>".to_string(), path: "<DualType as BetaTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 6, start_col: 1, end_line: 6, end_col: 29,
+        def_id: 5,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<DualType as BetaTrait>".to_string(),
+        path: "<DualType as BetaTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 6,
+        start_col: 1,
+        end_line: 6,
+        end_col: 29,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -137,22 +174,46 @@ fn test_type_hierarchy_supertypes_whitespace_around_names_in_impl() {
 
     let mut writer = IndexWriter::new("space_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "SpacedTrait".to_string(), path: "space_crate::SpacedTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "SpacedTrait".to_string(),
+        path: "space_crate::SpacedTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 21,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "SpacedStruct".to_string(), path: "space_crate::SpacedStruct".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 22,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "SpacedStruct".to_string(),
+        path: "space_crate::SpacedStruct".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 22,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<SpacedStruct as SpacedTrait>".to_string(), path: "<SpacedStruct as SpacedTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 45,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<SpacedStruct as SpacedTrait>".to_string(),
+        path: "<SpacedStruct as SpacedTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 45,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -183,16 +244,32 @@ fn test_type_hierarchy_supertypes_inherent_impl_block_ignored() {
 
     let mut writer = IndexWriter::new("inherent_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "OnlyInherent".to_string(), path: "inherent_crate::OnlyInherent".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "OnlyInherent".to_string(),
+        path: "inherent_crate::OnlyInherent".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "OnlyInherent".to_string(), path: "OnlyInherent".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 5, end_col: 2,
+        def_id: 2,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "OnlyInherent".to_string(),
+        path: "OnlyInherent".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 5,
+        end_col: 2,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -221,22 +298,46 @@ fn test_type_hierarchy_supertypes_roundtrip_response_structure() {
 
     let mut writer = IndexWriter::new("rt_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "RoundTrait".to_string(), path: "rt_crate::RoundTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "RoundTrait".to_string(),
+        path: "rt_crate::RoundTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "RoundStruct".to_string(), path: "rt_crate::RoundStruct".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 21,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "RoundStruct".to_string(),
+        path: "rt_crate::RoundStruct".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 21,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<RoundStruct as RoundTrait>".to_string(), path: "<RoundStruct as RoundTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 33,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<RoundStruct as RoundTrait>".to_string(),
+        path: "<RoundStruct as RoundTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 33,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 

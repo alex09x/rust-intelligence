@@ -93,12 +93,7 @@ pub fn cmd_refs(arg1: String, arg2: Option<String>, json: bool) {
                 }
             }
             None => {
-                println!(
-                    "{} No references found at {} [{:.1} µs]",
-                    "NotFound:".yellow().bold(),
-                    target,
-                    elapsed.as_micros()
-                );
+                println!("{} No references found at {} [{:.1} µs]", "NotFound:".yellow().bold(), target, elapsed.as_micros());
             }
         }
     } else {
@@ -116,13 +111,7 @@ pub fn cmd_refs(arg1: String, arg2: Option<String>, json: bool) {
             return;
         }
 
-        println!(
-            "{} {} reference(s) to {} across workspace [{:.1} µs]:",
-            "Found:".green().bold(),
-            refs.len(),
-            target.cyan(),
-            elapsed.as_micros()
-        );
+        println!("{} {} reference(s) to {} across workspace [{:.1} µs]:", "Found:".green().bold(), refs.len(), target.cyan(), elapsed.as_micros());
 
         for (i, r) in refs.iter().enumerate() {
             let span = r.span;

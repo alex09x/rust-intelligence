@@ -26,7 +26,6 @@ use std::sync::{Arc, Mutex};
 
 static INC_COUNTER_P6: AtomicU64 = AtomicU64::new(1600);
 
-
 fn to_uri(p: &Path) -> String {
     path_to_uri(p.to_str().unwrap())
 }
@@ -56,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -81,25 +77,48 @@ fn test_call_hierarchy_incoming_calls_caller_with_signature() {
 
     let mut writer = IndexWriter::new("sig_caller_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "service_target".to_string(), path: "sig_caller_crate::service_target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "service_target".to_string(),
+        path: "sig_caller_crate::service_target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "worker".to_string(), path: "sig_caller_crate::worker".to_string(),
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "worker".to_string(),
+        path: "sig_caller_crate::worker".to_string(),
         signature: Some("pub fn worker(val: u32) -> bool".to_string()),
         file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 7,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 19,
-        target_def_id: Some(1), target_path: "sig_caller_crate::service_target".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 19,
+        target_def_id: Some(1),
+        target_path: "sig_caller_crate::service_target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn service_target() {}\n\npub fn worker(val: u32) -> bool {\n    service_target();\n    true\n}\n").unwrap();
@@ -135,25 +154,48 @@ fn test_call_hierarchy_incoming_calls_const_fn_caller() {
 
     let mut writer = IndexWriter::new("const_caller_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "const_leaf".to_string(), path: "const_caller_crate::const_leaf".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 11,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "const_leaf".to_string(),
+        path: "const_caller_crate::const_leaf".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 11,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "calc_const".to_string(), path: "const_caller_crate::calc_const".to_string(),
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "calc_const".to_string(),
+        path: "const_caller_crate::calc_const".to_string(),
         signature: Some("const fn calc_const() -> i32".to_string()),
         file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 11,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 11,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 15,
-        target_def_id: Some(1), target_path: "const_caller_crate::const_leaf".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 15,
+        target_def_id: Some(1),
+        target_path: "const_caller_crate::const_leaf".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "const fn const_leaf() -> i32 { 1 }\n\nconst fn calc_const() -> i32 {\n    const_leaf();\n    2\n}\n").unwrap();
@@ -188,25 +230,48 @@ fn test_call_hierarchy_incoming_calls_async_fn_caller() {
 
     let mut writer = IndexWriter::new("async_caller_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "sync_task".to_string(), path: "async_caller_crate::sync_task".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "sync_task".to_string(),
+        path: "async_caller_crate::sync_task".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "async_runner".to_string(), path: "async_caller_crate::async_runner".to_string(),
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "async_runner".to_string(),
+        path: "async_caller_crate::async_runner".to_string(),
         signature: Some("async fn async_runner()".to_string()),
         file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 13,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 13,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 14,
-        target_def_id: Some(1), target_path: "async_caller_crate::sync_task".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 14,
+        target_def_id: Some(1),
+        target_path: "async_caller_crate::sync_task".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn sync_task() {}\n\nasync fn async_runner() {\n    sync_task();\n}\n").unwrap();
@@ -241,25 +306,48 @@ fn test_call_hierarchy_incoming_calls_unsafe_fn_caller() {
 
     let mut writer = IndexWriter::new("unsafe_caller_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "safe_op".to_string(), path: "unsafe_caller_crate::safe_op".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 8,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "safe_op".to_string(),
+        path: "unsafe_caller_crate::safe_op".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 8,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "raw_invoker".to_string(), path: "unsafe_caller_crate::raw_invoker".to_string(),
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "raw_invoker".to_string(),
+        path: "unsafe_caller_crate::raw_invoker".to_string(),
         signature: Some("unsafe fn raw_invoker()".to_string()),
         file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 12,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 12,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 12,
-        target_def_id: Some(1), target_path: "unsafe_caller_crate::safe_op".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 12,
+        target_def_id: Some(1),
+        target_path: "unsafe_caller_crate::safe_op".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn safe_op() {}\n\nunsafe fn raw_invoker() {\n    safe_op();\n}\n").unwrap();

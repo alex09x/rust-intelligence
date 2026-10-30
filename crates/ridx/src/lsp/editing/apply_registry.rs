@@ -35,32 +35,16 @@ impl Default for ApplyEditRegistry {
 
 impl ApplyEditRegistry {
     pub fn new() -> Self {
-        Self {
-            next_id: AtomicU64::new(10000),
-            pending: Mutex::new(HashMap::new()),
-        }
+        Self { next_id: AtomicU64::new(10000), pending: Mutex::new(HashMap::new()) }
     }
 
     pub fn get_next_id(&self) -> Value {
         json!(self.next_id.fetch_add(1, Ordering::Relaxed))
     }
 
-    pub fn register_pending(
-        &self,
-        apply_req_id: Value,
-        command_req_id: Option<Value>,
-        total_count: usize,
-        combined_edit: Value,
-    ) {
+    pub fn register_pending(&self, apply_req_id: Value, command_req_id: Option<Value>, total_count: usize, combined_edit: Value) {
         let mut lock = self.pending.lock().unwrap();
-        lock.insert(
-            apply_req_id,
-            PendingApplyState {
-                command_req_id,
-                total_count,
-                combined_edit,
-            },
-        );
+        lock.insert(apply_req_id, PendingApplyState { command_req_id, total_count, combined_edit });
     }
 
     pub fn handle_response(&self, msg: &Value) -> Option<(Option<Value>, Value)> {
@@ -68,11 +52,7 @@ impl ApplyEditRegistry {
         let mut lock = self.pending.lock().unwrap();
         let state = lock.remove(resp_id)?;
 
-        let client_applied = msg
-            .get("result")
-            .and_then(|r| r.get("applied"))
-            .and_then(|a| a.as_bool())
-            .unwrap_or(false);
+        let client_applied = msg.get("result").and_then(|r| r.get("applied")).and_then(|a| a.as_bool()).unwrap_or(false);
 
         if client_applied {
             Some((
@@ -84,10 +64,7 @@ impl ApplyEditRegistry {
                 }),
             ))
         } else {
-            Some((
-                state.command_req_id,
-                json!({ "applied": false, "count": 0, "failure": "client_rejected" }),
-            ))
+            Some((state.command_req_id, json!({ "applied": false, "count": 0, "failure": "client_rejected" })))
         }
     }
 
@@ -111,12 +88,6 @@ mod tests {
         r1.register_pending(json!(10000), Some(json!(404)), 2, json!({"test": 1}));
         let ack = json!({ "id": 10000, "result": { "applied": true } });
         assert_eq!(r2.handle_response(&ack), None);
-        assert_eq!(
-            r1.handle_response(&ack),
-            Some((
-                Some(json!(404)),
-                json!({ "applied": true, "count": 2, "edit": { "test": 1 } })
-            ))
-        );
+        assert_eq!(r1.handle_response(&ack), Some((Some(json!(404)), json!({ "applied": true, "count": 2, "edit": { "test": 1 } }))));
     }
 }

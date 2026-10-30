@@ -17,8 +17,7 @@ use ridx::lsp::presentation::color::{handle_color_presentation, handle_document_
 use ridx::lsp::presentation::folding::handle_folding_range;
 use ridx::lsp::presentation::lens::{handle_code_lens, handle_code_lens_resolve};
 use ridx::lsp::presentation::tokens::{
-    handle_semantic_tokens_delta, handle_semantic_tokens_full, handle_semantic_tokens_range,
-    TOKEN_TYPE_FUNCTION, TOKEN_TYPE_INTERFACE, TOKEN_TYPE_METHOD, TOKEN_TYPE_STRUCT,
+    handle_semantic_tokens_delta, handle_semantic_tokens_full, handle_semantic_tokens_range, TOKEN_TYPE_FUNCTION, TOKEN_TYPE_INTERFACE, TOKEN_TYPE_METHOD, TOKEN_TYPE_STRUCT,
 };
 use ridx::lsp::presentation::{handle_document_link, handle_selection_range};
 use ridx::lsp::protocol::{path_to_uri, PositionConverter};
@@ -42,18 +41,11 @@ fn test_l2_semantic_tokens_full_compiler_grounded() {
     let res = handle_semantic_tokens_full(&full_req, Some(ws), &overlay_mgr, &mut conv);
     assert!(res.is_object(), "semanticTokens/full must return an object");
     let result_id = res["resultId"].as_str().expect("resultId must be present");
-    assert!(
-        result_id.starts_with("ridx-st-"),
-        "resultId must follow ridx-st- convention"
-    );
+    assert!(result_id.starts_with("ridx-st-"), "resultId must follow ridx-st- convention");
 
     let data = res["data"].as_array().expect("data array must be present");
     assert!(!data.is_empty(), "Tokens data must not be empty for traits_and_generics");
-    assert_eq!(
-        data.len() % 5,
-        0,
-        "Tokens data length must be a multiple of 5 (LSP 5-tuple)"
-    );
+    assert_eq!(data.len() % 5, 0, "Tokens data length must be a multiple of 5 (LSP 5-tuple)");
 
     let mut token_types = Vec::new();
     for chunk in data.chunks(5) {
@@ -61,14 +53,8 @@ fn test_l2_semantic_tokens_full_compiler_grounded() {
         token_types.push(t_type);
     }
 
-    assert!(
-        token_types.contains(&TOKEN_TYPE_STRUCT) || token_types.contains(&TOKEN_TYPE_INTERFACE),
-        "Tokens must contain structs or interfaces/traits from compiler index"
-    );
-    assert!(
-        token_types.contains(&TOKEN_TYPE_FUNCTION) || token_types.contains(&TOKEN_TYPE_METHOD),
-        "Tokens must contain functions or methods from compiler index"
-    );
+    assert!(token_types.contains(&TOKEN_TYPE_STRUCT) || token_types.contains(&TOKEN_TYPE_INTERFACE), "Tokens must contain structs or interfaces/traits from compiler index");
+    assert!(token_types.contains(&TOKEN_TYPE_FUNCTION) || token_types.contains(&TOKEN_TYPE_METHOD), "Tokens must contain functions or methods from compiler index");
 }
 
 #[test]
@@ -100,8 +86,7 @@ fn test_l2_semantic_tokens_delta_caching_and_edits() {
     let new_id = delta_res["resultId"].as_str().unwrap();
 
     // 2. Open dirty overlay with new code
-    let modified_code = "pub fn new_helper() {}\n".to_string()
-        + &std::fs::read_to_string(&lib_file).unwrap();
+    let modified_code = "pub fn new_helper() {}\n".to_string() + &std::fs::read_to_string(&lib_file).unwrap();
     overlay_mgr.open_document(&uri, lib_file.to_str().unwrap(), 1, modified_code);
 
     let delta_req_after = json!({
@@ -110,17 +95,10 @@ fn test_l2_semantic_tokens_delta_caching_and_edits() {
             "previousResultId": new_id
         }
     });
-    let delta_res_after =
-        handle_semantic_tokens_delta(&delta_req_after, Some(ws), &overlay_mgr, &mut conv);
+    let delta_res_after = handle_semantic_tokens_delta(&delta_req_after, Some(ws), &overlay_mgr, &mut conv);
     let edits_after = delta_res_after["edits"].as_array().expect("edits array");
-    assert!(
-        !edits_after.is_empty(),
-        "Modified document must produce delta edits"
-    );
-    assert!(
-        edits_after[0]["start"].as_u64().is_some(),
-        "Edit must specify start offset"
-    );
+    assert!(!edits_after.is_empty(), "Modified document must produce delta edits");
+    assert!(edits_after[0]["start"].as_u64().is_some(), "Edit must specify start offset");
 }
 
 #[test]
@@ -144,10 +122,7 @@ fn test_l2_semantic_tokens_range_bounded() {
 
     let res = handle_semantic_tokens_range(&range_req, Some(ws), &overlay_mgr, &mut conv);
     let data = res["data"].as_array().expect("data array");
-    assert!(
-        !data.is_empty(),
-        "Range request over trait definition must find tokens"
-    );
+    assert!(!data.is_empty(), "Range request over trait definition must find tokens");
     assert_eq!(data.len() % 5, 0, "Range tokens must be 5-tuples");
 }
 
@@ -166,25 +141,16 @@ fn test_l2_folding_range_and_code_lens() {
     });
     let fold_res = handle_folding_range(&fold_req, &overlay_mgr);
     let fold_ranges = fold_res.as_array().expect("folding ranges array");
-    assert!(
-        !fold_ranges.is_empty(),
-        "Folding ranges must be generated for traits_and_generics"
-    );
+    assert!(!fold_ranges.is_empty(), "Folding ranges must be generated for traits_and_generics");
     for r in fold_ranges {
-        assert!(
-            r["endLine"].as_u64().unwrap() > r["startLine"].as_u64().unwrap(),
-            "End line must be strictly greater than start line"
-        );
+        assert!(r["endLine"].as_u64().unwrap() > r["startLine"].as_u64().unwrap(), "End line must be strictly greater than start line");
     }
 
     // 2. Folding range on live overlay buffer
     let code = "fn block_test() {\n    let x = 1;\n    let y = 2;\n}\n";
     overlay_mgr.open_document(&uri, lib_file.to_str().unwrap(), 1, code.to_string());
     let fold_res_overlay = handle_folding_range(&fold_req, &overlay_mgr);
-    assert!(
-        fold_res_overlay.is_array(),
-        "Overlay folding ranges must return array"
-    );
+    assert!(fold_res_overlay.is_array(), "Overlay folding ranges must return array");
 
     // 3. Code lens on compiler-indexed workspace
     let lens_req = json!({
@@ -196,30 +162,14 @@ fn test_l2_folding_range_and_code_lens() {
     let empty_overlay = OverlayManager::new();
     let lens_res = handle_code_lens(&lens_req, Some(ws), &empty_overlay, &mut conv);
     let lenses = lens_res.as_array().expect("code lens array");
-    assert!(
-        !lenses.is_empty(),
-        "Code lenses must be generated for definitions"
-    );
-    assert!(
-        lenses[0]["data"].is_object(),
-        "Unresolved code lens must carry data payload"
-    );
+    assert!(!lenses.is_empty(), "Code lenses must be generated for definitions");
+    assert!(lenses[0]["data"].is_object(), "Unresolved code lens must carry data payload");
 
     let resolve_req = json!({ "params": &lenses[0] });
     let resolved = handle_code_lens_resolve(&resolve_req, Some(ws), &empty_overlay, &mut conv);
     assert!(!resolved.is_null(), "codeLens/resolve returns params");
-    assert!(
-        resolved["command"]["title"]
-            .as_str()
-            .map(|t| t.contains("reference") || t.contains("References"))
-            .unwrap_or(false),
-        "Resolved code lens must carry reference title"
-    );
-    assert_eq!(
-        resolved["command"]["command"],
-        "ridx.showReferences",
-        "Code lens command must match registered ridx.showReferences"
-    );
+    assert!(resolved["command"]["title"].as_str().map(|t| t.contains("reference") || t.contains("References")).unwrap_or(false), "Resolved code lens must carry reference title");
+    assert_eq!(resolved["command"]["command"], "ridx.showReferences", "Code lens command must match registered ridx.showReferences");
 
     // 4. Code lens with a dirty overlay: the buffer is the indexed text with two lines inserted
     // at the top, opened as `didOpen` opens it. The lenses are the index's, two lines down, and
@@ -234,18 +184,11 @@ fn test_l2_folding_range_and_code_lens() {
     for (closed, dirty) in lenses.iter().zip(dirty_arr) {
         assert_eq!(dirty["data"]["name"], closed["data"]["name"]);
         assert_eq!(dirty["range"]["start"]["character"], closed["range"]["start"]["character"]);
-        assert_eq!(
-            dirty["range"]["start"]["line"].as_u64().unwrap(),
-            closed["range"]["start"]["line"].as_u64().unwrap() + 2
-        );
+        assert_eq!(dirty["range"]["start"]["line"].as_u64().unwrap(), closed["range"]["start"]["line"].as_u64().unwrap() + 2);
         assert_eq!(dirty["data"]["line"].as_u64().unwrap(), closed["data"]["line"].as_u64().unwrap() + 2);
     }
-    let dirty_resolved =
-        handle_code_lens_resolve(&json!({ "params": &dirty_arr[0] }), Some(ws), &dirty_overlay, &mut conv);
-    assert!(
-        dirty_resolved["command"]["title"].as_str().is_some(),
-        "Dirty overlay code lens must resolve cleanly"
-    );
+    let dirty_resolved = handle_code_lens_resolve(&json!({ "params": &dirty_arr[0] }), Some(ws), &dirty_overlay, &mut conv);
+    assert!(dirty_resolved["command"]["title"].as_str().is_some(), "Dirty overlay code lens must resolve cleanly");
 
     // 5. Folding range ignores braces in strings and comments
     let tricky_file = fixture_dir("traits_and_generics").join("src/tricky_fold.rs");
@@ -256,11 +199,7 @@ fn test_l2_folding_range_and_code_lens() {
     let tricky_res = handle_folding_range(&tricky_req, &empty_overlay);
     let _ = std::fs::remove_file(&tricky_file);
     let tricky_folds = tricky_res.as_array().unwrap();
-    assert_eq!(
-        tricky_folds.len(),
-        1,
-        "Only outer function brace should form a folding range, got: {tricky_folds:?}"
-    );
+    assert_eq!(tricky_folds.len(), 1, "Only outer function brace should form a folding range, got: {tricky_folds:?}");
     assert_eq!(tricky_folds[0]["startLine"], 0);
     assert_eq!(tricky_folds[0]["endLine"], 4);
 }
@@ -310,12 +249,7 @@ fn test_l2_code_lens_command_declared_in_execute_command_provider() {
     let mut lc = ridx::lsp::lifecycle::LifecycleManager::new();
     let init_req = json!({ "params": { "capabilities": {} } });
     let (init_res, _) = lc.handle_initialize(&init_req).expect("initialize result");
-    let exec_cmds = init_res["capabilities"]["executeCommandProvider"]["commands"]
-        .as_array()
-        .expect("executeCommandProvider.commands");
+    let exec_cmds = init_res["capabilities"]["executeCommandProvider"]["commands"].as_array().expect("executeCommandProvider.commands");
     let has_cmd = exec_cmds.iter().any(|c| c.as_str() == Some(cmd));
-    assert!(
-        has_cmd,
-        "Code lens command '{cmd}' must be declared in executeCommandProvider.commands: {exec_cmds:?}"
-    );
+    assert!(has_cmd, "Code lens command '{cmd}' must be declared in executeCommandProvider.commands: {exec_cmds:?}");
 }

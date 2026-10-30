@@ -47,12 +47,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -75,9 +70,7 @@ fn test_references_cross_crate_downstream_dependency() {
     ws.add_crate("core_lib", "0.1.0").unwrap();
     ws.add_crate("app_cli", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("core_lib", "src/lib.rs", "pub struct «CoreToken»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("core_lib", "src/lib.rs", "pub struct «CoreToken»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_refs_to_foreign_def("app_cli", "src/main.rs", "use core_lib::CoreToken;\npub fn run() { let _ = «CoreToken»; }\n", "core_lib", ids[0]).unwrap();
@@ -103,9 +96,7 @@ fn test_references_cross_crate_multiple_downstream_crates() {
     ws.add_crate("consumer_one", "0.1.0").unwrap();
     ws.add_crate("consumer_two", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs("shared_model", "src/lib.rs", "pub struct «GlobalItem»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("shared_model", "src/lib.rs", "pub struct «GlobalItem»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_refs_to_foreign_def("consumer_one", "src/lib.rs", "«GlobalItem»;\n", "shared_model", ids[0]).unwrap();

@@ -98,11 +98,7 @@ fn test_decl_overlay_dirty_imports_returns_null() {
     let code = fs::read_to_string(&file_path).unwrap();
 
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.clone());
-    overlay_mgr.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("use std::io;\n{}", code),
-    );
+    overlay_mgr.update(file_path.to_str().unwrap(), 2, format!("use std::io;\n{}", code));
 
     let req = json!({
         "params": {

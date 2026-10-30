@@ -54,9 +54,7 @@ fn shard(text: &str, defs: Vec<RawDefinition>) -> Shard {
     }
     writer.add_file_hash("src/lib.rs", normalized_source_hash(text.as_bytes()));
     let shard = dir.join("index.ridx");
-    writer
-        .write_to(&mut fs::File::create(&shard).unwrap())
-        .unwrap();
+    writer.write_to(&mut fs::File::create(&shard).unwrap()).unwrap();
     let ws = WorkspaceIndex::open(&shard).expect("open the shard");
     Shard { dir, ws }
 }
@@ -131,13 +129,7 @@ fn rows(result: &Value) -> Vec<(u64, u64, u64, u64, u64, String)> {
 const TEXT: &str = "pub fn alpha(x: u32) -> u32 {\n    let y = x;\n    y\n}\n\npub fn beta() {}\n";
 
 fn two_fns() -> Shard {
-    shard(
-        TEXT,
-        vec![
-            func("alpha", at(TEXT, "alpha")),
-            func("beta", at(TEXT, "beta")),
-        ],
-    )
+    shard(TEXT, vec![func("alpha", at(TEXT, "alpha")), func("beta", at(TEXT, "beta"))])
 }
 
 #[test]
@@ -148,13 +140,7 @@ fn test_code_lens_open_unmodified_buffer_answers_like_the_closed_file() {
     assert!(!mgr.get(&sh.file()).unwrap().is_dirty());
     let open_answer = lenses(Some(&sh.ws), &mgr, &sh.file());
     // The buffer also declares the parameter `x` and the local `y`; neither is a lens.
-    assert_eq!(
-        rows(&open_answer),
-        vec![
-            (0, 7, 12, 1, 8, "alpha".to_string()),
-            (5, 7, 11, 6, 8, "beta".to_string())
-        ]
-    );
+    assert_eq!(rows(&open_answer), vec![(0, 7, 12, 1, 8, "alpha".to_string()), (5, 7, 11, 6, 8, "beta".to_string())]);
     assert_eq!(open_answer, closed(&sh));
 }
 
@@ -168,32 +154,17 @@ fn test_code_lens_open_dirty_buffer_moves_lenses_and_drops_the_edited_line() {
     // Two lines inserted at the top: both lenses move down by two lines, range and `data` alike.
     assert!(mgr.update(&sh.file(), 2, format!("// one\n// two\n{TEXT}")));
     assert!(mgr.get(&sh.file()).unwrap().is_dirty());
-    assert_eq!(
-        rows(&lenses(Some(&sh.ws), &mgr, &sh.file())),
-        vec![
-            (2, 7, 12, 3, 8, "alpha".to_string()),
-            (7, 7, 11, 8, 8, "beta".to_string())
-        ]
-    );
+    assert_eq!(rows(&lenses(Some(&sh.ws), &mgr, &sh.file())), vec![(2, 7, 12, 3, 8, "alpha".to_string()), (7, 7, 11, 8, 8, "beta".to_string())]);
     // `beta` renamed in the buffer: its line has no counterpart in the indexed text, so it has
     // no lens; `alpha` keeps its own.
     assert!(mgr.update(&sh.file(), 3, TEXT.replace("fn beta()", "fn beta2()")));
-    assert_eq!(
-        rows(&lenses(Some(&sh.ws), &mgr, &sh.file())),
-        vec![(0, 7, 12, 1, 8, "alpha".to_string())]
-    );
+    assert_eq!(rows(&lenses(Some(&sh.ws), &mgr, &sh.file())), vec![(0, 7, 12, 1, 8, "alpha".to_string())]);
 }
 
 #[test]
 fn test_code_lens_open_buffer_without_compiled_baseline_falls_back_to_the_disk_text() {
     let indexed = "pub fn alpha() {}\npub fn beta() {}\n";
-    let sh = shard(
-        indexed,
-        vec![
-            func("alpha", at(indexed, "alpha")),
-            func("beta", at(indexed, "beta")),
-        ],
-    );
+    let sh = shard(indexed, vec![func("alpha", at(indexed, "alpha")), func("beta", at(indexed, "beta"))]);
     // The file changed on disk after indexing and the buffer differs from both: no compiled
     // baseline. The disk text is the baseline, as for a closed file: `beta` no longer spells
     // its name there, `alpha` does and follows the inserted line.
@@ -204,14 +175,8 @@ fn test_code_lens_open_buffer_without_compiled_baseline_falls_back_to_the_disk_t
     let overlay = mgr.get(&sh.file()).unwrap();
     assert_eq!(overlay.compiled_text, None);
     assert_eq!(overlay.disk_text.as_deref(), Some(on_disk));
-    assert_eq!(
-        rows(&lenses(Some(&sh.ws), &mgr, &sh.file())),
-        vec![(1, 7, 12, 2, 8, "alpha".to_string())]
-    );
-    assert_eq!(
-        rows(&closed(&sh)),
-        vec![(0, 7, 12, 1, 8, "alpha".to_string())]
-    );
+    assert_eq!(rows(&lenses(Some(&sh.ws), &mgr, &sh.file())), vec![(1, 7, 12, 2, 8, "alpha".to_string())]);
+    assert_eq!(rows(&closed(&sh)), vec![(0, 7, 12, 1, 8, "alpha".to_string())]);
 }
 
 #[test]
@@ -235,10 +200,7 @@ fn test_code_lens_open_buffer_keeps_utf16_columns_on_non_ascii_lines_through_a_s
     assert_eq!(unmodified, vec![(0, 16, 21, 1, 16, "alpha".to_string())]);
     assert_eq!(unmodified, rows(&closed(&sh)));
     assert!(mgr.update(&sh.file(), 2, format!("// top\n{text}")));
-    assert_eq!(
-        rows(&lenses(Some(&sh.ws), &mgr, &sh.file())),
-        vec![(1, 16, 21, 2, 16, "alpha".to_string())]
-    );
+    assert_eq!(rows(&lenses(Some(&sh.ws), &mgr, &sh.file())), vec![(1, 16, 21, 2, 16, "alpha".to_string())]);
 }
 
 #[test]
@@ -251,8 +213,5 @@ fn test_code_lens_open_buffer_with_crlf_line_endings() {
     assert_eq!(unmodified, vec![(1, 3, 12, 2, 4, "crlf_func".to_string())]);
     assert_eq!(unmodified, rows(&closed(&sh)));
     assert!(mgr.update(&sh.file(), 2, format!("// x\r\n{text}")));
-    assert_eq!(
-        rows(&lenses(Some(&sh.ws), &mgr, &sh.file())),
-        vec![(2, 3, 12, 3, 4, "crlf_func".to_string())]
-    );
+    assert_eq!(rows(&lenses(Some(&sh.ws), &mgr, &sh.file())), vec![(2, 3, 12, 3, 4, "crlf_func".to_string())]);
 }

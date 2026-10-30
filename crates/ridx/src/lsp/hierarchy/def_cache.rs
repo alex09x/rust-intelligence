@@ -50,35 +50,18 @@ pub fn make_cached_def(sym: &WorkspaceSymbol, kind: u32) -> CachedDef {
         "start": { "line": sym.span.start_line().saturating_sub(1), "character": sym.span.start_col().saturating_sub(1) },
         "end": { "line": sym.span.end_line().saturating_sub(1), "character": sym.span.end_col().saturating_sub(1) }
     });
-    CachedDef {
-        uri: path_to_uri(s),
-        range,
-        kind,
-    }
+    CachedDef { uri: path_to_uri(s), range, kind }
 }
 
 pub fn find_first_trait_def(ws: &WorkspaceIndex, trait_base: &str) -> Option<CachedDef> {
-    ws.find_first_symbol(trait_base, |d| {
-        d.name == trait_base && d.kind == DefKind::Trait
-    })
-    .map(|t| make_cached_def(&t, 11))
+    ws.find_first_symbol(trait_base, |d| d.name == trait_base && d.kind == DefKind::Trait).map(|t| make_cached_def(&t, 11))
 }
 
 pub fn find_first_target_def(ws: &WorkspaceIndex, target_base: &str) -> Option<CachedDef> {
-    ws.find_first_symbol(target_base, |d| {
-        d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum)
-    })
-    .map(|t| make_cached_def(&t, lsp_symbol_kind(t.kind)))
+    ws.find_first_symbol(target_base, |d| d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum)).map(|t| make_cached_def(&t, lsp_symbol_kind(t.kind)))
 }
 
-pub fn resolve_def<F>(
-    cache: &RwLock<HashMap<Box<str>, Option<CachedDef>>>,
-    name: &str,
-    kind: u32,
-    file: &Path,
-    line: u32,
-    find_fn: F,
-) -> Value
+pub fn resolve_def<F>(cache: &RwLock<HashMap<Box<str>, Option<CachedDef>>>, name: &str, kind: u32, file: &Path, line: u32, find_fn: F) -> Value
 where
     F: FnOnce() -> Option<CachedDef>,
 {

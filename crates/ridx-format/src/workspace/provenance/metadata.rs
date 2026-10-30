@@ -29,11 +29,7 @@ impl WorkspaceIndex {
         let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
         let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
         let deps_dir = base_dir.join(".deps");
-        let cand_json = [
-            deps_dir.join(format!("{stem_without_lib}.json")),
-            deps_dir.join(format!("{stem}.json")),
-            deps_dir.join(format!("{crate_name}.json")),
-        ];
+        let cand_json = [deps_dir.join(format!("{stem_without_lib}.json")), deps_dir.join(format!("{stem}.json")), deps_dir.join(format!("{crate_name}.json"))];
         for c in &cand_json {
             if c.is_file() {
                 if let Ok(content) = fs::read(c) {
@@ -48,9 +44,7 @@ impl WorkspaceIndex {
                                     continue;
                                 }
                             } else if !info.file_hashes.is_empty() {
-                                let computed_digest = crate::format::compute_source_snapshot_digest(
-                                    &info.file_hashes,
-                                );
+                                let computed_digest = crate::format::compute_source_snapshot_digest(&info.file_hashes);
                                 let computed_gen = format!("{:016x}", computed_digest);
                                 if computed_gen != expected_generation {
                                     continue;
@@ -60,35 +54,15 @@ impl WorkspaceIndex {
                         let mtime = fs::metadata(c).and_then(|m| m.modified()).ok();
                         let mut combined_hashes = info.file_hashes;
                         let sroot_path = info.source_root.as_deref().map(Path::new);
-                        crate::format::merge_embedded_hashes_authoritative(
-                            &mut combined_hashes,
-                            embedded_hashes,
-                            sroot_path,
-                        );
-                        let gen = if !expected_generation.is_empty() {
-                            Some(expected_generation.to_string())
-                        } else {
-                            info.generation
-                        };
-                        let effective_source_root = info
-                            .source_root
-                            .as_ref()
-                            .map(PathBuf::from)
-                            .or_else(|| info.env.get("CARGO_MANIFEST_DIR").map(PathBuf::from));
+                        crate::format::merge_embedded_hashes_authoritative(&mut combined_hashes, embedded_hashes, sroot_path);
+                        let gen = if !expected_generation.is_empty() { Some(expected_generation.to_string()) } else { info.generation };
+                        let effective_source_root = info.source_root.as_ref().map(PathBuf::from).or_else(|| info.env.get("CARGO_MANIFEST_DIR").map(PathBuf::from));
 
                         let effective_target_kind = info.target_kind.or_else(|| {
-                            let base_kind = if info.env.contains_key("CARGO_BIN_NAME") {
-                                Some("bin")
-                            } else {
-                                None
-                            };
+                            let base_kind = if info.env.contains_key("CARGO_BIN_NAME") { Some("bin") } else { None };
                             if base_kind.is_some() || !info.compiler_args.is_empty() {
                                 let manifest_dir = effective_source_root.as_deref();
-                                Some(super::target_kind::classify_target_with_manifest(
-                                    base_kind,
-                                    &info.compiler_args,
-                                    manifest_dir,
-                                ))
+                                Some(super::target_kind::classify_target_with_manifest(base_kind, &info.compiler_args, manifest_dir))
                             } else {
                                 None
                             }
@@ -110,16 +84,8 @@ impl WorkspaceIndex {
                 }
             }
         }
-        let gen = if !expected_generation.is_empty() {
-            Some(expected_generation.to_string())
-        } else {
-            None
-        };
-        let ukey = if !expected_unit_key.is_empty() {
-            Some(expected_unit_key.to_string())
-        } else {
-            None
-        };
+        let gen = if !expected_generation.is_empty() { Some(expected_generation.to_string()) } else { None };
+        let ukey = if !expected_unit_key.is_empty() { Some(expected_unit_key.to_string()) } else { None };
         LoadedFileMetadata {
             source_root: None,
             unit_key: ukey,

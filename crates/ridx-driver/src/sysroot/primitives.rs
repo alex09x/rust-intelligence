@@ -76,32 +76,20 @@ pub fn extract_primitive_inherent_impls<'tcx>(
                     continue;
                 }
                 let a_kind = tcx.def_kind(assoc_did);
-                let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
-                );
+                let a_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did)));
                 let a_sig = match a_kind {
-                    DefKind::Fn => Some(sanitize_type_name(
-                        &tcx.fn_sig(assoc_did).skip_binder().to_string(),
-                    )),
+                    DefKind::Fn => Some(sanitize_type_name(&tcx.fn_sig(assoc_did).skip_binder().to_string())),
                     DefKind::AssocFn => Some(format_assoc_fn_sig(tcx, assoc_did)),
                     _ => None,
                 };
-                let a_span = tcx
-                    .def_ident_span(assoc_did)
-                    .unwrap_or_else(|| tcx.def_span(assoc_did));
+                let a_span = tcx.def_ident_span(assoc_did).unwrap_or_else(|| tcx.def_span(assoc_did));
                 let (a_file, a_sl, a_sc, a_el, a_ec) = if !a_span.is_dummy() {
                     let sm = tcx.sess.source_map();
                     let lo = sm.lookup_char_pos(a_span.lo());
                     let hi = sm.lookup_char_pos(a_span.hi());
                     let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
                     let remapped = remap_sysroot_path(&raw_file, sysroot_src);
-                    (
-                        remapped,
-                        lo.line as u32,
-                        (lo.col.0 + 1) as u32,
-                        hi.line as u32,
-                        (hi.col.0 + 1) as u32,
-                    )
+                    (remapped, lo.line as u32, (lo.col.0 + 1) as u32, hi.line as u32, (hi.col.0 + 1) as u32)
                 } else {
                     (String::new(), 0, 0, 0, 0)
                 };

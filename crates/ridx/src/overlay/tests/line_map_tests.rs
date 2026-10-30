@@ -25,10 +25,7 @@ fn reference_to_live(baseline_text: &str, live_text: &str, baseline_line: u32) -
     }
     let curr_lines: Vec<&str> = live_text.lines().collect();
     let mut prefix_common = 0;
-    while prefix_common < curr_lines.len()
-        && prefix_common < baseline_lines.len()
-        && curr_lines[prefix_common] == baseline_lines[prefix_common]
-    {
+    while prefix_common < curr_lines.len() && prefix_common < baseline_lines.len() && curr_lines[prefix_common] == baseline_lines[prefix_common] {
         prefix_common += 1;
     }
     if b_idx < prefix_common {
@@ -37,8 +34,7 @@ fn reference_to_live(baseline_text: &str, live_text: &str, baseline_line: u32) -
     let mut suffix_common = 0;
     while suffix_common < curr_lines.len().saturating_sub(prefix_common)
         && suffix_common < baseline_lines.len().saturating_sub(prefix_common)
-        && curr_lines[curr_lines.len() - 1 - suffix_common]
-            == baseline_lines[baseline_lines.len() - 1 - suffix_common]
+        && curr_lines[curr_lines.len() - 1 - suffix_common] == baseline_lines[baseline_lines.len() - 1 - suffix_common]
     {
         suffix_common += 1;
     }
@@ -69,10 +65,7 @@ const CASES: &[(&str, &str)] = &[
     ("a\r\nb\r\nc\r\n", "a\r\nb\r\nc\r\n"),
     ("a\r\nb\r\nc\r\n", "a\nb\nc\n"),
     ("a\r\nb\r\nc\r\n", "// top\r\na\r\nb\r\nc\r\n"),
-    (
-        "fn a() {}\nfn b() {}\nfn c() {}\n",
-        "fn a() {}\nfn c() {}\n",
-    ),
+    ("fn a() {}\nfn b() {}\nfn c() {}\n", "fn a() {}\nfn c() {}\n"),
     ("fn a() {}\nfn b() {}\n", "fn a() {}\n\nfn b() {}\n"),
 ];
 
@@ -82,21 +75,9 @@ fn test_line_map_matches_the_per_line_algorithm_in_both_directions() {
         let map = LineMap::new(baseline, live);
         let span = baseline.lines().count().max(live.lines().count()) as u32 + 2;
         for line in 0..=span {
-            assert_eq!(
-                map.to_live(line),
-                reference_to_live(baseline, live, line),
-                "to_live({line}) for {baseline:?} -> {live:?}"
-            );
-            assert_eq!(
-                map.to_baseline(line),
-                reference_to_live(live, baseline, line),
-                "to_baseline({line}) for {baseline:?} -> {live:?}"
-            );
-            assert_eq!(
-                map_text_line_to_live(baseline, live, line),
-                map.to_live(line),
-                "map_text_line_to_live({line}) for {baseline:?} -> {live:?}"
-            );
+            assert_eq!(map.to_live(line), reference_to_live(baseline, live, line), "to_live({line}) for {baseline:?} -> {live:?}");
+            assert_eq!(map.to_baseline(line), reference_to_live(live, baseline, line), "to_baseline({line}) for {baseline:?} -> {live:?}");
+            assert_eq!(map_text_line_to_live(baseline, live, line), map.to_live(line), "map_text_line_to_live({line}) for {baseline:?} -> {live:?}");
         }
     }
 }
@@ -135,13 +116,7 @@ fn test_line_map_shift_edit_and_removal() {
 
 #[test]
 fn test_overlay_line_map_follows_the_compiled_baseline() {
-    let mut ov = DocumentOverlay::new_with_provenance(
-        "file:///test.rs",
-        "/test.rs",
-        1,
-        "top\nmid\nbot\n".to_string(),
-        false,
-    );
+    let mut ov = DocumentOverlay::new_with_provenance("file:///test.rs", "/test.rs", 1, "top\nmid\nbot\n".to_string(), false);
     assert_eq!(ov.line_map(), None);
     ov.advance_compiled_baseline("top\nold_mid\nbot\n".to_string());
     let map = ov.line_map().expect("baseline set");

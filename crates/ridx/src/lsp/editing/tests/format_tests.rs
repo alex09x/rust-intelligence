@@ -36,19 +36,12 @@ fn test_format_and_actions() {
     let on_type_fmt = handle_on_type_formatting(&fmt_req, &overlay_mgr);
     assert!(on_type_fmt.as_array().is_some());
 
-    let missing_fmt_req =
-        json!({ "params": { "textDocument": { "uri": "file:///nonexistent/file.rs" } } });
+    let missing_fmt_req = json!({ "params": { "textDocument": { "uri": "file:///nonexistent/file.rs" } } });
     assert_eq!(handle_formatting(&missing_fmt_req, &overlay_mgr), json!([]));
 
     let unformatted_file = temp_dir.join("unformatted.rs");
     let unformatted_uri = path_to_uri(unformatted_file.to_str().unwrap());
-    overlay_mgr.open_with_provenance(
-        &unformatted_uri,
-        unformatted_file.to_str().unwrap(),
-        1,
-        "fn  unformatted  (  x : i32 ) -> i32 {   x   }\n".to_string(),
-        true,
-    );
+    overlay_mgr.open_with_provenance(&unformatted_uri, unformatted_file.to_str().unwrap(), 1, "fn  unformatted  (  x : i32 ) -> i32 {   x   }\n".to_string(), true);
     let unformatted_req = json!({
         "params": {
             "textDocument": { "uri": &unformatted_uri }
@@ -99,10 +92,7 @@ fn test_format_and_actions() {
     // 3. Execute command
     assert!(handle_execute_command(&action_req, &mut overlay_mgr).is_err());
     let cmd_resolve = json!({ "params": { "command": "ridx.resolveWorkspace" } });
-    assert_eq!(
-        handle_execute_command(&cmd_resolve, &mut overlay_mgr).unwrap()["resolved"],
-        true
-    );
+    assert_eq!(handle_execute_command(&cmd_resolve, &mut overlay_mgr).unwrap()["resolved"], true);
 
     // 4. Edition helper
     let cargo_toml = temp_dir.join("Cargo.toml");
@@ -116,11 +106,7 @@ fn test_format_and_actions() {
     fs::create_dir_all(sub_file.parent().unwrap()).unwrap();
     fs::write(&sub_file, "fn test() {}").unwrap();
     let sub_cargo = sub_dir.join("Cargo.toml");
-    fs::write(
-        &sub_cargo,
-        "[package]\nname = \"sub\"\nedition.workspace = true\n",
-    )
-    .unwrap();
+    fs::write(&sub_cargo, "[package]\nname = \"sub\"\nedition.workspace = true\n").unwrap();
     let root_cargo = temp_dir.join("Cargo.toml");
     fs::write(&root_cargo, "[workspace.package]\nedition = \"2021\"\n").unwrap();
     assert_eq!(find_crate_edition(sub_file.to_str().unwrap()), "2021");
@@ -128,13 +114,7 @@ fn test_format_and_actions() {
     // Already formatted file returns empty edits
     let already_fmt_file = temp_dir.join("already_formatted.rs");
     let already_fmt_uri = path_to_uri(already_fmt_file.to_str().unwrap());
-    overlay_mgr.open_with_provenance(
-        &already_fmt_uri,
-        already_fmt_file.to_str().unwrap(),
-        1,
-        "fn already_formatted(x: i32) -> i32 {\n    x\n}\n".to_string(),
-        true,
-    );
+    overlay_mgr.open_with_provenance(&already_fmt_uri, already_fmt_file.to_str().unwrap(), 1, "fn already_formatted(x: i32) -> i32 {\n    x\n}\n".to_string(), true);
     let already_fmt_req = json!({
         "params": {
             "textDocument": { "uri": &already_fmt_uri }
@@ -145,13 +125,7 @@ fn test_format_and_actions() {
     // Invalid syntax formatting returns empty edits
     let broken_fmt_file = temp_dir.join("broken.rs");
     let broken_fmt_uri = path_to_uri(broken_fmt_file.to_str().unwrap());
-    overlay_mgr.open_with_provenance(
-        &broken_fmt_uri,
-        broken_fmt_file.to_str().unwrap(),
-        1,
-        "fn broken( {{{ \n".to_string(),
-        true,
-    );
+    overlay_mgr.open_with_provenance(&broken_fmt_uri, broken_fmt_file.to_str().unwrap(), 1, "fn broken( {{{ \n".to_string(), true);
     let broken_fmt_req = json!({
         "params": {
             "textDocument": { "uri": &broken_fmt_uri }
@@ -168,11 +142,7 @@ fn test_format_and_actions() {
     assert_eq!(find_crate_edition(file_path.to_str().unwrap()), "2015");
 
     // Edition with workspace.package 2024
-    fs::write(
-        &cargo_toml,
-        "[package]\nname = \"root\"\nedition = true\n\n[workspace.package]\nedition = \"2024\"\n",
-    )
-    .unwrap();
+    fs::write(&cargo_toml, "[package]\nname = \"root\"\nedition = true\n\n[workspace.package]\nedition = \"2024\"\n").unwrap();
     assert_eq!(find_crate_edition(file_path.to_str().unwrap()), "2024");
 
     let _ = fs::remove_dir_all(&temp_dir);

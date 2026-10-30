@@ -31,9 +31,7 @@ fn make_pos_req(uri: &str, line: u32, col: u32) -> Value {
 fn test_implementation_cross_file_struct_two_impl_files() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_1", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_1", "src/models.rs", "pub struct «SessionData»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_1", "src/models.rs", "pub struct «SessionData»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("pkg_i5_1", "src/file_a.rs", "«impl SessionData» {}\n", "pkg_i5_1", ids[0]).unwrap();
@@ -62,9 +60,7 @@ fn test_implementation_cross_file_struct_two_impl_files() {
 fn test_implementation_cross_file_trait_three_implementors() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_2", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_2", "src/traits.rs", "pub trait «Lifecycle»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_2", "src/traits.rs", "pub trait «Lifecycle»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_source_file_with_impl_refs("pkg_i5_2", "src/impl_a.rs", "«impl Lifecycle for ServiceA» {}\n", "pkg_i5_2", ids[0]).unwrap();
@@ -87,9 +83,7 @@ fn test_implementation_cross_file_trait_three_implementors() {
 fn test_implementation_marker_trait_no_methods() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_3", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_3", "src/lib.rs", "pub trait «Marker»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_3", "src/lib.rs", "pub trait «Marker»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait Marker;\n«impl Marker for MyType» {}\n";
@@ -112,9 +106,7 @@ fn test_implementation_marker_trait_no_methods() {
 fn test_implementation_generic_struct_concrete_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_4", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_4", "src/lib.rs", "pub struct «Stack»<T>(pub Vec<T>);\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_4", "src/lib.rs", "pub struct «Stack»<T>(pub Vec<T>);\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct Stack<T>(pub Vec<T>);\n«impl Stack<i32>» {}\n";
@@ -136,9 +128,7 @@ fn test_implementation_generic_struct_concrete_impl() {
 fn test_implementation_generic_struct_generic_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_5", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_5", "src/lib.rs", "pub struct «Queue»<T>(pub Vec<T>);\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_5", "src/lib.rs", "pub struct «Queue»<T>(pub Vec<T>);\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct Queue<T>(pub Vec<T>);\n«impl<T> Queue<T>» {}\n";
@@ -160,9 +150,7 @@ fn test_implementation_generic_struct_generic_impl() {
 fn test_implementation_enum_with_multiple_trait_impls() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_6", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_6", "src/lib.rs", "pub enum «Operation» { Read, Write }\n", DefKind::Enum)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_6", "src/lib.rs", "pub enum «Operation» { Read, Write }\n", DefKind::Enum).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub enum Operation { Read, Write }\n«impl Operation» {}\n«impl Display for Operation» {}\n";
@@ -184,9 +172,7 @@ fn test_implementation_enum_with_multiple_trait_impls() {
 fn test_implementation_tuple_struct_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_7", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_7", "src/lib.rs", "pub struct «Meters»(pub f64);\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_7", "src/lib.rs", "pub struct «Meters»(pub f64);\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct Meters(pub f64);\n«impl Meters» {}\n";
@@ -208,9 +194,7 @@ fn test_implementation_tuple_struct_impl() {
 fn test_implementation_unit_struct_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_8", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_8", "src/lib.rs", "pub struct «UnitType»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_8", "src/lib.rs", "pub struct «UnitType»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct UnitType;\n«impl UnitType» {}\n";
@@ -232,9 +216,7 @@ fn test_implementation_unit_struct_impl() {
 fn test_implementation_deep_module_tree_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i5_9", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i5_9", "src/a/b/c/mod.rs", "pub struct «DeepTreeStruct»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i5_9", "src/a/b/c/mod.rs", "pub struct «DeepTreeStruct»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "use crate::a::b::c::DeepTreeStruct;\n«impl DeepTreeStruct» {}\n";

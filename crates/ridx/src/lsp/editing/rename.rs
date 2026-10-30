@@ -21,28 +21,14 @@ use std::collections::HashMap;
 
 pub use super::prepare_rename::handle_prepare_rename;
 
-fn to_utf16_col(
-    ov: Option<&crate::overlay::DocumentOverlay>,
-    conv: &mut PositionConverter,
-    file: &str,
-    line: u32,
-    col: u32,
-) -> u32 {
-    ov.map(|o| o.char_col_to_utf16_col(line, col))
-        .unwrap_or_else(|| conv.char_col_to_utf16_col(file, line, col))
+fn to_utf16_col(ov: Option<&crate::overlay::DocumentOverlay>, conv: &mut PositionConverter, file: &str, line: u32, col: u32) -> u32 {
+    ov.map(|o| o.char_col_to_utf16_col(line, col)).unwrap_or_else(|| conv.char_col_to_utf16_col(file, line, col))
 }
 
-pub fn handle_rename(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> LspResult<Value> {
+pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let new_name = msg["params"]["newName"].as_str().unwrap_or("");
     if !is_valid_rust_ident(new_name) {
-        return Err(LspError::request_failed(format!(
-            "Invalid name '{new_name}': not a valid Rust identifier"
-        )));
+        return Err(LspError::request_failed(format!("Invalid name '{new_name}': not a valid Rust identifier")));
     }
 
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
@@ -97,25 +83,15 @@ pub fn handle_rename(
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
-                let target_name = loc_refs
-                    .target_symbol
-                    .rsplit("::")
-                    .next()
-                    .unwrap_or(loc_refs.target_symbol);
+                let target_name = loc_refs.target_symbol.rsplit("::").next().unwrap_or(loc_refs.target_symbol);
                 if target_name.is_empty() {
-                    return Err(LspError::request_failed(
-                        "No renameable symbol found at this position",
-                    ));
+                    return Err(LspError::request_failed("No renameable symbol found at this position"));
                 }
                 if loc_refs.is_external(ws) {
-                    return Err(LspError::request_failed(format!(
-                        "Cannot rename external symbol '{target_name}'"
-                    )));
+                    return Err(LspError::request_failed(format!("Cannot rename external symbol '{target_name}'")));
                 }
                 if ws.has_unmerged_reexport_references(loc_refs.target_path, &loc_refs.references) {
-                    return Err(LspError::request_failed(
-                        "symbol is re-exported; cross-crate references may be incomplete",
-                    ));
+                    return Err(LspError::request_failed("symbol is re-exported; cross-crate references may be incomplete"));
                 }
 
                 let decl_path = loc_refs.target_resolved_path();
@@ -128,23 +104,15 @@ pub fn handle_rename(
                     let decl_ov = overlay_mgr.get(decl_str);
                     if let Some(dov) = decl_ov {
                         if dov.is_dirty() && dov.has_modified_imports() {
-                            return Err(LspError::request_failed(
-                                "Cannot rename symbol in file with modified imports; save document first",
-                            ));
+                            return Err(LspError::request_failed("Cannot rename symbol in file with modified imports; save document first"));
                         }
                     }
 
                     let mapped_line = if let Some(dov) = decl_ov {
                         if dov.is_dirty() {
-                            match dov
-                                .map_compiled_to_live(loc_refs.target_line, loc_refs.target_col)
-                            {
+                            match dov.map_compiled_to_live(loc_refs.target_line, loc_refs.target_col) {
                                 Some(pos) => pos.0,
-                                None => {
-                                    return Err(LspError::request_failed(
-                                        "Cannot map symbol position in modified file",
-                                    ))
-                                }
+                                None => return Err(LspError::request_failed("Cannot map symbol position in modified file")),
                             }
                         } else {
                             loc_refs.target_line
@@ -156,34 +124,20 @@ pub fn handle_rename(
                     let decl_lines_vec: Vec<String> = if let Some(dov) = decl_ov {
                         dov.text.lines().map(|s| s.to_string()).collect()
                     } else {
-                        std::fs::read_to_string(decl_str)
-                            .map(|t| t.lines().map(|s| s.to_string()).collect())
-                            .unwrap_or_default()
+                        std::fs::read_to_string(decl_str).map(|t| t.lines().map(|s| s.to_string()).collect()).unwrap_or_default()
                     };
-                    let decl_lines_ref: Vec<&str> =
-                        decl_lines_vec.iter().map(|s| s.as_str()).collect();
+                    let decl_lines_ref: Vec<&str> = decl_lines_vec.iter().map(|s| s.as_str()).collect();
 
-                    let (final_line, ident_col) = match find_declaration_ident_in_lines(
-                        &decl_lines_ref,
-                        mapped_line,
-                        target_name,
-                        loc_refs.target_kind,
-                    ) {
+                    let (final_line, ident_col) = match find_declaration_ident_in_lines(&decl_lines_ref, mapped_line, target_name, loc_refs.target_kind) {
                         Some(pos) => pos,
-                        None => {
-                            return Err(LspError::request_failed(
-                                "Cannot find declaration identifier at mapped position",
-                            ))
-                        }
+                        None => return Err(LspError::request_failed("Cannot find declaration identifier at mapped position")),
                     };
                     decl_final_line = Some(final_line);
 
                     let end_col = ident_col + target_name.chars().count() as u32;
                     if let Some(dov) = decl_ov {
                         if dov.get_ident_at(final_line, ident_col).as_deref() != Some(target_name) {
-                            return Err(LspError::request_failed(format!(
-                                "Identifier at mapped location does not match '{target_name}'",
-                            )));
+                            return Err(LspError::request_failed(format!("Identifier at mapped location does not match '{target_name}'",)));
                         }
                     }
 
@@ -213,29 +167,15 @@ pub fn handle_rename(
                     let (mapped_line, mapped_col) = if let Some(rov) = ref_ov {
                         if rov.is_dirty() {
                             if rov.has_modified_imports() {
-                                return Err(LspError::request_failed(
-                                    "Cannot rename symbol in caller file with modified imports; save document first",
-                                ));
+                                return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
                             }
-                            let pos = match rov
-                                .map_compiled_to_live(r.span.start_line(), r.span.start_col())
-                            {
+                            let pos = match rov.map_compiled_to_live(r.span.start_line(), r.span.start_col()) {
                                 Some(p) => p,
-                                None => {
-                                    return Err(LspError::request_failed(
-                                        "Cannot map symbol position in modified file",
-                                    ))
-                                }
+                                None => return Err(LspError::request_failed("Cannot map symbol position in modified file")),
                             };
                             if let Some(local_def) = rov.find_definition_at(pos.0, pos.1) {
-                                if r_str != decl_str
-                                    || decl_final_line
-                                        .map(|fl| local_def.start_line != fl)
-                                        .unwrap_or(true)
-                                {
-                                    return Err(LspError::request_failed(
-                                        "Symbol shadowed by local definition",
-                                    ));
+                                if r_str != decl_str || decl_final_line.map(|fl| local_def.start_line != fl).unwrap_or(true) {
+                                    return Err(LspError::request_failed("Symbol shadowed by local definition"));
                                 }
                             }
                             pos
@@ -249,35 +189,21 @@ pub fn handle_rename(
                     let occ_name = if let Some(rov) = ref_ov {
                         rov.get_ident_at(mapped_line, mapped_col)
                     } else {
-                        std::fs::read_to_string(r_str).ok().and_then(|t| {
-                            t.lines()
-                                .nth(mapped_line.saturating_sub(1) as usize)
-                                .and_then(|line| {
-                                    extract_ident_at_col(line, mapped_col).map(|s| s.to_string())
-                                })
-                        })
+                        std::fs::read_to_string(r_str)
+                            .ok()
+                            .and_then(|t| t.lines().nth(mapped_line.saturating_sub(1) as usize).and_then(|line| extract_ident_at_col(line, mapped_col).map(|s| s.to_string())))
                     };
 
                     let occ_str = match occ_name {
                         Some(s) if !s.is_empty() => s,
                         _ => {
                             if r.is_macro_expansion
-                                || span_covers_other_identifier(
-                                    ref_ov.is_none().then_some(r_str),
-                                    (
-                                        r.span.start_line(),
-                                        r.span.start_col(),
-                                        r.span.end_line(),
-                                        r.span.end_col(),
-                                    ),
-                                )
+                                || span_covers_other_identifier(ref_ov.is_none().then_some(r_str), (r.span.start_line(), r.span.start_col(), r.span.end_line(), r.span.end_col()))
                             {
                                 skipped_macro_refs += 1;
                                 continue;
                             }
-                            return Err(LspError::request_failed(
-                                "Failed to locate identifier at reference position",
-                            ));
+                            return Err(LspError::request_failed("Failed to locate identifier at reference position"));
                         }
                     };
 
@@ -311,18 +237,14 @@ pub fn handle_rename(
                 }
 
                 if skipped_macro_refs > 0 {
-                    eprintln!(
-                        "[ridx:rename] Skipped {skipped_macro_refs} macro expansion reference(s) where identifier could not be located in source"
-                    );
+                    eprintln!("[ridx:rename] Skipped {skipped_macro_refs} macro expansion reference(s) where identifier could not be located in source");
                 }
             }
         }
     }
 
     if changes_map.is_empty() {
-        return Err(LspError::request_failed(
-            "No renameable symbol found at this position",
-        ));
+        return Err(LspError::request_failed("No renameable symbol found at this position"));
     }
 
     validate_and_dedup_edits(&mut changes_map)?;
@@ -330,10 +252,7 @@ pub fn handle_rename(
     let mut doc_changes = Vec::new();
     for (doc_uri, edits) in &changes_map {
         let doc_path = uri_to_path(doc_uri);
-        let version = overlay_mgr
-            .get(&doc_path)
-            .map(|ov| json!(ov.version))
-            .unwrap_or(Value::Null);
+        let version = overlay_mgr.get(&doc_path).map(|ov| json!(ov.version)).unwrap_or(Value::Null);
 
         doc_changes.push(json!({
             "textDocument": { "uri": doc_uri, "version": version },
@@ -347,9 +266,7 @@ pub fn handle_rename(
     }))
 }
 
-pub(crate) fn validate_and_dedup_edits(
-    changes_map: &mut HashMap<String, Vec<Value>>,
-) -> Result<(), LspError> {
+pub(crate) fn validate_and_dedup_edits(changes_map: &mut HashMap<String, Vec<Value>>) -> Result<(), LspError> {
     for (doc_uri, edits) in changes_map {
         edits.sort_by(|a, b| {
             let a_sl = a["range"]["start"]["line"].as_u64().unwrap_or(0);
@@ -371,9 +288,7 @@ pub(crate) fn validate_and_dedup_edits(
                         continue;
                     }
                     let doc_file = uri_to_path(doc_uri);
-                    return Err(LspError::internal_error(format!(
-                        "Overlapping rename edits in file: {doc_file}"
-                    )));
+                    return Err(LspError::internal_error(format!("Overlapping rename edits in file: {doc_file}")));
                 }
             }
             deduped.push(edit);

@@ -19,22 +19,11 @@ fn test_refactor_formatting_and_range_formatting_execution() {
     let uri = "file:///workspace/src/messy.rs";
     let file_path = "/workspace/src/messy.rs";
 
-    let unformatted = concat!(
-        "fn first( x: i32 ) -> i32 { x+1 }\n",
-        "\n",
-        "fn second(y:i32)->i32{\n",
-        "let z=y*2;\n",
-        "z\n",
-        "}\n",
-    );
+    let unformatted = concat!("fn first( x: i32 ) -> i32 { x+1 }\n", "\n", "fn second(y:i32)->i32{\n", "let z=y*2;\n", "z\n", "}\n",);
 
     overlay_mgr.open_document(uri, file_path, 1, unformatted.to_string());
 
-    let rustfmt_available = std::process::Command::new("rustfmt")
-        .arg("--version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false);
+    let rustfmt_available = std::process::Command::new("rustfmt").arg("--version").output().map(|o| o.status.success()).unwrap_or(false);
     if !rustfmt_available {
         eprintln!("Skipping formatting execution test: rustfmt binary is not available in PATH");
         return;
@@ -48,10 +37,7 @@ fn test_refactor_formatting_and_range_formatting_execution() {
     });
     let fmt_edits = handle_formatting(&fmt_req, &overlay_mgr);
     let edits_arr = fmt_edits.as_array().expect("formatting edits array");
-    assert!(
-        !edits_arr.is_empty(),
-        "Full formatting MUST return edits for unformatted code when rustfmt is available"
-    );
+    assert!(!edits_arr.is_empty(), "Full formatting MUST return edits for unformatted code when rustfmt is available");
     let formatted = apply_text_edits(unformatted, edits_arr);
     assert_ne!(formatted, unformatted);
     assert!(formatted.contains("fn first(x: i32) -> i32 {"));
@@ -69,10 +55,7 @@ fn test_refactor_formatting_and_range_formatting_execution() {
     });
     let range_edits = handle_range_formatting(&range_req, &overlay_mgr);
     let r_arr = range_edits.as_array().expect("range edits array");
-    assert!(
-        !r_arr.is_empty(),
-        "Range formatting MUST return edits for unformatted second function when rustfmt is available"
-    );
+    assert!(!r_arr.is_empty(), "Range formatting MUST return edits for unformatted second function when rustfmt is available");
     let partially_formatted = apply_text_edits(unformatted, r_arr);
     assert_ne!(partially_formatted, unformatted);
     assert!(partially_formatted.starts_with("fn first( x: i32 ) -> i32 {"));

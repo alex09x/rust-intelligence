@@ -50,12 +50,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -76,21 +71,8 @@ fn setup_initialized_server() -> (
 fn test_definition_struct_type_in_same_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_part3_a", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_part3_a",
-            "src/lib.rs",
-            "pub struct «DataRecord»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_part3_a",
-        "src/lib.rs",
-        "pub struct DataRecord;\npub fn run() { let _ = «DataRecord»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_part3_a", "src/lib.rs", "pub struct «DataRecord»;\n", DefKind::Struct).unwrap();
+    ws.add_refs_to_def("pkg_part3_a", "src/lib.rs", "pub struct DataRecord;\npub fn run() { let _ = «DataRecord»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_part3_a").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -108,21 +90,8 @@ fn test_definition_struct_type_in_same_file() {
 fn test_definition_function_symbol_in_same_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_part3_b", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_part3_b",
-            "src/lib.rs",
-            "pub fn «compute_sum»() -> i32 { 42 }\n",
-            DefKind::Fn,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_part3_b",
-        "src/lib.rs",
-        "pub fn compute_sum() -> i32 { 42 }\npub fn main() { let _ = «compute_sum»(); }\n",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_part3_b", "src/lib.rs", "pub fn «compute_sum»() -> i32 { 42 }\n", DefKind::Fn).unwrap();
+    ws.add_refs_to_def("pkg_part3_b", "src/lib.rs", "pub fn compute_sum() -> i32 { 42 }\npub fn main() { let _ = «compute_sum»(); }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_part3_b").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -140,21 +109,8 @@ fn test_definition_function_symbol_in_same_file() {
 fn test_definition_enum_type_in_same_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_part3_c", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_part3_c",
-            "src/lib.rs",
-            "pub enum «ColorMode» { Dark, Light }\n",
-            DefKind::Enum,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_part3_c",
-        "src/lib.rs",
-        "pub enum ColorMode { Dark, Light }\npub fn get_mode() -> «ColorMode» { todo!() }\n",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_part3_c", "src/lib.rs", "pub enum «ColorMode» { Dark, Light }\n", DefKind::Enum).unwrap();
+    ws.add_refs_to_def("pkg_part3_c", "src/lib.rs", "pub enum ColorMode { Dark, Light }\npub fn get_mode() -> «ColorMode» { todo!() }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_part3_c").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -172,21 +128,8 @@ fn test_definition_enum_type_in_same_file() {
 fn test_definition_const_item_in_same_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_part3_d", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_part3_d",
-            "src/lib.rs",
-            "pub const «BUFFER_CAP»: usize = 1024;\n",
-            DefKind::Const,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_part3_d",
-        "src/lib.rs",
-        "pub const BUFFER_CAP: usize = 1024;\npub fn init() { let _ = «BUFFER_CAP»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_part3_d", "src/lib.rs", "pub const «BUFFER_CAP»: usize = 1024;\n", DefKind::Const).unwrap();
+    ws.add_refs_to_def("pkg_part3_d", "src/lib.rs", "pub const BUFFER_CAP: usize = 1024;\npub fn init() { let _ = «BUFFER_CAP»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_part3_d").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -242,21 +185,8 @@ fn test_definition_preserves_string_request_id() {
 fn test_definition_delegating_declaration_parity() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_part3_e", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_part3_e",
-            "src/lib.rs",
-            "pub struct «SharedType»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_part3_e",
-        "src/lib.rs",
-        "pub struct SharedType;\npub fn run() { let _ = «SharedType»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_part3_e", "src/lib.rs", "pub struct «SharedType»;\n", DefKind::Struct).unwrap();
+    ws.add_refs_to_def("pkg_part3_e", "src/lib.rs", "pub struct SharedType;\npub fn run() { let _ = «SharedType»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_part3_e").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

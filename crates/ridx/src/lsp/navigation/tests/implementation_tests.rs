@@ -31,10 +31,7 @@ fn test_impl_trait_finds_implementors() {
     });
     let res = handle_implementation(&req, Some(&ws), &overlay_mgr, &mut conv);
     let arr = res.as_array().expect("Result must be array");
-    assert!(
-        !arr.is_empty(),
-        "Must find at least one implementation of Baz"
-    );
+    assert!(!arr.is_empty(), "Must find at least one implementation of Baz");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -83,11 +80,7 @@ fn test_impl_dirty_overlay_modified_imports_returns_empty_array() {
     let code = fs::read_to_string(&file_path).unwrap();
 
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.clone());
-    overlay_mgr.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("use std::fmt::Debug;\n{}", code),
-    );
+    overlay_mgr.update(file_path.to_str().unwrap(), 2, format!("use std::fmt::Debug;\n{}", code));
 
     let req = json!({
         "params": {
@@ -110,11 +103,7 @@ fn test_impl_target_dirty_overlay_safely_returns_empty() {
 
     let mut ov_target = OverlayManager::new();
     ov_target.open_document(&uri, file_path.to_str().unwrap(), 1, target_code.clone());
-    ov_target.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("// prepended line\n{}", target_code),
-    );
+    ov_target.update(file_path.to_str().unwrap(), 2, format!("// prepended line\n{}", target_code));
 
     let req = json!({
         "params": {

@@ -88,34 +88,18 @@ fn test_sysroot_references_without_unit_key_not_clobbered() {
     drop(f_app);
 
     let ws = WorkspaceIndex {
-        readers: vec![
-            IndexReader::open(&core_idx_path).unwrap(),
-            IndexReader::open(&alloc_idx_path).unwrap(),
-            IndexReader::open(&app_idx_path).unwrap(),
-        ],
+        readers: vec![IndexReader::open(&core_idx_path).unwrap(), IndexReader::open(&alloc_idx_path).unwrap(), IndexReader::open(&app_idx_path).unwrap()],
         paths: vec![core_idx_path, alloc_idx_path, app_idx_path],
         mtimes: vec![None, None, None],
         source_roots: vec![None, None, Some(ws_root.clone())],
-        unit_keys: vec![
-            Some("".to_string()),
-            Some("".to_string()),
-            Some("unit_app".to_string()),
-        ],
+        unit_keys: vec![Some("".to_string()), Some("".to_string()), Some("unit_app".to_string())],
         unit_match: UnitMatchIndex::default(),
         path_index: super::PathIndex::default(),
         target_kinds: vec![None, None, Some(TargetKind::Bin)],
         reader_generations: vec![None, None, None],
         reader_dependencies: vec![Vec::new(), Vec::new(), vec!["alloc".to_string()]],
-        reader_extern_units: vec![
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-        ],
-        reader_file_hashes: vec![
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-        ],
+        reader_extern_units: vec![std::collections::HashMap::new(), std::collections::HashMap::new(), std::collections::HashMap::new()],
+        reader_file_hashes: vec![std::collections::HashMap::new(), std::collections::HashMap::new(), std::collections::HashMap::new()],
         reader_is_dependency: vec![true, true, false],
         meta_paths: vec![None, None, None],
         meta_mtimes: vec![None, None, None],
@@ -136,20 +120,12 @@ fn test_sysroot_references_without_unit_key_not_clobbered() {
 
     // Querying with Some("") (sentinel from definitions lacking unit_key) must NOT clobber target_crate to core
     let refs_empty_str = ws.find_references_for_unit("alloc::vec::Vec", Some(""));
-    assert_eq!(
-        refs_empty_str.len(),
-        1,
-        "Query with empty unit_key sentinel must preserve target_crate and locate app reference"
-    );
+    assert_eq!(refs_empty_str.len(), 1, "Query with empty unit_key sentinel must preserve target_crate and locate app reference");
     assert_eq!(refs_empty_str[0].file, "src/main.rs");
 
     // Querying with None must also locate the reference
     let refs_none = ws.find_references_for_unit("alloc::vec::Vec", None);
-    assert_eq!(
-        refs_none.len(),
-        1,
-        "Query with None unit_key must locate app reference"
-    );
+    assert_eq!(refs_none.len(), 1, "Query with None unit_key must locate app reference");
 }
 
 #[test]
@@ -243,42 +219,18 @@ fn test_workspace_references_exclude_dependency_and_sysroot_readers() {
     drop(f_app);
 
     let ws = WorkspaceIndex {
-        readers: vec![
-            IndexReader::open(&alloc_idx_path).unwrap(),
-            IndexReader::open(&dep_idx_path).unwrap(),
-            IndexReader::open(&app_idx_path).unwrap(),
-        ],
+        readers: vec![IndexReader::open(&alloc_idx_path).unwrap(), IndexReader::open(&dep_idx_path).unwrap(), IndexReader::open(&app_idx_path).unwrap()],
         paths: vec![alloc_idx_path, dep_idx_path, app_idx_path],
         mtimes: vec![None, None, None],
-        source_roots: vec![
-            None,
-            Some(PathBuf::from("/cargo/registry/src/dep-0.1.0")),
-            Some(ws_root.clone()),
-        ],
-        unit_keys: vec![
-            Some("".to_string()),
-            Some("unit_dep".to_string()),
-            Some("unit_app".to_string()),
-        ],
+        source_roots: vec![None, Some(PathBuf::from("/cargo/registry/src/dep-0.1.0")), Some(ws_root.clone())],
+        unit_keys: vec![Some("".to_string()), Some("unit_dep".to_string()), Some("unit_app".to_string())],
         unit_match: UnitMatchIndex::default(),
         path_index: super::PathIndex::default(),
         target_kinds: vec![None, Some(TargetKind::Lib), Some(TargetKind::Bin)],
         reader_generations: vec![None, None, None],
-        reader_dependencies: vec![
-            Vec::new(),
-            vec!["alloc".to_string()],
-            vec!["alloc".to_string(), "dep_crate".to_string()],
-        ],
-        reader_extern_units: vec![
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-        ],
-        reader_file_hashes: vec![
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-            std::collections::HashMap::new(),
-        ],
+        reader_dependencies: vec![Vec::new(), vec!["alloc".to_string()], vec!["alloc".to_string(), "dep_crate".to_string()]],
+        reader_extern_units: vec![std::collections::HashMap::new(), std::collections::HashMap::new(), std::collections::HashMap::new()],
+        reader_file_hashes: vec![std::collections::HashMap::new(), std::collections::HashMap::new(), std::collections::HashMap::new()],
         reader_is_dependency: vec![true, true, false],
         meta_paths: vec![None, None, None],
         meta_mtimes: vec![None, None, None],
@@ -298,11 +250,7 @@ fn test_workspace_references_exclude_dependency_and_sysroot_readers() {
     };
 
     let refs = ws.find_references_for_unit("alloc::vec::Vec", None);
-    assert_eq!(
-        refs.len(),
-        1,
-        "Must return ONLY workspace references, excluding external dependency and sysroot references"
-    );
+    assert_eq!(refs.len(), 1, "Must return ONLY workspace references, excluding external dependency and sysroot references");
     assert_eq!(refs[0].crate_name, "app");
     assert_eq!(refs[0].file, "src/main.rs");
 }

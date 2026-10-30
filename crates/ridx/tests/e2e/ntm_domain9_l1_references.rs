@@ -33,20 +33,8 @@ fn make_ref_req(uri: &str, line: u32, col: u32, include_decl: bool) -> Value {
 fn test_l1_references_same_file_multiple_usages() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_h", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_h",
-            "src/lib.rs",
-            "pub struct «TargetNode»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_h",
-        "src/lib.rs",
-        "pub struct TargetNode;\npub fn a() { let _ = «TargetNode»; }\npub fn b() { let _ = «TargetNode»; }\n",
-        ids[0],
-    ).unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_h", "src/lib.rs", "pub struct «TargetNode»;\n", DefKind::Struct).unwrap();
+    ws.add_refs_to_def("pkg_h", "src/lib.rs", "pub struct TargetNode;\npub fn a() { let _ = «TargetNode»; }\npub fn b() { let _ = «TargetNode»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_h").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -64,11 +52,7 @@ fn test_l1_references_same_file_multiple_usages() {
     let req_with_decl = make_ref_req(&uri, 0, 11, true);
     let res_with_decl = handle_references(&req_with_decl, Some(&index), &overlay_mgr, &mut conv);
     let with_decl_arr = res_with_decl.as_array().expect("references array");
-    assert_eq!(
-        with_decl_arr.len(),
-        3,
-        "Must return 2 usages plus 1 declaration"
-    );
+    assert_eq!(with_decl_arr.len(), 3, "Must return 2 usages plus 1 declaration");
     assert_eq!(with_decl_arr[0]["range"]["start"]["line"], 0);
 }
 
@@ -76,21 +60,8 @@ fn test_l1_references_same_file_multiple_usages() {
 fn test_l1_references_cross_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_i",
-            "src/shared.rs",
-            "pub struct «SharedState»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_i",
-        "src/lib.rs",
-        "mod shared;\nuse shared::SharedState;\npub fn run() { let _ = «SharedState»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i", "src/shared.rs", "pub struct «SharedState»;\n", DefKind::Struct).unwrap();
+    ws.add_refs_to_def("pkg_i", "src/lib.rs", "mod shared;\nuse shared::SharedState;\npub fn run() { let _ = «SharedState»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_i").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -111,13 +82,7 @@ fn test_l1_references_cross_file() {
 fn test_l1_references_unused_symbol_returns_empty_without_decl_and_one_with_decl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_j", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_j",
-        "src/lib.rs",
-        "pub struct «UnusedSymbol»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_j", "src/lib.rs", "pub struct «UnusedSymbol»;\n", DefKind::Struct).unwrap();
 
     let shard = ws.build_crate_index("pkg_j").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -148,11 +113,7 @@ fn test_l1_references_overlay_local_bindings() {
     let req_with_decl = make_ref_req(uri, 1, 8, true);
     let res_with_decl = handle_references(&req_with_decl, None, &overlay_mgr, &mut conv);
     let arr_with_decl = res_with_decl.as_array().expect("references array");
-    assert_eq!(
-        arr_with_decl.len(),
-        3,
-        "Must return exactly 3 references with declaration"
-    );
+    assert_eq!(arr_with_decl.len(), 3, "Must return exactly 3 references with declaration");
     assert_eq!(arr_with_decl[0]["range"]["start"]["line"], 1);
     assert_eq!(arr_with_decl[1]["range"]["start"]["line"], 2);
     assert_eq!(arr_with_decl[2]["range"]["start"]["line"], 3);
@@ -161,11 +122,7 @@ fn test_l1_references_overlay_local_bindings() {
     let req_no_decl = make_ref_req(uri, 1, 8, false);
     let res_no_decl = handle_references(&req_no_decl, None, &overlay_mgr, &mut conv);
     let arr_no_decl = res_no_decl.as_array().expect("references array");
-    assert_eq!(
-        arr_no_decl.len(),
-        2,
-        "Must return exactly 2 references without declaration"
-    );
+    assert_eq!(arr_no_decl.len(), 2, "Must return exactly 2 references without declaration");
     assert_eq!(arr_no_decl[0]["range"]["start"]["line"], 2);
     assert_eq!(arr_no_decl[1]["range"]["start"]["line"], 3);
 }
@@ -192,8 +149,7 @@ fn test_l1_references_unregistered_uri_returns_empty() {
 fn test_l1_references_out_of_bounds_coords_returns_empty() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_m", "0.1.0").unwrap();
-    ws.add_source_file("pkg_m", "src/lib.rs", "pub fn existing() {}\n")
-        .unwrap();
+    ws.add_source_file("pkg_m", "src/lib.rs", "pub fn existing() {}\n").unwrap();
     let shard = ws.build_crate_index("pkg_m").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
     let overlay_mgr = OverlayManager::new();
@@ -209,20 +165,8 @@ fn test_l1_references_out_of_bounds_coords_returns_empty() {
 fn test_l1_references_on_callsite_finds_all_references() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_callsite", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_callsite",
-            "src/lib.rs",
-            "pub struct «TargetType»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
-    ws.add_refs_to_def(
-        "pkg_callsite",
-        "src/lib.rs",
-        "pub struct TargetType;\npub fn foo() { let _ = «TargetType»; }\npub fn bar() { let _ = «TargetType»; }\n",
-        ids[0],
-    ).unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_callsite", "src/lib.rs", "pub struct «TargetType»;\n", DefKind::Struct).unwrap();
+    ws.add_refs_to_def("pkg_callsite", "src/lib.rs", "pub struct TargetType;\npub fn foo() { let _ = «TargetType»; }\npub fn bar() { let _ = «TargetType»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_callsite").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -234,25 +178,14 @@ fn test_l1_references_on_callsite_finds_all_references() {
     let req = make_ref_req(&uri, 1, 24, true);
     let res = handle_references(&req, Some(&index), &overlay_mgr, &mut conv);
     let arr = res.as_array().expect("references array");
-    assert_eq!(
-        arr.len(),
-        3,
-        "Query on callsite must find definition and all sibling usages"
-    );
+    assert_eq!(arr.len(), 3, "Query on callsite must find definition and all sibling usages");
 }
 
 #[test]
 fn test_l1_references_local_parameter_without_overlay_returns_empty() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_param", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_param",
-            "src/lib.rs",
-            "pub fn «compute»(param_x: i32) -> i32 {\n    param_x * 2\n}\n",
-            DefKind::Fn,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_param", "src/lib.rs", "pub fn «compute»(param_x: i32) -> i32 {\n    param_x * 2\n}\n", DefKind::Fn).unwrap();
     assert_eq!(ids.len(), 1);
 
     let shard = ws.build_crate_index("pkg_param").unwrap();
@@ -264,11 +197,7 @@ fn test_l1_references_local_parameter_without_overlay_returns_empty() {
     // Verify indexed function itself can be resolved
     let fn_req = make_ref_req(&uri, 0, 8, true);
     let fn_res = handle_references(&fn_req, Some(&index), &overlay_mgr, &mut conv);
-    assert_eq!(
-        fn_res.as_array().map(|a| a.len()),
-        Some(1),
-        "Querying the indexed function itself must find its definition"
-    );
+    assert_eq!(fn_res.as_array().map(|a| a.len()), Some(1), "Querying the indexed function itself must find its definition");
 
     // Query on `param_x` on line 0, col 16 without an open overlay.
     // Position lies inside indexed function, but unindexed parameter without overlay
@@ -276,9 +205,5 @@ fn test_l1_references_local_parameter_without_overlay_returns_empty() {
     let req = make_ref_req(&uri, 0, 16, true);
     let res = handle_references(&req, Some(&index), &overlay_mgr, &mut conv);
     let arr = res.as_array().expect("references array");
-    assert!(
-        arr.is_empty(),
-        "Querying references on local parameter without overlay must return empty array, got: {:?}",
-        arr
-    );
+    assert!(arr.is_empty(), "Querying references on local parameter without overlay must return empty array, got: {:?}", arr);
 }

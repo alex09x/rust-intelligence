@@ -35,8 +35,7 @@ static EDIT_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64
 
 pub fn setup_test_editing() -> (PathBuf, WorkspaceIndex, OverlayManager, PositionConverter) {
     let id = EDIT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_edit_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_edit_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let caller_file = temp_dir.join("src/caller.rs");
@@ -45,44 +44,16 @@ pub fn setup_test_editing() -> (PathBuf, WorkspaceIndex, OverlayManager, Positio
     let caller_str = caller_file.to_str().unwrap().to_string();
 
     let mut builder = ridx_test_support::FixtureIndexBuilder::new("test_edit", "0.1.0");
-    let (code, def_ids) = builder.add_defs_with_ids(
-        "pub fn «add_values»(x: i32, y: i32) -> i32 {\n    let sum = x + y;\n    sum\n}\n",
-        &src_file_str,
-        "test_edit",
-        ridx_format::DefKind::Fn,
-    );
+    let (code, def_ids) =
+        builder.add_defs_with_ids("pub fn «add_values»(x: i32, y: i32) -> i32 {\n    let sum = x + y;\n    sum\n}\n", &src_file_str, "test_edit", ridx_format::DefKind::Fn);
     let _ = fs::write(&src_file, code);
 
     // Self-reference at declaration site
-    builder.add_ref(
-        "test_edit::add_values",
-        &src_file_str,
-        1,
-        8,
-        1,
-        18,
-        Some(def_ids[0]),
-        Some(&src_file_str),
-        1,
-        8,
-        ridx_format::DefKind::Fn,
-    );
+    builder.add_ref("test_edit::add_values", &src_file_str, 1, 8, 1, 18, Some(def_ids[0]), Some(&src_file_str), 1, 8, ridx_format::DefKind::Fn);
 
     let caller_code = "pub fn call() { test_edit::add_values(1, 2); }\n";
     let _ = fs::write(&caller_file, caller_code);
-    builder.add_ref(
-        "test_edit::add_values",
-        &caller_str,
-        1,
-        17,
-        1,
-        27,
-        Some(def_ids[0]),
-        Some(&src_file_str),
-        1,
-        8,
-        ridx_format::DefKind::Fn,
-    );
+    builder.add_ref("test_edit::add_values", &caller_str, 1, 17, 1, 27, Some(def_ids[0]), Some(&src_file_str), 1, 8, ridx_format::DefKind::Fn);
 
     let ridx_file = temp_dir.join("index.ridx");
     builder.write_to_file(&ridx_file);

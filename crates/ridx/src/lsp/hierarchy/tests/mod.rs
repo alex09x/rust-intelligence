@@ -28,8 +28,7 @@ static HIERARCHY_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::Atom
 
 pub fn setup_test_hierarchy() -> (PathBuf, WorkspaceIndex, OverlayManager, PositionConverter) {
     let id = HIERARCHY_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_hierarchy_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_hierarchy_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let code = "pub fn add(a: i32, b: i32) -> i32 { a + b }\npub struct Foo { pub x: i32 }\npub trait Bar { fn bar(&self); }\nimpl Bar for Foo { fn bar(&self) {} }\n";
@@ -81,8 +80,7 @@ pub fn setup_test_hierarchy() -> (PathBuf, WorkspaceIndex, OverlayManager, Posit
     });
 
     let caller_file = temp_dir.join("src/caller.rs");
-    let caller_code =
-        "pub fn caller() {\n    add(1, 2);\n    let callback = add;\n    Foo(1);\n}\n";
+    let caller_code = "pub fn caller() {\n    add(1, 2);\n    let callback = add;\n    Foo(1);\n}\n";
     let _ = fs::write(&caller_file, caller_code);
     let caller_str = caller_file.to_str().unwrap().to_string();
 

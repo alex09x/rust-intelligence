@@ -31,9 +31,7 @@ fn make_pos_req(uri: &str, line: u32, col: u32) -> Value {
 fn test_implementation_trait_implemented_by_two_structs() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_1", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_1", "src/lib.rs", "pub trait «Renderable»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_1", "src/lib.rs", "pub trait «Renderable»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait Renderable;\n«impl Renderable for Button» {}\n«impl Renderable for Label» {}\n";
@@ -57,9 +55,7 @@ fn test_implementation_trait_implemented_by_two_structs() {
 fn test_implementation_trait_implemented_by_enum() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_2", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_2", "src/lib.rs", "pub trait «Parseable»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_2", "src/lib.rs", "pub trait «Parseable»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait Parseable;\n«impl Parseable for Token» {}\n";
@@ -82,9 +78,7 @@ fn test_implementation_trait_implemented_by_enum() {
 fn test_implementation_trait_implemented_by_primitive_wrapper() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_3", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_3", "src/lib.rs", "pub trait «ByteConvertible»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_3", "src/lib.rs", "pub trait «ByteConvertible»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait ByteConvertible;\n«impl ByteConvertible for Wrapper» {}\n";
@@ -106,9 +100,7 @@ fn test_implementation_trait_implemented_by_primitive_wrapper() {
 fn test_implementation_struct_with_inherent_impl_only() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_4", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_4", "src/lib.rs", "pub struct «ServiceInstance»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_4", "src/lib.rs", "pub struct «ServiceInstance»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct ServiceInstance;\n«impl ServiceInstance» {}\n";
@@ -131,9 +123,7 @@ fn test_implementation_struct_with_inherent_impl_only() {
 fn test_implementation_struct_with_multiple_inherent_impl_blocks() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_5", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_5", "src/lib.rs", "pub struct «MultiBlockStruct»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_5", "src/lib.rs", "pub struct «MultiBlockStruct»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct MultiBlockStruct;\n«impl MultiBlockStruct» {}\n«impl MultiBlockStruct» {}\n";
@@ -155,9 +145,7 @@ fn test_implementation_struct_with_multiple_inherent_impl_blocks() {
 fn test_implementation_trait_with_generic_type_param_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_6", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_6", "src/lib.rs", "pub trait «Transformer»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_6", "src/lib.rs", "pub trait «Transformer»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait Transformer;\n«impl Transformer for String» {}\n";
@@ -179,9 +167,7 @@ fn test_implementation_trait_with_generic_type_param_impl() {
 fn test_implementation_struct_impl_in_submodule() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_7", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_7", "src/models.rs", "pub struct «Widget»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_7", "src/models.rs", "pub struct «Widget»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "use crate::models::Widget;\n«impl Widget» {}\n";
@@ -205,9 +191,7 @@ fn test_implementation_struct_impl_in_submodule() {
 fn test_implementation_trait_impl_in_parent_module() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_8", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_8", "src/sub/traits.rs", "pub trait «Emitter»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_8", "src/sub/traits.rs", "pub trait «Emitter»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "«impl Emitter for Console» {}\n";
@@ -231,9 +215,7 @@ fn test_implementation_trait_impl_in_parent_module() {
 fn test_implementation_struct_impl_with_where_clause() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_i4_9", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_i4_9", "src/lib.rs", "pub struct «Container»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_i4_9", "src/lib.rs", "pub struct «Container»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct Container;\n«impl Container» {}\n";

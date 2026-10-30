@@ -121,29 +121,17 @@ pub struct TypeEntry {
 impl TypeEntry {
     #[inline]
     pub fn new(span: Span, type_offset: u32, owner_path_offset: u32) -> Self {
-        Self {
-            span,
-            type_offset,
-            owner_path_offset,
-        }
+        Self { span, type_offset, owner_path_offset }
     }
 
     #[inline]
     pub fn to_le(self) -> Self {
-        Self {
-            span: self.span.to_le(),
-            type_offset: self.type_offset.to_le(),
-            owner_path_offset: self.owner_path_offset.to_le(),
-        }
+        Self { span: self.span.to_le(), type_offset: self.type_offset.to_le(), owner_path_offset: self.owner_path_offset.to_le() }
     }
 
     #[inline]
     pub fn from_le(self) -> Self {
-        Self {
-            span: self.span.from_le(),
-            type_offset: u32::from_le(self.type_offset),
-            owner_path_offset: u32::from_le(self.owner_path_offset),
-        }
+        Self { span: self.span.from_le(), type_offset: u32::from_le(self.type_offset), owner_path_offset: u32::from_le(self.owner_path_offset) }
     }
 
     #[inline]
@@ -174,20 +162,12 @@ pub struct HashIndexEntry {
 impl HashIndexEntry {
     #[inline]
     pub fn to_le(self) -> Self {
-        Self {
-            hash: self.hash.to_le(),
-            index: self.index.to_le(),
-            _pad: self._pad,
-        }
+        Self { hash: self.hash.to_le(), index: self.index.to_le(), _pad: self._pad }
     }
 
     #[inline]
     pub fn from_le(self) -> Self {
-        Self {
-            hash: u64::from_le(self.hash),
-            index: u32::from_le(self.index),
-            _pad: self._pad,
-        }
+        Self { hash: u64::from_le(self.hash), index: u32::from_le(self.index), _pad: self._pad }
     }
 
     #[inline]
@@ -215,29 +195,17 @@ pub struct OwnerIndexEntry {
 impl OwnerIndexEntry {
     #[inline]
     pub fn new(hash: u64, owner_path_offset: u32, def_index: u32) -> Self {
-        Self {
-            hash,
-            owner_path_offset,
-            def_index,
-        }
+        Self { hash, owner_path_offset, def_index }
     }
 
     #[inline]
     pub fn to_le(self) -> Self {
-        Self {
-            hash: self.hash.to_le(),
-            owner_path_offset: self.owner_path_offset.to_le(),
-            def_index: self.def_index.to_le(),
-        }
+        Self { hash: self.hash.to_le(), owner_path_offset: self.owner_path_offset.to_le(), def_index: self.def_index.to_le() }
     }
 
     #[inline]
     pub fn from_le(self) -> Self {
-        Self {
-            hash: u64::from_le(self.hash),
-            owner_path_offset: u32::from_le(self.owner_path_offset),
-            def_index: u32::from_le(self.def_index),
-        }
+        Self { hash: u64::from_le(self.hash), owner_path_offset: u32::from_le(self.owner_path_offset), def_index: u32::from_le(self.def_index) }
     }
 
     #[inline]
@@ -269,20 +237,12 @@ pub struct DerefEntry {
 impl DerefEntry {
     #[inline]
     pub fn new(source_type_hash: u64, source_type_offset: u32, target_type_offset: u32) -> Self {
-        Self {
-            source_type_hash,
-            source_type_offset,
-            target_type_offset,
-        }
+        Self { source_type_hash, source_type_offset, target_type_offset }
     }
 
     #[inline]
     pub fn to_le(self) -> Self {
-        Self {
-            source_type_hash: self.source_type_hash.to_le(),
-            source_type_offset: self.source_type_offset.to_le(),
-            target_type_offset: self.target_type_offset.to_le(),
-        }
+        Self { source_type_hash: self.source_type_hash.to_le(), source_type_offset: self.source_type_offset.to_le(), target_type_offset: self.target_type_offset.to_le() }
     }
 
     #[inline]

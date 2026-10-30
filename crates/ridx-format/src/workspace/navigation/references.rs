@@ -8,17 +8,11 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::reference_record::{
-    matches_reference_target, points_at_definition, push_reference, ReferenceTarget,
-};
+use super::reference_record::{matches_reference_target, points_at_definition, push_reference, ReferenceTarget};
 use super::*;
 impl WorkspaceIndex {
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
-    pub fn find_references_for_unit<'a>(
-        &'a self,
-        target_path: &str,
-        target_unit_key: Option<&str>,
-    ) -> Vec<WorkspaceReference<'a>> {
+    pub fn find_references_for_unit<'a>(&'a self, target_path: &str, target_unit_key: Option<&str>) -> Vec<WorkspaceReference<'a>> {
         self.find_references_for_unit_with_target(target_path, target_unit_key, None)
     }
 
@@ -42,13 +36,9 @@ impl WorkspaceIndex {
             }
         }
         let target_idx = if let Some(target_unit) = target_unit_key {
-            self.unit_keys
-                .iter()
-                .position(|u| u.as_deref() == Some(target_unit))
+            self.unit_keys.iter().position(|u| u.as_deref() == Some(target_unit))
         } else {
-            self.readers.iter().position(|r| {
-                r.crate_name() == target_crate && r.find_definition_by_path(target_path).is_some()
-            })
+            self.readers.iter().position(|r| r.crate_name() == target_crate && r.find_definition_by_path(target_path).is_some())
         };
 
         if let Some(t_idx) = target_idx {
@@ -60,47 +50,31 @@ impl WorkspaceIndex {
                 .get(t_idx)
                 .and_then(|r| r.as_ref())
                 .or(self.workspace_root.as_ref())
-                .map(|root| {
-                    crate::format::join_resolving_overlap(root, Path::new(f))
-                        .to_string_lossy()
-                        .to_string()
-                })
+                .map(|root| crate::format::join_resolving_overlap(root, Path::new(f)).to_string_lossy().to_string())
                 .unwrap_or_else(|| f.to_string())
         };
 
-        let target_def_coords =
-            if let Some((ef, el, _, _)) = explicit_def.filter(|d| !d.0.is_empty() && d.1 > 0) {
-                let full = target_idx
-                    .map(|t| resolve_full(t, ef))
-                    .unwrap_or_else(|| ef.to_string());
-                Some((ef.to_string(), full, el))
-            } else if let Some(t_idx) = target_idx {
-                let r = &self.readers[t_idx];
-                let def_opt = r.find_definition_by_path(target_path).or_else(|| {
-                    let rest = target_path.strip_prefix(&format!("{target_crate}::"))?;
-                    r.find_definition_by_path(&format!("{}::{rest}", r.crate_name()))
-                });
-                def_opt.map(|def| {
-                    let span = def.span();
-                    let file = r.get_file(span.file_id());
-                    (
-                        file.to_string(),
-                        resolve_full(t_idx, file),
-                        span.start_line(),
-                    )
-                })
-            } else {
-                None
-            };
+        let target_def_coords = if let Some((ef, el, _, _)) = explicit_def.filter(|d| !d.0.is_empty() && d.1 > 0) {
+            let full = target_idx.map(|t| resolve_full(t, ef)).unwrap_or_else(|| ef.to_string());
+            Some((ef.to_string(), full, el))
+        } else if let Some(t_idx) = target_idx {
+            let r = &self.readers[t_idx];
+            let def_opt = r.find_definition_by_path(target_path).or_else(|| {
+                let rest = target_path.strip_prefix(&format!("{target_crate}::"))?;
+                r.find_definition_by_path(&format!("{}::{rest}", r.crate_name()))
+            });
+            def_opt.map(|def| {
+                let span = def.span();
+                let file = r.get_file(span.file_id());
+                (file.to_string(), resolve_full(t_idx, file), span.start_line())
+            })
+        } else {
+            None
+        };
 
         let prefix = target_path.split("::").next().unwrap_or(target_path);
-        let is_alias_for_target = if let Some(target_unit) = target_unit_key {
-            self.reader_extern_units
-                .iter()
-                .any(|m| m.get(prefix).is_some_and(|uk| uk == target_unit))
-        } else {
-            false
-        };
+        let is_alias_for_target =
+            if let Some(target_unit) = target_unit_key { self.reader_extern_units.iter().any(|m| m.get(prefix).is_some_and(|uk| uk == target_unit)) } else { false };
 
         let local_path = if target_path.starts_with(&format!("{target_crate}::")) {
             &target_path[target_crate.len() + 2..]
@@ -116,32 +90,16 @@ impl WorkspaceIndex {
         let disambiguate_line = explicit_def.is_some()
             && target_idx.is_some_and(|t| {
                 let r = &self.readers[t];
-                r.has_multiple_definitions_at_path(target_path)
-                    || r.has_multiple_definitions_at_path(local_path)
-                    || r.has_multiple_definitions_at_path(global_path)
+                r.has_multiple_definitions_at_path(target_path) || r.has_multiple_definitions_at_path(local_path) || r.has_multiple_definitions_at_path(global_path)
             });
-        let ref_target = ReferenceTarget {
-            kind: explicit_def.map(|d| d.2),
-            name: explicit_def.map(|d| d.3),
-            coords: target_def_coords.clone(),
-            disambiguate_line,
-        };
+        let ref_target = ReferenceTarget { kind: explicit_def.map(|d| d.2), name: explicit_def.map(|d| d.3), coords: target_def_coords.clone(), disambiguate_line };
 
         // The target and the other builds of its crate and version (feature sets compile one
         // source into several units): a consumer reaching any of them uses the item.
         let target_builds: Vec<usize> = target_idx
             .map(|t| {
-                let (name, version) = (
-                    self.readers[t].crate_name(),
-                    self.readers[t].crate_version(),
-                );
-                (0..self.readers.len())
-                    .filter(|&s| {
-                        s == t
-                            || (self.readers[s].crate_name() == name
-                                && self.readers[s].crate_version() == version)
-                    })
-                    .collect()
+                let (name, version) = (self.readers[t].crate_name(), self.readers[t].crate_version());
+                (0..self.readers.len()).filter(|&s| s == t || (self.readers[s].crate_name() == name && self.readers[s].crate_version() == version)).collect()
             })
             .unwrap_or_default();
 
@@ -155,31 +113,17 @@ impl WorkspaceIndex {
             let reader_crate = reader.crate_name();
 
             let is_exact_target_unit =
-                if let (Some(target_unit), Some(ru)) = (target_unit_key, reader_unit) {
-                    ru == target_unit
-                } else {
-                    target_idx == Some(i) || reader_crate == target_crate
-                };
+                if let (Some(target_unit), Some(ru)) = (target_unit_key, reader_unit) { ru == target_unit } else { target_idx == Some(i) || reader_crate == target_crate };
 
-            let is_sibling_unit = target_idx
-                .map(|t| self.are_sibling_workspace_units(t, i))
-                .unwrap_or(false);
+            let is_sibling_unit = target_idx.map(|t| self.are_sibling_workspace_units(t, i)).unwrap_or(false);
 
             let is_same_package = is_exact_target_unit || is_sibling_unit;
 
             if !is_same_package {
                 let is_consumer_of_target = target_unit_key
                     .map(|tu| {
-                        let in_deps = self
-                            .reader_dependencies
-                            .get(i)
-                            .map(|d| d.iter().any(|dep| dep == tu))
-                            .unwrap_or(false);
-                        let in_extern = self
-                            .reader_extern_units
-                            .get(i)
-                            .map(|m| m.values().any(|uk| uk == tu))
-                            .unwrap_or(false);
+                        let in_deps = self.reader_dependencies.get(i).map(|d| d.iter().any(|dep| dep == tu)).unwrap_or(false);
+                        let in_extern = self.reader_extern_units.get(i).map(|m| m.values().any(|uk| uk == tu)).unwrap_or(false);
                         in_deps || in_extern
                     })
                     .unwrap_or(false);
@@ -191,42 +135,16 @@ impl WorkspaceIndex {
                 // The reader is an external/referring crate.
                 // If target_unit_key is given:
                 if let Some(target_unit) = target_unit_key {
-                    let has_deps = self
-                        .reader_dependencies
-                        .get(i)
-                        .map(|d| !d.is_empty())
-                        .unwrap_or(false);
-                    let has_extern_units = self
-                        .reader_extern_units
-                        .get(i)
-                        .map(|m| !m.is_empty())
-                        .unwrap_or(false);
+                    let has_deps = self.reader_dependencies.get(i).map(|d| !d.is_empty()).unwrap_or(false);
+                    let has_extern_units = self.reader_extern_units.get(i).map(|m| !m.is_empty()).unwrap_or(false);
 
                     if has_deps || has_extern_units {
-                        let in_deps = self
-                            .reader_dependencies
-                            .get(i)
-                            .map(|d| {
-                                d.iter()
-                                    .any(|dep| dep == target_unit || dep == target_crate)
-                            })
-                            .unwrap_or(false);
-                        let in_extern_units = self
-                            .reader_extern_units
-                            .get(i)
-                            .map(|m| {
-                                m.keys().any(|k| k == target_crate)
-                                    || m.values().any(|uk| uk == target_unit)
-                            })
-                            .unwrap_or(false);
+                        let in_deps = self.reader_dependencies.get(i).map(|d| d.iter().any(|dep| dep == target_unit || dep == target_crate)).unwrap_or(false);
+                        let in_extern_units =
+                            self.reader_extern_units.get(i).map(|m| m.keys().any(|k| k == target_crate) || m.values().any(|uk| uk == target_unit)).unwrap_or(false);
                         // A consumer may reach the target through a unit it depends on (an item
                         // used through a re-export): the dependency graph is walked from it.
-                        if !in_deps
-                            && !in_extern_units
-                            && !target_builds
-                                .iter()
-                                .any(|&t| self.is_reader_in_dep_graph(&[i], t))
-                        {
+                        if !in_deps && !in_extern_units && !target_builds.iter().any(|&t| self.is_reader_in_dep_graph(&[i], t)) {
                             // Referring crate has dependency info but depends neither on
                             // target_unit or target_crate nor, through another unit, on the
                             // target. Exclude!
@@ -234,11 +152,7 @@ impl WorkspaceIndex {
                         }
                     } else {
                         // Legacy reader without dependency info: exclude if multiple versions of target_crate exist in workspace
-                        let target_crate_versions = self
-                            .readers
-                            .iter()
-                            .filter(|r| r.crate_name() == target_crate)
-                            .count();
+                        let target_crate_versions = self.readers.iter().filter(|r| r.crate_name() == target_crate).count();
                         if target_crate_versions > 1 && reader_crate == target_crate {
                             continue;
                         }
@@ -247,11 +161,7 @@ impl WorkspaceIndex {
             }
 
             // References with canonical target_path (querying both local and global path representations)
-            let source_root = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref());
+            let source_root = self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref());
 
             let mut query_path_vec = Vec::new();
             if local_path == global_path {
@@ -269,13 +179,7 @@ impl WorkspaceIndex {
                     let r_target_unit = reader.target_unit(r);
                     if let Some(target_unit) = target_unit_key {
                         if !r_target_unit.is_empty() {
-                            if !self.matches_unit_memoized(
-                                &mut match_memo,
-                                i,
-                                r_target_unit,
-                                target_unit,
-                                target_crate,
-                            ) {
+                            if !self.matches_unit_memoized(&mut match_memo, i, r_target_unit, target_unit, target_crate) {
                                 continue;
                             }
                         } else if reader_crate == target_crate {
@@ -310,31 +214,18 @@ impl WorkspaceIndex {
                 for (alias, uk) in extern_map {
                     if alias != target_crate {
                         if let Some(target_unit) = target_unit_key {
-                            if !self.matches_unit_memoized(
-                                &mut match_memo,
-                                i,
-                                uk.as_str(),
-                                target_unit,
-                                target_crate,
-                            ) {
+                            if !self.matches_unit_memoized(&mut match_memo, i, uk.as_str(), target_unit, target_crate) {
                                 continue;
                             }
                         }
                         let aliased_path = format!("{alias}::{local_path}");
-                        let mut aliased =
-                            super::qualified_path::consumer_spellings(local_path, alias);
+                        let mut aliased = super::qualified_path::consumer_spellings(local_path, alias);
                         aliased.push(aliased_path);
                         for r in aliased.iter().flat_map(|p| reader.find_references(p)) {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {
                                 if !r_target_unit.is_empty() {
-                                    if !self.matches_unit_memoized(
-                                        &mut match_memo,
-                                        i,
-                                        r_target_unit,
-                                        target_unit,
-                                        target_crate,
-                                    ) {
+                                    if !self.matches_unit_memoized(&mut match_memo, i, r_target_unit, target_unit, target_crate) {
                                         continue;
                                     }
                                 } else if let Some(coords) = &target_def_coords {

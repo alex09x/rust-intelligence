@@ -10,9 +10,7 @@
 
 //! Unit tests for textDocument/onTypeFormatting and range formatting handlers.
 
-use crate::lsp::editing::format::{
-    handle_formatting, handle_on_type_formatting, handle_range_formatting,
-};
+use crate::lsp::editing::format::{handle_formatting, handle_on_type_formatting, handle_range_formatting};
 use crate::overlay::OverlayManager;
 use serde_json::json;
 
@@ -73,11 +71,7 @@ fn test_on_type_formatting_syntax_error_returns_empty_cleanly() {
     });
 
     let res = handle_on_type_formatting(&req, &overlay_mgr);
-    assert_eq!(
-        res,
-        json!([]),
-        "Syntax errors during typing must return empty edits without panic"
-    );
+    assert_eq!(res, json!([]), "Syntax errors during typing must return empty edits without panic");
 }
 
 #[test]
@@ -113,11 +107,7 @@ fn test_on_type_formatting_already_formatted_returns_empty() {
     });
 
     let res = handle_on_type_formatting(&req, &overlay_mgr);
-    assert_eq!(
-        res,
-        json!([]),
-        "Already formatted code must return empty edits"
-    );
+    assert_eq!(res, json!([]), "Already formatted code must return empty edits");
 }
 
 #[test]

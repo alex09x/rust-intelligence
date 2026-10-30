@@ -131,22 +131,8 @@ pub fn extract_colon_qualifier(trimmed_before: &str) -> String {
             let after_brace = &before_colon[brace_idx + 1..];
             if !after_brace.contains('}') {
                 let last_item = after_brace.rsplit(',').next().unwrap_or(after_brace).trim();
-                let sub_qual: String = last_item
-                    .chars()
-                    .rev()
-                    .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect();
-                let base_qual: String = prefix_base
-                    .chars()
-                    .rev()
-                    .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect();
+                let sub_qual: String = last_item.chars().rev().take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':').collect::<Vec<_>>().into_iter().rev().collect();
+                let base_qual: String = prefix_base.chars().rev().take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':').collect::<Vec<_>>().into_iter().rev().collect();
                 let base_trimmed = base_qual.trim_end_matches(':');
                 if !base_trimmed.is_empty() && !sub_qual.is_empty() {
                     return format!("{base_trimmed}::{sub_qual}");
@@ -159,14 +145,7 @@ pub fn extract_colon_qualifier(trimmed_before: &str) -> String {
         }
     }
 
-    before_colon
-        .chars()
-        .rev()
-        .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect()
+    before_colon.chars().rev().take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':').collect::<Vec<_>>().into_iter().rev().collect()
 }
 
 #[cfg(test)]
@@ -178,10 +157,7 @@ mod tests {
         assert_eq!(strip_turbofish("Foo::<T>::new"), "Foo::new");
         assert_eq!(strip_turbofish("Foo::<A, B<C>>::"), "Foo::");
         assert_eq!(strip_turbofish("path::Foo::<T>::"), "path::Foo::");
-        assert_eq!(
-            strip_turbofish("Vec::<u8>::with_capacity"),
-            "Vec::with_capacity"
-        );
+        assert_eq!(strip_turbofish("Vec::<u8>::with_capacity"), "Vec::with_capacity");
         assert_eq!(strip_turbofish("a < b::"), "a < b::");
         assert_eq!(strip_turbofish("<T as Tr>::"), "<T as Tr>::");
         assert_eq!(strip_turbofish("Foo::<'a, T>::"), "Foo::");
@@ -189,37 +165,19 @@ mod tests {
         assert_eq!(strip_turbofish("Foo::<\"hello\", T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<'c', T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<fn() -> u8>::new"), "Foo::new");
-        assert_eq!(
-            strip_turbofish("Foo::<fn(i32) -> Result<u8, ()>>::"),
-            "Foo::"
-        );
+        assert_eq!(strip_turbofish("Foo::<fn(i32) -> Result<u8, ()>>::"), "Foo::");
         assert_eq!(strip_turbofish(r"Foo::<'\u{10FFFF}', T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<'🦀', T>::"), "Foo::");
-        assert_eq!(
-            strip_turbofish("QueryState::<&A, Without<C>>::"),
-            "QueryState::"
-        );
-        assert_eq!(
-            strip_turbofish("EventTriggerState::<E>::"),
-            "EventTriggerState::"
-        );
+        assert_eq!(strip_turbofish("QueryState::<&A, Without<C>>::"), "QueryState::");
+        assert_eq!(strip_turbofish("EventTriggerState::<E>::"), "EventTriggerState::");
     }
 
     #[test]
     fn test_extract_colon_qualifier() {
         assert_eq!(extract_colon_qualifier("use core::cell::"), "core::cell");
-        assert_eq!(
-            extract_colon_qualifier("    use alloc::{string::"),
-            "alloc::string"
-        );
-        assert_eq!(
-            extract_colon_qualifier("    use alloc::{vec::Vec, string::"),
-            "alloc::string"
-        );
-        assert_eq!(
-            extract_colon_qualifier("unsafe { UniqueEntityEquivalentSlice::"),
-            "UniqueEntityEquivalentSlice"
-        );
+        assert_eq!(extract_colon_qualifier("    use alloc::{string::"), "alloc::string");
+        assert_eq!(extract_colon_qualifier("    use alloc::{vec::Vec, string::"), "alloc::string");
+        assert_eq!(extract_colon_qualifier("unsafe { UniqueEntityEquivalentSlice::"), "UniqueEntityEquivalentSlice");
         assert_eq!(extract_colon_qualifier("match x { Some(v) => Foo::"), "Foo");
 
         // Turbofish test cases
@@ -227,25 +185,13 @@ mod tests {
         assert_eq!(extract_colon_qualifier("Foo::<A, B<C>>::"), "Foo");
         assert_eq!(extract_colon_qualifier("path::Foo::<T>::"), "path::Foo");
         assert_eq!(extract_colon_qualifier("Vec::<u8>::with_capacity"), "Vec");
-        assert_eq!(
-            extract_colon_qualifier("QueryState::<&A, Without<C>>::"),
-            "QueryState"
-        );
-        assert_eq!(
-            extract_colon_qualifier("EventTriggerState::<E>::"),
-            "EventTriggerState"
-        );
+        assert_eq!(extract_colon_qualifier("QueryState::<&A, Without<C>>::"), "QueryState");
+        assert_eq!(extract_colon_qualifier("EventTriggerState::<E>::"), "EventTriggerState");
 
         // UFCS test cases
         assert_eq!(extract_colon_qualifier("<T as Tr>::"), "Tr");
-        assert_eq!(
-            extract_colon_qualifier("<T as my::Trait<U>>::"),
-            "my::Trait"
-        );
-        assert_eq!(
-            extract_colon_qualifier("<Option<<T as Other>::Item> as Trait>::"),
-            "Trait"
-        );
+        assert_eq!(extract_colon_qualifier("<T as my::Trait<U>>::"), "my::Trait");
+        assert_eq!(extract_colon_qualifier("<Option<<T as Other>::Item> as Trait>::"), "Trait");
         assert_eq!(extract_colon_qualifier("<&set::Slice<K>>::"), "set::Slice");
         assert_eq!(extract_colon_qualifier("<&'a mut Slice<K>>::"), "Slice");
         assert_eq!(extract_colon_qualifier("<*const u8>::"), "u8");
@@ -253,10 +199,7 @@ mod tests {
         assert_eq!(extract_colon_qualifier("<T>::"), "T");
         assert_eq!(extract_colon_qualifier("<Grüße>::"), "Grüße");
         assert_eq!(extract_colon_qualifier("<T as Grüße>::"), "Grüße");
-        assert_eq!(
-            extract_colon_qualifier("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>::"),
-            "set::Slice"
-        );
+        assert_eq!(extract_colon_qualifier("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>::"), "set::Slice");
 
         // Non-turbofish and negative tests
         assert_eq!(extract_colon_qualifier("a < b::"), "b");

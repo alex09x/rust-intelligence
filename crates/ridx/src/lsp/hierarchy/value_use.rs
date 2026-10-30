@@ -18,54 +18,27 @@
 /// a multi-line call, or a closed turbofish (`f::<T>`). Not a use: an import (`use a::f;`), a
 /// declaration (`fn f`), a line of an attribute (`#[derive(..)]`, whose generated code the index
 /// attributes to the attribute), a bare assignment (`let p = f;`), an unclosed turbofish.
-pub(crate) fn is_function_value_use_in_lines(
-    lines: &[&str],
-    name: &str,
-    start_line: u32,
-    start_col: u32,
-    end_line: u32,
-    end_col: u32,
-) -> bool {
-    let (Some(first), Some(last)) = (
-        lines.get(start_line.saturating_sub(1) as usize),
-        lines.get(end_line.saturating_sub(1) as usize),
-    ) else {
+pub(crate) fn is_function_value_use_in_lines(lines: &[&str], name: &str, start_line: u32, start_col: u32, end_line: u32, end_col: u32) -> bool {
+    let (Some(first), Some(last)) = (lines.get(start_line.saturating_sub(1) as usize), lines.get(end_line.saturating_sub(1) as usize)) else {
         return false;
     };
     if start_line != end_line || name.is_empty() {
         return false;
     }
-    let spelled: String = first
-        .chars()
-        .skip(start_col.saturating_sub(1) as usize)
-        .take(end_col.saturating_sub(start_col) as usize)
-        .collect();
+    let spelled: String = first.chars().skip(start_col.saturating_sub(1) as usize).take(end_col.saturating_sub(start_col) as usize).collect();
     if !spelled.ends_with(name) {
         return false;
     }
-    let before: String = first
-        .chars()
-        .take(start_col.saturating_sub(1) as usize)
-        .collect();
+    let before: String = first.chars().take(start_col.saturating_sub(1) as usize).collect();
     let head = first.trim_start();
-    if head.starts_with("use ")
-        || (head.starts_with("pub") && head.contains(" use "))
-        || head.starts_with("#[")
-        || head.starts_with("#![")
-    {
+    if head.starts_with("use ") || (head.starts_with("pub") && head.contains(" use ")) || head.starts_with("#[") || head.starts_with("#![") {
         return false;
     }
-    let last_word = before
-        .trim_end()
-        .rsplit(|c: char| !c.is_alphanumeric() && c != '_')
-        .next();
+    let last_word = before.trim_end().rsplit(|c: char| !c.is_alphanumeric() && c != '_').next();
     if last_word == Some("fn") {
         return false;
     }
-    let rest: String = last
-        .chars()
-        .skip(end_col.saturating_sub(1) as usize)
-        .collect();
+    let rest: String = last.chars().skip(end_col.saturating_sub(1) as usize).collect();
     let rest = rest.trim_start();
     match rest.chars().next() {
         None => true,
@@ -88,38 +61,15 @@ mod tests {
     fn a_reference_over_another_token_is_no_value_use_of_the_function() {
         let line = "    Var(u32),";
         let col = line.find("u32").unwrap() as u32 + 1;
-        assert!(!is_function_value_use_in_lines(
-            &[line],
-            "serialize",
-            1,
-            col,
-            1,
-            col + 3
-        ));
-        assert!(!is_function_value_use_in_lines(
-            &[line],
-            "",
-            1,
-            col,
-            1,
-            col + 3
-        ));
+        assert!(!is_function_value_use_in_lines(&[line], "serialize", 1, col, 1, col + 3));
+        assert!(!is_function_value_use_in_lines(&[line], "", 1, col, 1, col + 3));
     }
 
     #[test]
     fn a_function_passed_on_is_a_value_use() {
-        assert!(at(
-            "    xs.iter().map(requires_default).count();",
-            "requires_default"
-        ));
-        assert!(at(
-            "    app.add_systems(Update, (rotate, move_it));",
-            "move_it"
-        ));
-        assert!(at(
-            "    app.add_systems(Update, (rotate, move_it));",
-            "rotate"
-        ));
+        assert!(at("    xs.iter().map(requires_default).count();", "requires_default"));
+        assert!(at("    app.add_systems(Update, (rotate, move_it));", "move_it"));
+        assert!(at("    app.add_systems(Update, (rotate, move_it));", "rotate"));
         assert!(at("    system.in_set(Set::A);", "system"));
         assert!(at("    .and_then(Error::regex)", "regex"));
         assert!(at("        handler,", "handler"));

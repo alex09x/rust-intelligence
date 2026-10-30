@@ -50,10 +50,7 @@ pub(crate) fn is_call_site_in_lines(lines: &[&str], span_end_line: u32, span_end
     if check_from(char_offset) {
         return true;
     }
-    if char_offset < line_chars.len()
-        && (line_chars[char_offset].is_alphanumeric() || line_chars[char_offset] == '_')
-        && check_from(char_offset + 1)
-    {
+    if char_offset < line_chars.len() && (line_chars[char_offset].is_alphanumeric() || line_chars[char_offset] == '_') && check_from(char_offset + 1) {
         return true;
     }
     false
@@ -74,10 +71,7 @@ pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) ->
 /// `'{'`). A lifetime or label (`'a`, `'static`, `'_`) has no closing quote within reach.
 fn opens_char_literal(chars: &std::iter::Peekable<std::str::Chars<'_>>) -> bool {
     let mut ahead = chars.clone();
-    matches!(
-        (ahead.next(), ahead.next()),
-        (Some('\\'), _) | (Some(_), Some('\''))
-    )
+    matches!((ahead.next(), ahead.next()), (Some('\\'), _) | (Some(_), Some('\'')))
 }
 
 pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32) -> u32 {
@@ -174,12 +168,7 @@ pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32
 /// functions, which exist only in the test target's shard, so a shard without a containing
 /// function does not end the lookup, and a function nested in one the other shard also holds wins
 /// whichever shard sorts first.
-pub(crate) fn find_enclosing_function<'a>(
-    ws: &'a WorkspaceIndex,
-    file: &str,
-    call_line: u32,
-    file_lines: &[&str],
-) -> Option<(WorkspaceSymbol<'a>, u32)> {
+pub(crate) fn find_enclosing_function<'a>(ws: &'a WorkspaceIndex, file: &str, call_line: u32, file_lines: &[&str]) -> Option<(WorkspaceSymbol<'a>, u32)> {
     // (start line, reader index, definition, file id, body end) of the best candidate so far
     let mut best: Option<(u32, usize, &DefEntry, u32, u32)> = None;
     for reader_idx in ws.reader_indices_for_file(file) {
@@ -193,11 +182,7 @@ pub(crate) fn find_enclosing_function<'a>(
         let mut candidates: Vec<_> = reader
             .definitions()
             .iter()
-            .filter(|def| {
-                def.span.file_id == fid
-                    && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn)
-                    && def.span.start_line <= call_line
-            })
+            .filter(|def| def.span.file_id == fid && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn) && def.span.start_line <= call_line)
             .collect();
 
         candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
@@ -218,11 +203,7 @@ pub(crate) fn find_enclosing_function<'a>(
 
     let (_, reader_idx, cand, fid, body_end) = best?;
     let reader = &ws.readers()[reader_idx];
-    let sig = if cand.sig_offset > 0 {
-        Some(reader.get_str(cand.sig_offset))
-    } else {
-        None
-    };
+    let sig = if cand.sig_offset > 0 { Some(reader.get_str(cand.sig_offset)) } else { None };
     Some((
         WorkspaceSymbol {
             crate_name: reader.crate_name(),
@@ -267,16 +248,8 @@ pub(crate) fn parse_impl_line(line: &str) -> (Option<String>, Option<String>) {
     };
     let without_generics = strip_leading_generics(after_impl);
     if let Some((trait_part, target_part)) = without_generics.split_once(" for ") {
-        let trait_name = trait_part
-            .split_whitespace()
-            .last()
-            .and_then(|p| p.split('<').next())
-            .map(|p| p.to_string());
-        let target_name = target_part
-            .split_whitespace()
-            .next()
-            .and_then(|p| p.split('<').next())
-            .map(|p| p.trim_matches('{').to_string());
+        let trait_name = trait_part.split_whitespace().last().and_then(|p| p.split('<').next()).map(|p| p.to_string());
+        let target_name = target_part.split_whitespace().next().and_then(|p| p.split('<').next()).map(|p| p.trim_matches('{').to_string());
         (trait_name, target_name)
     } else {
         (None, None)
@@ -337,11 +310,7 @@ pub(crate) fn get_impl_line_from_file(path: &Path, line_1based: u32) -> Option<S
     get_impl_line(&refs, target_idx)
 }
 
-pub(crate) fn find_definition_path_in_workspace<'a>(
-    ws: &'a WorkspaceIndex,
-    file_str: &str,
-    start_line: u32,
-) -> Option<&'a str> {
+pub(crate) fn find_definition_path_in_workspace<'a>(ws: &'a WorkspaceIndex, file_str: &str, start_line: u32) -> Option<&'a str> {
     if file_str.is_empty() {
         return None;
     }
@@ -352,11 +321,9 @@ pub(crate) fn find_definition_path_in_workspace<'a>(
         let reader = &ws.readers()[idx];
 
         if let Some(fid) = reader.find_file_id(target.as_ref()) {
-            if let Some(def) = reader.definitions().iter().find(|d| {
-                d.span.file_id == fid
-                    && matches!(DefKind::from(d.kind), DefKind::Fn | DefKind::AssocFn)
-                    && d.span.start_line == start_line
-            }) {
+            if let Some(def) =
+                reader.definitions().iter().find(|d| d.span.file_id == fid && matches!(DefKind::from(d.kind), DefKind::Fn | DefKind::AssocFn) && d.span.start_line == start_line)
+            {
                 return Some(reader.get_str(def.path_offset));
             }
         }

@@ -86,20 +86,13 @@ fn test_server_request_with_same_id_is_not_treated_as_response() {
 
     let mut reader = std::io::BufReader::new(Cursor::new(stream));
     let mut writer = Vec::new();
-    let res = read_lsp_response_with_writer(&mut reader, &mut writer, 2)
-        .expect("Must retrieve client response id 2");
+    let res = read_lsp_response_with_writer(&mut reader, &mut writer, 2).expect("Must retrieve client response id 2");
 
-    assert!(
-        res.get("method").is_none(),
-        "Must not return server request as response"
-    );
+    assert!(res.get("method").is_none(), "Must not return server request as response");
     assert_eq!(res["result"]["contents"], "hover markdown");
 
     let out_str = String::from_utf8_lossy(&writer);
-    assert!(
-        out_str.contains("\"id\":2"),
-        "Server request must be answered"
-    );
+    assert!(out_str.contains("\"id\":2"), "Server request must be answered");
     assert!(out_str.contains("\"result\":null"));
 }
 
@@ -126,8 +119,7 @@ fn test_symbol_resolution_chooses_exact_candidate() {
         ]
     });
 
-    let loc = ridx::compare::client::extract_symbol_location(&resp, "foo")
-        .expect("Must resolve exact symbol 'foo'");
+    let loc = ridx::compare::client::extract_symbol_location(&resp, "foo").expect("Must resolve exact symbol 'foo'");
     assert_eq!(loc.0, "file:///fixture/lib.rs");
     assert_eq!(loc.1, 10);
     assert_eq!(loc.2, 4);

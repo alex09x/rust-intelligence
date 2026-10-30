@@ -20,11 +20,7 @@ impl DocumentOverlay {
             return utf16_col_0based + 1;
         }
         let start = self.line_starts[line_idx];
-        let end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
+        let end = if line_idx + 1 < self.line_starts.len() { self.line_starts[line_idx + 1] } else { self.text.len() };
         let line_str = &self.text[start..end];
 
         let mut utf16_count = 0;
@@ -46,11 +42,7 @@ impl DocumentOverlay {
             return char_col_1based.saturating_sub(1);
         }
         let start = self.line_starts[line_idx];
-        let end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
+        let end = if line_idx + 1 < self.line_starts.len() { self.line_starts[line_idx + 1] } else { self.text.len() };
         let line_str = &self.text[start..end];
 
         let target_char = char_col_1based.saturating_sub(1);
@@ -86,11 +78,7 @@ impl DocumentOverlay {
             return self.text.len();
         }
         let start = self.line_starts[line_idx];
-        let end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
+        let end = if line_idx + 1 < self.line_starts.len() { self.line_starts[line_idx + 1] } else { self.text.len() };
         let line_str = &self.text[start..end];
 
         let target_char = col.saturating_sub(1) as usize;
@@ -111,11 +99,7 @@ impl DocumentOverlay {
             return self.text.len();
         }
         let start = self.line_starts[line_idx];
-        let end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
+        let end = if line_idx + 1 < self.line_starts.len() { self.line_starts[line_idx + 1] } else { self.text.len() };
         let line_str = &self.text[start..end];
 
         let mut cur_utf16 = 0;

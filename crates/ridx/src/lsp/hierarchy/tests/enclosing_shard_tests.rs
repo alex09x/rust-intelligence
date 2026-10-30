@@ -120,27 +120,10 @@ fn workspace(code: &str, shards: impl FnOnce(&str) -> Vec<Shard>) -> (PathBuf, W
 /// `tests::calls_helper` and its call.
 fn module_workspace() -> (PathBuf, WorkspaceIndex) {
     workspace(MODULE_CODE, |f| {
-        let lib = vec![
-            def(1, "helper", "unit_crate::helper", 1, 8, f),
-            def(2, "lib_caller", "unit_crate::lib_caller", 2, 8, f),
-        ];
+        let lib = vec![def(1, "helper", "unit_crate::helper", 1, 8, f), def(2, "lib_caller", "unit_crate::lib_caller", 2, 8, f)];
         let mut test = lib.clone();
-        test.push(def(
-            3,
-            "calls_helper",
-            "unit_crate::tests::calls_helper",
-            8,
-            8,
-            f,
-        ));
-        vec![
-            ("a_lib.ridx", lib, vec![call_of_helper(3, 5, f)]),
-            (
-                "b_test.ridx",
-                test,
-                vec![call_of_helper(3, 5, f), call_of_helper(9, 27, f)],
-            ),
-        ]
+        test.push(def(3, "calls_helper", "unit_crate::tests::calls_helper", 8, 8, f));
+        vec![("a_lib.ridx", lib, vec![call_of_helper(3, 5, f)]), ("b_test.ridx", test, vec![call_of_helper(3, 5, f), call_of_helper(9, 27, f)])]
     })
 }
 
@@ -148,25 +131,11 @@ fn module_workspace() -> (PathBuf, WorkspaceIndex) {
 /// the nested `inner` and both calls. `lib_first` chooses which shard name sorts first.
 fn nested_workspace(lib_first: bool) -> (PathBuf, WorkspaceIndex) {
     workspace(NESTED_CODE, |f| {
-        let lib = vec![
-            def(1, "helper", "unit_crate::helper", 1, 8, f),
-            def(2, "outer", "unit_crate::outer", 2, 8, f),
-        ];
+        let lib = vec![def(1, "helper", "unit_crate::helper", 1, 8, f), def(2, "outer", "unit_crate::outer", 2, 8, f)];
         let mut test = lib.clone();
         test.push(def(3, "inner", "unit_crate::outer::inner", 4, 8, f));
-        let (lib_name, test_name) = if lib_first {
-            ("a_lib.ridx", "b_test.ridx")
-        } else {
-            ("b_lib.ridx", "a_test.ridx")
-        };
-        vec![
-            (lib_name, lib, vec![call_of_helper(7, 5, f)]),
-            (
-                test_name,
-                test,
-                vec![call_of_helper(5, 9, f), call_of_helper(7, 5, f)],
-            ),
-        ]
+        let (lib_name, test_name) = if lib_first { ("a_lib.ridx", "b_test.ridx") } else { ("b_lib.ridx", "a_test.ridx") };
+        vec![(lib_name, lib, vec![call_of_helper(7, 5, f)]), (test_name, test, vec![call_of_helper(5, 9, f), call_of_helper(7, 5, f)])]
     })
 }
 
@@ -182,12 +151,7 @@ fn incoming_callers_of_helper(dir: &PathBuf, ws: &WorkspaceIndex) -> Vec<(String
         .unwrap()
         .iter()
         .map(|it| {
-            let lines = it["fromRanges"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|r| r["start"]["line"].as_u64().unwrap())
-                .collect();
+            let lines = it["fromRanges"].as_array().unwrap().iter().map(|r| r["start"]["line"].as_u64().unwrap()).collect();
             (it["from"]["name"].as_str().unwrap().to_string(), lines)
         })
         .collect();
@@ -199,13 +163,7 @@ fn incoming_callers_of_helper(dir: &PathBuf, ws: &WorkspaceIndex) -> Vec<(String
 fn a_caller_known_only_to_the_test_shard_of_the_file_is_listed() {
     let (dir, ws) = module_workspace();
     let callers = incoming_callers_of_helper(&dir, &ws);
-    assert_eq!(
-        callers,
-        vec![
-            ("calls_helper".to_string(), vec![8]),
-            ("lib_caller".to_string(), vec![2])
-        ]
-    );
+    assert_eq!(callers, vec![("calls_helper".to_string(), vec![8]), ("lib_caller".to_string(), vec![2])]);
     let _ = fs::remove_dir_all(dir);
 }
 
@@ -215,10 +173,7 @@ fn the_enclosing_function_is_looked_up_in_every_shard_of_the_file() {
     let file = dir.join("src/lib.rs");
     let lines: Vec<&str> = MODULE_CODE.lines().collect();
     let (in_test, end) = find_enclosing_function(&ws, file.to_str().unwrap(), 9, &lines).unwrap();
-    assert_eq!(
-        (in_test.name, in_test.path, end),
-        ("calls_helper", "unit_crate::tests::calls_helper", 10)
-    );
+    assert_eq!((in_test.name, in_test.path, end), ("calls_helper", "unit_crate::tests::calls_helper", 10));
     let (in_lib, end) = find_enclosing_function(&ws, file.to_str().unwrap(), 3, &lines).unwrap();
     assert_eq!((in_lib.name, end), ("lib_caller", 4));
     assert!(find_enclosing_function(&ws, file.to_str().unwrap(), 6, &lines).is_none());
@@ -229,28 +184,13 @@ fn the_enclosing_function_is_looked_up_in_every_shard_of_the_file() {
 fn the_innermost_function_wins_across_shards_in_either_order() {
     for lib_first in [true, false] {
         let (dir, ws) = nested_workspace(lib_first);
-        assert_eq!(
-            incoming_callers_of_helper(&dir, &ws),
-            vec![
-                ("inner".to_string(), vec![4]),
-                ("outer".to_string(), vec![6])
-            ],
-            "lib shard first: {lib_first}"
-        );
+        assert_eq!(incoming_callers_of_helper(&dir, &ws), vec![("inner".to_string(), vec![4]), ("outer".to_string(), vec![6])], "lib shard first: {lib_first}");
         let file = dir.join("src/lib.rs");
         let lines: Vec<&str> = NESTED_CODE.lines().collect();
         let (inner, end) = find_enclosing_function(&ws, file.to_str().unwrap(), 5, &lines).unwrap();
-        assert_eq!(
-            (inner.name, end),
-            ("inner", 6),
-            "lib shard first: {lib_first}"
-        );
+        assert_eq!((inner.name, end), ("inner", 6), "lib shard first: {lib_first}");
         let (outer, end) = find_enclosing_function(&ws, file.to_str().unwrap(), 7, &lines).unwrap();
-        assert_eq!(
-            (outer.name, end),
-            ("outer", 8),
-            "lib shard first: {lib_first}"
-        );
+        assert_eq!((outer.name, end), ("outer", 8), "lib shard first: {lib_first}");
         let _ = fs::remove_dir_all(dir);
     }
 }

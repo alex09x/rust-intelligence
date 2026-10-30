@@ -19,13 +19,7 @@ pub use types::*;
 use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
 
-fn collect_type_owner(
-    ws: &WorkspaceIndex,
-    file: &str,
-    type_name: &str,
-    owners: &mut Vec<String>,
-    seen: &mut HashSet<String>,
-) {
+fn collect_type_owner(ws: &WorkspaceIndex, file: &str, type_name: &str, owners: &mut Vec<String>, seen: &mut HashSet<String>) {
     if type_name.is_empty() {
         return;
     }
@@ -39,14 +33,7 @@ fn collect_type_owner(
     }
 }
 
-pub(crate) fn collect_trait_and_supertraits(
-    ws: &WorkspaceIndex,
-    file: &str,
-    trait_name: &str,
-    owners: &mut Vec<String>,
-    seen: &mut HashSet<String>,
-    depth: usize,
-) {
+pub(crate) fn collect_trait_and_supertraits(ws: &WorkspaceIndex, file: &str, trait_name: &str, owners: &mut Vec<String>, seen: &mut HashSet<String>, depth: usize) {
     if depth > 4 || trait_name.is_empty() {
         return;
     }
@@ -74,11 +61,9 @@ pub(crate) fn collect_trait_and_supertraits(
     if indexed_supertraits.is_empty() {
         if let Some(def) = def_opt {
             if def.kind == DefKind::Trait {
-                let abs_file =
-                    ws.resolve_path_for_crate(ws.crate_name_for_file(file).unwrap_or(""), def.file);
+                let abs_file = ws.resolve_path_for_crate(ws.crate_name_for_file(file).unwrap_or(""), def.file);
                 let file_str = abs_file.to_str().unwrap_or(def.file);
-                let supertraits =
-                    super::scope_cache::get_or_resolve_trait_supertraits(file_str, def.start_line);
+                let supertraits = super::scope_cache::get_or_resolve_trait_supertraits(file_str, def.start_line);
                 for st_clean in supertraits {
                     collect_trait_and_supertraits(ws, file_str, &st_clean, owners, seen, depth + 1);
                 }
@@ -88,13 +73,7 @@ pub(crate) fn collect_trait_and_supertraits(
 }
 
 /// Resolves owner candidates for `Self::` completion within the lexical scope of `file:line`.
-pub fn resolve_self_owners(
-    ws: &WorkspaceIndex,
-    file: &str,
-    line_1based: u32,
-    line_slice: &str,
-    overlay_text: Option<&str>,
-) -> Option<Vec<String>> {
+pub fn resolve_self_owners(ws: &WorkspaceIndex, file: &str, line_1based: u32, line_slice: &str, overlay_text: Option<&str>) -> Option<Vec<String>> {
     let scopes = super::scope_cache::get_or_parse_file_scopes(file, overlay_text)?;
     let cursor_byte = scopes.cursor_byte(line_1based, line_slice);
     let scope = scopes.find_enclosing_scope(cursor_byte)?;
@@ -102,19 +81,13 @@ pub fn resolve_self_owners(
     let mut seen = HashSet::new();
 
     match scope {
-        EnclosingScope::Impl {
-            trait_name,
-            type_name,
-        } => {
+        EnclosingScope::Impl { trait_name, type_name } => {
             if let Some(tname) = trait_name {
                 collect_trait_and_supertraits(ws, file, &tname, &mut owners, &mut seen, 0);
             }
             collect_type_owner(ws, file, &type_name, &mut owners, &mut seen);
         }
-        EnclosingScope::Trait {
-            trait_name,
-            supertraits,
-        } => {
+        EnclosingScope::Trait { trait_name, supertraits } => {
             collect_trait_and_supertraits(ws, file, &trait_name, &mut owners, &mut seen, 0);
             for st in supertraits {
                 collect_trait_and_supertraits(ws, file, &st, &mut owners, &mut seen, 0);
@@ -137,40 +110,16 @@ mod tests {
     #[test]
     fn test_parse_impl_headers() {
         let h1 = "impl<I: Iterator<Item: EntityEquivalent>> Iterator for UniqueEntityIter<I>";
-        assert_eq!(
-            parse_header(h1),
-            EnclosingScope::Impl {
-                trait_name: Some("Iterator".to_string()),
-                type_name: "UniqueEntityIter".to_string(),
-            }
-        );
+        assert_eq!(parse_header(h1), EnclosingScope::Impl { trait_name: Some("Iterator".to_string()), type_name: "UniqueEntityIter".to_string() });
 
         let h2 = "impl<K: EntityEquivalent + Hash, V> Slice<K, V>";
-        assert_eq!(
-            parse_header(h2),
-            EnclosingScope::Impl {
-                trait_name: None,
-                type_name: "Slice".to_string(),
-            }
-        );
+        assert_eq!(parse_header(h2), EnclosingScope::Impl { trait_name: None, type_name: "Slice".to_string() });
 
         let h3 = "unsafe impl<D: ReadOnlyQueryData + 'static, F: QueryFilter + 'static> QueryData for NestedQuery<D, F>";
-        assert_eq!(
-            parse_header(h3),
-            EnclosingScope::Impl {
-                trait_name: Some("QueryData".to_string()),
-                type_name: "NestedQuery".to_string(),
-            }
-        );
+        assert_eq!(parse_header(h3), EnclosingScope::Impl { trait_name: Some("QueryData".to_string()), type_name: "NestedQuery".to_string() });
 
         let h4 = "impl<T: Component> ContiguousQueryData for Ref<'_, T>";
-        assert_eq!(
-            parse_header(h4),
-            EnclosingScope::Impl {
-                trait_name: Some("ContiguousQueryData".to_string()),
-                type_name: "Ref".to_string(),
-            }
-        );
+        assert_eq!(parse_header(h4), EnclosingScope::Impl { trait_name: Some("ContiguousQueryData".to_string()), type_name: "Ref".to_string() });
     }
 
     #[test]
@@ -178,23 +127,11 @@ mod tests {
         let h1 = "pub trait ContiguousQueryData: ArchetypeQueryData + IterQueryData";
         assert_eq!(
             parse_header(h1),
-            EnclosingScope::Trait {
-                trait_name: "ContiguousQueryData".to_string(),
-                supertraits: vec![
-                    "ArchetypeQueryData".to_string(),
-                    "IterQueryData".to_string()
-                ],
-            }
+            EnclosingScope::Trait { trait_name: "ContiguousQueryData".to_string(), supertraits: vec!["ArchetypeQueryData".to_string(), "IterQueryData".to_string()] }
         );
 
         let h2 = "pub trait EntitySet";
-        assert_eq!(
-            parse_header(h2),
-            EnclosingScope::Trait {
-                trait_name: "EntitySet".to_string(),
-                supertraits: vec![],
-            }
-        );
+        assert_eq!(parse_header(h2), EnclosingScope::Trait { trait_name: "EntitySet".to_string(), supertraits: vec![] });
     }
 
     #[test]
@@ -209,13 +146,7 @@ impl MyStruct {
 }
 "#;
         let scope = find_enclosing_scope(code, 5, "            Self::");
-        assert_eq!(
-            scope,
-            Some(EnclosingScope::Impl {
-                trait_name: None,
-                type_name: "MyStruct".to_string(),
-            })
-        );
+        assert_eq!(scope, Some(EnclosingScope::Impl { trait_name: None, type_name: "MyStruct".to_string() }));
     }
 
     #[test]
@@ -227,13 +158,7 @@ impl<I: Iterator> Iterator for UniqueEntityIter<I> {
     fn reduce<F>(self, f: F) -> Option<Self::
 "#;
         let scope = find_enclosing_scope(code, 5, "    fn reduce<F>(self, f: F) -> Option<Self::");
-        assert_eq!(
-            scope,
-            Some(EnclosingScope::Impl {
-                trait_name: Some("Iterator".to_string()),
-                type_name: "UniqueEntityIter".to_string(),
-            })
-        );
+        assert_eq!(scope, Some(EnclosingScope::Impl { trait_name: Some("Iterator".to_string()), type_name: "UniqueEntityIter".to_string() }));
     }
 
     #[test]
@@ -246,13 +171,7 @@ unsafe impl<D: ReadOnlyQueryData + 'static, F: QueryFilter + 'static> QueryData
         state: &'s Self::
 "#;
         let scope = find_enclosing_scope(code, 6, "        state: &'s Self::");
-        assert_eq!(
-            scope,
-            Some(EnclosingScope::Impl {
-                trait_name: Some("QueryData".to_string()),
-                type_name: "NestedQuery".to_string(),
-            })
-        );
+        assert_eq!(scope, Some(EnclosingScope::Impl { trait_name: Some("QueryData".to_string()), type_name: "NestedQuery".to_string() }));
     }
 
     #[test]
@@ -264,12 +183,6 @@ pub trait EntitySet {
 }
 "#;
         let scope = find_enclosing_scope(code, 4, "    fn get(&self) -> Option<Self::");
-        assert_eq!(
-            scope,
-            Some(EnclosingScope::Trait {
-                trait_name: "EntitySet".to_string(),
-                supertraits: vec![],
-            })
-        );
+        assert_eq!(scope, Some(EnclosingScope::Trait { trait_name: "EntitySet".to_string(), supertraits: vec![] }));
     }
 }

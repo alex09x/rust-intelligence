@@ -69,47 +69,19 @@ impl MacroAndTraitHierarchyFixture {
     fn check_coords(&self, name: &str, line: u32, start_col: u32, end_col: u32) {
         assert!(line >= 1, "Line must be 1-based (got 0)");
         assert!(start_col >= 1, "Start column must be 1-based (got 0)");
-        assert!(
-            start_col <= end_col,
-            "Start column {} exceeds end column {} for '{}'",
-            start_col, end_col, name
-        );
+        assert!(start_col <= end_col, "Start column {} exceeds end column {} for '{}'", start_col, end_col, name);
 
         if !self.source_code.is_empty() {
             let lines: Vec<&str> = self.source_code.lines().collect();
             let l_idx = (line - 1) as usize;
-            assert!(
-                l_idx < lines.len(),
-                "Line {} out of bounds (source has {} lines) for '{}'",
-                line,
-                lines.len(),
-                name
-            );
+            assert!(l_idx < lines.len(), "Line {} out of bounds (source has {} lines) for '{}'", line, lines.len(), name);
             let chars: Vec<char> = lines[l_idx].chars().collect();
             let sc = (start_col - 1) as usize;
             let ec = (end_col - 1) as usize;
-            assert!(
-                sc <= chars.len(),
-                "Start column {} out of bounds (line {} has {} chars) for '{}'",
-                start_col,
-                line,
-                chars.len(),
-                name
-            );
-            assert!(
-                ec <= chars.len(),
-                "End column {} out of bounds (line {} has {} chars) for '{}'",
-                end_col,
-                line,
-                chars.len(),
-                name
-            );
+            assert!(sc <= chars.len(), "Start column {} out of bounds (line {} has {} chars) for '{}'", start_col, line, chars.len(), name);
+            assert!(ec <= chars.len(), "End column {} out of bounds (line {} has {} chars) for '{}'", end_col, line, chars.len(), name);
             let slice: String = chars[sc..ec].iter().collect();
-            assert_eq!(
-                slice, name,
-                "Coordinate mismatch at line {}: expected '{}', found '{}'",
-                line, name, slice
-            );
+            assert_eq!(slice, name, "Coordinate mismatch at line {}: expected '{}', found '{}'", line, name, slice);
         }
     }
 
@@ -161,14 +133,10 @@ impl MacroAndTraitHierarchyFixture {
 
     /// Records a function call reference targeting a known callee definition ID.
     pub fn add_call(&mut self, callee_path: &str, callee_def_id: u32, call_line: u32, call_start_col: u32, call_end_col: u32) {
-        let (target_line, target_col, _, _) = *self.def_spans.get(&callee_def_id).unwrap_or_else(|| {
-            panic!("MacroAndTraitHierarchyFixture::add_call: callee_def_id {} not registered", callee_def_id)
-        });
+        let (target_line, target_col, _, _) =
+            *self.def_spans.get(&callee_def_id).unwrap_or_else(|| panic!("MacroAndTraitHierarchyFixture::add_call: callee_def_id {} not registered", callee_def_id));
         let abs_str = self.file_path.to_str().unwrap();
-        self.builder.add_ref(
-            callee_path, abs_str, call_line, call_start_col, call_line, call_end_col,
-            Some(callee_def_id), Some(abs_str), target_line, target_col, DefKind::Fn,
-        );
+        self.builder.add_ref(callee_path, abs_str, call_line, call_start_col, call_line, call_end_col, Some(callee_def_id), Some(abs_str), target_line, target_col, DefKind::Fn);
     }
 
     /// Adds a macro definition.
@@ -201,9 +169,15 @@ impl MacroAndTraitHierarchyFixture {
         Ok(self.index_path.clone())
     }
 
-    pub fn uri(&self) -> &str { &self.uri }
-    pub fn file_path(&self) -> &Path { &self.file_path }
-    pub fn index_path(&self) -> &Path { &self.index_path }
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+    pub fn file_path(&self) -> &Path {
+        &self.file_path
+    }
+    pub fn index_path(&self) -> &Path {
+        &self.index_path
+    }
 }
 
 #[cfg(test)]

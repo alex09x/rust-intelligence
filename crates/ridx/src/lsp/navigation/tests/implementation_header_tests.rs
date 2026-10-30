@@ -73,26 +73,15 @@ fn only_impl_headers_are_implementations_of_a_trait() {
     for (line, col) in [(1, 6), (2, 17), (3, 1), (4, 13)] {
         w.add_reference(reference(u, t, line, col));
     }
-    w.write_to(&mut fs::File::create(dir.join("t.ridx")).unwrap())
-        .unwrap();
+    w.write_to(&mut fs::File::create(dir.join("t.ridx")).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&dir).unwrap();
     let req = json!({"params": {
         "textDocument": { "uri": path_to_uri(t) },
         "position": { "line": 0, "character": 10 }
     }});
-    let res = handle_implementation(
-        &req,
-        Some(&ws),
-        &OverlayManager::new(),
-        &mut PositionConverter::new(),
-    );
-    let mut lines: Vec<u64> = res
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|l| l["range"]["start"]["line"].as_u64().unwrap())
-        .collect();
+    let res = handle_implementation(&req, Some(&ws), &OverlayManager::new(), &mut PositionConverter::new());
+    let mut lines: Vec<u64> = res.as_array().unwrap().iter().map(|l| l["range"]["start"]["line"].as_u64().unwrap()).collect();
     lines.sort();
     assert_eq!(lines, vec![0, 3]);
     let _ = fs::remove_dir_all(&dir);

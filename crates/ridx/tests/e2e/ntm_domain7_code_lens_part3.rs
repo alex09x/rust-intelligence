@@ -59,10 +59,18 @@ fn indexed(name: &str, text: &str, defs: &[(DefKind, &str)]) -> Indexed {
     for (i, (kind, def_name)) in defs.iter().enumerate() {
         let (line, start_col, end_col) = at(text, def_name);
         writer.add_definition(RawDefinition {
-            def_id: i as u32 + 1, kind: *kind, visibility: 1, is_macro_expansion: false,
-            name: def_name.to_string(), path: format!("{name}::{def_name}"),
-            signature: None, file: "src/lib.rs".to_string(),
-            start_line: line, start_col, end_line: line, end_col,
+            def_id: i as u32 + 1,
+            kind: *kind,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: def_name.to_string(),
+            path: format!("{name}::{def_name}"),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: line,
+            start_col,
+            end_line: line,
+            end_col,
         });
     }
     writer.add_file_hash("src/lib.rs", normalized_source_hash(text.as_bytes()));
@@ -107,10 +115,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -161,16 +166,7 @@ fn test_code_lens_struct_definition_lens() {
 fn test_code_lens_enum_definition_lens() {
     // The index names the variants as well as the enum, so each variant has a lens.
     let text = "enum Color {\n    Red,\n    Green,\n    Blue,\n}\n";
-    let ix = indexed(
-        "p3_enum",
-        text,
-        &[
-            (DefKind::Enum, "Color"),
-            (DefKind::Variant, "Red"),
-            (DefKind::Variant, "Green"),
-            (DefKind::Variant, "Blue"),
-        ],
-    );
+    let ix = indexed("p3_enum", text, &[(DefKind::Enum, "Color"), (DefKind::Variant, "Red"), (DefKind::Variant, "Green"), (DefKind::Variant, "Blue")]);
     let mut dsp = TestDispatcher::with_root(&ix.shard);
     let result = dsp.open_and_lenses(&ix.file(), text, 302);
     let lenses = result.as_array().unwrap();
@@ -193,11 +189,7 @@ fn test_code_lens_enum_definition_lens() {
 #[test]
 fn test_code_lens_trait_definition_lens() {
     let text = "trait Greeter {\n    fn greet(&self);\n}\n";
-    let ix = indexed(
-        "p3_trait",
-        text,
-        &[(DefKind::Trait, "Greeter"), (DefKind::AssocFn, "greet")],
-    );
+    let ix = indexed("p3_trait", text, &[(DefKind::Trait, "Greeter"), (DefKind::AssocFn, "greet")]);
     let mut dsp = TestDispatcher::with_root(&ix.shard);
     let result = dsp.open_and_lenses(&ix.file(), text, 303);
     let lenses = result.as_array().unwrap();

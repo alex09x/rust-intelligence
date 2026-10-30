@@ -38,12 +38,7 @@ fn test_references_and_highlights() {
     // 3. Local binding references and highlights in overlay
     let mut local_ov_mgr = OverlayManager::new();
     let local_code = "fn test() {\n    let my_var = 1;\n    let _ = my_var;\n}\n";
-    local_ov_mgr.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        10,
-        local_code.to_string(),
-    );
+    local_ov_mgr.open_document(&uri, file_path.to_str().unwrap(), 10, local_code.to_string());
     let local_ref_req = json!({
         "params": {
             "textDocument": { "uri": &uri },

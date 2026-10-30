@@ -15,112 +15,43 @@ use std::fs;
 
 #[test]
 fn test_trait_filter_parsing() {
-    assert_eq!(
-        extract_trait_from_def_path("bevy_ecs::world::World::entity"),
-        None
-    );
+    assert_eq!(extract_trait_from_def_path("bevy_ecs::world::World::entity"), None);
     assert_eq!(extract_trait_from_def_path("<[T]>::len"), None);
-    assert_eq!(
-        extract_trait_from_def_path("<compare::query_runner::SetMetrics as core::fmt::Debug>::fmt"),
-        Some("core::fmt::Debug")
-    );
-    assert_eq!(
-        extract_trait_from_def_path("<bevy_ecs::entity::Entity as core::convert::Into<u64>>::into"),
-        Some("core::convert::Into<u64>")
-    );
-    assert_eq!(
-        extract_trait_from_def_path("<alloc::vec::Vec<T> as core::clone::Clone>::clone"),
-        Some("core::clone::Clone")
-    );
-    assert_eq!(
-        extract_trait_from_def_path(
-            "impls::core::option::_::<impl reflect::Reflect for core::option::Option<T>>::into_any"
-        ),
-        Some("reflect::Reflect")
-    );
-    assert_eq!(
-        extract_trait_from_def_path("core::option::Option::<T>::is_some"),
-        None
-    );
+    assert_eq!(extract_trait_from_def_path("<compare::query_runner::SetMetrics as core::fmt::Debug>::fmt"), Some("core::fmt::Debug"));
+    assert_eq!(extract_trait_from_def_path("<bevy_ecs::entity::Entity as core::convert::Into<u64>>::into"), Some("core::convert::Into<u64>"));
+    assert_eq!(extract_trait_from_def_path("<alloc::vec::Vec<T> as core::clone::Clone>::clone"), Some("core::clone::Clone"));
+    assert_eq!(extract_trait_from_def_path("impls::core::option::_::<impl reflect::Reflect for core::option::Option<T>>::into_any"), Some("reflect::Reflect"));
+    assert_eq!(extract_trait_from_def_path("core::option::Option::<T>::is_some"), None);
 
     // Test extract_trait_and_self_from_def_path
+    assert_eq!(extract_trait_and_self_from_def_path("<core::option::Option<T> as core::fmt::Debug>::fmt"), Some(("core::fmt::Debug", "core::option::Option<T>")));
     assert_eq!(
-        extract_trait_and_self_from_def_path("<core::option::Option<T> as core::fmt::Debug>::fmt"),
-        Some(("core::fmt::Debug", "core::option::Option<T>"))
-    );
-    assert_eq!(
-        extract_trait_and_self_from_def_path(
-            "impls::core::option::_::<impl reflect::Reflect for core::option::Option<T>>::into_any"
-        ),
+        extract_trait_and_self_from_def_path("impls::core::option::_::<impl reflect::Reflect for core::option::Option<T>>::into_any"),
         Some(("reflect::Reflect", "core::option::Option<T>"))
     );
-    assert_eq!(
-        extract_trait_and_self_from_def_path("<T as core::convert::AsRef<[u8]>>::as_ref"),
-        Some(("core::convert::AsRef<[u8]>", "T"))
-    );
-    assert_eq!(
-        extract_trait_and_self_from_def_path("core::option::Option::<T>::is_some"),
-        None
-    );
+    assert_eq!(extract_trait_and_self_from_def_path("<T as core::convert::AsRef<[u8]>>::as_ref"), Some(("core::convert::AsRef<[u8]>", "T")));
+    assert_eq!(extract_trait_and_self_from_def_path("core::option::Option::<T>::is_some"), None);
 
     // Test extract_parent_type
-    assert_eq!(
-        extract_parent_type(
-            "relationship::relationship_query::<impl system::query::Query<'w, 's, D, F>>"
-        ),
-        "system::query::Query<'w, 's, D, F>"
-    );
-    assert_eq!(
-        extract_parent_type("<alloc::boxed::Box<dyn core::any::Any>>"),
-        "alloc::boxed::Box<dyn core::any::Any>"
-    );
+    assert_eq!(extract_parent_type("relationship::relationship_query::<impl system::query::Query<'w, 's, D, F>>"), "system::query::Query<'w, 's, D, F>");
+    assert_eq!(extract_parent_type("<alloc::boxed::Box<dyn core::any::Any>>"), "alloc::boxed::Box<dyn core::any::Any>");
     assert_eq!(extract_parent_type("<[T]>"), "[T]");
-    assert_eq!(
-        extract_parent_type("bevy_ecs::world::World"),
-        "bevy_ecs::world::World"
-    );
+    assert_eq!(extract_parent_type("bevy_ecs::world::World"), "bevy_ecs::world::World");
 
-    assert_eq!(
-        base_trait_path("core::convert::Into<u64>"),
-        "core::convert::Into"
-    );
+    assert_eq!(base_trait_path("core::convert::Into<u64>"), "core::convert::Into");
     assert_eq!(base_trait_path("core::fmt::Debug"), "core::fmt::Debug");
-    assert_eq!(
-        base_trait_path("core::convert::AsRef<[u8]>"),
-        "core::convert::AsRef"
-    );
+    assert_eq!(base_trait_path("core::convert::AsRef<[u8]>"), "core::convert::AsRef");
 
-    assert_eq!(
-        base_type_path("core::option::Option<T>"),
-        "core::option::Option"
-    );
-    assert_eq!(
-        base_type_path("addr2line::Context::<R>"),
-        "addr2line::Context"
-    );
-    assert_eq!(
-        base_type_path("<alloc::boxed::Box<dyn Any>>"),
-        "alloc::boxed::Box"
-    );
+    assert_eq!(base_type_path("core::option::Option<T>"), "core::option::Option");
+    assert_eq!(base_type_path("addr2line::Context::<R>"), "addr2line::Context");
+    assert_eq!(base_type_path("<alloc::boxed::Box<dyn Any>>"), "alloc::boxed::Box");
 
-    assert!(type_matches_owner(
-        "core::option::Option<T>",
-        "core::option::Option"
-    ));
+    assert!(type_matches_owner("core::option::Option<T>", "core::option::Option"));
     assert!(type_matches_owner("Option<T>", "core::option::Option"));
-    assert!(type_matches_owner(
-        "system::query::Query<'w, 's, D, F>",
-        "bevy_ecs::system::query::Query"
-    ));
-    assert!(type_matches_owner(
-        "<alloc::boxed::Box<dyn Any>>",
-        "alloc::boxed::Box"
-    ));
+    assert!(type_matches_owner("system::query::Query<'w, 's, D, F>", "bevy_ecs::system::query::Query"));
+    assert!(type_matches_owner("<alloc::boxed::Box<dyn Any>>", "alloc::boxed::Box"));
     assert!(type_matches_owner("<alloc::boxed::Box<dyn Any>>", "Box"));
-    assert!(!type_matches_owner(
-        "addr2line::Context::<R>",
-        "core::option::Option"
-    ));
+    assert!(!type_matches_owner("addr2line::Context::<R>", "core::option::Option"));
     assert!(!type_matches_owner("scene::Scene", "core::option::Option"));
 
     assert_eq!(trait_short_name("core::convert::Into<u64>"), "Into");
@@ -144,9 +75,7 @@ fn test_signature_receiver_detection() {
     assert!(signature_takes_receiver("fn(mut self)"));
 
     // Capitalized Self receiver (sysroot compiler trait methods)
-    assert!(signature_takes_receiver(
-        "for<'a, 'b, 'c> fn(&'a Self, &'b mut std::fmt::Formatter<'c>) -> std::result::Result<(), std::fmt::Error>"
-    ));
+    assert!(signature_takes_receiver("for<'a, 'b, 'c> fn(&'a Self, &'b mut std::fmt::Formatter<'c>) -> std::result::Result<(), std::fmt::Error>"));
     assert!(signature_takes_receiver("fn(&'a Self) -> &'a Self::Target"));
     assert!(signature_takes_receiver("fn(&Self)"));
     assert!(signature_takes_receiver("fn(&mut Self)"));
@@ -156,9 +85,7 @@ fn test_signature_receiver_detection() {
     assert!(signature_takes_receiver("fn(Self, Self) -> Self"));
 
     // Non-receiver methods
-    assert!(!signature_takes_receiver(
-        "fn(ComponentId, &mut Registrator)"
-    ));
+    assert!(!signature_takes_receiver("fn(ComponentId, &mut Registrator)"));
     assert!(!signature_takes_receiver("fn(self_param: i32)"));
     assert!(!signature_takes_receiver("fn() -> i32"));
 }
@@ -170,13 +97,7 @@ fn test_categorize_definition_rules() {
     in_scope_traits.insert("IntoBytes".to_string());
 
     // 1. Inherent method on Option
-    let cat = categorize_definition(
-        DefKind::AssocFn,
-        "core::option::Option::<T>::is_some",
-        "core::option::Option",
-        "core::option::Option",
-        &empty_traits,
-    );
+    let cat = categorize_definition(DefKind::AssocFn, "core::option::Option::<T>::is_some", "core::option::Option", "core::option::Option", &empty_traits);
     assert_eq!(cat, DefScopeCategory::Inherent);
 
     // 2. Inherent method with module::<impl Type>::method (e.g. Query::iter_ancestors)
@@ -190,72 +111,30 @@ fn test_categorize_definition_rules() {
     assert_eq!(cat, DefScopeCategory::Inherent);
 
     // 3. Inherent method on <Box<dyn Any>>::downcast
-    let cat = categorize_definition(
-        DefKind::AssocFn,
-        "<alloc::boxed::Box<dyn core::any::Any>>::downcast",
-        "alloc::boxed::Box",
-        "Box",
-        &empty_traits,
-    );
+    let cat = categorize_definition(DefKind::AssocFn, "<alloc::boxed::Box<dyn core::any::Any>>::downcast", "alloc::boxed::Box", "Box", &empty_traits);
     assert_eq!(cat, DefScopeCategory::Inherent);
 
     // 4. Mismatched self type on impl Clone: <scene::Scene as Clone>::clone indexed under Option
-    let cat = categorize_definition(
-        DefKind::AssocFn,
-        "<scene::Scene as core::clone::Clone>::clone",
-        "core::option::Option",
-        "core::option::Option",
-        &empty_traits,
-    );
+    let cat = categorize_definition(DefKind::AssocFn, "<scene::Scene as core::clone::Clone>::clone", "core::option::Option", "core::option::Option", &empty_traits);
     assert_eq!(cat, DefScopeCategory::OutOfScopeTrait);
 
     // 5. Matching self type for prelude trait: <core::option::Option<T> as Clone>::clone
-    let cat = categorize_definition(
-        DefKind::AssocFn,
-        "<core::option::Option<T> as core::clone::Clone>::clone",
-        "core::option::Option",
-        "core::option::Option",
-        &empty_traits,
-    );
+    let cat = categorize_definition(DefKind::AssocFn, "<core::option::Option<T> as core::clone::Clone>::clone", "core::option::Option", "core::option::Option", &empty_traits);
     assert_eq!(cat, DefScopeCategory::PreludeTrait);
 
     // 6. Direct prelude trait method: core::fmt::Debug::fmt on Option
-    let cat = categorize_definition(
-        DefKind::AssocFn,
-        "core::fmt::Debug::fmt",
-        "core::fmt::Debug",
-        "core::option::Option",
-        &empty_traits,
-    );
+    let cat = categorize_definition(DefKind::AssocFn, "core::fmt::Debug::fmt", "core::fmt::Debug", "core::option::Option", &empty_traits);
     assert_eq!(cat, DefScopeCategory::PreludeTrait);
 
     // 7. Direct prelude deref trait method: core::ops::deref::Deref::deref on RwLockReadGuard
-    let cat = categorize_definition(
-        DefKind::AssocFn,
-        "core::ops::deref::Deref::deref",
-        "core::ops::deref::Deref",
-        "RwLockReadGuard",
-        &empty_traits,
-    );
+    let cat = categorize_definition(DefKind::AssocFn, "core::ops::deref::Deref::deref", "core::ops::deref::Deref", "RwLockReadGuard", &empty_traits);
     assert_eq!(cat, DefScopeCategory::PreludeTrait);
 
     // 8. Trait method when in scope vs out of scope
-    let cat_out = categorize_definition(
-        DefKind::AssocFn,
-        "zerocopy::IntoBytes::as_bytes",
-        "core::option::Option",
-        "core::option::Option",
-        &empty_traits,
-    );
+    let cat_out = categorize_definition(DefKind::AssocFn, "zerocopy::IntoBytes::as_bytes", "core::option::Option", "core::option::Option", &empty_traits);
     assert_eq!(cat_out, DefScopeCategory::OutOfScopeTrait);
 
-    let cat_in = categorize_definition(
-        DefKind::AssocFn,
-        "zerocopy::IntoBytes::as_bytes",
-        "core::option::Option",
-        "core::option::Option",
-        &in_scope_traits,
-    );
+    let cat_in = categorize_definition(DefKind::AssocFn, "zerocopy::IntoBytes::as_bytes", "core::option::Option", "core::option::Option", &in_scope_traits);
     assert_eq!(cat_in, DefScopeCategory::InScopeTrait);
 }
 
@@ -324,22 +203,10 @@ fn test_collect_file_referenced_traits_with_globs() {
     let ws = WorkspaceIndex::open(&ridx_file).unwrap();
     let traits = collect_file_referenced_traits(&ws, "src/main.rs");
 
-    assert!(
-        traits.contains("MyPreludeTrait"),
-        "Expected MyPreludeTrait from glob expansion"
-    );
-    assert!(
-        traits.contains("test_glob_crate::prelude::MyPreludeTrait"),
-        "Expected full trait path from glob expansion"
-    );
-    assert!(
-        !traits.contains("MyPreludeStruct"),
-        "Struct in prelude module must NOT be collected as a trait"
-    );
-    assert!(
-        !traits.contains("test_glob_crate::prelude::MyPreludeStruct"),
-        "Full struct path must NOT be collected as a trait"
-    );
+    assert!(traits.contains("MyPreludeTrait"), "Expected MyPreludeTrait from glob expansion");
+    assert!(traits.contains("test_glob_crate::prelude::MyPreludeTrait"), "Expected full trait path from glob expansion");
+    assert!(!traits.contains("MyPreludeStruct"), "Struct in prelude module must NOT be collected as a trait");
+    assert!(!traits.contains("test_glob_crate::prelude::MyPreludeStruct"), "Full struct path must NOT be collected as a trait");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -349,10 +216,7 @@ fn test_primitive_type_matches_owner() {
     assert!(type_matches_owner("[T]", "slice"));
     assert!(type_matches_owner("&[entity::Entity]", "slice"));
     assert!(type_matches_owner("&'_ [Entity]", "slice"));
-    assert!(type_matches_owner(
-        "<[core::mem::maybe_uninit::MaybeUninit<T>]>",
-        "slice"
-    ));
+    assert!(type_matches_owner("<[core::mem::maybe_uninit::MaybeUninit<T>]>", "slice"));
     assert!(type_matches_owner("slice", "slice"));
     assert!(type_matches_owner("[T; 4]", "array"));
     assert!(type_matches_owner("&[u8; 32]", "array"));

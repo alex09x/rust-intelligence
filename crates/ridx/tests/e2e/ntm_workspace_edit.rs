@@ -28,10 +28,7 @@ fn test_same_position_inserts_preserve_declared_order() {
         }),
     ];
     let result = apply_workspace_text_edits_to_content(content, &edits).expect("apply edits");
-    assert_eq!(
-        result, "ABx",
-        "Array order must be preserved: A, then B gives ABx"
-    );
+    assert_eq!(result, "ABx", "Array order must be preserved: A, then B gives ABx");
 }
 
 #[test]
@@ -76,10 +73,7 @@ fn test_partial_workspace_edit_rejected_atomically() {
     });
 
     let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
-    assert_eq!(
-        res["applied"], false,
-        "Multi-doc edit with one stale version must fail completely"
-    );
+    assert_eq!(res["applied"], false, "Multi-doc edit with one stale version must fail completely");
     assert_eq!(res["count"], 0);
 
     let overlay_a = overlay_mgr.get(file_a).unwrap();
@@ -122,19 +116,13 @@ fn test_open_document_command_edits_sync_disk_and_return_payload() {
     let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     assert_eq!(res["count"], 1);
-    assert!(
-        res.get("edit").is_some(),
-        "Response must return WorkspaceEdit payload"
-    );
+    assert!(res.get("edit").is_some(), "Response must return WorkspaceEdit payload");
 
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(overlay.text, "fn bar() {}");
 
     let disk_text = fs::read_to_string(&temp_file).unwrap();
-    assert_eq!(
-        disk_text, "fn foo() {}",
-        "Disk file must NOT be updated for open overlay, preserving dirty draft on disk"
-    );
+    assert_eq!(disk_text, "fn foo() {}", "Disk file must NOT be updated for open overlay, preserving dirty draft on disk");
 
     let _ = fs::remove_file(temp_file);
 }
@@ -245,10 +233,7 @@ fn test_review_v4651_dual_edit_representation_applied_once() {
 
     let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
-    assert_eq!(
-        res["count"], 1,
-        "Only documentChanges should be applied, not both"
-    );
+    assert_eq!(res["count"], 1, "Only documentChanges should be applied, not both");
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(overlay.text, "fn bar() {}");
 }
@@ -318,10 +303,7 @@ fn test_review_v4651_closed_edit_remains_dirty() {
     assert_eq!(res["applied"], true);
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(overlay.text, "fn bar() {}");
-    assert!(
-        overlay.is_dirty(),
-        "Closed file edited on disk must remain dirty relative to compiled index"
-    );
+    assert!(overlay.is_dirty(), "Closed file edited on disk must remain dirty relative to compiled index");
     let _ = fs::remove_file(temp_file);
 }
 
@@ -347,10 +329,7 @@ fn test_multiple_arguments_preserve_all_edits() {
     assert_eq!(res["count"], 2);
 
     let overlay = overlay_mgr.get(file).unwrap();
-    assert_eq!(
-        overlay.text, "AB",
-        "Multiple arguments must sequentially transform the document to AB"
-    );
+    assert_eq!(overlay.text, "AB", "Multiple arguments must sequentially transform the document to AB");
 }
 
 #[test]
@@ -375,10 +354,7 @@ fn test_disk_failure_rollback_and_reported_failure() {
     let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     #[cfg(unix)]
     {
-        assert_eq!(
-            res["applied"], false,
-            "Disk write failure must report applied: false"
-        );
+        assert_eq!(res["applied"], false, "Disk write failure must report applied: false");
         let _ = fs::set_permissions(&temp_file, std::fs::Permissions::from_mode(0o644));
     }
     let _ = fs::remove_file(temp_file);

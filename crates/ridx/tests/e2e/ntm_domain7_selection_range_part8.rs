@@ -31,12 +31,7 @@ fn to_uri(p: &Path) -> String {
 
 fn temp_file(tag: &str) -> PathBuf {
     let id = SEL_P8_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-        "ridx_sel_p8_{}_{}_{}.rs",
-        tag,
-        std::process::id(),
-        id
-    ))
+    std::env::temp_dir().join(format!("ridx_sel_p8_{}_{}_{}.rs", tag, std::process::id(), id))
 }
 
 struct TestDispatcher {
@@ -63,16 +58,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -103,16 +89,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -132,12 +110,7 @@ fn test_selection_range_token_start_middle_and_end_boundary_share_one_range() {
     open_doc(&mut dsp, &file, TOKENS_TEXT);
 
     // `value` spans columns 8..13: its start, middle and end boundary all select it.
-    let result = selection_ranges(
-        &mut dsp,
-        801,
-        &file,
-        &[(1, 8), (1, 10), (1, 13), (1, 16), (1, 21)],
-    );
+    let result = selection_ranges(&mut dsp, 801, &file, &[(1, 8), (1, 10), (1, 13), (1, 16), (1, 21)]);
     let value = chain(&[(1, 8, 1, 13), (0, 12, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]);
     let other = chain(&[(1, 16, 1, 21), (0, 12, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]);
     assert_eq!(result, json!([value, value, value, other, other]));
@@ -150,52 +123,24 @@ fn test_selection_range_whitespace_punctuation_and_number_have_no_token() {
     open_doc(&mut dsp, &file, TOKENS_TEXT);
 
     // Indentation, `=`, `+`, the digit `1` and `;`: the chain starts at the fn body.
-    let result = selection_ranges(
-        &mut dsp,
-        802,
-        &file,
-        &[(1, 2), (1, 14), (1, 22), (1, 24), (1, 25)],
-    );
+    let result = selection_ranges(&mut dsp, 802, &file, &[(1, 2), (1, 14), (1, 22), (1, 24), (1, 25)]);
     let body_only = chain(&[(0, 12, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]);
-    assert_eq!(
-        result,
-        json!([body_only, body_only, body_only, body_only, body_only])
-    );
+    assert_eq!(result, json!([body_only, body_only, body_only, body_only, body_only]));
 }
 
 #[test]
 fn test_selection_range_raw_identifier_and_lifetime_tokens() {
     let file = temp_file("rawlife");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn demo<'a>(r#type: &'a str) -> &'a str {\n    r#type\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn demo<'a>(r#type: &'a str) -> &'a str {\n    r#type\n}\n");
 
     // `'a` at 8..10 (on `'`, on `a`, at its end before `>`); `r#type` at 12..18 (on `r`, `#`,
     // inside). Signature positions sit in the fn item but before its body.
-    let result = selection_ranges(
-        &mut dsp,
-        803,
-        &file,
-        &[(0, 8), (0, 9), (0, 10), (0, 12), (0, 13), (0, 15), (1, 6)],
-    );
+    let result = selection_ranges(&mut dsp, 803, &file, &[(0, 8), (0, 9), (0, 10), (0, 12), (0, 13), (0, 15), (1, 6)]);
     let lifetime = chain(&[(0, 8, 0, 10), (0, 0, 2, 1), (0, 0, 3, 0)]);
     let raw_param = chain(&[(0, 12, 0, 18), (0, 0, 2, 1), (0, 0, 3, 0)]);
     let raw_in_body = chain(&[(1, 4, 1, 10), (0, 40, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]);
-    assert_eq!(
-        result,
-        json!([
-            lifetime,
-            lifetime,
-            lifetime,
-            raw_param,
-            raw_param,
-            raw_param,
-            raw_in_body
-        ])
-    );
+    assert_eq!(result, json!([lifetime, lifetime, lifetime, raw_param, raw_param, raw_param, raw_in_body]));
 }
 
 #[test]
@@ -232,21 +177,7 @@ fn test_selection_range_comment_and_literal_select_whole_node() {
 
     // Inside a comment, string, char or raw string the whole node is selected; the `{` in the
     // raw string opens no block; on the opening quote itself there is no token yet.
-    let result = selection_ranges(
-        &mut dsp,
-        805,
-        &file,
-        &[
-            (1, 10),
-            (2, 15),
-            (2, 25),
-            (3, 13),
-            (5, 9),
-            (6, 17),
-            (6, 22),
-            (2, 12),
-        ],
-    );
+    let result = selection_ranges(&mut dsp, 805, &file, &[(1, 10), (2, 15), (2, 25), (3, 13), (5, 9), (6, 17), (6, 22), (2, 12)]);
     let rest = [(0, 10, 7, 1), (0, 0, 7, 1), (0, 0, 8, 0)];
     let with = |first: (u32, u32, u32, u32)| chain(&[&[first][..], &rest[..]].concat());
     assert_eq!(
@@ -271,16 +202,7 @@ fn test_selection_range_fn_item_includes_doc_comment_and_attributes() {
     open_doc(
         &mut dsp,
         &file,
-        concat!(
-            "//! Module docs.\n",
-            "\n",
-            "/// Adds one.\n",
-            "#[inline]\n",
-            "#[must_use] // keep\n",
-            "pub fn add_one(x: i32) -> i32 {\n",
-            "    x + 1\n",
-            "}\n",
-        ),
+        concat!("//! Module docs.\n", "\n", "/// Adds one.\n", "#[inline]\n", "#[must_use] // keep\n", "pub fn add_one(x: i32) -> i32 {\n", "    x + 1\n", "}\n",),
     );
 
     // The item starts at `/// Adds one.`; the module doc comment above the blank line is not
@@ -301,35 +223,13 @@ fn test_selection_range_fn_item_includes_doc_comment_and_attributes() {
 fn test_selection_range_trait_method_without_body_and_nested_fn_item() {
     let file = temp_file("traitnested");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        concat!(
-            "trait Shape {\n",
-            "    fn area(&self) -> f64;\n",
-            "}\n",
-            "fn outer() {\n",
-            "    fn inner() {\n",
-            "        1\n",
-            "    }\n",
-            "}\n",
-        ),
-    );
+    open_doc(&mut dsp, &file, concat!("trait Shape {\n", "    fn area(&self) -> f64;\n", "}\n", "fn outer() {\n", "    fn inner() {\n", "        1\n", "    }\n", "}\n",));
 
     // A bodiless trait method is an item ending at `;` with no body node; a nested fn item
     // sits inside the outer fn body.
     let result = selection_ranges(&mut dsp, 807, &file, &[(1, 14), (5, 8)]);
     assert_eq!(
         result,
-        json!([
-            chain(&[(1, 13, 1, 17), (1, 4, 1, 26), (0, 12, 2, 1), (0, 0, 8, 0)]),
-            chain(&[
-                (4, 15, 6, 5),
-                (4, 4, 6, 5),
-                (3, 11, 7, 1),
-                (3, 0, 7, 1),
-                (0, 0, 8, 0)
-            ]),
-        ])
+        json!([chain(&[(1, 13, 1, 17), (1, 4, 1, 26), (0, 12, 2, 1), (0, 0, 8, 0)]), chain(&[(4, 15, 6, 5), (4, 4, 6, 5), (3, 11, 7, 1), (3, 0, 7, 1), (0, 0, 8, 0)]),])
     );
 }

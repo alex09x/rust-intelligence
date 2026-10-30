@@ -26,6 +26,37 @@ use std::sync::{Arc, Mutex};
 
 static SUPER_P5_COUNTER: AtomicU64 = AtomicU64::new(500);
 
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rdef(
+    id: u32,
+    kind: DefKind,
+    vis: u8,
+    mac: bool,
+    name: impl Into<String>,
+    path: impl Into<String>,
+    sig: Option<String>,
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+) -> RawDefinition {
+    RawDefinition {
+        def_id: id,
+        kind,
+        visibility: vis,
+        is_macro_expansion: mac,
+        name: name.into(),
+        path: path.into(),
+        signature: sig,
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+    }
+}
+
 fn to_uri(p: &Path) -> String {
     path_to_uri(p.to_str().unwrap())
 }
@@ -53,14 +84,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -77,56 +103,18 @@ fn test_type_hierarchy_supertypes_three_traits_on_same_struct() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("three_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "TraitA".to_string(), path: "three_crate::TraitA".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 15,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "TraitB".to_string(), path: "three_crate::TraitB".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 15,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "TraitC".to_string(), path: "three_crate::TraitC".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 15,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "TriStruct".to_string(), path: "three_crate::TriStruct".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 20,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 5, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TriStruct as TraitA>".to_string(), path: "<TriStruct as TraitA>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 6, start_col: 1, end_line: 6, end_col: 27,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 6, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TriStruct as TraitB>".to_string(), path: "<TriStruct as TraitB>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 7, start_col: 1, end_line: 7, end_col: 27,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 7, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TriStruct as TraitC>".to_string(), path: "<TriStruct as TraitC>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 8, start_col: 1, end_line: 8, end_col: 27,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "TraitA", "three_crate::TraitA", None, &lib_str, 1, 1, 1, 15));
+    writer.add_definition(rdef(2, DefKind::Trait, 1, false, "TraitB", "three_crate::TraitB", None, &lib_str, 2, 1, 2, 15));
+    writer.add_definition(rdef(3, DefKind::Trait, 1, false, "TraitC", "three_crate::TraitC", None, &lib_str, 3, 1, 3, 15));
+    writer.add_definition(rdef(4, DefKind::Struct, 1, false, "TriStruct", "three_crate::TriStruct", None, &lib_str, 4, 1, 4, 20));
+    writer.add_definition(rdef(5, DefKind::Impl, 1, false, "<TriStruct as TraitA>", "<TriStruct as TraitA>", None, &lib_str, 6, 1, 6, 27));
+    writer.add_definition(rdef(6, DefKind::Impl, 1, false, "<TriStruct as TraitB>", "<TriStruct as TraitB>", None, &lib_str, 7, 1, 7, 27));
+    writer.add_definition(rdef(7, DefKind::Impl, 1, false, "<TriStruct as TraitC>", "<TriStruct as TraitC>", None, &lib_str, 8, 1, 8, 27));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait TraitA {}\ntrait TraitB {}\ntrait TraitC {}\nstruct TriStruct;\n\nimpl TraitA for TriStruct {}\nimpl TraitB for TriStruct {}\nimpl TraitC for TriStruct {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 801, "method": "typeHierarchy/supertypes",
         "params": { "item": { "name": "TriStruct", "kind": 23, "uri": to_uri(&file) } }
@@ -146,32 +134,14 @@ fn test_type_hierarchy_supertypes_impl_with_comments_in_header() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("comm_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "LogTrait".to_string(), path: "comm_crate::LogTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Logger".to_string(), path: "comm_crate::Logger".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 15,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Logger as LogTrait>".to_string(), path: "<Logger as LogTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 35,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "LogTrait", "comm_crate::LogTrait", None, &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "Logger", "comm_crate::Logger", None, &lib_str, 2, 1, 2, 15));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<Logger as LogTrait>", "<Logger as LogTrait>", None, &lib_str, 4, 1, 4, 35));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait LogTrait {}\nstruct Logger;\n\nimpl LogTrait for Logger {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 802, "method": "typeHierarchy/supertypes",
         "params": { "item": { "name": "Logger", "kind": 23, "uri": to_uri(&file) } }
@@ -192,32 +162,14 @@ fn test_type_hierarchy_supertypes_associated_type_in_impl() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("assoc_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Iterator".to_string(), path: "assoc_crate::Iterator".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "MyIter".to_string(), path: "assoc_crate::MyIter".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 15,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<MyIter as Iterator>".to_string(), path: "<MyIter as Iterator>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 6, end_col: 2,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Iterator", "assoc_crate::Iterator", None, &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "MyIter", "assoc_crate::MyIter", None, &lib_str, 2, 1, 2, 15));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<MyIter as Iterator>", "<MyIter as Iterator>", None, &lib_str, 4, 1, 6, 2));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait Iterator {}\nstruct MyIter;\n\nimpl Iterator for MyIter {\n    type Item = u32;\n}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 803, "method": "typeHierarchy/supertypes",
         "params": { "item": { "name": "MyIter", "kind": 23, "uri": to_uri(&file) } }
@@ -238,32 +190,14 @@ fn test_type_hierarchy_supertypes_tuple_struct_impl() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("tuple_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Summable".to_string(), path: "tuple_crate::Summable".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Pair".to_string(), path: "tuple_crate::Pair".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 22,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Pair as Summable>".to_string(), path: "<Pair as Summable>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 26,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "Summable", "tuple_crate::Summable", None, &lib_str, 1, 1, 1, 18));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "Pair", "tuple_crate::Pair", None, &lib_str, 2, 1, 2, 22));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<Pair as Summable>", "<Pair as Summable>", None, &lib_str, 4, 1, 4, 26));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait Summable {}\nstruct Pair(i32, i32);\n\nimpl Summable for Pair {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 804, "method": "typeHierarchy/supertypes",
         "params": { "item": { "name": "Pair", "kind": 23, "uri": to_uri(&file) } }
@@ -284,32 +218,14 @@ fn test_type_hierarchy_supertypes_unit_struct_impl() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("unit_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "MarkerTrait".to_string(), path: "unit_crate::MarkerTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "UnitToken".to_string(), path: "unit_crate::UnitToken".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 17,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<UnitToken as MarkerTrait>".to_string(), path: "<UnitToken as MarkerTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 32,
-    });
+    writer.add_definition(rdef(1, DefKind::Trait, 1, false, "MarkerTrait", "unit_crate::MarkerTrait", None, &lib_str, 1, 1, 1, 21));
+    writer.add_definition(rdef(2, DefKind::Struct, 1, false, "UnitToken", "unit_crate::UnitToken", None, &lib_str, 2, 1, 2, 17));
+    writer.add_definition(rdef(3, DefKind::Impl, 1, false, "<UnitToken as MarkerTrait>", "<UnitToken as MarkerTrait>", None, &lib_str, 4, 1, 4, 32));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
-
     let code = "trait MarkerTrait {}\nstruct UnitToken;\n\nimpl MarkerTrait for UnitToken {}\n";
     std::fs::write(&file, code).unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 805, "method": "typeHierarchy/supertypes",
         "params": { "item": { "name": "UnitToken", "kind": 23, "uri": to_uri(&file) } }

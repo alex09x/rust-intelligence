@@ -68,14 +68,7 @@ fn test_completion_owner_method_isolation() {
 
     // Expression `a` at line 3, col 5 has owner "test_iso::ServiceA"
     writer.add_type_with_owner(
-        RawType {
-            file: src_path.clone(),
-            start_line: 3,
-            start_col: 5,
-            end_line: 3,
-            end_col: 6,
-            type_name: "ServiceA".to_string(),
-        },
+        RawType { file: src_path.clone(), start_line: 3, start_col: 5, end_line: 3, end_col: 6, type_name: "ServiceA".to_string() },
         Some("test_iso::ServiceA".to_string()),
     );
 
@@ -102,13 +95,7 @@ fn test_completion_owner_method_isolation() {
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1, "Must isolate and return exactly 1 item");
     assert_eq!(items[0]["label"], "execute");
-    assert!(
-        items[0]["detail"]
-            .as_str()
-            .unwrap()
-            .contains("ServiceA::execute"),
-        "Detail must refer to ServiceA, not ServiceB"
-    );
+    assert!(items[0]["detail"].as_str().unwrap().contains("ServiceA::execute"), "Detail must refer to ServiceA, not ServiceB");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -148,14 +135,7 @@ fn test_completion_autoderef_chain() {
 
     // Expression `ptr` at line 3, col 5 has owner "test_deref::SmartPtr"
     writer.add_type_with_owner(
-        RawType {
-            file: src_path.clone(),
-            start_line: 3,
-            start_col: 5,
-            end_line: 3,
-            end_col: 8,
-            type_name: "SmartPtr".to_string(),
-        },
+        RawType { file: src_path.clone(), start_line: 3, start_col: 5, end_line: 3, end_col: 8, type_name: "SmartPtr".to_string() },
         Some("test_deref::SmartPtr".to_string()),
     );
 
@@ -180,11 +160,7 @@ fn test_completion_autoderef_chain() {
 
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
-    assert_eq!(
-        items.len(),
-        1,
-        "Autoderef must find inner_action from InnerTarget"
-    );
+    assert_eq!(items.len(), 1, "Autoderef must find inner_action from InnerTarget");
     assert_eq!(items[0]["label"], "inner_action");
 
     let _ = fs::remove_dir_all(&temp_dir);
@@ -233,14 +209,7 @@ fn test_dot_fallback_completion_empty_prefix_finds_methods() {
 
     // Add type for `self.0` at line 4, col 9-15
     writer.add_type_with_owner(
-        RawType {
-            file: src_path.clone(),
-            start_line: 4,
-            start_col: 9,
-            end_line: 4,
-            end_col: 15,
-            type_name: "fixedbitset::FixedBitSet".to_string(),
-        },
+        RawType { file: src_path.clone(), start_line: 4, start_col: 9, end_line: 4, end_col: 15, type_name: "fixedbitset::FixedBitSet".to_string() },
         Some("fixedbitset::FixedBitSet".to_string()),
     );
 
@@ -266,16 +235,8 @@ fn test_dot_fallback_completion_empty_prefix_finds_methods() {
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
     let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
-    assert!(
-        labels.contains(&"is_disjoint"),
-        "Fallback dot completion must find is_disjoint, got: {:?}",
-        labels
-    );
-    assert!(
-        labels.contains(&"insert"),
-        "Fallback dot completion must find insert, got: {:?}",
-        labels
-    );
+    assert!(labels.contains(&"is_disjoint"), "Fallback dot completion must find is_disjoint, got: {:?}", labels);
+    assert!(labels.contains(&"insert"), "Fallback dot completion must find insert, got: {:?}", labels);
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

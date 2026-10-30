@@ -46,10 +46,18 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_str = lib_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "MyStruct".to_string(), path: format!("{}::MyStruct", name),
-        signature: Some("pub struct MyStruct".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyStruct".to_string(),
+        path: format!("{}::MyStruct", name),
+        signature: Some("pub struct MyStruct".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 18,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -84,10 +92,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -131,10 +136,18 @@ fn test_prepare_type_hierarchy_enum_definition() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("enum_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "Color".to_string(), path: "enum_crate::Color".to_string(),
-        signature: Some("pub enum Color".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 25,
+        def_id: 1,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Color".to_string(),
+        path: "enum_crate::Color".to_string(),
+        signature: Some("pub enum Color".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 25,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "enum Color { Red, Green, Blue }\n").unwrap();
@@ -165,10 +178,18 @@ fn test_prepare_type_hierarchy_trait_definition() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("trait_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: "trait_crate::Greeter".to_string(),
-        signature: Some("pub trait Greeter".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 8,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Greeter".to_string(),
+        path: "trait_crate::Greeter".to_string(),
+        signature: Some("pub trait Greeter".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 8,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "trait Greeter { fn greet(&self); }\n").unwrap();
@@ -199,10 +220,18 @@ fn test_prepare_type_hierarchy_type_alias_definition() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("alias_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-        name: "Result".to_string(), path: "alias_crate::Result".to_string(),
-        signature: Some("pub type Result<T> = std::result::Result<T, ()>".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::TyAlias,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Result".to_string(),
+        path: "alias_crate::Result".to_string(),
+        signature: Some("pub type Result<T> = std::result::Result<T, ()>".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "type Result<T> = std::result::Result<T, ()>;\n").unwrap();
@@ -233,16 +262,32 @@ fn test_prepare_type_hierarchy_cursor_on_function_returns_empty() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("fn_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "fn_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 4,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "fn_crate::foo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 4,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Bar".to_string(), path: "fn_crate::Bar".to_string(),
-        signature: None, file: lib_str,
-        start_line: 3, start_col: 1, end_line: 3, end_col: 15,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Bar".to_string(),
+        path: "fn_crate::Bar".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 15,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn foo() {}\n\nstruct Bar;\n").unwrap();

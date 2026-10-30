@@ -68,12 +68,7 @@ pub fn reconcile_diagnostics(heuristic: &[Value], authoritative: &[Value]) -> Ve
 ///
 /// Diagnostics whose lines fall into modified, inserted, or deleted regions are dropped.
 /// If `baseline_text` is None or equals `live_text`, diagnostics are returned as-is.
-pub fn map_authoritative_diagnostics_to_live(
-    auth_items: &[Value],
-    baseline_text: Option<&str>,
-    live_text: &str,
-    uri: &str,
-) -> Vec<Value> {
+pub fn map_authoritative_diagnostics_to_live(auth_items: &[Value], baseline_text: Option<&str>, live_text: &str, uri: &str) -> Vec<Value> {
     let Some(base_text) = baseline_text else {
         return auth_items.to_vec();
     };
@@ -109,32 +104,16 @@ pub fn map_authoritative_diagnostics_to_live(
                 d["range"]["end"]["line"] = json!(new_el.saturating_sub(1));
                 d["range"]["end"]["character"] = json!(ec);
 
-                if let Some(related) = d
-                    .get_mut("relatedInformation")
-                    .and_then(|r| r.as_array_mut())
-                {
+                if let Some(related) = d.get_mut("relatedInformation").and_then(|r| r.as_array_mut()) {
                     for rel in related {
                         if rel["location"]["uri"].as_str() == Some(uri) {
-                            if let (Some(r_sl), Some(r_el)) = (
-                                rel["location"]["range"]["start"]["line"].as_u64(),
-                                rel["location"]["range"]["end"]["line"].as_u64(),
-                            ) {
+                            if let (Some(r_sl), Some(r_el)) = (rel["location"]["range"]["start"]["line"].as_u64(), rel["location"]["range"]["end"]["line"].as_u64()) {
                                 if let (Some(m_sl), Some(m_el)) = (
-                                    crate::overlay::map_text_line_to_live(
-                                        base_text,
-                                        live_text,
-                                        r_sl as u32 + 1,
-                                    ),
-                                    crate::overlay::map_text_line_to_live(
-                                        base_text,
-                                        live_text,
-                                        r_el as u32 + 1,
-                                    ),
+                                    crate::overlay::map_text_line_to_live(base_text, live_text, r_sl as u32 + 1),
+                                    crate::overlay::map_text_line_to_live(base_text, live_text, r_el as u32 + 1),
                                 ) {
-                                    rel["location"]["range"]["start"]["line"] =
-                                        json!(m_sl.saturating_sub(1));
-                                    rel["location"]["range"]["end"]["line"] =
-                                        json!(m_el.saturating_sub(1));
+                                    rel["location"]["range"]["start"]["line"] = json!(m_sl.saturating_sub(1));
+                                    rel["location"]["range"]["end"]["line"] = json!(m_el.saturating_sub(1));
                                 }
                             }
                         }
@@ -156,13 +135,7 @@ pub fn map_authoritative_diagnostics_to_live(
 ///
 /// Sends a `textDocument/publishDiagnostics` notification when diagnostics are non-empty,
 /// or when previously active diagnostics for this document need to be cleared.
-pub fn publish_reconciled_diagnostics<W: Write>(
-    uri: &str,
-    version: Option<i32>,
-    overlay_mgr: &OverlayManager,
-    flycheck: &FlycheckState,
-    writer: &mut W,
-) -> std::io::Result<()> {
+pub fn publish_reconciled_diagnostics<W: Write>(uri: &str, version: Option<i32>, overlay_mgr: &OverlayManager, flycheck: &FlycheckState, writer: &mut W) -> std::io::Result<()> {
     let file = uri_to_path(uri);
     let ov_opt = overlay_mgr.get(&file);
     let file_text;
@@ -190,14 +163,10 @@ pub fn publish_reconciled_diagnostics<W: Write>(
     };
 
     let heuristic = handle_document_diagnostic_text(text);
-    let h_items = heuristic["items"]
-        .as_array()
-        .map(|a| a.as_slice())
-        .unwrap_or(&[]);
+    let h_items = heuristic["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
     let raw_auth = flycheck.get_latest_diagnostics(uri);
     let baseline = flycheck.get_diagnostic_baseline(uri);
-    let auth_items =
-        map_authoritative_diagnostics_to_live(&raw_auth, baseline.as_deref(), text, uri);
+    let auth_items = map_authoritative_diagnostics_to_live(&raw_auth, baseline.as_deref(), text, uri);
     let merged = reconcile_diagnostics(h_items, &auth_items);
 
     if !merged.is_empty() {
@@ -241,18 +210,10 @@ pub fn handle_internal_diagnostic<W: Write>(
     writer: &mut W,
 ) -> std::io::Result<()> {
     let uri = diag["params"]["uri"].as_str().unwrap_or("");
-    let diags = diag["params"]["diagnostics"]
-        .as_array()
-        .cloned()
-        .unwrap_or_default();
+    let diags = diag["params"]["diagnostics"].as_array().cloned().unwrap_or_default();
     let file = uri_to_path(uri);
-    let baseline = overlay_mgr
-        .get(&file)
-        .and_then(|ov| ov.disk_text.clone())
-        .or_else(|| std::fs::read_to_string(&file).ok());
-    lifecycle
-        .flycheck
-        .set_latest_diagnostics_with_baseline(uri, diags, baseline);
+    let baseline = overlay_mgr.get(&file).and_then(|ov| ov.disk_text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
+    lifecycle.flycheck.set_latest_diagnostics_with_baseline(uri, diags, baseline);
     if lifecycle.client_pull_diagnostics() {
         if lifecycle.client_refresh_diagnostics() {
             let refresh = json!({

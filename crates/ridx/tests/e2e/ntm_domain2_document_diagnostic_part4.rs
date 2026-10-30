@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> Value {
     Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -54,13 +49,7 @@ fn setup_initialized_server() -> (
     (mr, ov, lc, can)
 }
 
-fn send_diagnostic_req(
-    uri: &str,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<Value>>>,
-) -> Value {
+fn send_diagnostic_req(uri: &str, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
     let mut out = Vec::new();
     let req = json!({
         "jsonrpc": "2.0",
@@ -123,12 +112,7 @@ fn test_document_diagnostic_update_overlay_introduces_new_error() {
 fn test_document_diagnostic_multiple_let_mismatches_in_single_file() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///workspace/multiple_mismatches.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn main() {\n    let a: i32 = \"str\";\n    let b: bool = 100;\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn main() {\n    let a: i32 = \"str\";\n    let b: bool = 100;\n}\n");
 
     let val = send_diagnostic_req(uri, &mut mr, &mut ov, &mut lc, &can);
     let items = val["result"]["items"].as_array().unwrap();
@@ -182,12 +166,7 @@ fn test_document_diagnostic_raw_string_multiple_hashes_unclosed() {
 fn test_document_diagnostic_nested_closures_and_blocks_balanced() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///workspace/closures.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn main() {\n    let f = |x: i32| { (x + 1) };\n    let _ = f(5);\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn main() {\n    let f = |x: i32| { (x + 1) };\n    let _ = f(5);\n}\n");
 
     let val = send_diagnostic_req(uri, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["kind"], "full");

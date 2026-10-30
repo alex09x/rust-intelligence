@@ -10,12 +10,12 @@
 
 //! End-to-end tests for `textDocument/codeAction` (Part 2: parameter validation, organizeImports, refactor.extract, quickfix basics).
 
-use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::dispatch::dispatch_lsp_message;
 use ridx::lsp::error::INVALID_PARAMS;
+use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::LspMessage;
-use ridx::overlay::OverlayManager;
 use ridx::lsp::workspace::MultiRootWorkspace;
+use ridx::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -33,12 +33,7 @@ fn extract_response(out: &[u8]) -> Value {
     Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -55,13 +50,7 @@ fn setup_initialized_server() -> (
     (mr, ov, lc, can)
 }
 
-fn send_code_action_req(
-    params: Value,
-    mr: &mut MultiRootWorkspace,
-    ov: &mut OverlayManager,
-    lc: &mut LifecycleManager,
-    can: &Arc<Mutex<HashSet<Value>>>,
-) -> Value {
+fn send_code_action_req(params: Value, mr: &mut MultiRootWorkspace, ov: &mut OverlayManager, lc: &mut LifecycleManager, can: &Arc<Mutex<HashSet<Value>>>) -> Value {
     let mut out = Vec::new();
     let req = json!({
         "jsonrpc": "2.0",

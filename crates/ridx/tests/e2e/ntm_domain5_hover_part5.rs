@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -89,10 +84,7 @@ fn test_hover_nested_module_item() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn inner_work()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn inner_work()\n```");
 }
 
 #[test]
@@ -107,10 +99,7 @@ fn test_hover_struct_with_generics() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nstruct GenericBox\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nstruct GenericBox\n```");
 }
 
 #[test]
@@ -125,10 +114,7 @@ fn test_hover_enum_with_tuple_variants() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nenum EventKind\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nenum EventKind\n```");
 }
 
 #[test]
@@ -143,10 +129,7 @@ fn test_hover_const_with_explicit_type() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nconst MAX_PAYLOAD_SIZE\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nconst MAX_PAYLOAD_SIZE\n```");
 }
 
 #[test]
@@ -161,8 +144,5 @@ fn test_hover_static_raw_definition() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nstatic GLOBAL_FLAG\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nstatic GLOBAL_FLAG\n```");
 }

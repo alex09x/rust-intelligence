@@ -27,14 +27,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
 
-pub type WorkspaceCrateEntry = (
-    String,
-    String,
-    Vec<String>,
-    HashMap<String, String>,
-    HashMap<String, u64>,
-    PathBuf,
-);
+pub type WorkspaceCrateEntry = (String, String, Vec<String>, HashMap<String, String>, HashMap<String, u64>, PathBuf);
 
 #[allow(clippy::too_many_arguments)]
 pub fn try_direct_crate_indexing(
@@ -70,60 +63,28 @@ pub fn try_direct_crate_indexing(
         let content = fs::read(&path).ok()?;
         let val: serde_json::Value = serde_json::from_slice(&content).ok()?;
 
-        let is_dep = val
-            .get("is_dependency")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
+        let is_dep = val.get("is_dependency").and_then(|v| v.as_bool()).unwrap_or(false);
         if is_dep {
             if let Ok(info) = serde_json::from_value::<ridx_format::DependencyShardInfo>(val) {
                 dep_shards.push(info);
             }
         } else {
-            let crate_name = val
-                .get("name")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string();
-            let args: Vec<String> = val
-                .get("compiler_args")
-                .and_then(|v| v.as_array())
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|x| x.as_str().map(|s| s.to_string()))
-                        .collect()
-                })
-                .unwrap_or_default();
+            let crate_name = val.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let args: Vec<String> =
+                val.get("compiler_args").and_then(|v| v.as_array()).map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect()).unwrap_or_default();
 
             if args.is_empty() {
                 eprintln!("[ridx-direct] fallback to Cargo: compiler args missing for crate '{crate_name}'");
                 return None;
             }
 
-            let file_hashes: HashMap<String, u64> = val
-                .get("file_hashes")
-                .and_then(|v| v.as_object())
-                .map(|obj| {
-                    obj.iter()
-                        .filter_map(|(k, v)| v.as_u64().map(|h| (k.clone(), h)))
-                        .collect()
-                })
-                .unwrap_or_default();
+            let file_hashes: HashMap<String, u64> =
+                val.get("file_hashes").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_u64().map(|h| (k.clone(), h))).collect()).unwrap_or_default();
 
-            let env_vars: HashMap<String, String> = val
-                .get("env")
-                .and_then(|v| v.as_object())
-                .map(|obj| {
-                    obj.iter()
-                        .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
-                        .collect()
-                })
-                .unwrap_or_default();
+            let env_vars: HashMap<String, String> =
+                val.get("env").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect()).unwrap_or_default();
 
-            let target_id = path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or(&crate_name)
-                .to_string();
+            let target_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or(&crate_name).to_string();
             workspace_crates.push((target_id, crate_name, args, env_vars, file_hashes, path));
         }
     }
@@ -183,12 +144,8 @@ pub fn try_direct_crate_indexing(
     let (dependencies_of, rdeps_of) = build_workspace_dependency_graphs(&workspace_crates);
 
     // Map target_ids back to workspace crate data
-    let crate_map: HashMap<String, _> = workspace_crates
-        .into_iter()
-        .map(|(tid, name, args, env_vars, file_hashes, path)| {
-            (tid, (name, args, env_vars, file_hashes, path))
-        })
-        .collect();
+    let crate_map: HashMap<String, _> =
+        workspace_crates.into_iter().map(|(tid, name, args, env_vars, file_hashes, path)| (tid, (name, args, env_vars, file_hashes, path))).collect();
 
     // Determine directly modified target_ids
     let mut initial_changed = HashSet::new();
@@ -219,30 +176,17 @@ pub fn try_direct_crate_indexing(
     }
 
     // Collect distinct affected package names
-    let affected_packages: HashSet<String> = affected_target_ids
-        .iter()
-        .filter_map(|tid| {
-            crate_map.get(tid).map(|(name, _, env, ..)| {
-                env.get("CARGO_PKG_NAME")
-                    .cloned()
-                    .unwrap_or_else(|| name.clone())
-            })
-        })
-        .collect();
+    let affected_packages: HashSet<String> =
+        affected_target_ids.iter().filter_map(|tid| crate_map.get(tid).map(|(name, _, env, ..)| env.get("CARGO_PKG_NAME").cloned().unwrap_or_else(|| name.clone()))).collect();
 
     // Proc-macro crates produce dynamic libraries needed at compile time by downstream crates.
     // Direct indexing compiles with --emit=metadata which only produces .rmeta, causing downstream
     // compilation to fail if a proc-macro was modified or recompiled.
     for tid in &affected_target_ids {
         if let Some((crate_name, args, ..)) = crate_map.get(tid) {
-            let is_proc_macro = args
-                .windows(2)
-                .any(|w| w[0] == "--crate-type" && w[1] == "proc-macro")
-                || args.iter().any(|a| a == "--crate-type=proc-macro");
+            let is_proc_macro = args.windows(2).any(|w| w[0] == "--crate-type" && w[1] == "proc-macro") || args.iter().any(|a| a == "--crate-type=proc-macro");
             if is_proc_macro {
-                eprintln!(
-                    "[ridx-direct] fallback to Cargo: affected crate '{crate_name}' is a proc-macro"
-                );
+                eprintln!("[ridx-direct] fallback to Cargo: affected crate '{crate_name}' is a proc-macro");
                 return None;
             }
         }
@@ -250,11 +194,7 @@ pub fn try_direct_crate_indexing(
 
     // If more than 10 distinct workspace packages changed, let Cargo orchestrate
     if affected_packages.len() > 10 {
-        eprintln!(
-            "[ridx-direct] fallback to Cargo: too many affected packages ({} > 10: {:?})",
-            affected_packages.len(),
-            affected_packages
-        );
+        eprintln!("[ridx-direct] fallback to Cargo: too many affected packages ({} > 10: {:?})", affected_packages.len(), affected_packages);
         return None;
     }
 
@@ -295,8 +235,7 @@ pub fn try_direct_crate_indexing(
     // Execute direct indexing on changed targets in topological order
     for target_id in &sorted_target_ids {
         let (crate_name, args, env_vars, _, _) = crate_map.get(target_id)?;
-        let sanitized_args =
-            sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
+        let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
 
         let mut cmd = Command::new(driver_bin);
         if sanitized_args.is_empty() {
@@ -323,9 +262,7 @@ pub fn try_direct_crate_indexing(
 
         let status = cmd.status().ok()?;
         if !status.success() {
-            eprintln!(
-                "[ridx-direct] fallback to Cargo: direct rustc execution failed for '{crate_name}'"
-            );
+            eprintln!("[ridx-direct] fallback to Cargo: direct rustc execution failed for '{crate_name}'");
             return None;
         }
     }
@@ -334,12 +271,7 @@ pub fn try_direct_crate_indexing(
     let stats = ws.stats();
     let manifest_file = base_out_dir.join("ridx_manifest.json");
     let deps_dir = variant_out_dir.join(".deps");
-    let sysroot_cas_key = super::manifest::resolve_sysroot_cas_key(
-        &deps_dir,
-        &manifest_file,
-        driver_bin,
-        opts.target.as_deref(),
-    );
+    let sysroot_cas_key = super::manifest::resolve_sysroot_cas_key(&deps_dir, &manifest_file, driver_bin, opts.target.as_deref());
 
     let params = ManifestParams {
         variant_id,
@@ -363,16 +295,7 @@ pub fn try_direct_crate_indexing(
     publish_manifest(params).ok()?;
 
     let dur = start.elapsed().as_secs_f64() * 1000.0;
-    eprintln!(
-        "  {} Direct fast-path indexing finished in {:.1} ms ({} changed crates)",
-        "RIDX Success:".green().bold(),
-        dur,
-        sorted_target_ids.len()
-    );
+    eprintln!("  {} Direct fast-path indexing finished in {:.1} ms ({} changed crates)", "RIDX Success:".green().bold(), dur, sorted_target_ids.len());
 
-    Some(PublishedVariant {
-        base_out_dir: base_out_dir.to_path_buf(),
-        variant_out_dir: variant_out_dir.to_path_buf(),
-        variant_id: variant_id.to_string(),
-    })
+    Some(PublishedVariant { base_out_dir: base_out_dir.to_path_buf(), variant_out_dir: variant_out_dir.to_path_buf(), variant_id: variant_id.to_string() })
 }

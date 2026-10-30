@@ -15,28 +15,15 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(super) type OpenManifestInfo = (
-    PathBuf,
-    Option<std::time::SystemTime>,
-    String,
-    Vec<DependencyShardInfo>,
-    Option<PathBuf>,
-    Option<String>,
-);
+pub(super) type OpenManifestInfo = (PathBuf, Option<std::time::SystemTime>, String, Vec<DependencyShardInfo>, Option<PathBuf>, Option<String>);
 
 impl WorkspaceIndex {
-    pub(super) fn resolve_open_manifest(
-        search_dir: &Path,
-    ) -> io::Result<(PathBuf, Option<OpenManifestInfo>)> {
+    pub(super) fn resolve_open_manifest(search_dir: &Path) -> io::Result<(PathBuf, Option<OpenManifestInfo>)> {
         let manifest_file = search_dir.join("ridx_manifest.json");
         let res = if manifest_file.is_file() {
             let content = fs::read(&manifest_file)?;
-            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Failed to parse variant manifest {:?}: {e}", manifest_file),
-                )
-            })?;
+            let manifest = serde_json::from_slice::<VariantManifest>(&content)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse variant manifest {:?}: {e}", manifest_file)))?;
 
             let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
             if !manifest.active_variant_id.is_empty() {
@@ -45,9 +32,7 @@ impl WorkspaceIndex {
                 let vpath = Path::new(vdir_str);
                 if vdir_str.is_empty()
                     || vpath.is_absolute()
-                    || vpath
-                        .components()
-                        .any(|c| c == std::path::Component::ParentDir)
+                    || vpath.components().any(|c| c == std::path::Component::ParentDir)
                     || vpath == Path::new(".")
                     || vdir_str != expected_variant_dir
                 {
@@ -64,10 +49,7 @@ impl WorkspaceIndex {
                 if vdir == search_dir || !vdir.is_dir() {
                     return Err(io::Error::new(
                         io::ErrorKind::NotFound,
-                        format!(
-                            "Active variant directory {:?} specified in {:?} does not exist. Run 'ridx index' to build this variant.",
-                            vdir, manifest_file
-                        ),
+                        format!("Active variant directory {:?} specified in {:?} does not exist. Run 'ridx index' to build this variant.", vdir, manifest_file),
                     ));
                 }
 
@@ -76,7 +58,9 @@ impl WorkspaceIndex {
                         io::ErrorKind::InvalidData,
                         format!(
                             "Format version mismatch in manifest {:?}: format_version {} != current {}",
-                            manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                            manifest_file,
+                            manifest.format_version,
+                            crate::format::CURRENT_FORMAT_VERSION
                         ),
                     ));
                 }
@@ -86,17 +70,11 @@ impl WorkspaceIndex {
                     Some(ver) => {
                         return Err(io::Error::new(
                             io::ErrorKind::InvalidData,
-                            format!(
-                                "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
-                                manifest_file, ver, crate::format::EXTRACTOR_VERSION
-                            ),
+                            format!("Extractor version mismatch in manifest {:?}: extractor_version {} != current {}", manifest_file, ver, crate::format::EXTRACTOR_VERSION),
                         ));
                     }
                     None => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
-                            format!("Extractor version missing in manifest {:?}", manifest_file),
-                        ));
+                        return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Extractor version missing in manifest {:?}", manifest_file)));
                     }
                 }
 
@@ -107,11 +85,7 @@ impl WorkspaceIndex {
                         mtime,
                         manifest.active_variant_id,
                         manifest.dependency_shards,
-                        if !manifest.workspace_root.is_empty() {
-                            Some(PathBuf::from(manifest.workspace_root))
-                        } else {
-                            None
-                        },
+                        if !manifest.workspace_root.is_empty() { Some(PathBuf::from(manifest.workspace_root)) } else { None },
                         manifest.sysroot_cas_key,
                     )),
                 )
@@ -122,18 +96,9 @@ impl WorkspaceIndex {
         } else if search_dir.join("variant_manifest.json").is_file() {
             let v_manifest_file = search_dir.join("variant_manifest.json");
             let content = fs::read(&v_manifest_file)?;
-            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!(
-                        "Failed to parse variant manifest {:?}: {e}",
-                        v_manifest_file
-                    ),
-                )
-            })?;
-            let mtime = fs::metadata(&v_manifest_file)
-                .and_then(|m| m.modified())
-                .ok();
+            let manifest = serde_json::from_slice::<VariantManifest>(&content)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse variant manifest {:?}: {e}", v_manifest_file)))?;
+            let mtime = fs::metadata(&v_manifest_file).and_then(|m| m.modified()).ok();
             if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -150,20 +115,11 @@ impl WorkspaceIndex {
                 Some(ver) => {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
-                        format!(
-                            "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
-                            v_manifest_file, ver, crate::format::EXTRACTOR_VERSION
-                        ),
+                        format!("Extractor version mismatch in manifest {:?}: extractor_version {} != current {}", v_manifest_file, ver, crate::format::EXTRACTOR_VERSION),
                     ));
                 }
                 None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!(
-                            "Extractor version missing in manifest {:?}",
-                            v_manifest_file
-                        ),
-                    ));
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Extractor version missing in manifest {:?}", v_manifest_file)));
                 }
             }
             (
@@ -173,11 +129,7 @@ impl WorkspaceIndex {
                     mtime,
                     manifest.active_variant_id,
                     manifest.dependency_shards,
-                    if !manifest.workspace_root.is_empty() {
-                        Some(PathBuf::from(manifest.workspace_root))
-                    } else {
-                        None
-                    },
+                    if !manifest.workspace_root.is_empty() { Some(PathBuf::from(manifest.workspace_root)) } else { None },
                     manifest.sysroot_cas_key,
                 )),
             )
@@ -223,15 +175,7 @@ impl WorkspaceIndex {
 
         let has_ridx_indicators = cur.join("ridx_manifest.json").is_file()
             || cur.join("variant_manifest.json").is_file()
-            || fs::read_dir(&cur)
-                .ok()
-                .map(|mut rd| {
-                    rd.any(|e| {
-                        e.map(|e| e.path().extension().is_some_and(|ext| ext == "ridx"))
-                            .unwrap_or(false)
-                    })
-                })
-                .unwrap_or(false);
+            || fs::read_dir(&cur).ok().map(|mut rd| rd.any(|e| e.map(|e| e.path().extension().is_some_and(|ext| ext == "ridx")).unwrap_or(false))).unwrap_or(false);
         if has_ridx_indicators {
             candidates.push(cur.clone());
         }
@@ -244,10 +188,7 @@ impl WorkspaceIndex {
             }
         }
 
-        Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "Could not auto-discover target/ridx directory. Specify index path explicitly.",
-        ))
+        Err(io::Error::new(io::ErrorKind::NotFound, "Could not auto-discover target/ridx directory. Specify index path explicitly."))
     }
 }
 
@@ -255,12 +196,7 @@ pub(crate) fn collect_ridx_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Re
     collect_ridx_files_bounded(dir, files, 0, 2)
 }
 
-fn collect_ridx_files_bounded(
-    dir: &Path,
-    files: &mut Vec<PathBuf>,
-    depth: usize,
-    max_depth: usize,
-) -> io::Result<()> {
+fn collect_ridx_files_bounded(dir: &Path, files: &mut Vec<PathBuf>, depth: usize, max_depth: usize) -> io::Result<()> {
     if depth > max_depth {
         return Ok(());
     }
@@ -273,12 +209,7 @@ fn collect_ridx_files_bounded(
             }
         } else if p.is_dir() {
             if let Some(name) = p.file_name().and_then(|s| s.to_str()) {
-                if name.starts_with('.')
-                    || name == "variants"
-                    || name == "target"
-                    || name == "node_modules"
-                    || name == "vendor"
-                {
+                if name.starts_with('.') || name == "variants" || name == "target" || name == "node_modules" || name == "vendor" {
                     continue;
                 }
             }

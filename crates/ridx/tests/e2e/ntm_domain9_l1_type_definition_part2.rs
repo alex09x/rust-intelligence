@@ -61,13 +61,8 @@ fn test_l1_declaration_definition_parity_contract() {
     // 3. Whitespace (line 0, col 0)
     // 4. Out of bounds (line 99, col 0)
     // 5. Unregistered URI
-    let positions = [
-        make_pos_req(&uri, 1, 8),
-        make_pos_req(&uri, 5, 8),
-        make_pos_req(&uri, 0, 0),
-        make_pos_req(&uri, 99, 0),
-        make_pos_req("file:///workspace/nonexistent.rs", 0, 0),
-    ];
+    let positions =
+        [make_pos_req(&uri, 1, 8), make_pos_req(&uri, 5, 8), make_pos_req(&uri, 0, 0), make_pos_req(&uri, 99, 0), make_pos_req("file:///workspace/nonexistent.rs", 0, 0)];
 
     for req in &positions {
         let decl_res = handle_declaration(req, Some(&index), &overlay_mgr, &mut conv);
@@ -92,22 +87,13 @@ fn test_l1_declaration_definition_parity_contract() {
 fn test_l1_type_definition_local_variable_with_overlay() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_local_typedef", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_local_typedef",
-            "src/lib.rs",
-            "pub struct «Widget»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_local_typedef", "src/lib.rs", "pub struct «Widget»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let full_code = "pub struct Widget;\npub fn run() {\n    let w = Widget;\n}\n";
-    ws.add_source_file("pkg_local_typedef", "src/lib.rs", full_code)
-        .unwrap();
+    ws.add_source_file("pkg_local_typedef", "src/lib.rs", full_code).unwrap();
     // Line 3, cols 9..10 is `w`, type is "Widget"
-    ws.add_type_at("pkg_local_typedef", "src/lib.rs", 3, 9, 3, 10, "Widget")
-        .unwrap();
+    ws.add_type_at("pkg_local_typedef", "src/lib.rs", 3, 9, 3, 10, "Widget").unwrap();
 
     let shard = ws.build_crate_index("pkg_local_typedef").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -135,25 +121,12 @@ fn test_l1_type_definition_local_variable_with_overlay() {
 fn test_l1_type_definition_fn_parameter_cross_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_param_typedef", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_param_typedef",
-            "src/config.rs",
-            "pub struct «Config»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_param_typedef", "src/config.rs", "pub struct «Config»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
-    ws.add_source_file(
-        "pkg_param_typedef",
-        "src/lib.rs",
-        "pub fn run(cfg: Config) {}\n",
-    )
-    .unwrap();
+    ws.add_source_file("pkg_param_typedef", "src/lib.rs", "pub fn run(cfg: Config) {}\n").unwrap();
     // Line 1, cols 12..15 is `cfg`, type is "Config"
-    ws.add_type_at("pkg_param_typedef", "src/lib.rs", 1, 12, 1, 15, "Config")
-        .unwrap();
+    ws.add_type_at("pkg_param_typedef", "src/lib.rs", 1, 12, 1, 15, "Config").unwrap();
 
     let shard = ws.build_crate_index("pkg_param_typedef").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -177,25 +150,12 @@ fn test_l1_type_definition_fn_parameter_cross_file() {
 fn test_l1_type_definition_struct_field_target() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_field", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_field",
-            "src/models.rs",
-            "pub struct «Payload»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_field", "src/models.rs", "pub struct «Payload»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
-    ws.add_source_file(
-        "pkg_field",
-        "src/lib.rs",
-        "pub struct Container {\n    pub data: Payload,\n}\n",
-    )
-    .unwrap();
+    ws.add_source_file("pkg_field", "src/lib.rs", "pub struct Container {\n    pub data: Payload,\n}\n").unwrap();
     // Line 2, cols 9..13 is field `data`, type is "Payload"
-    ws.add_type_at("pkg_field", "src/lib.rs", 2, 9, 2, 13, "Payload")
-        .unwrap();
+    ws.add_type_at("pkg_field", "src/lib.rs", 2, 9, 2, 13, "Payload").unwrap();
 
     let shard = ws.build_crate_index("pkg_field").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -218,22 +178,13 @@ fn test_l1_type_definition_struct_field_target() {
 fn test_l1_type_definition_field_access_expression() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_field_expr", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_field_expr",
-            "src/lib.rs",
-            "pub struct «InnerCore»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_field_expr", "src/lib.rs", "pub struct «InnerCore»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct InnerCore;\npub struct Wrapper {\n    pub inner: InnerCore,\n}\nimpl Wrapper {\n    pub fn get(&self) { self.inner; }\n}\n";
-    ws.add_source_file("pkg_field_expr", "src/lib.rs", code)
-        .unwrap();
+    ws.add_source_file("pkg_field_expr", "src/lib.rs", code).unwrap();
     // Line 6, 1-based cols 30..35 is `inner` in `self.inner`, type is "InnerCore"
-    ws.add_type_at("pkg_field_expr", "src/lib.rs", 6, 30, 6, 35, "InnerCore")
-        .unwrap();
+    ws.add_type_at("pkg_field_expr", "src/lib.rs", 6, 30, 6, 35, "InnerCore").unwrap();
 
     let shard = ws.build_crate_index("pkg_field_expr").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -257,22 +208,13 @@ fn test_l1_type_definition_utf16_with_emoji_prefix() {
     ws.add_crate("pkg_utf16_type", "0.1.0").unwrap();
     // 2 crabs in comment: each takes 2 UTF-16 code units (surrogate pair)
     // "/* 🦀🦀 */ pub struct " = 3 + 4 + 4 + 11 = 22 UTF-16 code units
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_utf16_type",
-            "src/lib.rs",
-            "/* 🦀🦀 */ pub struct «SpecialToken»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_utf16_type", "src/lib.rs", "/* 🦀🦀 */ pub struct «SpecialToken»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let full_code = "/* 🦀🦀 */ pub struct SpecialToken;\npub fn run() { let token = SpecialToken; }\n";
-    ws.add_source_file("pkg_utf16_type", "src/lib.rs", full_code)
-        .unwrap();
+    ws.add_source_file("pkg_utf16_type", "src/lib.rs", full_code).unwrap();
     // Line 2, cols 20..25 is `token`, type is "SpecialToken"
-    ws.add_type_at("pkg_utf16_type", "src/lib.rs", 2, 20, 2, 25, "SpecialToken")
-        .unwrap();
+    ws.add_type_at("pkg_utf16_type", "src/lib.rs", 2, 20, 2, 25, "SpecialToken").unwrap();
 
     let shard = ws.build_crate_index("pkg_utf16_type").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -293,12 +235,7 @@ fn test_l1_type_definition_utf16_with_emoji_prefix() {
 fn test_l1_type_definition_missing_from_type_table_returns_null() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_missing_type", "0.1.0").unwrap();
-    ws.add_source_file(
-        "pkg_missing_type",
-        "src/lib.rs",
-        "pub fn compute() { let untyped = 123; }\n",
-    )
-    .unwrap();
+    ws.add_source_file("pkg_missing_type", "src/lib.rs", "pub fn compute() { let untyped = 123; }\n").unwrap();
 
     let shard = ws.build_crate_index("pkg_missing_type").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -318,13 +255,10 @@ fn test_l1_type_definition_prefers_exact_name_over_substring_match() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_exact_match", "0.1.0").unwrap();
     let template = "pub struct «AppConfig»;\npub struct «Config»;\npub fn run() { let cfg = Config; }\n";
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_exact_match", "src/lib.rs", template, DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_exact_match", "src/lib.rs", template, DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 2);
     // Line 3 (1-based), cols 20..23 is `cfg` with type "Config"
-    ws.add_type_at("pkg_exact_match", "src/lib.rs", 3, 20, 3, 23, "Config")
-        .unwrap();
+    ws.add_type_at("pkg_exact_match", "src/lib.rs", 3, 20, 3, 23, "Config").unwrap();
     let shard = ws.build_crate_index("pkg_exact_match").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
     let overlay_mgr = OverlayManager::new();
@@ -345,13 +279,10 @@ fn test_l1_type_definition_no_exact_match_returns_null() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_no_match", "0.1.0").unwrap();
     let template = "pub struct «AppConfig»;\npub fn run() { let cfg = 42; }\n";
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_no_match", "src/lib.rs", template, DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_no_match", "src/lib.rs", template, DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
     // Line 2 (1-based), cols 20..23 is `cfg` with unindexed alias type "Conf"
-    ws.add_type_at("pkg_no_match", "src/lib.rs", 2, 20, 2, 23, "Conf")
-        .unwrap();
+    ws.add_type_at("pkg_no_match", "src/lib.rs", 2, 20, 2, 23, "Conf").unwrap();
     let shard = ws.build_crate_index("pkg_no_match").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
     let overlay_mgr = OverlayManager::new();

@@ -48,10 +48,7 @@ const RUST_PRELUDE_PATHS: &[&str] = &[
     "core::ops::Drop",
 ];
 
-const PRIMITIVE_TYPES: &[&str] = &[
-    "bool", "char", "str", "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64",
-    "i128", "isize", "f32", "f64",
-];
+const PRIMITIVE_TYPES: &[&str] = &["bool", "char", "str", "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64"];
 
 pub fn is_prelude_symbol(symbol_path: &str) -> bool {
     if !symbol_path.contains("::") {
@@ -206,11 +203,7 @@ fn extract_use_statements(doc_text: &str) -> Vec<String> {
         let trimmed = line.trim();
         if !in_use {
             if trimmed.starts_with("use ") || trimmed.starts_with("pub use ") {
-                let start_idx = if let Some(idx) = trimmed.find("use ") {
-                    idx + 4
-                } else {
-                    0
-                };
+                let start_idx = if let Some(idx) = trimmed.find("use ") { idx + 4 } else { 0 };
                 current_stmt.push_str(&trimmed[start_idx..]);
                 if trimmed.ends_with(';') {
                     let cleaned = current_stmt.trim_end_matches(';').trim().to_string();

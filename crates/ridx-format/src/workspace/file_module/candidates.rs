@@ -17,11 +17,7 @@ impl WorkspaceIndex {
     /// this reader does not index the file. Every string returned is accepted by that reader's
     /// exact `find_file_id`: the input is re-expressed in the reader's coordinates (relative to
     /// the workspace root or to the source root) and compared whole, never by suffix.
-    pub fn target_file_for_reader<'a>(
-        &self,
-        reader_idx: usize,
-        file: &'a str,
-    ) -> Option<std::borrow::Cow<'a, str>> {
+    pub fn target_file_for_reader<'a>(&self, reader_idx: usize, file: &'a str) -> Option<std::borrow::Cow<'a, str>> {
         let reader = self.readers.get(reader_idx)?;
         let p = Path::new(file);
         let root_opt = self.reader_root(reader_idx);
@@ -116,13 +112,7 @@ impl WorkspaceIndex {
         let mut candidates: Vec<usize> = raw_candidates
             .into_iter()
             .filter(|&idx| {
-                let is_non_lib = self
-                    .target_kinds
-                    .get(idx)
-                    .copied()
-                    .flatten()
-                    .map(|k| !k.is_lib())
-                    .unwrap_or(false);
+                let is_non_lib = self.target_kinds.get(idx).copied().flatten().map(|k| !k.is_lib()).unwrap_or(false);
                 if is_non_lib {
                     if self.readers[idx].files_count() > 0 {
                         self.target_file_for_reader(idx, file).is_some()
@@ -134,36 +124,16 @@ impl WorkspaceIndex {
                 }
             })
             .collect();
-        candidates.sort_by_key(|&idx| {
-            if self
-                .target_kinds
-                .get(idx)
-                .copied()
-                .flatten()
-                .map(|k| k.is_lib())
-                .unwrap_or(false)
-            {
-                0
-            } else {
-                1
-            }
-        });
+        candidates.sort_by_key(|&idx| if self.target_kinds.get(idx).copied().flatten().map(|k| k.is_lib()).unwrap_or(false) { 0 } else { 1 });
         let mut non_dep_others = Vec::new();
         let mut sysroot_others = Vec::new();
         let mut dep_others = Vec::new();
 
         for idx in 0..self.readers.len() {
             if !candidates.contains(&idx) {
-                let is_inaccessible = self
-                    .target_kinds
-                    .get(idx)
-                    .copied()
-                    .flatten()
-                    .map(|k| !k.is_lib())
-                    .unwrap_or(false);
+                let is_inaccessible = self.target_kinds.get(idx).copied().flatten().map(|k| !k.is_lib()).unwrap_or(false);
                 if !is_inaccessible {
-                    let is_sysroot =
-                        matches!(self.readers[idx].crate_name(), "core" | "alloc" | "std");
+                    let is_sysroot = matches!(self.readers[idx].crate_name(), "core" | "alloc" | "std");
                     let is_dep = self.reader_is_dependency.get(idx).copied().unwrap_or(false);
                     if is_sysroot {
                         sysroot_others.push(idx);

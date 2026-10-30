@@ -29,23 +29,10 @@ fn setup_open_doc(uri: &str, initial_text: &str) -> (LifecycleManager, MultiRoot
     (lifecycle, multi_root, overlay_mgr)
 }
 
-fn dispatch_did_change(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_change(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -64,7 +51,9 @@ fn test_did_change_full_sync_replaces_entire_buffer() {
                 "contentChanges": [{ "text": "fn replacement() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -95,7 +84,9 @@ fn test_did_change_insert_at_start_of_document() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -124,7 +115,9 @@ fn test_did_change_insert_at_end_of_document() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -153,7 +146,9 @@ fn test_did_change_insert_in_middle_of_line() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -182,7 +177,9 @@ fn test_did_change_delete_entire_document() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -211,7 +208,9 @@ fn test_did_change_delete_first_character() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -240,7 +239,9 @@ fn test_did_change_delete_last_character() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -269,7 +270,9 @@ fn test_did_change_replace_word_in_line() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -298,7 +301,9 @@ fn test_did_change_replace_multiline_block() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -327,7 +332,9 @@ fn test_did_change_empty_change_leaves_text_intact() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);

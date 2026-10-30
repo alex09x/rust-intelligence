@@ -42,25 +42,12 @@ fn test_l1_type_definition_cross_crate_two_shards() {
     ws.add_crate("types_crate", "0.1.0").unwrap();
     ws.add_crate("client_crate", "0.1.0").unwrap();
 
-    let (_, type_ids) = ws
-        .add_source_file_with_defs(
-            "types_crate",
-            "src/lib.rs",
-            "pub struct «RemoteConfig»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, type_ids) = ws.add_source_file_with_defs("types_crate", "src/lib.rs", "pub struct «RemoteConfig»;\n", DefKind::Struct).unwrap();
     assert_eq!(type_ids.len(), 1);
 
-    ws.add_source_file(
-        "client_crate",
-        "src/lib.rs",
-        "pub fn setup(cfg: RemoteConfig) {}\n",
-    )
-    .unwrap();
+    ws.add_source_file("client_crate", "src/lib.rs", "pub fn setup(cfg: RemoteConfig) {}\n").unwrap();
     // Line 1, 1-based cols 14..17 is `cfg`, type is "RemoteConfig"
-    ws.add_type_at("client_crate", "src/lib.rs", 1, 14, 1, 17, "RemoteConfig")
-        .unwrap();
+    ws.add_type_at("client_crate", "src/lib.rs", 1, 14, 1, 17, "RemoteConfig").unwrap();
 
     ws.build_all_indices().unwrap();
     let index = WorkspaceIndex::open(ws.root_path()).unwrap();
@@ -86,10 +73,8 @@ fn test_l1_type_definition_same_named_type_prefers_local_crate() {
     ws.add_crate("zzz_local", "0.1.0").unwrap();
 
     // Both crates define `Record` in their respective `src/lib.rs`
-    ws.add_source_file_with_defs("aaa_shared", "src/lib.rs", "pub struct «Record»;\n", DefKind::Struct)
-        .unwrap();
-    ws.add_source_file_with_defs("zzz_local", "src/lib.rs", "pub struct «Record»;\n", DefKind::Struct)
-        .unwrap();
+    ws.add_source_file_with_defs("aaa_shared", "src/lib.rs", "pub struct «Record»;\n", DefKind::Struct).unwrap();
+    ws.add_source_file_with_defs("zzz_local", "src/lib.rs", "pub struct «Record»;\n", DefKind::Struct).unwrap();
 
     // Query is made from a DIFFERENT file in zzz_local (`src/main.rs`), ensuring same-file tier does not match
     let main_code = "pub fn main() { let r = 42; }\n";
@@ -120,15 +105,7 @@ fn test_l1_type_definition_qualified_path_suffix_fallback() {
     ws.add_crate("driver_pkg", "0.1.0").unwrap();
 
     // Definition in src/service.rs with path driver_pkg::service::DriverHandle
-    let (_, ids) = ws
-        .add_source_file_with_prefix_defs(
-            "driver_pkg",
-            "src/service.rs",
-            "pub struct «DriverHandle»;\n",
-            "driver_pkg::service",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_prefix_defs("driver_pkg", "src/service.rs", "pub struct «DriverHandle»;\n", "driver_pkg::service", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     // Query file has type_at registering partially qualified suffix "service::DriverHandle"
@@ -155,15 +132,7 @@ fn test_l1_type_definition_qualified_path_exact_match() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("driver_pkg2", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_prefix_defs(
-            "driver_pkg2",
-            "src/service.rs",
-            "pub struct «DriverHandle»;\n",
-            "driver_pkg2::service",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_prefix_defs("driver_pkg2", "src/service.rs", "pub struct «DriverHandle»;\n", "driver_pkg2::service", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     // Query file registers fully-qualified path "driver_pkg2::service::DriverHandle"
@@ -190,14 +159,7 @@ fn test_l1_type_definition_utf16_query_side() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_utf16_query", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_utf16_query",
-            "src/models.rs",
-            "pub struct «SuperState»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_utf16_query", "src/models.rs", "pub struct «SuperState»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     // Query line in src/lib.rs:
@@ -234,14 +196,7 @@ fn test_l1_type_definition_generic_wrapper_type_string_returns_null() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_generic_type", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_generic_type",
-            "src/lib.rs",
-            "pub struct «Config»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_generic_type", "src/lib.rs", "pub struct «Config»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct Config;\npub fn run() { let list = 1; }\n";

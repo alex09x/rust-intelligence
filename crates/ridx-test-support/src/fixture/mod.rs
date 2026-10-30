@@ -50,9 +50,7 @@ impl FixtureIndexBuilder {
 
     /// Returns definition span coordinates `(start_line, start_col, end_line, end_col)` if recorded.
     pub fn def_span(&self, def_id: u32) -> Option<(u32, u32, u32, u32)> {
-        self.defs
-            .get(&def_id)
-            .map(|d| (d.start_line, d.start_col, d.end_line, d.end_col))
+        self.defs.get(&def_id).map(|d| (d.start_line, d.start_col, d.end_line, d.end_col))
     }
 
     /// Looks up a recorded definition by its ID.
@@ -61,38 +59,13 @@ impl FixtureIndexBuilder {
     }
 
     /// Adds an inferred expression type at 1-based coordinates.
-    pub fn add_type(
-        &mut self,
-        file: &str,
-        start_line: u32,
-        start_col: u32,
-        end_line: u32,
-        end_col: u32,
-        type_name: &str,
-    ) {
-        self.types_list.push(RawType {
-            file: file.to_string(),
-            start_line,
-            start_col,
-            end_line,
-            end_col,
-            type_name: type_name.to_string(),
-        });
+    pub fn add_type(&mut self, file: &str, start_line: u32, start_col: u32, end_line: u32, end_col: u32, type_name: &str) {
+        self.types_list.push(RawType { file: file.to_string(), start_line, start_col, end_line, end_col, type_name: type_name.to_string() });
     }
 
     /// Adds a raw definition with 1-based char coordinates (matching ridx-driver).
     #[allow(clippy::too_many_arguments)]
-    pub fn add_def(
-        &mut self,
-        name: &str,
-        path: &str,
-        kind: DefKind,
-        file: &str,
-        start_line: u32,
-        start_col: u32,
-        end_line: u32,
-        end_col: u32,
-    ) -> u32 {
+    pub fn add_def(&mut self, name: &str, path: &str, kind: DefKind, file: &str, start_line: u32, start_col: u32, end_line: u32, end_col: u32) -> u32 {
         let def_id = self.next_def_id;
         self.next_def_id += 1;
 
@@ -120,25 +93,13 @@ impl FixtureIndexBuilder {
     ///
     /// Coordinates are recorded in 1-based Unicode scalar (char) columns,
     /// precisely matching `ridx-driver`'s `resolve_span_coords`.
-    pub fn add_defs_from_fixture(
-        &mut self,
-        annotated_code: &str,
-        file: &str,
-        path_prefix: &str,
-        kind: DefKind,
-    ) -> String {
+    pub fn add_defs_from_fixture(&mut self, annotated_code: &str, file: &str, path_prefix: &str, kind: DefKind) -> String {
         let (clean_code, _) = self.add_defs_with_ids(annotated_code, file, path_prefix, kind);
         clean_code
     }
 
     /// Adds definitions from a fixture, returning both clean code and definition IDs.
-    pub fn add_defs_with_ids(
-        &mut self,
-        annotated_code: &str,
-        file: &str,
-        path_prefix: &str,
-        kind: DefKind,
-    ) -> (String, Vec<u32>) {
+    pub fn add_defs_with_ids(&mut self, annotated_code: &str, file: &str, path_prefix: &str, kind: DefKind) -> (String, Vec<u32>) {
         let (clean_code, spans) = parse_spans(annotated_code);
         let mut ids = Vec::new();
         for span in spans {
@@ -159,13 +120,7 @@ impl FixtureIndexBuilder {
     }
 
     /// Adds definitions and self-references targeting them from a fixture with `«name»` and optional `$0`.
-    pub fn add_defs_and_self_refs_fixture(
-        &mut self,
-        fixture: &str,
-        file: &str,
-        path_prefix: &str,
-        kind: DefKind,
-    ) -> (ParsedFixture, Vec<u32>) {
+    pub fn add_defs_and_self_refs_fixture(&mut self, fixture: &str, file: &str, path_prefix: &str, kind: DefKind) -> (ParsedFixture, Vec<u32>) {
         let parsed = parse_fixture(fixture);
         let mut ids = Vec::new();
         for span in &parsed.spans {
@@ -174,52 +129,22 @@ impl FixtureIndexBuilder {
             let start_col = span.start_col_char + 1;
             let end_line = span.end_line + 1;
             let end_col = span.end_col_char + 1;
-            let id = self.add_def(
-                &span.text, &full_path, kind, file, start_line, start_col, end_line, end_col,
-            );
-            self.add_ref(
-                &full_path,
-                file,
-                start_line,
-                start_col,
-                end_line,
-                end_col,
-                Some(id),
-                Some(file),
-                start_line,
-                start_col,
-                kind,
-            );
+            let id = self.add_def(&span.text, &full_path, kind, file, start_line, start_col, end_line, end_col);
+            self.add_ref(&full_path, file, start_line, start_col, end_line, end_col, Some(id), Some(file), start_line, start_col, kind);
             ids.push(id);
         }
         (parsed, ids)
     }
 
     /// Adds definitions from a fixture with `«name»`, also recording self-references.
-    pub fn add_defs_and_self_refs(
-        &mut self,
-        annotated_code: &str,
-        file: &str,
-        path_prefix: &str,
-        kind: DefKind,
-    ) -> (String, Vec<u32>) {
-        let (parsed, ids) =
-            self.add_defs_and_self_refs_fixture(annotated_code, file, path_prefix, kind);
+    pub fn add_defs_and_self_refs(&mut self, annotated_code: &str, file: &str, path_prefix: &str, kind: DefKind) -> (String, Vec<u32>) {
+        let (parsed, ids) = self.add_defs_and_self_refs_fixture(annotated_code, file, path_prefix, kind);
         (parsed.clean_text, ids)
     }
 
     /// Adds references targeting an existing definition from a fixture with `«name»` and optional `$0`.
-    pub fn add_refs_to_def_fixture(
-        &mut self,
-        fixture: &str,
-        file: &str,
-        def_id: u32,
-    ) -> ParsedFixture {
-        let def = self
-            .defs
-            .get(&def_id)
-            .unwrap_or_else(|| panic!("FixtureIndexBuilder: def_id {} not found", def_id))
-            .clone();
+    pub fn add_refs_to_def_fixture(&mut self, fixture: &str, file: &str, def_id: u32) -> ParsedFixture {
+        let def = self.defs.get(&def_id).unwrap_or_else(|| panic!("FixtureIndexBuilder: def_id {} not found", def_id)).clone();
         let parsed = parse_fixture(fixture);
         for span in &parsed.spans {
             self.add_ref(
@@ -328,9 +253,7 @@ impl FixtureIndexBuilder {
             writer.add_type(t.clone());
         }
         let mut file = fs::File::create(out_path).expect("Failed to create fixture file");
-        writer
-            .write_to(&mut file)
-            .expect("Failed to write fixture .ridx file");
+        writer.write_to(&mut file).expect("Failed to write fixture .ridx file");
     }
 }
 
@@ -343,4 +266,3 @@ pub use synthetic_workspace::SyntheticWorkspaceFixture;
 
 #[cfg(test)]
 mod tests;
-

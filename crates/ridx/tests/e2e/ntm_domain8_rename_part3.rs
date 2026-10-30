@@ -12,12 +12,12 @@
 //! Tests workspace index-backed symbols: functions, structs, enums,
 //! traits, type aliases, constants, statics, caller triggers, and external symbol rejection.
 
-use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference};
 use ridx::lsp::dispatch::dispatch_lsp_message;
 use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::path_to_uri;
 use ridx::lsp::workspace::MultiRootWorkspace;
 use ridx::overlay::OverlayManager;
+use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::fs::File;
@@ -56,15 +56,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -88,17 +80,34 @@ fn test_rename_index_fn_declaration_and_caller_edits() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "calculate".to_string(), path: "pkg::calculate".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "calculate".to_string(),
+        path: "pkg::calculate".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 17,
     });
     writer.add_reference(RawReference {
-        file: caller_str.clone(), start_line: 2, start_col: 10, end_line: 2, end_col: 19,
-        target_def_id: Some(1), target_path: "pkg::calculate".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 8, kind: DefKind::Fn,
-        is_write: false, is_macro_expansion: false,
+        file: caller_str.clone(),
+        start_line: 2,
+        start_col: 10,
+        end_line: 2,
+        end_col: 19,
+        target_def_id: Some(1),
+        target_path: "pkg::calculate".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 8,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub fn calculate(x: i32) -> i32 { x * 2 }\n").unwrap();
@@ -140,17 +149,34 @@ fn test_rename_index_fn_triggered_from_caller_site() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "transform".to_string(), path: "pkg::transform".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "transform".to_string(),
+        path: "pkg::transform".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 17,
     });
     writer.add_reference(RawReference {
-        file: caller_str.clone(), start_line: 2, start_col: 10, end_line: 2, end_col: 19,
-        target_def_id: Some(1), target_path: "pkg::transform".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 8, kind: DefKind::Fn,
-        is_write: false, is_macro_expansion: false,
+        file: caller_str.clone(),
+        start_line: 2,
+        start_col: 10,
+        end_line: 2,
+        end_col: 19,
+        target_def_id: Some(1),
+        target_path: "pkg::transform".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 8,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub fn transform(s: &str) -> usize { s.len() }\n").unwrap();
@@ -190,17 +216,34 @@ fn test_rename_index_struct_edits_declaration_and_usages() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Config".to_string(), path: "pkg::Config".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 12, end_line: 1, end_col: 18,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Config".to_string(),
+        path: "pkg::Config".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 12,
+        end_line: 1,
+        end_col: 18,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 4, start_col: 16, end_line: 4, end_col: 22,
-        target_def_id: Some(1), target_path: "pkg::Config".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 12, kind: DefKind::Struct,
-        is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 16,
+        end_line: 4,
+        end_col: 22,
+        target_def_id: Some(1),
+        target_path: "pkg::Config".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 12,
+        kind: DefKind::Struct,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub struct Config {\n    pub port: u16,\n}\npub fn init(c: Config) -> u16 { c.port }\n").unwrap();
@@ -236,17 +279,34 @@ fn test_rename_index_enum_edits_declaration_and_usages() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "Status".to_string(), path: "pkg::Status".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 10, end_line: 1, end_col: 16,
+        def_id: 1,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Status".to_string(),
+        path: "pkg::Status".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 10,
+        end_line: 1,
+        end_col: 16,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 5, start_col: 17, end_line: 5, end_col: 23,
-        target_def_id: Some(1), target_path: "pkg::Status".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 10, kind: DefKind::Enum,
-        is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(),
+        start_line: 5,
+        start_col: 17,
+        end_line: 5,
+        end_col: 23,
+        target_def_id: Some(1),
+        target_path: "pkg::Status".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 10,
+        kind: DefKind::Enum,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub enum Status {\n    Ready,\n    Done,\n}\npub fn check(s: Status) -> bool { true }\n").unwrap();
@@ -282,17 +342,34 @@ fn test_rename_index_trait_edits_declaration_and_usages() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Worker".to_string(), path: "pkg::Worker".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 11, end_line: 1, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Worker".to_string(),
+        path: "pkg::Worker".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 11,
+        end_line: 1,
+        end_col: 17,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 4, start_col: 21, end_line: 4, end_col: 27,
-        target_def_id: Some(1), target_path: "pkg::Worker".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 11, kind: DefKind::Trait,
-        is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 21,
+        end_line: 4,
+        end_col: 27,
+        target_def_id: Some(1),
+        target_path: "pkg::Worker".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 11,
+        kind: DefKind::Trait,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub trait Worker {\n    fn run(&self);\n}\npub fn exec(w: &dyn Worker) {}\n").unwrap();
@@ -316,4 +393,3 @@ fn test_rename_index_trait_edits_declaration_and_usages() {
     assert_eq!(edits[0]["newText"], "Operator");
     assert_eq!(edits[1]["newText"], "Operator");
 }
-

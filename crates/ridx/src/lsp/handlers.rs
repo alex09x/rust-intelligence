@@ -123,12 +123,7 @@ pub fn caller() {
 
         // 5. Document links with Unicode support
         let link_code = "// check out https://example.com/docs for info";
-        overlay_mgr.open_document(
-            "file:///sample/src/links.rs",
-            "/sample/src/links.rs",
-            1,
-            link_code.to_string(),
-        );
+        overlay_mgr.open_document("file:///sample/src/links.rs", "/sample/src/links.rs", 1, link_code.to_string());
         let link_msg = json!({
             "params": { "textDocument": { "uri": "file:///sample/src/links.rs" } }
         });
@@ -143,8 +138,7 @@ pub fn caller() {
                 "position": { "line": 15, "character": 9 }
             }
         });
-        let prep_res = handle_prepare_rename(&prep_rename_msg, None, &overlay_mgr, &mut conv)
-            .expect("prepare rename succeeds");
+        let prep_res = handle_prepare_rename(&prep_rename_msg, None, &overlay_mgr, &mut conv).expect("prepare rename succeeds");
         assert!(!prep_res.is_null());
         assert_eq!(prep_res["placeholder"], "local");
 
@@ -155,8 +149,7 @@ pub fn caller() {
                 "newName": "new_local"
             }
         });
-        let rename_res =
-            handle_rename(&rename_msg, None, &overlay_mgr, &mut conv).expect("rename succeeds");
+        let rename_res = handle_rename(&rename_msg, None, &overlay_mgr, &mut conv).expect("rename succeeds");
         let changes = rename_res["changes"].as_object().unwrap();
         assert!(changes.contains_key(lib_uri));
         assert_eq!(changes[lib_uri].as_array().unwrap().len(), 2); // Declaration AND usage!

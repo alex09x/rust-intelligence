@@ -22,8 +22,7 @@ static TEST_DIR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn setup_temp_workspace() -> (PathBuf, PathBuf, PathBuf) {
     let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_d2_lc_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_d2_lc_{}_{}", std::process::id(), id));
     let src_lib = temp_dir.join("src/lib.rs");
     let src_main = temp_dir.join("src/main.rs");
     let _ = fs::create_dir_all(temp_dir.join("src"));
@@ -44,11 +43,7 @@ fn process_simulated_cargo_stream(lines: &[&str], root: &Path) -> HashMap<String
         };
         // Rustc compiler message is wrapped in {"reason": "compiler-message", "message": ...}
         // or direct compiler message
-        let msg_obj = if val.get("reason") == Some(&Value::String("compiler-message".to_string())) {
-            val.get("message")
-        } else {
-            Some(&val)
-        };
+        let msg_obj = if val.get("reason") == Some(&Value::String("compiler-message".to_string())) { val.get("message") } else { Some(&val) };
 
         if let Some(msg) = msg_obj {
             if let Some((uri, diag)) = parse_compiler_message(msg, root) {
@@ -86,23 +81,13 @@ fn test_flycheck_stream_multi_file_diagnostics() {
     ];
 
     let diags_by_uri = process_simulated_cargo_stream(&stream, &root);
-    assert_eq!(
-        diags_by_uri.len(),
-        2,
-        "Must group diagnostics by distinct file URIs"
-    );
+    assert_eq!(diags_by_uri.len(), 2, "Must group diagnostics by distinct file URIs");
 
-    let lib_uri = diags_by_uri
-        .keys()
-        .find(|k| k.ends_with("src/lib.rs"))
-        .expect("lib.rs uri");
+    let lib_uri = diags_by_uri.keys().find(|k| k.ends_with("src/lib.rs")).expect("lib.rs uri");
     assert_eq!(diags_by_uri[lib_uri].len(), 1);
     assert_eq!(diags_by_uri[lib_uri][0]["severity"], 1);
 
-    let main_uri = diags_by_uri
-        .keys()
-        .find(|k| k.ends_with("src/main.rs"))
-        .expect("main.rs uri");
+    let main_uri = diags_by_uri.keys().find(|k| k.ends_with("src/main.rs")).expect("main.rs uri");
     assert_eq!(diags_by_uri[main_uri].len(), 1);
     assert_eq!(diags_by_uri[main_uri][0]["severity"], 2);
     let _ = fs::remove_dir_all(&root);
@@ -121,10 +106,7 @@ fn test_flycheck_stream_ignores_non_json_and_compiler_artifacts() {
     ];
 
     let diags = process_simulated_cargo_stream(&stream, &root);
-    assert!(
-        diags.is_empty(),
-        "Non-diagnostic messages must be ignored cleanly"
-    );
+    assert!(diags.is_empty(), "Non-diagnostic messages must be ignored cleanly");
     let _ = fs::remove_dir_all(&root);
 }
 
@@ -132,9 +114,8 @@ fn test_flycheck_stream_ignores_non_json_and_compiler_artifacts() {
 fn test_flycheck_diagnostic_clearing_logic_on_clean_build() {
     let (root, _, _) = setup_temp_workspace();
     // Round 1: Run with error
-    let stream_err = [
-        r#"{"message":"syntax error","level":"error","spans":[{"file_name":"src/lib.rs","line_start":1,"line_end":1,"column_start":1,"column_end":5,"is_primary":true}]}"#,
-    ];
+    let stream_err =
+        [r#"{"message":"syntax error","level":"error","spans":[{"file_name":"src/lib.rs","line_start":1,"line_end":1,"column_start":1,"column_end":5,"is_primary":true}]}"#];
     let diags_round1 = process_simulated_cargo_stream(&stream_err, &root);
     let mut published_uris: HashSet<String> = diags_round1.keys().cloned().collect();
     assert_eq!(published_uris.len(), 1);
@@ -159,10 +140,7 @@ fn test_flycheck_diagnostic_clearing_logic_on_clean_build() {
     published_uris.clear();
 
     assert_eq!(cleared_payloads.len(), 1);
-    assert!(cleared_payloads[0]["params"]["diagnostics"]
-        .as_array()
-        .unwrap()
-        .is_empty());
+    assert!(cleared_payloads[0]["params"]["diagnostics"].as_array().unwrap().is_empty());
     let _ = fs::remove_dir_all(&root);
 }
 
@@ -173,17 +151,11 @@ fn test_flycheck_generation_mismatch_drops_stale_notification() {
 
     // Simulate notification filter in LSP server
     let should_publish = old_job_generation == current_generation;
-    assert!(
-        !should_publish,
-        "Notification from older generation must be discarded"
-    );
+    assert!(!should_publish, "Notification from older generation must be discarded");
 
     let match_job_generation = 5u64;
     let should_publish_match = match_job_generation == current_generation;
-    assert!(
-        should_publish_match,
-        "Notification matching current generation must be accepted"
-    );
+    assert!(should_publish_match, "Notification matching current generation must be accepted");
 }
 
 #[test]
@@ -229,11 +201,7 @@ fn test_flycheck_multiple_errors_same_file_accumulated() {
     let diags = process_simulated_cargo_stream(&stream, &root);
     assert_eq!(diags.len(), 1);
     let file_diags = diags.values().next().unwrap();
-    assert_eq!(
-        file_diags.len(),
-        3,
-        "All 3 errors in the same file must be accumulated in order"
-    );
+    assert_eq!(file_diags.len(), 3, "All 3 errors in the same file must be accumulated in order");
     assert_eq!(file_diags[0]["message"], "error 1");
     assert_eq!(file_diags[1]["message"], "error 2");
     assert_eq!(file_diags[2]["message"], "error 3");
@@ -272,10 +240,7 @@ fn test_parse_lint_with_suggested_replacement() {
 
     let (_, diag) = parse_compiler_message(&raw, &root).unwrap();
     assert_eq!(diag["code"], "unused_mut");
-    assert!(diag["message"]
-        .as_str()
-        .unwrap()
-        .contains("remove this `mut`"));
+    assert!(diag["message"].as_str().unwrap().contains("remove this `mut`"));
     let _ = fs::remove_dir_all(&root);
 }
 

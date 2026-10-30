@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -90,10 +85,7 @@ fn test_prepare_rename_external_symbol_rejection_error() {
 
     let val = send_prepare_rename_req(uri, 0, 24, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(
-        val["error"]["message"],
-        "Cannot prepare rename: no identifier found at this position"
-    );
+    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
 }
 
 #[test]
@@ -114,10 +106,7 @@ fn test_prepare_rename_utf16_column_calculation() {
 
     let val = send_prepare_rename_req(uri, 1, 9, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(
-        val["error"]["message"],
-        "Cannot prepare rename: no identifier found at this position"
-    );
+    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
 }
 
 #[test]
@@ -128,10 +117,7 @@ fn test_prepare_rename_parameter_binding_in_closure() {
 
     let val = send_prepare_rename_req(uri, 1, 14, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(
-        val["error"]["message"],
-        "Cannot prepare rename: no identifier found at this position"
-    );
+    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
 }
 
 #[test]
@@ -142,10 +128,7 @@ fn test_prepare_rename_match_arm_binding() {
 
     let val = send_prepare_rename_req(uri, 2, 14, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(
-        val["error"]["message"],
-        "Cannot prepare rename: no identifier found at this position"
-    );
+    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
 }
 
 #[test]
@@ -156,10 +139,7 @@ fn test_prepare_rename_for_loop_binding() {
 
     let val = send_prepare_rename_req(uri, 1, 9, &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(
-        val["error"]["message"],
-        "Cannot prepare rename: no identifier found at this position"
-    );
+    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
 }
 
 #[test]

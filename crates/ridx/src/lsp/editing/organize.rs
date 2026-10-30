@@ -21,11 +21,7 @@ struct UseEntry {
 
 /// Organizes and sorts import statements in the given document text.
 /// Correctly handles multi-line use trees, attributes, and comments.
-pub fn organize_imports_action(
-    doc_text: &str,
-    uri: &str,
-    doc_version: Option<i32>,
-) -> Option<Value> {
+pub fn organize_imports_action(doc_text: &str, uri: &str, doc_version: Option<i32>) -> Option<Value> {
     let lines: Vec<&str> = doc_text.lines().collect();
     if lines.is_empty() {
         return None;
@@ -76,9 +72,7 @@ pub fn organize_imports_action(
 
             let mut use_lines = vec![line.to_string()];
             let mut end_line_idx = i;
-            while !use_lines.last().is_some_and(|l| l.contains(';'))
-                && end_line_idx + 1 < lines.len()
-            {
+            while !use_lines.last().is_some_and(|l| l.contains(';')) && end_line_idx + 1 < lines.len() {
                 end_line_idx += 1;
                 use_lines.push(lines[end_line_idx].to_string());
             }
@@ -91,25 +85,13 @@ pub fn organize_imports_action(
             i = end_line_idx;
             block_end_line = Some(i);
             let sort_key = use_lines[0].trim().to_string();
-            entries.push(UseEntry {
-                attrs_and_comments: std::mem::take(&mut current_attrs),
-                use_lines,
-                sort_key,
-            });
+            entries.push(UseEntry { attrs_and_comments: std::mem::take(&mut current_attrs), use_lines, sort_key });
             i += 1;
         } else if in_import_block {
             if trimmed.is_empty() {
-                let next_non_empty = lines
-                    .iter()
-                    .skip(i + 1)
-                    .find(|l| !l.trim().is_empty())
-                    .map(|l| l.trim());
+                let next_non_empty = lines.iter().skip(i + 1).find(|l| !l.trim().is_empty()).map(|l| l.trim());
                 if let Some(nl) = next_non_empty {
-                    if nl.starts_with("use ")
-                        || nl.starts_with("pub use ")
-                        || nl.starts_with("#[")
-                        || nl.starts_with("//")
-                    {
+                    if nl.starts_with("use ") || nl.starts_with("pub use ") || nl.starts_with("#[") || nl.starts_with("//") {
                         i += 1;
                         continue;
                     }
@@ -124,11 +106,7 @@ pub fn organize_imports_action(
     if let (Some(start_idx), Some(end_idx)) = (block_start_line, block_end_line) {
         if !entries.is_empty() {
             entries.sort_by(|a, b| a.sort_key.cmp(&b.sort_key));
-            entries.dedup_by(|a, b| {
-                a.sort_key == b.sort_key
-                    && a.attrs_and_comments == b.attrs_and_comments
-                    && a.use_lines == b.use_lines
-            });
+            entries.dedup_by(|a, b| a.sort_key == b.sort_key && a.attrs_and_comments == b.attrs_and_comments && a.use_lines == b.use_lines);
             let mut new_text_lines = Vec::new();
             for c in &leading_comments {
                 new_text_lines.push(c.clone());

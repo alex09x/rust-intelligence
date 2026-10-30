@@ -102,11 +102,7 @@ exit 0
     let new_path = format!("{}:{}", bin_dir.display(), orig_path);
     std::env::set_var("PATH", &new_path);
 
-    fs::write(
-        ws_dir.join("Cargo.toml"),
-        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(ws_dir.join("Cargo.toml"), "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let main_file = src_dir.join("main.rs");
     let extra_file = src_dir.join("extra.rs");
     fs::write(&main_file, "fn main() {}\n").unwrap();
@@ -114,10 +110,7 @@ exit 0
     let main_uri = format!("file://{}", main_file.canonicalize().unwrap().display());
 
     let (pipe_tx, pipe_rx) = std::sync::mpsc::channel::<Vec<u8>>();
-    let reader = PipeReader {
-        rx: pipe_rx,
-        cur: Cursor::new(Vec::new()),
-    };
+    let reader = PipeReader { rx: pipe_rx, cur: Cursor::new(Vec::new()) };
 
     let init_uri = format!("file://{}", ws_dir.canonicalize().unwrap().display());
     pipe_tx
@@ -125,11 +118,7 @@ exit 0
             "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "rootUri": init_uri, "capabilities": {} }
         })))
         .unwrap();
-    pipe_tx
-        .send(make_lsp_msg(
-            &json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }),
-        ))
-        .unwrap();
+    pipe_tx.send(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }))).unwrap();
     pipe_tx
         .send(make_lsp_msg(&json!({
             "jsonrpc": "2.0", "method": "textDocument/didOpen",
@@ -178,16 +167,8 @@ exit 0
 
     std::thread::sleep(std::time::Duration::from_millis(250));
 
-    pipe_tx
-        .send(make_lsp_msg(
-            &json!({ "jsonrpc": "2.0", "id": 300, "method": "shutdown", "params": null }),
-        ))
-        .unwrap();
-    pipe_tx
-        .send(make_lsp_msg(
-            &json!({ "jsonrpc": "2.0", "method": "exit", "params": null }),
-        ))
-        .unwrap();
+    pipe_tx.send(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 300, "method": "shutdown", "params": null }))).unwrap();
+    pipe_tx.send(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "exit", "params": null }))).unwrap();
     drop(pipe_tx);
 
     let (res, output) = server_handle.join().unwrap();
@@ -198,22 +179,10 @@ exit 0
     let out_str = String::from_utf8_lossy(&output);
 
     for req_id in (100..170).chain(200..270) {
-        assert!(
-            out_str.contains(&format!("\"id\":{req_id}")),
-            "Must respond to req {req_id}"
-        );
+        assert!(out_str.contains(&format!("\"id\":{req_id}")), "Must respond to req {req_id}");
     }
     assert!(out_str.contains("\"id\":300"), "Must respond to shutdown");
-    assert!(
-        out_str.contains("error file 1"),
-        "Published diagnostic 1 must arrive: {out_str}"
-    );
-    assert!(
-        out_str.contains("error file 2"),
-        "Published diagnostic 2 must arrive: {out_str}"
-    );
-    assert!(
-        out_str.contains("\"diagnostics\":[]"),
-        "Clear diagnostics must arrive: {out_str}"
-    );
+    assert!(out_str.contains("error file 1"), "Published diagnostic 1 must arrive: {out_str}");
+    assert!(out_str.contains("error file 2"), "Published diagnostic 2 must arrive: {out_str}");
+    assert!(out_str.contains("\"diagnostics\":[]"), "Clear diagnostics must arrive: {out_str}");
 }

@@ -21,10 +21,7 @@ use ridx_test_support::{apply_workspace_edit, parse_fixture};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-fn run_local_rename_result(
-    fixture: &str,
-    new_name: &str,
-) -> Result<(Value, String, HashMap<String, String>), crate::lsp::error::LspError> {
+fn run_local_rename_result(fixture: &str, new_name: &str) -> Result<(Value, String, HashMap<String, String>), crate::lsp::error::LspError> {
     let parsed = parse_fixture(fixture);
     let temp = tempfile::tempdir().unwrap();
     let file = temp.path().join("lib.rs");
@@ -62,10 +59,7 @@ fn test_rename_local_variable_oracle_syntax() {
     let (_res, uri, updated) = run_local_rename(fixture, "multiplier");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn compute() -> i32 {\n    let multiplier = 10;\n    let y = multiplier + 5;\n    multiplier * y\n}\n"
-    );
+    assert_eq!(new_code, "fn compute() -> i32 {\n    let multiplier = 10;\n    let y = multiplier + 5;\n    multiplier * y\n}\n");
     syn::parse_file(new_code).expect("Resulting code must be valid Rust");
 }
 
@@ -75,10 +69,7 @@ fn test_rename_function_argument() {
     let (_res, uri, updated) = run_local_rename(fixture, "multiplier");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn scale(multiplier: f64, val: f64) -> f64 {\n    val * multiplier\n}\n"
-    );
+    assert_eq!(new_code, "fn scale(multiplier: f64, val: f64) -> f64 {\n    val * multiplier\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -88,10 +79,7 @@ fn test_rename_mutable_let_binding() {
     let (_res, uri, updated) = run_local_rename(fixture, "total");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn process() -> i32 {\n    let mut total = 0;\n    total += 1;\n    total * 2\n}\n"
-    );
+    assert_eq!(new_code, "fn process() -> i32 {\n    let mut total = 0;\n    total += 1;\n    total * 2\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -101,10 +89,7 @@ fn test_rename_multiple_occurrences_single_expr() {
     let (_res, uri, updated) = run_local_rename(fixture, "coeff");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn poly(x: i32) -> i32 {\n    let coeff = 2;\n    coeff * coeff + coeff\n}\n"
-    );
+    assert_eq!(new_code, "fn poly(x: i32) -> i32 {\n    let coeff = 2;\n    coeff * coeff + coeff\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -114,10 +99,7 @@ fn test_rename_shadowed_inner_variable() {
     let (_res, uri, updated) = run_local_rename(fixture, "inner_x");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn shadow() {\n    let x = 1;\n    {\n        let inner_x = 2;\n        let _ = inner_x + 1;\n    }\n    let _ = x;\n}\n"
-    );
+    assert_eq!(new_code, "fn shadow() {\n    let x = 1;\n    {\n        let inner_x = 2;\n        let _ = inner_x + 1;\n    }\n    let _ = x;\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -127,10 +109,7 @@ fn test_rename_crlf_document_preserves_endings() {
     let (_res, uri, updated) = run_local_rename(fixture, "count");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn test() {\r\n    let count = 100;\r\n    let res = count * 2;\r\n}\r\n"
-    );
+    assert_eq!(new_code, "fn test() {\r\n    let count = 100;\r\n    let res = count * 2;\r\n}\r\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -140,10 +119,7 @@ fn test_rename_skips_comments_and_strings() {
     let (_res, uri, updated) = run_local_rename(fixture, "target_var");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn test() {\n    // x should not change\n    let target_var = 42;\n    let msg = \"value of x is here\";\n    let y = target_var;\n}\n"
-    );
+    assert_eq!(new_code, "fn test() {\n    // x should not change\n    let target_var = 42;\n    let msg = \"value of x is here\";\n    let y = target_var;\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -153,10 +129,7 @@ fn test_rename_local_with_type_annotation() {
     let (_res, uri, updated) = run_local_rename(fixture, "buffer_length");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn calc() -> usize {\n    let buffer_length: usize = 1024;\n    buffer_length * 2\n}\n"
-    );
+    assert_eq!(new_code, "fn calc() -> usize {\n    let buffer_length: usize = 1024;\n    buffer_length * 2\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -166,10 +139,7 @@ fn test_rename_multiple_local_variables_in_scope() {
     let (_res, uri, updated) = run_local_rename(fixture, "num1");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn math() -> i32 {\n    let num1 = 1;\n    let second = 2;\n    let third = num1 + second;\n    num1 * third\n}\n"
-    );
+    assert_eq!(new_code, "fn math() -> i32 {\n    let num1 = 1;\n    let second = 2;\n    let third = num1 + second;\n    num1 * third\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -179,10 +149,7 @@ fn test_rename_local_variable_in_loop() {
     let (_res, uri, updated) = run_local_rename(fixture, "max_iterations");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn loop_test() {\n    let max_iterations = 10;\n    let mut i = 0;\n    while i < max_iterations {\n        i += 1;\n    }\n}\n"
-    );
+    assert_eq!(new_code, "fn loop_test() {\n    let max_iterations = 10;\n    let mut i = 0;\n    while i < max_iterations {\n        i += 1;\n    }\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -192,10 +159,7 @@ fn test_rename_at_identifier_boundary() {
     let (_res, uri, updated) = run_local_rename(fixture, "multiplier");
     let new_code = &updated[&uri];
 
-    assert_eq!(
-        new_code,
-        "fn compute() -> i32 {\n    let multiplier = 10;\n    multiplier * 2\n}\n"
-    );
+    assert_eq!(new_code, "fn compute() -> i32 {\n    let multiplier = 10;\n    multiplier * 2\n}\n");
     syn::parse_file(new_code).expect("Valid Rust");
 }
 
@@ -220,10 +184,7 @@ fn test_rename_commutativity_property() {
     let fixture = "fn comm() -> i32 {\n    let $0original = 100;\n    original * 2\n}\n";
     let (_res1, uri1, step1) = run_local_rename(fixture, "renamed");
     let step1_code = &step1[&uri1];
-    assert_eq!(
-        step1_code,
-        "fn comm() -> i32 {\n    let renamed = 100;\n    renamed * 2\n}\n"
-    );
+    assert_eq!(step1_code, "fn comm() -> i32 {\n    let renamed = 100;\n    renamed * 2\n}\n");
 
     // Step 2: rename back
     let fixture2 = step1_code.replace("let renamed", "let $0renamed");

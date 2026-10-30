@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -81,12 +76,7 @@ fn send_completion_req(
 fn test_completion_local_let_binding_present_in_items() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_let_completion.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn demo() {\n    let counter_variable = 100;\n    cou\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn demo() {\n    let counter_variable = 100;\n    cou\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -94,12 +84,7 @@ fn test_completion_local_let_binding_present_in_items() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["counter_variable"]);
 }
 
@@ -107,12 +92,7 @@ fn test_completion_local_let_binding_present_in_items() {
 fn test_completion_function_parameter_suggested() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_param_completion.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn process_record(target_record_id: u64) {\n    tar\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn process_record(target_record_id: u64) {\n    tar\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -127,12 +107,7 @@ fn test_completion_function_parameter_suggested() {
 fn test_completion_multiple_scopes_nested_block() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_nested_scopes.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn outer() {\n    let outer_var = 1;\n    {\n        let inner_var = 2;\n        inn\n    }\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn outer() {\n    let outer_var = 1;\n    {\n        let inner_var = 2;\n        inn\n    }\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -140,12 +115,7 @@ fn test_completion_multiple_scopes_nested_block() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["inner_var"]);
 }
 
@@ -153,19 +123,9 @@ fn test_completion_multiple_scopes_nested_block() {
 fn test_completion_overlay_update_replaces_completion_candidates() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_overlay_replace.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn test() {\n    let alpha_version = 1;\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn test() {\n    let alpha_version = 1;\n}\n");
     // Update overlay with beta
-    open_test_file(
-        &mut ov,
-        uri,
-        2,
-        "fn test() {\n    let beta_version = 2;\n    bet\n}\n",
-    );
+    open_test_file(&mut ov, uri, 2, "fn test() {\n    let beta_version = 2;\n    bet\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -173,12 +133,7 @@ fn test_completion_overlay_update_replaces_completion_candidates() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["beta_version"]);
 }
 
@@ -186,24 +141,14 @@ fn test_completion_overlay_update_replaces_completion_candidates() {
 fn test_completion_for_loop_variable_scoped() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_loop_var.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn run() {\n    for _ in 0..10 {\n        let loop_item_index = 1;\n        loop\n    }\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn run() {\n    for _ in 0..10 {\n        let loop_item_index = 1;\n        loop\n    }\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
         "position": { "line": 3, "character": 12 }
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["loop_item_index"]);
 }
 
@@ -211,12 +156,7 @@ fn test_completion_for_loop_variable_scoped() {
 fn test_completion_while_let_binding_scoped() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_while_let.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn run(opt: Option<i32>) {\n    while let Some(_) = opt {\n        let while_elem = 1;\n        whi\n    }\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn run(opt: Option<i32>) {\n    while let Some(_) = opt {\n        let while_elem = 1;\n        whi\n    }\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -224,12 +164,7 @@ fn test_completion_while_let_binding_scoped() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["while_elem"]);
 }
 
@@ -237,12 +172,7 @@ fn test_completion_while_let_binding_scoped() {
 fn test_completion_if_let_binding_scoped() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_if_let.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn run(opt: Option<i32>) {\n    if let Some(_) = opt {\n        let matched_val = 1;\n        mat\n    }\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn run(opt: Option<i32>) {\n    if let Some(_) = opt {\n        let matched_val = 1;\n        mat\n    }\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -250,12 +180,7 @@ fn test_completion_if_let_binding_scoped() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["matched_val"]);
 }
 
@@ -276,12 +201,7 @@ fn test_completion_match_arm_pattern_variable() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["ok_result_num"]);
 }
 
@@ -289,12 +209,7 @@ fn test_completion_match_arm_pattern_variable() {
 fn test_completion_closure_argument_scoped() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_closure_arg.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn execute() {\n    let c = || {\n        let closure_arg = 1;\n        clos\n    };\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn execute() {\n    let c = || {\n        let closure_arg = 1;\n        clos\n    };\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -302,12 +217,7 @@ fn test_completion_closure_argument_scoped() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["closure_arg"]);
 }
 
@@ -315,12 +225,7 @@ fn test_completion_closure_argument_scoped() {
 fn test_completion_items_have_valid_kind_integers() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_kind_check.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn sample() {\n    let my_var = 10;\n    my\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn sample() {\n    let my_var = 10;\n    my\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },

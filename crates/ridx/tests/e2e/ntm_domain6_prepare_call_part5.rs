@@ -75,10 +75,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -92,15 +89,23 @@ impl TestDispatcher {
 #[test]
 fn test_prepare_call_hierarchy_cursor_on_struct_returns_empty() {
     let lib_str = "/mock/prepcall/struct_nodef/src/lib.rs";
-    let ts = create_custom_shard("struct_nodef", vec![
-        RawDefinition {
-            def_id: 9, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-            name: "ServerConfig".to_string(), path: "struct_nodef::ServerConfig".to_string(),
+    let ts = create_custom_shard(
+        "struct_nodef",
+        vec![RawDefinition {
+            def_id: 9,
+            kind: DefKind::Struct,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "ServerConfig".to_string(),
+            path: "struct_nodef::ServerConfig".to_string(),
             signature: Some("pub struct ServerConfig".to_string()),
             file: lib_str.to_string(),
-            start_line: 2, start_col: 1, end_line: 2, end_col: 13,
-        }
-    ]);
+            start_line: 2,
+            start_col: 1,
+            end_line: 2,
+            end_col: 13,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 629, "method": "textDocument/prepareCallHierarchy",
@@ -118,15 +123,23 @@ fn test_prepare_call_hierarchy_cursor_on_struct_returns_empty() {
 #[test]
 fn test_prepare_call_hierarchy_cursor_on_enum_returns_empty() {
     let lib_str = "/mock/prepcall/enum_nodef/src/lib.rs";
-    let ts = create_custom_shard("enum_nodef", vec![
-        RawDefinition {
-            def_id: 10, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-            name: "StateEnum".to_string(), path: "enum_nodef::StateEnum".to_string(),
+    let ts = create_custom_shard(
+        "enum_nodef",
+        vec![RawDefinition {
+            def_id: 10,
+            kind: DefKind::Enum,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "StateEnum".to_string(),
+            path: "enum_nodef::StateEnum".to_string(),
             signature: Some("pub enum StateEnum".to_string()),
             file: lib_str.to_string(),
-            start_line: 4, start_col: 1, end_line: 4, end_col: 10,
-        }
-    ]);
+            start_line: 4,
+            start_col: 1,
+            end_line: 4,
+            end_col: 10,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 630, "method": "textDocument/prepareCallHierarchy",
@@ -144,15 +157,23 @@ fn test_prepare_call_hierarchy_cursor_on_enum_returns_empty() {
 #[test]
 fn test_prepare_call_hierarchy_cursor_on_type_alias_returns_empty() {
     let lib_str = "/mock/prepcall/alias_nodef/src/lib.rs";
-    let ts = create_custom_shard("alias_nodef", vec![
-        RawDefinition {
-            def_id: 11, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-            name: "IdType".to_string(), path: "alias_nodef::IdType".to_string(),
+    let ts = create_custom_shard(
+        "alias_nodef",
+        vec![RawDefinition {
+            def_id: 11,
+            kind: DefKind::TyAlias,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "IdType".to_string(),
+            path: "alias_nodef::IdType".to_string(),
             signature: Some("pub type IdType = u64".to_string()),
             file: lib_str.to_string(),
-            start_line: 6, start_col: 1, end_line: 6, end_col: 7,
-        }
-    ]);
+            start_line: 6,
+            start_col: 1,
+            end_line: 6,
+            end_col: 7,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 631, "method": "textDocument/prepareCallHierarchy",
@@ -170,15 +191,23 @@ fn test_prepare_call_hierarchy_cursor_on_type_alias_returns_empty() {
 #[test]
 fn test_prepare_call_hierarchy_cursor_on_const_returns_empty() {
     let lib_str = "/mock/prepcall/const_nodef/src/lib.rs";
-    let ts = create_custom_shard("const_nodef", vec![
-        RawDefinition {
-            def_id: 12, kind: DefKind::Const, visibility: 1, is_macro_expansion: false,
-            name: "BUFFER_SIZE".to_string(), path: "const_nodef::BUFFER_SIZE".to_string(),
+    let ts = create_custom_shard(
+        "const_nodef",
+        vec![RawDefinition {
+            def_id: 12,
+            kind: DefKind::Const,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "BUFFER_SIZE".to_string(),
+            path: "const_nodef::BUFFER_SIZE".to_string(),
             signature: Some("pub const BUFFER_SIZE: usize = 4096".to_string()),
             file: lib_str.to_string(),
-            start_line: 20, start_col: 1, end_line: 20, end_col: 12,
-        }
-    ]);
+            start_line: 20,
+            start_col: 1,
+            end_line: 20,
+            end_col: 12,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 632, "method": "textDocument/prepareCallHierarchy",
@@ -196,15 +225,23 @@ fn test_prepare_call_hierarchy_cursor_on_const_returns_empty() {
 #[test]
 fn test_prepare_call_hierarchy_cursor_on_static_returns_empty() {
     let lib_str = "/mock/prepcall/static_nodef/src/lib.rs";
-    let ts = create_custom_shard("static_nodef", vec![
-        RawDefinition {
-            def_id: 13, kind: DefKind::Static, visibility: 1, is_macro_expansion: false,
-            name: "GLOBAL_COUNTER".to_string(), path: "static_nodef::GLOBAL_COUNTER".to_string(),
+    let ts = create_custom_shard(
+        "static_nodef",
+        vec![RawDefinition {
+            def_id: 13,
+            kind: DefKind::Static,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "GLOBAL_COUNTER".to_string(),
+            path: "static_nodef::GLOBAL_COUNTER".to_string(),
             signature: Some("static GLOBAL_COUNTER: AtomicU64 = AtomicU64::new(0)".to_string()),
             file: lib_str.to_string(),
-            start_line: 25, start_col: 1, end_line: 25, end_col: 15,
-        }
-    ]);
+            start_line: 25,
+            start_col: 1,
+            end_line: 25,
+            end_col: 15,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 633, "method": "textDocument/prepareCallHierarchy",
@@ -252,15 +289,23 @@ fn test_prepare_call_hierarchy_invalid_params_type_rejected_32602() {
 #[test]
 fn test_prepare_call_hierarchy_nested_function_in_block() {
     let lib_str = "/mock/prepcall/nested/src/lib.rs";
-    let ts = create_custom_shard("nested", vec![
-        RawDefinition {
-            def_id: 1, kind: DefKind::Fn, visibility: 0, is_macro_expansion: false,
-            name: "inner_worker".to_string(), path: "nested::outer::inner_worker".to_string(),
+    let ts = create_custom_shard(
+        "nested",
+        vec![RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "inner_worker".to_string(),
+            path: "nested::outer::inner_worker".to_string(),
             signature: Some("fn inner_worker()".to_string()),
             file: lib_str.to_string(),
-            start_line: 4, start_col: 9, end_line: 4, end_col: 21,
-        }
-    ]);
+            start_line: 4,
+            start_col: 9,
+            end_line: 4,
+            end_col: 21,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 641, "method": "textDocument/prepareCallHierarchy",
@@ -272,12 +317,15 @@ fn test_prepare_call_hierarchy_nested_function_in_block() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 641);
-    assert_eq!(resp["result"], json!([{
-        "name": "inner_worker",
-        "kind": 12,
-        "detail": "fn inner_worker()",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 3, "character": 8 }, "end": { "line": 3, "character": 20 } },
-        "selectionRange": { "start": { "line": 3, "character": 8 }, "end": { "line": 3, "character": 20 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "inner_worker",
+            "kind": 12,
+            "detail": "fn inner_worker()",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 3, "character": 8 }, "end": { "line": 3, "character": 20 } },
+            "selectionRange": { "start": { "line": 3, "character": 8 }, "end": { "line": 3, "character": 20 } }
+        }])
+    );
 }

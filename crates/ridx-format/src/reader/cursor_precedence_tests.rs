@@ -17,12 +17,7 @@ use crate::format::DefKind;
 use crate::writer::{IndexWriter, RawDefinition, RawReference};
 use std::path::{Path, PathBuf};
 
-pub(crate) fn def(
-    def_id: u32,
-    kind: DefKind,
-    name: &str,
-    span: (u32, u32, u32, u32),
-) -> RawDefinition {
+pub(crate) fn def(def_id: u32, kind: DefKind, name: &str, span: (u32, u32, u32, u32)) -> RawDefinition {
     RawDefinition {
         def_id,
         kind,
@@ -39,11 +34,7 @@ pub(crate) fn def(
     }
 }
 
-fn reference(
-    span: (u32, u32, u32, u32),
-    target: (Option<u32>, &str, DefKind),
-    is_macro_expansion: bool,
-) -> RawReference {
+fn reference(span: (u32, u32, u32, u32), target: (Option<u32>, &str, DefKind), is_macro_expansion: bool) -> RawReference {
     RawReference {
         file: "src/lib.rs".to_string(),
         start_line: span.0,
@@ -85,11 +76,7 @@ pub(crate) fn write_fixture(dir: &Path) -> PathBuf {
     w.add_reference(reference((1, 1, 30, 2), (None, arc, DefKind::Struct), true));
     w.add_reference(reference((7, 5, 7, 8), (None, arc, DefKind::Struct), false));
     w.add_reference(reference((8, 5, 8, 30), (None, arc, DefKind::Struct), true));
-    w.add_reference(reference(
-        (10, 12, 10, 16),
-        (Some(3), "fx::Boom", DefKind::Struct),
-        false,
-    ));
+    w.add_reference(reference((10, 12, 10, 16), (Some(3), "fx::Boom", DefKind::Struct), false));
     let mut f = std::fs::File::create(&path).unwrap();
     w.write_to(&mut f).unwrap();
     path
@@ -122,10 +109,7 @@ fn item_inside_a_macro_invocation_answers_definition_on_its_name() {
 fn inside_the_invocation_on_no_item_the_reference_still_answers() {
     let (dir, reader) = fixture();
     let inside = reader.find_definition_at("src/lib.rs", 20, 1).unwrap();
-    assert_eq!(
-        (inside.path, inside.kind),
-        ("alloc::sync::Arc", DefKind::Struct)
-    );
+    assert_eq!((inside.path, inside.kind), ("alloc::sync::Arc", DefKind::Struct));
     let _ = std::fs::remove_dir_all(dir);
 }
 
@@ -141,10 +125,7 @@ fn item_inside_a_single_line_reference_wider_than_its_name_answers() {
 fn a_reference_as_wide_as_its_name_answers_the_reference() {
     let (dir, reader) = fixture();
     let on_arc = reader.find_definition_at("src/lib.rs", 7, 6).unwrap();
-    assert_eq!(
-        (on_arc.path, on_arc.kind),
-        ("alloc::sync::Arc", DefKind::Struct)
-    );
+    assert_eq!((on_arc.path, on_arc.kind), ("alloc::sync::Arc", DefKind::Struct));
     let _ = std::fs::remove_dir_all(dir);
 }
 

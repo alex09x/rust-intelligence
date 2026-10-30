@@ -21,12 +21,7 @@ pub(super) fn is_ident_byte(b: u8) -> bool {
 
 pub(super) fn strip_generics_and_refs(s: &str) -> &str {
     let mut t = s.trim();
-    while let Some(r) = t
-        .strip_prefix("&mut ")
-        .or_else(|| t.strip_prefix('&'))
-        .or_else(|| t.strip_prefix("mut "))
-        .or_else(|| t.strip_prefix("dyn "))
-    {
+    while let Some(r) = t.strip_prefix("&mut ").or_else(|| t.strip_prefix('&')).or_else(|| t.strip_prefix("mut ")).or_else(|| t.strip_prefix("dyn ")) {
         t = r.trim_start();
     }
     if t.starts_with('\'') {
@@ -46,11 +41,7 @@ fn extract_use_tree_prefix(lines: &[&str], line_idx: usize, p_start_byte: usize)
     let mut prefixes = Vec::new();
     let min_line = line_idx.saturating_sub(25);
     for l in (min_line..=line_idx).rev() {
-        let s = if l == line_idx {
-            &lines[l][..p_start_byte.min(lines[l].len())]
-        } else {
-            lines[l]
-        };
+        let s = if l == line_idx { &lines[l][..p_start_byte.min(lines[l].len())] } else { lines[l] };
         let code = s.split("//").next().unwrap_or(s);
         let bytes = code.as_bytes();
         let mut i = bytes.len();
@@ -66,10 +57,7 @@ fn extract_use_tree_prefix(lines: &[&str], line_idx: usize, p_start_byte: usize)
                         let before = code[..i].trim_end();
                         if let Some(before_colons) = before.strip_suffix("::") {
                             let mut k = before_colons.len();
-                            while k > 0
-                                && (is_ident_byte(before_colons.as_bytes()[k - 1])
-                                    || before_colons.as_bytes()[k - 1] == b':')
-                            {
+                            while k > 0 && (is_ident_byte(before_colons.as_bytes()[k - 1]) || before_colons.as_bytes()[k - 1] == b':') {
                                 k -= 1;
                             }
                             let seg = before_colons[k..].trim_matches(':');
@@ -84,9 +72,7 @@ fn extract_use_tree_prefix(lines: &[&str], line_idx: usize, p_start_byte: usize)
             }
         }
         let trimmed = code.trim_start();
-        let is_use = trimmed.starts_with("use ")
-            || trimmed.starts_with("pub use ")
-            || (trimmed.starts_with("pub(") && trimmed.contains(") use "));
+        let is_use = trimmed.starts_with("use ") || trimmed.starts_with("pub use ") || (trimmed.starts_with("pub(") && trimmed.contains(") use "));
         if is_use {
             prefixes.reverse();
             return Some(prefixes.join("::"));
@@ -102,22 +88,14 @@ enum LexState {
     RawString(usize),
 }
 
-pub(super) fn is_in_string_or_comment(
-    lines: &[&str],
-    target_line: usize,
-    target_byte: usize,
-) -> bool {
+pub(super) fn is_in_string_or_comment(lines: &[&str], target_line: usize, target_byte: usize) -> bool {
     if target_line >= lines.len() {
         return false;
     }
     let mut state = LexState::Normal;
     for (l, line) in lines.iter().enumerate().take(target_line + 1) {
         let b = line.as_bytes();
-        let end = if l == target_line {
-            target_byte.min(b.len())
-        } else {
-            b.len()
-        };
+        let end = if l == target_line { target_byte.min(b.len()) } else { b.len() };
         let mut i = 0;
         while i < end {
             match state {
@@ -149,10 +127,7 @@ pub(super) fn is_in_string_or_comment(
                     }
                 }
                 LexState::RawString(hashes) => {
-                    if b[i] == b'"'
-                        && i + 1 + hashes <= b.len()
-                        && b[i + 1..i + 1 + hashes].iter().all(|&x| x == b'#')
-                    {
+                    if b[i] == b'"' && i + 1 + hashes <= b.len() && b[i + 1..i + 1 + hashes].iter().all(|&x| x == b'#') {
                         if l == target_line && i + hashes >= end {
                             return true;
                         }
@@ -171,10 +146,7 @@ pub(super) fn is_in_string_or_comment(
                     } else if i + 1 < b.len() && b[i] == b'/' && b[i + 1] == b'*' {
                         state = LexState::BlockComment(1);
                         i += 2;
-                    } else if matches!(b[i], b'r' | b'b' | b'c')
-                        && (i == 0
-                            || !(is_ident_byte(b[i - 1]) || b[i - 1] == b'\'' || b[i - 1] == b'"'))
-                    {
+                    } else if matches!(b[i], b'r' | b'b' | b'c') && (i == 0 || !(is_ident_byte(b[i - 1]) || b[i - 1] == b'\'' || b[i - 1] == b'"')) {
                         let raw_after = if b[i] == b'r' {
                             Some(i + 1)
                         } else if i + 1 < b.len() && b[i + 1] == b'r' {
@@ -210,11 +182,7 @@ pub(super) fn is_in_string_or_comment(
                             while k < b.len() && k <= i + 10 && b[k] != b'\'' {
                                 k += 1;
                             }
-                            i = if k < b.len() && b[k] == b'\'' {
-                                k + 1
-                            } else {
-                                i + 1
-                            };
+                            i = if k < b.len() && b[k] == b'\'' { k + 1 } else { i + 1 };
                         } else {
                             i += 1;
                         }
@@ -234,10 +202,7 @@ impl WorkspaceIndex {
         if p.is_absolute() && p.is_file() {
             return std::fs::read_to_string(p).ok();
         }
-        for root in [self.workspace_root.as_deref(), self.root_dir.as_deref()]
-            .into_iter()
-            .flatten()
-        {
+        for root in [self.workspace_root.as_deref(), self.root_dir.as_deref()].into_iter().flatten() {
             let full = join_resolving_overlap(root, p);
             if full.is_file() {
                 return std::fs::read_to_string(full).ok();
@@ -257,12 +222,7 @@ impl WorkspaceIndex {
         None
     }
 
-    pub(crate) fn cursor_ident_at(
-        &self,
-        file: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<(String, u32, u32)> {
+    pub(crate) fn cursor_ident_at(&self, file: &str, line: u32, col: u32) -> Option<(String, u32, u32)> {
         let content = self.read_source_file(file)?;
         let line_idx = (line as usize).checked_sub(1)?;
         let line_str = content.lines().nth(line_idx)?;
@@ -296,12 +256,7 @@ impl WorkspaceIndex {
         Some((line_str[s..e].to_string(), sc, ec))
     }
 
-    pub(crate) fn resolve_cursor_path_at<'a>(
-        &'a self,
-        file: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<ResolvedDefinition<'a>> {
+    pub(crate) fn resolve_cursor_path_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<ResolvedDefinition<'a>> {
         let content = self.read_source_file(file)?;
         let lines: Vec<&str> = content.lines().collect();
         let line_idx = (line as usize).checked_sub(1)?;
@@ -344,11 +299,7 @@ impl WorkspaceIndex {
             }
             p_start = seg_start;
         }
-        let prefix = if p_start < id_start {
-            &line_str[p_start..id_start - 2]
-        } else {
-            ""
-        };
+        let prefix = if p_start < id_start { &line_str[p_start..id_start - 2] } else { "" };
         let has_trailing_colons = line_str[id_end..].starts_with("::");
         let use_outer = extract_use_tree_prefix(&lines, line_idx, p_start);
         if prefix.is_empty() && !has_trailing_colons && use_outer.is_none() {
@@ -358,19 +309,12 @@ impl WorkspaceIndex {
             return None;
         }
         if prefix == "Self" {
-            if let Some(def) = self.resolve_self_assoc_at(file, line, col, &lines, line_idx, ident)
-            {
+            if let Some(def) = self.resolve_self_assoc_at(file, line, col, &lines, line_idx, ident) {
                 return Some(def);
             }
         }
-        if !prefix.is_empty()
-            && !prefix.contains("::")
-            && prefix != "Self"
-            && prefix.as_bytes()[0].is_ascii_uppercase()
-        {
-            if let Some(def) =
-                self.resolve_type_relative_at(file, line, col, &lines, line_idx, prefix, ident)
-            {
+        if !prefix.is_empty() && !prefix.contains("::") && prefix != "Self" && prefix.as_bytes()[0].is_ascii_uppercase() {
+            if let Some(def) = self.resolve_type_relative_at(file, line, col, &lines, line_idx, prefix, ident) {
                 return Some(def);
             }
             if use_outer.is_none() && prefix.len() > 1 && is_ident_byte(prefix.as_bytes()[0]) {
@@ -389,7 +333,6 @@ impl WorkspaceIndex {
                 }
             }
         }
-        self.resolve_qualifier(file, &full_qual)
-            .or_else(|| self.find_definition_by_path(&full_qual))
+        self.resolve_qualifier(file, &full_qual).or_else(|| self.find_definition_by_path(&full_qual))
     }
 }

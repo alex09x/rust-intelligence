@@ -126,24 +126,15 @@ fn test_lsp_server_stream_exit_before_shutdown_and_broken_pipe() {
     let mut output = Vec::new();
     let res = run_lsp_server_stream(Cursor::new(input), &mut output, None);
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "exit notification received before shutdown"
-    );
+    assert_eq!(res.unwrap_err().to_string(), "exit notification received before shutdown");
 
     struct BrokenWriter;
     impl std::io::Write for BrokenWriter {
         fn write(&mut self, _buf: &[u8]) -> std::io::Result<usize> {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "broken pipe",
-            ))
+            Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "broken pipe"))
         }
         fn flush(&mut self) -> std::io::Result<()> {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "broken pipe",
-            ))
+            Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "broken pipe"))
         }
     }
 
@@ -177,10 +168,7 @@ fn test_lsp_server_stream_exit_before_shutdown_and_broken_pipe() {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
             self.writes += 1;
             if self.writes > 2 {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::BrokenPipe,
-                    "broken pipe",
-                ))
+                Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "broken pipe"))
             } else {
                 Ok(buf.len())
             }
@@ -209,11 +197,7 @@ fn test_lsp_server_stream_exit_before_shutdown_and_broken_pipe() {
         "method": "textDocument/definition",
         "params": {}
     })));
-    let res3 = run_lsp_server_stream(
-        Cursor::new(shutdown_input),
-        BrokenWriterAfterInit { writes: 0 },
-        None,
-    );
+    let res3 = run_lsp_server_stream(Cursor::new(shutdown_input), BrokenWriterAfterInit { writes: 0 }, None);
     assert!(res3.is_err());
 }
 
@@ -310,11 +294,7 @@ fn test_lsp_server_stream_initialize_with_empty_multi_root() {
     })));
 
     let mut output = Vec::new();
-    let res = run_lsp_server_stream(
-        Cursor::new(input),
-        &mut output,
-        Some(PathBuf::from("/nonexistent/empty_mr.ridx")),
-    );
+    let res = run_lsp_server_stream(Cursor::new(input), &mut output, Some(PathBuf::from("/nonexistent/empty_mr.ridx")));
     assert!(res.is_ok());
     let responses = parse_lsp_responses(&output);
     assert_eq!(responses.len(), 2);

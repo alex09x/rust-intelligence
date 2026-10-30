@@ -31,37 +31,19 @@ fn a_lifetime_in_the_signature_does_not_hide_the_opening_brace() {
 
 #[test]
 fn a_static_lifetime_in_the_return_type_does_not_hide_the_opening_brace() {
-    let lines = [
-        "fn hidden() -> IgnoreMatch<'static> {",
-        "    let m = Match::None;",
-        "    m.invert()",
-        "}",
-    ];
+    let lines = ["fn hidden() -> IgnoreMatch<'static> {", "    let m = Match::None;", "    m.invert()", "}"];
     assert_eq!(find_function_body_end_line(&lines, 1), 4);
 }
 
 #[test]
 fn a_loop_label_does_not_hide_its_brace() {
-    let lines = [
-        "fn f() {",
-        "    'outer: loop {",
-        "        break 'outer;",
-        "    }",
-        "}",
-    ];
+    let lines = ["fn f() {", "    'outer: loop {", "        break 'outer;", "    }", "}"];
     assert_eq!(find_function_body_end_line(&lines, 1), 5);
 }
 
 #[test]
 fn char_literals_with_braces_and_escapes_still_do_not_count() {
-    let lines = [
-        "fn f() {",
-        "    let open = '{';",
-        "    let quote = '\\'';",
-        "    let crab = '\\u{1F980}';",
-        "    let byte = b'}';",
-        "}",
-    ];
+    let lines = ["fn f() {", "    let open = '{';", "    let quote = '\\'';", "    let crab = '\\u{1F980}';", "    let byte = b'}';", "}"];
     assert_eq!(find_function_body_end_line(&lines, 1), 6);
 }
 

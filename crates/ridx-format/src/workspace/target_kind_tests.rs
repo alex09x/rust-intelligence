@@ -14,12 +14,7 @@ use super::target_kind::{classify_target, TargetKind};
 fn test_classification_lib_in_examples_dir() {
     // A library crate living inside an examples directory (e.g. workspace member `examples/foo_lib`)
     // Must be classified as Lib, NOT Example.
-    let compiler_args = vec![
-        "rustc".to_string(),
-        "examples/foo_lib/src/lib.rs".to_string(),
-        "--crate-type".to_string(),
-        "lib".to_string(),
-    ];
+    let compiler_args = vec!["rustc".to_string(), "examples/foo_lib/src/lib.rs".to_string(), "--crate-type".to_string(), "lib".to_string()];
     let kind = classify_target(Some("lib"), &compiler_args);
     assert_eq!(kind, TargetKind::Lib);
 }
@@ -28,12 +23,7 @@ fn test_classification_lib_in_examples_dir() {
 fn test_classification_checkout_in_tests_dir() {
     // A checkout path containing `/tests/` in its directory prefix (e.g. `/tmp/x/tests/my_crate`)
     // Must be classified as Lib, NOT Test.
-    let compiler_args = vec![
-        "rustc".to_string(),
-        "/tmp/x/tests/my_crate/src/lib.rs".to_string(),
-        "--crate-type".to_string(),
-        "lib".to_string(),
-    ];
+    let compiler_args = vec!["rustc".to_string(), "/tmp/x/tests/my_crate/src/lib.rs".to_string(), "--crate-type".to_string(), "lib".to_string()];
     let kind = classify_target(Some("lib"), &compiler_args);
     assert_eq!(kind, TargetKind::Lib);
 }
@@ -42,13 +32,7 @@ fn test_classification_checkout_in_tests_dir() {
 fn test_classification_test_flag_on_lib() {
     // Compiling a library unit with `--test` for unit testing.
     // Must be classified as Test.
-    let compiler_args = vec![
-        "rustc".to_string(),
-        "src/lib.rs".to_string(),
-        "--test".to_string(),
-        "--crate-type".to_string(),
-        "lib".to_string(),
-    ];
+    let compiler_args = vec!["rustc".to_string(), "src/lib.rs".to_string(), "--test".to_string(), "--crate-type".to_string(), "lib".to_string()];
     let kind = classify_target(Some("lib"), &compiler_args);
     assert_eq!(kind, TargetKind::Test);
 }
@@ -58,12 +42,7 @@ fn test_classification_bench_with_harness_false() {
     // A benchmark target configured with `harness = false`.
     // Cargo compiles it as `--crate-type bin` WITHOUT `--test`.
     // Authoritative cargo metadata `kind: bench` must classify it as Bench, NOT Bin.
-    let compiler_args = vec![
-        "rustc".to_string(),
-        "benches/criterion_bench.rs".to_string(),
-        "--crate-type".to_string(),
-        "bin".to_string(),
-    ];
+    let compiler_args = vec!["rustc".to_string(), "benches/criterion_bench.rs".to_string(), "--crate-type".to_string(), "bin".to_string()];
     let kind = classify_target(Some("bench"), &compiler_args);
     assert_eq!(kind, TargetKind::Bench);
 }
@@ -72,12 +51,7 @@ fn test_classification_bench_with_harness_false() {
 fn test_classification_bin_target_with_examples_path() {
     // A binary target configured as `[[bin]] path = "examples/tool.rs"`.
     // Cargo metadata provides `kind: bin`. It must be classified as Bin, NOT Example.
-    let compiler_args = vec![
-        "rustc".to_string(),
-        "examples/tool.rs".to_string(),
-        "--crate-type".to_string(),
-        "bin".to_string(),
-    ];
+    let compiler_args = vec!["rustc".to_string(), "examples/tool.rs".to_string(), "--crate-type".to_string(), "bin".to_string()];
     let kind = classify_target(Some("bin"), &compiler_args);
     assert_eq!(kind, TargetKind::Bin);
 }

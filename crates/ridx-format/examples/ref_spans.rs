@@ -38,14 +38,8 @@ use ridx_format::{DefKind, IndexReader};
 
 fn shards(arg: &Path) -> Vec<PathBuf> {
     if arg.is_dir() {
-        let mut found: Vec<PathBuf> = std::fs::read_dir(arg)
-            .map(|rd| {
-                rd.filter_map(Result::ok)
-                    .map(|e| e.path())
-                    .filter(|p| p.extension().is_some_and(|e| e == "ridx"))
-                    .collect()
-            })
-            .unwrap_or_default();
+        let mut found: Vec<PathBuf> =
+            std::fs::read_dir(arg).map(|rd| rd.filter_map(Result::ok).map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "ridx")).collect()).unwrap_or_default();
         found.sort();
         found
     } else {
@@ -105,10 +99,7 @@ fn main() {
     let mut cache: HashMap<PathBuf, Option<Vec<String>>> = HashMap::new();
     for arg in &args {
         for shard in shards(Path::new(arg)) {
-            let name = shard
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default();
+            let name = shard.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             let reader = match IndexReader::open(&shard) {
                 Ok(r) => r,
                 Err(e) => {
@@ -116,48 +107,23 @@ fn main() {
                     continue;
                 }
             };
-            let def_spans: HashMap<u32, _> = reader
-                .definitions()
-                .iter()
-                .map(|d| (d.def_id(), d.span()))
-                .collect();
+            let def_spans: HashMap<u32, _> = reader.definitions().iter().map(|d| (d.def_id(), d.span())).collect();
             let item_spans: HashSet<(u32, u32, u32, u32, u32)> = reader
                 .definitions()
                 .iter()
                 .map(|d| {
                     let s = d.span();
-                    (
-                        s.file_id(),
-                        s.start_line(),
-                        s.start_col(),
-                        s.end_line(),
-                        s.end_col(),
-                    )
+                    (s.file_id(), s.start_line(), s.start_col(), s.end_line(), s.end_col())
                 })
                 .collect();
             for r in reader.references() {
                 let span = r.span();
                 let stored = reader.get_file(span.file_id());
                 let path = Path::new(stored);
-                let abs = if path.is_absolute() {
-                    path.to_path_buf()
-                } else {
-                    root.as_deref()
-                        .map(|d| d.join(path))
-                        .unwrap_or_else(|| path.to_path_buf())
-                };
-                let lines = cache.entry(abs.clone()).or_insert_with(|| {
-                    std::fs::read_to_string(&abs)
-                        .ok()
-                        .map(|t| t.split('\n').map(str::to_string).collect())
-                });
+                let abs = if path.is_absolute() { path.to_path_buf() } else { root.as_deref().map(|d| d.join(path)).unwrap_or_else(|| path.to_path_buf()) };
+                let lines = cache.entry(abs.clone()).or_insert_with(|| std::fs::read_to_string(&abs).ok().map(|t| t.split('\n').map(str::to_string).collect()));
                 let target_path = reader.get_str(r.target_path_offset());
-                let (sl, sc, el, ec) = (
-                    span.start_line(),
-                    span.start_col(),
-                    span.end_line(),
-                    span.end_col(),
-                );
+                let (sl, sc, el, ec) = (span.start_line(), span.start_col(), span.end_line(), span.end_col());
                 let text = match lines.as_deref().and_then(|l| span_text(l, sl, sc, el, ec)) {
                     None => "unread",
                     Some(t) if t == last_segment(target_path) => "name",
@@ -165,29 +131,13 @@ fn main() {
                 };
                 let def_span = match def_spans.get(&r.target_def_id()) {
                     None => "none",
-                    Some(d)
-                        if d.start_line() == sl
-                            && d.start_col() == sc
-                            && d.end_line() == el
-                            && d.end_col() == ec =>
-                    {
-                        "same"
-                    }
+                    Some(d) if d.start_line() == sl && d.start_col() == sc && d.end_line() == el && d.end_col() == ec => "same",
                     Some(_) => "differs",
                 };
-                let last_line = lines
-                    .as_deref()
-                    .map(|l| l.len() as u32 - u32::from(l.last().is_some_and(|t| t.is_empty())));
+                let last_line = lines.as_deref().map(|l| l.len() as u32 - u32::from(l.last().is_some_and(|t| t.is_empty())));
                 let own = match def_spans.get(&r.target_def_id()) {
                     None => "none",
-                    Some(d)
-                        if d.start_line() == sl
-                            && d.start_col() == sc
-                            && d.end_line() == el
-                            && d.end_col() == ec =>
-                    {
-                        "equal"
-                    }
+                    Some(d) if d.start_line() == sl && d.start_col() == sc && d.end_line() == el && d.end_col() == ec => "equal",
                     Some(d)
                         if (d.end_line(), d.end_col()) >= (d.start_line(), d.start_col())
                             && d.file_id() == span.file_id()

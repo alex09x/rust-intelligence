@@ -52,17 +52,12 @@ fn reference(file: &str, target_file: &str, line: u32, col: u32, macro_made: boo
 }
 
 #[test]
-fn a_function_passed_as_an_argument_makes_its_caller_but_an_assignment_and_a_macro_made_use_do_not()
-{
+fn a_function_passed_as_an_argument_makes_its_caller_but_an_assignment_and_a_macro_made_use_do_not() {
     let dir = std::env::temp_dir().join(format!("ridx_value_use_{}", std::process::id()));
     let _ = fs::create_dir_all(&dir);
     let (a_file, b_file) = (dir.join("a.rs"), dir.join("b.rs"));
     fs::write(&a_file, "fn target() {}\n").unwrap();
-    fs::write(
-        &b_file,
-        "fn holder() {\n    run(target);\n    let _p = target;\n    xs.iter().map(target).count();\n    made_by(target);\n}\n",
-    )
-    .unwrap();
+    fs::write(&b_file, "fn holder() {\n    run(target);\n    let _p = target;\n    xs.iter().map(target).count();\n    made_by(target);\n}\n").unwrap();
     let (a, b) = (a_file.to_str().unwrap(), b_file.to_str().unwrap());
 
     let mut w = IndexWriter::new("t", "0.1.0");
@@ -72,8 +67,7 @@ fn a_function_passed_as_an_argument_makes_its_caller_but_an_assignment_and_a_mac
     w.add_reference(reference(b, a, 3, 14, false));
     w.add_reference(reference(b, a, 4, 19, false));
     w.add_reference(reference(b, a, 5, 13, true));
-    w.write_to(&mut fs::File::create(dir.join("t.ridx")).unwrap())
-        .unwrap();
+    w.write_to(&mut fs::File::create(dir.join("t.ridx")).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&dir).unwrap();
     let callers = incoming_callers_of(&ws, "target", &a_file, 0, 3);

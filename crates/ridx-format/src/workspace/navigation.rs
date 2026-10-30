@@ -36,22 +36,14 @@ pub(crate) fn strip_crate_prefix<'a>(s: &'a str, crate_name: &str) -> Option<&'a
 }
 
 impl WorkspaceIndex {
-    pub(crate) fn make_resolved_definition<'a>(
-        &'a self,
-        reader_idx: usize,
-        def: &DefEntry,
-    ) -> ResolvedDefinition<'a> {
+    pub(crate) fn make_resolved_definition<'a>(&'a self, reader_idx: usize, def: &DefEntry) -> ResolvedDefinition<'a> {
         let reader = &self.readers[reader_idx];
         let span = def.span();
         ResolvedDefinition {
             name: reader.get_str(def.name_offset()),
             path: reader.get_str(def.path_offset()),
             kind: DefKind::from(def.kind),
-            signature: if def.sig_offset() != 0 {
-                Some(reader.get_str(def.sig_offset()))
-            } else {
-                None
-            },
+            signature: if def.sig_offset() != 0 { Some(reader.get_str(def.sig_offset())) } else { None },
             file: reader.get_file(span.file_id()),
             start_line: span.start_line(),
             start_col: span.start_col(),
@@ -59,18 +51,10 @@ impl WorkspaceIndex {
             end_col: span.end_col(),
             is_macro_expansion: def.is_macro_expansion(),
             is_reexport: def.is_reexport(),
-            source_root: if self
-                .reader_is_dependency
-                .get(reader_idx)
-                .copied()
-                .unwrap_or(false)
-            {
+            source_root: if self.reader_is_dependency.get(reader_idx).copied().unwrap_or(false) {
                 self.source_roots.get(reader_idx).and_then(|r| r.as_deref())
             } else {
-                self.source_roots
-                    .get(reader_idx)
-                    .and_then(|r| r.as_deref())
-                    .or(self.workspace_root.as_deref())
+                self.source_roots.get(reader_idx).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())
             },
             unit_key: self.unit_keys.get(reader_idx).and_then(|u| u.as_deref()),
             reader_idx: Some(reader_idx),
@@ -82,11 +66,7 @@ impl WorkspaceIndex {
         self.find_definition_by_path_depth(path, 0)
     }
 
-    pub(crate) fn find_definition_by_path_depth<'a>(
-        &'a self,
-        path: &str,
-        depth: u8,
-    ) -> Option<ResolvedDefinition<'a>> {
+    pub(crate) fn find_definition_by_path_depth<'a>(&'a self, path: &str, depth: u8) -> Option<ResolvedDefinition<'a>> {
         if depth > 4 {
             return None;
         }
@@ -96,10 +76,7 @@ impl WorkspaceIndex {
                     let sig_clean = sig.trim_end_matches("::*");
                     let rel_sig = sig_clean.strip_prefix("self::").unwrap_or(sig_clean);
                     if let Some((owner_mod, _)) = res.path.rsplit_once("::") {
-                        if let Some(target) = self.find_definition_by_path_depth(
-                            &format!("{owner_mod}::{rel_sig}"),
-                            depth + 1,
-                        ) {
+                        if let Some(target) = self.find_definition_by_path_depth(&format!("{owner_mod}::{rel_sig}"), depth + 1) {
                             if target.kind != DefKind::Use && target.kind != DefKind::Local {
                                 return target;
                             }
@@ -108,10 +85,7 @@ impl WorkspaceIndex {
                     if let Some(r_idx) = res.reader_idx {
                         let cname = self.readers[r_idx].crate_name();
                         if !rel_sig.starts_with(&format!("{cname}::")) {
-                            if let Some(target) = self.find_definition_by_path_depth(
-                                &format!("{cname}::{rel_sig}"),
-                                depth + 1,
-                            ) {
+                            if let Some(target) = self.find_definition_by_path_depth(&format!("{cname}::{rel_sig}"), depth + 1) {
                                 if target.kind != DefKind::Use && target.kind != DefKind::Local {
                                     return target;
                                 }
@@ -139,21 +113,10 @@ impl WorkspaceIndex {
                     continue;
                 }
                 let sub = strip_crate_prefix(candidate_str, first_seg).unwrap_or(candidate_str);
-                if let Some(def) = reader.find_definition_by_path(candidate_str).or_else(|| {
-                    (sub != candidate_str)
-                        .then(|| reader.find_definition_by_path(sub))
-                        .flatten()
-                }) {
+                if let Some(def) = reader.find_definition_by_path(candidate_str).or_else(|| (sub != candidate_str).then(|| reader.find_definition_by_path(sub)).flatten()) {
                     return Some(resolve_def(self.make_resolved_definition(i, def)));
                 }
-                if candidate_str == first_seg
-                    && self
-                        .target_kinds
-                        .get(i)
-                        .copied()
-                        .flatten()
-                        .is_none_or(|k| k.is_lib())
-                {
+                if candidate_str == first_seg && self.target_kinds.get(i).copied().flatten().is_none_or(|k| k.is_lib()) {
                     if let Some(root_def) = reader.find_definition_by_path("") {
                         let mut resolved = self.make_resolved_definition(i, root_def);
                         resolved.name = reader.crate_name();
@@ -236,11 +199,7 @@ impl WorkspaceIndex {
     /// Returns the crate name that contains or owns the specified file path, if known.
     pub fn crate_name_for_file(&self, file_path: &str) -> Option<&str> {
         self.reader_index_for_file(file_path)
-            .or_else(|| {
-                self.candidate_reader_indices_for_file(file_path)
-                    .into_iter()
-                    .next()
-            })
+            .or_else(|| self.candidate_reader_indices_for_file(file_path).into_iter().next())
             .and_then(|i| self.readers.get(i).map(|r| r.crate_name()))
     }
 
@@ -265,22 +224,14 @@ impl WorkspaceIndex {
     }
 
     /// Finds a generic type parameter (`DefKind::TyParam`) in scope at `(file, line, col)`.
-    pub fn find_type_param_in_scope<'a>(
-        &'a self,
-        file: &str,
-        name: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<ResolvedDefinition<'a>> {
+    pub fn find_type_param_in_scope<'a>(&'a self, file: &str, name: &str, line: u32, col: u32) -> Option<ResolvedDefinition<'a>> {
         for i in self.candidate_reader_indices_for_file(file) {
             let reader = &self.readers[i];
             let Some(target_file) = self.target_file_for_reader(i, file) else {
                 continue;
             };
 
-            if let Some((def, _)) =
-                reader.find_type_param_in_scope(target_file.as_ref(), name, line, col)
-            {
+            if let Some((def, _)) = reader.find_type_param_in_scope(target_file.as_ref(), name, line, col) {
                 return Some(self.make_resolved_definition(i, def));
             }
         }
@@ -297,9 +248,7 @@ impl WorkspaceIndex {
 
             if let Some(_fid) = reader.find_file_id(target_file.as_ref()) {
                 if let Some(def_entry) = reader.find_definition_by_path(def.path) {
-                    let def_idx = (def_entry as *const _ as usize
-                        - reader.definitions().as_ptr() as usize)
-                        / std::mem::size_of::<DefEntry>();
+                    let def_idx = (def_entry as *const _ as usize - reader.definitions().as_ptr() as usize) / std::mem::size_of::<DefEntry>();
                     let owners = reader.find_owners_by_def_index(def_idx as u32);
                     if !owners.is_empty() {
                         return owners;

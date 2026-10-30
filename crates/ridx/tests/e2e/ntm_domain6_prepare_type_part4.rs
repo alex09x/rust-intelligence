@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,10 +77,18 @@ fn test_prepare_type_hierarchy_const_definition_returns_empty() {
 
     let mut writer = IndexWriter::new("const_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Const, visibility: 1, is_macro_expansion: false,
-        name: "MAX_SIZE".to_string(), path: "const_crate::MAX_SIZE".to_string(),
-        signature: Some("pub const MAX_SIZE: usize = 1024;".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 9,
+        def_id: 1,
+        kind: DefKind::Const,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MAX_SIZE".to_string(),
+        path: "const_crate::MAX_SIZE".to_string(),
+        signature: Some("pub const MAX_SIZE: usize = 1024;".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 9,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "const MAX_SIZE: usize = 1024;\n").unwrap();
@@ -113,10 +118,18 @@ fn test_prepare_type_hierarchy_static_definition_returns_empty() {
 
     let mut writer = IndexWriter::new("static_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Static, visibility: 1, is_macro_expansion: false,
-        name: "COUNTER".to_string(), path: "static_crate::COUNTER".to_string(),
-        signature: Some("pub static COUNTER: u32 = 0;".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 8,
+        def_id: 1,
+        kind: DefKind::Static,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "COUNTER".to_string(),
+        path: "static_crate::COUNTER".to_string(),
+        signature: Some("pub static COUNTER: u32 = 0;".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 8,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "static COUNTER: u32 = 0;\n").unwrap();
@@ -146,10 +159,18 @@ fn test_prepare_type_hierarchy_module_definition_returns_empty() {
 
     let mut writer = IndexWriter::new("mod_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Mod, visibility: 1, is_macro_expansion: false,
-        name: "submod".to_string(), path: "mod_crate::submod".to_string(),
-        signature: Some("pub mod submod;".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Mod,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "submod".to_string(),
+        path: "mod_crate::submod".to_string(),
+        signature: Some("pub mod submod;".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "mod submod {}\n").unwrap();
@@ -179,10 +200,18 @@ fn test_prepare_type_hierarchy_macro_definition_returns_empty() {
 
     let mut writer = IndexWriter::new("mac_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Macro, visibility: 1, is_macro_expansion: false,
-        name: "my_macro".to_string(), path: "mac_crate::my_macro".to_string(),
-        signature: None, file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 9,
+        def_id: 1,
+        kind: DefKind::Macro,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "my_macro".to_string(),
+        path: "mac_crate::my_macro".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 9,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "macro_rules! my_macro { () => {}; }\n").unwrap();
@@ -212,10 +241,18 @@ fn test_prepare_type_hierarchy_field_definition_returns_empty() {
 
     let mut writer = IndexWriter::new("field_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Field, visibility: 1, is_macro_expansion: false,
-        name: "field_x".to_string(), path: "field_crate::Point::field_x".to_string(),
-        signature: Some("pub field_x: i32".to_string()), file: lib_str,
-        start_line: 2, start_col: 5, end_line: 2, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Field,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "field_x".to_string(),
+        path: "field_crate::Point::field_x".to_string(),
+        signature: Some("pub field_x: i32".to_string()),
+        file: lib_str,
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 17,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct Point {\n    field_x: i32,\n}\n").unwrap();

@@ -15,27 +15,17 @@ use super::*;
 /// the struct or import of the same name stands in the same file. Such a target with a known
 /// line only matches a definition on that line; any other target keeps the match by name.
 fn is_on_line_of(res: &ResolvedDefinition<'_>, line: u32) -> bool {
-    !matches!(res.kind, DefKind::Variant | DefKind::VariantCtor)
-        || res.start_line == 0
-        || res.start_line == line
+    !matches!(res.kind, DefKind::Variant | DefKind::VariantCtor) || res.start_line == 0 || res.start_line == line
 }
 
 impl WorkspaceIndex {
     /// Resolves a cross-crate definition target with compilation-unit and path/signature awareness.
-    pub(super) fn find_cross_definition<'a>(
-        &'a self,
-        referrer_idx: usize,
-        res: &ResolvedDefinition<'_>,
-    ) -> Option<ResolvedDefinition<'a>> {
+    pub(super) fn find_cross_definition<'a>(&'a self, referrer_idx: usize, res: &ResolvedDefinition<'_>) -> Option<ResolvedDefinition<'a>> {
         let target_path = res.path;
         let extern_alias = target_path.split("::").next().unwrap_or(target_path);
 
         // 1. Determine target unit key for this extern alias if known
-        let target_unit: Option<&str> = res.unit_key.or_else(|| {
-            self.reader_extern_units
-                .get(referrer_idx)
-                .and_then(|m| m.get(extern_alias).map(|s| s.as_str()))
-        });
+        let target_unit: Option<&str> = res.unit_key.or_else(|| self.reader_extern_units.get(referrer_idx).and_then(|m| m.get(extern_alias).map(|s| s.as_str())));
 
         // 2. Identify candidate readers: either matching the exact target unit key,
         // or matching extern_alias among referrer's direct dependencies
@@ -49,10 +39,7 @@ impl WorkspaceIndex {
         } else if let Some(deps) = self.reader_dependencies.get(referrer_idx) {
             for (j, r) in self.readers.iter().enumerate() {
                 if let Some(Some(uk)) = self.unit_keys.get(j).map(|u| u.as_deref()) {
-                    if deps.iter().any(|d| d == uk)
-                        && (r.crate_name() == extern_alias
-                            || target_path.starts_with(&format!("{}::", r.crate_name())))
-                    {
+                    if deps.iter().any(|d| d == uk) && (r.crate_name() == extern_alias || target_path.starts_with(&format!("{}::", r.crate_name()))) {
                         candidate_readers.push((j, r));
                     }
                 }
@@ -65,25 +52,15 @@ impl WorkspaceIndex {
                 let cand_def = if let Some(def) = r.find_definition_by_path(target_path) {
                     Some(def)
                 } else if target_path.starts_with(&format!("{extern_alias}::")) {
-                    let mapped_path = format!(
-                        "{}::{}",
-                        r.crate_name(),
-                        &target_path[extern_alias.len() + 2..]
-                    );
+                    let mapped_path = format!("{}::{}", r.crate_name(), &target_path[extern_alias.len() + 2..]);
                     r.find_definition_by_path(&mapped_path)
                 } else if res.file != "external" && !res.file.is_empty() {
                     let file_id_opt = (0..r.header().files_count).find(|&fid| {
                         let f_name = r.get_file(fid);
-                        f_name == res.file
-                            || res.file.ends_with(f_name)
-                            || f_name.ends_with(res.file)
+                        f_name == res.file || res.file.ends_with(f_name) || f_name.ends_with(res.file)
                     });
                     if let Some(fid) = file_id_opt {
-                        r.definitions().iter().find(|d| {
-                            d.span().file_id() == fid
-                                && r.get_str(d.name_offset()) == res.name
-                                && is_on_line_of(res, d.span().start_line())
-                        })
+                        r.definitions().iter().find(|d| d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name && is_on_line_of(res, d.span().start_line()))
                     } else {
                         None
                     }
@@ -109,10 +86,7 @@ impl WorkspaceIndex {
                         source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
                             self.source_roots.get(j).and_then(|r| r.as_deref())
                         } else {
-                            self.source_roots
-                                .get(j)
-                                .and_then(|r| r.as_deref())
-                                .or(self.workspace_root.as_deref())
+                            self.source_roots.get(j).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())
                         },
                         unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
                         reader_idx: Some(j),
@@ -168,10 +142,7 @@ impl WorkspaceIndex {
                         source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
                             self.source_roots.get(j).and_then(|r| r.as_deref())
                         } else {
-                            self.source_roots
-                                .get(j)
-                                .and_then(|r| r.as_deref())
-                                .or(self.workspace_root.as_deref())
+                            self.source_roots.get(j).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())
                         },
                         unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
                         reader_idx: Some(j),
@@ -193,12 +164,7 @@ impl WorkspaceIndex {
                 let file_id_opt = (0..r.header().files_count).find(|&fid| {
                     let f_name = r.get_file(fid);
                     if target_p.is_absolute() {
-                        let cand_p = if let Some(root) = self
-                            .source_roots
-                            .get(j)
-                            .and_then(|s| s.as_deref())
-                            .or(self.workspace_root.as_deref())
-                        {
+                        let cand_p = if let Some(root) = self.source_roots.get(j).and_then(|s| s.as_deref()).or(self.workspace_root.as_deref()) {
                             crate::format::join_resolving_overlap(root, Path::new(f_name))
                         } else {
                             PathBuf::from(f_name)
@@ -218,8 +184,7 @@ impl WorkspaceIndex {
                                     name: d_name,
                                     path: r.get_str(def.path_offset()),
                                     kind: DefKind::from(def.kind),
-                                    signature: (def.sig_offset() != 0)
-                                        .then(|| r.get_str(def.sig_offset())),
+                                    signature: (def.sig_offset() != 0).then(|| r.get_str(def.sig_offset())),
                                     file: r.get_file(fid),
                                     start_line: d_span.start_line(),
                                     start_col: d_span.start_col(),
@@ -227,18 +192,10 @@ impl WorkspaceIndex {
                                     end_col: d_span.end_col(),
                                     is_macro_expansion: def.is_macro_expansion(),
                                     is_reexport: def.is_reexport(),
-                                    source_root: if self
-                                        .reader_is_dependency
-                                        .get(j)
-                                        .copied()
-                                        .unwrap_or(false)
-                                    {
+                                    source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
                                         self.source_roots.get(j).and_then(|s| s.as_deref())
                                     } else {
-                                        self.source_roots
-                                            .get(j)
-                                            .and_then(|s| s.as_deref())
-                                            .or(self.workspace_root.as_deref())
+                                        self.source_roots.get(j).and_then(|s| s.as_deref()).or(self.workspace_root.as_deref())
                                     },
                                     unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
                                     reader_idx: Some(j),
@@ -267,9 +224,7 @@ impl WorkspaceIndex {
                 && (c_def.file == res.file
                     || res.file.ends_with(c_def.file)
                     || c_def.file.ends_with(res.file)
-                    || res
-                        .file
-                        .ends_with(&*c_def.resolved_path().to_string_lossy())
+                    || res.file.ends_with(&*c_def.resolved_path().to_string_lossy())
                     || c_def.resolved_path().to_string_lossy().ends_with(res.file));
             if line_matches && file_matches {
                 return Some(c_def.clone());
@@ -319,11 +274,7 @@ impl WorkspaceIndex {
 
     /// Checks whether there are references to a re-export of `target_path` that are
     /// not included in `found_refs`.
-    pub fn has_unmerged_reexport_references(
-        &self,
-        target_path: &str,
-        found_refs: &[WorkspaceReference<'_>],
-    ) -> bool {
+    pub fn has_unmerged_reexport_references(&self, target_path: &str, found_refs: &[WorkspaceReference<'_>]) -> bool {
         let aliases = self.collect_reexport_aliases(target_path);
         if aliases.is_empty() {
             return false;
@@ -333,11 +284,7 @@ impl WorkspaceIndex {
                 for aref in r.find_references(alias) {
                     let span = aref.span();
                     let file = r.get_file(span.file_id());
-                    let merged = found_refs.iter().any(|fr| {
-                        fr.file == file
-                            && fr.span.start_line() == span.start_line()
-                            && fr.span.start_col() == span.start_col()
-                    });
+                    let merged = found_refs.iter().any(|fr| fr.file == file && fr.span.start_line() == span.start_line() && fr.span.start_col() == span.start_col());
                     if !merged {
                         return true;
                     }
@@ -351,20 +298,8 @@ impl WorkspaceIndex {
     /// Handles exact unit match, as well as single-version workspaces where Cargo
     /// assigned different unit hashes (e.g. lib vs test vs dep compilation).
     #[inline]
-    pub(crate) fn matches_unit(
-        &self,
-        reader_idx: usize,
-        ref_target_unit: &str,
-        target_unit: &str,
-        target_crate: &str,
-    ) -> bool {
-        self.unit_match.matches_unit(
-            reader_idx,
-            ref_target_unit,
-            target_unit,
-            target_crate,
-            &self.reader_extern_units,
-        )
+    pub(crate) fn matches_unit(&self, reader_idx: usize, ref_target_unit: &str, target_unit: &str, target_crate: &str) -> bool {
+        self.unit_match.matches_unit(reader_idx, ref_target_unit, target_unit, target_crate, &self.reader_extern_units)
     }
 
     #[inline]

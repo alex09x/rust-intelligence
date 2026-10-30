@@ -35,8 +35,7 @@ fn test_position_conversions_and_bounds() {
     assert!(ov.position_to_byte_offset(1, 4) > 0);
 
     // 4. Content changes with missing text (line 163 in overlay/mod.rs)
-    let mut ov_changes =
-        DocumentOverlay::new("file:///ch.rs", "/ch.rs", 1, "fn test() {}\n".to_string());
+    let mut ov_changes = DocumentOverlay::new("file:///ch.rs", "/ch.rs", 1, "fn test() {}\n".to_string());
     let invalid_change = serde_json::json!({
         "range": {
             "start": { "line": 0, "character": 0 },

@@ -36,22 +36,9 @@ fn test_l1_document_highlight_dirty_overlay_skips_compiled_index_returns_empty()
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_dirty", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_dirty",
-            "src/lib.rs",
-            "pub struct «CleanTarget»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_dirty", "src/lib.rs", "pub struct «CleanTarget»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_dirty",
-        "src/lib.rs",
-        "pub struct CleanTarget;\npub fn invoke() { let _ = «CleanTarget»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_dirty", "src/lib.rs", "pub struct CleanTarget;\npub fn invoke() { let _ = «CleanTarget»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_dirty").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -85,19 +72,11 @@ fn test_l1_document_highlight_overlay_local_binding_takes_precedence_over_compil
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_prec", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_prec",
-            "src/lib.rs",
-            "pub struct «ShadowedItem»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_prec", "src/lib.rs", "pub struct «ShadowedItem»;\n", DefKind::Struct).unwrap();
 
     // Index compiled references matching the exact positions of the local bindings
     let full_code = "pub struct ShadowedItem;\npub fn run() {\n    let «ShadowedItem» = 42;\n    let _ = «ShadowedItem»;\n}\n";
-    ws.add_refs_to_def("pkg_prec", "src/lib.rs", full_code, ids[0])
-        .unwrap();
+    ws.add_refs_to_def("pkg_prec", "src/lib.rs", full_code, ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_prec").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -213,22 +192,9 @@ fn test_l1_document_highlight_utf16_multibyte_declaration_and_references() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_utf16_hl", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_utf16_hl",
-            "src/lib.rs",
-            "/* 🚀 */ pub struct «Rocket»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_utf16_hl", "src/lib.rs", "/* 🚀 */ pub struct «Rocket»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_utf16_hl",
-        "src/lib.rs",
-        "/* 🚀 */ pub struct Rocket;\n/* 🦀 */ pub fn launch() { let _ = «Rocket»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_utf16_hl", "src/lib.rs", "/* 🚀 */ pub struct Rocket;\n/* 🦀 */ pub fn launch() { let _ = «Rocket»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_utf16_hl").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -277,22 +243,9 @@ fn test_l1_document_highlight_cursor_on_compiled_reference_includes_decl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_cur_ref", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_cur_ref",
-            "src/lib.rs",
-            "pub struct «TargetItem»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_cur_ref", "src/lib.rs", "pub struct «TargetItem»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_cur_ref",
-        "src/lib.rs",
-        "pub struct TargetItem;\npub fn consume() { let _ = «TargetItem»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_cur_ref", "src/lib.rs", "pub struct TargetItem;\npub fn consume() { let _ = «TargetItem»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_cur_ref").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -322,22 +275,9 @@ fn test_l1_document_highlight_clean_overlay_input_column_via_overlay_conversion(
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_clean_ov", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_clean_ov",
-            "src/lib.rs",
-            "/* 🚀 */ pub struct «SpaceStation»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_clean_ov", "src/lib.rs", "/* 🚀 */ pub struct «SpaceStation»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_clean_ov",
-        "src/lib.rs",
-        "/* 🚀 */ pub struct SpaceStation;\n/* 🚀 */ pub fn dock() { let _ = «SpaceStation»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_clean_ov", "src/lib.rs", "/* 🚀 */ pub struct SpaceStation;\n/* 🚀 */ pub fn dock() { let _ = «SpaceStation»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_clean_ov").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

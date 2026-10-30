@@ -77,10 +77,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -256,22 +253,39 @@ fn test_prepare_call_hierarchy_cursor_on_string_literal_returns_empty() {
 #[test]
 fn test_prepare_call_hierarchy_consecutive_queries_different_functions() {
     let lib_str = "/mock/prepcall/consec/src/lib.rs";
-    let ts = create_custom_shard("consec", vec![
-        RawDefinition {
-            def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-            name: "fn_alpha".to_string(), path: "consec::fn_alpha".to_string(),
-            signature: Some("pub fn fn_alpha()".to_string()),
-            file: lib_str.to_string(),
-            start_line: 1, start_col: 1, end_line: 1, end_col: 9,
-        },
-        RawDefinition {
-            def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-            name: "fn_beta".to_string(), path: "consec::fn_beta".to_string(),
-            signature: Some("pub fn fn_beta()".to_string()),
-            file: lib_str.to_string(),
-            start_line: 3, start_col: 1, end_line: 3, end_col: 8,
-        }
-    ]);
+    let ts = create_custom_shard(
+        "consec",
+        vec![
+            RawDefinition {
+                def_id: 1,
+                kind: DefKind::Fn,
+                visibility: 1,
+                is_macro_expansion: false,
+                name: "fn_alpha".to_string(),
+                path: "consec::fn_alpha".to_string(),
+                signature: Some("pub fn fn_alpha()".to_string()),
+                file: lib_str.to_string(),
+                start_line: 1,
+                start_col: 1,
+                end_line: 1,
+                end_col: 9,
+            },
+            RawDefinition {
+                def_id: 2,
+                kind: DefKind::Fn,
+                visibility: 1,
+                is_macro_expansion: false,
+                name: "fn_beta".to_string(),
+                path: "consec::fn_beta".to_string(),
+                signature: Some("pub fn fn_beta()".to_string()),
+                file: lib_str.to_string(),
+                start_line: 3,
+                start_col: 1,
+                end_line: 3,
+                end_col: 8,
+            },
+        ],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
 
     let req1 = json!({
@@ -306,15 +320,23 @@ fn test_prepare_call_hierarchy_consecutive_queries_different_functions() {
 #[test]
 fn test_prepare_call_hierarchy_zero_width_selection_range_validity() {
     let lib_str = "/mock/prepcall/zerowidth/src/lib.rs";
-    let ts = create_custom_shard("zerowidth", vec![
-        RawDefinition {
-            def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-            name: "f".to_string(), path: "zerowidth::f".to_string(),
+    let ts = create_custom_shard(
+        "zerowidth",
+        vec![RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "f".to_string(),
+            path: "zerowidth::f".to_string(),
             signature: Some("fn f()".to_string()),
             file: lib_str.to_string(),
-            start_line: 1, start_col: 4, end_line: 1, end_col: 5,
-        }
-    ]);
+            start_line: 1,
+            start_col: 4,
+            end_line: 1,
+            end_col: 5,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 655, "method": "textDocument/prepareCallHierarchy",
@@ -326,12 +348,15 @@ fn test_prepare_call_hierarchy_zero_width_selection_range_validity() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 655);
-    assert_eq!(resp["result"], json!([{
-        "name": "f",
-        "kind": 12,
-        "detail": "fn f()",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 4 } },
-        "selectionRange": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 4 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "f",
+            "kind": 12,
+            "detail": "fn f()",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 4 } },
+            "selectionRange": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 4 } }
+        }])
+    );
 }

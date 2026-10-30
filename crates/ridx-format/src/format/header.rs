@@ -20,11 +20,7 @@ pub struct FileEntry {
 impl FileEntry {
     #[inline]
     pub fn new(path_offset: u32, source_hash: u64) -> Self {
-        Self {
-            path_offset,
-            _pad: 0,
-            source_hash,
-        }
+        Self { path_offset, _pad: 0, source_hash }
     }
 
     #[inline]
@@ -39,11 +35,7 @@ impl FileEntry {
 
     #[inline]
     pub fn to_le(self) -> Self {
-        Self {
-            path_offset: self.path_offset.to_le(),
-            _pad: 0,
-            source_hash: self.source_hash.to_le(),
-        }
+        Self { path_offset: self.path_offset.to_le(), _pad: 0, source_hash: self.source_hash.to_le() }
     }
 }
 

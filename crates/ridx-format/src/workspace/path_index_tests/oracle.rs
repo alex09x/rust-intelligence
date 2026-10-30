@@ -16,28 +16,17 @@ use crate::workspace::WorkspaceIndex;
 use std::path::{Path, PathBuf};
 
 /// Reference oracle reproducing the legacy `shard_mtime_for_file` implementation verbatim.
-pub(crate) fn shard_mtime_for_file_oracle(
-    ws: &WorkspaceIndex,
-    file_path: &str,
-) -> Option<std::time::SystemTime> {
+pub(crate) fn shard_mtime_for_file_oracle(ws: &WorkspaceIndex, file_path: &str) -> Option<std::time::SystemTime> {
     for idx in ws.candidate_reader_indices_for_file(file_path) {
         if let Some(target_file) = ws.target_file_for_reader(idx, file_path) {
             if ws.readers[idx].find_file_id(target_file.as_ref()).is_some() {
                 return ws.mtimes.get(idx).copied().flatten();
             }
-            if ws
-                .reader_file_hashes
-                .get(idx)
-                .is_some_and(|h| h.contains_key(target_file.as_ref()))
-            {
+            if ws.reader_file_hashes.get(idx).is_some_and(|h| h.contains_key(target_file.as_ref())) {
                 return ws.mtimes.get(idx).copied().flatten();
             }
         }
-        if ws
-            .reader_file_hashes
-            .get(idx)
-            .is_some_and(|h| h.contains_key(file_path))
-        {
+        if ws.reader_file_hashes.get(idx).is_some_and(|h| h.contains_key(file_path)) {
             return ws.mtimes.get(idx).copied().flatten();
         }
     }
@@ -52,11 +41,7 @@ pub(crate) fn shard_mtime_for_file_oracle(
             if entry_str.is_empty() {
                 continue;
             }
-            if file_entry_matches(entry_str, origin, p, req_canon.as_deref())
-                || ws_abs
-                    .as_ref()
-                    .is_some_and(|a| file_entry_matches(entry_str, origin, a, ws_canon.as_deref()))
-            {
+            if file_entry_matches(entry_str, origin, p, req_canon.as_deref()) || ws_abs.as_ref().is_some_and(|a| file_entry_matches(entry_str, origin, a, ws_canon.as_deref())) {
                 return ws.mtimes.get(i).copied().flatten();
             }
         }
@@ -65,11 +50,7 @@ pub(crate) fn shard_mtime_for_file_oracle(
         let origin = reader_origin(ws, i);
         if let Some(map) = ws.reader_file_hashes.get(i) {
             for k in map.keys() {
-                if file_entry_matches(k, origin, p, req_canon.as_deref())
-                    || ws_abs
-                        .as_ref()
-                        .is_some_and(|a| file_entry_matches(k, origin, a, ws_canon.as_deref()))
-                {
+                if file_entry_matches(k, origin, p, req_canon.as_deref()) || ws_abs.as_ref().is_some_and(|a| file_entry_matches(k, origin, a, ws_canon.as_deref())) {
                     return ws.mtimes.get(i).copied().flatten();
                 }
             }
@@ -88,21 +69,13 @@ pub(crate) fn source_hash_for_file_oracle(ws: &WorkspaceIndex, file_path: &str) 
                     return Some(h);
                 }
             }
-            if let Some(&h) = ws
-                .reader_file_hashes
-                .get(idx)
-                .and_then(|m| m.get(target_file.as_ref()))
-            {
+            if let Some(&h) = ws.reader_file_hashes.get(idx).and_then(|m| m.get(target_file.as_ref())) {
                 if h != 0 {
                     return Some(h);
                 }
             }
         }
-        if let Some(&h) = ws
-            .reader_file_hashes
-            .get(idx)
-            .and_then(|m| m.get(file_path))
-        {
+        if let Some(&h) = ws.reader_file_hashes.get(idx).and_then(|m| m.get(file_path)) {
             if h != 0 {
                 return Some(h);
             }
@@ -120,11 +93,7 @@ pub(crate) fn source_hash_for_file_oracle(ws: &WorkspaceIndex, file_path: &str) 
             if h == 0 || entry_str.is_empty() {
                 continue;
             }
-            if file_entry_matches(entry_str, origin, p, req_canon.as_deref())
-                || ws_abs
-                    .as_ref()
-                    .is_some_and(|a| file_entry_matches(entry_str, origin, a, ws_canon.as_deref()))
-            {
+            if file_entry_matches(entry_str, origin, p, req_canon.as_deref()) || ws_abs.as_ref().is_some_and(|a| file_entry_matches(entry_str, origin, a, ws_canon.as_deref())) {
                 return Some(h);
             }
         }
@@ -136,11 +105,7 @@ pub(crate) fn source_hash_for_file_oracle(ws: &WorkspaceIndex, file_path: &str) 
                 if h == 0 || k.is_empty() {
                     continue;
                 }
-                if file_entry_matches(k, origin, p, req_canon.as_deref())
-                    || ws_abs
-                        .as_ref()
-                        .is_some_and(|a| file_entry_matches(k, origin, a, ws_canon.as_deref()))
-                {
+                if file_entry_matches(k, origin, p, req_canon.as_deref()) || ws_abs.as_ref().is_some_and(|a| file_entry_matches(k, origin, a, ws_canon.as_deref())) {
                     return Some(h);
                 }
             }
@@ -150,11 +115,7 @@ pub(crate) fn source_hash_for_file_oracle(ws: &WorkspaceIndex, file_path: &str) 
 }
 
 fn reader_origin(ws: &WorkspaceIndex, i: usize) -> Option<&Path> {
-    ws.source_roots
-        .get(i)
-        .and_then(|r| r.as_deref())
-        .or(ws.workspace_root.as_deref())
-        .or(ws.root_dir.as_deref())
+    ws.source_roots.get(i).and_then(|r| r.as_deref()).or(ws.workspace_root.as_deref()).or(ws.root_dir.as_deref())
 }
 
 pub(crate) fn cached_canonicalize(p: &Path) -> Option<PathBuf> {
@@ -162,9 +123,7 @@ pub(crate) fn cached_canonicalize(p: &Path) -> Option<PathBuf> {
     if p.starts_with(std::env::temp_dir()) {
         return p.canonicalize().ok();
     }
-    static CACHE: std::sync::OnceLock<
-        std::sync::RwLock<std::collections::HashMap<PathBuf, Option<PathBuf>>>,
-    > = std::sync::OnceLock::new();
+    static CACHE: std::sync::OnceLock<std::sync::RwLock<std::collections::HashMap<PathBuf, Option<PathBuf>>>> = std::sync::OnceLock::new();
     let lock = CACHE.get_or_init(|| std::sync::RwLock::new(std::collections::HashMap::new()));
     if let Some(res) = lock.read().unwrap().get(p) {
         return res.clone();
@@ -174,20 +133,8 @@ pub(crate) fn cached_canonicalize(p: &Path) -> Option<PathBuf> {
     res
 }
 
-fn legacy_candidates(
-    ws: &WorkspaceIndex,
-    p: &Path,
-) -> (
-    Option<PathBuf>,
-    Option<PathBuf>,
-    Option<PathBuf>,
-    Vec<usize>,
-) {
-    let explicit_origin = ws
-        .workspace_root
-        .as_deref()
-        .or(ws.root_dir.as_deref())
-        .or_else(|| (ws.readers.len() == 1).then(|| ws.source_roots.first()?.as_deref())?);
+fn legacy_candidates(ws: &WorkspaceIndex, p: &Path) -> (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>, Vec<usize>) {
+    let explicit_origin = ws.workspace_root.as_deref().or(ws.root_dir.as_deref()).or_else(|| (ws.readers.len() == 1).then(|| ws.source_roots.first()?.as_deref())?);
 
     let (ws_abs, req_canon) = if p.is_absolute() {
         (None, cached_canonicalize(p))
@@ -204,9 +151,7 @@ fn legacy_candidates(
     if let Some(ref c_p) = req_canon {
         for i in 0..ws.readers.len() {
             if let Some(Some(ref root)) = ws.source_roots.get(i) {
-                if cached_canonicalize(root).is_some_and(|cr| c_p.starts_with(&cr))
-                    && !candidate_indices.contains(&i)
-                {
+                if cached_canonicalize(root).is_some_and(|cr| c_p.starts_with(&cr)) && !candidate_indices.contains(&i) {
                     candidate_indices.push(i);
                 }
             }
@@ -232,8 +177,7 @@ fn legacy_candidates(
         }
     }
     for i in 0..ws.readers.len() {
-        let is_dep = ws.reader_is_dependency.get(i).copied().unwrap_or(false)
-            || ws.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
+        let is_dep = ws.reader_is_dependency.get(i).copied().unwrap_or(false) || ws.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
         if !is_dep && !candidate_indices.contains(&i) {
             candidate_indices.push(i);
         }

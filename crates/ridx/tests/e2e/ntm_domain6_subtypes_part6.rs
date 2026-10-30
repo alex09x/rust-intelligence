@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,22 +77,46 @@ fn test_type_hierarchy_subtypes_unit_struct_implementor() {
 
     let mut writer = IndexWriter::new("unit_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Tag".to_string(), path: "unit_sub_crate::Tag".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Tag".to_string(),
+        path: "unit_sub_crate::Tag".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "EmptyTag".to_string(), path: "unit_sub_crate::EmptyTag".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 17,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "EmptyTag".to_string(),
+        path: "unit_sub_crate::EmptyTag".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<EmptyTag as Tag>".to_string(), path: "<EmptyTag as Tag>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 25,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<EmptyTag as Tag>".to_string(),
+        path: "<EmptyTag as Tag>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 25,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -128,22 +149,46 @@ fn test_type_hierarchy_subtypes_cross_file_impl() {
 
     let mut writer = IndexWriter::new("cfimpl_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "RemoteTrait".to_string(), path: "cfimpl_sub_crate::RemoteTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "RemoteTrait".to_string(),
+        path: "cfimpl_sub_crate::RemoteTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "RemoteTarget".to_string(), path: "cfimpl_sub_crate::RemoteTarget".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 23,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "RemoteTarget".to_string(),
+        path: "cfimpl_sub_crate::RemoteTarget".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 23,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<RemoteTarget as RemoteTrait>".to_string(), path: "<RemoteTarget as RemoteTrait>".to_string(),
-        signature: None, file: impl_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 39,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<RemoteTarget as RemoteTrait>".to_string(),
+        path: "<RemoteTarget as RemoteTrait>".to_string(),
+        signature: None,
+        file: impl_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 39,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -176,22 +221,46 @@ fn test_type_hierarchy_subtypes_cross_file_struct_definition() {
 
     let mut writer = IndexWriter::new("cfstruct_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "ModelTrait".to_string(), path: "cfstruct_sub_crate::ModelTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ModelTrait".to_string(),
+        path: "cfstruct_sub_crate::ModelTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 21,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "DomainModel".to_string(), path: "cfstruct_sub_crate::DomainModel".to_string(),
-        signature: None, file: model_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 25,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "DomainModel".to_string(),
+        path: "cfstruct_sub_crate::DomainModel".to_string(),
+        signature: None,
+        file: model_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 25,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<DomainModel as ModelTrait>".to_string(), path: "<DomainModel as ModelTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 36,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<DomainModel as ModelTrait>".to_string(),
+        path: "<DomainModel as ModelTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 36,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -223,22 +292,46 @@ fn test_type_hierarchy_subtypes_qualified_struct_in_impl() {
 
     let mut writer = IndexWriter::new("qual_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Serialize".to_string(), path: "qual_sub_crate::Serialize".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Serialize".to_string(),
+        path: "qual_sub_crate::Serialize".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Record".to_string(), path: "qual_sub_crate::models::Record".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 16,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Record".to_string(),
+        path: "qual_sub_crate::models::Record".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 16,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<models::Record as Serialize>".to_string(), path: "<models::Record as Serialize>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 38,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<models::Record as Serialize>".to_string(),
+        path: "<models::Record as Serialize>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 38,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 

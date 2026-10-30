@@ -307,16 +307,9 @@ fn test_completion_trait_method_dedup() {
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
     // Must return exactly 1 item (the trait declaration), NOT 3 duplicates from TaskA and TaskB!
-    assert_eq!(
-        items.len(),
-        1,
-        "Trait completion must not include duplicate impl methods from every implementor"
-    );
+    assert_eq!(items.len(), 1, "Trait completion must not include duplicate impl methods from every implementor");
     assert_eq!(items[0]["label"], "work");
-    assert_eq!(
-        items[0]["detail"],
-        "fn work(&self) (in test_trait::Worker::work)"
-    );
+    assert_eq!(items[0]["detail"], "fn work(&self) (in test_trait::Worker::work)");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

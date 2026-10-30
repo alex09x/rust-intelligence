@@ -60,10 +60,18 @@ fn indexed(name: &str, text: &str, fns: &[&str]) -> Indexed {
     for (i, def_name) in fns.iter().enumerate() {
         let (line, start_col, end_col) = at(text, def_name);
         writer.add_definition(RawDefinition {
-            def_id: i as u32 + 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-            name: def_name.to_string(), path: format!("{name}::{def_name}"),
-            signature: None, file: "src/lib.rs".to_string(),
-            start_line: line, start_col, end_line: line, end_col,
+            def_id: i as u32 + 1,
+            kind: DefKind::Fn,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: def_name.to_string(),
+            path: format!("{name}::{def_name}"),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: line,
+            start_col,
+            end_line: line,
+            end_col,
         });
     }
     writer.add_file_hash("src/lib.rs", normalized_source_hash(text.as_bytes()));
@@ -108,10 +116,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {

@@ -37,6 +37,72 @@ impl Drop for TempShard {
     }
 }
 
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rdef(
+    id: u32,
+    kind: DefKind,
+    vis: u8,
+    mac: bool,
+    name: impl Into<String>,
+    path: impl Into<String>,
+    sig: Option<String>,
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+) -> RawDefinition {
+    RawDefinition {
+        def_id: id,
+        kind,
+        visibility: vis,
+        is_macro_expansion: mac,
+        name: name.into(),
+        path: path.into(),
+        signature: sig,
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+    }
+}
+
+#[allow(clippy::too_many_arguments, dead_code)]
+fn rref(
+    file: impl Into<String>,
+    sl: u32,
+    sc: u32,
+    el: u32,
+    ec: u32,
+    td: Option<u32>,
+    tp: impl Into<String>,
+    tf: Option<String>,
+    tu: Option<String>,
+    tl: u32,
+    tc: u32,
+    kind: DefKind,
+    w: bool,
+    m: bool,
+) -> RawReference {
+    RawReference {
+        file: file.into(),
+        start_line: sl,
+        start_col: sc,
+        end_line: el,
+        end_col: ec,
+        target_def_id: td,
+        target_path: tp.into(),
+        target_file: tf,
+        target_unit: tu,
+        target_line: tl,
+        target_col: tc,
+        kind,
+        is_write: w,
+        is_macro_expansion: m,
+    }
+}
+
 fn create_temp_shard(name: &str) -> TempShard {
     let id = OUT_COUNTER.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("ridx_outcall_{}_{}_{}", name, std::process::id(), id));
@@ -45,28 +111,10 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_file = dir.join("src/lib.rs");
     let lib_str = lib_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "callee".to_string(), path: format!("{}::callee", name),
-        signature: Some("pub fn callee()".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller".to_string(), path: format!("{}::caller", name),
-        signature: Some("pub fn caller()".to_string()), file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 6, end_col: 2,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 4, start_col: 5, end_line: 4, end_col: 11,
-        target_def_id: Some(1), target_path: format!("{}::callee", name), target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 5, start_col: 5, end_line: 5, end_col: 11,
-        target_def_id: Some(1), target_path: format!("{}::callee", name), target_file: Some(lib_str),
-        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "callee", format!("{}::callee", name), Some("pub fn callee()".to_string()), &lib_str, 1, 1, 1, 7));
+    writer.add_definition(rdef(2, DefKind::Fn, 1, false, "caller", format!("{}::caller", name), Some("pub fn caller()".to_string()), &lib_str, 3, 1, 6, 2));
+    writer.add_reference(rref(&lib_str, 4, 5, 4, 11, Some(1), format!("{}::callee", name), Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
+    writer.add_reference(rref(&lib_str, 5, 5, 5, 11, Some(1), format!("{}::callee", name), Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
 }
@@ -86,8 +134,11 @@ struct TestDispatcher {
 impl TestDispatcher {
     fn new(shard: PathBuf) -> Self {
         let mut d = Self {
-            lifecycle: LifecycleManager::new(), multi_root: MultiRootWorkspace::new(),
-            overlay_mgr: OverlayManager::new(), cancelled: Arc::new(Mutex::new(HashSet::new())), writer: Vec::new(),
+            lifecycle: LifecycleManager::new(),
+            multi_root: MultiRootWorkspace::new(),
+            overlay_mgr: OverlayManager::new(),
+            cancelled: Arc::new(Mutex::new(HashSet::new())),
+            writer: Vec::new(),
         };
         assert!(d.multi_root.add_root(shard));
         let init_msg = json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "capabilities": {} } });
@@ -95,14 +146,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -117,7 +163,6 @@ fn test_call_hierarchy_outgoing_calls_single_callee() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 651, "method": "callHierarchy/outgoingCalls",
         "params": {
@@ -148,32 +193,14 @@ fn test_call_hierarchy_outgoing_calls_multiple_callees() {
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("multi_out_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false, name: "foo".to_string(),
-        path: "multi_out_crate::foo".to_string(), signature: None, file: lib_str.clone(), start_line: 1, start_col: 1, end_line: 1, end_col: 4,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false, name: "bar".to_string(),
-        path: "multi_out_crate::bar".to_string(), signature: None, file: lib_str.clone(), start_line: 2, start_col: 1, end_line: 2, end_col: 4,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false, name: "caller".to_string(),
-        path: "multi_out_crate::caller".to_string(), signature: None, file: lib_str.clone(), start_line: 4, start_col: 1, end_line: 7, end_col: 2,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 5, start_col: 5, end_line: 5, end_col: 8,
-        target_def_id: Some(1), target_path: "multi_out_crate::foo".to_string(), target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 6, start_col: 5, end_line: 6, end_col: 8,
-        target_def_id: Some(2), target_path: "multi_out_crate::bar".to_string(), target_file: Some(lib_str),
-        target_unit: None, target_line: 2, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "foo", "multi_out_crate::foo", None, &lib_str, 1, 1, 1, 4));
+    writer.add_definition(rdef(2, DefKind::Fn, 1, false, "bar", "multi_out_crate::bar", None, &lib_str, 2, 1, 2, 4));
+    writer.add_definition(rdef(3, DefKind::Fn, 1, false, "caller", "multi_out_crate::caller", None, &lib_str, 4, 1, 7, 2));
+    writer.add_reference(rref(&lib_str, 5, 5, 5, 8, Some(1), "multi_out_crate::foo", Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
+    writer.add_reference(rref(&lib_str, 6, 5, 6, 8, Some(2), "multi_out_crate::bar", Some(lib_str.clone()), None, 2, 1, DefKind::Fn, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn foo() {}\nfn bar() {}\n\nfn caller() {\n    foo();\n    bar();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 652, "method": "callHierarchy/outgoingCalls",
         "params": {
@@ -198,7 +225,6 @@ fn test_call_hierarchy_outgoing_calls_multiple_calls_same_callee() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 653, "method": "callHierarchy/outgoingCalls",
         "params": {
@@ -223,7 +249,6 @@ fn test_call_hierarchy_outgoing_calls_zero_callees_returns_empty() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     // callee makes 0 outgoing calls
     let req = json!({
         "jsonrpc": "2.0", "id": 654, "method": "callHierarchy/outgoingCalls",
@@ -239,7 +264,6 @@ fn test_call_hierarchy_outgoing_calls_zero_callees_returns_empty() {
     let resp = dsp.parse_response();
     let calls = resp["result"].as_array().unwrap();
     assert_eq!(calls.len(), 0);
-
     // Positive control on caller making 1 call
     let ctrl_req = json!({
         "jsonrpc": "2.0", "id": 6540, "method": "callHierarchy/outgoingCalls",
@@ -266,32 +290,13 @@ fn test_call_hierarchy_outgoing_calls_recursive_call_self_ignored() {
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("rec_crate", "0.1.0");
-    writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "recurse".to_string(), path: "rec_crate::recurse".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 28,
-    });
-    writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller".to_string(), path: "rec_crate::caller".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 27,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 1, start_col: 15, end_line: 1, end_col: 22,
-        target_def_id: Some(1), target_path: "rec_crate::recurse".to_string(), target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
-    writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 3, start_col: 14, end_line: 3, end_col: 21,
-        target_def_id: Some(1), target_path: "rec_crate::recurse".to_string(), target_file: Some(lib_str),
-        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
-    });
+    writer.add_definition(rdef(1, DefKind::Fn, 1, false, "recurse", "rec_crate::recurse", None, &lib_str, 1, 1, 1, 28));
+    writer.add_definition(rdef(2, DefKind::Fn, 1, false, "caller", "rec_crate::caller", None, &lib_str, 3, 1, 3, 27));
+    writer.add_reference(rref(&lib_str, 1, 15, 1, 22, Some(1), "rec_crate::recurse", Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
+    writer.add_reference(rref(&lib_str, 3, 14, 3, 21, Some(1), "rec_crate::recurse", Some(lib_str.clone()), None, 1, 1, DefKind::Fn, false, false));
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn recurse() { recurse(); }\n\nfn caller() { recurse(); }\n").unwrap();
     let mut dsp = TestDispatcher::new(shard);
-
     let req = json!({
         "jsonrpc": "2.0", "id": 655, "method": "callHierarchy/outgoingCalls",
         "params": {
@@ -307,7 +312,6 @@ fn test_call_hierarchy_outgoing_calls_recursive_call_self_ignored() {
     let calls = resp["result"].as_array().unwrap();
     // Same-line self-call is filtered out by outgoingCalls logic
     assert_eq!(calls.len(), 0);
-
     // Positive control on caller calling recurse
     let ctrl_req = json!({
         "jsonrpc": "2.0", "id": 6550, "method": "callHierarchy/outgoingCalls",
@@ -332,7 +336,6 @@ fn test_call_hierarchy_outgoing_calls_dispatcher_echoes_numeric_id() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 888111, "method": "callHierarchy/outgoingCalls",
         "params": {
@@ -357,7 +360,6 @@ fn test_call_hierarchy_outgoing_calls_dispatcher_echoes_string_id() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": "outgoing-str-42", "method": "callHierarchy/outgoingCalls",
         "params": {
@@ -382,7 +384,6 @@ fn test_call_hierarchy_outgoing_calls_valid_uri_missing_range_saturates() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 888222, "method": "callHierarchy/outgoingCalls",
         "params": {

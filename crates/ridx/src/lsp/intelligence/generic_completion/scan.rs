@@ -15,11 +15,7 @@ use super::types::GenericParam;
 use std::collections::HashMap;
 
 /// Scans source text forward to collect all generic parameters in scope for the cursor.
-pub fn find_generic_params_in_scope(
-    text: &str,
-    line_1based: u32,
-    line_slice: &str,
-) -> Vec<GenericParam> {
+pub fn find_generic_params_in_scope(text: &str, line_1based: u32, line_slice: &str) -> Vec<GenericParam> {
     let mut current_line = 1;
     let mut line_start = 0;
     for (idx, &b) in text.as_bytes().iter().enumerate() {
@@ -85,10 +81,7 @@ pub fn find_generic_params_in_scope(
                 while i < bytes.len() {
                     if bytes[i] == b'"' {
                         let mut match_hashes = 0;
-                        while i + 1 + match_hashes < bytes.len()
-                            && bytes[i + 1 + match_hashes] == b'#'
-                            && match_hashes < num_hashes
-                        {
+                        while i + 1 + match_hashes < bytes.len() && bytes[i + 1 + match_hashes] == b'#' && match_hashes < num_hashes {
                             match_hashes += 1;
                         }
                         if match_hashes == num_hashes {

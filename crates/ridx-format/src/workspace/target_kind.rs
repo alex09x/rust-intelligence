@@ -90,11 +90,7 @@ impl std::fmt::Display for TargetKind {
 ///    - If entrypoint relative to `manifest_dir` begins with `benches/`, `examples/`, `tests/`, or equals `build.rs` -> corresponding kind.
 ///    - `--crate-type bin` -> `Bin`.
 ///    - Default -> `Lib`.
-pub fn classify_target_with_manifest(
-    base_kind: Option<&str>,
-    compiler_args: &[String],
-    manifest_dir: Option<&Path>,
-) -> TargetKind {
+pub fn classify_target_with_manifest(base_kind: Option<&str>, compiler_args: &[String], manifest_dir: Option<&Path>) -> TargetKind {
     let has_test_flag = compiler_args.iter().any(|a| a == "--test");
 
     if let Some(kind) = base_kind {
@@ -136,13 +132,7 @@ pub fn classify_target_with_manifest(
         return inferred;
     }
 
-    if compiler_args
-        .windows(2)
-        .any(|w| w[0] == "--crate-type" && w[1] == "bin")
-        || compiler_args
-            .iter()
-            .any(|a| a.starts_with("--crate-type=bin"))
-    {
+    if compiler_args.windows(2).any(|w| w[0] == "--crate-type" && w[1] == "bin") || compiler_args.iter().any(|a| a.starts_with("--crate-type=bin")) {
         TargetKind::Bin
     } else {
         TargetKind::Lib
@@ -154,30 +144,22 @@ pub fn classify_target(base_kind: Option<&str>, compiler_args: &[String]) -> Tar
     classify_target_with_manifest(base_kind, compiler_args, None)
 }
 
-fn infer_target_from_manifest(
-    compiler_args: &[String],
-    manifest_dir: Option<&Path>,
-) -> Option<TargetKind> {
+fn infer_target_from_manifest(compiler_args: &[String], manifest_dir: Option<&Path>) -> Option<TargetKind> {
     let manifest = manifest_dir?;
-    let entry_rs = compiler_args
-        .iter()
-        .find(|a| !a.starts_with('-') && a.ends_with(".rs"))?;
+    let entry_rs = compiler_args.iter().find(|a| !a.starts_with('-') && a.ends_with(".rs"))?;
 
     let p = Path::new(entry_rs);
     let rel = if p.is_relative() {
         p.to_path_buf()
     } else {
-        p.strip_prefix(manifest)
-            .ok()
-            .map(|p| p.to_path_buf())
-            .or_else(|| {
-                if let Ok(canon_p) = std::fs::canonicalize(p) {
-                    if let Ok(canon_m) = std::fs::canonicalize(manifest) {
-                        return canon_p.strip_prefix(canon_m).ok().map(|p| p.to_path_buf());
-                    }
+        p.strip_prefix(manifest).ok().map(|p| p.to_path_buf()).or_else(|| {
+            if let Ok(canon_p) = std::fs::canonicalize(p) {
+                if let Ok(canon_m) = std::fs::canonicalize(manifest) {
+                    return canon_p.strip_prefix(canon_m).ok().map(|p| p.to_path_buf());
                 }
-                None
-            })?
+            }
+            None
+        })?
     };
 
     if rel.starts_with("benches") {

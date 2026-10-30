@@ -45,9 +45,7 @@ fn test_late_metadata_publication_and_reload() {
     fs::write(src_dir.join("main.rs"), "fn main() {}\n").unwrap();
 
     let index_path = test_dir.join("app.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&index_path).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&index_path).unwrap())).unwrap();
 
     // Open index before sidecar metadata exists
     let mut ws = WorkspaceIndex::open(&test_dir).expect("should open index");
@@ -67,18 +65,11 @@ fn test_late_metadata_publication_and_reload() {
         "extern_units": {"dep": "dep_unit_123"},
         "file_hashes": {"src/main.rs": 0xbeefu64},
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&sidecar_info).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&sidecar_info).unwrap()).unwrap();
 
     // reload_if_modified detects metadata change and reloads
     let reloaded = ws.reload_if_modified().expect("reload should succeed");
-    assert!(
-        reloaded,
-        "reload_if_modified should detect newly published metadata"
-    );
+    assert!(reloaded, "reload_if_modified should detect newly published metadata");
 
     // Modify ONLY sidecar JSON (update dependencies) without touching app.ridx
     std::thread::sleep(std::time::Duration::from_millis(20));
@@ -92,11 +83,7 @@ fn test_late_metadata_publication_and_reload() {
         "extern_units": {"dep": "dep_unit_123", "dep2": "dep_unit_456"},
         "file_hashes": {"src/main.rs": 0xbeefu64},
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&sidecar_updated).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&sidecar_updated).unwrap()).unwrap();
 
     let reloaded_meta = ws.reload_if_modified().expect("reload should succeed");
     assert!(reloaded_meta);
@@ -131,19 +118,13 @@ fn test_reload_variant_switch_computed_gen_mismatch() {
         end_line: 1,
         end_col: 10,
     });
-    w1.write_to(&mut BufWriter::new(
-        File::create(var1_dir.join("app.ridx")).unwrap(),
-    ))
-    .unwrap();
+    w1.write_to(&mut BufWriter::new(File::create(var1_dir.join("app.ridx")).unwrap())).unwrap();
 
     // In var2: dep crate with generation "reader_gen"
     let mut w2 = IndexWriter::new("dep", "0.1.0");
     w2.set_unit_key("unitDep");
     w2.set_generation("reader_gen_1234");
-    w2.write_to(&mut BufWriter::new(
-        File::create(var2_dir.join("dep.ridx")).unwrap(),
-    ))
-    .unwrap();
+    w2.write_to(&mut BufWriter::new(File::create(var2_dir.join("dep.ridx")).unwrap())).unwrap();
 
     // Manifest initially points to var1
     let manifest1 = serde_json::json!({
@@ -156,11 +137,7 @@ fn test_reload_variant_switch_computed_gen_mismatch() {
         "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev"
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest1).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest1).unwrap()).unwrap();
 
     let mut ws = WorkspaceIndex::open(&test_dir).expect("open workspace");
     assert_eq!(ws.active_variant_id(), Some("var1"));
@@ -190,11 +167,7 @@ fn test_reload_variant_switch_computed_gen_mismatch() {
             "file_hashes": file_hashes
         }]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest2).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest2).unwrap()).unwrap();
 
     let reloaded = ws.reload_if_modified().expect("reload variant switch");
     assert!(reloaded);

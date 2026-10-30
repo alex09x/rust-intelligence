@@ -27,11 +27,7 @@ fn parse_framed_json(bytes: &[u8]) -> Vec<Value> {
     while let Some(pos) = rest.find("\r\n\r\n") {
         let body = &rest[pos + 4..];
         let len_header = &rest[..pos];
-        let len: usize = len_header
-            .lines()
-            .find_map(|l| l.strip_prefix("Content-Length: "))
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0);
+        let len: usize = len_header.lines().find_map(|l| l.strip_prefix("Content-Length: ")).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
         if body.len() >= len && len > 0 {
             if let Ok(val) = serde_json::from_str::<Value>(&body[..len]) {
                 out.push(val);
@@ -79,10 +75,7 @@ fn test_extract_variable_inside_closure_rejected() {
     let arr = actions.as_array().expect("code action array");
     for action in arr {
         let kind = action.get("kind").and_then(|k| k.as_str()).unwrap_or("");
-        assert_ne!(
-            kind, "refactor.extract.variable",
-            "Variable extraction must not escape closure binding scope"
-        );
+        assert_ne!(kind, "refactor.extract.variable", "Variable extraction must not escape closure binding scope");
     }
 }
 
@@ -143,11 +136,7 @@ fn test_sequential_workspace_edit_client_snapshot_consistency() {
     assert_eq!(server_doc.text, "aBcDef\n");
 
     let changes = res["edit"]["changes"][&uri].as_array().unwrap();
-    assert_eq!(
-        changes.len(),
-        1,
-        "Multi-arg edit must produce single full-doc replacement"
-    );
+    assert_eq!(changes.len(), 1, "Multi-arg edit must produce single full-doc replacement");
     assert_eq!(changes[0]["newText"], "aBcDef\n");
 }
 
@@ -170,35 +159,15 @@ fn test_apply_edit_two_way_handshake_reject_and_accept() {
     let mut multi_root = MultiRootWorkspace::new();
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
 
-    let _ = dispatch_lsp_message(
-        init_req,
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(init_req, &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let edit_cmd = make_apply_cmd(42, &uri, "renamed");
 
     let mut cmd_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        edit_cmd,
-        &mut cmd_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(edit_cmd, &mut cmd_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let msgs = parse_framed_json(&cmd_out.into_inner());
-    assert_eq!(
-        msgs.len(),
-        1,
-        "Must emit workspace/applyEdit without command response yet"
-    );
+    assert_eq!(msgs.len(), 1, "Must emit workspace/applyEdit without command response yet");
     assert_eq!(msgs[0]["method"], "workspace/applyEdit");
     let apply_id = msgs[0]["id"].clone();
     assert!(apply_id.as_u64().is_some());
@@ -210,31 +179,16 @@ fn test_apply_edit_two_way_handshake_reject_and_accept() {
     });
 
     let mut resp_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        reject_resp,
-        &mut resp_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(reject_resp, &mut resp_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let final_msgs = parse_framed_json(&resp_out.into_inner());
-    assert_eq!(
-        final_msgs.len(),
-        1,
-        "Must complete command with client rejection"
-    );
+    assert_eq!(final_msgs.len(), 1, "Must complete command with client rejection");
     assert_eq!(final_msgs[0]["id"], 42);
     assert_eq!(final_msgs[0]["result"]["applied"], false);
     assert_eq!(final_msgs[0]["result"]["failure"], "client_rejected");
 
     let overlay = overlay_mgr.get(file).unwrap();
-    assert_eq!(
-        overlay.text, initial_text,
-        "Overlay must remain untouched on client rejection"
-    );
+    assert_eq!(overlay.text, initial_text, "Overlay must remain untouched on client rejection");
 }
 
 #[test]
@@ -261,38 +215,19 @@ fn test_two_concurrent_pending_edits_distinct_ids() {
 
     let cmd1 = make_apply_cmd(101, &uri, "bar");
     let mut out1 = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        cmd1,
-        &mut out1,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(cmd1, &mut out1, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
     let msgs1 = parse_framed_json(&out1.into_inner());
     assert_eq!(msgs1.len(), 1);
     let id1 = msgs1[0]["id"].clone();
 
     let cmd2 = make_apply_cmd(102, &uri, "baz");
     let mut out2 = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        cmd2,
-        &mut out2,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(cmd2, &mut out2, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
     let msgs2 = parse_framed_json(&out2.into_inner());
     assert_eq!(msgs2.len(), 1);
     let id2 = msgs2[0]["id"].clone();
 
-    assert_ne!(
-        id1, id2,
-        "Concurrent commands must have distinct applyEdit request IDs"
-    );
+    assert_ne!(id1, id2, "Concurrent commands must have distinct applyEdit request IDs");
 
     // Reply to id1:
     let mut resp_out1 = Cursor::new(Vec::new());
@@ -336,22 +271,13 @@ fn test_atomic_closed_write_preserves_large_file_on_error() {
     fs::write(&target, &original_content).unwrap();
 
     let invalid_target = "/invalid_nonexistent_dir_cannot_write/should_fail.rs".to_string();
-    let writes = vec![
-        (
-            target.to_str().unwrap().to_string(),
-            "new content".to_string(),
-        ),
-        (invalid_target, "fail".to_string()),
-    ];
+    let writes = vec![(target.to_str().unwrap().to_string(), "new content".to_string()), (invalid_target, "fail".to_string())];
 
     let ok = ridx::lsp::editing::commit_closed_writes_atomic(&writes);
     assert!(!ok, "Batch write with failing path must return false");
 
     let restored = fs::read_to_string(&target).unwrap();
-    assert_eq!(
-        restored, original_content,
-        "Original file must be 100% preserved without truncation"
-    );
+    assert_eq!(restored, original_content, "Original file must be 100% preserved without truncation");
     let _ = fs::remove_dir_all(&tmp);
 }
 

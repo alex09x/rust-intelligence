@@ -14,10 +14,7 @@ use std::fs;
 
 #[test]
 fn test_parse_location_cases() {
-    assert_eq!(
-        parse_location("src/lib.rs:10:5"),
-        Some(("src/lib.rs", 10, 5))
-    );
+    assert_eq!(parse_location("src/lib.rs:10:5"), Some(("src/lib.rs", 10, 5)));
     assert_eq!(parse_location("src/lib.rs"), None);
     assert_eq!(parse_location("src/lib.rs:not_num:5"), None);
     assert_eq!(parse_location("src/lib.rs:10:not_num"), None);
@@ -52,11 +49,7 @@ fn test_find_manifest_for_path_variants() {
         "variant_dir": "variants/var1",
         "workspace_root": test_dir.0.display().to_string(),
     });
-    fs::write(
-        &manifest_file,
-        serde_json::to_string(&manifest_data).unwrap(),
-    )
-    .unwrap();
+    fs::write(&manifest_file, serde_json::to_string(&manifest_data).unwrap()).unwrap();
 
     let found = find_manifest_for_path(&test_dir.0);
     assert!(found.is_some());
@@ -73,11 +66,7 @@ fn test_find_manifest_for_path_variants() {
     let v_dir = test_dir.0.join("v_dir");
     fs::create_dir_all(&v_dir).unwrap();
     let v_manifest_file = v_dir.join("variant_manifest.json");
-    fs::write(
-        &v_manifest_file,
-        serde_json::to_string(&manifest_data).unwrap(),
-    )
-    .unwrap();
+    fs::write(&v_manifest_file, serde_json::to_string(&manifest_data).unwrap()).unwrap();
     let found_v = find_manifest_for_path(&v_dir);
     assert!(found_v.is_some());
 
@@ -106,11 +95,7 @@ fn test_try_resolve_index_and_target_from_file_location() {
 
     let target_ridx = test_dir.0.join("target/ridx");
     fs::create_dir_all(&target_ridx).unwrap();
-    fs::rename(
-        test_dir.0.join("test_crate.ridx"),
-        target_ridx.join("test_crate.ridx"),
-    )
-    .unwrap();
+    fs::rename(test_dir.0.join("test_crate.ridx"), target_ridx.join("test_crate.ridx")).unwrap();
 
     let src_file = test_dir.0.join("src/lib.rs");
     fs::create_dir_all(src_file.parent().unwrap()).unwrap();

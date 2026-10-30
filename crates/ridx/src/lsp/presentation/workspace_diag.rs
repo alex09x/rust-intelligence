@@ -17,11 +17,7 @@ use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::path::Path;
 
-pub fn handle_workspace_diagnostic(
-    msg: &Value,
-    overlay_mgr: &OverlayManager,
-    multi_root: &MultiRootWorkspace,
-) -> Value {
+pub fn handle_workspace_diagnostic(msg: &Value, overlay_mgr: &OverlayManager, multi_root: &MultiRootWorkspace) -> Value {
     handle_workspace_diagnostic_with_flycheck(msg, overlay_mgr, multi_root, None)
 }
 
@@ -36,20 +32,11 @@ pub fn handle_workspace_diagnostic_with_flycheck(
 
     let build_items = |uri: &str, text: &str| -> Vec<Value> {
         let diag_resp = handle_document_diagnostic_text(text);
-        let h_items = diag_resp
-            .get("items")
-            .and_then(|i| i.as_array())
-            .map(|a| a.as_slice())
-            .unwrap_or(&[]);
+        let h_items = diag_resp.get("items").and_then(|i| i.as_array()).map(|a| a.as_slice()).unwrap_or(&[]);
         if let Some(fc) = flycheck {
             let auth = fc.get_latest_diagnostics(uri);
             let baseline = fc.get_diagnostic_baseline(uri);
-            let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(
-                &auth,
-                baseline.as_deref(),
-                text,
-                uri,
-            );
+            let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(&auth, baseline.as_deref(), text, uri);
             super::reconcile::reconcile_diagnostics(h_items, &mapped_auth)
         } else {
             h_items.to_vec()
@@ -76,10 +63,7 @@ pub fn handle_workspace_diagnostic_with_flycheck(
             if ws.is_reader_external(i) {
                 continue;
             }
-            let origin = ws
-                .source_root_at(i)
-                .or_else(|| ws.workspace_root())
-                .or_else(|| ws.paths().get(i).and_then(|p| p.parent()));
+            let origin = ws.source_root_at(i).or_else(|| ws.workspace_root()).or_else(|| ws.paths().get(i).and_then(|p| p.parent()));
             for fid in 0..reader.files_count() {
                 let rel = reader.get_file(fid);
                 if rel.is_empty() {
@@ -114,11 +98,7 @@ pub fn handle_workspace_diagnostic_with_flycheck(
     }
 
     // 3. Any previousResultIds sent by the client
-    if let Some(prev_ids) = msg
-        .get("params")
-        .and_then(|p| p.get("previousResultIds"))
-        .and_then(|p| p.as_array())
-    {
+    if let Some(prev_ids) = msg.get("params").and_then(|p| p.get("previousResultIds")).and_then(|p| p.as_array()) {
         for prev in prev_ids {
             if let Some(uri) = prev.get("uri").and_then(|u| u.as_str()) {
                 if seen_uris.insert(uri.to_string()) {

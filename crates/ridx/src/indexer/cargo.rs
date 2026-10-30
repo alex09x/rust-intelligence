@@ -103,10 +103,7 @@ pub fn collect_all_workspace_manifests(dir: &Path, manifests: &mut Vec<PathBuf>)
 }
 
 pub fn compute_sysroot_ld_path() -> Option<String> {
-    let out = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .ok()?;
+    let out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().ok()?;
     if !out.status.success() {
         return None;
     }

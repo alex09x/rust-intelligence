@@ -11,9 +11,7 @@
 //! Integration tests for the symmetric framed LSP comparison runner.
 
 use ridx::compare::symmetric::run_server_session;
-use ridx::compare::types::{
-    ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario,
-};
+use ridx::compare::types::{ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -39,16 +37,7 @@ fn test_symmetric_summary_serialization_roundtrip() {
     ridx_latencies.insert("def_test".to_string(), 12u128);
 
     let mut ridx_results = HashMap::new();
-    ridx_results.insert(
-        "def_test".to_string(),
-        ExternalLspResult {
-            found: true,
-            span: "/tmp/test.rs:10:5".to_string(),
-            count: 1,
-            latency_micros: 12,
-            rss_bytes: 4096,
-        },
-    );
+    ridx_results.insert("def_test".to_string(), ExternalLspResult { found: true, span: "/tmp/test.rs:10:5".to_string(), count: 1, latency_micros: 12, rss_bytes: 4096 });
 
     let ridx_metrics = ServerMetrics {
         server_name: "ridx".to_string(),
@@ -114,20 +103,9 @@ fn test_symmetric_summary_serialization_roundtrip() {
 
 #[test]
 fn test_run_server_session_handles_invalid_binary_gracefully() {
-    let scenarios = [SymmetricScenario {
-        name: "test".to_string(),
-        capability: "def".to_string(),
-        target: "foo".to_string(),
-        location: None,
-        mutation: None,
-    }];
+    let scenarios = [SymmetricScenario { name: "test".to_string(), capability: "def".to_string(), target: "foo".to_string(), location: None, mutation: None }];
 
-    let res = run_server_session(
-        "nonexistent_server",
-        &["/nonexistent/bin/path".to_string()],
-        Path::new("."),
-        &scenarios,
-    );
+    let res = run_server_session("nonexistent_server", &["/nonexistent/bin/path".to_string()], Path::new("."), &scenarios);
     assert!(res.is_none(), "Nonexistent binary must return None safely");
 }
 

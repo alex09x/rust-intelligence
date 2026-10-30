@@ -30,23 +30,10 @@ fn setup_open_doc(uri: &str, initial_text: &str) -> (LifecycleManager, MultiRoot
     (lifecycle, multi_root, overlay_mgr)
 }
 
-fn dispatch_did_change(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_change(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -65,7 +52,9 @@ fn test_did_change_adds_new_fn_symbol() {
                 "contentChanges": [{ "text": "pub fn added() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -90,7 +79,9 @@ fn test_did_change_removes_existing_fn_symbol() {
                 "contentChanges": [{ "text": "// replaced with comment\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -119,7 +110,9 @@ fn test_did_change_renames_fn_symbol_in_place() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -143,7 +136,9 @@ fn test_did_change_adds_struct_definition_symbol() {
                 "contentChanges": [{ "text": "pub struct Config;\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -168,7 +163,9 @@ fn test_did_change_adds_enum_definition_symbol() {
                 "contentChanges": [{ "text": "pub enum Action { Play, Stop }\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -199,7 +196,9 @@ fn test_did_change_converts_fn_to_comment_removes_symbol() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -222,7 +221,9 @@ fn test_did_change_notification_produces_no_stdout_when_pull_diagnostics() {
                 "contentChanges": [{ "text": "fn f2() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -244,7 +245,9 @@ fn test_did_change_notification_returns_ok_true() {
                 "contentChanges": [{ "text": "fn f3() {}\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -265,7 +268,9 @@ fn test_did_change_empty_content_changes_array_safe() {
                 "contentChanges": []
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -288,7 +293,9 @@ fn test_did_change_missing_content_changes_key_safe() {
                 "textDocument": { "uri": uri, "version": 4 }
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);

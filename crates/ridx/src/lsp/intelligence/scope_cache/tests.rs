@@ -28,13 +28,7 @@ impl MyStruct {
     let data = parse_file_scopes(Arc::from(src));
     let cursor = data.cursor_byte(5, "            Self::");
     let scope = data.find_enclosing_scope(cursor);
-    assert_eq!(
-        scope,
-        Some(EnclosingScope::Impl {
-            trait_name: None,
-            type_name: "MyStruct".to_string(),
-        })
-    );
+    assert_eq!(scope, Some(EnclosingScope::Impl { trait_name: None, type_name: "MyStruct".to_string() }));
 }
 
 #[test]
@@ -65,47 +59,29 @@ where
 #[test]
 fn test_parse_assoc_bounds_edge_cases() {
     let src1 = "type Item: 'a + EntityEquivalent + Clone;\n";
-    assert_eq!(
-        parse_assoc_bounds_from_source(src1, 1),
-        vec!["EntityEquivalent".to_string(), "Clone".to_string()]
-    );
+    assert_eq!(parse_assoc_bounds_from_source(src1, 1), vec!["EntityEquivalent".to_string(), "Clone".to_string()]);
 
     let src2 = "type Item: Clone where Self: 'a;\n";
-    assert_eq!(
-        parse_assoc_bounds_from_source(src2, 1),
-        vec!["Clone".to_string()]
-    );
+    assert_eq!(parse_assoc_bounds_from_source(src2, 1), vec!["Clone".to_string()]);
 
     let src3 = "type Item = Vec<u8>;\n";
     assert!(parse_assoc_bounds_from_source(src3, 1).is_empty());
 
     let src4 = "type Assoc: 'static + Send + Sync;\n";
-    assert_eq!(
-        parse_assoc_bounds_from_source(src4, 1),
-        vec!["Send".to_string(), "Sync".to_string()]
-    );
+    assert_eq!(parse_assoc_bounds_from_source(src4, 1), vec!["Send".to_string(), "Sync".to_string()]);
 
     let src5 = r#"
     type Output:
         Debug
         + Display;
 "#;
-    assert_eq!(
-        parse_assoc_bounds_from_source(src5, 2),
-        vec!["Debug".to_string(), "Display".to_string()]
-    );
+    assert_eq!(parse_assoc_bounds_from_source(src5, 2), vec!["Debug".to_string(), "Display".to_string()]);
 }
 
 #[test]
 fn test_parse_trait_supertraits() {
     let src = "pub trait ContiguousQueryData: ArchetypeQueryData + 'static + IterQueryData {\n";
-    assert_eq!(
-        parse_trait_supertraits_from_source(src, 1),
-        vec![
-            "ArchetypeQueryData".to_string(),
-            "IterQueryData".to_string()
-        ]
-    );
+    assert_eq!(parse_trait_supertraits_from_source(src, 1), vec!["ArchetypeQueryData".to_string(), "IterQueryData".to_string()]);
 }
 
 #[test]
@@ -120,24 +96,12 @@ fn test_overlay_cache_key_change_after_64_bytes() {
     let scope1 = get_or_parse_file_scopes(file, Some(&src1)).expect("should parse scope1");
     let cursor1 = scope1.cursor_byte(4, "        Self::");
     let enclosing1 = scope1.find_enclosing_scope(cursor1);
-    assert_eq!(
-        enclosing1,
-        Some(EnclosingScope::Impl {
-            trait_name: None,
-            type_name: "Foo".to_string(),
-        })
-    );
+    assert_eq!(enclosing1, Some(EnclosingScope::Impl { trait_name: None, type_name: "Foo".to_string() }));
 
     let scope2 = get_or_parse_file_scopes(file, Some(&src2)).expect("should parse scope2");
     let cursor2 = scope2.cursor_byte(4, "        Self::");
     let enclosing2 = scope2.find_enclosing_scope(cursor2);
-    assert_eq!(
-        enclosing2,
-        Some(EnclosingScope::Impl {
-            trait_name: None,
-            type_name: "Baz".to_string(),
-        })
-    );
+    assert_eq!(enclosing2, Some(EnclosingScope::Impl { trait_name: None, type_name: "Baz".to_string() }));
 }
 
 #[test]

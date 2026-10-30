@@ -34,15 +34,11 @@ fn test_call_hierarchy_incoming_and_outgoing() {
         }
     });
 
-    let incoming =
-        handle_call_hierarchy_incoming_calls(&incoming_req, Some(&ws), &overlay_mgr, &mut conv);
+    let incoming = handle_call_hierarchy_incoming_calls(&incoming_req, Some(&ws), &overlay_mgr, &mut conv);
     let arr = incoming.as_array().unwrap();
     // Actual calls from caller and turbo_caller, skipping function value assignment and non-function context static _C
     assert_eq!(arr.len(), 2);
-    let caller_names: Vec<&str> = arr
-        .iter()
-        .filter_map(|item| item["from"]["name"].as_str())
-        .collect();
+    let caller_names: Vec<&str> = arr.iter().filter_map(|item| item["from"]["name"].as_str()).collect();
     assert!(caller_names.contains(&"caller"));
     assert!(caller_names.contains(&"turbo_caller"));
 
@@ -61,14 +57,10 @@ fn test_call_hierarchy_incoming_and_outgoing() {
             }
         }
     });
-    let outgoing =
-        handle_call_hierarchy_outgoing_calls(&outgoing_req, Some(&ws), &overlay_mgr, &mut conv);
+    let outgoing = handle_call_hierarchy_outgoing_calls(&outgoing_req, Some(&ws), &overlay_mgr, &mut conv);
     let out_arr = outgoing.as_array().unwrap();
     assert_eq!(out_arr.len(), 1);
-    let names: Vec<&str> = out_arr
-        .iter()
-        .filter_map(|it| it["to"]["name"].as_str())
-        .collect();
+    let names: Vec<&str> = out_arr.iter().filter_map(|it| it["to"]["name"].as_str()).collect();
     assert!(!names.contains(&"caller"));
     assert!(names.contains(&"add"));
 
@@ -76,20 +68,11 @@ fn test_call_hierarchy_incoming_and_outgoing() {
     let non_exist_req = json!({
         "params": { "item": { "uri": "file:///nonexistent.rs", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 1, "character": 0 } } } }
     });
-    assert_eq!(
-        handle_call_hierarchy_outgoing_calls(&non_exist_req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
-    assert_eq!(
-        handle_call_hierarchy_outgoing_calls(&outgoing_req, None, &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_call_hierarchy_outgoing_calls(&non_exist_req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
+    assert_eq!(handle_call_hierarchy_outgoing_calls(&outgoing_req, None, &overlay_mgr, &mut conv), json!([]));
 
     // Incoming calls without workspace
-    assert_eq!(
-        handle_call_hierarchy_incoming_calls(&incoming_req, None, &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_call_hierarchy_incoming_calls(&incoming_req, None, &overlay_mgr, &mut conv), json!([]));
 
     // Prepare call hierarchy: workspace fallback on function
     let prep_req = json!({
@@ -98,8 +81,7 @@ fn test_call_hierarchy_incoming_and_outgoing() {
             "position": { "line": 0, "character": 8 }
         }
     });
-    let prep_res =
-        handle_prepare_call_hierarchy(&prep_req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!prep_res.as_array().unwrap().is_empty());
 
     // Prepare call hierarchy: workspace on struct (not a function -> returns empty)
@@ -109,8 +91,7 @@ fn test_call_hierarchy_incoming_and_outgoing() {
             "position": { "line": 1, "character": 12 }
         }
     });
-    let prep_struct_res =
-        handle_prepare_call_hierarchy(&prep_struct, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let prep_struct_res = handle_prepare_call_hierarchy(&prep_struct, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(prep_struct_res.as_array().unwrap().is_empty());
 
     // Prepare call hierarchy: workspace on whitespace (no definition -> returns empty)
@@ -120,37 +101,24 @@ fn test_call_hierarchy_incoming_and_outgoing() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    let prep_ws_res =
-        handle_prepare_call_hierarchy(&prep_ws, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let prep_ws_res = handle_prepare_call_hierarchy(&prep_ws, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(prep_ws_res.as_array().unwrap().is_empty());
 
     // Prepare call hierarchy: with overlay on a function
     let mut ov_mgr = OverlayManager::new();
-    ov_mgr.open_document(
-        &uri,
-        src_file.to_str().unwrap(),
-        1,
-        "pub fn add(x: i32) -> i32 { x }\n".to_string(),
-    );
-    let prep_ov_res =
-        handle_prepare_call_hierarchy(&prep_req, Some(&ws), &ov_mgr, &mut conv).unwrap();
+    ov_mgr.open_document(&uri, src_file.to_str().unwrap(), 1, "pub fn add(x: i32) -> i32 { x }\n".to_string());
+    let prep_ov_res = handle_prepare_call_hierarchy(&prep_req, Some(&ws), &ov_mgr, &mut conv).unwrap();
     assert!(!prep_ov_res.as_array().unwrap().is_empty());
 
     // Prepare call hierarchy: with overlay on a struct (not a fn -> falls through to workspace)
-    ov_mgr.open_document(
-        &uri,
-        src_file.to_str().unwrap(),
-        2,
-        "pub struct NotAFn;\n".to_string(),
-    );
+    ov_mgr.open_document(&uri, src_file.to_str().unwrap(), 2, "pub struct NotAFn;\n".to_string());
     let prep_ov_struct = json!({
         "params": {
             "textDocument": { "uri": &uri },
             "position": { "line": 0, "character": 12 }
         }
     });
-    let prep_ov_struct_res =
-        handle_prepare_call_hierarchy(&prep_ov_struct, Some(&ws), &ov_mgr, &mut conv).unwrap();
+    let prep_ov_struct_res = handle_prepare_call_hierarchy(&prep_ov_struct, Some(&ws), &ov_mgr, &mut conv).unwrap();
     assert!(prep_ov_struct_res.as_array().unwrap().is_empty());
 
     // is_call_site edge cases
@@ -169,11 +137,9 @@ fn test_call_hierarchy_missing_item_or_empty_uri_returns_empty() {
 
     // 1. Missing item param (params: {})
     let req_missing = json!({ "params": {} });
-    let inc1 =
-        handle_call_hierarchy_incoming_calls(&req_missing, Some(&ws), &overlay_mgr, &mut conv);
+    let inc1 = handle_call_hierarchy_incoming_calls(&req_missing, Some(&ws), &overlay_mgr, &mut conv);
     assert_eq!(inc1, json!([]));
-    let out1 =
-        handle_call_hierarchy_outgoing_calls(&req_missing, Some(&ws), &overlay_mgr, &mut conv);
+    let out1 = handle_call_hierarchy_outgoing_calls(&req_missing, Some(&ws), &overlay_mgr, &mut conv);
     assert_eq!(out1, json!([]));
 
     // 2. Empty uri in item
@@ -189,11 +155,9 @@ fn test_call_hierarchy_missing_item_or_empty_uri_returns_empty() {
             }
         }
     });
-    let inc2 =
-        handle_call_hierarchy_incoming_calls(&req_empty_uri, Some(&ws), &overlay_mgr, &mut conv);
+    let inc2 = handle_call_hierarchy_incoming_calls(&req_empty_uri, Some(&ws), &overlay_mgr, &mut conv);
     assert_eq!(inc2, json!([]));
-    let out2 =
-        handle_call_hierarchy_outgoing_calls(&req_empty_uri, Some(&ws), &overlay_mgr, &mut conv);
+    let out2 = handle_call_hierarchy_outgoing_calls(&req_empty_uri, Some(&ws), &overlay_mgr, &mut conv);
     assert_eq!(out2, json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
@@ -234,14 +198,12 @@ fn test_prepare_call_hierarchy_missing_params_rejected_code_32602() {
 
     // 1. Missing params object entirely
     let req_no_params = json!({});
-    let err1 = handle_prepare_call_hierarchy(&req_no_params, Some(&ws), &overlay_mgr, &mut conv)
-        .unwrap_err();
+    let err1 = handle_prepare_call_hierarchy(&req_no_params, Some(&ws), &overlay_mgr, &mut conv).unwrap_err();
     assert_eq!(err1.code, -32602);
 
     // 2. Empty params object
     let req_empty_params = json!({ "params": {} });
-    let err2 = handle_prepare_call_hierarchy(&req_empty_params, Some(&ws), &overlay_mgr, &mut conv)
-        .unwrap_err();
+    let err2 = handle_prepare_call_hierarchy(&req_empty_params, Some(&ws), &overlay_mgr, &mut conv).unwrap_err();
     assert_eq!(err2.code, -32602);
 
     let _ = fs::remove_dir_all(&temp_dir);

@@ -37,14 +37,7 @@ impl Drop for Fixture {
     }
 }
 
-fn def(
-    def_id: u32,
-    name: &str,
-    krate: &str,
-    line: u32,
-    start_col: u32,
-    end_col: u32,
-) -> RawDefinition {
+fn def(def_id: u32, name: &str, krate: &str, line: u32, start_col: u32, end_col: u32) -> RawDefinition {
     RawDefinition {
         def_id,
         kind: DefKind::Fn,
@@ -68,23 +61,13 @@ fn expanded(mut d: RawDefinition) -> RawDefinition {
 }
 
 /// `unit` is `lib` or `lib test`: two units of one crate share the source root and the file.
-fn write_shard(
-    var_dir: &Path,
-    stem: &str,
-    krate: &str,
-    unit: &str,
-    source_root: &Path,
-    is_dependency: bool,
-    defs: Vec<RawDefinition>,
-) {
+fn write_shard(var_dir: &Path, stem: &str, krate: &str, unit: &str, source_root: &Path, is_dependency: bool, defs: Vec<RawDefinition>) {
     let mut writer = IndexWriter::new(krate, "0.1.0");
     writer.set_unit_key(format!("{krate} 0.1.0 ({unit})"));
     for d in defs {
         writer.add_definition(d);
     }
-    writer
-        .write_to(&mut fs::File::create(var_dir.join(format!("{stem}.ridx"))).unwrap())
-        .unwrap();
+    writer.write_to(&mut fs::File::create(var_dir.join(format!("{stem}.ridx"))).unwrap()).unwrap();
     let sidecar = json!({
         "name": krate,
         "version": "0.1.0",
@@ -93,11 +76,7 @@ fn write_shard(
         "target_kind": if unit == "lib" { "lib" } else { "test" },
         "is_dependency": is_dependency,
     });
-    fs::write(
-        var_dir.join(".deps").join(format!("{stem}.json")),
-        serde_json::to_string(&sidecar).unwrap(),
-    )
-    .unwrap();
+    fs::write(var_dir.join(".deps").join(format!("{stem}.json")), serde_json::to_string(&sidecar).unwrap()).unwrap();
 }
 
 fn fixture() -> Fixture {
@@ -118,65 +97,23 @@ fn fixture_with(sibling_unit_and_macro: bool) -> Fixture {
     let crate_a = root.join("crates/crate_a");
     let crate_b = root.join("crates/crate_b");
     let dep = registry.join("dep_crate-1.0.0");
-    for (dir, text) in [
-        (
-            &crate_a,
-            "pub fn alpha() {}\n\npub fn beta() {}\n\nimpls! {}\n",
-        ),
-        (&crate_b, "pub fn gamma() {}\n"),
-        (&dep, "pub fn dep_item() {}\n"),
-    ] {
+    for (dir, text) in [(&crate_a, "pub fn alpha() {}\n\npub fn beta() {}\n\nimpls! {}\n"), (&crate_b, "pub fn gamma() {}\n"), (&dep, "pub fn dep_item() {}\n")] {
         fs::create_dir_all(dir.join("src")).unwrap();
         fs::write(dir.join("src/lib.rs"), text).unwrap();
     }
     fs::create_dir_all(crate_a.join("examples")).unwrap();
     fs::write(crate_a.join("examples/demo.rs"), "fn main() {}\n").unwrap();
 
-    let mut crate_a_defs = vec![
-        def(1, "alpha", "crate_a", 1, 8, 13),
-        def(2, "beta", "crate_a", 3, 8, 12),
-    ];
+    let mut crate_a_defs = vec![def(1, "alpha", "crate_a", 1, 8, 13), def(2, "beta", "crate_a", 3, 8, 12)];
     if sibling_unit_and_macro {
         for id in 3..6 {
             crate_a_defs.push(expanded(def(id, "generated", "crate_a", 5, 1, 10)));
         }
-        write_shard(
-            &var_dir,
-            "crate_a_test",
-            "crate_a",
-            "lib test",
-            &crate_a,
-            false,
-            crate_a_defs.clone(),
-        );
+        write_shard(&var_dir, "crate_a_test", "crate_a", "lib test", &crate_a, false, crate_a_defs.clone());
     }
-    write_shard(
-        &var_dir,
-        "crate_a",
-        "crate_a",
-        "lib",
-        &crate_a,
-        false,
-        crate_a_defs,
-    );
-    write_shard(
-        &var_dir,
-        "crate_b",
-        "crate_b",
-        "lib",
-        &crate_b,
-        false,
-        vec![def(1, "gamma", "crate_b", 1, 8, 13)],
-    );
-    write_shard(
-        &var_dir,
-        "dep_crate",
-        "dep_crate",
-        "lib",
-        &dep,
-        true,
-        vec![def(1, "dep_item", "dep_crate", 1, 8, 16)],
-    );
+    write_shard(&var_dir, "crate_a", "crate_a", "lib", &crate_a, false, crate_a_defs);
+    write_shard(&var_dir, "crate_b", "crate_b", "lib", &crate_b, false, vec![def(1, "gamma", "crate_b", 1, 8, 13)]);
+    write_shard(&var_dir, "dep_crate", "dep_crate", "lib", &dep, true, vec![def(1, "dep_item", "dep_crate", 1, 8, 16)]);
 
     let manifest = json!({
         "version": "2.0",
@@ -188,19 +125,11 @@ fn fixture_with(sibling_unit_and_macro: bool) -> Fixture {
         "manifest_path": root.join("Cargo.toml").display().to_string(),
         "profile": "dev"
     });
-    fs::write(
-        root.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(root.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&root).expect("open the fixture workspace");
     let expected_readers = if sibling_unit_and_macro { 4 } else { 3 };
-    assert_eq!(
-        ws.readers().len(),
-        expected_readers,
-        "every shard must be mapped"
-    );
+    assert_eq!(ws.readers().len(), expected_readers, "every shard must be mapped");
     Fixture { root, registry, ws }
 }
 
@@ -227,10 +156,7 @@ fn test_code_lens_closed_file_lists_only_the_owning_crates_definitions() {
     let fx = fixture();
     let (uri, result) = code_lens(&fx, &fx.root.join("crates/crate_a/src/lib.rs"));
     // `crate_b` and `dep_crate` also index a `src/lib.rs`; none of their definitions may appear.
-    assert_eq!(
-        result,
-        json!([lens(&uri, 1, 8, 13, "alpha"), lens(&uri, 3, 8, 12, "beta")])
-    );
+    assert_eq!(result, json!([lens(&uri, 1, 8, 13, "alpha"), lens(&uri, 3, 8, 12, "beta")]));
 }
 
 #[test]
@@ -259,8 +185,5 @@ fn test_code_lens_one_lens_per_range_and_name_across_units() {
     // Two units index the file: every (range, name) appears once, in definition order, lib unit
     // first. The three `generated` definitions expanded from `impls! {}` on line 5 get no lens
     // (`lens_filter_tests`): they are macro expansions and their span does not spell their name.
-    assert_eq!(
-        result,
-        json!([lens(&uri, 1, 8, 13, "alpha"), lens(&uri, 3, 8, 12, "beta")])
-    );
+    assert_eq!(result, json!([lens(&uri, 1, 8, 13, "alpha"), lens(&uri, 3, 8, 12, "beta")]));
 }

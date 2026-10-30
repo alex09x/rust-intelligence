@@ -33,12 +33,7 @@ fn to_uri(p: &Path) -> String {
 
 fn temp_file(tag: &str) -> PathBuf {
     let id = SEL_P9_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-        "ridx_sel_p9_{}_{}_{}.rs",
-        tag,
-        std::process::id(),
-        id
-    ))
+    std::env::temp_dir().join(format!("ridx_sel_p9_{}_{}_{}.rs", tag, std::process::id(), id))
 }
 
 struct TestDispatcher {
@@ -65,16 +60,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -105,16 +91,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -133,12 +111,7 @@ fn test_selection_range_closed_file_on_disk_matches_open_document_through_dispat
     let mut dsp = TestDispatcher::new();
 
     // Never opened: the server parses the file from disk.
-    let expected = json!([chain(&[
-        (1, 8, 1, 9),
-        (0, 10, 2, 1),
-        (0, 0, 2, 1),
-        (0, 0, 3, 0)
-    ])]);
+    let expected = json!([chain(&[(1, 8, 1, 9), (0, 10, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]);
     assert_eq!(selection_ranges(&mut dsp, 901, &file, &[(1, 8)]), expected);
 
     // Opened with the same text: identical answer. Edited: the live buffer wins.
@@ -148,15 +121,7 @@ fn test_selection_range_closed_file_on_disk_matches_open_document_through_dispat
         "params": { "textDocument": { "uri": to_uri(&file), "version": 2 },
             "contentChanges": [{ "text": "fn disk() {\n    let dd = 1;\n}\n" }] } });
     assert!(dsp.dispatch(&change_msg));
-    assert_eq!(
-        selection_ranges(&mut dsp, 903, &file, &[(1, 8)]),
-        json!([chain(&[
-            (1, 8, 1, 10),
-            (0, 10, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(selection_ranges(&mut dsp, 903, &file, &[(1, 8)]), json!([chain(&[(1, 8, 1, 10), (0, 10, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
 
     // Closed again: back to the file on disk.
     let close_msg = json!({ "jsonrpc": "2.0", "method": "textDocument/didClose",
@@ -184,11 +149,7 @@ fn test_selection_range_method_call_receiver_and_name_boundaries() {
 fn test_selection_range_unicode_identifier_after_emoji_literal_uses_utf16_columns() {
     let file = temp_file("unicode");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn ü() {\n    let s = \"🎉\"; let γειά = 1;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn ü() {\n    let s = \"🎉\"; let γειά = 1;\n}\n");
 
     // `🎉` is one char, four UTF-8 bytes and two UTF-16 units: `γειά` starts at UTF-16
     // column 22. The emoji string is a whole node; `ü` is a one-unit identifier.
@@ -238,8 +199,5 @@ fn test_selection_range_chain_invariants_hold_for_every_cursor_position() {
     // The `{` inside the string literal opens no block: on `brace` the string is innermost
     // and its parent is the fn body.
     let on_brace = positions.iter().position(|&p| p == (4, 20)).unwrap();
-    assert_eq!(
-        items[on_brace],
-        chain(&[(4, 12, 4, 26), (2, 35, 10, 1), (0, 0, 10, 1), (0, 0, 11, 0)])
-    );
+    assert_eq!(items[on_brace], chain(&[(4, 12, 4, 26), (2, 35, 10, 1), (0, 0, 10, 1), (0, 0, 11, 0)]));
 }

@@ -50,16 +50,8 @@ impl OverlayLifecycleFixture {
 
         let uri = format!("file://{}", file_path.display());
 
-        let mut fixture = Self {
-            _temp_dir: temp_dir,
-            crate_name: crate_name.to_string(),
-            file_path,
-            index_path,
-            uri,
-            version: 0,
-            disk_content: base_code.to_string(),
-            overlay_content: None,
-        };
+        let mut fixture =
+            Self { _temp_dir: temp_dir, crate_name: crate_name.to_string(), file_path, index_path, uri, version: 0, disk_content: base_code.to_string(), overlay_content: None };
 
         fixture.rebuild_index_with_defs(base_code, DefKind::Fn)?;
         Ok(fixture)
@@ -132,9 +124,7 @@ impl OverlayLifecycleFixture {
 
     /// Current visible text (overlay buffer if open, disk content otherwise).
     pub fn current_text(&self) -> &str {
-        self.overlay_content
-            .as_deref()
-            .unwrap_or(&self.disk_content)
+        self.overlay_content.as_deref().unwrap_or(&self.disk_content)
     }
 
     /// Current on-disk text.
@@ -146,16 +136,9 @@ impl OverlayLifecycleFixture {
     /// Synchronizes both disk content and in-memory overlay buffer if active, preserving clean state.
     pub fn rebuild_index_with_defs(&mut self, annotated_code: &str, kind: DefKind) -> io::Result<Vec<u32>> {
         let mut builder = FixtureIndexBuilder::new(&self.crate_name, "0.1.0");
-        let abs_str = self.file_path.to_str().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path")
-        })?;
+        let abs_str = self.file_path.to_str().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path"))?;
 
-        let (clean_code, def_ids) = builder.add_defs_with_ids(
-            annotated_code,
-            abs_str,
-            &self.crate_name,
-            kind,
-        );
+        let (clean_code, def_ids) = builder.add_defs_with_ids(annotated_code, abs_str, &self.crate_name, kind);
 
         fs::write(&self.file_path, &clean_code)?;
         if self.overlay_content.is_some() {

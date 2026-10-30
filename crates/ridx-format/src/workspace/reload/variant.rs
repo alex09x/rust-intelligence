@@ -61,30 +61,29 @@ impl WorkspaceIndex {
                                 io::ErrorKind::InvalidData,
                                 format!(
                                     "Format version mismatch in reloaded manifest {:?}: format_version {} != current {}",
-                                    mf, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                                    mf,
+                                    manifest.format_version,
+                                    crate::format::CURRENT_FORMAT_VERSION
                                 ),
                             ));
                         }
-                        if manifest.extractor_version.as_deref()
-                            != Some(crate::format::EXTRACTOR_VERSION)
-                        {
+                        if manifest.extractor_version.as_deref() != Some(crate::format::EXTRACTOR_VERSION) {
                             return Err(io::Error::new(
                                 io::ErrorKind::InvalidData,
                                 format!(
                                     "Extractor version mismatch in reloaded manifest {:?}: extractor_version {:?} != current {:?}",
-                                    mf, manifest.extractor_version, crate::format::EXTRACTOR_VERSION
+                                    mf,
+                                    manifest.extractor_version,
+                                    crate::format::EXTRACTOR_VERSION
                                 ),
                             ));
                         }
 
                         let base_dir = mf.parent().unwrap_or_else(|| Path::new("."));
                         if Some(&manifest.active_variant_id) != self.active_variant_id.as_ref() {
-                            let expected_variant_dir =
-                                format!("variants/{}", manifest.active_variant_id);
+                            let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
                             let vdir_str = manifest.variant_dir.trim();
-                            if !manifest.active_variant_id.is_empty()
-                                && vdir_str == expected_variant_dir
-                            {
+                            if !manifest.active_variant_id.is_empty() && vdir_str == expected_variant_dir {
                                 let new_vdir = base_dir.join(&expected_variant_dir);
                                 if new_vdir != base_dir && new_vdir.is_dir() {
                                     // Active variant changed! Atomically switch reader set
@@ -98,32 +97,19 @@ impl WorkspaceIndex {
                                     let mut new_source_roots = Vec::with_capacity(new_files.len());
                                     let mut new_unit_keys = Vec::with_capacity(new_files.len());
                                     let mut new_target_kinds = Vec::with_capacity(new_files.len());
-                                    let mut new_reader_generations =
-                                        Vec::with_capacity(new_files.len());
-                                    let mut new_reader_dependencies =
-                                        Vec::with_capacity(new_files.len());
-                                    let mut new_reader_extern_units =
-                                        Vec::with_capacity(new_files.len());
-                                    let mut new_reader_file_hashes =
-                                        Vec::with_capacity(new_files.len());
-                                    let mut new_reader_is_dependency =
-                                        Vec::with_capacity(new_files.len());
+                                    let mut new_reader_generations = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_dependencies = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_extern_units = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_file_hashes = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_is_dependency = Vec::with_capacity(new_files.len());
                                     let mut new_meta_paths = Vec::with_capacity(new_files.len());
                                     let mut new_meta_mtimes = Vec::with_capacity(new_files.len());
 
                                     for fp in new_files {
                                         if let Ok(r) = IndexReader::open(&fp) {
-                                            let mt =
-                                                fs::metadata(&fp).and_then(|m| m.modified()).ok();
+                                            let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
                                             let embedded = r.embedded_file_hashes();
-                                            let meta = Self::load_file_metadata(
-                                                &fp,
-                                                &new_vdir,
-                                                r.crate_name(),
-                                                r.unit_key(),
-                                                r.generation(),
-                                                &embedded,
-                                            );
+                                            let meta = Self::load_file_metadata(&fp, &new_vdir, r.crate_name(), r.unit_key(), r.generation(), &embedded);
                                             let is_dep = meta.source_root.is_some();
                                             new_readers.push(r);
                                             new_paths.push(fp);
@@ -147,93 +133,52 @@ impl WorkspaceIndex {
                                     for dep in &manifest.dependency_shards {
                                         let cand = cache_resolver.resolve(dep);
                                         if let Some(dep_file) = cand {
-                                            let canon_cand = fs::canonicalize(&dep_file)
-                                                .unwrap_or_else(|_| dep_file.clone());
+                                            let canon_cand = fs::canonicalize(&dep_file).unwrap_or_else(|_| dep_file.clone());
                                             let existing_pos = new_paths
                                                 .iter()
-                                                .position(|existing| {
-                                                    fs::canonicalize(existing)
-                                                        .unwrap_or_else(|_| existing.clone())
-                                                        == canon_cand
-                                                })
-                                                .or_else(|| {
-                                                    new_unit_keys.iter().position(|existing_uk| {
-                                                        existing_uk.as_deref()
-                                                            == Some(&dep.unit_key)
-                                                    })
-                                                });
+                                                .position(|existing| fs::canonicalize(existing).unwrap_or_else(|_| existing.clone()) == canon_cand)
+                                                .or_else(|| new_unit_keys.iter().position(|existing_uk| existing_uk.as_deref() == Some(&dep.unit_key)));
                                             if let Some(idx) = existing_pos {
                                                 new_reader_is_dependency[idx] = true;
                                                 if new_source_roots[idx].is_none() {
-                                                    new_source_roots[idx] =
-                                                        dep.source_root.as_ref().map(PathBuf::from);
+                                                    new_source_roots[idx] = dep.source_root.as_ref().map(PathBuf::from);
                                                 }
-                                                if new_target_kinds[idx].is_none()
-                                                    && dep.target_kind.is_some()
-                                                {
+                                                if new_target_kinds[idx].is_none() && dep.target_kind.is_some() {
                                                     new_target_kinds[idx] = dep.target_kind;
                                                 }
                                                 if new_reader_generations[idx].is_none() {
-                                                    new_reader_generations[idx] =
-                                                        dep.generation.clone();
+                                                    new_reader_generations[idx] = dep.generation.clone();
                                                 }
-                                                if new_reader_dependencies[idx].is_empty()
-                                                    && !dep.dependencies.is_empty()
-                                                {
-                                                    new_reader_dependencies[idx] =
-                                                        dep.dependencies.clone();
+                                                if new_reader_dependencies[idx].is_empty() && !dep.dependencies.is_empty() {
+                                                    new_reader_dependencies[idx] = dep.dependencies.clone();
                                                 }
-                                                if new_reader_extern_units[idx].is_empty()
-                                                    && !dep.extern_units.is_empty()
-                                                {
-                                                    new_reader_extern_units[idx] =
-                                                        dep.extern_units.clone();
+                                                if new_reader_extern_units[idx].is_empty() && !dep.extern_units.is_empty() {
+                                                    new_reader_extern_units[idx] = dep.extern_units.clone();
                                                 }
                                                 if !dep.file_hashes.is_empty() {
-                                                    let embedded =
-                                                        new_readers[idx].embedded_file_hashes();
+                                                    let embedded = new_readers[idx].embedded_file_hashes();
                                                     let mut combined = dep.file_hashes.clone();
-                                                    let sroot_path =
-                                                        dep.source_root.as_deref().map(Path::new);
-                                                    crate::format::merge_embedded_hashes_authoritative(
-                                                        &mut combined,
-                                                        &embedded,
-                                                        sroot_path,
-                                                    );
+                                                    let sroot_path = dep.source_root.as_deref().map(Path::new);
+                                                    crate::format::merge_embedded_hashes_authoritative(&mut combined, &embedded, sroot_path);
                                                     new_reader_file_hashes[idx] = combined;
                                                 }
                                                 continue;
                                             }
 
                                             if let Ok(r) = IndexReader::open(&dep_file) {
-                                                if !dep.name.is_empty()
-                                                    && r.crate_name() != dep.name
-                                                {
+                                                if !dep.name.is_empty() && r.crate_name() != dep.name {
                                                     continue;
                                                 }
-                                                if !dep.version.is_empty()
-                                                    && !r.crate_version().is_empty()
-                                                    && r.crate_version() != dep.version
-                                                {
+                                                if !dep.version.is_empty() && !r.crate_version().is_empty() && r.crate_version() != dep.version {
                                                     continue;
                                                 }
-                                                if !dep.unit_key.is_empty()
-                                                    && !r.unit_key().is_empty()
-                                                    && dep.unit_key != r.unit_key()
-                                                {
-                                                    let dep_gen =
-                                                        dep.generation.as_deref().unwrap_or("");
+                                                if !dep.unit_key.is_empty() && !r.unit_key().is_empty() && dep.unit_key != r.unit_key() {
+                                                    let dep_gen = dep.generation.as_deref().unwrap_or("");
                                                     let gen_matches = if !dep_gen.is_empty() {
                                                         dep_gen == r.generation()
-                                                    } else if !dep.file_hashes.is_empty()
-                                                        && !r.generation().is_empty()
-                                                    {
-                                                        let computed_digest =
-                                                            crate::format::compute_source_snapshot_digest(
-                                                                &dep.file_hashes,
-                                                            );
-                                                        let computed_gen =
-                                                            format!("{:016x}", computed_digest);
+                                                    } else if !dep.file_hashes.is_empty() && !r.generation().is_empty() {
+                                                        let computed_digest = crate::format::compute_source_snapshot_digest(&dep.file_hashes);
+                                                        let computed_gen = format!("{:016x}", computed_digest);
                                                         computed_gen == r.generation()
                                                     } else {
                                                         false
@@ -242,25 +187,19 @@ impl WorkspaceIndex {
                                                         continue;
                                                     }
                                                 }
-                                                let mt = fs::metadata(&dep_file)
-                                                    .and_then(|m| m.modified())
-                                                    .ok();
+                                                let mt = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
                                                 let embedded = r.embedded_file_hashes();
                                                 let reader_gen = r.generation();
                                                 let mut gen_valid = true;
                                                 if !reader_gen.is_empty() {
-                                                    let dep_gen =
-                                                        dep.generation.as_deref().unwrap_or("");
+                                                    let dep_gen = dep.generation.as_deref().unwrap_or("");
                                                     if !dep_gen.is_empty() {
                                                         if dep_gen != reader_gen {
                                                             gen_valid = false;
                                                         }
                                                     } else if !dep.file_hashes.is_empty() {
-                                                        let computed_digest = crate::format::compute_source_snapshot_digest(
-                                                            &dep.file_hashes,
-                                                        );
-                                                        let computed_gen =
-                                                            format!("{:016x}", computed_digest);
+                                                        let computed_digest = crate::format::compute_source_snapshot_digest(&dep.file_hashes);
+                                                        let computed_gen = format!("{:016x}", computed_digest);
                                                         if computed_gen != reader_gen {
                                                             gen_valid = false;
                                                         }
@@ -276,36 +215,17 @@ impl WorkspaceIndex {
                                                 new_readers.push(r);
                                                 new_paths.push(dep_file);
                                                 new_mtimes.push(mt);
-                                                new_source_roots.push(
-                                                    dep.source_root.as_ref().map(PathBuf::from),
-                                                );
+                                                new_source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
                                                 new_unit_keys.push(Some(dep.unit_key.clone()));
                                                 new_target_kinds.push(dep.target_kind);
                                                 new_reader_generations.push(gen);
-                                                let deps = if gen_valid {
-                                                    dep.dependencies.clone()
-                                                } else {
-                                                    Vec::new()
-                                                };
-                                                let ext_units = if gen_valid {
-                                                    dep.extern_units.clone()
-                                                } else {
-                                                    HashMap::new()
-                                                };
+                                                let deps = if gen_valid { dep.dependencies.clone() } else { Vec::new() };
+                                                let ext_units = if gen_valid { dep.extern_units.clone() } else { HashMap::new() };
                                                 new_reader_dependencies.push(deps);
                                                 new_reader_extern_units.push(ext_units);
-                                                let mut combined_hashes = if gen_valid {
-                                                    dep.file_hashes.clone()
-                                                } else {
-                                                    HashMap::new()
-                                                };
-                                                let sroot_path =
-                                                    dep.source_root.as_deref().map(Path::new);
-                                                crate::format::merge_embedded_hashes_authoritative(
-                                                    &mut combined_hashes,
-                                                    &embedded,
-                                                    sroot_path,
-                                                );
+                                                let mut combined_hashes = if gen_valid { dep.file_hashes.clone() } else { HashMap::new() };
+                                                let sroot_path = dep.source_root.as_deref().map(Path::new);
+                                                crate::format::merge_embedded_hashes_authoritative(&mut combined_hashes, &embedded, sroot_path);
                                                 new_reader_file_hashes.push(combined_hashes);
                                                 new_reader_is_dependency.push(true);
                                                 new_meta_paths.push(None);

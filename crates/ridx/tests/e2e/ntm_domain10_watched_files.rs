@@ -62,10 +62,18 @@ fn write_index_shard(path: &Path, name: &str, ver: &str) {
 fn write_index_shard_with_def(path: &Path, name: &str, ver: &str, def_name: &str) {
     let mut writer = IndexWriter::new(name, ver);
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 0, is_macro_expansion: false,
-        name: def_name.to_string(), path: format!("{}::{}", name, def_name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: def_name.to_string(),
+        path: format!("{}::{}", name, def_name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
     });
     let id = WATCH_COUNTER.fetch_add(1, Ordering::Relaxed);
     let tmp = path.with_file_name(format!("tmp_{}_{}.ridx", name, id));
@@ -96,18 +104,8 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &serde_json::Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 }
 
@@ -239,14 +237,11 @@ fn test_did_change_watched_files_clears_position_converter_cache() {
     std::fs::write(&test_file, "🦀abc\nworld").unwrap();
     let col_warm = dsp.lifecycle.conv.char_col_to_utf16_col(test_file.to_str().unwrap(), 1, 2);
     assert_eq!(col_warm, 2);
-
     // Overwrite file on disk with ASCII content where char col 2 is UTF-16 col 1
     std::fs::write(&test_file, "xabc\nworld").unwrap();
-
     // Control query without event: PositionConverter returns stale cached value 2
     let col_cached = dsp.lifecycle.conv.char_col_to_utf16_col(test_file.to_str().unwrap(), 1, 2);
     assert_eq!(col_cached, 2);
-
     // Notification clears PositionConverter cache; re-query returns fresh value 1
     let notif = json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWatchedFiles", "params": { "changes": [] } });
     assert!(dsp.dispatch(&notif));

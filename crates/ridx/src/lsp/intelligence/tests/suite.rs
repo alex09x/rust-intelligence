@@ -28,23 +28,11 @@ fn test_hover_clean_and_overlay() {
     });
     let h_res = handle_hover(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_res.is_null());
-    assert!(h_res["contents"]["value"]
-        .as_str()
-        .unwrap()
-        .contains("calculate"));
+    assert!(h_res["contents"]["value"].as_str().unwrap().contains("calculate"));
 
     // 2. Overlay hover hit (dirty buffer)
-    overlay_mgr.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        1,
-        "fn local_work() -> bool { true }\n".to_string(),
-    );
-    overlay_mgr.update(
-        file_path.to_str().unwrap(),
-        2,
-        "// dirty\nfn local_work() -> bool { true }\n".to_string(),
-    );
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, "fn local_work() -> bool { true }\n".to_string());
+    overlay_mgr.update(file_path.to_str().unwrap(), 2, "// dirty\nfn local_work() -> bool { true }\n".to_string());
     let req_ov = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -75,11 +63,7 @@ fn test_completion_scoping() {
         }
     });
     let res_first = handle_completion(&comp_in_first, Some(&ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(res_first["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|i| i["label"] == "helper"));
+    assert!(res_first["items"].as_array().unwrap().iter().any(|i| i["label"] == "helper"));
 
     // In second(), helper() should NOT be suggested
     let comp_in_second = json!({
@@ -88,13 +72,8 @@ fn test_completion_scoping() {
             "position": { "line": 5, "character": 7 }
         }
     });
-    let res_second =
-        handle_completion(&comp_in_second, Some(&ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(!res_second["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|i| i["label"] == "helper"));
+    let res_second = handle_completion(&comp_in_second, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    assert!(!res_second["items"].as_array().unwrap().iter().any(|i| i["label"] == "helper"));
 
     // Completion with empty overlay manager (disk fallback)
     let empty_ov = crate::overlay::OverlayManager::new();
@@ -152,19 +131,11 @@ fn test_inlay_hints_and_inline() {
             "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 1, "character": 0 } }
         }
     });
-    assert_eq!(
-        handle_inlay_hint(&missing_hint, Some(&ws), &overlay_mgr).unwrap(),
-        json!([])
-    );
+    assert_eq!(handle_inlay_hint(&missing_hint, Some(&ws), &overlay_mgr).unwrap(), json!([]));
 
     // Inlay hints with inferred type on `let mut x = ...`
     let code_with_let = "   let calculate = 100;\n";
-    overlay_mgr.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        1,
-        code_with_let.to_string(),
-    );
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code_with_let.to_string());
     let req_let = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -176,12 +147,7 @@ fn test_inlay_hints_and_inline() {
 
     // Inlay hints with `let mut` and range filtering (lines 46, 52 in hints.rs)
     let code_with_mut = "fn test() {\n   let mut val = 100;\n}\n";
-    overlay_mgr.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        2,
-        code_with_mut.to_string(),
-    );
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 2, code_with_mut.to_string());
     let req_mut = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -193,10 +159,7 @@ fn test_inlay_hints_and_inline() {
 
     let inline_vals = handle_inline_value(&hint_req, Some(&overlay_mgr));
     assert!(inline_vals.is_array());
-    assert_eq!(
-        handle_inline_completion(&hint_req, Some(&overlay_mgr)),
-        json!({ "items": [] })
-    );
+    assert_eq!(handle_inline_completion(&hint_req, Some(&overlay_mgr)), json!({ "items": [] }));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

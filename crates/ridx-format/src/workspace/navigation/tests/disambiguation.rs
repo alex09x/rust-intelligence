@@ -42,10 +42,7 @@ fn test_navigation_edge_cases() {
 
     // 2. resolve_path_for_crate
     let abs = Path::new("/abs/path/to/file.rs");
-    assert_eq!(
-        ws.resolve_path_for_crate("edge_crate", abs.to_str().unwrap()),
-        abs
-    );
+    assert_eq!(ws.resolve_path_for_crate("edge_crate", abs.to_str().unwrap()), abs);
     let rel_res = ws.resolve_path_for_crate("edge_crate", "src/lib.rs");
     assert!(rel_res.ends_with("src/lib.rs"));
 

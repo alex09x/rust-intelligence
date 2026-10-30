@@ -41,9 +41,7 @@ fn test_consumer_with_aliased_dependencies() {
         end_line: 12,
         end_col: 2,
     });
-    writer_a1
-        .write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap()))
-        .unwrap();
+    writer_a1.write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap())).unwrap();
 
     // 2. Shard dep v2.0.0 (unitA2)
     let mut writer_a2 = IndexWriter::new("dep", "2.0.0");
@@ -61,9 +59,7 @@ fn test_consumer_with_aliased_dependencies() {
         end_line: 22,
         end_col: 2,
     });
-    writer_a2
-        .write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap()))
-        .unwrap();
+    writer_a2.write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap())).unwrap();
 
     // 3. Workspace consumer crate with aliased extern names:
     // dep_old -> unitA1, dep_new -> unitA2
@@ -101,9 +97,7 @@ fn test_consumer_with_aliased_dependencies() {
         is_macro_expansion: false,
     });
     let consumer_ridx = var_dir.join("consumer.ridx");
-    writer_consumer
-        .write_to(&mut BufWriter::new(File::create(&consumer_ridx).unwrap()))
-        .unwrap();
+    writer_consumer.write_to(&mut BufWriter::new(File::create(&consumer_ridx).unwrap())).unwrap();
 
     let consumer_meta = serde_json::json!({
         "name": "consumer",
@@ -116,11 +110,7 @@ fn test_consumer_with_aliased_dependencies() {
             "dep_new": "unitA2"
         }
     });
-    fs::write(
-        deps_dir.join("consumer.json"),
-        serde_json::to_string_pretty(&consumer_meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("consumer.json"), serde_json::to_string_pretty(&consumer_meta).unwrap()).unwrap();
 
     let manifest = serde_json::json!({
         "version": "2.0",
@@ -148,27 +138,18 @@ fn test_consumer_with_aliased_dependencies() {
             }
         ]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
-    let ws = WorkspaceIndex::open(&test_dir)
-        .expect("failed to open workspace with aliased dependencies");
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace with aliased dependencies");
 
     // Definition via dep_old alias must resolve to unitA1 (v1.0.0 at line 10)
-    let def_old = ws
-        .find_definition_at("src/main.rs", 3, 6)
-        .expect("should resolve dep_old::foo");
+    let def_old = ws.find_definition_at("src/main.rs", 3, 6).expect("should resolve dep_old::foo");
     assert_eq!(def_old.unit_key, Some("unitA1"));
     assert_eq!(def_old.start_line, 10);
     assert_eq!(def_old.signature, Some("fn() -> i32"));
 
     // Definition via dep_new alias must resolve to unitA2 (v2.0.0 at line 20)
-    let def_new = ws
-        .find_definition_at("src/main.rs", 7, 6)
-        .expect("should resolve dep_new::foo");
+    let def_new = ws.find_definition_at("src/main.rs", 7, 6).expect("should resolve dep_new::foo");
     assert_eq!(def_new.unit_key, Some("unitA2"));
     assert_eq!(def_new.start_line, 20);
     assert_eq!(def_new.signature, Some("fn() -> String"));
@@ -214,9 +195,7 @@ fn test_consumer_with_dual_version_canonical_references() {
         end_line: 12,
         end_col: 2,
     });
-    writer_a1
-        .write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap()))
-        .unwrap();
+    writer_a1.write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap())).unwrap();
 
     // 2. Dependency shard A2: crate "a" v2.0.0, unitA2, defines a::Thing at line 20
     let mut writer_a2 = IndexWriter::new("a", "2.0.0");
@@ -234,9 +213,7 @@ fn test_consumer_with_dual_version_canonical_references() {
         end_line: 22,
         end_col: 2,
     });
-    writer_a2
-        .write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap()))
-        .unwrap();
+    writer_a2.write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap())).unwrap();
 
     // 3. Consumer crate C: references canonical a::Thing at line 4 (pointing to A1's line 10)
     // and canonical a::Thing at line 8 (pointing to A2's line 20)
@@ -274,9 +251,7 @@ fn test_consumer_with_dual_version_canonical_references() {
         is_macro_expansion: false,
     });
     let c_ridx = var_dir.join("c.ridx");
-    writer_c
-        .write_to(&mut BufWriter::new(File::create(&c_ridx).unwrap()))
-        .unwrap();
+    writer_c.write_to(&mut BufWriter::new(File::create(&c_ridx).unwrap())).unwrap();
 
     // Sidecar metadata for C with extern_units mapping a1 -> unitA1, a2 -> unitA2
     let c_meta = serde_json::json!({
@@ -290,11 +265,7 @@ fn test_consumer_with_dual_version_canonical_references() {
             "a2": "unitA2"
         }
     });
-    fs::write(
-        deps_dir.join("c.json"),
-        serde_json::to_string_pretty(&c_meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("c.json"), serde_json::to_string_pretty(&c_meta).unwrap()).unwrap();
 
     let manifest = serde_json::json!({
         "version": "2.0",
@@ -324,25 +295,17 @@ fn test_consumer_with_dual_version_canonical_references() {
             }
         ]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
 
     // Definition resolution at line 4 (pointing to A1 coords) must resolve to unitA1
-    let def_line4 = ws
-        .find_definition_at("src/main.rs", 4, 6)
-        .expect("should resolve line 4");
+    let def_line4 = ws.find_definition_at("src/main.rs", 4, 6).expect("should resolve line 4");
     assert_eq!(def_line4.unit_key, Some("unitA1"));
     assert_eq!(def_line4.start_line, 10);
 
     // Definition resolution at line 8 (pointing to A2 coords) must resolve to unitA2
-    let def_line8 = ws
-        .find_definition_at("src/main.rs", 8, 6)
-        .expect("should resolve line 8");
+    let def_line8 = ws.find_definition_at("src/main.rs", 8, 6).expect("should resolve line 8");
     assert_eq!(def_line8.unit_key, Some("unitA2"));
     assert_eq!(def_line8.start_line, 20);
 

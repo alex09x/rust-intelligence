@@ -20,23 +20,10 @@ use std::collections::HashSet;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
-fn dispatch_msg(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) {
+fn dispatch_msg(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let _ = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
 }
 
 #[test]
@@ -71,13 +58,7 @@ fn test_did_open_fresh_document() {
 fn test_did_open_with_provenance_compiled() {
     let mut overlay_mgr = OverlayManager::new();
     let path = "/test/compiled_doc.rs";
-    overlay_mgr.open_with_provenance(
-        "file:///test/compiled_doc.rs",
-        path,
-        1,
-        "fn f() {}\n".to_string(),
-        true,
-    );
+    overlay_mgr.open_with_provenance("file:///test/compiled_doc.rs", path, 1, "fn f() {}\n".to_string(), true);
 
     let ov = overlay_mgr.get(path).unwrap();
     assert!(!ov.is_dirty(), "compiled baseline must not be dirty");
@@ -88,13 +69,7 @@ fn test_did_open_with_provenance_compiled() {
 fn test_did_open_with_provenance_uncompiled() {
     let mut overlay_mgr = OverlayManager::new();
     let path = "/test/uncompiled_doc.rs";
-    overlay_mgr.open_with_provenance(
-        "file:///test/uncompiled_doc.rs",
-        path,
-        1,
-        "fn f() {}\n".to_string(),
-        false,
-    );
+    overlay_mgr.open_with_provenance("file:///test/uncompiled_doc.rs", path, 1, "fn f() {}\n".to_string(), false);
 
     let ov = overlay_mgr.get(path).unwrap();
     assert!(ov.is_dirty(), "uncompiled doc must report dirty");
@@ -209,9 +184,7 @@ fn test_did_open_multibyte_unicode_and_emojis() {
     );
 
     let ov = overlay_mgr.get(&file).unwrap();
-    let def = ov
-        .find_definition_at(1, 4)
-        .expect("should find unicode_greeting");
+    let def = ov.find_definition_at(1, 4).expect("should find unicode_greeting");
     assert_eq!(def.name, "unicode_greeting");
 }
 
@@ -250,9 +223,7 @@ fn test_did_open_multi_reader_provenance_fast_path() {
         end_line: 1,
         end_col: 10,
     });
-    writer_a
-        .write_to(&mut std::fs::File::create(temp_dir.join("crate_a.ridx")).unwrap())
-        .unwrap();
+    writer_a.write_to(&mut std::fs::File::create(temp_dir.join("crate_a.ridx")).unwrap()).unwrap();
 
     let file_b_path = temp_dir.join("src_b.rs").to_str().unwrap().to_string();
     let mut writer_b = IndexWriter::new("crate_b", "0.1.0");
@@ -271,9 +242,7 @@ fn test_did_open_multi_reader_provenance_fast_path() {
         end_line: 1,
         end_col: 10,
     });
-    writer_b
-        .write_to(&mut std::fs::File::create(temp_dir.join("crate_b.ridx")).unwrap())
-        .unwrap();
+    writer_b.write_to(&mut std::fs::File::create(temp_dir.join("crate_b.ridx")).unwrap()).unwrap();
 
     let mut ws = WorkspaceIndex::open(&temp_dir).expect("must open multi-reader workspace");
     ws.set_workspace_root(Some(temp_dir.clone()));
@@ -294,8 +263,7 @@ fn test_did_open_modified_buffer_populates_compiled_text_and_resolves_shifted_de
     use ridx::lsp::protocol::path_to_uri;
     use ridx_format::{normalized_source_hash, DefKind, IndexWriter, RawDefinition, RawReference};
 
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_did_open_shifted_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_did_open_shifted_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let target_file = temp_dir.join("target.rs");
     let caller_file = temp_dir.join("caller.rs");
@@ -339,9 +307,7 @@ fn test_did_open_modified_buffer_populates_compiled_text_and_resolves_shifted_de
         is_write: false,
         is_macro_expansion: false,
     });
-    writer
-        .write_to(&mut std::fs::File::create(temp_dir.join("shifted_open_crate.ridx")).unwrap())
-        .unwrap();
+    writer.write_to(&mut std::fs::File::create(temp_dir.join("shifted_open_crate.ridx")).unwrap()).unwrap();
 
     let mut lifecycle = LifecycleManager::new();
     let _ = lifecycle.handle_initialize(&json!({ "params": {} }));
@@ -361,10 +327,7 @@ fn test_did_open_modified_buffer_populates_compiled_text_and_resolves_shifted_de
         &mut multi_root,
         &mut overlay_mgr,
     );
-    assert_eq!(
-        overlay_mgr.get(&caller_path).unwrap().compiled_text.as_deref(),
-        Some(caller_disk)
-    );
+    assert_eq!(overlay_mgr.get(&caller_path).unwrap().compiled_text.as_deref(), Some(caller_disk));
 
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));

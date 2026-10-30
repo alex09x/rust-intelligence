@@ -46,24 +46,48 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_str = lib_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "callee".to_string(), path: format!("{}::callee", name),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "callee".to_string(),
+        path: format!("{}::callee", name),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller".to_string(), path: format!("{}::caller", name),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "caller".to_string(),
+        path: format!("{}::caller", name),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 7,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 4, start_col: 5, end_line: 4, end_col: 11,
-        target_def_id: Some(1), target_path: format!("{}::callee", name),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 11,
+        target_def_id: Some(1),
+        target_path: format!("{}::callee", name),
         target_file: Some(lib_str),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -96,14 +120,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -120,7 +139,6 @@ fn test_call_hierarchy_incoming_calls_empty_file_returns_empty() {
     let valid_file = ts.dir.join("src/lib.rs");
     std::fs::write(&valid_file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 633, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -135,7 +153,6 @@ fn test_call_hierarchy_incoming_calls_empty_file_returns_empty() {
     let resp = dsp.parse_response();
     let calls = resp["result"].as_array().unwrap();
     assert_eq!(calls.len(), 0);
-
     // Positive control query on valid file
     let ctrl_req = json!({
         "jsonrpc": "2.0", "id": 6330, "method": "callHierarchy/incomingCalls",
@@ -159,7 +176,6 @@ fn test_call_hierarchy_incoming_calls_caller_range_body_end_bounded() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 634, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -183,7 +199,6 @@ fn test_call_hierarchy_incoming_calls_after_overlay_did_change() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let open_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didOpen",
         "params": {
@@ -191,7 +206,6 @@ fn test_call_hierarchy_incoming_calls_after_overlay_did_change() {
         }
     });
     assert!(dsp.dispatch(&open_msg));
-
     let change_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didChange",
         "params": {
@@ -200,7 +214,6 @@ fn test_call_hierarchy_incoming_calls_after_overlay_did_change() {
         }
     });
     assert!(dsp.dispatch(&change_msg));
-
     let req = json!({
         "jsonrpc": "2.0", "id": 635, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -224,7 +237,6 @@ fn test_call_hierarchy_incoming_calls_after_overlay_did_close() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let open_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didOpen",
         "params": {
@@ -232,13 +244,11 @@ fn test_call_hierarchy_incoming_calls_after_overlay_did_close() {
         }
     });
     assert!(dsp.dispatch(&open_msg));
-
     let close_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didClose",
         "params": { "textDocument": { "uri": to_uri(&file) } }
     });
     assert!(dsp.dispatch(&close_msg));
-
     let req = json!({
         "jsonrpc": "2.0", "id": 636, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -262,7 +272,6 @@ fn test_call_hierarchy_incoming_calls_roundtrip_from_prepare() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let prep_req = json!({
         "jsonrpc": "2.0", "id": 637, "method": "textDocument/prepareCallHierarchy",
         "params": { "textDocument": { "uri": to_uri(&file) }, "position": { "line": 0, "character": 3 } }
@@ -270,7 +279,6 @@ fn test_call_hierarchy_incoming_calls_roundtrip_from_prepare() {
     assert!(dsp.dispatch(&prep_req));
     let prep_resp = dsp.parse_response();
     let item = &prep_resp["result"][0];
-
     let inc_req = json!({
         "jsonrpc": "2.0", "id": 638, "method": "callHierarchy/incomingCalls",
         "params": { "item": item }
@@ -289,7 +297,6 @@ fn test_call_hierarchy_incoming_calls_missing_item_param_returns_empty() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 639, "method": "callHierarchy/incomingCalls",
         "params": {}
@@ -298,7 +305,6 @@ fn test_call_hierarchy_incoming_calls_missing_item_param_returns_empty() {
     let resp = dsp.parse_response();
     let calls = resp["result"].as_array().unwrap();
     assert_eq!(calls.len(), 0);
-
     // Positive control query with item
     let ctrl_req = json!({
         "jsonrpc": "2.0", "id": 6390, "method": "callHierarchy/incomingCalls",
@@ -322,7 +328,6 @@ fn test_call_hierarchy_incoming_calls_missing_uri_in_item_returns_empty() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 640, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -336,7 +341,6 @@ fn test_call_hierarchy_incoming_calls_missing_uri_in_item_returns_empty() {
     let resp = dsp.parse_response();
     let calls = resp["result"].as_array().unwrap();
     assert_eq!(calls.len(), 0);
-
     // Positive control query with uri
     let ctrl_req = json!({
         "jsonrpc": "2.0", "id": 6400, "method": "callHierarchy/incomingCalls",
@@ -360,7 +364,6 @@ fn test_call_hierarchy_incoming_calls_isolated_successive_requests() {
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
     let req = json!({
         "jsonrpc": "2.0", "id": 1, "method": "callHierarchy/incomingCalls",
         "params": {
@@ -375,7 +378,6 @@ fn test_call_hierarchy_incoming_calls_isolated_successive_requests() {
     let resp1 = dsp.parse_response();
     assert_eq!(resp1["id"], 1);
     assert_eq!(resp1["result"].as_array().unwrap().len(), 1);
-
     let mut req2 = req.clone();
     req2["id"] = json!(2);
     assert!(dsp.dispatch(&req2));

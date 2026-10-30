@@ -20,23 +20,10 @@ use std::collections::HashSet;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
-fn dispatch_did_open(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Vec<u8>) {
+fn dispatch_did_open(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -53,11 +40,15 @@ fn test_did_open_open_file_paths_lists_exact_paths() {
 
     let _ = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri1, "version": 1, "text": "fn f1() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
     let _ = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri2, "version": 1, "text": "fn f2() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     let mut paths = overlay_mgr.open_file_paths();
@@ -77,11 +68,15 @@ fn test_did_open_reopen_updates_version_and_content() {
 
     let _ = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "fn old() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
     let _ = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 2, "text": "fn new() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
@@ -101,7 +96,9 @@ fn test_did_open_reopen_same_uri_does_not_increase_count() {
     for v in 1..=3 {
         let _ = dispatch_did_open(
             json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": v, "text": "fn f() {}\n" } } }),
-            &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+            &mut lifecycle,
+            &mut multi_root,
+            &mut overlay_mgr,
         );
     }
 
@@ -117,7 +114,9 @@ fn test_did_open_notification_produces_no_stdout_output() {
 
     let (ok, out) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "fn quiet() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);
@@ -133,7 +132,9 @@ fn test_did_open_dispatch_returns_ok_true() {
 
     let (ok, _) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "fn ret() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);
@@ -149,7 +150,9 @@ fn test_did_open_single_character_text() {
 
     let (ok, _) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "x" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);
@@ -168,7 +171,9 @@ fn test_did_open_line_starts_multiple_lines() {
 
     let (ok, _) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "a\nb\nc\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);
@@ -186,7 +191,9 @@ fn test_did_open_line_starts_crlf() {
 
     let (ok, _) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": "a\r\nb\r\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);
@@ -205,7 +212,9 @@ fn test_did_open_comment_only_document_symbols_empty() {
 
     let (ok, _) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "version": 1, "text": code } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);
@@ -221,7 +230,9 @@ fn test_did_open_empty_uri_handled_safely() {
 
     let (ok, _) = dispatch_did_open(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": "", "version": 1, "text": "fn empty_uri() {}\n" } } }),
-        &mut lifecycle, &mut multi_root, &mut overlay_mgr,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
     );
 
     assert_eq!(ok, true);

@@ -44,10 +44,18 @@ fn create_temp_shard(name: &str) -> TempShard {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "test_fn".to_string(), path: format!("{}::test_fn", name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 8,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "test_fn".to_string(),
+        path: format!("{}::test_fn", name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 8,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -82,10 +90,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -127,16 +132,32 @@ fn test_semantic_tokens_full_multiple_functions_relative_delta_encoding() {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new("st_multi", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "first".to_string(), path: "st_multi::first".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 6,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "first".to_string(),
+        path: "st_multi::first".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 6,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "second".to_string(), path: "st_multi::second".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "second".to_string(),
+        path: "st_multi::second".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let file = dir.join("src/lib.rs");

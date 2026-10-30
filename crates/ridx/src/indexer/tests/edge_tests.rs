@@ -21,20 +21,12 @@ fn test_indexer_additional_edge_cases() {
 
     let temp = new_test_dir("indexer_add_edges");
     let manifest_file = temp.0.join("Cargo.toml");
-    fs::write(
-        &manifest_file,
-        "[package]\nname = \"add_edges\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(&manifest_file, "[package]\nname = \"add_edges\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
 
     // 1. collect_all_workspace_manifests with subdirectory
     let sub = temp.0.join("member_pkg");
     fs::create_dir_all(&sub).unwrap();
-    fs::write(
-        sub.join("Cargo.toml"),
-        "[package]\nname = \"sub\"\nversion = \"0.1.0\"\n",
-    )
-    .unwrap();
+    fs::write(sub.join("Cargo.toml"), "[package]\nname = \"sub\"\nversion = \"0.1.0\"\n").unwrap();
     let mut manifests = Vec::new();
     collect_all_workspace_manifests(&temp.0, &mut manifests);
     assert_eq!(manifests.len(), 2);
@@ -53,11 +45,7 @@ fn test_indexer_additional_edge_cases() {
 
     let out_dir_with_variants_file = temp.0.join("out_dir_var_err");
     fs::create_dir_all(&out_dir_with_variants_file).unwrap();
-    fs::write(
-        out_dir_with_variants_file.join("variants"),
-        b"blocking file",
-    )
-    .unwrap();
+    fs::write(out_dir_with_variants_file.join("variants"), b"blocking file").unwrap();
     let err_mkdir = try_run_indexing(IndexOptions {
         path: manifest_file.clone(),
         out_dir_opt: Some(out_dir_with_variants_file),
@@ -71,9 +59,7 @@ fn test_indexer_additional_edge_cases() {
         driver_bin: None,
         capture_child_output: false,
     });
-    assert!(err_mkdir
-        .unwrap_err()
-        .contains("failed to create variant directory"));
+    assert!(err_mkdir.unwrap_err().contains("failed to create variant directory"));
 
     // 4. run_indexing when driver binary is not found
     std::env::set_var("RIDX_DRIVER_BIN", "/nonexistent/ridx-driver-bogus");
@@ -90,9 +76,7 @@ fn test_indexer_additional_edge_cases() {
         driver_bin: None,
         capture_child_output: false,
     });
-    assert!(err_no_driver
-        .unwrap_err()
-        .contains("could not find ridx-driver binary"));
+    assert!(err_no_driver.unwrap_err().contains("could not find ridx-driver binary"));
     if let Some(d) = orig_driver {
         std::env::set_var("RIDX_DRIVER_BIN", d);
     } else {

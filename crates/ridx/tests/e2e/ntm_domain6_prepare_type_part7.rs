@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -84,10 +81,18 @@ fn test_prepare_type_hierarchy_utf16_multibyte_character_offset() {
 
     let mut writer = IndexWriter::new("utf_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "RocketFuel".to_string(), path: "utf_crate::RocketFuel".to_string(),
-        signature: Some("struct RocketFuel".to_string()), file: lib_str,
-        start_line: 2, start_col: 1, end_line: 2, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "RocketFuel".to_string(),
+        path: "utf_crate::RocketFuel".to_string(),
+        signature: Some("struct RocketFuel".to_string()),
+        file: lib_str,
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 17,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let mut dsp = TestDispatcher::new(shard);
@@ -118,10 +123,18 @@ fn test_prepare_type_hierarchy_position_at_first_character_of_line() {
 
     let mut writer = IndexWriter::new("first_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "FirstChar".to_string(), path: "first_crate::FirstChar".to_string(),
-        signature: Some("pub struct FirstChar".to_string()), file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "FirstChar".to_string(),
+        path: "first_crate::FirstChar".to_string(),
+        signature: Some("pub struct FirstChar".to_string()),
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "pub struct FirstChar;\n").unwrap();
@@ -154,16 +167,32 @@ fn test_prepare_type_hierarchy_position_on_empty_line_returns_empty() {
 
     let mut writer = IndexWriter::new("emptyline_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "First".to_string(), path: "emptyline_crate::First".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 12,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "First".to_string(),
+        path: "emptyline_crate::First".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 12,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Second".to_string(), path: "emptyline_crate::Second".to_string(),
-        signature: None, file: lib_str,
-        start_line: 3, start_col: 1, end_line: 3, end_col: 13,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Second".to_string(),
+        path: "emptyline_crate::Second".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 13,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct First;\n\nstruct Second;\n").unwrap();
@@ -194,10 +223,18 @@ fn test_prepare_type_hierarchy_null_position_object_returns_empty() {
 
     let mut writer = IndexWriter::new("nullpos_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Foo".to_string(), path: "nullpos_crate::Foo".to_string(),
-        signature: None, file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Foo".to_string(),
+        path: "nullpos_crate::Foo".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct Foo;\n").unwrap();
@@ -227,10 +264,18 @@ fn test_prepare_type_hierarchy_params_missing_text_document_returns_empty() {
 
     let mut writer = IndexWriter::new("notextdoc_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Bar".to_string(), path: "notextdoc_crate::Bar".to_string(),
-        signature: None, file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Bar".to_string(),
+        path: "notextdoc_crate::Bar".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct Bar;\n").unwrap();

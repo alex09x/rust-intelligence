@@ -24,11 +24,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
     fs::create_dir_all(&src_dir).unwrap();
 
     let manifest_file = work_dir.join("Cargo.toml");
-    fs::write(
-        &manifest_file,
-        "[package]\nname = \"sample_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(&manifest_file, "[package]\nname = \"sample_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     fs::write(src_dir.join("lib.rs"), "pub fn sample() {}\n").unwrap();
 
     let host_target = std::process::Command::new("rustc")
@@ -37,20 +33,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         .ok()
         .and_then(|out| {
             let s = String::from_utf8_lossy(&out.stdout);
-            s.lines()
-                .find(|l| l.starts_with("host: "))
-                .map(|l| l.trim_start_matches("host: ").trim().to_string())
+            s.lines().find(|l| l.starts_with("host: ")).map(|l| l.trim_start_matches("host: ").trim().to_string())
         })
         .unwrap_or_else(|| "x86_64-unknown-linux-gnu".to_string());
 
     // 1. Cargo config with build target (lines 551-560)
     let dot_cargo = work_dir.join(".cargo");
     fs::create_dir_all(&dot_cargo).unwrap();
-    fs::write(
-        dot_cargo.join("config.toml"),
-        format!("[build]\ntarget = \"{}\"\n", host_target),
-    )
-    .unwrap();
+    fs::write(dot_cargo.join("config.toml"), format!("[build]\ntarget = \"{}\"\n", host_target)).unwrap();
 
     let out_dir = temp.0.join("target_ridx");
     let opts = IndexOptions {
@@ -78,15 +68,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
     drop(f_dep);
 
     // Prepopulate .deps directory with DependencyShardInfo (lines 506-548)
-    let variant_id = compute_variant_id(
-        "dev",
-        Some(&host_target),
-        None,
-        None,
-        false,
-        false,
-        &manifest_file,
-    );
+    let variant_id = compute_variant_id("dev", Some(&host_target), None, None, false, false, &manifest_file);
     let variant_out_dir = out_dir.join(format!("variants/{}", variant_id));
     let deps_dir = variant_out_dir.join(".deps");
     fs::create_dir_all(&deps_dir).unwrap();
@@ -107,11 +89,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_crate.json"),
-        serde_json::to_string(&dep_info).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_crate.json"), serde_json::to_string(&dep_info).unwrap()).unwrap();
 
     // Shard with generation mismatch (lines 526-528)
     let dep_info_mismatch = ridx_format::DependencyShardInfo {
@@ -130,11 +108,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_mismatch.json"),
-        serde_json::to_string(&dep_info_mismatch).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_mismatch.json"), serde_json::to_string(&dep_info_mismatch).unwrap()).unwrap();
 
     // Shard with None generation and empty file_hashes (line 523)
     let dep_info_empty_hashes = ridx_format::DependencyShardInfo {
@@ -153,11 +127,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_empty_h.json"),
-        serde_json::to_string(&dep_info_empty_hashes).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_empty_h.json"), serde_json::to_string(&dep_info_empty_hashes).unwrap()).unwrap();
 
     // Shard with generation: None and computed digest matching bin_gen (lines 518-525)
     let mut f_hashes = std::collections::HashMap::new();
@@ -189,11 +159,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_matching.json"),
-        serde_json::to_string(&dep_info_matching).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_matching.json"), serde_json::to_string(&dep_info_matching).unwrap()).unwrap();
 
     // Shard with generation: None and computed digest NOT matching bin_gen (lines 514-518)
     let dep_mismatch_gen_file = temp.0.join("dep_mismatch_gen.ridx");
@@ -220,11 +186,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_mismatch_gen.json"),
-        serde_json::to_string(&dep_info_mismatch_gen).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_mismatch_gen.json"), serde_json::to_string(&dep_info_mismatch_gen).unwrap()).unwrap();
 
     // Shard with is_dependency: false (lines 544-546)
     let dep_info_not_dep = ridx_format::DependencyShardInfo {
@@ -243,11 +205,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_not_dep.json"),
-        serde_json::to_string(&dep_info_not_dep).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_not_dep.json"), serde_json::to_string(&dep_info_not_dep).unwrap()).unwrap();
 
     // Shard with nonexistent object_path (lines 540-541)
     let dep_info_missing_obj = ridx_format::DependencyShardInfo {
@@ -266,11 +224,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         caught_panics: None,
         ..Default::default()
     };
-    fs::write(
-        deps_dir.join("dep_missing_obj.json"),
-        serde_json::to_string(&dep_info_missing_obj).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("dep_missing_obj.json"), serde_json::to_string(&dep_info_missing_obj).unwrap()).unwrap();
 
     // Non-json file in .deps (lines 548-549)
     fs::write(deps_dir.join("ignored.txt"), b"not json").unwrap();
@@ -289,14 +243,11 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         assert!(mf.contains("dep_matching"));
 
         // Test atomic manifest write temp file failure (lines 610-616)
-        let tmp_manifest_blocker =
-            out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
+        let tmp_manifest_blocker = out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
         if fs::create_dir_all(&tmp_manifest_blocker).is_ok() {
             let err_tmp = try_run_indexing(opts.clone());
             assert!(err_tmp.is_err());
-            assert!(err_tmp
-                .unwrap_err()
-                .contains("failed to write temporary variant manifest"));
+            assert!(err_tmp.unwrap_err().contains("failed to write temporary variant manifest"));
             let _ = fs::remove_dir_all(&tmp_manifest_blocker);
         }
 
@@ -306,9 +257,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         if fs::create_dir_all(manifest_dest.join("nested_blocker")).is_ok() {
             let err_res = try_run_indexing(opts);
             assert!(err_res.is_err());
-            assert!(err_res
-                .unwrap_err()
-                .contains("failed to publish active variant manifest"));
+            assert!(err_res.unwrap_err().contains("failed to publish active variant manifest"));
             let _ = fs::remove_dir_all(&manifest_dest);
         }
     }

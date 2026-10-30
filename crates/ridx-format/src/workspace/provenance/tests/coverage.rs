@@ -15,12 +15,7 @@ use crate::workspace::DependencyShardInfo;
 #[test]
 fn test_provenance_additional_coverage() {
     // Line 142: both entry and req are relative and match
-    assert!(file_entry_matches(
-        "src/lib.rs",
-        None,
-        Path::new("src/lib.rs"),
-        None
-    ));
+    assert!(file_entry_matches("src/lib.rs", None, Path::new("src/lib.rs"), None));
 
     // Line 127: path traverses symlink parent
     let temp = new_test_dir("prov_cov_symlink");
@@ -76,18 +71,8 @@ fn test_provenance_additional_coverage() {
     assert_eq!(ws_abs_hash, Some(77777u64));
 
     // Direct file_entry_matches edge cases (lines 142, 154, 156, 158)
-    assert!(file_entry_matches(
-        "./src/lib.rs",
-        None,
-        Path::new("src/lib.rs"),
-        None
-    ));
-    assert!(file_entry_matches(
-        &dep_file.to_string_lossy(),
-        Some(&dep_dir.0),
-        Path::new("src/lib.rs"),
-        None
-    ));
+    assert!(file_entry_matches("./src/lib.rs", None, Path::new("src/lib.rs"), None));
+    assert!(file_entry_matches(&dep_file.to_string_lossy(), Some(&dep_dir.0), Path::new("src/lib.rs"), None));
 
     // Relative query with workspace_root set matching norm_root (lines 198-199, 316-317)
     let mtime_ws = ws.shard_mtime_for_file("src/lib.rs");
@@ -101,12 +86,7 @@ fn test_provenance_additional_coverage() {
         let symlink_dep = dep_dir.0.join("symlink_dep");
         if std::os::unix::fs::symlink(&dep_dir.0, &symlink_dep).is_ok() {
             let symlink_file = symlink_dep.join("src/lib.rs");
-            assert!(file_entry_matches(
-                &symlink_file.to_string_lossy(),
-                Some(&dep_dir.0),
-                Path::new("src/lib.rs"),
-                None
-            ));
+            assert!(file_entry_matches(&symlink_file.to_string_lossy(), Some(&dep_dir.0), Path::new("src/lib.rs"), None));
         }
     }
 
@@ -117,14 +97,7 @@ fn test_provenance_additional_coverage() {
 
     // Invalid JSON file (line 474)
     fs::write(deps_dir.join("sample.json"), b"invalid json content").unwrap();
-    let _ = WorkspaceIndex::load_file_metadata(
-        &meta_test_dir.0.join("sample.ridx"),
-        &meta_test_dir.0,
-        "sample",
-        "",
-        "",
-        &HashMap::new(),
-    );
+    let _ = WorkspaceIndex::load_file_metadata(&meta_test_dir.0.join("sample.ridx"), &meta_test_dir.0, "sample", "", "", &HashMap::new());
 
     // Valid JSON with mismatching computed generation (line 448)
     let mut fh = HashMap::new();
@@ -146,19 +119,8 @@ fn test_provenance_additional_coverage() {
         compiler_args: vec![],
         env: HashMap::new(),
     };
-    fs::write(
-        deps_dir.join("sample.json"),
-        serde_json::to_string(&dep_info_mismatch).unwrap(),
-    )
-    .unwrap();
-    let _ = WorkspaceIndex::load_file_metadata(
-        &meta_test_dir.0.join("sample.ridx"),
-        &meta_test_dir.0,
-        "sample",
-        "uk_sample",
-        "different_gen_than_computed",
-        &HashMap::new(),
-    );
+    fs::write(deps_dir.join("sample.json"), serde_json::to_string(&dep_info_mismatch).unwrap()).unwrap();
+    let _ = WorkspaceIndex::load_file_metadata(&meta_test_dir.0.join("sample.ridx"), &meta_test_dir.0, "sample", "uk_sample", "different_gen_than_computed", &HashMap::new());
 
     // ws_abs matching where direct relative query against reader origin fails (lines 247, 269, 366, 391)
     let ws_parent = new_test_dir("ws_abs_parent");
@@ -190,10 +152,7 @@ fn test_provenance_additional_coverage() {
 
     // 2. Phase 2 ws_abs match via reader_file_hashes (lines 269, 391)
     let mut sidecar_map2 = HashMap::new();
-    let abs_sidecar = ws_sub
-        .join("src/virtual_sidecar.rs")
-        .to_string_lossy()
-        .to_string();
+    let abs_sidecar = ws_sub.join("src/virtual_sidecar.rs").to_string_lossy().to_string();
     sidecar_map2.insert(abs_sidecar, 55555u64);
     ws_abs_idx.reader_file_hashes = vec![sidecar_map2];
     let mtime_p2 = ws_abs_idx.shard_mtime_for_file("sub_pkg/src/virtual_sidecar.rs");

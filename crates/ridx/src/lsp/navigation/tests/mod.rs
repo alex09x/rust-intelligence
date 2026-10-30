@@ -28,8 +28,7 @@ static NAV_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64:
 
 pub fn setup_test_navigation() -> (PathBuf, WorkspaceIndex, OverlayManager, PositionConverter) {
     let id = NAV_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_nav_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_nav_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let code = "pub fn foo() {}\npub struct Bar;\npub trait Baz {}\nimpl Baz for Bar {}\npub fn caller() { foo(); }\nunsafe impl Baz for () {}\nunsafe impl Baz for (u8,) where Self: Sized {}\nunsafe impl<T: Baz> for Option<T> {}\npub fn ext() { ext_fn(); }\npub fn zero_end() {}\n";
@@ -207,14 +206,7 @@ pub fn setup_test_navigation() -> (PathBuf, WorkspaceIndex, OverlayManager, Posi
         is_write: false,
         is_macro_expansion: false,
     });
-    writer.add_type(RawType {
-        file: src_path_str,
-        start_line: 2,
-        start_col: 12,
-        end_line: 2,
-        end_col: 15,
-        type_name: "Bar".to_string(),
-    });
+    writer.add_type(RawType { file: src_path_str, start_line: 2, start_col: 12, end_line: 2, end_col: 15, type_name: "Bar".to_string() });
 
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();

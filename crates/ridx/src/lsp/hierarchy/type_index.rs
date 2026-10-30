@@ -44,12 +44,7 @@ pub fn build_type_index(ws: &WorkspaceIndex) -> Vec<TypeDefEntry> {
             if matches!(k, DefKind::Struct | DefKind::Enum | DefKind::Trait) {
                 let name = reader.get_str(def.name_offset());
                 let hash = fnv1a_64(name.as_bytes());
-                entries.push(TypeDefEntry {
-                    hash,
-                    reader_idx: reader_idx as u32,
-                    def_idx: def_idx as u32,
-                    kind: def.kind,
-                });
+                entries.push(TypeDefEntry { hash, reader_idx: reader_idx as u32, def_idx: def_idx as u32, kind: def.kind });
             }
         }
     }
@@ -57,12 +52,7 @@ pub fn build_type_index(ws: &WorkspaceIndex) -> Vec<TypeDefEntry> {
     entries
 }
 
-pub fn find_in_type_index<'a>(
-    entries: &[TypeDefEntry],
-    ws: &'a WorkspaceIndex,
-    query: &str,
-    expected_mask: u8,
-) -> Option<WorkspaceSymbol<'a>> {
+pub fn find_in_type_index<'a>(entries: &[TypeDefEntry], ws: &'a WorkspaceIndex, query: &str, expected_mask: u8) -> Option<WorkspaceSymbol<'a>> {
     if query.contains("::") {
         return None;
     }
@@ -91,14 +81,8 @@ pub fn find_in_type_index<'a>(
         let path = reader.get_str(def.path_offset());
         let span = def.span();
         let file = reader.get_file(span.file_id());
-        let signature = if def.sig_offset() != 0 {
-            Some(reader.get_str(def.sig_offset()))
-        } else {
-            None
-        };
-        let source_root = ws
-            .source_root_at(entry.reader_idx as usize)
-            .or_else(|| ws.workspace_root());
+        let signature = if def.sig_offset() != 0 { Some(reader.get_str(def.sig_offset())) } else { None };
+        let source_root = ws.source_root_at(entry.reader_idx as usize).or_else(|| ws.workspace_root());
         let unit_key = {
             let uk = reader.unit_key();
             if uk.is_empty() {

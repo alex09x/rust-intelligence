@@ -293,27 +293,17 @@ fn test_navigation_references_and_candidate_resolution() {
 
     let mut ws = WorkspaceIndex::open(&test_dir.0).unwrap();
     // Setup extern mapping for consumer: t_alias -> unit_1
-    let cons_idx = ws
-        .readers
-        .iter()
-        .position(|r| r.crate_name() == "consumer_krate")
-        .unwrap();
+    let cons_idx = ws.readers.iter().position(|r| r.crate_name() == "consumer_krate").unwrap();
     let mut ext_map = HashMap::new();
     ext_map.insert("t_alias".to_string(), "unit_1".to_string());
     ws.reader_extern_units[cons_idx] = ext_map;
     ws.reader_dependencies[cons_idx] = vec!["unit_1".to_string(), "unit_2".to_string()]; // hits lines 224-235
 
-    let t2_idx = ws
-        .readers
-        .iter()
-        .position(|r| r.unit_key() == "unit_2")
-        .unwrap();
+    let t2_idx = ws.readers.iter().position(|r| r.unit_key() == "unit_2").unwrap();
     ws.reader_dependencies[t2_idx] = vec!["unit_1".to_string()]; // hits lines 499-503
 
     // find_definition_by_path with signature None (line 65)
-    let def_no_sig = ws
-        .find_definition_by_path("consumer_krate::no_sig_mod")
-        .unwrap();
+    let def_no_sig = ws.find_definition_by_path("consumer_krate::no_sig_mod").unwrap();
     assert_eq!(def_no_sig.signature, None);
 
     // Query references to target_krate::target_fn in unit_1
@@ -323,11 +313,7 @@ fn test_navigation_references_and_candidate_resolution() {
     assert_eq!(refs[0].span.start_line(), 34);
 
     // Hover with source_root set (lines 407-409)
-    let t1_idx = ws
-        .readers
-        .iter()
-        .position(|r| r.unit_key() == "unit_1")
-        .unwrap();
+    let t1_idx = ws.readers.iter().position(|r| r.unit_key() == "unit_1").unwrap();
     ws.source_roots[t1_idx] = Some(test_dir.0.clone());
     let hover = ws.hover_at("src/target.rs", 10, 5);
     assert!(hover.is_some());
@@ -359,9 +345,7 @@ fn test_navigation_references_and_candidate_resolution() {
     assert_eq!(def_unresolved.name, "nonexistent_symbol");
 
     // Definition with signature None (line 65)
-    let d_no_sig = ws
-        .find_definition_by_path("consumer_krate::no_sig_mod")
-        .unwrap();
+    let d_no_sig = ws.find_definition_by_path("consumer_krate::no_sig_mod").unwrap();
     assert_eq!(d_no_sig.signature, None);
 
     // find_references_for_unit with target_unit_key None to trigger target_def_coords filtering (lines 504-528, 565-590)
@@ -369,7 +353,6 @@ fn test_navigation_references_and_candidate_resolution() {
     assert!(!coord_refs.is_empty());
 
     // Target unit filtering in extern_map and reader_unit != target_unit (lines 500-502, 555)
-    let refs_wrong_unit =
-        ws.find_references_for_unit("target_krate::target_fn", Some("nonexistent_unit"));
+    let refs_wrong_unit = ws.find_references_for_unit("target_krate::target_fn", Some("nonexistent_unit"));
     assert!(refs_wrong_unit.is_empty());
 }

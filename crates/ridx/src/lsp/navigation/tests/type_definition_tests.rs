@@ -47,11 +47,7 @@ fn test_typedef_dirty_overlay_safely_returns_null() {
 
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.clone());
     // Insert single comment line at the top
-    overlay_mgr.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("// header\n{}", code),
-    );
+    overlay_mgr.update(file_path.to_str().unwrap(), 2, format!("// header\n{}", code));
 
     let req = json!({
         "params": {
@@ -93,11 +89,7 @@ fn test_typedef_dirty_overlay_modified_imports_returns_null() {
     let code = fs::read_to_string(&file_path).unwrap();
 
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.clone());
-    overlay_mgr.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("use std::sync::Arc;\n{}", code),
-    );
+    overlay_mgr.update(file_path.to_str().unwrap(), 2, format!("use std::sync::Arc;\n{}", code));
 
     let req = json!({
         "params": {
@@ -200,10 +192,7 @@ fn test_typedef_out_of_bounds_character_clamped() {
 
 #[test]
 fn test_typedef_prefers_exact_name_over_substring() {
-    let id = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    let id = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let temp_dir = std::env::temp_dir().join(format!("ridx_test_typedef_exact_{}", id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
@@ -240,14 +229,7 @@ fn test_typedef_prefers_exact_name_over_substring() {
         path: "test_exact::Config".to_string(),
         signature: None,
     });
-    writer.add_type(RawType {
-        file: src_path_str.clone(),
-        start_line: 3,
-        start_col: 20,
-        end_line: 3,
-        end_col: 23,
-        type_name: "Config".to_string(),
-    });
+    writer.add_type(RawType { file: src_path_str.clone(), start_line: 3, start_col: 20, end_line: 3, end_col: 23, type_name: "Config".to_string() });
 
     let index_path = temp_dir.join("test.ridx");
     let mut f = fs::File::create(&index_path).unwrap();

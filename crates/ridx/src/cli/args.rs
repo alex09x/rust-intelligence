@@ -57,13 +57,9 @@ impl Cli {
     /// defaulting to [`Commands::Lsp`] when invoked without a subcommand (drop-in `rust-analyzer` mode).
     pub fn into_command(self) -> Commands {
         match self.command {
-            Some(Commands::Lsp { index_path }) => Commands::Lsp {
-                index_path: index_path.or(self.index_path),
-            },
+            Some(Commands::Lsp { index_path }) => Commands::Lsp { index_path: index_path.or(self.index_path) },
             Some(cmd) => cmd,
-            None => Commands::Lsp {
-                index_path: self.index_path,
-            },
+            None => Commands::Lsp { index_path: self.index_path },
         }
     }
 }

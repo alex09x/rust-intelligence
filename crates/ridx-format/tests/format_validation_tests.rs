@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Compiler-backed, mmap-indexed code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 mod common;
 
 use common::unique_temp_dir;
@@ -26,11 +36,7 @@ fn test_version_mismatch_rejected() {
     let f = File::create(var_dir.join("test_crate.ridx")).unwrap();
     writer.write_to(&mut BufWriter::new(f)).unwrap();
 
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_future).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_future).unwrap()).unwrap();
 
     let res = WorkspaceIndex::open(&test_dir);
     assert!(res.is_err(), "should reject future format_version");
@@ -51,14 +57,8 @@ fn test_normalized_source_hash_crlf_and_bom() {
     let hash_crlf = ridx_format::normalized_source_hash(crlf_bytes);
     let hash_bom_crlf = ridx_format::normalized_source_hash(bom_crlf_bytes);
 
-    assert_eq!(
-        hash_lf, hash_crlf,
-        "CRLF and LF must produce identical normalized hash"
-    );
-    assert_eq!(
-        hash_lf, hash_bom_crlf,
-        "BOM+CRLF and LF must produce identical normalized hash"
-    );
+    assert_eq!(hash_lf, hash_crlf, "CRLF and LF must produce identical normalized hash");
+    assert_eq!(hash_lf, hash_bom_crlf, "BOM+CRLF and LF must produce identical normalized hash");
 }
 
 #[test]
@@ -81,9 +81,7 @@ fn test_v1_format_rejection() {
         end_col: 10,
     });
     let valid_path = test_dir.join("valid_v2.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&valid_path).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&valid_path).unwrap())).unwrap();
 
     let mut bytes = fs::read(&valid_path).unwrap();
     // Overwrite format version in Header (offset 4..8) with 1
@@ -130,9 +128,7 @@ fn test_v2_file_table_requires_full_16_byte_entry() {
     });
 
     let valid_path = test_dir.join("valid.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&valid_path).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&valid_path).unwrap())).unwrap();
 
     let buf = fs::read(&valid_path).unwrap();
     let file_len = buf.len();
@@ -147,10 +143,7 @@ fn test_v2_file_table_requires_full_16_byte_entry() {
     fs::write(&trunc_path, &truncated_buf).unwrap();
 
     let res = IndexReader::open(&trunc_path);
-    assert!(
-        res.is_err(),
-        "IndexReader::open must reject truncated file table where 16-byte FileEntry extends beyond EOF"
-    );
+    assert!(res.is_err(), "IndexReader::open must reject truncated file table where 16-byte FileEntry extends beyond EOF");
 
     // 2. Unaligned files table: files_offset not aligned to 8 bytes
     let mut unaligned_buf = buf;
@@ -161,10 +154,7 @@ fn test_v2_file_table_requires_full_16_byte_entry() {
     fs::write(&unaligned_path, &unaligned_buf).unwrap();
 
     let res_unaligned = IndexReader::open(&unaligned_path);
-    assert!(
-        res_unaligned.is_err(),
-        "IndexReader::open must reject files table whose offset is not 8-byte aligned"
-    );
+    assert!(res_unaligned.is_err(), "IndexReader::open must reject files table whose offset is not 8-byte aligned");
 
     let _ = fs::remove_dir_all(&test_dir);
 }
@@ -197,10 +187,7 @@ fn test_driver_hash_cache_by_path_size_mtime() {
     fs::write(&bin_path, b"driver mock binary 2").unwrap();
 
     let h3 = ridx_format::get_driver_hash_with(Some(&bin_path), Some(&cache_dir));
-    assert_ne!(
-        h1, h3,
-        "hash must update when driver mtime changes even if binary size is identical"
-    );
+    assert_ne!(h1, h3, "hash must update when driver mtime changes even if binary size is identical");
 
     // Clean up isolated cache dir
     ridx_format::clear_driver_hash_cache_in(Some(&cache_dir));
@@ -267,10 +254,7 @@ fn test_find_type_param_in_scope_and_owners() {
             end_line: 5,
             end_col: 25,
         },
-        vec![
-            "tp_crate::MyTrait".to_string(),
-            "core::fmt::Debug".to_string(),
-        ],
+        vec!["tp_crate::MyTrait".to_string(), "core::fmt::Debug".to_string()],
     );
 
     let idx_file = File::create(var_dir.join("tp_crate.ridx")).unwrap();
@@ -286,11 +270,7 @@ fn test_find_type_param_in_scope_and_owners() {
         "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).unwrap();
 
@@ -308,10 +288,7 @@ fn test_find_type_param_in_scope_and_owners() {
 
     // Query cursor outside foo at line 35
     let tp_outside = ws.find_type_param_in_scope("src/lib.rs", "F", 35, 10);
-    assert!(
-        tp_outside.is_none(),
-        "TyParam F should not be in scope at line 35"
-    );
+    assert!(tp_outside.is_none(), "TyParam F should not be in scope at line 35");
 
     let _ = fs::remove_dir_all(&test_dir);
 }

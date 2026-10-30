@@ -30,12 +30,7 @@ pub fn remap_sysroot_path(raw_path: &str, sysroot_src: Option<&Path>) -> String 
 
 /// Discovers the path to `library` inside `rust-src` for the current sysroot if installed.
 pub fn discover_rust_src_path(tcx: TyCtxt<'_>) -> Option<PathBuf> {
-    let candidate = tcx
-        .sess
-        .opts
-        .sysroot
-        .path()
-        .join("lib/rustlib/src/rust/library");
+    let candidate = tcx.sess.opts.sysroot.path().join("lib/rustlib/src/rust/library");
     if candidate.is_dir() {
         Some(candidate)
     } else {
@@ -64,22 +59,11 @@ pub fn is_stable_api(tcx: TyCtxt<'_>, did: DefId) -> bool {
 pub fn format_assoc_fn_sig<'tcx>(tcx: TyCtxt<'tcx>, assoc_did: DefId) -> String {
     let fn_sig = tcx.fn_sig(assoc_did).instantiate_identity().skip_binder();
     let ret = crate::sanitize::sanitize_type_name(&fn_sig.output().to_string());
-    let has_self = tcx
-        .opt_associated_item(assoc_did)
-        .map(|a| a.is_method())
-        .unwrap_or(false);
+    let has_self = tcx.opt_associated_item(assoc_did).map(|a| a.is_method()).unwrap_or(false);
 
     if !has_self {
-        let args: Vec<String> = fn_sig
-            .inputs()
-            .iter()
-            .map(|ty| crate::sanitize::sanitize_type_name(&ty.to_string()))
-            .collect();
-        return if ret == "()" {
-            format!("fn({})", args.join(", "))
-        } else {
-            format!("fn({}) -> {}", args.join(", "), ret)
-        };
+        let args: Vec<String> = fn_sig.inputs().iter().map(|ty| crate::sanitize::sanitize_type_name(&ty.to_string())).collect();
+        return if ret == "()" { format!("fn({})", args.join(", ")) } else { format!("fn({}) -> {}", args.join(", "), ret) };
     }
 
     // Has self parameter: inspect the first input type to determine receiver style

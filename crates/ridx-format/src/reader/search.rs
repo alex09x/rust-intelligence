@@ -104,9 +104,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             }
             let name = self.get_str(def.name_offset());
             let path = self.get_str(def.path_offset());
-            if contains_ignore_case_ascii(name, needle_lower)
-                || contains_ignore_case_ascii(path, needle_lower)
-            {
+            if contains_ignore_case_ascii(name, needle_lower) || contains_ignore_case_ascii(path, needle_lower) {
                 matches.push(def);
             }
         }
@@ -125,13 +123,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
     /// Iterates over matching definitions without heap allocation, stopping when `cb` returns false,
     /// when match `budget` is exhausted, or when `record_budget` of inspected definitions is reached.
-    pub fn for_each_symbol_ascii_budgeted<F>(
-        &self,
-        needle_lower: &[u8],
-        match_budget: &mut usize,
-        record_budget: &mut usize,
-        mut cb: F,
-    ) -> bool
+    pub fn for_each_symbol_ascii_budgeted<F>(&self, needle_lower: &[u8], match_budget: &mut usize, record_budget: &mut usize, mut cb: F) -> bool
     where
         F: FnMut(&DefEntry) -> bool,
     {
@@ -145,9 +137,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             }
             let name = self.get_str(def.name_offset());
             let path = self.get_str(def.path_offset());
-            if contains_ignore_case_ascii(name, needle_lower)
-                || contains_ignore_case_ascii(path, needle_lower)
-            {
+            if contains_ignore_case_ascii(name, needle_lower) || contains_ignore_case_ascii(path, needle_lower) {
                 if *match_budget == 0 {
                     return false;
                 }
@@ -179,12 +169,7 @@ pub(crate) fn contains_ignore_case_ascii(haystack: &str, needle_lower: &[u8]) ->
     let rest = &needle_lower[1..];
     for i in 0..=(h.len() - n) {
         let b = h[i];
-        if (b == q0 || b == q0_upper)
-            && h[i + 1..i + n]
-                .iter()
-                .zip(rest)
-                .all(|(&hb, &qb)| hb.to_ascii_lowercase() == qb)
-        {
+        if (b == q0 || b == q0_upper) && h[i + 1..i + n].iter().zip(rest).all(|(&hb, &qb)| hb.to_ascii_lowercase() == qb) {
             return true;
         }
     }
@@ -194,157 +179,62 @@ pub(crate) fn contains_ignore_case_ascii(haystack: &str, needle_lower: &[u8]) ->
 pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<()> {
     // 1. String pool alignment and bounds
     if (header.string_pool_offset as usize) % 8 != 0 {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "String pool offset is not 8-byte aligned",
-        ));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "String pool offset is not 8-byte aligned"));
     }
     let pool_start = header.string_pool_offset as usize;
     let pool_len = header.string_pool_len as usize;
-    let pool_end = pool_start
-        .checked_add(pool_len)
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "String pool length overflow"))?;
+    let pool_end = pool_start.checked_add(pool_len).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "String pool length overflow"))?;
     if pool_end > buf_len {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "String pool extends beyond file bounds",
-        ));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "String pool extends beyond file bounds"));
     }
 
-    if (header.crate_name_offset as usize) >= pool_len
-        || (header.crate_version_offset as usize) >= pool_len
-    {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Crate metadata string offsets exceed string pool bounds",
-        ));
+    if (header.crate_name_offset as usize) >= pool_len || (header.crate_version_offset as usize) >= pool_len {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Crate metadata string offsets exceed string pool bounds"));
     }
 
     // 2. Files table
-    check_section(
-        buf_len,
-        header.files_offset,
-        header.files_count,
-        std::mem::size_of::<FileEntry>(),
-        std::mem::align_of::<FileEntry>(),
-        "Files table",
-    )?;
+    check_section(buf_len, header.files_offset, header.files_count, std::mem::size_of::<FileEntry>(), std::mem::align_of::<FileEntry>(), "Files table")?;
 
     // 3. Definitions table
-    check_section(
-        buf_len,
-        header.defs_offset,
-        header.defs_count,
-        std::mem::size_of::<DefEntry>(),
-        4,
-        "Definitions table",
-    )?;
+    check_section(buf_len, header.defs_offset, header.defs_count, std::mem::size_of::<DefEntry>(), 4, "Definitions table")?;
 
     // 4. Definitions hash index
-    check_section(
-        buf_len,
-        header.defs_by_hash_offset,
-        header.defs_by_hash_count,
-        std::mem::size_of::<HashIndexEntry>(),
-        8,
-        "Definitions hash index",
-    )?;
+    check_section(buf_len, header.defs_by_hash_offset, header.defs_by_hash_count, std::mem::size_of::<HashIndexEntry>(), 8, "Definitions hash index")?;
 
     // 5. References table
-    check_section(
-        buf_len,
-        header.refs_offset,
-        header.refs_count,
-        std::mem::size_of::<RefEntry>(),
-        4,
-        "References table",
-    )?;
+    check_section(buf_len, header.refs_offset, header.refs_count, std::mem::size_of::<RefEntry>(), 4, "References table")?;
 
     // 6. References target hash index
-    check_section(
-        buf_len,
-        header.refs_by_target_offset,
-        header.refs_by_target_count,
-        std::mem::size_of::<HashIndexEntry>(),
-        8,
-        "References target hash index",
-    )?;
+    check_section(buf_len, header.refs_by_target_offset, header.refs_by_target_count, std::mem::size_of::<HashIndexEntry>(), 8, "References target hash index")?;
 
     // 7. Types table
-    check_section(
-        buf_len,
-        header.types_offset,
-        header.types_count,
-        std::mem::size_of::<TypeEntry>(),
-        4,
-        "Types table",
-    )?;
+    check_section(buf_len, header.types_offset, header.types_count, std::mem::size_of::<TypeEntry>(), 4, "Types table")?;
 
     // 8. Definitions by owner table
-    check_section(
-        buf_len,
-        header.defs_by_owner_offset,
-        header.defs_by_owner_count,
-        std::mem::size_of::<OwnerIndexEntry>(),
-        8,
-        "Definitions by owner table",
-    )?;
+    check_section(buf_len, header.defs_by_owner_offset, header.defs_by_owner_count, std::mem::size_of::<OwnerIndexEntry>(), 8, "Definitions by owner table")?;
 
     // 9. Derefs table
-    check_section(
-        buf_len,
-        header.derefs_offset,
-        header.derefs_count,
-        std::mem::size_of::<DerefEntry>(),
-        8,
-        "Derefs table",
-    )?;
+    check_section(buf_len, header.derefs_offset, header.derefs_count, std::mem::size_of::<DerefEntry>(), 8, "Derefs table")?;
 
     Ok(())
 }
 
-pub(super) fn check_section(
-    buf_len: usize,
-    offset: u64,
-    count: u32,
-    elem_size: usize,
-    required_align: usize,
-    section_name: &str,
-) -> io::Result<()> {
+pub(super) fn check_section(buf_len: usize, offset: u64, count: u32, elem_size: usize, required_align: usize, section_name: &str) -> io::Result<()> {
     let off = offset as usize;
     if off % required_align != 0 {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("{section_name} offset {offset} is not aligned to {required_align} bytes"),
-        ));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, format!("{section_name} offset {offset} is not aligned to {required_align} bytes")));
     }
     if count == 0 {
         let max_empty_offset = buf_len.div_ceil(8) * 8;
         if off > max_empty_offset {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("{section_name} offset {offset} extends beyond file bounds ({max_empty_offset})"),
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("{section_name} offset {offset} extends beyond file bounds ({max_empty_offset})")));
         }
         return Ok(());
     }
-    let total_bytes = (count as usize).checked_mul(elem_size).ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("{section_name} size calculation overflow"),
-        )
-    })?;
-    let end = off.checked_add(total_bytes).ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("{section_name} end offset overflow"),
-        )
-    })?;
+    let total_bytes = (count as usize).checked_mul(elem_size).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, format!("{section_name} size calculation overflow")))?;
+    let end = off.checked_add(total_bytes).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, format!("{section_name} end offset overflow")))?;
     if end > buf_len {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("{section_name} extends beyond file bounds ({end} > {buf_len})"),
-        ));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, format!("{section_name} extends beyond file bounds ({end} > {buf_len})")));
     }
     Ok(())
 }

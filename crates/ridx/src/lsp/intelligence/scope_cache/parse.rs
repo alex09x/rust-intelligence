@@ -79,10 +79,7 @@ pub fn parse_file_scopes(text: Arc<str>) -> FileScopeData {
                 while i < bytes.len() {
                     if bytes[i] == b'"' {
                         let mut match_hashes = 0;
-                        while i + 1 + match_hashes < bytes.len()
-                            && bytes[i + 1 + match_hashes] == b'#'
-                            && match_hashes < num_hashes
-                        {
+                        while i + 1 + match_hashes < bytes.len() && bytes[i + 1 + match_hashes] == b'#' && match_hashes < num_hashes {
                             match_hashes += 1;
                         }
                         if match_hashes == num_hashes {
@@ -116,12 +113,7 @@ pub fn parse_file_scopes(text: Arc<str>) -> FileScopeData {
             last_stmt_end = i + 1;
         } else if b == b'}' {
             if let Some((brace_pos, scope, params)) = stack.pop() {
-                blocks.push(ScopeBlock {
-                    start_byte: brace_pos,
-                    end_byte: i,
-                    enclosing: scope,
-                    generic_params: params,
-                });
+                blocks.push(ScopeBlock { start_byte: brace_pos, end_byte: i, enclosing: scope, generic_params: params });
             }
             last_stmt_end = i + 1;
         } else if b == b';' {
@@ -132,17 +124,8 @@ pub fn parse_file_scopes(text: Arc<str>) -> FileScopeData {
 
     // Flush unclosed blocks
     while let Some((brace_pos, scope, params)) = stack.pop() {
-        blocks.push(ScopeBlock {
-            start_byte: brace_pos,
-            end_byte: text.len(),
-            enclosing: scope,
-            generic_params: params,
-        });
+        blocks.push(ScopeBlock { start_byte: brace_pos, end_byte: text.len(), enclosing: scope, generic_params: params });
     }
 
-    FileScopeData {
-        text,
-        line_starts,
-        blocks,
-    }
+    FileScopeData { text, line_starts, blocks }
 }

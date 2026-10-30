@@ -30,39 +30,24 @@ fn test_driver_immutable_cache_hit_and_extern() {
         "unit_key": "mock_unit_1234",
         "generation": "mock_gen_5678"
     });
-    fs::write(
-        deps_dir.join("mock_dep.json"),
-        serde_json::to_string(&mock_dep_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("mock_dep.json"), serde_json::to_string(&mock_dep_json).unwrap()).unwrap();
 
     let core_dep_json = serde_json::json!({
         "name": "core",
         "unit_key": "core_unit_1234",
         "generation": "core_gen_5678"
     });
-    fs::write(
-        deps_dir.join("core.json"),
-        serde_json::to_string(&core_dep_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("core.json"), serde_json::to_string(&core_dep_json).unwrap()).unwrap();
 
     let alias_dep_json = serde_json::json!({
         "name": "alias_dep",
         "unit_key": "alias_unit_9999",
         "generation": "alias_gen_9999"
     });
-    fs::write(
-        deps_dir.join("alias_dep.json"),
-        serde_json::to_string(&alias_dep_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("alias_dep.json"), serde_json::to_string(&alias_dep_json).unwrap()).unwrap();
 
     let rmeta_file = temp_dir.join("libdep_pkg.rmeta");
-    let sysroot = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .unwrap();
+    let sysroot = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
     let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
 
     let mock_src = temp_dir.join("mock_dep.rs");
@@ -91,13 +76,9 @@ fn test_driver_immutable_cache_hit_and_extern() {
         "unit_key": "core_unit_test_123",
         "generation": "core_gen_test"
     });
-    let _ = fs::write(
-        deps_dir.join("core.json"),
-        serde_json::to_string(&core_json).unwrap(),
-    );
+    let _ = fs::write(deps_dir.join("core.json"), serde_json::to_string(&core_json).unwrap());
 
-    let code =
-        "extern crate aliased_mock as mock_dep; pub fn dep_calc(x: i32) -> i32 { mock_dep::mock(); x + 42 }\n";
+    let code = "extern crate aliased_mock as mock_dep; pub fn dep_calc(x: i32) -> i32 { mock_dep::mock(); x + 42 }\n";
     fs::write(&src_file, code).unwrap();
 
     let args = vec![
@@ -124,13 +105,7 @@ fn test_driver_immutable_cache_hit_and_extern() {
 
     let cache_dir = ridx_format::resolve_cache_dir();
     let disambiguator = extract_target_disambiguator(&args);
-    let unit_key = compute_dependency_unit_key(
-        "dep_pkg",
-        "0.1.0",
-        disambiguator.as_deref(),
-        Some(&reg_dir),
-        &args,
-    );
+    let unit_key = compute_dependency_unit_key("dep_pkg", "0.1.0", disambiguator.as_deref(), Some(&reg_dir), &args);
     let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
     assert!(obj_path.is_file());
 
@@ -186,17 +161,10 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
         "unit_key": "core_unit_ws_1234",
         "generation": "core_gen_ws_5678"
     });
-    fs::write(
-        deps_dir.join("core.json"),
-        serde_json::to_string(&core_dep_json).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("core.json"), serde_json::to_string(&core_dep_json).unwrap()).unwrap();
 
     let rmeta_file = temp_dir.join("libws_pkg.rmeta");
-    let sysroot = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .unwrap();
+    let sysroot = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
     let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
 
     let args = vec![
@@ -233,24 +201,10 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
     // "pub fn add_point" -> col 8 (1-based), not 1
     let reader = ridx_format::IndexReader::open(&out_ridx).unwrap();
     let defs = reader.definitions();
-    let point_def = defs
-        .iter()
-        .find(|d| reader.get_str(d.name_offset) == "Point")
-        .expect("Point def");
-    assert_eq!(
-        point_def.span.start_col(),
-        12,
-        "Point definition must point to identifier name, not pub keyword"
-    );
-    let fn_def = defs
-        .iter()
-        .find(|d| reader.get_str(d.name_offset) == "add_point")
-        .expect("add_point def");
-    assert_eq!(
-        fn_def.span.start_col(),
-        8,
-        "add_point definition must point to identifier name, not pub fn keyword"
-    );
+    let point_def = defs.iter().find(|d| reader.get_str(d.name_offset) == "Point").expect("Point def");
+    assert_eq!(point_def.span.start_col(), 12, "Point definition must point to identifier name, not pub keyword");
+    let fn_def = defs.iter().find(|d| reader.get_str(d.name_offset) == "add_point").expect("add_point def");
+    assert_eq!(fn_def.span.start_col(), 8, "add_point definition must point to identifier name, not pub fn keyword");
 
     // Test out_dir creation failure (lines 916-917)
     let not_a_dir = temp_dir.join("file_not_dir");
@@ -275,20 +229,12 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
     }
 
     // Also test driver wrapper stripping and query flags
-    let query_args = vec![
-        "ridx-driver".to_string(),
-        "rustc".to_string(),
-        "-vV".to_string(),
-    ];
+    let query_args = vec!["ridx-driver".to_string(), "rustc".to_string(), "-vV".to_string()];
     assert!(run_driver(query_args).is_ok());
 
     // Also test help and print query flags
     assert!(run_driver(vec!["ridx-driver".to_string(), "--help".to_string()]).is_ok());
-    assert!(run_driver(vec![
-        "ridx-driver".to_string(),
-        "--print=sysroot".to_string()
-    ])
-    .is_ok());
+    assert!(run_driver(vec!["ridx-driver".to_string(), "--print=sysroot".to_string()]).is_ok());
 
     // Also test build script skipping
     let mut bs_args = args.clone();
@@ -298,26 +244,11 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
     assert!(run_driver(bs_args).is_ok());
 
     // Disambiguator extraction edge cases (lines 325-348)
-    assert_eq!(
-        extract_target_disambiguator(&["-C".to_string(), "extra-filename=bar".to_string()]),
-        Some("bar".to_string())
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["-C".to_string(), "extra-filename=".to_string()]),
-        None
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["-Cextra-filename=".to_string()]),
-        None
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["--crate-type=rlib".to_string()]),
-        Some("_rlib".to_string())
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["--crate-type".to_string(), "dylib".to_string()]),
-        Some("_dylib".to_string())
-    );
+    assert_eq!(extract_target_disambiguator(&["-C".to_string(), "extra-filename=bar".to_string()]), Some("bar".to_string()));
+    assert_eq!(extract_target_disambiguator(&["-C".to_string(), "extra-filename=".to_string()]), None);
+    assert_eq!(extract_target_disambiguator(&["-Cextra-filename=".to_string()]), None);
+    assert_eq!(extract_target_disambiguator(&["--crate-type=rlib".to_string()]), Some("_rlib".to_string()));
+    assert_eq!(extract_target_disambiguator(&["--crate-type".to_string(), "dylib".to_string()]), Some("_dylib".to_string()));
 
     std::env::remove_var("CARGO_MANIFEST_DIR");
     std::env::remove_var("CARGO_PKG_VERSION");
@@ -340,10 +271,7 @@ fn test_hash_directory_source_with_subdirs() {
 #[test]
 fn test_driver_main_and_disambiguator_extra() {
     // Disambiguator -C without extra-filename (line 335)
-    assert_eq!(
-        extract_target_disambiguator(&["-C".to_string(), "opt-level=3".to_string()]),
-        None
-    );
+    assert_eq!(extract_target_disambiguator(&["-C".to_string(), "opt-level=3".to_string()]), None);
 
     // Driver main entrypoint (lines 1071-1074)
     main();

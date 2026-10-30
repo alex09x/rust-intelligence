@@ -55,9 +55,7 @@ pub fn collect_sysroot_traits<'tcx>(tcx: TyCtxt<'tcx>) -> Vec<(DefId, String)> {
                     if tcx.associated_item_def_ids(did).is_empty() {
                         continue;
                     }
-                    let path = rustc_middle::ty::print::with_no_visible_paths!(
-                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-                    );
+                    let path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
                     if path.starts_with("core::marker::") {
                         continue;
                     }
@@ -71,13 +69,7 @@ pub fn collect_sysroot_traits<'tcx>(tcx: TyCtxt<'tcx>) -> Vec<(DefId, String)> {
 
 /// Extracts Deref edges (e.g. `String -> str`, `Vec<T> -> [T]`) and trait implementation links
 /// (`Option -> Clone`, `Option -> IntoIterator`, `Vec -> Extend`) for types defined in `cnum`.
-pub fn extract_trait_and_deref_links<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cnum: CrateNum,
-    traits: &[(DefId, String)],
-    writer: &mut IndexWriter,
-    total_derefs: &mut usize,
-) {
+pub fn extract_trait_and_deref_links<'tcx>(tcx: TyCtxt<'tcx>, cnum: CrateNum, traits: &[(DefId, String)], writer: &mut IndexWriter, total_derefs: &mut usize) {
     let deref_trait_did = tcx.lang_items().deref_trait();
 
     let mut seen_derefs = std::collections::HashSet::new();
@@ -103,27 +95,11 @@ pub fn extract_trait_and_deref_links<'tcx>(
 
         let trait_impls = tcx.trait_impls_of(trait_did);
         for &impl_did in trait_impls.blanket_impls() {
-            process_trait_type_link(
-                tcx,
-                cnum,
-                impl_did,
-                trait_path,
-                writer,
-                &mut seen_derefs,
-                total_derefs,
-            );
+            process_trait_type_link(tcx, cnum, impl_did, trait_path, writer, &mut seen_derefs, total_derefs);
         }
         for (_, impl_dids) in trait_impls.non_blanket_impls() {
             for &impl_did in impl_dids {
-                process_trait_type_link(
-                    tcx,
-                    cnum,
-                    impl_did,
-                    trait_path,
-                    writer,
-                    &mut seen_derefs,
-                    total_derefs,
-                );
+                process_trait_type_link(tcx, cnum, impl_did, trait_path, writer, &mut seen_derefs, total_derefs);
             }
         }
     }
@@ -145,16 +121,10 @@ fn process_deref_impl<'tcx>(
         return;
     };
     for &assoc_did in tcx.associated_item_def_ids(impl_did) {
-        if tcx.def_kind(assoc_did) == DefKind::AssocTy
-            && tcx
-                .opt_item_name(assoc_did)
-                .is_some_and(|s| s.as_str() == "Target")
-        {
+        if tcx.def_kind(assoc_did) == DefKind::AssocTy && tcx.opt_item_name(assoc_did).is_some_and(|s| s.as_str() == "Target") {
             let target_ty = tcx.type_of(assoc_did).skip_binder();
             if let Some(tgt_owner) = resolve_owner_from_ty(tcx, target_ty, None) {
-                if src_owner != tgt_owner
-                    && seen_derefs.insert((src_owner.clone(), tgt_owner.clone()))
-                {
+                if src_owner != tgt_owner && seen_derefs.insert((src_owner.clone(), tgt_owner.clone())) {
                     writer.add_deref(src_owner.clone(), tgt_owner);
                     *total_derefs += 1;
                 }

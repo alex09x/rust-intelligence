@@ -22,19 +22,10 @@ use std::collections::HashMap;
 #[cfg(test)]
 pub(crate) use super::scan::is_call_site;
 #[allow(unused_imports)]
-use super::scan::{
-    find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line,
-    is_call_site_in_lines,
-};
+use super::scan::{find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line, is_call_site_in_lines};
 use super::value_use::is_function_value_use_in_lines;
 
-fn make_call_item(
-    name: &str,
-    kind: DefKind,
-    sig: Option<&str>,
-    uri: &str,
-    coords: (u32, u32, u32, u32),
-) -> Value {
+fn make_call_item(name: &str, kind: DefKind, sig: Option<&str>, uri: &str, coords: (u32, u32, u32, u32)) -> Value {
     let r = json!({
         "start": { "line": coords.0.saturating_sub(1), "character": coords.1 },
         "end": { "line": coords.2.saturating_sub(1), "character": coords.3 }
@@ -42,12 +33,7 @@ fn make_call_item(
     json!({ "name": name, "kind": lsp_symbol_kind(kind), "detail": sig, "uri": uri, "range": r, "selectionRange": r })
 }
 
-pub fn handle_prepare_call_hierarchy(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> LspResult<Value> {
+pub fn handle_prepare_call_hierarchy(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let (uri, pos_opt) = text_document_opt_position(msg)?;
     let (line_0based, utf16_col_0based) = match pos_opt {
         Some(p) => p,
@@ -68,17 +54,8 @@ pub fn handle_prepare_call_hierarchy(
     if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
         if matches!(def.kind, DefKind::Fn | DefKind::AssocFn) {
             let overlay = overlay_opt.unwrap();
-            let (sc, ec) = (
-                overlay.char_col_to_utf16_col(def.start_line, def.start_col),
-                overlay.char_col_to_utf16_col(def.end_line, def.end_col),
-            );
-            items.push(make_call_item(
-                &def.name,
-                def.kind,
-                def.signature.as_deref(),
-                uri,
-                (def.start_line, sc, def.end_line, ec),
-            ));
+            let (sc, ec) = (overlay.char_col_to_utf16_col(def.start_line, def.start_col), overlay.char_col_to_utf16_col(def.end_line, def.end_col));
+            items.push(make_call_item(&def.name, def.kind, def.signature.as_deref(), uri, (def.start_line, sc, def.end_line, ec)));
             return Ok(json!(items));
         }
     }
@@ -92,13 +69,7 @@ pub fn handle_prepare_call_hierarchy(
                     let d_str = d_path.to_str().unwrap_or(def.file);
                     let sc = conv.char_col_to_utf16_col(d_str, def.start_line, def.start_col);
                     let ec = conv.char_col_to_utf16_col(d_str, def.end_line, def.end_col);
-                    items.push(make_call_item(
-                        def.name,
-                        def.kind,
-                        def.signature,
-                        &path_to_uri(d_str),
-                        (def.start_line, sc, def.end_line, ec),
-                    ));
+                    items.push(make_call_item(def.name, def.kind, def.signature, &path_to_uri(d_str), (def.start_line, sc, def.end_line, ec)));
                 }
             }
         }
@@ -107,18 +78,9 @@ pub fn handle_prepare_call_hierarchy(
     Ok(json!(items))
 }
 
-pub fn handle_call_hierarchy_incoming_calls(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_call_hierarchy_incoming_calls(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let item = &msg["params"]["item"];
-    let Some(item_uri) = item
-        .get("uri")
-        .and_then(|u| u.as_str())
-        .filter(|u| !u.is_empty())
-    else {
+    let Some(item_uri) = item.get("uri").and_then(|u| u.as_str()).filter(|u| !u.is_empty()) else {
         return json!([]);
     };
     let item_file = uri_to_path(item_uri);
@@ -134,22 +96,12 @@ pub fn handle_call_hierarchy_incoming_calls(
     // (`test`, `main`) shares its path with same-named items of other shards, and references
     // recorded by sibling units spell the target path differently. A position that resolves to
     // no function falls back to the path of the function starting on the item's line.
-    let name_pos = if item["selectionRange"]["start"]["line"].is_u64() {
-        &item["selectionRange"]["start"]
-    } else {
-        &item["range"]["start"]
-    };
+    let name_pos = if item["selectionRange"]["start"]["line"].is_u64() { &item["selectionRange"]["start"] } else { &item["range"]["start"] };
     let name_line = name_pos["line"].as_u64().unwrap_or(0) as u32 + 1;
-    let name_col = conv.utf16_col_to_char_col(
-        &item_file,
-        name_line,
-        name_pos["character"].as_u64().unwrap_or(0) as u32,
-    );
+    let name_col = conv.utf16_col_to_char_col(&item_file, name_line, name_pos["character"].as_u64().unwrap_or(0) as u32);
     let refs = match ws.find_references_at(&item_file, name_line, name_col) {
         Some(loc) if matches!(loc.target_kind, DefKind::Fn | DefKind::AssocFn) => loc.references,
-        _ => find_definition_path_in_workspace(ws, &item_file, item_start_line)
-            .map(|path| ws.find_references(path))
-            .unwrap_or_default(),
+        _ => find_definition_path_in_workspace(ws, &item_file, item_start_line).map(|path| ws.find_references(path)).unwrap_or_default(),
     };
 
     let item_name = item["name"].as_str().unwrap_or("");
@@ -175,14 +127,7 @@ pub fn handle_call_hierarchy_incoming_calls(
         if !is_call
             && !(matches!(r.kind, DefKind::Fn | DefKind::AssocFn)
                 && !r.is_macro_expansion
-                && is_function_value_use_in_lines(
-                    &file_lines,
-                    item_name,
-                    span.start_line(),
-                    span.start_col(),
-                    span.end_line(),
-                    span.end_col(),
-                ))
+                && is_function_value_use_in_lines(&file_lines, item_name, span.start_line(), span.start_col(), span.end_line(), span.end_col()))
         {
             continue;
         }
@@ -203,8 +148,7 @@ pub fn handle_call_hierarchy_incoming_calls(
         let c_path = caller.resolved_path();
         let c_str = c_path.to_str().unwrap_or(caller.file);
         let c_uri = path_to_uri(c_str);
-        let c_sc =
-            conv.char_col_to_utf16_col(c_str, caller.span.start_line(), caller.span.start_col());
+        let c_sc = conv.char_col_to_utf16_col(c_str, caller.span.start_line(), caller.span.start_col());
         let c_ec = conv.char_col_to_utf16_col(c_str, caller.span.end_line(), caller.span.end_col());
         let c_range = json!({
             "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
@@ -224,11 +168,7 @@ pub fn handle_call_hierarchy_incoming_calls(
         });
 
         let key = format!("{}:{}:{}", caller.path, c_str, caller.span.start_line());
-        incoming_map
-            .entry(key)
-            .or_insert_with(|| (caller_item, Vec::new()))
-            .1
-            .push(call_range);
+        incoming_map.entry(key).or_insert_with(|| (caller_item, Vec::new())).1.push(call_range);
     }
 
     let incoming: Vec<Value> = incoming_map
@@ -244,27 +184,14 @@ pub fn handle_call_hierarchy_incoming_calls(
     json!(incoming)
 }
 
-pub fn handle_call_hierarchy_outgoing_calls(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_call_hierarchy_outgoing_calls(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let item = &msg["params"]["item"];
-    let Some(uri) = item
-        .get("uri")
-        .and_then(|u| u.as_str())
-        .filter(|u| !u.is_empty())
-    else {
+    let Some(uri) = item.get("uri").and_then(|u| u.as_str()).filter(|u| !u.is_empty()) else {
         return json!([]);
     };
     let file = uri_to_path(uri);
-    let start_line = item["range"]["start"]["line"]
-        .as_u64()
-        .map_or(1, |l| (l as u32).saturating_add(1));
-    let mut end_line = item["range"]["end"]["line"]
-        .as_u64()
-        .map_or(u32::MAX, |l| (l as u32).saturating_add(1));
+    let start_line = item["range"]["start"]["line"].as_u64().map_or(1, |l| (l as u32).saturating_add(1));
+    let mut end_line = item["range"]["end"]["line"].as_u64().map_or(u32::MAX, |l| (l as u32).saturating_add(1));
 
     let Some(ws) = workspace else {
         return json!([]);
@@ -296,16 +223,10 @@ pub fn handle_call_hierarchy_outgoing_calls(
             if ch == '_' || ch.is_alphabetic() {
                 let start_c = i;
                 let start_byte = char_indices[start_c].0;
-                while i < char_indices.len()
-                    && (char_indices[i].1 == '_' || char_indices[i].1.is_alphanumeric())
-                {
+                while i < char_indices.len() && (char_indices[i].1 == '_' || char_indices[i].1.is_alphanumeric()) {
                     i += 1;
                 }
-                let end_byte = if i < char_indices.len() {
-                    char_indices[i].0
-                } else {
-                    line_str.len()
-                };
+                let end_byte = if i < char_indices.len() { char_indices[i].0 } else { line_str.len() };
                 let ident = &line_str[start_byte..end_byte];
 
                 let line_prefix = &line_str[..start_byte];
@@ -323,8 +244,7 @@ pub fn handle_call_hierarchy_outgoing_calls(
                     }
                 }
                 let trimmed = full_rest.trim_start();
-                let is_call = trimmed.starts_with('(')
-                    || (trimmed.starts_with("::<") && trimmed.contains('('));
+                let is_call = trimmed.starts_with('(') || (trimmed.starts_with("::<") && trimmed.contains('('));
 
                 if is_call && !is_decl && !is_rust_keyword(ident) {
                     let col_1based = (start_c + 1) as u32;
@@ -332,23 +252,15 @@ pub fn handle_call_hierarchy_outgoing_calls(
 
                     if let Some(def) = ws.find_definition_at(&file, line_num, col_1based) {
                         if matches!(def.kind, DefKind::Fn | DefKind::AssocFn) {
-                            if def.file == file
-                                && def.start_line == start_line
-                                && line_num == start_line
-                            {
+                            if def.file == file && def.start_line == start_line && line_num == start_line {
                                 continue;
                             }
                             let target_path = def.resolved_path();
                             let target_str = target_path.to_str().unwrap_or(def.file);
                             let target_uri = path_to_uri(target_str);
 
-                            let t_sc = conv.char_col_to_utf16_col(
-                                target_str,
-                                def.start_line,
-                                def.start_col,
-                            );
-                            let t_ec =
-                                conv.char_col_to_utf16_col(target_str, def.end_line, def.end_col);
+                            let t_sc = conv.char_col_to_utf16_col(target_str, def.start_line, def.start_col);
+                            let t_ec = conv.char_col_to_utf16_col(target_str, def.end_line, def.end_col);
                             let c_sc = conv.char_col_to_utf16_col(&file, line_num, col_1based);
                             let c_ec = conv.char_col_to_utf16_col(&file, line_num, end_col_1based);
                             let call_range = json!({
@@ -356,13 +268,7 @@ pub fn handle_call_hierarchy_outgoing_calls(
                                 "end": { "line": line_idx, "character": c_ec }
                             });
 
-                            let target_item = make_call_item(
-                                def.name,
-                                def.kind,
-                                def.signature,
-                                &target_uri,
-                                (def.start_line, t_sc, def.end_line, t_ec),
-                            );
+                            let target_item = make_call_item(def.name, def.kind, def.signature, &target_uri, (def.start_line, t_sc, def.end_line, t_ec));
 
                             outgoing.push(json!({
                                 "to": target_item,

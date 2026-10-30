@@ -24,11 +24,7 @@ fn parse_framed_json(bytes: &[u8]) -> Vec<Value> {
     while let Some(pos) = rest.find("\r\n\r\n") {
         let body = &rest[pos + 4..];
         let len_header = &rest[..pos];
-        let len: usize = len_header
-            .lines()
-            .find_map(|l| l.strip_prefix("Content-Length: "))
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0);
+        let len: usize = len_header.lines().find_map(|l| l.strip_prefix("Content-Length: ")).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
         if body.len() >= len && len > 0 {
             if let Ok(val) = serde_json::from_str::<Value>(&body[..len]) {
                 out.push(val);
@@ -82,30 +78,17 @@ fn test_outbound_apply_edit_preserves_document_changes_version() {
     });
 
     let mut cmd_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        cmd,
-        &mut cmd_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(cmd, &mut cmd_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let msgs = parse_framed_json(&cmd_out.into_inner());
     assert_eq!(msgs.len(), 1);
     assert_eq!(msgs[0]["method"], "workspace/applyEdit");
 
     let edit = &msgs[0]["params"]["edit"];
-    let doc_changes = edit["documentChanges"]
-        .as_array()
-        .expect("Must preserve documentChanges structure");
+    let doc_changes = edit["documentChanges"].as_array().expect("Must preserve documentChanges structure");
     assert_eq!(doc_changes.len(), 1);
     assert_eq!(doc_changes[0]["textDocument"]["uri"], uri);
-    assert_eq!(
-        doc_changes[0]["textDocument"]["version"], 1,
-        "Outbound applyEdit must preserve client document version"
-    );
+    assert_eq!(doc_changes[0]["textDocument"]["version"], 1, "Outbound applyEdit must preserve client document version");
 }
 
 #[test]
@@ -160,30 +143,17 @@ fn test_combined_versions_retain_initial_client_snapshot() {
     });
 
     let mut cmd_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        cmd,
-        &mut cmd_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(cmd, &mut cmd_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let msgs = parse_framed_json(&cmd_out.into_inner());
     assert_eq!(msgs.len(), 1);
     assert_eq!(msgs[0]["method"], "workspace/applyEdit");
 
     let edit = &msgs[0]["params"]["edit"];
-    let doc_changes = edit["documentChanges"]
-        .as_array()
-        .expect("Must preserve documentChanges structure");
+    let doc_changes = edit["documentChanges"].as_array().expect("Must preserve documentChanges structure");
     assert_eq!(doc_changes.len(), 1);
     assert_eq!(doc_changes[0]["textDocument"]["uri"], uri);
-    assert_eq!(
-        doc_changes[0]["textDocument"]["version"], 1,
-        "Outbound combined applyEdit must retain initial client version 1, not intermediate version 2"
-    );
+    assert_eq!(doc_changes[0]["textDocument"]["version"], 1, "Outbound combined applyEdit must retain initial client version 1, not intermediate version 2");
     let edits = doc_changes[0]["edits"].as_array().unwrap();
     assert_eq!(edits[0]["newText"], "pub fn baz() {}\n");
 }
@@ -229,15 +199,7 @@ fn test_client_advancing_to_version_2_rejects_version_1_apply_edit() {
     });
 
     let mut cmd_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        cmd,
-        &mut cmd_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(cmd, &mut cmd_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let msgs = parse_framed_json(&cmd_out.into_inner());
     let apply_id = msgs[0]["id"].clone();
@@ -250,15 +212,7 @@ fn test_client_advancing_to_version_2_rejects_version_1_apply_edit() {
     });
 
     let mut resp_out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        reject_resp,
-        &mut resp_out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let _ = dispatch_lsp_message(reject_resp, &mut resp_out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None);
 
     let resp_msgs = parse_framed_json(&resp_out.into_inner());
     assert_eq!(resp_msgs.len(), 1);

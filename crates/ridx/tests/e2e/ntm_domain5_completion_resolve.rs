@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -83,32 +78,20 @@ fn test_completion_resolve_label_preserved() {
 #[test]
 fn test_completion_resolve_detail_to_markdown_documentation() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "calculate", "detail": "fn calculate(x: i32) -> i32" }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "calculate", "detail": "fn calculate(x: i32) -> i32" }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["label"], "calculate");
     assert_eq!(val["result"]["detail"], "fn calculate(x: i32) -> i32");
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "```rust\nfn calculate(x: i32) -> i32\n```"
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "```rust\nfn calculate(x: i32) -> i32\n```");
 }
 
 #[test]
 fn test_completion_resolve_data_to_markdown_documentation() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "MyStruct", "data": "Full documentation text for MyStruct" }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "MyStruct", "data": "Full documentation text for MyStruct" }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["label"], "MyStruct");
     assert_eq!(val["result"]["documentation"]["kind"], "markdown");
-    assert_eq!(
-        val["result"]["documentation"]["value"],
-        "Full documentation text for MyStruct"
-    );
+    assert_eq!(val["result"]["documentation"]["value"], "Full documentation text for MyStruct");
 }
 
 #[test]
@@ -120,7 +103,10 @@ fn test_completion_resolve_existing_doc_preserved() {
             "detail": "fn foo()",
             "documentation": { "kind": "markdown", "value": "Original doc" }
         }),
-        &mut mr, &mut ov, &mut lc, &can,
+        &mut mr,
+        &mut ov,
+        &mut lc,
+        &can,
     );
     assert_eq!(val["result"]["documentation"]["value"], "Original doc");
 }
@@ -163,9 +149,6 @@ fn test_completion_resolve_kind_field_preserved() {
 #[test]
 fn test_completion_resolve_insert_text_preserved() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
-    let val = send_resolve_req(
-        json!({ "label": "func", "insertText": "func($1)" }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_resolve_req(json!({ "label": "func", "insertText": "func($1)" }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["result"]["insertText"], "func($1)");
 }

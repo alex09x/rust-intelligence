@@ -33,12 +33,7 @@ pub(crate) struct WorkspaceFixture {
 }
 
 impl WorkspaceFixture {
-    pub(crate) fn new_two_file(
-        crate_name: &str,
-        def_kind: DefKind,
-        decl_fixture: &str,
-        caller_fixture: &str,
-    ) -> Self {
+    pub(crate) fn new_two_file(crate_name: &str, def_kind: DefKind, decl_fixture: &str, caller_fixture: &str) -> Self {
         let temp = tempfile::tempdir().unwrap();
         let lib_path = temp.path().join("lib.rs");
         let caller_path = temp.path().join("caller.rs");
@@ -47,12 +42,10 @@ impl WorkspaceFixture {
         let caller_str = caller_path.to_str().unwrap().to_string();
 
         let mut builder = FixtureIndexBuilder::new(crate_name, "0.1.0");
-        let (parsed_decl, def_ids) =
-            builder.add_defs_and_self_refs_fixture(decl_fixture, &lib_str, crate_name, def_kind);
+        let (parsed_decl, def_ids) = builder.add_defs_and_self_refs_fixture(decl_fixture, &lib_str, crate_name, def_kind);
         fs::write(&lib_path, &parsed_decl.clean_text).unwrap();
 
-        let parsed_caller =
-            builder.add_refs_to_def_fixture(caller_fixture, &caller_str, def_ids[0]);
+        let parsed_caller = builder.add_refs_to_def_fixture(caller_fixture, &caller_str, def_ids[0]);
         fs::write(&caller_path, &parsed_caller.clean_text).unwrap();
 
         let idx_file = temp.path().join("index.ridx");
@@ -74,26 +67,13 @@ impl WorkspaceFixture {
         files.insert(lib_uri.clone(), parsed_decl.clean_text);
         files.insert(caller_uri.clone(), parsed_caller.clean_text);
 
-        Self {
-            temp_dir: temp,
-            ws,
-            files,
-            cursor,
-            cursor_uri,
-            lib_uri,
-            caller_uri,
-        }
+        Self { temp_dir: temp, ws, files, cursor, cursor_uri, lib_uri, caller_uri }
     }
 }
 
 #[test]
 fn test_workspace_rename_fn_across_files() {
-    let fix = WorkspaceFixture::new_two_file(
-        "math",
-        DefKind::Fn,
-        "pub fn «$0calculate»(x: i32) -> i32 { x * 2 }\n",
-        "pub fn invoke() -> i32 { math::«calculate»(21) }\n",
-    );
+    let fix = WorkspaceFixture::new_two_file("math", DefKind::Fn, "pub fn «$0calculate»(x: i32) -> i32 { x * 2 }\n", "pub fn invoke() -> i32 { math::«calculate»(21) }\n");
 
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
@@ -111,14 +91,8 @@ fn test_workspace_rename_fn_across_files() {
     assert!(res["changes"].get(&fix.caller_uri).is_some());
 
     let updated = apply_workspace_edit(&fix.files, &res);
-    assert_eq!(
-        updated[&fix.lib_uri],
-        "pub fn compute_double(x: i32) -> i32 { x * 2 }\n"
-    );
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn invoke() -> i32 { math::compute_double(21) }\n"
-    );
+    assert_eq!(updated[&fix.lib_uri], "pub fn compute_double(x: i32) -> i32 { x * 2 }\n");
+    assert_eq!(updated[&fix.caller_uri], "pub fn invoke() -> i32 { math::compute_double(21) }\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("lib.rs must be valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("caller.rs must be valid Rust");
@@ -126,12 +100,7 @@ fn test_workspace_rename_fn_across_files() {
 
 #[test]
 fn test_workspace_rename_from_caller_site() {
-    let fix = WorkspaceFixture::new_two_file(
-        "pkg",
-        DefKind::Fn,
-        "pub fn «transform»(s: &str) -> usize { s.len() }\n",
-        "pub fn run() -> usize { pkg::«$0transform»(\"hello\") }\n",
-    );
+    let fix = WorkspaceFixture::new_two_file("pkg", DefKind::Fn, "pub fn «transform»(s: &str) -> usize { s.len() }\n", "pub fn run() -> usize { pkg::«$0transform»(\"hello\") }\n");
 
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
@@ -149,14 +118,8 @@ fn test_workspace_rename_from_caller_site() {
     assert!(res["changes"].get(&fix.caller_uri).is_some());
 
     let updated = apply_workspace_edit(&fix.files, &res);
-    assert_eq!(
-        updated[&fix.lib_uri],
-        "pub fn measure(s: &str) -> usize { s.len() }\n"
-    );
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn run() -> usize { pkg::measure(\"hello\") }\n"
-    );
+    assert_eq!(updated[&fix.lib_uri], "pub fn measure(s: &str) -> usize { s.len() }\n");
+    assert_eq!(updated[&fix.caller_uri], "pub fn run() -> usize { pkg::measure(\"hello\") }\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("valid Rust");
@@ -164,12 +127,7 @@ fn test_workspace_rename_from_caller_site() {
 
 #[test]
 fn test_workspace_rename_struct() {
-    let fix = WorkspaceFixture::new_two_file(
-        "model",
-        DefKind::Struct,
-        "pub struct «$0Config» { pub port: u16 }\n",
-        "pub fn setup(c: model::«Config») -> u16 { c.port }\n",
-    );
+    let fix = WorkspaceFixture::new_two_file("model", DefKind::Struct, "pub struct «$0Config» { pub port: u16 }\n", "pub fn setup(c: model::«Config») -> u16 { c.port }\n");
 
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
@@ -185,14 +143,8 @@ fn test_workspace_rename_struct() {
     let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
-    assert_eq!(
-        updated[&fix.lib_uri],
-        "pub struct ServerSettings { pub port: u16 }\n"
-    );
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn setup(c: model::ServerSettings) -> u16 { c.port }\n"
-    );
+    assert_eq!(updated[&fix.lib_uri], "pub struct ServerSettings { pub port: u16 }\n");
+    assert_eq!(updated[&fix.caller_uri], "pub fn setup(c: model::ServerSettings) -> u16 { c.port }\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("valid Rust");
@@ -221,14 +173,8 @@ fn test_workspace_rename_enum() {
     let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
-    assert_eq!(
-        updated[&fix.lib_uri],
-        "pub enum ProcessState { Ready, Failed }\n"
-    );
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn check(s: types::ProcessState) -> bool { matches!(s, types::ProcessState::Ready) }\n"
-    );
+    assert_eq!(updated[&fix.lib_uri], "pub enum ProcessState { Ready, Failed }\n");
+    assert_eq!(updated[&fix.caller_uri], "pub fn check(s: types::ProcessState) -> bool { matches!(s, types::ProcessState::Ready) }\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("valid Rust");
@@ -236,12 +182,7 @@ fn test_workspace_rename_enum() {
 
 #[test]
 fn test_workspace_rename_type_alias() {
-    let fix = WorkspaceFixture::new_two_file(
-        "aliases",
-        DefKind::TyAlias,
-        "pub type «$0ByteCount» = usize;\n",
-        "pub fn alloc(size: aliases::«ByteCount») {}\n",
-    );
+    let fix = WorkspaceFixture::new_two_file("aliases", DefKind::TyAlias, "pub type «$0ByteCount» = usize;\n", "pub fn alloc(size: aliases::«ByteCount») {}\n");
 
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
@@ -258,10 +199,7 @@ fn test_workspace_rename_type_alias() {
     let updated = apply_workspace_edit(&fix.files, &res);
 
     assert_eq!(updated[&fix.lib_uri], "pub type SizeInBytes = usize;\n");
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn alloc(size: aliases::SizeInBytes) {}\n"
-    );
+    assert_eq!(updated[&fix.caller_uri], "pub fn alloc(size: aliases::SizeInBytes) {}\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("valid Rust");
@@ -269,12 +207,7 @@ fn test_workspace_rename_type_alias() {
 
 #[test]
 fn test_workspace_rename_const() {
-    let fix = WorkspaceFixture::new_two_file(
-        "constants",
-        DefKind::Const,
-        "pub const «$0MAX_RETRY»: u32 = 3;\n",
-        "pub fn retry_limit() -> u32 { constants::«MAX_RETRY» }\n",
-    );
+    let fix = WorkspaceFixture::new_two_file("constants", DefKind::Const, "pub const «$0MAX_RETRY»: u32 = 3;\n", "pub fn retry_limit() -> u32 { constants::«MAX_RETRY» }\n");
 
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
@@ -290,14 +223,8 @@ fn test_workspace_rename_const() {
     let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
-    assert_eq!(
-        updated[&fix.lib_uri],
-        "pub const DEFAULT_ATTEMPTS: u32 = 3;\n"
-    );
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn retry_limit() -> u32 { constants::DEFAULT_ATTEMPTS }\n"
-    );
+    assert_eq!(updated[&fix.lib_uri], "pub const DEFAULT_ATTEMPTS: u32 = 3;\n");
+    assert_eq!(updated[&fix.caller_uri], "pub fn retry_limit() -> u32 { constants::DEFAULT_ATTEMPTS }\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("valid Rust");
@@ -305,23 +232,13 @@ fn test_workspace_rename_const() {
 
 #[test]
 fn test_workspace_rename_with_dirty_overlay_line_shift() {
-    let fix = WorkspaceFixture::new_two_file(
-        "shift",
-        DefKind::Fn,
-        "pub fn «action»() {}\n",
-        "pub fn invoke() { shift::«$0action»(); }\n",
-    );
+    let fix = WorkspaceFixture::new_two_file("shift", DefKind::Fn, "pub fn «action»() {}\n", "pub fn invoke() { shift::«$0action»(); }\n");
 
     let lib_path = fix.temp_dir.path().join("lib.rs");
     let mut overlay_mgr = OverlayManager::new();
     // Simulate dirty overlay where 2 comment lines are inserted at the top:
     let dirty_text = "// line 1\n// line 2\npub fn action() {}\n";
-    overlay_mgr.open_document(
-        &fix.lib_uri,
-        lib_path.to_str().unwrap(),
-        2,
-        dirty_text.to_string(),
-    );
+    overlay_mgr.open_document(&fix.lib_uri, lib_path.to_str().unwrap(), 2, dirty_text.to_string());
 
     let mut conv = PositionConverter::new();
     let req = json!({
@@ -340,14 +257,8 @@ fn test_workspace_rename_with_dirty_overlay_line_shift() {
     live_files.insert(fix.lib_uri.clone(), dirty_text.to_string());
     let updated = apply_workspace_edit(&live_files, &res);
 
-    assert_eq!(
-        updated[&fix.lib_uri],
-        "// line 1\n// line 2\npub fn new_action() {}\n"
-    );
-    assert_eq!(
-        updated[&fix.caller_uri],
-        "pub fn invoke() { shift::new_action(); }\n"
-    );
+    assert_eq!(updated[&fix.lib_uri], "// line 1\n// line 2\npub fn new_action() {}\n");
+    assert_eq!(updated[&fix.caller_uri], "pub fn invoke() { shift::new_action(); }\n");
 
     syn::parse_file(&updated[&fix.lib_uri]).expect("valid Rust");
     syn::parse_file(&updated[&fix.caller_uri]).expect("valid Rust");

@@ -74,10 +74,7 @@ fn test_indexer_helpers_and_error_paths() {
 
     // 2. extract_config_target
     let config_toml = "[build]\ntarget = \"x86_64-unknown-linux-gnu\"\n";
-    assert_eq!(
-        extract_config_target(config_toml),
-        Some("x86_64-unknown-linux-gnu".to_string())
-    );
+    assert_eq!(extract_config_target(config_toml), Some("x86_64-unknown-linux-gnu".to_string()));
     assert_eq!(extract_config_target("[other]\ntarget = \"abc\""), None);
     assert_eq!(extract_config_target("# [build]\n# target = 1"), None);
     assert_eq!(extract_config_target("[build]\ntarget = \"\""), None);
@@ -93,36 +90,23 @@ fn test_indexer_helpers_and_error_paths() {
 
     let member_dir = ws_dir.join("crates/member");
     fs::create_dir_all(&member_dir).unwrap();
-    fs::write(
-        member_dir.join("Cargo.toml"),
-        "[package]\nname = \"member\"\nversion = \"0.1.0\"\n",
-    )
-    .unwrap();
+    fs::write(member_dir.join("Cargo.toml"), "[package]\nname = \"member\"\nversion = \"0.1.0\"\n").unwrap();
     let mut manifests = Vec::new();
     collect_all_workspace_manifests(&ws_dir, &mut manifests);
     assert!(!manifests.is_empty());
 
     let mut empty_manifests = Vec::new();
-    collect_all_workspace_manifests(
-        &PathBuf::from("/nonexistent_dir_for_test"),
-        &mut empty_manifests,
-    );
+    collect_all_workspace_manifests(&PathBuf::from("/nonexistent_dir_for_test"), &mut empty_manifests);
     assert!(empty_manifests.is_empty());
 
     // 4. resolve_cargo_home with CARGO_HOME and HOME variants
     let orig_cargo_home = std::env::var("CARGO_HOME").ok();
     let orig_home = std::env::var("HOME").ok();
     std::env::set_var("CARGO_HOME", "/custom/cargo/home");
-    assert_eq!(
-        resolve_cargo_home(),
-        Some(PathBuf::from("/custom/cargo/home"))
-    );
+    assert_eq!(resolve_cargo_home(), Some(PathBuf::from("/custom/cargo/home")));
     std::env::remove_var("CARGO_HOME");
     std::env::set_var("HOME", "/custom/home");
-    assert_eq!(
-        resolve_cargo_home(),
-        Some(PathBuf::from("/custom/home/.cargo"))
-    );
+    assert_eq!(resolve_cargo_home(), Some(PathBuf::from("/custom/home/.cargo")));
     std::env::set_var("CARGO_HOME", "");
     std::env::set_var("HOME", "");
     assert_eq!(resolve_cargo_home(), None);
@@ -158,16 +142,8 @@ fn test_indexer_helpers_and_error_paths() {
     // 6. Direct Cargo.toml path and relative out_dir_opt
     let direct_manifest = temp.0.join("direct_crate/Cargo.toml");
     fs::create_dir_all(direct_manifest.parent().unwrap()).unwrap();
-    fs::write(
-            &direct_manifest,
-            "[package]\nname = \"direct_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"lib.rs\"\n",
-        )
-        .unwrap();
-    fs::write(
-        temp.0.join("direct_crate/lib.rs"),
-        "pub fn direct_fn() {}\n",
-    )
-    .unwrap();
+    fs::write(&direct_manifest, "[package]\nname = \"direct_crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"lib.rs\"\n").unwrap();
+    fs::write(temp.0.join("direct_crate/lib.rs"), "pub fn direct_fn() {}\n").unwrap();
 
     std::env::set_var("RIDX_NO_DEPS", "1");
     let cur_d = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
@@ -207,9 +183,7 @@ fn test_indexer_helpers_and_error_paths() {
         capture_child_output: false,
     });
     assert!(err_out.is_err());
-    assert!(err_out
-        .unwrap_err()
-        .contains("failed to create output directory"));
+    assert!(err_out.unwrap_err().contains("failed to create output directory"));
 
     // 8. Driver binary not found error (line 337)
     let err_driver = {
@@ -243,8 +217,7 @@ fn test_indexer_helpers_and_error_paths() {
     {
         let _path = EnvGuard::set("PATH", "");
         let _tc = EnvGuard::set("RUSTUP_TOOLCHAIN", "test-toolchain");
-        let v_toolchain =
-            compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
+        let v_toolchain = compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
         assert!(!v_toolchain.is_empty());
     }
 
@@ -288,7 +261,5 @@ fn test_indexer_helpers_and_error_paths() {
         })
     };
     assert!(err_open.is_err());
-    assert!(err_open
-        .unwrap_err()
-        .contains("failed to open generated variant index"));
+    assert!(err_open.unwrap_err().contains("failed to open generated variant index"));
 }

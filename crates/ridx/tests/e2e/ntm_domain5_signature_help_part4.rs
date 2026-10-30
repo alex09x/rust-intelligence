@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -88,18 +83,12 @@ fn test_signature_help_dirty_overlay_updates_signature() {
         "position": { "line": 1, "character": 25 }
     });
     let res1 = send_sig_help_req(params.clone(), &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(
-        res1["result"]["signatures"][0]["parameters"][0]["label"],
-        "val: i32"
-    );
+    assert_eq!(res1["result"]["signatures"][0]["parameters"][0]["label"], "val: i32");
 
     // Update overlay with new parameter type
     open_test_file(&mut ov, uri, 2, "pub fn calculate(val: f64) {}\nfn caller() { calculate( }\n");
     let res2 = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(
-        res2["result"]["signatures"][0]["parameters"][0]["label"],
-        "val: f64"
-    );
+    assert_eq!(res2["result"]["signatures"][0]["parameters"][0]["label"], "val: f64");
 }
 
 #[test]
@@ -134,10 +123,7 @@ fn test_signature_help_method_call_on_self() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 0);
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn execute(&self, priority: u8)"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn execute(&self, priority: u8)");
 }
 
 #[test]
@@ -153,10 +139,7 @@ fn test_signature_help_multiple_sequential_requests_stable() {
     for _ in 0..5 {
         let res = send_sig_help_req(params.clone(), &mut mr, &mut ov, &mut lc, &can);
         assert_eq!(res["result"]["activeParameter"], 0);
-        assert_eq!(
-            res["result"]["signatures"][0]["label"],
-            "fn stable_op(code: usize)"
-        );
+        assert_eq!(res["result"]["signatures"][0]["label"], "fn stable_op(code: usize)");
     }
 }
 
@@ -188,10 +171,7 @@ fn test_signature_help_string_literal_in_argument() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "footer: &str"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "footer: &str");
 }
 
 #[test]
@@ -205,10 +185,7 @@ fn test_signature_help_return_type_arrow_present_in_label() {
         "position": { "line": 1, "character": 24 }
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn query_count() -> usize"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn query_count() -> usize");
 }
 
 #[test]
@@ -222,10 +199,7 @@ fn test_signature_help_generic_function_signature_label() {
         "position": { "line": 1, "character": 20 }
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn box_item<T>(val: T) -> Box<T>"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn box_item<T>(val: T) -> Box<T>");
 }
 
 #[test]
@@ -255,8 +229,5 @@ fn test_signature_help_tab_indented_call() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn tabbed_fn(x: i32)"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn tabbed_fn(x: i32)");
 }

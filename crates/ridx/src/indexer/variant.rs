@@ -45,10 +45,7 @@ pub fn compute_variant_id(
 
     // 2. Effective target: CLI target -> CARGO_BUILD_TARGET -> .cargo/config target -> "host"
     let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
-    let effective_target = target
-        .or(env_target.as_deref())
-        .or(config_target.as_deref())
-        .unwrap_or("host");
+    let effective_target = target.or(env_target.as_deref()).or(config_target.as_deref()).unwrap_or("host");
     effective_target.hash(&mut hasher);
 
     // 3. Package filter and feature flags
@@ -65,11 +62,7 @@ pub fn compute_variant_id(
     }
     all_manifests.sort();
     for m in all_manifests {
-        m.strip_prefix(work_dir)
-            .unwrap_or(&m)
-            .display()
-            .to_string()
-            .hash(&mut hasher);
+        m.strip_prefix(work_dir).unwrap_or(&m).display().to_string().hash(&mut hasher);
         if let Ok(bytes) = fs::read(&m) {
             bytes.hash(&mut hasher);
         }

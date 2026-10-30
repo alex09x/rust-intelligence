@@ -100,22 +100,8 @@ fn test_reader_overlapping_spans_and_hash_collisions() {
     });
 
     // Overlapping types
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 25,
-        start_col: 1,
-        end_line: 25,
-        end_col: 30,
-        type_name: "OuterType".to_string(),
-    });
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 25,
-        start_col: 5,
-        end_line: 25,
-        end_col: 15,
-        type_name: "InnerType".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 25, start_col: 1, end_line: 25, end_col: 30, type_name: "OuterType".to_string() });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 25, start_col: 5, end_line: 25, end_col: 15, type_name: "InnerType".to_string() });
 
     // Missing def_id target in reference (line 386)
     writer.add_reference(crate::writer::RawReference {
@@ -201,22 +187,8 @@ fn test_reader_overlapping_spans_and_hash_collisions() {
     });
 
     // 3. Type: inner first, outer second
-    writer.add_type(crate::writer::RawType {
-        file: "src/other.rs".to_string(),
-        start_line: 20,
-        start_col: 5,
-        end_line: 20,
-        end_col: 10,
-        type_name: "InnerOther".to_string(),
-    });
-    writer.add_type(crate::writer::RawType {
-        file: "src/other.rs".to_string(),
-        start_line: 20,
-        start_col: 1,
-        end_line: 20,
-        end_col: 20,
-        type_name: "OuterOther".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/other.rs".to_string(), start_line: 20, start_col: 5, end_line: 20, end_col: 10, type_name: "InnerOther".to_string() });
+    writer.add_type(crate::writer::RawType { file: "src/other.rs".to_string(), start_line: 20, start_col: 1, end_line: 20, end_col: 20, type_name: "OuterOther".to_string() });
 
     let mut f = std::fs::File::create(&idx_path).unwrap();
     writer.write_to(&mut f).unwrap();
@@ -253,20 +225,8 @@ fn test_reader_overlapping_spans_and_hash_collisions() {
     assert_eq!(reader.type_at("missing.rs", 1, 1), None);
 
     // 4. Reverse ordering tests (lines 357, 427, 493)
-    assert_eq!(
-        reader
-            .find_definition_at("src/other.rs", 5, 6)
-            .unwrap()
-            .name,
-        "inner_def"
-    );
-    assert_eq!(
-        reader
-            .find_definition_at("src/other.rs", 15, 6)
-            .unwrap()
-            .name,
-        "inner_def"
-    );
+    assert_eq!(reader.find_definition_at("src/other.rs", 5, 6).unwrap().name, "inner_def");
+    assert_eq!(reader.find_definition_at("src/other.rs", 15, 6).unwrap().name, "inner_def");
     assert_eq!(reader.type_at("src/other.rs", 20, 6), Some("InnerOther"));
 
     // 5. find_references

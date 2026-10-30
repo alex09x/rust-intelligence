@@ -113,16 +113,7 @@ pub fn parse_assoc_bounds_from_source(src: &str, start_line: u32) -> Vec<String>
     };
 
     let after_colon = &collected[colon_pos + 1..];
-    let bound_part = after_colon
-        .split(';')
-        .next()
-        .unwrap_or(after_colon)
-        .split('=')
-        .next()
-        .unwrap_or("")
-        .split("where")
-        .next()
-        .unwrap_or("");
+    let bound_part = after_colon.split(';').next().unwrap_or(after_colon).split('=').next().unwrap_or("").split("where").next().unwrap_or("");
 
     let mut bounds = Vec::new();
     for part in bound_part.split('+') {
@@ -165,28 +156,18 @@ pub fn get_or_resolve_assoc_bounds(file: &str, start_line: u32) -> Vec<String> {
 }
 
 /// Resolves a module prefix (`crate::`, `self::`, `super::`) relative to the file's owning crate and module.
-fn resolve_module_prefix(
-    ws: &WorkspaceIndex,
-    file_path: &str,
-    reader_crate: &str,
-    path: &str,
-) -> String {
+fn resolve_module_prefix(ws: &WorkspaceIndex, file_path: &str, reader_crate: &str, path: &str) -> String {
     if let Some(rest) = path.strip_prefix("crate::") {
         format!("{reader_crate}::{rest}")
     } else if path == "crate" {
         reader_crate.to_string()
     } else if let Some(rest) = path.strip_prefix("self::") {
-        let mod_path = ws
-            .module_path_for_file(file_path)
-            .unwrap_or_else(|| reader_crate.to_string());
+        let mod_path = ws.module_path_for_file(file_path).unwrap_or_else(|| reader_crate.to_string());
         format!("{mod_path}::{rest}")
     } else if path == "self" {
-        ws.module_path_for_file(file_path)
-            .unwrap_or_else(|| reader_crate.to_string())
+        ws.module_path_for_file(file_path).unwrap_or_else(|| reader_crate.to_string())
     } else if path.starts_with("super::") || path == "super" {
-        let mod_path = ws
-            .module_path_for_file(file_path)
-            .unwrap_or_else(|| reader_crate.to_string());
+        let mod_path = ws.module_path_for_file(file_path).unwrap_or_else(|| reader_crate.to_string());
         let mut cur = mod_path.as_str();
         let mut rest = path;
         while let Some(r) = rest.strip_prefix("super::") {
@@ -237,15 +218,12 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
 
                 if r_kind == DefKind::Use && path.ends_with("::*") {
                     let raw_prefix = path.trim_end_matches("::*");
-                    let prefix =
-                        resolve_module_prefix(ws, file_path, reader.crate_name(), raw_prefix);
+                    let prefix = resolve_module_prefix(ws, file_path, reader.crate_name(), raw_prefix);
                     let prefix_colon = format!("{prefix}::");
                     let target_crate = prefix.split("::").next().unwrap_or(&prefix);
 
                     for candidate_reader in ws.readers() {
-                        if candidate_reader.crate_name() != target_crate
-                            && candidate_reader.crate_name() != reader.crate_name()
-                        {
+                        if candidate_reader.crate_name() != target_crate && candidate_reader.crate_name() != reader.crate_name() {
                             continue;
                         }
 
@@ -262,9 +240,7 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
                     }
                 } else if r_kind == DefKind::Use && !path.ends_with("::*") {
                     let resolved = resolve_module_prefix(ws, file_path, reader.crate_name(), path);
-                    let target = ws
-                        .find_definition_by_path(&resolved)
-                        .or_else(|| ws.find_definition_by_path(path));
+                    let target = ws.find_definition_by_path(&resolved).or_else(|| ws.find_definition_by_path(path));
                     if let Some(target) = target {
                         if target.kind == DefKind::Trait {
                             if let Some(short) = path.rsplit("::").next() {

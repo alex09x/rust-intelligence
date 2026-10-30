@@ -45,10 +45,18 @@ fn create_temp_shard_with_symbol(name: &str, sym_name: &str) -> TempShard {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: sym_name.to_string(), path: format!("{}::{}", name, sym_name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 10, start_col: 5, end_line: 10, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: sym_name.to_string(),
+        path: format!("{}::{}", name, sym_name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 5,
+        end_line: 10,
+        end_col: 15,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -69,8 +77,10 @@ struct TestDispatcher {
 impl TestDispatcher {
     fn new(shard: PathBuf) -> Self {
         let mut d = Self {
-            lifecycle: LifecycleManager::new(), multi_root: MultiRootWorkspace::new(),
-            overlay_mgr: OverlayManager::new(), cancelled: Arc::new(Mutex::new(HashSet::new())),
+            lifecycle: LifecycleManager::new(),
+            multi_root: MultiRootWorkspace::new(),
+            overlay_mgr: OverlayManager::new(),
+            cancelled: Arc::new(Mutex::new(HashSet::new())),
             writer: Vec::new(),
         };
         assert!(d.multi_root.add_root(shard));
@@ -79,14 +89,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &serde_json::Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> serde_json::Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -164,11 +169,9 @@ fn test_will_rename_files_lifecycle_sequence_with_did_rename() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 555);
     assert_eq!(resp["result"], json!({}));
-
     dsp.overlay_mgr.open_with_provenance("file:///tmp/seq_old.rs", "/tmp/seq_old.rs", 1, "fn seq() {}\n".to_string(), true);
     let did_msg = json!({ "params": { "files": [{ "oldUri": "file:///tmp/seq_old.rs", "newUri": "file:///tmp/seq_new.rs" }] } });
     dsp.multi_root.handle_file_event("workspace/didRenameFiles", &did_msg, &mut dsp.overlay_mgr, &mut dsp.lifecycle.conv);
-
     assert!(dsp.overlay_mgr.get("/tmp/seq_old.rs").is_none());
     assert_eq!(dsp.overlay_mgr.get("/tmp/seq_new.rs").unwrap().text, "fn seq() {}\n");
 }
@@ -181,11 +184,9 @@ fn test_did_rename_files_active_overlay_rebound() {
     let (ctrl_file, ctrl_uri) = ("/tmp/rename_ctrl_doc.rs", "file:///tmp/rename_ctrl_doc.rs");
     overlay_mgr.open_with_provenance(old_uri, old_file, 1, "pub fn foo() {}\n".to_string(), true);
     overlay_mgr.open_with_provenance(ctrl_uri, ctrl_file, 1, "pub fn control() {}\n".to_string(), true);
-
     let (mut mr, mut conv) = (MultiRootWorkspace::new(), PositionConverter::new());
     let msg = json!({ "params": { "files": [{ "oldUri": old_uri, "newUri": new_uri }] } });
     mr.handle_file_event("workspace/didRenameFiles", &msg, &mut overlay_mgr, &mut conv);
-
     assert!(overlay_mgr.get(old_file).is_none());
     assert_eq!(overlay_mgr.get(new_file).unwrap().text, "pub fn foo() {}\n");
     assert_eq!(overlay_mgr.get(ctrl_file).unwrap().text, "pub fn control() {}\n");
@@ -200,11 +201,9 @@ fn test_did_rename_files_dirty_overlay_preserves_text_and_version() {
     let edits = vec![json!({ "text": "pub fn uncommitted() {}\n" })];
     overlay_mgr.apply_content_changes(old_file, 5, &edits);
     assert!(overlay_mgr.get(old_file).unwrap().is_dirty());
-
     let (mut mr, mut conv) = (MultiRootWorkspace::new(), PositionConverter::new());
     let msg = json!({ "params": { "files": [{ "oldUri": old_uri, "newUri": new_uri }] } });
     mr.handle_file_event("workspace/didRenameFiles", &msg, &mut overlay_mgr, &mut conv);
-
     assert!(overlay_mgr.get(old_file).is_none());
     assert!(overlay_mgr.get(new_file).unwrap().is_dirty());
     assert_eq!(overlay_mgr.get(new_file).unwrap().version, 5);
@@ -225,14 +224,12 @@ fn test_did_rename_files_multi_rename_simultaneous() {
     let mut overlay_mgr = OverlayManager::new();
     overlay_mgr.open_with_provenance("file:///tmp/m1.rs", "/tmp/m1.rs", 1, "fn m1() {}\n".to_string(), true);
     overlay_mgr.open_with_provenance("file:///tmp/m2.rs", "/tmp/m2.rs", 1, "fn m2() {}\n".to_string(), true);
-
     let (mut mr, mut conv) = (MultiRootWorkspace::new(), PositionConverter::new());
     let msg = json!({ "params": { "files": [
         { "oldUri": "file:///tmp/m1.rs", "newUri": "file:///tmp/m1_renamed.rs" },
         { "oldUri": "file:///tmp/m2.rs", "newUri": "file:///tmp/m2_renamed.rs" }
     ] } });
     mr.handle_file_event("workspace/didRenameFiles", &msg, &mut overlay_mgr, &mut conv);
-
     assert!(overlay_mgr.get("/tmp/m1.rs").is_none());
     assert!(overlay_mgr.get("/tmp/m2.rs").is_none());
     assert_eq!(overlay_mgr.get("/tmp/m1_renamed.rs").unwrap().text, "fn m1() {}\n");
@@ -274,23 +271,19 @@ fn test_did_rename_files_clears_position_converter() {
     let ts1 = create_temp_shard_with_symbol("ren_conv", "ConvControl");
     let (mut mr, mut overlay_mgr, mut conv) = (MultiRootWorkspace::new(), OverlayManager::new(), PositionConverter::new());
     assert!(mr.add_root(ts1.shard.clone()));
-
     let test_file = ts1.dir.join("src/test.rs");
     std::fs::create_dir_all(test_file.parent().unwrap()).unwrap();
     // Non-BMP crab emoji is 2 UTF-16 code units; 1-based char col 2 (at 'a') is UTF-16 col 2
     std::fs::write(&test_file, "🦀abc\nworld").unwrap();
     let col_warm = conv.char_col_to_utf16_col(test_file.to_str().unwrap(), 1, 2);
     assert_eq!(col_warm, 2);
-
     // Overwrite file on disk with ASCII content where char col 2 is UTF-16 col 1
     std::fs::write(&test_file, "xabc\nworld").unwrap();
     // Control query without event: PositionConverter returns stale cached value 2
     let col_cached = conv.char_col_to_utf16_col(test_file.to_str().unwrap(), 1, 2);
     assert_eq!(col_cached, 2);
-
     let msg = json!({ "params": { "files": [{ "oldUri": "file:///tmp/old.rs", "newUri": "file:///tmp/new.rs" }] } });
     mr.handle_file_event("workspace/didRenameFiles", &msg, &mut overlay_mgr, &mut conv);
-
     let col_fresh = conv.char_col_to_utf16_col(test_file.to_str().unwrap(), 1, 2);
     assert_eq!(col_fresh, 1);
 }
@@ -301,13 +294,11 @@ fn test_did_rename_files_cyclic_rename_roundtrip() {
     let (file_a, uri_a) = ("/tmp/cycle_a.rs", "file:///tmp/cycle_a.rs");
     let (file_b, uri_b) = ("/tmp/cycle_b.rs", "file:///tmp/cycle_b.rs");
     overlay_mgr.open_with_provenance(uri_a, file_a, 1, "fn cycle() {}\n".to_string(), true);
-
     let (mut mr, mut conv) = (MultiRootWorkspace::new(), PositionConverter::new());
     let step1 = json!({ "params": { "files": [{ "oldUri": uri_a, "newUri": uri_b }] } });
     mr.handle_file_event("workspace/didRenameFiles", &step1, &mut overlay_mgr, &mut conv);
     assert!(overlay_mgr.get(file_a).is_none());
     assert_eq!(overlay_mgr.get(file_b).unwrap().text, "fn cycle() {}\n");
-
     let step2 = json!({ "params": { "files": [{ "oldUri": uri_b, "newUri": uri_a }] } });
     mr.handle_file_event("workspace/didRenameFiles", &step2, &mut overlay_mgr, &mut conv);
     assert!(overlay_mgr.get(file_b).is_none());
@@ -321,13 +312,11 @@ fn test_did_rename_files_chain_rename() {
     let (f2, u2) = ("/tmp/chain_2.rs", "file:///tmp/chain_2.rs");
     let (f3, u3) = ("/tmp/chain_3.rs", "file:///tmp/chain_3.rs");
     overlay_mgr.open_with_provenance(u1, f1, 1, "fn chain() {}\n".to_string(), true);
-
     let (mut mr, mut conv) = (MultiRootWorkspace::new(), PositionConverter::new());
     let msg1 = json!({ "params": { "files": [{ "oldUri": u1, "newUri": u2 }] } });
     mr.handle_file_event("workspace/didRenameFiles", &msg1, &mut overlay_mgr, &mut conv);
     assert!(overlay_mgr.get(f1).is_none());
     assert_eq!(overlay_mgr.get(f2).unwrap().text, "fn chain() {}\n");
-
     let msg2 = json!({ "params": { "files": [{ "oldUri": u2, "newUri": u3 }] } });
     mr.handle_file_event("workspace/didRenameFiles", &msg2, &mut overlay_mgr, &mut conv);
     assert!(overlay_mgr.get(f2).is_none());

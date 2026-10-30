@@ -30,14 +30,7 @@ fn make_pos_req(uri: &str, line: u32, col: u32) -> Value {
 fn test_l1_implementation_struct_inherent_and_two_traits() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_three_impls", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_three_impls",
-            "src/lib.rs",
-            "pub struct «Engine»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_three_impls", "src/lib.rs", "pub struct «Engine»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "\
@@ -46,14 +39,7 @@ pub struct Engine;
 «impl Starter for Engine» {}
 «impl Stopper for Engine» {}
 ";
-    ws.add_source_file_with_impl_refs(
-        "pkg_three_impls",
-        "src/lib.rs",
-        code,
-        "pkg_three_impls",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_three_impls", "src/lib.rs", code, "pkg_three_impls", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_three_impls").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -87,14 +73,7 @@ pub struct Engine;
 fn test_l1_implementation_trait_without_implementations() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_unimplemented", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_unimplemented",
-            "src/lib.rs",
-            "pub trait «LonelyTrait» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_unimplemented", "src/lib.rs", "pub trait «LonelyTrait» {}\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let shard = ws.build_crate_index("pkg_unimplemented").unwrap();
@@ -113,33 +92,12 @@ fn test_l1_implementation_trait_without_implementations() {
 fn test_l1_implementation_two_separate_files_same_crate() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_two_files", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_two_files",
-            "src/logger.rs",
-            "pub trait «Logger» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_two_files", "src/logger.rs", "pub trait «Logger» {}\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
-    ws.add_source_file_with_impl_refs(
-        "pkg_two_files",
-        "src/console.rs",
-        "«impl Logger for ConsoleLogger» {}\n",
-        "pkg_two_files",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_two_files", "src/console.rs", "«impl Logger for ConsoleLogger» {}\n", "pkg_two_files", ids[0]).unwrap();
 
-    ws.add_source_file_with_impl_refs(
-        "pkg_two_files",
-        "src/file.rs",
-        "«impl Logger for FileLogger» {}\n",
-        "pkg_two_files",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_two_files", "src/file.rs", "«impl Logger for FileLogger» {}\n", "pkg_two_files", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_two_files").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -170,24 +128,10 @@ fn test_l1_implementation_two_separate_files_same_crate() {
 fn test_l1_implementation_cursor_on_impl_header_returns_self_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_impl_header", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_impl_header",
-            "src/lib.rs",
-            "pub trait «Worker» {}\npub struct Task;\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_impl_header", "src/lib.rs", "pub trait «Worker» {}\npub struct Task;\n", DefKind::Trait).unwrap();
 
     let code = "pub trait Worker {}\npub struct Task;\n«impl Worker for Task» {}\n";
-    ws.add_source_file_with_impl_refs(
-        "pkg_impl_header",
-        "src/lib.rs",
-        code,
-        "pkg_impl_header",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_impl_header", "src/lib.rs", code, "pkg_impl_header", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_impl_header").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -212,25 +156,11 @@ fn test_l1_implementation_cursor_on_impl_header_returns_self_impl() {
 fn test_l1_implementation_generic_impl_block() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_generic_impl", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_generic_impl",
-            "src/lib.rs",
-            "pub trait «Serializable» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_generic_impl", "src/lib.rs", "pub trait «Serializable» {}\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait Serializable {}\npub struct Container<T>(T);\n«impl<T> Serializable for Container<T>» {}\n";
-    ws.add_source_file_with_impl_refs(
-        "pkg_generic_impl",
-        "src/lib.rs",
-        code,
-        "pkg_generic_impl",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_generic_impl", "src/lib.rs", code, "pkg_generic_impl", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_generic_impl").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -253,26 +183,12 @@ fn test_l1_implementation_generic_impl_block() {
 fn test_l1_implementation_utf16_with_emoji_prefix() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_impl_utf16", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_impl_utf16",
-            "src/lib.rs",
-            "pub trait «Action» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_impl_utf16", "src/lib.rs", "pub trait «Action» {}\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     // 2 crabs: 4 UTF-16 code units. "/* 🦀🦀 */ " = 3 + 4 + 4 = 11 UTF-16 code units
     let code = "pub trait Action {}\n/* 🦀🦀 */ «impl Action for ()» {}\n";
-    ws.add_source_file_with_impl_refs(
-        "pkg_impl_utf16",
-        "src/lib.rs",
-        code,
-        "pkg_impl_utf16",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_impl_utf16", "src/lib.rs", code, "pkg_impl_utf16", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_impl_utf16").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

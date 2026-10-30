@@ -35,15 +35,9 @@ fn test_l2_workspace_symbol_search_and_deduplication() {
 
     let res = handle_workspace_symbol(&req, std::iter::once(ws), &mut conv);
     let items = res.as_array().expect("workspace symbols array");
-    assert!(
-        !items.is_empty(),
-        "Workspace symbol query for 'Greeter' must find definition"
-    );
+    assert!(!items.is_empty(), "Workspace symbol query for 'Greeter' must find definition");
 
-    let greeter = items
-        .iter()
-        .find(|item| item["name"].as_str() == Some("Greeter"))
-        .expect("Greeter symbol");
+    let greeter = items.iter().find(|item| item["name"].as_str() == Some("Greeter")).expect("Greeter symbol");
     assert_eq!(greeter["name"], "Greeter");
     assert!(greeter["location"]["uri"].as_str().is_some());
     assert!(greeter["location"]["range"]["start"]["line"].as_u64().is_some());
@@ -51,11 +45,7 @@ fn test_l2_workspace_symbol_search_and_deduplication() {
     // 2. Multi-root deduplication: pass the same workspace twice
     let double_res = handle_workspace_symbol(&req, [ws, ws].into_iter(), &mut conv);
     let double_items = double_res.as_array().unwrap();
-    assert_eq!(
-        items.len(),
-        double_items.len(),
-        "Workspace symbol search must deduplicate across roots"
-    );
+    assert_eq!(items.len(), double_items.len(), "Workspace symbol search must deduplicate across roots");
 }
 
 #[test]
@@ -71,17 +61,10 @@ fn test_l2_workspace_symbol_resolve() {
         }
     });
 
-    let resolved =
-        handle_workspace_symbol_resolve(&unresolved_req, std::iter::once(ws), &mut conv);
+    let resolved = handle_workspace_symbol_resolve(&unresolved_req, std::iter::once(ws), &mut conv);
     assert!(!resolved.is_null(), "Resolved symbol must not be null");
-    assert!(
-        resolved["location"].is_object(),
-        "Resolve must populate location for Greeter"
-    );
-    assert!(
-        resolved["location"]["uri"].as_str().unwrap().contains("lib.rs"),
-        "Resolved location URI must point to lib.rs"
-    );
+    assert!(resolved["location"].is_object(), "Resolve must populate location for Greeter");
+    assert!(resolved["location"]["uri"].as_str().unwrap().contains("lib.rs"), "Resolved location URI must point to lib.rs");
 }
 
 #[test]
@@ -113,10 +96,7 @@ fn test_l2_workspace_diagnostic_report() {
     let broken_items = report_broken["items"].as_array().unwrap();
     let file_report = broken_items.iter().find(|it| it["uri"].as_str() == Some(&uri));
     assert!(file_report.is_some(), "Must report diagnostics for broken overlay");
-    assert!(
-        !file_report.unwrap()["items"].as_array().unwrap().is_empty(),
-        "Must contain syntax error items"
-    );
+    assert!(!file_report.unwrap()["items"].as_array().unwrap().is_empty(), "Must contain syntax error items");
 }
 
 #[test]
@@ -188,21 +168,10 @@ fn test_l2_workspace_file_operations_lifecycle() {
             ]
         }
     });
-    multi_root.handle_file_event(
-        "workspace/didRenameFiles",
-        &rename_msg,
-        &mut overlay_mgr,
-        &mut conv,
-    );
+    multi_root.handle_file_event("workspace/didRenameFiles", &rename_msg, &mut overlay_mgr, &mut conv);
 
-    assert!(
-        overlay_mgr.get(old_path).is_none(),
-        "Old file path must be closed in overlay"
-    );
-    assert!(
-        overlay_mgr.get(new_path).is_some(),
-        "New file path must be active in overlay"
-    );
+    assert!(overlay_mgr.get(old_path).is_none(), "Old file path must be closed in overlay");
+    assert!(overlay_mgr.get(new_path).is_some(), "New file path must be active in overlay");
 
     // 3. Dispatch workspace/didDeleteFiles
     let delete_msg = json!({
@@ -212,15 +181,7 @@ fn test_l2_workspace_file_operations_lifecycle() {
             ]
         }
     });
-    multi_root.handle_file_event(
-        "workspace/didDeleteFiles",
-        &delete_msg,
-        &mut overlay_mgr,
-        &mut conv,
-    );
+    multi_root.handle_file_event("workspace/didDeleteFiles", &delete_msg, &mut overlay_mgr, &mut conv);
 
-    assert!(
-        overlay_mgr.get(new_path).is_none(),
-        "Deleted file must be closed in overlay"
-    );
+    assert!(overlay_mgr.get(new_path).is_none(), "Deleted file must be closed in overlay");
 }

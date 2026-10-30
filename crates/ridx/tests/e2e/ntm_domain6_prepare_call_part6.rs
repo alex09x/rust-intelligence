@@ -76,10 +76,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -93,15 +90,23 @@ impl TestDispatcher {
 #[test]
 fn test_prepare_call_hierarchy_private_function() {
     let lib_str = "/mock/prepcall/priv_fn/src/lib.rs";
-    let ts = create_custom_shard("priv_fn", vec![
-        RawDefinition {
-            def_id: 1, kind: DefKind::Fn, visibility: 0, is_macro_expansion: false,
-            name: "secret_work".to_string(), path: "priv_fn::secret_work".to_string(),
+    let ts = create_custom_shard(
+        "priv_fn",
+        vec![RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "secret_work".to_string(),
+            path: "priv_fn::secret_work".to_string(),
             signature: Some("fn secret_work()".to_string()),
             file: lib_str.to_string(),
-            start_line: 5, start_col: 4, end_line: 5, end_col: 15,
-        }
-    ]);
+            start_line: 5,
+            start_col: 4,
+            end_line: 5,
+            end_col: 15,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 641, "method": "textDocument/prepareCallHierarchy",
@@ -113,28 +118,39 @@ fn test_prepare_call_hierarchy_private_function() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 641);
-    assert_eq!(resp["result"], json!([{
-        "name": "secret_work",
-        "kind": 12,
-        "detail": "fn secret_work()",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 4, "character": 3 }, "end": { "line": 4, "character": 14 } },
-        "selectionRange": { "start": { "line": 4, "character": 3 }, "end": { "line": 4, "character": 14 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "secret_work",
+            "kind": 12,
+            "detail": "fn secret_work()",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 4, "character": 3 }, "end": { "line": 4, "character": 14 } },
+            "selectionRange": { "start": { "line": 4, "character": 3 }, "end": { "line": 4, "character": 14 } }
+        }])
+    );
 }
 
 #[test]
 fn test_prepare_call_hierarchy_pub_crate_function() {
     let lib_str = "/mock/prepcall/crate_fn/src/lib.rs";
-    let ts = create_custom_shard("crate_fn", vec![
-        RawDefinition {
-            def_id: 2, kind: DefKind::Fn, visibility: 2, is_macro_expansion: false,
-            name: "crate_worker".to_string(), path: "crate_fn::crate_worker".to_string(),
+    let ts = create_custom_shard(
+        "crate_fn",
+        vec![RawDefinition {
+            def_id: 2,
+            kind: DefKind::Fn,
+            visibility: 2,
+            is_macro_expansion: false,
+            name: "crate_worker".to_string(),
+            path: "crate_fn::crate_worker".to_string(),
             signature: Some("pub(crate) fn crate_worker()".to_string()),
             file: lib_str.to_string(),
-            start_line: 8, start_col: 15, end_line: 8, end_col: 27,
-        }
-    ]);
+            start_line: 8,
+            start_col: 15,
+            end_line: 8,
+            end_col: 27,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 642, "method": "textDocument/prepareCallHierarchy",
@@ -146,28 +162,39 @@ fn test_prepare_call_hierarchy_pub_crate_function() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 642);
-    assert_eq!(resp["result"], json!([{
-        "name": "crate_worker",
-        "kind": 12,
-        "detail": "pub(crate) fn crate_worker()",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 7, "character": 14 }, "end": { "line": 7, "character": 26 } },
-        "selectionRange": { "start": { "line": 7, "character": 14 }, "end": { "line": 7, "character": 26 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "crate_worker",
+            "kind": 12,
+            "detail": "pub(crate) fn crate_worker()",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 7, "character": 14 }, "end": { "line": 7, "character": 26 } },
+            "selectionRange": { "start": { "line": 7, "character": 14 }, "end": { "line": 7, "character": 26 } }
+        }])
+    );
 }
 
 #[test]
 fn test_prepare_call_hierarchy_method_with_ref_self() {
     let lib_str = "/mock/prepcall/self_ref/src/lib.rs";
-    let ts = create_custom_shard("self_ref", vec![
-        RawDefinition {
-            def_id: 4, kind: DefKind::AssocFn, visibility: 1, is_macro_expansion: false,
-            name: "read_data".to_string(), path: "self_ref::Data::read_data".to_string(),
+    let ts = create_custom_shard(
+        "self_ref",
+        vec![RawDefinition {
+            def_id: 4,
+            kind: DefKind::AssocFn,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "read_data".to_string(),
+            path: "self_ref::Data::read_data".to_string(),
             signature: Some("pub fn read_data(&self)".to_string()),
             file: lib_str.to_string(),
-            start_line: 10, start_col: 8, end_line: 10, end_col: 17,
-        }
-    ]);
+            start_line: 10,
+            start_col: 8,
+            end_line: 10,
+            end_col: 17,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 643, "method": "textDocument/prepareCallHierarchy",
@@ -179,28 +206,39 @@ fn test_prepare_call_hierarchy_method_with_ref_self() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 643);
-    assert_eq!(resp["result"], json!([{
-        "name": "read_data",
-        "kind": 6,
-        "detail": "pub fn read_data(&self)",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 9, "character": 7 }, "end": { "line": 9, "character": 16 } },
-        "selectionRange": { "start": { "line": 9, "character": 7 }, "end": { "line": 9, "character": 16 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "read_data",
+            "kind": 6,
+            "detail": "pub fn read_data(&self)",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 9, "character": 7 }, "end": { "line": 9, "character": 16 } },
+            "selectionRange": { "start": { "line": 9, "character": 7 }, "end": { "line": 9, "character": 16 } }
+        }])
+    );
 }
 
 #[test]
 fn test_prepare_call_hierarchy_method_with_mut_ref_self() {
     let lib_str = "/mock/prepcall/self_mut/src/lib.rs";
-    let ts = create_custom_shard("self_mut", vec![
-        RawDefinition {
-            def_id: 5, kind: DefKind::AssocFn, visibility: 1, is_macro_expansion: false,
-            name: "mutate_data".to_string(), path: "self_mut::Data::mutate_data".to_string(),
+    let ts = create_custom_shard(
+        "self_mut",
+        vec![RawDefinition {
+            def_id: 5,
+            kind: DefKind::AssocFn,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "mutate_data".to_string(),
+            path: "self_mut::Data::mutate_data".to_string(),
             signature: Some("pub fn mutate_data(&mut self)".to_string()),
             file: lib_str.to_string(),
-            start_line: 12, start_col: 8, end_line: 12, end_col: 19,
-        }
-    ]);
+            start_line: 12,
+            start_col: 8,
+            end_line: 12,
+            end_col: 19,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 644, "method": "textDocument/prepareCallHierarchy",
@@ -212,28 +250,39 @@ fn test_prepare_call_hierarchy_method_with_mut_ref_self() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 644);
-    assert_eq!(resp["result"], json!([{
-        "name": "mutate_data",
-        "kind": 6,
-        "detail": "pub fn mutate_data(&mut self)",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 11, "character": 7 }, "end": { "line": 11, "character": 18 } },
-        "selectionRange": { "start": { "line": 11, "character": 7 }, "end": { "line": 11, "character": 18 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "mutate_data",
+            "kind": 6,
+            "detail": "pub fn mutate_data(&mut self)",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 11, "character": 7 }, "end": { "line": 11, "character": 18 } },
+            "selectionRange": { "start": { "line": 11, "character": 7 }, "end": { "line": 11, "character": 18 } }
+        }])
+    );
 }
 
 #[test]
 fn test_prepare_call_hierarchy_method_with_value_self() {
     let lib_str = "/mock/prepcall/self_val/src/lib.rs";
-    let ts = create_custom_shard("self_val", vec![
-        RawDefinition {
-            def_id: 6, kind: DefKind::AssocFn, visibility: 1, is_macro_expansion: false,
-            name: "consume".to_string(), path: "self_val::MyStruct::consume".to_string(),
+    let ts = create_custom_shard(
+        "self_val",
+        vec![RawDefinition {
+            def_id: 6,
+            kind: DefKind::AssocFn,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "consume".to_string(),
+            path: "self_val::MyStruct::consume".to_string(),
             signature: Some("pub fn consume(self)".to_string()),
             file: lib_str.to_string(),
-            start_line: 14, start_col: 5, end_line: 14, end_col: 12,
-        }
-    ]);
+            start_line: 14,
+            start_col: 5,
+            end_line: 14,
+            end_col: 12,
+        }],
+    );
     let mut dsp = TestDispatcher::new(ts.shard.clone());
     let req = json!({
         "jsonrpc": "2.0", "id": 645, "method": "textDocument/prepareCallHierarchy",
@@ -245,14 +294,17 @@ fn test_prepare_call_hierarchy_method_with_value_self() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 645);
-    assert_eq!(resp["result"], json!([{
-        "name": "consume",
-        "kind": 6,
-        "detail": "pub fn consume(self)",
-        "uri": path_to_uri(lib_str),
-        "range": { "start": { "line": 13, "character": 4 }, "end": { "line": 13, "character": 11 } },
-        "selectionRange": { "start": { "line": 13, "character": 4 }, "end": { "line": 13, "character": 11 } }
-    }]));
+    assert_eq!(
+        resp["result"],
+        json!([{
+            "name": "consume",
+            "kind": 6,
+            "detail": "pub fn consume(self)",
+            "uri": path_to_uri(lib_str),
+            "range": { "start": { "line": 13, "character": 4 }, "end": { "line": 13, "character": 11 } },
+            "selectionRange": { "start": { "line": 13, "character": 4 }, "end": { "line": 13, "character": 11 } }
+        }])
+    );
 }
 
 #[test]

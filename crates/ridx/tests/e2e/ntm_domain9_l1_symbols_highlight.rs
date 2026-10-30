@@ -73,22 +73,9 @@ fn test_l1_document_highlight_local_binding() {
 fn test_l1_document_highlight_workspace_references() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_hl_ws", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_hl_ws",
-            "src/lib.rs",
-            "pub fn «helper»() {}\n",
-            DefKind::Fn,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_hl_ws", "src/lib.rs", "pub fn «helper»() {}\n", DefKind::Fn).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_hl_ws",
-        "src/lib.rs",
-        "pub fn helper() {}\npub fn run() {\n    «helper»();\n    «helper»();\n}\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_hl_ws", "src/lib.rs", "pub fn helper() {}\npub fn run() {\n    «helper»();\n    «helper»();\n}\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_hl_ws").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -100,11 +87,7 @@ fn test_l1_document_highlight_workspace_references() {
     let req = make_pos_req(&uri, 0, 7);
     let res = handle_document_highlight(&req, Some(&index), &overlay_mgr, &mut conv);
     let items = res.as_array().expect("highlight array");
-    assert_eq!(
-        items.len(),
-        3,
-        "Must return exactly 3 highlights: 1 definition and 2 local references"
-    );
+    assert_eq!(items.len(), 3, "Must return exactly 3 highlights: 1 definition and 2 local references");
     assert_eq!(items[0]["range"]["start"]["line"], 0);
     assert_eq!(items[1]["range"]["start"]["line"], 2);
     assert_eq!(items[2]["range"]["start"]["line"], 3);
@@ -116,32 +99,13 @@ fn test_l1_document_highlight_workspace_references() {
 fn test_l1_document_highlight_cross_file_excluded() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_hl_cross", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_hl_cross",
-            "src/callee.rs",
-            "pub fn «action»() {}\n",
-            DefKind::Fn,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_hl_cross", "src/callee.rs", "pub fn «action»() {}\n", DefKind::Fn).unwrap();
 
     // Local call in callee.rs
-    ws.add_refs_to_def(
-        "pkg_hl_cross",
-        "src/callee.rs",
-        "pub fn action() {}\npub fn local_invoke() { «action»(); }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_hl_cross", "src/callee.rs", "pub fn action() {}\npub fn local_invoke() { «action»(); }\n", ids[0]).unwrap();
 
     // Cross-file call in caller.rs
-    ws.add_refs_to_def(
-        "pkg_hl_cross",
-        "src/caller.rs",
-        "use crate::callee::action;\npub fn remote_invoke() { «action»(); }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_hl_cross", "src/caller.rs", "use crate::callee::action;\npub fn remote_invoke() { «action»(); }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_hl_cross").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -154,11 +118,7 @@ fn test_l1_document_highlight_cross_file_excluded() {
     let req = make_pos_req(&callee_uri, 0, 7);
     let res = handle_document_highlight(&req, Some(&index), &overlay_mgr, &mut conv);
     let items = res.as_array().expect("highlight items");
-    assert_eq!(
-        items.len(),
-        2,
-        "Must return exactly 2 highlights within callee.rs (def and local call), excluding caller.rs"
-    );
+    assert_eq!(items.len(), 2, "Must return exactly 2 highlights within callee.rs (def and local call), excluding caller.rs");
     assert_eq!(items[0]["range"]["start"]["line"], 0);
     assert_eq!(items[1]["range"]["start"]["line"], 1);
     assert!(items.iter().all(|item| item.get("uri").is_none()));
@@ -168,11 +128,7 @@ fn test_l1_document_highlight_cross_file_excluded() {
     let caller_req = make_pos_req(&caller_uri, 1, 25);
     let caller_res = handle_document_highlight(&caller_req, Some(&index), &overlay_mgr, &mut conv);
     let caller_items = caller_res.as_array().expect("caller highlight items");
-    assert_eq!(
-        caller_items.len(),
-        1,
-        "Query in caller.rs must only return its own reference site"
-    );
+    assert_eq!(caller_items.len(), 1, "Query in caller.rs must only return its own reference site");
     assert_eq!(caller_items[0]["range"]["start"]["line"], 1);
     assert!(caller_items.iter().all(|item| item.get("uri").is_none()));
 }
@@ -181,10 +137,7 @@ fn test_l1_document_highlight_cross_file_excluded() {
 fn test_l1_document_highlight_boundaries_and_empty() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_hl_bounds", "0.1.0").unwrap();
-    let uri = ws
-        .add_source_file("pkg_hl_bounds", "src/lib.rs", "pub fn empty() {}\n")
-        .map(|p| format!("file://{}", p.display()))
-        .unwrap();
+    let uri = ws.add_source_file("pkg_hl_bounds", "src/lib.rs", "pub fn empty() {}\n").map(|p| format!("file://{}", p.display())).unwrap();
 
     let shard = ws.build_crate_index("pkg_hl_bounds").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -263,10 +216,7 @@ fn test_l1_document_symbol_typaram_filtered() {
     assert_eq!(items[0]["name"], "process_data");
     assert_eq!(items[0]["kind"], 12);
     assert_eq!(items[1]["name"], "val");
-    assert!(
-        items.iter().all(|s| s["name"] != "T"),
-        "TyParam T must be filtered out"
-    );
+    assert!(items.iter().all(|s| s["name"] != "T"), "TyParam T must be filtered out");
 }
 
 #[test]

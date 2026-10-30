@@ -28,20 +28,9 @@ pub fn span_covers_other_identifier(path: Option<&str>, span: (u32, u32, u32, u3
     let last = end_line.saturating_sub(1) as usize;
     let from = start_col.saturating_sub(1) as usize;
     let to = end_col.saturating_sub(1) as usize;
-    text.lines()
-        .enumerate()
-        .skip(first)
-        .take(last - first + 1)
-        .any(|(n, line)| {
-            let skip = if n == first { from } else { 0 };
-            let take = if n == last {
-                to.saturating_sub(skip)
-            } else {
-                usize::MAX
-            };
-            line.chars()
-                .skip(skip)
-                .take(take)
-                .any(|c| c.is_alphanumeric() || c == '_')
-        })
+    text.lines().enumerate().skip(first).take(last - first + 1).any(|(n, line)| {
+        let skip = if n == first { from } else { 0 };
+        let take = if n == last { to.saturating_sub(skip) } else { usize::MAX };
+        line.chars().skip(skip).take(take).any(|c| c.is_alphanumeric() || c == '_')
+    })
 }

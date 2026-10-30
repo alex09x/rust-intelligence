@@ -104,11 +104,7 @@ pub fn is_rust_keyword(s: &str) -> bool {
 }
 
 /// Locates the 1-based character column where `target_name` begins on `line`.
-pub fn find_declaration_ident_col(
-    line: &str,
-    target_name: &str,
-    target_kind: DefKind,
-) -> Option<u32> {
+pub fn find_declaration_ident_col(line: &str, target_name: &str, target_kind: DefKind) -> Option<u32> {
     if target_name.is_empty() {
         return None;
     }
@@ -125,11 +121,7 @@ pub fn find_declaration_ident_col(
         _ => "",
     };
 
-    let kw_after_pos = if !kw.is_empty() {
-        line.find(kw).map(|pos| pos + kw.len())
-    } else {
-        None
-    };
+    let kw_after_pos = if !kw.is_empty() { line.find(kw).map(|pos| pos + kw.len()) } else { None };
 
     let mut first_match = None;
     let mut search_from = 0;
@@ -137,16 +129,8 @@ pub fn find_declaration_ident_col(
         let abs_pos = search_from + rel_pos;
         let end_pos = abs_pos + target_name.len();
 
-        let prev_ok = if abs_pos == 0 {
-            true
-        } else {
-            !is_ident_continue(line[..abs_pos].chars().next_back().unwrap_or(' '))
-        };
-        let next_ok = if end_pos >= line.len() {
-            true
-        } else {
-            !is_ident_continue(line[end_pos..].chars().next().unwrap_or(' '))
-        };
+        let prev_ok = if abs_pos == 0 { true } else { !is_ident_continue(line[..abs_pos].chars().next_back().unwrap_or(' ')) };
+        let next_ok = if end_pos >= line.len() { true } else { !is_ident_continue(line[end_pos..].chars().next().unwrap_or(' ')) };
 
         if prev_ok && next_ok && !is_byte_in_string_or_comment(line, abs_pos) {
             let col = line[..abs_pos].chars().count() as u32 + 1;
@@ -166,12 +150,7 @@ pub fn find_declaration_ident_col(
 }
 
 /// Locates (line_1based, col_1based) of `target_name` in multiline declaration text.
-pub fn find_declaration_ident_in_lines(
-    lines: &[&str],
-    start_line_1based: u32,
-    target_name: &str,
-    target_kind: DefKind,
-) -> Option<(u32, u32)> {
+pub fn find_declaration_ident_in_lines(lines: &[&str], start_line_1based: u32, target_name: &str, target_kind: DefKind) -> Option<(u32, u32)> {
     let start_idx = start_line_1based.saturating_sub(1) as usize;
     for (offset, line) in lines.iter().skip(start_idx).take(10).enumerate() {
         let curr_line = start_line_1based + offset as u32;
@@ -234,10 +213,7 @@ pub fn byte_offset_to_utf16_col(s: &str, byte_offset: usize) -> usize {
 
 /// Applies a slice of LSP TextEdits from a WorkspaceEdit to the original document text.
 /// Edits refer to the same snapshot, so they are sorted descending and applied in reverse order.
-pub fn apply_workspace_text_edits_to_content(
-    content: &str,
-    edits: &[serde_json::Value],
-) -> Option<String> {
+pub fn apply_workspace_text_edits_to_content(content: &str, edits: &[serde_json::Value]) -> Option<String> {
     if edits.is_empty() {
         return Some(content.to_string());
     }
@@ -264,11 +240,7 @@ pub fn apply_workspace_text_edits_to_content(
             return content.len();
         }
         let line_start = line_starts[line];
-        let next_start = if line + 1 < line_starts.len() {
-            line_starts[line + 1]
-        } else {
-            content.len()
-        };
+        let next_start = if line + 1 < line_starts.len() { line_starts[line + 1] } else { content.len() };
         let line_slice = &content[line_start..next_start];
         let line_text = line_slice.trim_end_matches(['\r', '\n']);
         let col_offset = utf16_col_to_byte_offset(line_text, utf16_col);
@@ -283,24 +255,14 @@ pub fn apply_workspace_text_edits_to_content(
         let el = range.get("end")?.get("line")?.as_u64()? as usize;
         let ec = range.get("end")?.get("character")?.as_u64()? as usize;
 
-        let new_text = e
-            .get("newText")
-            .or_else(|| e.get("text"))
-            .and_then(|t| t.as_str())
-            .unwrap_or("")
-            .to_string();
+        let new_text = e.get("newText").or_else(|| e.get("text")).and_then(|t| t.as_str()).unwrap_or("").to_string();
 
         let start_byte = get_byte_offset(sl, sc);
         let end_byte = get_byte_offset(el, ec);
         if start_byte > end_byte {
             return None;
         }
-        parsed.push(ParsedEdit {
-            start_byte,
-            end_byte,
-            new_text,
-            orig_idx,
-        });
+        parsed.push(ParsedEdit { start_byte, end_byte, new_text, orig_idx });
     }
 
     use std::collections::BTreeMap;
@@ -338,11 +300,7 @@ pub fn apply_workspace_text_edits_to_content(
             start_byte
         };
 
-        merged.push(MergedEdit {
-            start_byte,
-            end_byte,
-            new_text: combined_text,
-        });
+        merged.push(MergedEdit { start_byte, end_byte, new_text: combined_text });
     }
 
     for i in 0..merged.len().saturating_sub(1) {

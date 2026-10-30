@@ -77,8 +77,7 @@ mod build;
 impl PathIndex {
     #[inline]
     pub(crate) fn is_current(&self, ws: &WorkspaceIndex) -> bool {
-        (self.generation, self.reader_count) == (ws.generation, ws.readers.len())
-            && self.generation > 0
+        (self.generation, self.reader_count) == (ws.generation, ws.readers.len()) && self.generation > 0
     }
 
     /// Returns `false` when `file_path` cannot match the fast path.
@@ -97,26 +96,14 @@ impl PathIndex {
             return true;
         }
         let fname_str = fname.to_str().unwrap_or("");
-        if self
-            .bare_reader_files
-            .iter()
-            .any(|b| fname_str.ends_with(b.as_str()))
-        {
+        if self.bare_reader_files.iter().any(|b| fname_str.ends_with(b.as_str())) {
             return true;
         }
-        p.parent().is_none_or(|par| {
-            par.as_os_str().is_empty()
-                || ws.workspace_root.as_deref() == Some(par)
-                || self.origins.iter().any(|o| o.raw == par)
-        })
+        p.parent().is_none_or(|par| par.as_os_str().is_empty() || ws.workspace_root.as_deref() == Some(par) || self.origins.iter().any(|o| o.raw == par))
     }
 
     /// Resolves `shard_mtime_for_file` when the in-memory fast path does not match.
-    pub fn shard_mtime_slow(
-        &self,
-        ws: &WorkspaceIndex,
-        file_path: &str,
-    ) -> Option<std::time::SystemTime> {
+    pub fn shard_mtime_slow(&self, ws: &WorkspaceIndex, file_path: &str) -> Option<std::time::SystemTime> {
         let (idx, _) = self.resolve_checked(ws, file_path, false)?;
         ws.mtimes.get(idx).copied().flatten()
     }
@@ -126,24 +113,14 @@ impl PathIndex {
         self.resolve_checked(ws, file_path, true).map(|(_, h)| h)
     }
 
-    fn resolve_checked(
-        &self,
-        ws: &WorkspaceIndex,
-        file_path: &str,
-        want_hash: bool,
-    ) -> Option<(usize, u64)> {
+    fn resolve_checked(&self, ws: &WorkspaceIndex, file_path: &str, want_hash: bool) -> Option<(usize, u64)> {
         if (self.generation, self.reader_count) != (ws.generation, ws.readers.len()) {
             return Self::build(ws).resolve_slow(ws, file_path, want_hash);
         }
         self.resolve_slow(ws, file_path, want_hash)
     }
 
-    fn resolve_slow(
-        &self,
-        ws: &WorkspaceIndex,
-        file_path: &str,
-        want_hash: bool,
-    ) -> Option<(usize, u64)> {
+    fn resolve_slow(&self, ws: &WorkspaceIndex, file_path: &str, want_hash: bool) -> Option<(usize, u64)> {
         let p = Path::new(file_path);
         let explicit_origin = match ws.workspace_root.as_deref().or(ws.root_dir.as_deref()) {
             Some(origin) => Some(origin),
@@ -165,20 +142,10 @@ impl PathIndex {
         let norm_ws_abs = ws_abs.as_deref().map(normalize_path);
 
         let p_trav = has_parent_dir(p) && path_traverses_symlink_parent(p);
-        let abs_trav = ws_abs
-            .as_deref()
-            .is_some_and(|a| has_parent_dir(a) && path_traverses_symlink_parent(a));
+        let abs_trav = ws_abs.as_deref().is_some_and(|a| has_parent_dir(a) && path_traverses_symlink_parent(a));
         let matches_uid = |uid: u32| -> bool {
             self.entry_matches_single(uid, p, &norm_p, req_canon.as_deref(), p_trav)
-                || ws_abs.as_deref().is_some_and(|abs_req| {
-                    self.entry_matches_single(
-                        uid,
-                        abs_req,
-                        norm_ws_abs.as_deref().unwrap_or(abs_req),
-                        ws_canon.as_deref(),
-                        abs_trav,
-                    )
-                })
+                || ws_abs.as_deref().is_some_and(|abs_req| self.entry_matches_single(uid, abs_req, norm_ws_abs.as_deref().unwrap_or(abs_req), ws_canon.as_deref(), abs_trav))
         };
 
         let mut matching_uids: Vec<u32> = Vec::new();
@@ -197,28 +164,12 @@ impl PathIndex {
                     }
                 }
             };
-            for key in [
-                Some(p),
-                Some(norm_p.as_path()),
-                req_canon.as_deref(),
-                ws_abs.as_deref(),
-                norm_ws_abs.as_deref(),
-            ]
-            .into_iter()
-            .flatten()
-            {
+            for key in [Some(p), Some(norm_p.as_path()), req_canon.as_deref(), ws_abs.as_deref(), norm_ws_abs.as_deref()].into_iter().flatten() {
                 check_slice(self.by_key.get(key), &mut matching_uids);
             }
             check_slice(Some(&self.dotdot_uids), &mut matching_uids);
             if matching_uids.is_empty() && (req_canon.is_some() || p.is_relative()) {
-                for fname in [
-                    p.file_name(),
-                    norm_p.file_name(),
-                    req_canon.as_deref().and_then(Path::file_name),
-                ]
-                .into_iter()
-                .flatten()
-                {
+                for fname in [p.file_name(), norm_p.file_name(), req_canon.as_deref().and_then(Path::file_name)].into_iter().flatten() {
                     check_slice(self.by_file_name.get(fname), &mut matching_uids);
                 }
             }
@@ -229,27 +180,14 @@ impl PathIndex {
 
         let tier_of = |i: usize| -> u8 {
             let rmeta = &self.readers_meta[i];
-            if req_canon
-                .as_ref()
-                .zip(rmeta.canon_source_root.as_ref())
-                .is_some_and(|(c_p, c_root)| c_p.starts_with(c_root))
-            {
+            if req_canon.as_ref().zip(rmeta.canon_source_root.as_ref()).is_some_and(|(c_p, c_root)| c_p.starts_with(c_root)) {
                 return 0;
             }
             if let Some(ref n_abs) = norm_ws_abs {
-                if rmeta
-                    .norm_source_root
-                    .as_ref()
-                    .is_some_and(|n_root| n_abs.starts_with(n_root))
-                {
+                if rmeta.norm_source_root.as_ref().is_some_and(|n_root| n_abs.starts_with(n_root)) {
                     return 1;
                 }
-            } else if p.is_absolute()
-                && rmeta
-                    .norm_source_root
-                    .as_ref()
-                    .is_some_and(|n_root| norm_p.starts_with(n_root))
-            {
+            } else if p.is_absolute() && rmeta.norm_source_root.as_ref().is_some_and(|n_root| norm_p.starts_with(n_root)) {
                 return 1;
             }
             if !rmeta.is_dep {
@@ -262,11 +200,7 @@ impl PathIndex {
         let pick_best = |phase1: bool| -> Option<(usize, u64)> {
             let mut best = None;
             for &uid in &matching_uids {
-                let list = if phase1 {
-                    &self.entries[uid as usize].phase1
-                } else {
-                    &self.entries[uid as usize].phase2
-                };
+                let list = if phase1 { &self.entries[uid as usize].phase1 } else { &self.entries[uid as usize].phase2 };
                 for &(r_idx, ord, h) in list {
                     if want_hash && h == 0 {
                         continue;
@@ -282,14 +216,7 @@ impl PathIndex {
         pick_best(true).or_else(|| pick_best(false))
     }
 
-    fn entry_matches_single(
-        &self,
-        uid: u32,
-        req_path: &Path,
-        norm_req: &Path,
-        req_canon: Option<&Path>,
-        req_traverses_symlink: bool,
-    ) -> bool {
+    fn entry_matches_single(&self, uid: u32, req_path: &Path, norm_req: &Path, req_canon: Option<&Path>, req_traverses_symlink: bool) -> bool {
         let entry = &self.entries[uid as usize];
         let req_str = req_path.to_str().unwrap_or("");
         if entry.entry_str.is_empty() {
@@ -312,8 +239,7 @@ impl PathIndex {
 
         let compute_fs = || EntryFsMeta {
             canon: entry.entry_orig.canonicalize().ok(),
-            traverses_symlink: has_parent_dir(&entry.entry_orig)
-                && path_traverses_symlink_parent(&entry.entry_orig),
+            traverses_symlink: has_parent_dir(&entry.entry_orig) && path_traverses_symlink_parent(&entry.entry_orig),
         };
         let owned_fs;
         let fs_meta = if entry.entry_orig.is_absolute() {
@@ -330,16 +256,8 @@ impl PathIndex {
         let lexical_match = if req_path.is_absolute() || entry.norm_entry.is_relative() {
             entry.norm_entry == norm_req
         } else if let Some(orig) = orig_meta {
-            let matches_rel = |base: &Path, full: &Path| {
-                full.strip_prefix(base)
-                    .is_ok_and(|rel| rel == norm_req || normalize_path(rel) == norm_req)
-            };
-            matches_rel(&orig.norm, &entry.norm_entry)
-                || fs_meta
-                    .canon
-                    .as_ref()
-                    .zip(orig.canon.as_ref())
-                    .is_some_and(|(ce, co)| matches_rel(co, ce))
+            let matches_rel = |base: &Path, full: &Path| full.strip_prefix(base).is_ok_and(|rel| rel == norm_req || normalize_path(rel) == norm_req);
+            matches_rel(&orig.norm, &entry.norm_entry) || fs_meta.canon.as_ref().zip(orig.canon.as_ref()).is_some_and(|(ce, co)| matches_rel(co, ce))
         } else {
             false
         };
@@ -350,9 +268,6 @@ impl PathIndex {
         let req_has_dotdot = has_parent_dir(req_path);
         !(fs_meta.traverses_symlink
             || req_traverses_symlink
-            || orig_meta.is_some_and(|orig| {
-                (orig.has_dotdot || req_has_dotdot)
-                    && path_traverses_symlink_parent(&orig.raw.join(req_path))
-            }))
+            || orig_meta.is_some_and(|orig| (orig.has_dotdot || req_has_dotdot) && path_traverses_symlink_parent(&orig.raw.join(req_path))))
     }
 }

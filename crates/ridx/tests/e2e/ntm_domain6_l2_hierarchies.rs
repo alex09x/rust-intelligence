@@ -13,14 +13,8 @@
 //! supertypes, and subtypes on real compiler-indexed fixture workspaces.
 
 use super::l2_harness::{fixture_dir, get_or_index_l2_fixture, pos_in_file};
-use ridx::lsp::hierarchy::call::{
-    handle_call_hierarchy_incoming_calls, handle_call_hierarchy_outgoing_calls,
-    handle_prepare_call_hierarchy,
-};
-use ridx::lsp::hierarchy::types::{
-    handle_prepare_type_hierarchy, handle_type_hierarchy_subtypes,
-    handle_type_hierarchy_supertypes,
-};
+use ridx::lsp::hierarchy::call::{handle_call_hierarchy_incoming_calls, handle_call_hierarchy_outgoing_calls, handle_prepare_call_hierarchy};
+use ridx::lsp::hierarchy::types::{handle_prepare_type_hierarchy, handle_type_hierarchy_subtypes, handle_type_hierarchy_supertypes};
 use ridx::lsp::protocol::{path_to_uri, PositionConverter};
 use ridx::overlay::OverlayManager;
 use serde_json::json;
@@ -35,11 +29,7 @@ fn test_l2_call_hierarchy_prepare_and_incoming() {
     let mut conv = PositionConverter::new();
 
     // 1. Prepare call hierarchy on `fn greet` in `impl Greeter for Robot`
-    let (greet_line, greet_col) = pos_in_file(
-        &lib_file,
-        "impl Greeter for Robot {\n    fn greet(&self)",
-        "greet",
-    );
+    let (greet_line, greet_col) = pos_in_file(&lib_file, "impl Greeter for Robot {\n    fn greet(&self)", "greet");
     let prep_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -48,10 +38,7 @@ fn test_l2_call_hierarchy_prepare_and_incoming() {
     });
 
     let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
-    assert!(
-        prep_res.is_array(),
-        "prepareCallHierarchy must return an array"
-    );
+    assert!(prep_res.is_array(), "prepareCallHierarchy must return an array");
     let items = prep_res.as_array().unwrap();
     assert_eq!(items.len(), 1, "Expected 1 CallHierarchyItem for greet");
     let greet_item = &items[0];
@@ -64,23 +51,11 @@ fn test_l2_call_hierarchy_prepare_and_incoming() {
         }
     });
     let inc_res = handle_call_hierarchy_incoming_calls(&inc_req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        inc_res.is_array(),
-        "incomingCalls must return an array"
-    );
+    assert!(inc_res.is_array(), "incomingCalls must return an array");
     let inc_calls = inc_res.as_array().unwrap();
-    assert!(
-        !inc_calls.is_empty(),
-        "Expected at least 1 incoming call for greet"
-    );
-    let caller_names: Vec<&str> = inc_calls
-        .iter()
-        .filter_map(|c| c["from"]["name"].as_str())
-        .collect();
-    assert!(
-        caller_names.contains(&"call_concrete"),
-        "Incoming calls for greet must contain call_concrete, got: {caller_names:?}"
-    );
+    assert!(!inc_calls.is_empty(), "Expected at least 1 incoming call for greet");
+    let caller_names: Vec<&str> = inc_calls.iter().filter_map(|c| c["from"]["name"].as_str()).collect();
+    assert!(caller_names.contains(&"call_concrete"), "Incoming calls for greet must contain call_concrete, got: {caller_names:?}");
 }
 
 #[test]
@@ -92,11 +67,7 @@ fn test_l2_call_hierarchy_outgoing() {
     let mut conv = PositionConverter::new();
 
     // 1. Prepare call hierarchy on `process_container`
-    let (proc_line, proc_col) = pos_in_file(
-        &lib_file,
-        "pub fn process_container<C: Container<Item = i32>>(c: &C) -> i32",
-        "process_container",
-    );
+    let (proc_line, proc_col) = pos_in_file(&lib_file, "pub fn process_container<C: Container<Item = i32>>(c: &C) -> i32", "process_container");
     let prep_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -119,18 +90,9 @@ fn test_l2_call_hierarchy_outgoing() {
     let out_res = handle_call_hierarchy_outgoing_calls(&out_req, Some(ws), &overlay_mgr, &mut conv);
     assert!(out_res.is_array());
     let out_calls = out_res.as_array().unwrap();
-    assert!(
-        !out_calls.is_empty(),
-        "process_container must have outgoing calls (extract)"
-    );
-    let target_names: Vec<&str> = out_calls
-        .iter()
-        .filter_map(|c| c["to"]["name"].as_str())
-        .collect();
-    assert!(
-        target_names.contains(&"extract"),
-        "Outgoing calls from process_container must contain extract, got: {target_names:?}"
-    );
+    assert!(!out_calls.is_empty(), "process_container must have outgoing calls (extract)");
+    let target_names: Vec<&str> = out_calls.iter().filter_map(|c| c["to"]["name"].as_str()).collect();
+    assert!(target_names.contains(&"extract"), "Outgoing calls from process_container must contain extract, got: {target_names:?}");
 }
 
 #[test]
@@ -142,8 +104,7 @@ fn test_l2_type_hierarchy_supertypes_and_subtypes() {
     let mut conv = PositionConverter::new();
 
     // 1. Prepare type hierarchy on `BoxContainer` struct
-    let (box_line, box_col) =
-        pos_in_file(&lib_file, "pub struct BoxContainer(pub i32);", "BoxContainer");
+    let (box_line, box_col) = pos_in_file(&lib_file, "pub struct BoxContainer(pub i32);", "BoxContainer");
     let prep_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -165,18 +126,9 @@ fn test_l2_type_hierarchy_supertypes_and_subtypes() {
     let super_res = handle_type_hierarchy_supertypes(&super_req, Some(ws));
     assert!(super_res.is_array());
     let supers = super_res.as_array().unwrap();
-    assert!(
-        !supers.is_empty(),
-        "BoxContainer must have supertypes (Container)"
-    );
-    let super_names: Vec<&str> = supers
-        .iter()
-        .filter_map(|s| s["name"].as_str())
-        .collect();
-    assert!(
-        super_names.iter().any(|n| n.contains("Container")),
-        "Supertypes of BoxContainer must contain Container trait, got: {super_names:?}"
-    );
+    assert!(!supers.is_empty(), "BoxContainer must have supertypes (Container)");
+    let super_names: Vec<&str> = supers.iter().filter_map(|s| s["name"].as_str()).collect();
+    assert!(super_names.iter().any(|n| n.contains("Container")), "Supertypes of BoxContainer must contain Container trait, got: {super_names:?}");
 
     // 3. Subtypes of `Container` trait: must include `BoxContainer`
     let sub_req = json!({
@@ -187,18 +139,9 @@ fn test_l2_type_hierarchy_supertypes_and_subtypes() {
     let sub_res = handle_type_hierarchy_subtypes(&sub_req, Some(ws));
     assert!(sub_res.is_array());
     let subs = sub_res.as_array().unwrap();
-    assert!(
-        !subs.is_empty(),
-        "Container must have subtypes (BoxContainer)"
-    );
-    let sub_names: Vec<&str> = subs
-        .iter()
-        .filter_map(|s| s["name"].as_str())
-        .collect();
-    assert!(
-        sub_names.iter().any(|n| n.contains("BoxContainer")),
-        "Subtypes of Container must contain BoxContainer struct, got: {sub_names:?}"
-    );
+    assert!(!subs.is_empty(), "Container must have subtypes (BoxContainer)");
+    let sub_names: Vec<&str> = subs.iter().filter_map(|s| s["name"].as_str()).collect();
+    assert!(sub_names.iter().any(|n| n.contains("BoxContainer")), "Subtypes of Container must contain BoxContainer struct, got: {sub_names:?}");
 }
 
 #[test]
@@ -213,14 +156,8 @@ fn test_l2_type_hierarchy_robot_greeter() {
     });
     let super_res = handle_type_hierarchy_supertypes(&super_req, Some(ws));
     let supers = super_res.as_array().unwrap();
-    let super_names: Vec<&str> = supers
-        .iter()
-        .filter_map(|s| s["name"].as_str())
-        .collect();
-    assert!(
-        super_names.iter().any(|n| n.contains("Greeter")),
-        "Supertypes of Robot must contain Greeter, got: {super_names:?}"
-    );
+    let super_names: Vec<&str> = supers.iter().filter_map(|s| s["name"].as_str()).collect();
+    assert!(super_names.iter().any(|n| n.contains("Greeter")), "Supertypes of Robot must contain Greeter, got: {super_names:?}");
 
     // 2. Subtypes of `Greeter`: must include `Robot`
     let sub_req = json!({
@@ -230,14 +167,8 @@ fn test_l2_type_hierarchy_robot_greeter() {
     });
     let sub_res = handle_type_hierarchy_subtypes(&sub_req, Some(ws));
     let subs = sub_res.as_array().unwrap();
-    let sub_names: Vec<&str> = subs
-        .iter()
-        .filter_map(|s| s["name"].as_str())
-        .collect();
-    assert!(
-        sub_names.iter().any(|n| n.contains("Robot")),
-        "Subtypes of Greeter must contain Robot, got: {sub_names:?}"
-    );
+    let sub_names: Vec<&str> = subs.iter().filter_map(|s| s["name"].as_str()).collect();
+    assert!(sub_names.iter().any(|n| n.contains("Robot")), "Subtypes of Greeter must contain Robot, got: {sub_names:?}");
 }
 
 #[test]
@@ -250,11 +181,7 @@ fn test_l2_hierarchy_latency_benchmark() {
     let mut conv = PositionConverter::new();
 
     // 1. Benchmark prepareCallHierarchy on `greet`
-    let (greet_line, greet_col) = pos_in_file(
-        &lib_file,
-        "impl Greeter for Robot {\n    fn greet(&self)",
-        "greet",
-    );
+    let (greet_line, greet_col) = pos_in_file(&lib_file, "impl Greeter for Robot {\n    fn greet(&self)", "greet");
     let prep_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -288,14 +215,8 @@ fn test_l2_hierarchy_latency_benchmark() {
     let super_p50 = super_latencies[50];
     let super_p95 = super_latencies[95];
 
-    eprintln!(
-        "BENCHMARK_PREPARE_CALL_HIERARCHY: p50={:?}, p95={:?}",
-        prep_p50, prep_p95
-    );
-    eprintln!(
-        "BENCHMARK_TYPE_SUPERTYPES: p50={:?}, p95={:?}",
-        super_p50, super_p95
-    );
+    eprintln!("BENCHMARK_PREPARE_CALL_HIERARCHY: p50={:?}, p95={:?}", prep_p50, prep_p95);
+    eprintln!("BENCHMARK_TYPE_SUPERTYPES: p50={:?}, p95={:?}", super_p50, super_p95);
 }
 
 #[test]
@@ -306,11 +227,7 @@ fn test_l2_call_hierarchy_outgoing_with_array_and_braces() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (proc_line, proc_col) = pos_in_file(
-        &lib_file,
-        "pub fn process_bytes(b: [u8; 4]) -> i32",
-        "process_bytes",
-    );
+    let (proc_line, proc_col) = pos_in_file(&lib_file, "pub fn process_bytes(b: [u8; 4]) -> i32", "process_bytes");
     let prep_req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -329,14 +246,8 @@ fn test_l2_call_hierarchy_outgoing_with_array_and_braces() {
     assert!(out_res.is_array());
     let out_calls = out_res.as_array().unwrap();
     assert!(!out_calls.is_empty(), "process_bytes must have outgoing calls");
-    let target_names: Vec<&str> = out_calls
-        .iter()
-        .filter_map(|c| c["to"]["name"].as_str())
-        .collect();
-    assert!(
-        target_names.contains(&"extract"),
-        "Outgoing calls from process_bytes must contain extract, got: {target_names:?}"
-    );
+    let target_names: Vec<&str> = out_calls.iter().filter_map(|c| c["to"]["name"].as_str()).collect();
+    assert!(target_names.contains(&"extract"), "Outgoing calls from process_bytes must contain extract, got: {target_names:?}");
 }
 
 #[test]
@@ -347,19 +258,13 @@ fn test_l2_type_hierarchy_cross_crate_impl() {
     let super_res = handle_type_hierarchy_supertypes(&super_req, Some(ws));
     let supers = super_res.as_array().unwrap();
     let super_names: Vec<&str> = supers.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert!(
-        super_names.iter().any(|n| n.contains("Worker")),
-        "Supertypes of CoreService must contain cross-crate trait Worker, got: {super_names:?}"
-    );
+    assert!(super_names.iter().any(|n| n.contains("Worker")), "Supertypes of CoreService must contain cross-crate trait Worker, got: {super_names:?}");
 
     let sub_req = json!({ "params": { "item": { "name": "Worker" } } });
     let sub_res = handle_type_hierarchy_subtypes(&sub_req, Some(ws));
     let subs = sub_res.as_array().unwrap();
     let sub_names: Vec<&str> = subs.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert!(
-        sub_names.iter().any(|n| n.contains("CoreService")),
-        "Subtypes of Worker must contain CoreService, got: {sub_names:?}"
-    );
+    assert!(sub_names.iter().any(|n| n.contains("CoreService")), "Subtypes of Worker must contain CoreService, got: {sub_names:?}");
 }
 
 #[test]
@@ -371,9 +276,5 @@ fn test_l2_type_hierarchy_derive_impl() {
     let sub_res = handle_type_hierarchy_subtypes(&sub_req, Some(ws));
     let subs = sub_res.as_array().unwrap();
     let sub_names: Vec<&str> = subs.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert!(
-        sub_names.iter().any(|n| n.contains("DerivedModel")),
-        "Subtypes of Clone must contain DerivedModel via #[derive(Clone)], got: {sub_names:?}"
-    );
+    assert!(sub_names.iter().any(|n| n.contains("DerivedModel")), "Subtypes of Clone must contain DerivedModel via #[derive(Clone)], got: {sub_names:?}");
 }
-

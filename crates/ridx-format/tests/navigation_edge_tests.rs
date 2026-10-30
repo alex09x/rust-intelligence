@@ -37,9 +37,7 @@ fn test_disambiguation_and_unit_scoping_edges() {
         end_col: 10,
     });
     let p_c1 = ws_dir.join("crate_c1.ridx");
-    writer_c1
-        .write_to(&mut BufWriter::new(File::create(&p_c1).unwrap()))
-        .unwrap();
+    writer_c1.write_to(&mut BufWriter::new(File::create(&p_c1).unwrap())).unwrap();
 
     // 2. crate_c v2: defines Item at line 20
     let mut writer_c2 = IndexWriter::new("crate_c", "0.2.0");
@@ -59,9 +57,7 @@ fn test_disambiguation_and_unit_scoping_edges() {
         end_col: 10,
     });
     let p_c2 = ws_dir.join("crate_c2.ridx");
-    writer_c2
-        .write_to(&mut BufWriter::new(File::create(&p_c2).unwrap()))
-        .unwrap();
+    writer_c2.write_to(&mut BufWriter::new(File::create(&p_c2).unwrap())).unwrap();
 
     // 3. crate_ref: references crate_c::Item in various scenarios
     let mut writer_ref = IndexWriter::new("crate_ref", "0.1.0");
@@ -140,9 +136,7 @@ fn test_disambiguation_and_unit_scoping_edges() {
     });
 
     let p_ref = ws_dir.join("crate_ref.ridx");
-    writer_ref
-        .write_to(&mut BufWriter::new(File::create(&p_ref).unwrap()))
-        .unwrap();
+    writer_ref.write_to(&mut BufWriter::new(File::create(&p_ref).unwrap())).unwrap();
 
     let ws = WorkspaceIndex::open(&ws_dir).unwrap();
 

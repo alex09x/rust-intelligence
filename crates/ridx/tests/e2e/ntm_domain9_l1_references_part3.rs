@@ -40,22 +40,9 @@ fn test_l1_references_multiple_references_same_line() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_multi_ref", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_multi_ref",
-            "src/lib.rs",
-            "pub fn «calc»(v: i32) -> i32 { v }\n",
-            DefKind::Fn,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_multi_ref", "src/lib.rs", "pub fn «calc»(v: i32) -> i32 { v }\n", DefKind::Fn).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_multi_ref",
-        "src/lib.rs",
-        "pub fn calc(v: i32) -> i32 { v }\npub fn nested() { let _ = «calc»(«calc»(5)); }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_multi_ref", "src/lib.rs", "pub fn calc(v: i32) -> i32 { v }\npub fn nested() { let _ = «calc»(«calc»(5)); }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_multi_ref").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -78,22 +65,9 @@ fn test_l1_references_overlay_dirty_mapped_references() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_dirty", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_dirty",
-            "src/lib.rs",
-            "pub struct «DirtyItem»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_dirty", "src/lib.rs", "pub struct «DirtyItem»;\n", DefKind::Struct).unwrap();
 
-    ws.add_refs_to_def(
-        "pkg_dirty",
-        "src/lib.rs",
-        "pub struct DirtyItem;\npub fn run() { let _ = «DirtyItem»; }\n",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_refs_to_def("pkg_dirty", "src/lib.rs", "pub struct DirtyItem;\npub fn run() { let _ = «DirtyItem»; }\n", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_dirty").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();

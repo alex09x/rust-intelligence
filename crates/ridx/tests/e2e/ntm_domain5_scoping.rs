@@ -105,9 +105,7 @@ fn test_hermetic_scoping_module_visibility_and_use_std_fmt() {
     });
 
     let mut user_buf = Vec::new();
-    user_writer
-        .write_to(&mut Cursor::new(&mut user_buf))
-        .unwrap();
+    user_writer.write_to(&mut Cursor::new(&mut user_buf)).unwrap();
     fs::write(root.join("user_crate.ridx"), &user_buf).unwrap();
 
     // 2. Build core sysroot shard with core::fmt
@@ -143,9 +141,7 @@ fn test_hermetic_scoping_module_visibility_and_use_std_fmt() {
     });
 
     let mut core_buf = Vec::new();
-    core_writer
-        .write_to(&mut Cursor::new(&mut core_buf))
-        .unwrap();
+    core_writer.write_to(&mut Cursor::new(&mut core_buf)).unwrap();
     fs::write(root.join("core.ridx"), &core_buf).unwrap();
 
     let ws = WorkspaceIndex::open(root).unwrap();
@@ -160,10 +156,7 @@ fn test_hermetic_scoping_module_visibility_and_use_std_fmt() {
     // In src/d.rs without local fmt and without use, resolve_qualifier("src/d.rs", "fmt")
     // must NOT pick up user_crate::a::fmt or user_crate::b::fmt.
     let d_res = ws.resolve_qualifier("src/d.rs", "fmt");
-    assert!(
-        d_res.is_none() || d_res.as_ref().map(|d| d.path) == Some("core::fmt"),
-        "Unqualified fmt in unrelated file must never pick up a/b module: got {d_res:?}"
-    );
+    assert!(d_res.is_none() || d_res.as_ref().map(|d| d.path) == Some("core::fmt"), "Unqualified fmt in unrelated file must never pick up a/b module: got {d_res:?}");
     if let Some(d_def) = d_res {
         assert_ne!(d_def.path, "user_crate::a::fmt");
         assert_ne!(d_def.path, "user_crate::b::fmt");
@@ -241,9 +234,7 @@ fn test_hermetic_scoping_shadowing_and_reverse_sysroot() {
     });
 
     let mut user_buf = Vec::new();
-    user_writer
-        .write_to(&mut Cursor::new(&mut user_buf))
-        .unwrap();
+    user_writer.write_to(&mut Cursor::new(&mut user_buf)).unwrap();
     fs::write(root.join("user_crate.ridx"), &user_buf).unwrap();
 
     // 2. Build sysroot `core` index with core::ops::range
@@ -279,9 +270,7 @@ fn test_hermetic_scoping_shadowing_and_reverse_sysroot() {
     });
 
     let mut core_buf = Vec::new();
-    core_writer
-        .write_to(&mut Cursor::new(&mut core_buf))
-        .unwrap();
+    core_writer.write_to(&mut Cursor::new(&mut core_buf)).unwrap();
     fs::write(root.join("core.ridx"), &core_buf).unwrap();
 
     let ws = WorkspaceIndex::open(root).unwrap();
@@ -297,10 +286,7 @@ fn test_hermetic_scoping_shadowing_and_reverse_sysroot() {
 
     // Case 2: In src/remote.rs, resolving `range` MUST find sysroot `core::ops::range` via `use`
     let remote_res = ws.resolve_qualifier("src/remote.rs", "range");
-    assert!(
-        remote_res.is_some(),
-        "Must resolve range in src/remote.rs via use"
-    );
+    assert!(remote_res.is_some(), "Must resolve range in src/remote.rs via use");
     let remote_def = remote_res.unwrap();
     assert_eq!(remote_def.path, "core::ops::range");
     let sysroot_items = ws.find_definitions_by_owner(remote_def.path);
@@ -310,13 +296,7 @@ fn test_hermetic_scoping_shadowing_and_reverse_sysroot() {
     // Case 3: In an unassociated file without local range or use, resolve_qualifier returns None,
     // and find_definitions_by_owner("range") does NOT return sysroot items
     let other_res = ws.resolve_qualifier("src/other.rs", "range");
-    assert!(
-        other_res.is_none(),
-        "Unqualified range with no local mod or use must not resolve"
-    );
+    assert!(other_res.is_none(), "Unqualified range with no local mod or use must not resolve");
     let empty_items = ws.find_definitions_by_owner("range");
-    assert!(
-        empty_items.is_empty(),
-        "Sysroot must not match unqualified range: {empty_items:?}"
-    );
+    assert!(empty_items.is_empty(), "Sysroot must not match unqualified range: {empty_items:?}");
 }

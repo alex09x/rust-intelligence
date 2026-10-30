@@ -44,22 +44,12 @@ pub fn parse_header(header: &str) -> EnclosingScope {
             let trait_name = clean_trait_name(trait_raw);
             let type_name = clean_type_name(type_raw);
             if !type_name.is_empty() {
-                return EnclosingScope::Impl {
-                    trait_name: if trait_name.is_empty() {
-                        None
-                    } else {
-                        Some(trait_name)
-                    },
-                    type_name,
-                };
+                return EnclosingScope::Impl { trait_name: if trait_name.is_empty() { None } else { Some(trait_name) }, type_name };
             }
         } else {
             let type_name = clean_type_name(text);
             if !type_name.is_empty() {
-                return EnclosingScope::Impl {
-                    trait_name: None,
-                    type_name,
-                };
+                return EnclosingScope::Impl { trait_name: None, type_name };
             }
         }
     } else if let Some(trait_pos) = find_keyword(header, "trait") {
@@ -67,11 +57,7 @@ pub fn parse_header(header: &str) -> EnclosingScope {
         if let Some(where_pos) = find_keyword(text, "where") {
             text = text[..where_pos].trim_end();
         }
-        let (raw_name, super_slice) = if let Some(colon_pos) = text.find(':') {
-            (text[..colon_pos].trim(), Some(&text[colon_pos + 1..]))
-        } else {
-            (text.trim(), None)
-        };
+        let (raw_name, super_slice) = if let Some(colon_pos) = text.find(':') { (text[..colon_pos].trim(), Some(&text[colon_pos + 1..])) } else { (text.trim(), None) };
         let trait_name = clean_trait_name(raw_name);
         let mut supertraits = Vec::new();
         if let Some(supers) = super_slice {
@@ -83,10 +69,7 @@ pub fn parse_header(header: &str) -> EnclosingScope {
             }
         }
         if !trait_name.is_empty() {
-            return EnclosingScope::Trait {
-                trait_name,
-                supertraits,
-            };
+            return EnclosingScope::Trait { trait_name, supertraits };
         }
     }
 
@@ -94,11 +77,7 @@ pub fn parse_header(header: &str) -> EnclosingScope {
 }
 
 /// Scans source text forward to determine the enclosing `impl` or `trait` for the cursor position.
-pub fn find_enclosing_scope(
-    text: &str,
-    line_1based: u32,
-    line_slice: &str,
-) -> Option<EnclosingScope> {
+pub fn find_enclosing_scope(text: &str, line_1based: u32, line_slice: &str) -> Option<EnclosingScope> {
     let mut current_line = 1;
     let mut line_start = 0;
     for (idx, &b) in text.as_bytes().iter().enumerate() {
@@ -164,10 +143,7 @@ pub fn find_enclosing_scope(
                 while i < bytes.len() {
                     if bytes[i] == b'"' {
                         let mut match_hashes = 0;
-                        while i + 1 + match_hashes < bytes.len()
-                            && bytes[i + 1 + match_hashes] == b'#'
-                            && match_hashes < num_hashes
-                        {
+                        while i + 1 + match_hashes < bytes.len() && bytes[i + 1 + match_hashes] == b'#' && match_hashes < num_hashes {
                             match_hashes += 1;
                         }
                         if match_hashes == num_hashes {
@@ -207,8 +183,5 @@ pub fn find_enclosing_scope(
         i += 1;
     }
 
-    stack
-        .into_iter()
-        .rev()
-        .find(|s| !matches!(s, EnclosingScope::Other))
+    stack.into_iter().rev().find(|s| !matches!(s, EnclosingScope::Other))
 }

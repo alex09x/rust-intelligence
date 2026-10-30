@@ -111,9 +111,7 @@ fn test_lsp_server_stream_stage5_safe_code_changes() {
 
     let rename_resp = &responses[2];
     assert_eq!(rename_resp["id"], 61);
-    let changes = rename_resp["result"]["changes"]
-        .as_object()
-        .expect("changes map");
+    let changes = rename_resp["result"]["changes"].as_object().expect("changes map");
     let edits = changes[&doc_uri].as_array().expect("edits list");
     assert!(!edits.is_empty());
     assert_eq!(edits[0]["newText"], "total_count");
@@ -239,8 +237,7 @@ fn test_lsp_server_stream_stage7_remaining_capabilities() {
         "params": { "capabilities": {} }
     })));
     let doc_uri = "file:///tmp/stage7_test.rs";
-    let code =
-        "// See https://example.com/docs for details\nfn test_run() {\n    let my_var = 123;\n}\n";
+    let code = "// See https://example.com/docs for details\nfn test_run() {\n    let my_var = 123;\n}\n";
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "method": "textDocument/didOpen",
@@ -349,9 +346,7 @@ fn test_lsp_server_stream_stage7_remaining_capabilities() {
 
     let linked_resp = &responses[3];
     assert_eq!(linked_resp["id"], 82);
-    let ranges = linked_resp["result"]["ranges"]
-        .as_array()
-        .expect("ranges array");
+    let ranges = linked_resp["result"]["ranges"].as_array().expect("ranges array");
     assert!(!ranges.is_empty());
 
     let inline_val_resp = &responses[4];

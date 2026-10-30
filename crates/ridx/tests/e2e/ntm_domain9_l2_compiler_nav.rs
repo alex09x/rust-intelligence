@@ -37,22 +37,14 @@ fn test_l2_reexport_item_definition_and_declaration() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (cur_line, cur_col) = pos_in_file(
-        &lib_file,
-        "construct_widget(\"example\")",
-        "construct_widget",
-    );
+    let (cur_line, cur_col) = pos_in_file(&lib_file, "construct_widget(\"example\")", "construct_widget");
     let req = nav_req(&uri, cur_line, cur_col);
     let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "Re-exported function call must resolve to definition"
-    );
+    assert!(!def_res.is_null(), "Re-exported function call must resolve to definition");
     assert_eq!(def_res, decl_res, "Declaration must match definition");
 
-    let (target_line, target_col) =
-        pos_in_file(&lib_file, "pub fn construct_widget", "construct_widget");
+    let (target_line, target_col) = pos_in_file(&lib_file, "pub fn construct_widget", "construct_widget");
     assert_eq!(def_res["range"]["start"]["line"], target_line);
     assert_eq!(def_res["range"]["start"]["character"], target_col);
 }
@@ -65,11 +57,7 @@ fn test_l2_reexport_statement_navigation() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (use_line, use_col) = pos_in_file(
-        &lib_file,
-        "pub use inner::construct_widget;",
-        "construct_widget",
-    );
+    let (use_line, use_col) = pos_in_file(&lib_file, "pub use inner::construct_widget;", "construct_widget");
     let req = nav_req(&uri, use_line, use_col);
     let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
@@ -85,18 +73,11 @@ fn test_l2_reexport_aliased_type_navigation() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (cur_line, cur_col) = pos_in_file(
-        &lib_file,
-        "pub fn invoke_aliased_widget() -> AliasedWidget",
-        "AliasedWidget",
-    );
+    let (cur_line, cur_col) = pos_in_file(&lib_file, "pub fn invoke_aliased_widget() -> AliasedWidget", "AliasedWidget");
     let req = nav_req(&uri, cur_line, cur_col);
     let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "Aliased re-export must resolve to original type"
-    );
+    assert!(!def_res.is_null(), "Aliased re-export must resolve to original type");
     assert_eq!(def_res, decl_res);
 
     let (orig_line, orig_col) = pos_in_file(&lib_file, "pub struct InnerWidget", "InnerWidget");
@@ -133,11 +114,7 @@ fn test_l2_raw_ident_navigation_and_references() {
     });
     let ref_res = handle_references(&ref_req, Some(ws), &overlay_mgr, &mut conv);
     let arr = ref_res.as_array().expect("references array");
-    assert_eq!(
-        arr.len(),
-        2,
-        "Must find exactly 2 references for r#match (declaration and call site)"
-    );
+    assert_eq!(arr.len(), 2, "Must find exactly 2 references for r#match (declaration and call site)");
     assert_eq!(arr[0]["range"]["start"]["line"], fn_line);
     assert_eq!(arr[1]["range"]["start"]["line"], cur_line);
 
@@ -163,11 +140,7 @@ fn test_l2_struct_field_shorthand_navigation_and_refs() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (cur_line, cur_col) = pos_in_file(
-        &lib_file,
-        "pub fn make_point(x: i32, y: i32) -> Point {\n    Point { x, y }",
-        "y }",
-    );
+    let (cur_line, cur_col) = pos_in_file(&lib_file, "pub fn make_point(x: i32, y: i32) -> Point {\n    Point { x, y }", "y }");
     let req = nav_req(&uri, cur_line, cur_col);
     let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
@@ -210,13 +183,8 @@ fn test_l2_macro_multiplier_navigation_and_refs() {
     });
     let q_refs = handle_references(&q_ref_req, Some(ws), &overlay_mgr, &mut conv);
     let refs_arr = q_refs.as_array().expect("references array");
-    let (macro_inv_line, _) =
-        pos_in_file(&lib_file, "make_multiplier!(quadruple, 4);", "quadruple");
-    assert_eq!(
-        refs_arr.len(),
-        2,
-        "Must find exactly 2 references (macro declaration site and call site)"
-    );
+    let (macro_inv_line, _) = pos_in_file(&lib_file, "make_multiplier!(quadruple, 4);", "quadruple");
+    assert_eq!(refs_arr.len(), 2, "Must find exactly 2 references (macro declaration site and call site)");
     assert_eq!(refs_arr[0]["range"]["start"]["line"], macro_inv_line);
     assert_eq!(refs_arr[1]["range"]["start"]["line"], q_line);
 }
@@ -248,11 +216,7 @@ fn test_l2_cross_crate_dispatch_and_references() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (import_line, import_col) = pos_in_file(
-        &app_file,
-        "use core_lib::CoreService as ExternalCoreService;",
-        "CoreService",
-    );
+    let (import_line, import_col) = pos_in_file(&app_file, "use core_lib::CoreService as ExternalCoreService;", "CoreService");
     let import_req = nav_req(&app_uri, import_line, import_col);
     let def_res = handle_definition(&import_req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&import_req, Some(ws), &overlay_mgr, &mut conv);
@@ -268,8 +232,7 @@ fn test_l2_cross_crate_dispatch_and_references() {
     assert_eq!(call_def, call_decl);
     assert_eq!(call_def["uri"], core_uri);
 
-    let (core_exec_line, core_exec_col) =
-        pos_in_file(&core_file, "pub fn execute(&self)", "execute");
+    let (core_exec_line, core_exec_col) = pos_in_file(&core_file, "pub fn execute(&self)", "execute");
     let ref_req = json!({
         "params": {
             "textDocument": { "uri": &core_uri },
@@ -291,11 +254,7 @@ fn test_l2_sysroot_ops_range_navigation() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    let (range_line, range_col) = pos_in_file(
-        &lib_file,
-        "let _ = ops::Range { start: 0, end: 1 };",
-        "Range",
-    );
+    let (range_line, range_col) = pos_in_file(&lib_file, "let _ = ops::Range { start: 0, end: 1 };", "Range");
     let req = nav_req(&uri, range_line, range_col);
     let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
@@ -319,8 +278,7 @@ fn test_l2_traits_call_generic_method_definition() {
     assert!(!def_res.is_null());
     assert_eq!(def_res, decl_res);
 
-    let (trait_line, trait_col) =
-        pos_in_file(&lib_file, "fn greet(&self) -> &'static str;", "greet");
+    let (trait_line, trait_col) = pos_in_file(&lib_file, "fn greet(&self) -> &'static str;", "greet");
     assert_eq!(def_res["range"]["start"]["line"], trait_line);
     assert_eq!(def_res["range"]["start"]["character"], trait_col);
 }
@@ -347,11 +305,7 @@ fn test_l2_traits_default_method_references() {
     let (generic_line, _) = pos_in_file(&lib_file, "let _ = G::default_greet;", "default_greet");
     let (call_line, _) = pos_in_file(&lib_file, "r.default_greet()", "default_greet");
     let (wrap_line, _) = pos_in_file(&lib_file, "let _ = W::default_greet;", "default_greet");
-    assert_eq!(
-        arr.len(),
-        4,
-        "Must find exactly 4 references: trait declaration, generic access, call_default, and wrap_greet"
-    );
+    assert_eq!(arr.len(), 4, "Must find exactly 4 references: trait declaration, generic access, call_default, and wrap_greet");
     assert_eq!(arr[0]["range"]["start"]["line"], def_line);
     assert_eq!(arr[1]["range"]["start"]["line"], generic_line);
     assert_eq!(arr[2]["range"]["start"]["line"], call_line);
@@ -370,15 +324,8 @@ fn test_l2_sysroot_atomic_load_definition() {
     let req = nav_req(&core_uri, load_line, load_col);
     let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
     let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(
-        !def_res.is_null(),
-        "AtomicUsize::load must resolve via sysroot alias fallback in handle_definition"
-    );
+    assert!(!def_res.is_null(), "AtomicUsize::load must resolve via sysroot alias fallback in handle_definition");
     assert_eq!(def_res, decl_res);
     let uri_str = def_res["uri"].as_str().unwrap_or("");
-    assert!(
-        uri_str.contains("atomic.rs"),
-        "Definition URI must point to sysroot atomic.rs, got: {}",
-        uri_str
-    );
+    assert!(uri_str.contains("atomic.rs"), "Definition URI must point to sysroot atomic.rs, got: {}", uri_str);
 }

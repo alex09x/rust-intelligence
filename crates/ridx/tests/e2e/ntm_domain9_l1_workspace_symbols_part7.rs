@@ -21,13 +21,7 @@ use serde_json::json;
 fn test_workspace_symbol_identical_index_deduplicated() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_dedupe_test", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_dedupe_test",
-        "src/lib.rs",
-        "pub struct «DedupeItem»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_dedupe_test", "src/lib.rs", "pub struct «DedupeItem»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -76,13 +70,7 @@ fn test_workspace_symbol_three_shards_ordered_merge() {
 fn test_workspace_symbol_query_with_underscore_matching() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_under", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_under",
-        "src/lib.rs",
-        "pub struct «my_internal_helper»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_under", "src/lib.rs", "pub struct «my_internal_helper»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -100,13 +88,7 @@ fn test_workspace_symbol_query_with_underscore_matching() {
 fn test_workspace_symbol_query_with_numbers() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_num", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_num",
-        "src/lib.rs",
-        "pub struct «PacketV1»;\npub struct «PacketV2»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_num", "src/lib.rs", "pub struct «PacketV1»;\npub struct «PacketV2»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -146,25 +128,14 @@ fn test_workspace_symbol_same_name_different_crates_preserved() {
     let expected_b = ws_b.file_uri("crate_second", "src/lib.rs").unwrap();
     let uri_0 = items[0]["location"]["uri"].as_str().unwrap();
     let uri_1 = items[1]["location"]["uri"].as_str().unwrap();
-    assert_eq!(
-        std::collections::HashSet::from([uri_0, uri_1]),
-        std::collections::HashSet::from([expected_a.as_str(), expected_b.as_str()])
-    );
+    assert_eq!(std::collections::HashSet::from([uri_0, uri_1]), std::collections::HashSet::from([expected_a.as_str(), expected_b.as_str()]));
 }
-
 
 #[test]
 fn test_workspace_symbol_submodule_deep_nesting() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_deep", "0.1.0").unwrap();
-    ws.add_source_file_with_prefix_defs(
-        "pkg_deep",
-        "src/a/b/c.rs",
-        "pub struct «NestedLeaf»;\n",
-        "pkg_deep::a::b::c",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_prefix_defs("pkg_deep", "src/a/b/c.rs", "pub struct «NestedLeaf»;\n", "pkg_deep::a::b::c", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -201,13 +172,7 @@ fn test_workspace_symbol_root_manifest_workspace_indexing() {
 fn test_workspace_symbol_query_matching_start_of_symbol() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_start", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_start",
-        "src/lib.rs",
-        "pub struct «ExactStartMatch»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_start", "src/lib.rs", "pub struct «ExactStartMatch»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 

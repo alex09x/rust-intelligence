@@ -11,9 +11,7 @@
 //! Domain 2: Unit tests for real-time syntax diagnostics, delimiter balancing,
 //! raw string scanning, comment escaping, and let-binding type mismatch detection.
 
-use ridx::lsp::presentation::diagnostics::{
-    handle_document_diagnostic_text, publish_syntax_diagnostics, reconcile_diagnostics,
-};
+use ridx::lsp::presentation::diagnostics::{handle_document_diagnostic_text, publish_syntax_diagnostics, reconcile_diagnostics};
 use ridx::overlay::OverlayManager;
 use serde_json::json;
 
@@ -27,10 +25,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 "#;
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().expect("items array");
-    assert!(
-        items.is_empty(),
-        "Valid code must produce 0 syntax diagnostics"
-    );
+    assert!(items.is_empty(), "Valid code must produce 0 syntax diagnostics");
 }
 
 #[test]
@@ -40,10 +35,7 @@ fn test_syntax_unclosed_brace_at_eof() {
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["severity"], 1);
-    assert!(items[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unclosed delimiter '{'"));
+    assert!(items[0]["message"].as_str().unwrap().contains("unclosed delimiter '{'"));
     assert_eq!(items[0]["range"]["start"]["line"], 0);
 }
 
@@ -53,18 +45,13 @@ fn test_syntax_unclosed_parenthesis_and_bracket() {
     let res1 = handle_document_diagnostic_text(code1);
     let items1 = res1["items"].as_array().unwrap();
     assert!(!items1.is_empty());
-    assert!(items1
-        .iter()
-        .any(|d| d["message"].as_str().unwrap().contains("delimiter")));
+    assert!(items1.iter().any(|d| d["message"].as_str().unwrap().contains("delimiter")));
 
     let code2 = "let arr = [1, 2, 3;\n";
     let res2 = handle_document_diagnostic_text(code2);
     let items2 = res2["items"].as_array().unwrap();
     assert!(!items2.is_empty());
-    assert!(items2.iter().any(|d| d["message"]
-        .as_str()
-        .unwrap()
-        .contains("unclosed delimiter '['")));
+    assert!(items2.iter().any(|d| d["message"].as_str().unwrap().contains("unclosed delimiter '['")));
 }
 
 #[test]
@@ -73,28 +60,19 @@ fn test_syntax_unmatched_closing_delimiters() {
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
-    assert!(items[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unmatched closing delimiter '}'"));
+    assert!(items[0]["message"].as_str().unwrap().contains("unmatched closing delimiter '}'"));
 
     let code_paren = "let x = 1);\n";
     let res_paren = handle_document_diagnostic_text(code_paren);
     let items_paren = res_paren["items"].as_array().unwrap();
     assert_eq!(items_paren.len(), 1);
-    assert!(items_paren[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unmatched closing delimiter ')'"));
+    assert!(items_paren[0]["message"].as_str().unwrap().contains("unmatched closing delimiter ')'"));
 
     let code_bracket = "let y = 1];\n";
     let res_bracket = handle_document_diagnostic_text(code_bracket);
     let items_bracket = res_bracket["items"].as_array().unwrap();
     assert_eq!(items_bracket.len(), 1);
-    assert!(items_bracket[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unmatched closing delimiter ']'"));
+    assert!(items_bracket[0]["message"].as_str().unwrap().contains("unmatched closing delimiter ']'"));
 }
 
 #[test]
@@ -112,10 +90,7 @@ fn test_syntax_unclosed_string_literal() {
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
-    assert!(items[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unclosed string literal"));
+    assert!(items[0]["message"].as_str().unwrap().contains("unclosed string literal"));
     assert_eq!(items[0]["range"]["start"]["line"], 0);
 }
 
@@ -125,19 +100,13 @@ fn test_syntax_unclosed_raw_string_single_and_multi_hash() {
     let res1 = handle_document_diagnostic_text(code1);
     let items1 = res1["items"].as_array().unwrap();
     assert_eq!(items1.len(), 1);
-    assert!(items1[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unclosed raw string literal"));
+    assert!(items1[0]["message"].as_str().unwrap().contains("unclosed raw string literal"));
 
     let code2 = "let r = r###\"three hashes missing end;\n";
     let res2 = handle_document_diagnostic_text(code2);
     let items2 = res2["items"].as_array().unwrap();
     assert_eq!(items2.len(), 1);
-    assert!(items2[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unclosed raw string literal"));
+    assert!(items2[0]["message"].as_str().unwrap().contains("unclosed raw string literal"));
 }
 
 #[test]
@@ -145,10 +114,7 @@ fn test_syntax_properly_closed_raw_string_with_internal_quotes() {
     let code = "let r = r#\"contains \"quotes\" and {braces} inside\"#;\n";
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items.is_empty(),
-        "Properly closed raw string must not report errors"
-    );
+    assert!(items.is_empty(), "Properly closed raw string must not report errors");
 }
 
 #[test]
@@ -164,10 +130,7 @@ pub fn valid() -> i32 {
 "#;
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items.is_empty(),
-        "Delimiters inside comments must be ignored"
-    );
+    assert!(items.is_empty(), "Delimiters inside comments must be ignored");
 }
 
 #[test]
@@ -178,10 +141,7 @@ pub fn check() {}
 "#;
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items.is_empty(),
-        "Nested block comments must be handled cleanly"
-    );
+    assert!(items.is_empty(), "Nested block comments must be handled cleanly");
 }
 
 #[test]
@@ -195,10 +155,7 @@ pub fn check() {
 "#;
     let res = handle_document_diagnostic_text(code);
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items.is_empty(),
-        "Delimiters inside chars and strings must be ignored"
-    );
+    assert!(items.is_empty(), "Delimiters inside chars and strings must be ignored");
 }
 
 #[test]
@@ -209,14 +166,8 @@ fn test_syntax_let_type_mismatch_int_expected_str_found() {
     assert_eq!(items.len(), 1);
     let diag = &items[0];
     assert_eq!(diag["code"], "E0308");
-    assert!(diag["message"]
-        .as_str()
-        .unwrap()
-        .contains("mismatched types"));
-    assert!(diag["message"]
-        .as_str()
-        .unwrap()
-        .contains("expected `i32`, found `&str`"));
+    assert!(diag["message"].as_str().unwrap().contains("mismatched types"));
+    assert!(diag["message"].as_str().unwrap().contains("expected `i32`, found `&str`"));
     assert_eq!(diag["range"]["start"]["line"], 1);
 }
 
@@ -228,10 +179,7 @@ fn test_syntax_let_type_mismatch_bool_expected_int_found() {
     assert_eq!(items.len(), 1);
     let diag = &items[0];
     assert_eq!(diag["code"], "E0308");
-    assert!(diag["message"]
-        .as_str()
-        .unwrap()
-        .contains("expected `bool`, found `{integer}`"));
+    assert!(diag["message"].as_str().unwrap().contains("expected `bool`, found `{integer}`"));
 }
 
 #[test]
@@ -241,10 +189,7 @@ fn test_syntax_let_type_mismatch_str_expected_int_found() {
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["code"], "E0308");
-    assert!(items[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("expected `&str`, found `{integer}`"));
+    assert!(items[0]["message"].as_str().unwrap().contains("expected `&str`, found `{integer}`"));
 }
 
 #[test]
@@ -263,10 +208,7 @@ fn test_publish_syntax_diagnostics_overlay_lookup() {
     let res = publish_syntax_diagnostics(&req, &mgr);
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
-    assert!(items[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("unclosed delimiter '{'"));
+    assert!(items[0]["message"].as_str().unwrap().contains("unclosed delimiter '{'"));
 }
 
 #[test]
@@ -285,10 +227,7 @@ fn test_syntax_let_type_mismatch_usize_bool() {
     let items = res["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["code"], "E0308");
-    assert!(items[0]["message"]
-        .as_str()
-        .unwrap()
-        .contains("expected `usize`, found `bool`"));
+    assert!(items[0]["message"].as_str().unwrap().contains("expected `usize`, found `bool`"));
 }
 
 #[test]
@@ -297,12 +236,7 @@ fn test_syntax_unclosed_block_comment_at_eof() {
     let res = handle_document_diagnostic_text(code);
     // Unclosed block comment is error-tolerated by scanner without crashing
     let items = res["items"].as_array().unwrap();
-    assert!(
-        items.is_empty()
-            || items
-                .iter()
-                .all(|i| i["severity"].as_u64().unwrap_or(0) >= 1)
-    );
+    assert!(items.is_empty() || items.iter().all(|i| i["severity"].as_u64().unwrap_or(0) >= 1));
 }
 
 #[test]
@@ -345,10 +279,7 @@ fn test_syntax_and_flycheck_diagnostics_coexistence_and_deduplication() {
     // Exactly 2 diagnostics: both authoritative rustc diagnostics, 0 duplicated E0308 from ridx
     assert_eq!(reconciled.len(), 2);
     assert!(reconciled.iter().all(|d| d["source"] == "rustc"));
-    let codes: Vec<&str> = reconciled
-        .iter()
-        .map(|d| d["code"].as_str().unwrap())
-        .collect();
+    let codes: Vec<&str> = reconciled.iter().map(|d| d["code"].as_str().unwrap()).collect();
     assert_eq!(codes, vec!["E0308", "unused_variables"]);
 
     // If flycheck has no E0308 (e.g. only unused warning on line 2), heuristic E0308 is retained

@@ -96,17 +96,10 @@ pub fn init_lsp_logger(log_file: Option<PathBuf>, no_buffering: bool, verbose: u
     let mut guard = logger_slot().lock().unwrap();
     if let Some(mut s) = sink {
         if !quiet {
-            let line = format!(
-                "[ridx-lsp] INFO: logger initialized (verbose={verbose}, no_buffering={no_buffering})\n"
-            );
+            let line = format!("[ridx-lsp] INFO: logger initialized (verbose={verbose}, no_buffering={no_buffering})\n");
             s.write_line(&line, true);
         }
-        *guard = Some(ActiveLogger {
-            sink: s,
-            no_buffering,
-            verbose,
-            quiet,
-        });
+        *guard = Some(ActiveLogger { sink: s, no_buffering, verbose, quiet });
     } else {
         *guard = None;
     }

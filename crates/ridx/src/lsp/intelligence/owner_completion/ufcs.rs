@@ -15,8 +15,7 @@
 /// Returns `Some(start_idx)` if `before_colon` ends with a balanced `<...>` construct
 /// that is not attached to an identifier.
 pub fn find_ufcs_start(before_colon: &str) -> Option<usize> {
-    if !before_colon.ends_with('>') || before_colon.ends_with("->") || before_colon.ends_with("=>")
-    {
+    if !before_colon.ends_with('>') || before_colon.ends_with("->") || before_colon.ends_with("=>") {
         return None;
     }
     let bytes = before_colon.as_bytes();
@@ -60,9 +59,7 @@ pub fn peel_type_modifiers(mut s: &str) -> &str {
         if let Some(rest) = s.strip_prefix('&') {
             s = rest.trim_start();
             if s.starts_with('\'') {
-                if let Some(end_lt) =
-                    s.find(|c: char| !c.is_alphanumeric() && c != '_' && c != '\'')
-                {
+                if let Some(end_lt) = s.find(|c: char| !c.is_alphanumeric() && c != '_' && c != '\'') {
                     s = s[end_lt..].trim_start();
                 } else {
                     s = "";
@@ -184,10 +181,7 @@ mod tests {
     #[test]
     fn test_find_ufcs_start() {
         assert_eq!(find_ufcs_start("<T as Tr>"), Some(0));
-        assert_eq!(
-            find_ufcs_start("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>"),
-            Some(37)
-        );
+        assert_eq!(find_ufcs_start("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>"), Some(37));
         assert_eq!(find_ufcs_start("foo<T>"), None);
         assert_eq!(find_ufcs_start("a < b"), None);
         assert_eq!(find_ufcs_start("a ->"), None);
@@ -206,33 +200,15 @@ mod tests {
     #[test]
     fn test_extract_ufcs_qualifier() {
         assert_eq!(extract_ufcs_qualifier("<T as Tr>"), Some("Tr".to_string()));
-        assert_eq!(
-            extract_ufcs_qualifier("<T as my::Trait<U>>"),
-            Some("my::Trait".to_string())
-        );
-        assert_eq!(
-            extract_ufcs_qualifier("<Option<<T as Other>::Item> as Trait>"),
-            Some("Trait".to_string())
-        );
-        assert_eq!(
-            extract_ufcs_qualifier("<&set::Slice<K>>"),
-            Some("set::Slice".to_string())
-        );
-        assert_eq!(
-            extract_ufcs_qualifier("<&'a mut Slice<K>>"),
-            Some("Slice".to_string())
-        );
-        assert_eq!(
-            extract_ufcs_qualifier("<*const u8>"),
-            Some("u8".to_string())
-        );
+        assert_eq!(extract_ufcs_qualifier("<T as my::Trait<U>>"), Some("my::Trait".to_string()));
+        assert_eq!(extract_ufcs_qualifier("<Option<<T as Other>::Item> as Trait>"), Some("Trait".to_string()));
+        assert_eq!(extract_ufcs_qualifier("<&set::Slice<K>>"), Some("set::Slice".to_string()));
+        assert_eq!(extract_ufcs_qualifier("<&'a mut Slice<K>>"), Some("Slice".to_string()));
+        assert_eq!(extract_ufcs_qualifier("<*const u8>"), Some("u8".to_string()));
         assert_eq!(extract_ufcs_qualifier("<*mut u8>"), Some("u8".to_string()));
         assert_eq!(extract_ufcs_qualifier("<T>"), Some("T".to_string()));
         assert_eq!(extract_ufcs_qualifier("<Grüße>"), Some("Grüße".to_string()));
-        assert_eq!(
-            extract_ufcs_qualifier("<T as Grüße>"),
-            Some("Grüße".to_string())
-        );
+        assert_eq!(extract_ufcs_qualifier("<T as Grüße>"), Some("Grüße".to_string()));
     }
 
     #[test]

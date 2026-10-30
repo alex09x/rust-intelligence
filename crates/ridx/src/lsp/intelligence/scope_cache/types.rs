@@ -45,11 +45,7 @@ impl FileScopeData {
     pub fn find_enclosing_scope(&self, cursor_byte: usize) -> Option<EnclosingScope> {
         self.blocks
             .iter()
-            .filter(|b| {
-                b.start_byte <= cursor_byte
-                    && cursor_byte <= b.end_byte
-                    && !matches!(b.enclosing, EnclosingScope::Other)
-            })
+            .filter(|b| b.start_byte <= cursor_byte && cursor_byte <= b.end_byte && !matches!(b.enclosing, EnclosingScope::Other))
             .max_by_key(|b| b.start_byte)
             .map(|b| b.enclosing.clone())
     }
@@ -62,10 +58,7 @@ impl FileScopeData {
         for b in &self.blocks {
             if b.start_byte <= cursor_byte && cursor_byte <= b.end_byte {
                 for p in &b.generic_params {
-                    merged
-                        .entry(p.name.clone())
-                        .or_default()
-                        .extend(p.bounds.clone());
+                    merged.entry(p.name.clone()).or_default().extend(p.bounds.clone());
                 }
             }
         }
@@ -99,13 +92,6 @@ impl FileScopeData {
 /// Cache key identifying disk or overlay source state.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum FileCacheKey {
-    Disk {
-        path: String,
-        mtime: SystemTime,
-        len: u64,
-    },
-    Overlay {
-        path: String,
-        full_hash: u64,
-    },
+    Disk { path: String, mtime: SystemTime, len: u64 },
+    Overlay { path: String, full_hash: u64 },
 }

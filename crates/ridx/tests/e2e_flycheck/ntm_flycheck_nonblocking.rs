@@ -46,11 +46,7 @@ fn test_didsave_does_not_block_dispatch_loop_and_hover_responds_immediately() {
     let new_path = format!("{}:{}", bin_dir.display(), orig_path);
     std::env::set_var("PATH", &new_path);
 
-    fs::write(
-        ws_dir.join("Cargo.toml"),
-        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(ws_dir.join("Cargo.toml"), "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let main_file = src_dir.join("main.rs");
     fs::write(&main_file, "fn main() {\n    let val = 42;\n}\n").unwrap();
     let main_uri = format!("file://{}", main_file.canonicalize().unwrap().display());
@@ -123,11 +119,7 @@ fn test_didsave_does_not_block_dispatch_loop_and_hover_responds_immediately() {
 
     assert!(res.is_ok(), "Server should complete cleanly");
     // Verify hover and shutdown were processed without blocking for the 3s cargo sleep!
-    assert!(
-        elapsed.as_millis() < 1500,
-        "LSP dispatch loop should NOT block on cargo check: elapsed was {} ms",
-        elapsed.as_millis()
-    );
+    assert!(elapsed.as_millis() < 1500, "LSP dispatch loop should NOT block on cargo check: elapsed was {} ms", elapsed.as_millis());
 
     // Verify responses contain initialize, hover, and shutdown
     let out_str = String::from_utf8_lossy(&output);
@@ -185,11 +177,7 @@ exit 0
     let new_path = format!("{}:{}", bin_dir.display(), orig_path);
     std::env::set_var("PATH", &new_path);
 
-    fs::write(
-        ws_dir.join("Cargo.toml"),
-        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(ws_dir.join("Cargo.toml"), "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let main_file = src_dir.join("main.rs");
     fs::write(&main_file, "fn main() {}\n").unwrap();
 
@@ -212,25 +200,12 @@ exit 0
 
     let all_messages: Vec<String> = notifs
         .iter()
-        .filter_map(|n| {
-            n["params"]["diagnostics"].as_array().map(|arr| {
-                arr.iter()
-                    .map(|d| d["message"].as_str().unwrap_or("").to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            })
-        })
+        .filter_map(|n| n["params"]["diagnostics"].as_array().map(|arr| arr.iter().map(|d| d["message"].as_str().unwrap_or("").to_string()).collect::<Vec<_>>().join(", ")))
         .collect();
 
     let all_str = all_messages.join("; ");
-    assert!(
-        all_str.contains("error from worker B"),
-        "Worker B must publish diagnostic: {all_str}"
-    );
-    assert!(
-        !all_str.contains("error from worker A"),
-        "Worker A must NOT publish after being superseded: {all_str}"
-    );
+    assert!(all_str.contains("error from worker B"), "Worker B must publish diagnostic: {all_str}");
+    assert!(!all_str.contains("error from worker A"), "Worker A must NOT publish after being superseded: {all_str}");
 
     state.cancel();
     state.shutdown();

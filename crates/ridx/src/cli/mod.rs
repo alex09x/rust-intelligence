@@ -32,12 +32,7 @@ use clap::Parser;
 pub fn run() {
     let cli = Cli::parse();
     if cli.log_file.is_some() || cli.verbose > 0 || cli.quiet {
-        crate::lsp::logger::init_lsp_logger(
-            cli.log_file.clone(),
-            cli.no_log_buffering,
-            cli.verbose,
-            cli.quiet,
-        );
+        crate::lsp::logger::init_lsp_logger(cli.log_file.clone(), cli.no_log_buffering, cli.verbose, cli.quiet);
     }
     if cli.print_config_schema {
         println!("{{}}");

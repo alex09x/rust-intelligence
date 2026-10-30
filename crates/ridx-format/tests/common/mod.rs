@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Compiler-backed, mmap-indexed code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 #![allow(dead_code)]
 
 use ridx_format::{DefKind, IndexWriter, RawDefinition};
@@ -18,15 +28,7 @@ pub fn unique_temp_dir(prefix: &str) -> PathBuf {
 }
 
 /// Helper to build and write a simple .ridx index with a single function definition.
-pub fn write_simple_index(
-    crate_name: &str,
-    crate_version: &str,
-    unit_key: Option<&str>,
-    file: &str,
-    def_name: &str,
-    def_path: &str,
-    out_path: &Path,
-) {
+pub fn write_simple_index(crate_name: &str, crate_version: &str, unit_key: Option<&str>, file: &str, def_name: &str, def_path: &str, out_path: &Path) {
     if let Some(parent) = out_path.parent() {
         let _ = fs::create_dir_all(parent);
     }

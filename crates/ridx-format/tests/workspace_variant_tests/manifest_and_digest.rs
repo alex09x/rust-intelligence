@@ -31,11 +31,7 @@ fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
         "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_empty).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_empty).unwrap()).unwrap();
 
     let res = WorkspaceIndex::open(&base_dir);
     assert!(res.is_err(), "should reject empty variant_dir");
@@ -50,11 +46,7 @@ fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
         "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_dot).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_dot).unwrap()).unwrap();
 
     let res = WorkspaceIndex::open(&base_dir);
     assert!(res.is_err(), "should reject '.' variant_dir");
@@ -69,11 +61,7 @@ fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
         "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_escape).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_escape).unwrap()).unwrap();
 
     let res = WorkspaceIndex::open(&base_dir);
     assert!(res.is_err(), "should reject escaping variant_dir");
@@ -88,17 +76,10 @@ fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
         "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev",
     });
-    fs::write(
-        base_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest_mismatch).unwrap(),
-    )
-    .unwrap();
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_mismatch).unwrap()).unwrap();
 
     let res = WorkspaceIndex::open(&base_dir);
-    assert!(
-        res.is_err(),
-        "should reject mismatched variant_id and variant_dir"
-    );
+    assert!(res.is_err(), "should reject mismatched variant_id and variant_dir");
     assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
 
     let _ = fs::remove_dir_all(&base_dir);
@@ -127,9 +108,7 @@ fn test_local_metadata_not_loaded_as_second_shard() {
         end_col: 2,
     });
     let app_ridx = var_dir.join("app.ridx");
-    writer
-        .write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap()))
-        .unwrap();
+    writer.write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap())).unwrap();
 
     let app_meta = serde_json::json!({
         "name": "app",
@@ -138,11 +117,7 @@ fn test_local_metadata_not_loaded_as_second_shard() {
         "object_path": app_ridx.display().to_string(),
         "is_dependency": false
     });
-    fs::write(
-        deps_dir.join("app.json"),
-        serde_json::to_string_pretty(&app_meta).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("app.json"), serde_json::to_string_pretty(&app_meta).unwrap()).unwrap();
 
     // Manifest erroneously includes the local shard in dependency_shards
     let manifest = serde_json::json!({
@@ -164,27 +139,13 @@ fn test_local_metadata_not_loaded_as_second_shard() {
             }
         ]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
     let symbols = ws.search_symbols("main");
     // Must be exactly 1 symbol, not duplicated!
-    assert_eq!(
-        symbols.len(),
-        1,
-        "expected 1 symbol for main, got {}",
-        symbols.len()
-    );
-    assert_eq!(
-        ws.stats().total_crates,
-        1,
-        "expected 1 total crate, got {}",
-        ws.stats().total_crates
-    );
+    assert_eq!(symbols.len(), 1, "expected 1 symbol for main, got {}", symbols.len());
+    assert_eq!(ws.stats().total_crates, 1, "expected 1 total crate, got {}", ws.stats().total_crates);
 
     // Unit mismatch skips candidate references and returns empty
     let refs_mismatch = ws.find_references_for_unit("app::main", Some("different_unit_key"));
@@ -232,9 +193,7 @@ fn test_references_target_file_filter_and_computed_snapshot_digest() {
         is_macro_expansion: false,
     });
     let path_a = ws_dir.join("crate_a.ridx");
-    writer_a
-        .write_to(&mut BufWriter::new(File::create(&path_a).unwrap()))
-        .unwrap();
+    writer_a.write_to(&mut BufWriter::new(File::create(&path_a).unwrap())).unwrap();
 
     // 2. Write crate_b with 2 references to crate_a::types::TypeA:
     // ref1 matches target_file
@@ -308,9 +267,7 @@ fn test_references_target_file_filter_and_computed_snapshot_digest() {
         is_macro_expansion: false,
     });
     let path_b = ws_dir.join("crate_b.ridx");
-    writer_b
-        .write_to(&mut BufWriter::new(File::create(&path_b).unwrap()))
-        .unwrap();
+    writer_b.write_to(&mut BufWriter::new(File::create(&path_b).unwrap())).unwrap();
 
     let deps_dir = ws_dir.join(".deps");
     fs::create_dir_all(&deps_dir).unwrap();
@@ -322,16 +279,11 @@ fn test_references_target_file_filter_and_computed_snapshot_digest() {
         "dependencies": ["unitA"],
         "extern_units": { "alias_a": "unitA" }
     });
-    fs::write(
-        deps_dir.join("crate_b.json"),
-        serde_json::to_string(&meta_b).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("crate_b.json"), serde_json::to_string(&meta_b).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&ws_dir).expect("open workspace");
     // Unit mismatch on target crate unit (lines 457-460 and 491-495)
-    let refs_mismatch =
-        ws.find_references_for_unit("crate_a::types::TypeA", Some("different_unit_key"));
+    let refs_mismatch = ws.find_references_for_unit("crate_a::types::TypeA", Some("different_unit_key"));
     assert!(refs_mismatch.is_empty());
 
     // References query filters out ref2 and aliased refs with differing target file (lines 505-520 and 578-581)
@@ -348,11 +300,7 @@ fn test_references_target_file_filter_and_computed_snapshot_digest() {
         "object_path": path_a.display().to_string(),
         "file_hashes": file_hashes
     });
-    fs::write(
-        deps_dir.join("crate_a.json"),
-        serde_json::to_string(&meta_computed).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("crate_a.json"), serde_json::to_string(&meta_computed).unwrap()).unwrap();
 
     let manifest = serde_json::json!({
         "version": "2.0",
@@ -364,11 +312,7 @@ fn test_references_target_file_filter_and_computed_snapshot_digest() {
         "manifest_path": ws_dir.join("Cargo.toml").display().to_string(),
         "profile": "dev"
     });
-    fs::write(
-        ws_dir.join("ridx_manifest.json"),
-        serde_json::to_string(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(ws_dir.join("ridx_manifest.json"), serde_json::to_string(&manifest).unwrap()).unwrap();
 
     let ws_manifest = WorkspaceIndex::open(&ws_dir).expect("open workspace with manifest");
     assert!(ws_manifest.crate_count() >= 1);

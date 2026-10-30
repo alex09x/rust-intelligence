@@ -60,8 +60,14 @@ fn test_will_save_wait_until_cancelled_request_returns_request_cancelled_error()
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
@@ -84,8 +90,14 @@ fn test_will_save_followed_by_did_save_sequence() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out1, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out1,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok1, true);
 
     let mut out2 = Cursor::new(Vec::new());
@@ -95,8 +107,14 @@ fn test_will_save_followed_by_did_save_sequence() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut out2, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out2,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok2, true);
 
     let overlay = om.get(&file).expect("overlay must exist");
@@ -117,8 +135,14 @@ fn test_will_save_wait_until_followed_by_did_save() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out1, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out1,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok1, true);
     let resp1 = extract_response(&out1.into_inner());
     assert_eq!(resp1["result"], json!([]));
@@ -130,8 +154,14 @@ fn test_will_save_wait_until_followed_by_did_save() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut out2, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out2,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
     assert_eq!(ok2, true);
 }
 
@@ -149,8 +179,14 @@ fn test_will_save_multiple_successive_notifications() {
                 "method": "textDocument/willSave",
                 "params": { "textDocument": { "uri": uri }, "reason": reason }
             }),
-            &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-        ).unwrap_or(false);
+            &mut out,
+            &mut lc,
+            &mut mr,
+            &mut om,
+            &cancelled,
+            None,
+        )
+        .unwrap_or(false);
         assert_eq!(ok, true);
         assert_eq!(out.into_inner().len(), 0);
     }
@@ -171,8 +207,14 @@ fn test_will_save_wait_until_multiple_successive_requests() {
                 "method": "textDocument/willSaveWaitUntil",
                 "params": { "textDocument": { "uri": uri }, "reason": 1 }
             }),
-            &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-        ).unwrap_or(false);
+            &mut out,
+            &mut lc,
+            &mut mr,
+            &mut om,
+            &cancelled,
+            None,
+        )
+        .unwrap_or(false);
         assert_eq!(ok, true);
         let resp = extract_response(&out.into_inner());
         assert_eq!(resp["id"], req_id);
@@ -195,8 +237,14 @@ fn test_will_save_with_dirty_overlay_preserves_dirty_state() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
@@ -219,8 +267,14 @@ fn test_will_save_wait_until_preserves_symbols_count() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
@@ -253,8 +307,14 @@ fn test_will_save_does_not_invalidate_position_converter() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     // willSave is a no-op that does NOT invalidate converter cache, so old cached line remains
@@ -289,8 +349,14 @@ fn test_will_save_wait_until_does_not_invalidate_position_converter() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_initial"));
@@ -310,8 +376,14 @@ fn test_will_save_does_not_trigger_flycheck() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(lc.flycheck.current_generation(), 0);

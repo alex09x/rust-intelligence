@@ -61,11 +61,7 @@ fn test_refs_include_declaration_flag_false() {
 
 #[test]
 fn test_refs_local_binding_references_in_overlay() {
-    let (temp_dir, ws, mut conv) = (
-        setup_test_navigation().0,
-        setup_test_navigation().1,
-        setup_test_navigation().3,
-    );
+    let (temp_dir, ws, mut conv) = (setup_test_navigation().0, setup_test_navigation().1, setup_test_navigation().3);
     let file_path = temp_dir.join("src/lib.rs");
     let uri = format!("file://{}", file_path.to_str().unwrap());
 
@@ -88,11 +84,7 @@ fn test_refs_local_binding_references_in_overlay() {
 
 #[test]
 fn test_refs_doc_highlight_read_and_write() {
-    let (temp_dir, ws, mut conv) = (
-        setup_test_navigation().0,
-        setup_test_navigation().1,
-        setup_test_navigation().3,
-    );
+    let (temp_dir, ws, mut conv) = (setup_test_navigation().0, setup_test_navigation().1, setup_test_navigation().3);
     let file_path = temp_dir.join("src/lib.rs");
     let uri = format!("file://{}", file_path.to_str().unwrap());
 
@@ -128,14 +120,8 @@ fn test_refs_empty_position_returns_empty_array() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    assert_eq!(
-        handle_references(&req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
-    assert_eq!(
-        handle_document_highlight(&req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_references(&req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
+    assert_eq!(handle_document_highlight(&req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -152,10 +138,7 @@ fn test_refs_missing_workspace_returns_empty_array() {
             "position": { "line": 0, "character": 8 }
         }
     });
-    assert_eq!(
-        handle_references(&req, None, &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_references(&req, None, &overlay_mgr, &mut conv), json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -169,10 +152,7 @@ fn test_refs_nonexistent_uri_returns_empty_array() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    assert_eq!(
-        handle_references(&req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_references(&req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -189,10 +169,7 @@ fn test_refs_out_of_bounds_returns_empty_array() {
             "position": { "line": 9999, "character": 9999 }
         }
     });
-    assert_eq!(
-        handle_references(&req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_references(&req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

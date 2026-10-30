@@ -53,13 +53,9 @@ impl super::WorkspaceIndex {
         }
         let shards = discover_sysroot_shards_for_key(cas_key);
         if shards.is_empty() {
-            static LOGGED_ONCE: std::sync::atomic::AtomicBool =
-                std::sync::atomic::AtomicBool::new(false);
+            static LOGGED_ONCE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
             if !LOGGED_ONCE.swap(true, std::sync::atomic::Ordering::Relaxed) {
-                eprintln!(
-                    "[ridx] Warning: no sysroot shards found for cas_key {:?} in cache",
-                    cas_key
-                );
+                eprintln!("[ridx] Warning: no sysroot shards found for cas_key {:?} in cache", cas_key);
             }
             return;
         }
@@ -80,11 +76,7 @@ impl super::WorkspaceIndex {
             if let Ok(reader) = IndexReader::open(sys_path) {
                 let mtime = fs::metadata(sys_path).and_then(|m| m.modified()).ok();
                 let ukey = (!reader.unit_key().is_empty()).then(|| reader.unit_key().to_string());
-                let gen = if !reader.generation().is_empty() {
-                    Some(reader.generation().to_string())
-                } else {
-                    None
-                };
+                let gen = if !reader.generation().is_empty() { Some(reader.generation().to_string()) } else { None };
                 self.readers.push(reader);
                 self.paths.push(sys_path.clone());
                 self.mtimes.push(mtime);
@@ -112,8 +104,7 @@ mod tests {
 
     #[test]
     fn test_discover_and_attach_sysroot() {
-        let temp_dir =
-            std::env::temp_dir().join(format!("ridx_sysroot_test_{}", std::process::id()));
+        let temp_dir = std::env::temp_dir().join(format!("ridx_sysroot_test_{}", std::process::id()));
         let _ = fs::remove_dir_all(&temp_dir);
         let base_cache = temp_dir.join("sysroot");
         let sys_dir = base_cache.join("test_cas_key");
@@ -123,9 +114,7 @@ mod tests {
             let mut writer = IndexWriter::new(cname, "1.97.1");
             writer.set_unit_key(format!("{cname}-1.97.1"));
             let mut buf = Vec::new();
-            writer
-                .write_to(&mut std::io::Cursor::new(&mut buf))
-                .unwrap();
+            writer.write_to(&mut std::io::Cursor::new(&mut buf)).unwrap();
             fs::write(sys_dir.join(format!("{cname}.ridx")), buf).unwrap();
         }
 
@@ -138,9 +127,7 @@ mod tests {
         let mut user_writer = IndexWriter::new("user_crate", "0.1.0");
         user_writer.set_unit_key("user_crate-0.1.0");
         let mut user_buf = Vec::new();
-        user_writer
-            .write_to(&mut std::io::Cursor::new(&mut user_buf))
-            .unwrap();
+        user_writer.write_to(&mut std::io::Cursor::new(&mut user_buf)).unwrap();
         fs::write(proj_dir.join("user_crate.ridx"), user_buf).unwrap();
 
         let mut ws = super::super::WorkspaceIndex::open(&proj_dir).expect("open must succeed");

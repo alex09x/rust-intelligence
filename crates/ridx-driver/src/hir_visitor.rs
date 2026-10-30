@@ -12,44 +12,28 @@ use super::*;
 
 impl<'tcx> HirVisitor<'tcx> {
     fn current_param_env(&self) -> Option<rustc_middle::ty::ParamEnv<'tcx>> {
-        self.current_body_owner
-            .map(|owner| self.tcx.param_env(owner.to_def_id()))
+        self.current_body_owner.map(|owner| self.tcx.param_env(owner.to_def_id()))
     }
 
     fn add_ref_from_res(&mut self, span: Span, res: Res) {
-        let Some((file, s_line, s_col, e_line, e_col, is_macro)) =
-            resolve_span_coords(self.tcx, span, self.package_root.as_deref())
-        else {
+        let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(self.tcx, span, self.package_root.as_deref()) else {
             return;
         };
 
         match res {
             Res::Def(kind, def_id) => {
-                let target_path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(self.tcx.def_path_str(def_id))
-                );
-                if !self
-                    .seen_refs
-                    .insert((file.clone(), s_line, s_col, target_path.clone()))
-                {
+                let target_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(self.tcx.def_path_str(def_id)));
+                if !self.seen_refs.insert((file.clone(), s_line, s_col, target_path.clone())) {
                     return;
                 }
-                let target_span = self
-                    .tcx
-                    .def_ident_span(def_id)
-                    .unwrap_or_else(|| self.tcx.def_span(def_id));
-                let target_coords =
-                    resolve_span_coords(self.tcx, target_span, self.package_root.as_deref());
+                let target_span = self.tcx.def_ident_span(def_id).unwrap_or_else(|| self.tcx.def_span(def_id));
+                let target_coords = resolve_span_coords(self.tcx, target_span, self.package_root.as_deref());
                 let (target_file, target_line, target_col) = match target_coords {
                     Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
                 };
 
-                let target_def_id = if def_id.krate == rustc_span::def_id::LOCAL_CRATE {
-                    Some(def_id.index.as_u32())
-                } else {
-                    None
-                };
+                let target_def_id = if def_id.krate == rustc_span::def_id::LOCAL_CRATE { Some(def_id.index.as_u32()) } else { None };
 
                 let target_unit = self.krate_to_unit.get(&def_id.krate).cloned();
 
@@ -72,26 +56,16 @@ impl<'tcx> HirVisitor<'tcx> {
             }
             Res::Local(hir_id) => {
                 let name = self.tcx.hir_name(hir_id).to_string();
-                if !self
-                    .seen_refs
-                    .insert((file.clone(), s_line, s_col, name.clone()))
-                {
+                if !self.seen_refs.insert((file.clone(), s_line, s_col, name.clone())) {
                     return;
                 }
-                let target_coords = resolve_span_coords(
-                    self.tcx,
-                    self.tcx.hir_span(hir_id),
-                    self.package_root.as_deref(),
-                );
+                let target_coords = resolve_span_coords(self.tcx, self.tcx.hir_span(hir_id), self.package_root.as_deref());
                 let (target_file, target_line, target_col) = match target_coords {
                     Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
                 };
 
-                let target_unit = self
-                    .krate_to_unit
-                    .get(&rustc_span::def_id::LOCAL_CRATE)
-                    .cloned();
+                let target_unit = self.krate_to_unit.get(&rustc_span::def_id::LOCAL_CRATE).cloned();
 
                 self.writer.add_reference(RawReference {
                     file,
@@ -115,11 +89,7 @@ impl<'tcx> HirVisitor<'tcx> {
     }
 
     fn resolve_trait_instance(&self, expr_hir_id: hir::HirId, def_id: DefId) -> Option<DefId> {
-        let is_trait_item = self
-            .tcx
-            .opt_associated_item(def_id)
-            .map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait))
-            .unwrap_or(false);
+        let is_trait_item = self.tcx.opt_associated_item(def_id).map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait)).unwrap_or(false);
         if !is_trait_item {
             return None;
         }
@@ -131,10 +101,7 @@ impl<'tcx> HirVisitor<'tcx> {
         let body_owner = self.tcx.hir_enclosing_body_owner(expr_hir_id).to_def_id();
         let env = rustc_middle::ty::TypingEnv::post_analysis(self.tcx, body_owner);
         let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let norm_args = self
-                .tcx
-                .try_normalize_erasing_regions(env, rustc_middle::ty::Unnormalized::new(args))
-                .unwrap_or(args);
+            let norm_args = self.tcx.try_normalize_erasing_regions(env, rustc_middle::ty::Unnormalized::new(args)).unwrap_or(args);
             rustc_middle::ty::Instance::try_resolve(self.tcx, env, def_id, norm_args)
         }));
         match res {
@@ -169,20 +136,14 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
     fn visit_nested_body(&mut self, id: hir::BodyId) {
         let prev = self.typeck.replace(self.tcx.typeck_body(id));
-        let prev_owner = self
-            .current_body_owner
-            .replace(self.tcx.hir_body_owner_def_id(id));
+        let prev_owner = self.current_body_owner.replace(self.tcx.hir_body_owner_def_id(id));
         self.visit_body(self.tcx.hir_body(id));
         self.current_body_owner = prev_owner;
         self.typeck = prev;
     }
 
     fn visit_path(&mut self, path: &hir::Path<'tcx>, _: HirId) {
-        let span = if let Some(last_seg) = path.segments.last() {
-            last_seg.ident.span
-        } else {
-            path.span
-        };
+        let span = if let Some(last_seg) = path.segments.last() { last_seg.ident.span } else { path.span };
         self.add_ref_from_res(span, path.res);
 
         if path.segments.len() >= 2 {
@@ -191,20 +152,13 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                 Res::Def(hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, _), ctor_did) => {
                     let var_did = self.tcx.parent(ctor_did);
                     let enum_did = self.tcx.parent(var_did);
-                    self.add_ref_from_res(
-                        pen_seg.ident.span,
-                        Res::Def(hir::def::DefKind::Enum, enum_did),
-                    );
+                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(hir::def::DefKind::Enum, enum_did));
                 }
                 Res::Def(hir::def::DefKind::Variant, var_did) => {
                     let enum_did = self.tcx.parent(var_did);
-                    self.add_ref_from_res(
-                        pen_seg.ident.span,
-                        Res::Def(hir::def::DefKind::Enum, enum_did),
-                    );
+                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(hir::def::DefKind::Enum, enum_did));
                 }
-                Res::Def(hir::def::DefKind::AssocFn, fn_did)
-                | Res::Def(hir::def::DefKind::AssocConst { .. }, fn_did) => {
+                Res::Def(hir::def::DefKind::AssocFn, fn_did) | Res::Def(hir::def::DefKind::AssocConst { .. }, fn_did) => {
                     let parent_did = self.tcx.parent(fn_did);
                     let parent_kind = self.tcx.def_kind(parent_did);
                     let target_res = if matches!(parent_kind, hir::def::DefKind::Impl { .. }) {
@@ -242,22 +196,15 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             match expr.kind {
                 hir::ExprKind::MethodCall(segment, ..) => {
                     if let Some(def_id) = typeck.type_dependent_def_id(expr.hir_id) {
-                        let final_def_id = self
-                            .resolve_trait_instance(expr.hir_id, def_id)
-                            .unwrap_or(def_id);
-                        self.add_ref_from_res(
-                            segment.ident.span,
-                            Res::Def(self.tcx.def_kind(final_def_id), final_def_id),
-                        );
+                        let final_def_id = self.resolve_trait_instance(expr.hir_id, def_id).unwrap_or(def_id);
+                        self.add_ref_from_res(segment.ident.span, Res::Def(self.tcx.def_kind(final_def_id), final_def_id));
                     }
                 }
                 hir::ExprKind::Path(hir::QPath::TypeRelative(_, segment)) => {
                     if let hir::ExprKind::Path(ref qpath) = expr.kind {
                         let mut res = typeck.qpath_res(qpath, expr.hir_id);
                         if let Res::Def(hir::def::DefKind::AssocFn, def_id) = res {
-                            if let Some(resolved_did) =
-                                self.resolve_trait_instance(expr.hir_id, def_id)
-                            {
+                            if let Some(resolved_did) = self.resolve_trait_instance(expr.hir_id, def_id) {
                                 res = Res::Def(self.tcx.def_kind(resolved_did), resolved_did);
                             }
                         }
@@ -267,16 +214,8 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                 hir::ExprKind::Field(base, field) => {
                     if let Some(adt) = typeck.expr_ty_adjusted(base).ty_adt_def() {
                         if !adt.is_enum() {
-                            if let Some(def) = adt
-                                .non_enum_variant()
-                                .fields
-                                .iter()
-                                .find(|it| it.name == field.name)
-                            {
-                                self.add_ref_from_res(
-                                    field.span,
-                                    Res::Def(self.tcx.def_kind(def.did), def.did),
-                                );
+                            if let Some(def) = adt.non_enum_variant().fields.iter().find(|it| it.name == field.name) {
+                                self.add_ref_from_res(field.span, Res::Def(self.tcx.def_kind(def.did), def.did));
                             }
                         }
                     }
@@ -286,21 +225,11 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
             // Inferred expression type
             if !expr.span.from_expansion() {
-                if let Some((file, s_line, s_col, e_line, e_col, _)) =
-                    resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
-                {
+                if let Some((file, s_line, s_col, e_line, e_col, _)) = resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref()) {
                     if let Some(ty) = typeck.expr_ty_opt(expr) {
-                        let owner_path =
-                            resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
+                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
-                            RawType {
-                                file,
-                                start_line: s_line,
-                                start_col: s_col,
-                                end_line: e_line,
-                                end_col: e_col,
-                                type_name: sanitize_type_name(&ty.to_string()),
-                            },
+                            RawType { file, start_line: s_line, start_col: s_col, end_line: e_line, end_col: e_col, type_name: sanitize_type_name(&ty.to_string()) },
                             owner_path,
                         );
                     }
@@ -314,21 +243,11 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
         if !pat.span.from_expansion() {
             if let Some(typeck) = self.typeck {
                 if let hir::PatKind::Binding(..) = pat.kind {
-                    if let Some((file, s_line, s_col, e_line, e_col, _)) =
-                        resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
-                    {
+                    if let Some((file, s_line, s_col, e_line, e_col, _)) = resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref()) {
                         let ty = typeck.pat_ty(pat);
-                        let owner_path =
-                            resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
+                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
-                            RawType {
-                                file,
-                                start_line: s_line,
-                                start_col: s_col,
-                                end_line: e_line,
-                                end_col: e_col,
-                                type_name: sanitize_type_name(&ty.to_string()),
-                            },
+                            RawType { file, start_line: s_line, start_col: s_col, end_line: e_line, end_col: e_col, type_name: sanitize_type_name(&ty.to_string()) },
                             owner_path,
                         );
                     }

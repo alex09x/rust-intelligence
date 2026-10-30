@@ -21,13 +21,7 @@ use serde_json::json;
 fn test_workspace_symbol_resolve_field_item_in_struct() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_field_res", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_field_res",
-        "src/lib.rs",
-        "pub struct Record { pub «count_field»: usize }\n",
-        DefKind::Field,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_field_res", "src/lib.rs", "pub struct Record { pub «count_field»: usize }\n", DefKind::Field).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -45,13 +39,7 @@ fn test_workspace_symbol_resolve_field_item_in_struct() {
 fn test_workspace_symbol_resolve_assoc_fn_in_impl() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_assoc_fn", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_assoc_fn",
-        "src/lib.rs",
-        "impl Service { pub fn «serve_request»() {} }\n",
-        DefKind::AssocFn,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_assoc_fn", "src/lib.rs", "impl Service { pub fn «serve_request»() {} }\n", DefKind::AssocFn).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -69,13 +57,7 @@ fn test_workspace_symbol_resolve_assoc_fn_in_impl() {
 fn test_workspace_symbol_resolve_assoc_const_in_trait() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_assoc_c", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_assoc_c",
-        "src/lib.rs",
-        "pub trait Protocol { const «VERSION_CODE»: u32; }\n",
-        DefKind::AssocConst,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_assoc_c", "src/lib.rs", "pub trait Protocol { const «VERSION_CODE»: u32; }\n", DefKind::AssocConst).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -93,13 +75,7 @@ fn test_workspace_symbol_resolve_assoc_const_in_trait() {
 fn test_workspace_symbol_resolve_complex_client_nested_json() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_complex", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_complex",
-        "src/lib.rs",
-        "pub struct «ComplexTarget»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_complex", "src/lib.rs", "pub struct «ComplexTarget»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -149,13 +125,7 @@ fn test_workspace_symbol_resolve_four_shards_fourth_shard_lookup() {
 fn test_workspace_symbol_resolve_non_ascii_unicode_symbol_name() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_german", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_german",
-        "src/lib.rs",
-        "pub struct «Übersicht»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_german", "src/lib.rs", "pub struct «Übersicht»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -172,13 +142,7 @@ fn test_workspace_symbol_resolve_non_ascii_unicode_symbol_name() {
 fn test_workspace_symbol_resolve_repeated_consecutive_resolves_idempotent() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_idempotent", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_idempotent",
-        "src/lib.rs",
-        "pub struct «IdempotentItem»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_idempotent", "src/lib.rs", "pub struct «IdempotentItem»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -198,13 +162,7 @@ fn test_workspace_symbol_resolve_repeated_consecutive_resolves_idempotent() {
 fn test_workspace_symbol_resolve_root_manifest_workspace_indexing() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("root_member", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "root_member",
-        "src/lib.rs",
-        "pub struct «MemberStruct»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("root_member", "src/lib.rs", "pub struct «MemberStruct»;\n", DefKind::Struct).unwrap();
     ws.write_workspace_manifest().unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
@@ -222,13 +180,7 @@ fn test_workspace_symbol_resolve_root_manifest_workspace_indexing() {
 fn test_workspace_symbol_resolve_exact_match_priority_over_prefix() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_exact_prio", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_exact_prio",
-        "src/lib.rs",
-        "pub struct «Target»;\npub struct «TargetLonger»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_exact_prio", "src/lib.rs", "pub struct «Target»;\npub struct «TargetLonger»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 

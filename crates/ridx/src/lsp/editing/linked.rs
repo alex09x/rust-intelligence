@@ -14,11 +14,7 @@ use crate::lsp::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 
-pub fn handle_linked_editing_range(
-    msg: &Value,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_linked_editing_range(msg: &Value, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;

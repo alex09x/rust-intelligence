@@ -41,8 +41,7 @@ impl Drop for TempShard {
 
 fn create_temp_shard(name: &str) -> TempShard {
     let id = SEL_COUNTER2.fetch_add(1, Ordering::Relaxed);
-    let dir =
-        std::env::temp_dir().join(format!("ridx_sel2_{}_{}_{}", name, std::process::id(), id));
+    let dir = std::env::temp_dir().join(format!("ridx_sel2_{}_{}_{}", name, std::process::id(), id));
     std::fs::create_dir_all(dir.join("src")).unwrap();
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
@@ -93,16 +92,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -133,16 +123,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: Value,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: Value, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -158,24 +140,11 @@ fn test_selection_range_deeply_nested_blocks() {
     let ts = create_temp_shard("deep_nested");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp, &file,
-        "fn l1() {\n    if true {\n        while true {\n            let deepest = 1;\n        }\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn l1() {\n    if true {\n        while true {\n            let deepest = 1;\n        }\n    }\n}\n");
 
     // Six levels: `deepest`, while block, if block, fn body, fn item, file.
     let result = selection_ranges(&mut dsp, json!(211), &file, &[(3, 16)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (3, 16, 3, 23),
-            (2, 19, 4, 9),
-            (1, 12, 5, 5),
-            (0, 8, 6, 1),
-            (0, 0, 6, 1),
-            (0, 0, 7, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(3, 16, 3, 23), (2, 19, 4, 9), (1, 12, 5, 5), (0, 8, 6, 1), (0, 0, 6, 1), (0, 0, 7, 0)])]));
 }
 
 #[test]
@@ -191,16 +160,7 @@ fn test_selection_range_after_did_change_overlay_edit() {
 
     // The `if` block inserted by the edit is now between the token and the fn body.
     let result = selection_ranges(&mut dsp, json!(212), &file, &[(2, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 12, 2, 15),
-            (1, 12, 3, 5),
-            (0, 13, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 12, 2, 15), (1, 12, 3, 5), (0, 13, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
@@ -211,10 +171,7 @@ fn test_selection_range_numeric_request_id_echoed() {
     open_doc(&mut dsp, &file, "fn f() {}\n");
 
     let result = selection_ranges(&mut dsp, json!(501), &file, &[(0, 3)]);
-    assert_eq!(
-        result,
-        json!([chain(&[(0, 3, 0, 4), (0, 0, 0, 9), (0, 0, 1, 0)])])
-    );
+    assert_eq!(result, json!([chain(&[(0, 3, 0, 4), (0, 0, 0, 9), (0, 0, 1, 0)])]));
 }
 
 #[test]
@@ -225,10 +182,7 @@ fn test_selection_range_string_request_id_echoed() {
     open_doc(&mut dsp, &file, "fn f() {}\n");
 
     let result = selection_ranges(&mut dsp, json!("sel-range-1"), &file, &[(0, 3)]);
-    assert_eq!(
-        result,
-        json!([chain(&[(0, 3, 0, 4), (0, 0, 0, 9), (0, 0, 1, 0)])])
-    );
+    assert_eq!(result, json!([chain(&[(0, 3, 0, 4), (0, 0, 0, 9), (0, 0, 1, 0)])]));
 }
 
 #[test]
@@ -236,23 +190,10 @@ fn test_selection_range_cursor_on_closure_or_loop() {
     let ts = create_temp_shard("closure_loop");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn process() {\n    for x in 0..10 {\n        let y = x * 2;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn process() {\n    for x in 0..10 {\n        let y = x * 2;\n    }\n}\n");
 
     let result = selection_ranges(&mut dsp, json!(213), &file, &[(2, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 12, 2, 13),
-            (1, 19, 3, 5),
-            (0, 13, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 12, 2, 13), (1, 19, 3, 5), (0, 13, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
@@ -263,15 +204,7 @@ fn test_selection_range_range_coordinates_validity() {
     open_doc(&mut dsp, &file, "fn valid() {\n    let a = 10;\n}\n");
 
     let result = selection_ranges(&mut dsp, json!(214), &file, &[(1, 8)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 8, 1, 9),
-            (0, 11, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 8, 1, 9), (0, 11, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
     assert_chain_invariants(&result[0], (1, 8), 3);
 }
 
@@ -280,11 +213,7 @@ fn test_selection_range_parent_nesting_invariants() {
     let ts = create_temp_shard("nesting_inv");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn parent_test() {\n    let inner = 5;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn parent_test() {\n    let inner = 5;\n}\n");
 
     // Every cursor position of the document yields a well-formed chain.
     let text = "fn parent_test() {\n    let inner = 5;\n}\n";
@@ -303,10 +232,7 @@ fn test_selection_range_parent_nesting_invariants() {
     }
     // Spot check: cursor on `inner`.
     let on_inner = positions.iter().position(|&p| p == (1, 8)).unwrap();
-    assert_eq!(
-        items[on_inner],
-        chain(&[(1, 8, 1, 13), (0, 17, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])
-    );
+    assert_eq!(items[on_inner], chain(&[(1, 8, 1, 13), (0, 17, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)]));
 }
 
 #[test]
@@ -344,23 +270,7 @@ fn test_selection_range_multiple_documents_isolation() {
 
     // Same cursor, different documents: the token lengths differ (`a` vs `bb`).
     let result_a = selection_ranges(&mut dsp, json!(218), &file_a, &[(1, 8)]);
-    assert_eq!(
-        result_a,
-        json!([chain(&[
-            (1, 8, 1, 9),
-            (0, 8, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(result_a, json!([chain(&[(1, 8, 1, 9), (0, 8, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
     let result_b = selection_ranges(&mut dsp, json!(219), &file_b, &[(1, 8)]);
-    assert_eq!(
-        result_b,
-        json!([chain(&[
-            (1, 8, 1, 10),
-            (0, 8, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(result_b, json!([chain(&[(1, 8, 1, 10), (0, 8, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
 }

@@ -30,14 +30,7 @@ fn test_l1_workspace_symbol_resolve_preserves_kind_with_location_sub() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_resolve_kind", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_resolve_kind",
-            "src/lib.rs",
-            "pub struct «NodeWorker»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_resolve_kind", "src/lib.rs", "pub struct «NodeWorker»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let shard = ws.build_crate_index("pkg_resolve_kind").unwrap();
@@ -55,10 +48,7 @@ fn test_l1_workspace_symbol_resolve_preserves_kind_with_location_sub() {
 
     let res = handle_workspace_symbol_resolve(&req, std::iter::once(&index), &mut conv);
     assert_eq!(res["name"], "NodeWorker");
-    assert_eq!(
-        res["kind"], 23,
-        "Symbol kind must be preserved when location is substituted"
-    );
+    assert_eq!(res["kind"], 23, "Symbol kind must be preserved when location is substituted");
     assert_eq!(res["containerName"], "pkg_resolve_kind");
     assert_eq!(res["location"]["uri"], uri);
     assert_range(&res["location"], 0, 11, 21);
@@ -69,14 +59,7 @@ fn test_l1_workspace_symbol_resolve_explicit_null_location_substitutes() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_resolve_null", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_resolve_null",
-            "src/lib.rs",
-            "pub struct «NullTarget»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_resolve_null", "src/lib.rs", "pub struct «NullTarget»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let shard = ws.build_crate_index("pkg_resolve_null").unwrap();
@@ -107,24 +90,10 @@ fn test_l1_workspace_symbol_resolve_same_name_multiple_crates_first_shard() {
     ws.add_crate("crate_one", "0.1.0").unwrap();
     ws.add_crate("crate_two", "0.1.0").unwrap();
 
-    let (_, ids_one) = ws
-        .add_source_file_with_defs(
-            "crate_one",
-            "src/lib.rs",
-            "pub struct «SharedConfig»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids_one) = ws.add_source_file_with_defs("crate_one", "src/lib.rs", "pub struct «SharedConfig»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids_one.len(), 1);
 
-    let (_, ids_two) = ws
-        .add_source_file_with_defs(
-            "crate_two",
-            "src/lib.rs",
-            "pub struct «SharedConfig»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids_two) = ws.add_source_file_with_defs("crate_two", "src/lib.rs", "pub struct «SharedConfig»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids_two.len(), 1);
 
     let shard_one = ws.build_crate_index("crate_one").unwrap();
@@ -146,21 +115,14 @@ fn test_l1_workspace_symbol_resolve_same_name_multiple_crates_first_shard() {
     let workspaces_first = vec![&idx_one, &idx_two];
     let res_first = handle_workspace_symbol_resolve(&req, workspaces_first.into_iter(), &mut conv);
     assert_eq!(res_first["name"], "SharedConfig");
-    assert_eq!(
-        res_first["containerName"], "crate_one",
-        "Must pick first shard in iteration order"
-    );
+    assert_eq!(res_first["containerName"], "crate_one", "Must pick first shard in iteration order");
     assert_eq!(res_first["location"]["uri"], uri_one);
 
     // 2. Order [idx_two, idx_one] resolves to crate_two
     let workspaces_second = vec![&idx_two, &idx_one];
-    let res_second =
-        handle_workspace_symbol_resolve(&req, workspaces_second.into_iter(), &mut conv);
+    let res_second = handle_workspace_symbol_resolve(&req, workspaces_second.into_iter(), &mut conv);
     assert_eq!(res_second["name"], "SharedConfig");
-    assert_eq!(
-        res_second["containerName"], "crate_two",
-        "Must pick first shard in reversed iteration order"
-    );
+    assert_eq!(res_second["containerName"], "crate_two", "Must pick first shard in reversed iteration order");
     assert_eq!(res_second["location"]["uri"], uri_two);
 }
 
@@ -170,14 +132,7 @@ fn test_l1_workspace_symbol_resolve_non_ascii_symbol_name() {
     ws.add_crate("pkg_non_ascii", "0.1.0").unwrap();
 
     // Symbol with Greek non-ASCII character (\u{03B4} = δ)
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_non_ascii",
-            "src/lib.rs",
-            "pub fn «delta_\u{03B4}»() {}\n",
-            DefKind::Fn,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_non_ascii", "src/lib.rs", "pub fn «delta_\u{03B4}»() {}\n", DefKind::Fn).unwrap();
     assert_eq!(ids.len(), 1);
 
     let shard = ws.build_crate_index("pkg_non_ascii").unwrap();

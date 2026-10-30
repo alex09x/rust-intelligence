@@ -48,10 +48,7 @@ pub fn test_sub<S: SubTrait>(s: S) {
     fs::create_dir_all(&deps_dir).unwrap();
 
     let rmeta_file = temp_dir.join("libws_gen2.rmeta");
-    let sysroot = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .unwrap();
+    let sysroot = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
     let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
 
     let args = vec![
@@ -86,54 +83,26 @@ pub fn test_sub<S: SubTrait>(s: S) {
 
     // 1. Where clause: V bounded by de::Visitor
     let types = reader.types();
-    let v_types: Vec<_> = types
-        .iter()
-        .filter(|t| reader.get_str(t.type_offset) == "V")
-        .collect();
+    let v_types: Vec<_> = types.iter().filter(|t| reader.get_str(t.type_offset) == "V").collect();
     assert!(!v_types.is_empty(), "expected type entry for V");
     assert!(
-        v_types
-            .iter()
-            .any(|t| reader.get_str(t.owner_path_offset) == "de::Visitor"),
+        v_types.iter().any(|t| reader.get_str(t.owner_path_offset) == "de::Visitor"),
         "where-clause generic V must resolve owner to de::Visitor, got {:?}",
-        v_types
-            .iter()
-            .map(|t| reader.get_str(t.owner_path_offset))
-            .collect::<Vec<_>>()
+        v_types.iter().map(|t| reader.get_str(t.owner_path_offset)).collect::<Vec<_>>()
     );
 
     // 2. Generic bound S: SubTrait
-    let s_types: Vec<_> = types
-        .iter()
-        .filter(|t| reader.get_str(t.type_offset) == "S")
-        .collect();
+    let s_types: Vec<_> = types.iter().filter(|t| reader.get_str(t.type_offset) == "S").collect();
     assert!(!s_types.is_empty(), "expected type entry for S");
-    assert!(
-        s_types
-            .iter()
-            .any(|t| reader.get_str(t.owner_path_offset) == "SubTrait"),
-        "generic parameter S must resolve owner to SubTrait"
-    );
+    assert!(s_types.iter().any(|t| reader.get_str(t.owner_path_offset) == "SubTrait"), "generic parameter S must resolve owner to SubTrait");
 
     // 3. Multiple supertraits deref chain: SubTrait -> BaseTrait AND SecondBaseTrait
     let targets = reader.find_deref_targets("SubTrait");
-    assert!(
-        targets.contains(&"BaseTrait"),
-        "SubTrait must declare target BaseTrait"
-    );
-    assert!(
-        targets.contains(&"SecondBaseTrait"),
-        "SubTrait must declare target SecondBaseTrait"
-    );
+    assert!(targets.contains(&"BaseTrait"), "SubTrait must declare target BaseTrait");
+    assert!(targets.contains(&"SecondBaseTrait"), "SubTrait must declare target SecondBaseTrait");
     let chain = reader.resolve_deref_chain("SubTrait", 4);
-    assert!(
-        chain.contains(&"BaseTrait"),
-        "BFS chain must contain BaseTrait"
-    );
-    assert!(
-        chain.contains(&"SecondBaseTrait"),
-        "BFS chain must contain SecondBaseTrait"
-    );
+    assert!(chain.contains(&"BaseTrait"), "BFS chain must contain BaseTrait");
+    assert!(chain.contains(&"SecondBaseTrait"), "BFS chain must contain SecondBaseTrait");
 
     std::env::remove_var("RIDX_OUT_DIR");
     std::env::remove_var("CARGO_MANIFEST_DIR");
@@ -173,10 +142,7 @@ impl std::fmt::Display for MyDisplay {
     fs::create_dir_all(&deps_dir).unwrap();
 
     let rmeta_file = temp_dir.join("libws_trait.rmeta");
-    let sysroot = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .unwrap();
+    let sysroot = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
     let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
 
     let args = vec![
@@ -211,19 +177,11 @@ impl std::fmt::Display for MyDisplay {
 
     // Verify MyIter has deref/trait link to Iterator
     let iter_targets = reader.find_deref_targets("MyIter");
-    assert!(
-        iter_targets.iter().any(|&t| t.contains("Iterator")),
-        "MyIter must link to Iterator, got: {:?}",
-        iter_targets
-    );
+    assert!(iter_targets.iter().any(|&t| t.contains("Iterator")), "MyIter must link to Iterator, got: {:?}", iter_targets);
 
     // Verify MyDisplay has deref/trait link to Display
     let disp_targets = reader.find_deref_targets("MyDisplay");
-    assert!(
-        disp_targets.iter().any(|&t| t.contains("Display")),
-        "MyDisplay must link to Display, got: {:?}",
-        disp_targets
-    );
+    assert!(disp_targets.iter().any(|&t| t.contains("Display")), "MyDisplay must link to Display, got: {:?}", disp_targets);
 
     std::env::remove_var("RIDX_OUT_DIR");
     std::env::remove_var("CARGO_MANIFEST_DIR");

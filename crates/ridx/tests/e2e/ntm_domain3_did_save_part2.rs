@@ -39,15 +39,7 @@ fn dispatch_did_save_with_converter(
 ) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -66,7 +58,10 @@ fn test_did_save_with_included_text_param_safe() {
                 "text": "fn f_saved() {}\n"
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -90,7 +85,10 @@ fn test_did_save_triggers_flycheck_when_cargo_toml_present() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     let _ = fs::remove_dir_all(&temp_dir);
@@ -109,7 +107,10 @@ fn test_did_save_does_not_trigger_flycheck_when_no_cargo_toml() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -129,7 +130,10 @@ fn test_did_save_multiple_successive_saves_on_same_file() {
                 "method": "textDocument/didSave",
                 "params": { "textDocument": { "uri": uri } }
             }),
-            &mut lc, &mut mr, &mut om, None,
+            &mut lc,
+            &mut mr,
+            &mut om,
+            None,
         );
         assert_eq!(ok, true);
         let overlay = om.get(&file).expect("overlay must exist");
@@ -153,7 +157,10 @@ fn test_did_save_after_did_change_updates_disk_baseline() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -172,7 +179,10 @@ fn test_did_save_preserves_line_starts() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -195,7 +205,10 @@ fn test_did_save_preserves_other_open_documents() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri1 } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -229,7 +242,10 @@ fn test_did_save_invalidates_position_converter_cache() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -249,7 +265,10 @@ fn test_did_save_does_not_evict_overlay() {
             "method": "textDocument/didSave",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -266,14 +285,20 @@ fn test_did_save_on_already_saved_document_is_idempotent() {
     // Save once
     let _ = dispatch_did_save_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
     let text1 = om.get(&file).unwrap().disk_text.clone();
 
     // Save second time
     let (ok, _) = dispatch_did_save_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);

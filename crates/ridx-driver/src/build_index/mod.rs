@@ -38,22 +38,14 @@ fn resolve_extern_and_crate_units(
     compiler_args: &[String],
     deps_dir: &Path,
     unit_key: &str,
-) -> (
-    Vec<String>,
-    std::collections::HashMap<String, String>,
-    std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
-) {
+) -> (Vec<String>, std::collections::HashMap<String, String>, std::collections::HashMap<rustc_span::def_id::CrateNum, String>) {
     let unit_key = unit_key.to_string();
     let mut dep_keys_or_names = Vec::new();
     let mut extern_units = std::collections::HashMap::new();
 
     for i in 0..compiler_args.len() {
         let arg = &compiler_args[i];
-        let ext_val = if arg == "--extern" && i + 1 < compiler_args.len() {
-            Some(compiler_args[i + 1].as_str())
-        } else {
-            arg.strip_prefix("--extern=")
-        };
+        let ext_val = if arg == "--extern" && i + 1 < compiler_args.len() { Some(compiler_args[i + 1].as_str()) } else { arg.strip_prefix("--extern=") };
         if let Some(val) = ext_val {
             let (name_part, path_opt) = if let Some((n, p)) = val.split_once('=') {
                 (n.trim(), Some(p.trim()))
@@ -74,21 +66,14 @@ fn resolve_extern_and_crate_units(
                 let p = Path::new(p_str);
                 let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
                 let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
-                let cand_files = [
-                    deps_dir.join(format!("{stem_without_lib}.json")),
-                    deps_dir.join(format!("{stem}.json")),
-                    deps_dir.join(format!("{clean_alias}.json")),
-                ];
+                let cand_files = [deps_dir.join(format!("{stem_without_lib}.json")), deps_dir.join(format!("{stem}.json")), deps_dir.join(format!("{clean_alias}.json"))];
                 for c in &cand_files {
                     if c.is_file() {
                         if let Ok(content) = fs::read(c) {
                             if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
                                 if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
                                     resolved_unit = Some(uk.to_string());
-                                    let dep_name = val
-                                        .get("name")
-                                        .and_then(|v| v.as_str())
-                                        .unwrap_or(clean_alias);
+                                    let dep_name = val.get("name").and_then(|v| v.as_str()).unwrap_or(clean_alias);
                                     if !dep_keys_or_names.contains(&dep_name.to_string()) {
                                         dep_keys_or_names.push(dep_name.to_string());
                                     }
@@ -102,10 +87,7 @@ fn resolve_extern_and_crate_units(
                 let c = deps_dir.join(format!("{clean_alias}.json"));
                 if let Ok(content) = fs::read(&c) {
                     if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
-                        resolved_unit = val
-                            .get("unit_key")
-                            .and_then(|v| v.as_str())
-                            .map(ToString::to_string);
+                        resolved_unit = val.get("unit_key").and_then(|v| v.as_str()).map(ToString::to_string);
                     }
                 }
             }
@@ -126,19 +108,14 @@ fn resolve_extern_and_crate_units(
         }
     }
 
-    let mut krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String> =
-        std::collections::HashMap::new();
+    let mut krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String> = std::collections::HashMap::new();
     krate_to_unit.insert(rustc_span::def_id::LOCAL_CRATE, unit_key.clone());
 
     for &cnum in tcx.crates(()) {
         let stable_id = tcx.stable_crate_id(cnum).as_u64();
         let cname = tcx.crate_name(cnum).to_string();
         let csource = tcx.used_crate_source(cnum);
-        let cand_path = csource
-            .rmeta
-            .as_deref()
-            .or_else(|| csource.rlib.as_deref())
-            .or_else(|| csource.dylib.as_deref());
+        let cand_path = csource.rmeta.as_deref().or_else(|| csource.rlib.as_deref()).or_else(|| csource.dylib.as_deref());
         let mut found_unit = None;
 
         // 1. Check stable crate ID first (exact disambiguation for duplicate crate versions e.g. syn 2 vs 3)
@@ -158,10 +135,7 @@ fn resolve_extern_and_crate_units(
             if let Some(p) = cand_path {
                 let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
                 let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
-                let cand_files = [
-                    deps_dir.join(format!("{stem_without_lib}.json")),
-                    deps_dir.join(format!("{stem}.json")),
-                ];
+                let cand_files = [deps_dir.join(format!("{stem_without_lib}.json")), deps_dir.join(format!("{stem}.json"))];
                 for c in &cand_files {
                     if c.is_file() {
                         if let Ok(content) = fs::read(c) {
@@ -191,25 +165,15 @@ fn resolve_extern_and_crate_units(
     (dep_keys_or_names, extern_units, krate_to_unit)
 }
 
-pub(crate) fn build_crate_index(
-    tcx: TyCtxt<'_>,
-    out_dir: &Path,
-    disambiguator: Option<&str>,
-    compiler_args: &[String],
-) {
+pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>, compiler_args: &[String]) {
     let start = Instant::now();
-    let local_stable_crate_id = tcx
-        .stable_crate_id(rustc_span::def_id::LOCAL_CRATE)
-        .as_u64();
+    let local_stable_crate_id = tcx.stable_crate_id(rustc_span::def_id::LOCAL_CRATE).as_u64();
     let caught_panics = CAUGHT_PANICS.load(std::sync::atomic::Ordering::Relaxed);
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
     let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
 
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
-    let is_immutable = manifest_dir
-        .as_ref()
-        .map(|m| is_immutable_package(m))
-        .unwrap_or(false);
+    let is_immutable = manifest_dir.as_ref().map(|m| is_immutable_package(m)).unwrap_or(false);
 
     let suffix = match disambiguator {
         Some(d) if d.starts_with('-') || d.starts_with('_') => d.to_string(),
@@ -217,19 +181,12 @@ pub(crate) fn build_crate_index(
         _ => String::new(),
     };
 
-    let unit_key = compute_dependency_unit_key(
-        &crate_name,
-        &crate_version,
-        disambiguator,
-        manifest_dir.as_deref(),
-        compiler_args,
-    );
+    let unit_key = compute_dependency_unit_key(&crate_name, &crate_version, disambiguator, manifest_dir.as_deref(), compiler_args);
 
     let deps_dir = out_dir.join(".deps");
     let _ = fs::create_dir_all(&deps_dir);
 
-    let (dep_keys_or_names, extern_units, krate_to_unit) =
-        resolve_extern_and_crate_units(tcx, compiler_args, &deps_dir, &unit_key);
+    let (dep_keys_or_names, extern_units, krate_to_unit) = resolve_extern_and_crate_units(tcx, compiler_args, &deps_dir, &unit_key);
     let ctx = CrateIndexBuildContext {
         start,
         local_stable_crate_id,

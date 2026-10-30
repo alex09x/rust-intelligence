@@ -31,8 +31,7 @@ fn test_contains_ignore_case_ascii_unit() {
 
 #[test]
 fn test_search_symbols_parity_with_naive() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_search_syms_parity_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_search_syms_parity_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&temp_dir);
     std::fs::create_dir_all(&temp_dir).unwrap();
     let idx_path = temp_dir.join("test.ridx");
@@ -85,32 +84,12 @@ fn test_search_symbols_parity_with_naive() {
             .collect()
     };
 
-    let queries = [
-        "",
-        "struct",
-        "STRUCT",
-        "my",
-        "val",
-        "CONSTANT",
-        "module",
-        "another",
-        "nonexistent",
-        "Γειά",
-        "Σας",
-    ];
+    let queries = ["", "struct", "STRUCT", "my", "val", "CONSTANT", "module", "another", "nonexistent", "Γειά", "Σας"];
 
     for q in queries {
         let expected = naive_search(q);
-        let actual: Vec<String> = reader
-            .search_symbols(q)
-            .into_iter()
-            .map(|d| reader.get_str(d.name_offset()).to_string())
-            .collect();
-        assert_eq!(
-            actual, expected,
-            "Query {:?} failed parity with naive search",
-            q
-        );
+        let actual: Vec<String> = reader.search_symbols(q).into_iter().map(|d| reader.get_str(d.name_offset()).to_string()).collect();
+        assert_eq!(actual, expected, "Query {:?} failed parity with naive search", q);
     }
 
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -118,8 +97,7 @@ fn test_search_symbols_parity_with_naive() {
 
 #[test]
 fn test_search_symbols_scale_benchmark() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_search_syms_scale_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_search_syms_scale_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&temp_dir);
     std::fs::create_dir_all(&temp_dir).unwrap();
     let idx_path = temp_dir.join("scale.ridx");
@@ -133,12 +111,7 @@ fn test_search_symbols_scale_benchmark() {
             visibility: 0,
             is_macro_expansion: false,
             name: format!("SymbolName_{}_{}", i % 50, i),
-            path: format!(
-                "scale_crate::module_{}::SymbolName_{}_{}",
-                i % 20,
-                i % 50,
-                i
-            ),
+            path: format!("scale_crate::module_{}::SymbolName_{}_{}", i % 20, i % 50, i),
             file: format!("src/mod_{}.rs", i % 30),
             start_line: (i % 500 + 1) as u32,
             start_col: 1,
@@ -153,13 +126,7 @@ fn test_search_symbols_scale_benchmark() {
     drop(f);
 
     let reader = IndexReader::open(&idx_path).unwrap();
-    let queries = [
-        "symbolname",
-        "module_5",
-        "name_25",
-        "xyz_nonexistent",
-        "scale_crate",
-    ];
+    let queries = ["symbolname", "module_5", "name_25", "xyz_nonexistent", "scale_crate"];
 
     // 1. Time new implementation (zero-alloc ASCII)
     let t0 = std::time::Instant::now();
@@ -224,9 +191,7 @@ fn test_search_symbols_and_fallback_ignore_typaram() {
         start_col: 1,
         end_line: 10,
         end_col: 20,
-        signature: Some(
-            "fn deserialize<'de, D>(deserializer: D) -> Result<T, D::Error>".to_string(),
-        ),
+        signature: Some("fn deserialize<'de, D>(deserializer: D) -> Result<T, D::Error>".to_string()),
     });
     writer.add_definition(crate::writer::RawDefinition {
         def_id: 2,
@@ -279,31 +244,19 @@ fn test_search_symbols_and_fallback_ignore_typaram() {
 
     // 1. search_symbols for "deserialize" must return Fn and Struct, but NOT TyParam D or T
     let matches = reader.search_symbols("deserialize");
-    let matched_names: Vec<&str> = matches
-        .iter()
-        .map(|d| reader.get_str(d.name_offset()))
-        .collect();
+    let matched_names: Vec<&str> = matches.iter().map(|d| reader.get_str(d.name_offset())).collect();
     assert_eq!(matched_names, vec!["deserialize", "Deserializer"]);
 
     // 2. search_symbols_ascii for "d" must return "deserialize" and "Deserializer", NOT "D"
     let matches_d = reader.search_symbols_ascii(b"d");
-    let names_d: Vec<&str> = matches_d
-        .iter()
-        .map(|d| reader.get_str(d.name_offset()))
-        .collect();
-    assert!(
-        !names_d.contains(&"D"),
-        "TyParam D must not be returned in symbol search"
-    );
+    let names_d: Vec<&str> = matches_d.iter().map(|d| reader.get_str(d.name_offset())).collect();
+    assert!(!names_d.contains(&"D"), "TyParam D must not be returned in symbol search");
     assert!(names_d.contains(&"deserialize"));
     assert!(names_d.contains(&"Deserializer"));
 
     // 3. search_symbols for "T" must return empty, NOT TyParam T
     let matches_t = reader.search_symbols("T");
-    assert!(
-        matches_t.is_empty(),
-        "TyParam T must not be returned in symbol search"
-    );
+    assert!(matches_t.is_empty(), "TyParam T must not be returned in symbol search");
 
     // 4. for_each_symbol_ascii with needle "deserialize":
     // Budget must NOT be consumed by TyParam entries
@@ -322,19 +275,11 @@ fn test_search_symbols_and_fallback_ignore_typaram() {
     let mut match_budget = 10usize;
     let mut record_budget = 1usize;
     let mut collected_budgeted = Vec::new();
-    let completed = reader.for_each_symbol_ascii_budgeted(
-        b"deserialize",
-        &mut match_budget,
-        &mut record_budget,
-        |def| {
-            collected_budgeted.push(reader.get_str(def.name_offset()).to_string());
-            true
-        },
-    );
-    assert!(
-        !completed,
-        "Must return false when record budget is exhausted"
-    );
+    let completed = reader.for_each_symbol_ascii_budgeted(b"deserialize", &mut match_budget, &mut record_budget, |def| {
+        collected_budgeted.push(reader.get_str(def.name_offset()).to_string());
+        true
+    });
+    assert!(!completed, "Must return false when record budget is exhausted");
     assert_eq!(record_budget, 0, "Record budget must be fully exhausted");
 
     let _ = std::fs::remove_dir_all(&temp_dir);

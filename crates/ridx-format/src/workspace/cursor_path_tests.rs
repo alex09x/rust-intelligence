@@ -22,11 +22,8 @@ fn synthetic_use_impl_and_tuple_field_defs_do_not_hijack_cursor_path() {
     let root = dir.path().to_path_buf();
     let src_dir = root.join("src");
     fs::create_dir_all(&src_dir).unwrap();
-    fs::write(
-        src_dir.join("lib.rs"),
-        "pub mod sub {\n    pub struct Bar;\n}\nuse crate::sub::Bar;\nstruct S(pub sub::Bar);\nimpl S {\n    fn f() -> sub::Bar { todo!() }\n}\n",
-    )
-    .unwrap();
+    fs::write(src_dir.join("lib.rs"), "pub mod sub {\n    pub struct Bar;\n}\nuse crate::sub::Bar;\nstruct S(pub sub::Bar);\nimpl S {\n    fn f() -> sub::Bar { todo!() }\n}\n")
+        .unwrap();
 
     let shard = root.join("k.ridx");
     let mut w = IndexWriter::new("k", "0.1.0");
@@ -89,16 +86,7 @@ fn synthetic_use_impl_and_tuple_field_defs_do_not_hijack_cursor_path() {
     });
     w.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
-    let ws = create_test_workspace(
-        vec![(
-            &shard,
-            Some(root.clone()),
-            Some("unit_k".into()),
-            Some(TargetKind::Lib),
-            false,
-        )],
-        root,
-    );
+    let ws = create_test_workspace(vec![(&shard, Some(root.clone()), Some("unit_k".into()), Some(TargetKind::Lib), false)], root);
 
     let d_use = ws.find_definition_at("src/lib.rs", 4, 13).unwrap();
     assert_eq!((d_use.name, d_use.kind), ("sub", DefKind::Mod));
@@ -172,16 +160,7 @@ fn self_assoc_and_type_param_assoc_resolve_to_trait_and_impl_items() {
     );
     w.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
-    let ws = create_test_workspace(
-        vec![(
-            &shard,
-            Some(root.clone()),
-            Some("unit_k".into()),
-            Some(TargetKind::Lib),
-            false,
-        )],
-        root,
-    );
+    let ws = create_test_workspace(vec![(&shard, Some(root.clone()), Some("unit_k".into()), Some(TargetKind::Lib), false)], root);
 
     let self_val = ws.find_definition_at("src/lib.rs", 3, 29).unwrap();
     assert_eq!(self_val.path, "k::Visitor::Value");
@@ -196,11 +175,7 @@ fn wide_loop_ref_yields_to_cursor_path_segment() {
     let root = dir.path().to_path_buf();
     let src_dir = root.join("src");
     fs::create_dir_all(&src_dir).unwrap();
-    fs::write(
-        src_dir.join("lib.rs"),
-        "pub mod sub {\n    pub fn make() -> Vec<i32> { vec![] }\n}\nfn demo() {\n    for _ in crate::sub::make() {\n    }\n}\n",
-    )
-    .unwrap();
+    fs::write(src_dir.join("lib.rs"), "pub mod sub {\n    pub fn make() -> Vec<i32> { vec![] }\n}\nfn demo() {\n    for _ in crate::sub::make() {\n    }\n}\n").unwrap();
 
     let shard = root.join("k.ridx");
     let mut w = IndexWriter::new("k", "0.1.0");
@@ -237,16 +212,7 @@ fn wide_loop_ref_yields_to_cursor_path_segment() {
     });
     w.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
-    let ws = create_test_workspace(
-        vec![(
-            &shard,
-            Some(root.clone()),
-            Some("unit_k".into()),
-            Some(TargetKind::Lib),
-            false,
-        )],
-        root,
-    );
+    let ws = create_test_workspace(vec![(&shard, Some(root.clone()), Some("unit_k".into()), Some(TargetKind::Lib), false)], root);
 
     let def = ws.find_definition_at("src/lib.rs", 5, 22).unwrap();
     assert_eq!((def.path, def.kind), ("k::sub", DefKind::Mod));
@@ -323,16 +289,7 @@ fn cursor_path_ignores_strings_raw_strings_and_comments_but_resolves_adjacent_co
     });
     w.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
-    let ws = create_test_workspace(
-        vec![(
-            &shard,
-            Some(root.clone()),
-            Some("unit_k".into()),
-            Some(TargetKind::Lib),
-            false,
-        )],
-        root,
-    );
+    let ws = create_test_workspace(vec![(&shard, Some(root.clone()), Some("unit_k".into()), Some(TargetKind::Lib), false)], root);
 
     assert!(ws.find_definition_at("src/lib.rs", 5, 55).is_none());
     assert!(ws.find_references_at("src/lib.rs", 5, 48).is_none());

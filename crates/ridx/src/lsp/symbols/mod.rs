@@ -19,11 +19,7 @@ use super::protocol::{lsp_symbol_kind, path_to_uri, PositionConverter};
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 
-pub fn handle_workspace_symbol<'a>(
-    msg: &Value,
-    workspaces: impl Iterator<Item = &'a WorkspaceIndex>,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {
     let query = msg["params"]["query"].as_str().unwrap_or("");
     let mut results = Vec::new();
     let mut seen = std::collections::HashSet::new();
@@ -33,20 +29,14 @@ pub fn handle_workspace_symbol<'a>(
         for s in symbols {
             let resolved_path = s.resolved_path();
             let path_str = resolved_path.to_str().unwrap_or(s.file);
-            let dedupe_key = (
-                s.name.to_string(),
-                path_str.to_string(),
-                s.span.start_line(),
-            );
+            let dedupe_key = (s.name.to_string(), path_str.to_string(), s.span.start_line());
             if !seen.insert(dedupe_key) {
                 continue;
             }
 
             let uri = path_to_uri(path_str);
-            let start_char =
-                conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col());
-            let end_char =
-                conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col());
+            let start_char = conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col());
+            let end_char = conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col());
             results.push(json!({
                 "name": s.name,
                 "kind": lsp_symbol_kind(s.kind),
@@ -72,11 +62,7 @@ pub fn handle_workspace_symbol<'a>(
     json!(results)
 }
 
-pub fn handle_workspace_symbol_resolve<'a>(
-    msg: &Value,
-    workspaces: impl Iterator<Item = &'a WorkspaceIndex>,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {
     let mut item = msg.get("params").cloned().unwrap_or(Value::Null);
     if item.is_null() {
         return Value::Null;
@@ -91,10 +77,8 @@ pub fn handle_workspace_symbol_resolve<'a>(
                 let resolved_path = s.resolved_path();
                 let path_str = resolved_path.to_str().unwrap_or(s.file);
                 let uri = path_to_uri(path_str);
-                let start_char =
-                    conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col());
-                let end_char =
-                    conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col());
+                let start_char = conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col());
+                let end_char = conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col());
                 item["location"] = json!({
                     "uri": uri,
                     "range": {

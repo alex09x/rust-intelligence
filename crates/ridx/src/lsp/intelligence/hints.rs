@@ -16,13 +16,8 @@ use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 
-pub fn handle_inlay_hint(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-) -> LspResult<Value> {
-    let (uri, start_line, _start_col, end_line, _end_col) =
-        crate::lsp::params::text_document_range(msg)?;
+pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager) -> LspResult<Value> {
+    let (uri, start_line, _start_col, end_line, _end_col) = crate::lsp::params::text_document_range(msg)?;
 
     let file = uri_to_path(uri);
     let overlay_opt = overlay_mgr.get(&file);
@@ -47,10 +42,7 @@ pub fn handle_inlay_hint(
             let col_1based = line_str[..ident_start_byte].chars().count() as u32 + 1;
             let utf16_char_pos = line_str[..ident_end_byte].encode_utf16().count() as u32;
 
-            let inferred_type = workspace
-                .and_then(|ws| ws.hover_at(&file, line_1based, col_1based))
-                .and_then(|hover| hover.inferred_type)
-                .map(|t| t.to_string());
+            let inferred_type = workspace.and_then(|ws| ws.hover_at(&file, line_1based, col_1based)).and_then(|hover| hover.inferred_type).map(|t| t.to_string());
 
             if let Some(t) = inferred_type {
                 hints.push(json!({
@@ -69,18 +61,11 @@ pub fn handle_inlay_hint(
     Ok(json!(hints))
 }
 
-pub fn handle_inline_value(
-    msg: &Value,
-    overlay_mgr: Option<&crate::overlay::OverlayManager>,
-) -> Value {
+pub fn handle_inline_value(msg: &Value, overlay_mgr: Option<&crate::overlay::OverlayManager>) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = crate::lsp::protocol::uri_to_path(uri);
-    let sl = msg["params"]["range"]["start"]["line"]
-        .as_u64()
-        .unwrap_or(0) as usize;
-    let el = msg["params"]["range"]["end"]["line"]
-        .as_u64()
-        .unwrap_or(sl as u64) as usize;
+    let sl = msg["params"]["range"]["start"]["line"].as_u64().unwrap_or(0) as usize;
+    let el = msg["params"]["range"]["end"]["line"].as_u64().unwrap_or(sl as u64) as usize;
 
     let doc_text = if let Some(mgr) = overlay_mgr {
         if let Some(overlay) = mgr.get(&file) {
@@ -110,9 +95,7 @@ pub fn handle_inline_value(
                 cur_ident.push(ch);
             } else if in_ident {
                 in_ident = false;
-                if !crate::lsp::editing::ident::is_rust_keyword(&cur_ident)
-                    && !cur_ident.chars().next().is_some_and(|c| c.is_ascii_digit())
-                {
+                if !crate::lsp::editing::ident::is_rust_keyword(&cur_ident) && !cur_ident.chars().next().is_some_and(|c| c.is_ascii_digit()) {
                     values.push(json!({
                         "range": {
                             "start": { "line": l, "character": start_col },
@@ -126,10 +109,7 @@ pub fn handle_inline_value(
             cur_col += ch_utf16_len;
         }
 
-        if in_ident
-            && !crate::lsp::editing::ident::is_rust_keyword(&cur_ident)
-            && !cur_ident.chars().next().is_some_and(|c| c.is_ascii_digit())
-        {
+        if in_ident && !crate::lsp::editing::ident::is_rust_keyword(&cur_ident) && !cur_ident.chars().next().is_some_and(|c| c.is_ascii_digit()) {
             values.push(json!({
                 "range": {
                     "start": { "line": l, "character": start_col },
@@ -143,10 +123,7 @@ pub fn handle_inline_value(
     json!(values)
 }
 
-pub fn handle_inline_completion(
-    msg: &Value,
-    overlay_mgr: Option<&crate::overlay::OverlayManager>,
-) -> Value {
+pub fn handle_inline_completion(msg: &Value, overlay_mgr: Option<&crate::overlay::OverlayManager>) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = crate::lsp::protocol::uri_to_path(uri);
     let line = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as usize;
@@ -164,8 +141,7 @@ pub fn handle_inline_completion(
 
     let mut items = Vec::new();
     if let Some(line_str) = doc_text.lines().nth(line) {
-        let target_byte_offset =
-            crate::lsp::editing::ident::utf16_col_to_byte_offset(line_str, target_char_col);
+        let target_byte_offset = crate::lsp::editing::ident::utf16_col_to_byte_offset(line_str, target_char_col);
         let prefix_slice = &line_str[..target_byte_offset.min(line_str.len())];
 
         let mut ident_start_byte = prefix_slice.len();
@@ -179,9 +155,7 @@ pub fn handle_inline_completion(
 
         let prefix = &prefix_slice[ident_start_byte..];
         if !prefix.is_empty() {
-            let start_char_col =
-                crate::lsp::editing::ident::byte_offset_to_utf16_col(line_str, ident_start_byte)
-                    as u32;
+            let start_char_col = crate::lsp::editing::ident::byte_offset_to_utf16_col(line_str, ident_start_byte) as u32;
             items.push(json!({
                 "insertText": prefix.to_string(),
                 "range": {
@@ -195,19 +169,13 @@ pub fn handle_inline_completion(
 }
 
 pub fn handle_inlay_hint_resolve(msg: &Value) -> LspResult<Value> {
-    let params = msg
-        .get("params")
-        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    let params = msg.get("params").ok_or_else(|| LspError::invalid_params("Missing params object"))?;
     if !params.is_object() {
-        return Err(LspError::invalid_params(
-            "Params must be an InlayHint object",
-        ));
+        return Err(LspError::invalid_params("Params must be an InlayHint object"));
     }
 
     if params.get("position").is_none() || params.get("label").is_none() {
-        return Err(LspError::invalid_params(
-            "InlayHint must contain position and label",
-        ));
+        return Err(LspError::invalid_params("InlayHint must contain position and label"));
     }
 
     let mut hint = params.clone();
@@ -250,9 +218,7 @@ fn find_let_binding(line_str: &str) -> Option<(usize, &str, usize)> {
     let ident_start = offset + let_kw_len + ws_len;
     let trimmed_ident = after_let.trim_start();
 
-    let ident_end_rel = trimmed_ident
-        .find(|c: char| !c.is_alphanumeric() && c != '_')
-        .unwrap_or(trimmed_ident.len());
+    let ident_end_rel = trimmed_ident.find(|c: char| !c.is_alphanumeric() && c != '_').unwrap_or(trimmed_ident.len());
     let var_name = &trimmed_ident[..ident_end_rel];
 
     if var_name.is_empty() {

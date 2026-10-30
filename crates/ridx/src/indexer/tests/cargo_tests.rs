@@ -19,29 +19,20 @@ fn test_extract_config_target() {
             [build]
             target = "x86_64-unknown-linux-gnu"
         "#;
-    assert_eq!(
-        extract_config_target(content1),
-        Some("x86_64-unknown-linux-gnu".to_string())
-    );
+    assert_eq!(extract_config_target(content1), Some("x86_64-unknown-linux-gnu".to_string()));
 
     let content_single_quote = r#"
             [build]
             target = 'aarch64-apple-darwin'
         "#;
-    assert_eq!(
-        extract_config_target(content_single_quote),
-        Some("aarch64-apple-darwin".to_string())
-    );
+    assert_eq!(extract_config_target(content_single_quote), Some("aarch64-apple-darwin".to_string()));
 
     let content_with_flags = r#"
             [build]
             rustflags = ["-C", "target-cpu=native"]
             target = "x86_64-unknown-linux-gnu"
         "#;
-    assert_eq!(
-        extract_config_target(content_with_flags),
-        Some("x86_64-unknown-linux-gnu".to_string())
-    );
+    assert_eq!(extract_config_target(content_with_flags), Some("x86_64-unknown-linux-gnu".to_string()));
 
     let content_other_section = r#"
             [target.x86_64-unknown-linux-gnu]
@@ -81,11 +72,7 @@ fn test_collect_all_workspace_manifests() {
     let sub_crate = test_dir.0.join("crate_a");
     fs::create_dir_all(&sub_crate).unwrap();
     let sub_cargo = sub_crate.join("Cargo.toml");
-    fs::write(
-        &sub_cargo,
-        "[package]\nname = \"crate_a\"\nversion = \"0.1.0\"\n",
-    )
-    .unwrap();
+    fs::write(&sub_cargo, "[package]\nname = \"crate_a\"\nversion = \"0.1.0\"\n").unwrap();
 
     let target_dir = test_dir.0.join("target/sub");
     fs::create_dir_all(&target_dir).unwrap();

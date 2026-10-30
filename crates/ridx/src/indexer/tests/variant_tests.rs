@@ -20,11 +20,7 @@ fn test_compute_variant_id_permutations() {
     let _lock = lock_indexer_test();
     let test_dir = new_test_dir("ridx_variant_test");
     let root_cargo = test_dir.0.join("Cargo.toml");
-    fs::write(
-        &root_cargo,
-        "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n",
-    )
-    .unwrap();
+    fs::write(&root_cargo, "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n").unwrap();
 
     let v1 = compute_variant_id("dev", None, None, None, false, false, &root_cargo);
     let v2 = compute_variant_id("release", None, None, None, false, false, &root_cargo);
@@ -60,11 +56,7 @@ fn test_compute_variant_id_with_lock_and_env() {
     let _lock = lock_indexer_test();
     let test_dir = new_test_dir("ridx_variant_lock");
     let root_cargo = test_dir.0.join("Cargo.toml");
-    fs::write(
-        &root_cargo,
-        "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n",
-    )
-    .unwrap();
+    fs::write(&root_cargo, "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n").unwrap();
     let root_lock = test_dir.0.join("Cargo.lock");
     fs::write(&root_lock, "# Lock file content\nversion = 3\n").unwrap();
 
@@ -89,11 +81,7 @@ fn test_published_variant_and_options() {
     };
     assert_eq!(opts.package.as_deref(), Some("test_pkg"));
 
-    let pv = PublishedVariant {
-        base_out_dir: PathBuf::from("/target/ridx"),
-        variant_out_dir: PathBuf::from("/target/ridx/variants/dev-123"),
-        variant_id: "dev-123".to_string(),
-    };
+    let pv = PublishedVariant { base_out_dir: PathBuf::from("/target/ridx"), variant_out_dir: PathBuf::from("/target/ridx/variants/dev-123"), variant_id: "dev-123".to_string() };
     let debug_str = format!("{pv:?}");
     assert!(debug_str.contains("dev-123"));
 }

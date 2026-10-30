@@ -46,32 +46,19 @@ pub(crate) fn map_def_kind(kind: hir::def::DefKind) -> RDefKind {
     }
 }
 
-pub(crate) fn resolve_span_coords(
-    tcx: TyCtxt<'_>,
-    span: Span,
-    package_root: Option<&Path>,
-) -> Option<(String, u32, u32, u32, u32, bool)> {
+pub(crate) fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span, package_root: Option<&Path>) -> Option<(String, u32, u32, u32, u32, bool)> {
     if span.is_dummy() {
         return None;
     }
     let is_macro = span.from_expansion();
     // Remap macro expansions to their outer call-site in source code
-    let actual_span = if is_macro {
-        span.source_callsite()
-    } else {
-        span
-    };
+    let actual_span = if is_macro { span.source_callsite() } else { span };
     if actual_span.is_dummy() {
         return None;
     }
     let source_map = tcx.sess.source_map();
-    let (lo, hi) = (
-        source_map.lookup_char_pos(actual_span.lo()),
-        source_map.lookup_char_pos(actual_span.hi()),
-    );
-    let full_file = source_map
-        .filename_for_diagnostics(&lo.file.name)
-        .to_string();
+    let (lo, hi) = (source_map.lookup_char_pos(actual_span.lo()), source_map.lookup_char_pos(actual_span.hi()));
+    let full_file = source_map.filename_for_diagnostics(&lo.file.name).to_string();
     let file = if let Some(root) = package_root {
         let p = Path::new(&full_file);
         if let Ok(rel) = p.strip_prefix(root) {
@@ -82,12 +69,5 @@ pub(crate) fn resolve_span_coords(
     } else {
         full_file
     };
-    Some((
-        file,
-        lo.line as u32,
-        (lo.col.0 + 1) as u32,
-        hi.line as u32,
-        (hi.col.0 + 1) as u32,
-        is_macro,
-    ))
+    Some((file, lo.line as u32, (lo.col.0 + 1) as u32, hi.line as u32, (hi.col.0 + 1) as u32, is_macro))
 }

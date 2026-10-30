@@ -49,9 +49,7 @@ pub struct DocumentSymbolDiskCache {
 
 impl DocumentSymbolDiskCache {
     pub fn new() -> Self {
-        Self {
-            entries: Mutex::new(HashMap::new()),
-        }
+        Self { entries: Mutex::new(HashMap::new()) }
     }
 
     pub(crate) fn get(&self, file: &str, mtime: Option<SystemTime>, len: u64) -> Option<Value> {
@@ -94,10 +92,7 @@ impl DocumentSymbolDiskCache {
 
     #[cfg(test)]
     pub(crate) fn hits_for(&self, file_path: &str) -> Option<usize> {
-        self.entries
-            .lock()
-            .ok()
-            .and_then(|cache| cache.get(file_path).map(|entry| entry.hits))
+        self.entries.lock().ok().and_then(|cache| cache.get(file_path).map(|entry| entry.hits))
     }
 
     #[cfg(test)]

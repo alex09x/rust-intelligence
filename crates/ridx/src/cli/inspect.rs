@@ -40,64 +40,21 @@ pub fn cmd_inspect(ws: &WorkspaceIndex, json: bool) {
         return;
     }
 
-    println!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-    println!(
-        "  {} {} crate(s) loaded",
-        "RIDX Workspace Index:".bold(),
-        stats.total_crates.to_string().cyan()
-    );
+    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    println!("  {} {} crate(s) loaded", "RIDX Workspace Index:".bold(), stats.total_crates.to_string().cyan());
     if let Some(ref v) = stats.active_variant {
         println!("  Active Variant        : {}", v.cyan().bold());
     }
-    println!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-    println!(
-        "{:<28}: {}",
-        "Total Crates",
-        stats.total_crates.to_string().bold()
-    );
-    println!(
-        "{:<28}: {} bytes ({:.2} KB / {:.2} MB)",
-        "Total Index Size",
-        stats.total_bytes,
-        stats.total_bytes as f64 / 1024.0,
-        stats.total_bytes as f64 / (1024.0 * 1024.0)
-    );
+    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    println!("{:<28}: {}", "Total Crates", stats.total_crates.to_string().bold());
+    println!("{:<28}: {} bytes ({:.2} KB / {:.2} MB)", "Total Index Size", stats.total_bytes, stats.total_bytes as f64 / 1024.0, stats.total_bytes as f64 / (1024.0 * 1024.0));
     println!("{:<28}: {}", "Indexed Files", stats.total_files);
-    println!(
-        "{:<28}: {}",
-        "Definitions Count",
-        stats.total_defs.to_string().green().bold()
-    );
-    println!(
-        "{:<28}: {}",
-        "References Count",
-        stats.total_refs.to_string().green().bold()
-    );
-    println!(
-        "{:<28}: {}",
-        "Inferred Types Count",
-        stats.total_types.to_string().green().bold()
-    );
-    println!(
-        "{:<28}: {}",
-        "Zero-Copy Lookup Ready",
-        "YES (Mmap)".green().bold()
-    );
-    println!(
-        "{:<28}: {}",
-        "Daemon Memory Required",
-        "0 MB (pure disk index)".green().bold()
-    );
-    println!(
-        "{}",
-        "───────────────────────────────────────────────────────────────────────".dimmed()
-    );
+    println!("{:<28}: {}", "Definitions Count", stats.total_defs.to_string().green().bold());
+    println!("{:<28}: {}", "References Count", stats.total_refs.to_string().green().bold());
+    println!("{:<28}: {}", "Inferred Types Count", stats.total_types.to_string().green().bold());
+    println!("{:<28}: {}", "Zero-Copy Lookup Ready", "YES (Mmap)".green().bold());
+    println!("{:<28}: {}", "Daemon Memory Required", "0 MB (pure disk index)".green().bold());
+    println!("{}", "───────────────────────────────────────────────────────────────────────".dimmed());
     println!("  Crate Breakdown:");
     for c in &stats.crate_summaries {
         println!(
@@ -111,8 +68,5 @@ pub fn cmd_inspect(ws: &WorkspaceIndex, json: bool) {
             c.path.display()
         );
     }
-    println!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
+    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
 }

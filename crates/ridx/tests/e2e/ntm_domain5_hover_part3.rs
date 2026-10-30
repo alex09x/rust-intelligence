@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -91,10 +86,7 @@ fn test_hover_fn_parameter_shows_parameter_signature() {
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["contents"]["kind"], "markdown");
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfactor: i64\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfactor: i64\n```");
 }
 
 #[test]
@@ -121,10 +113,7 @@ fn test_hover_file_scheme_uri_normalized() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn normalized_call()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn normalized_call()\n```");
 }
 
 #[test]
@@ -139,10 +128,7 @@ fn test_hover_pub_crate_fn_shows_fn_name() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn crate_internal()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn crate_internal()\n```");
 }
 
 #[test]
@@ -157,10 +143,7 @@ fn test_hover_async_fn_shows_fn_name() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn async_fetch()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn async_fetch()\n```");
 }
 
 #[test]
@@ -175,10 +158,7 @@ fn test_hover_unsafe_fn_shows_fn_name() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn raw_operation()\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn raw_operation()\n```");
 }
 
 #[test]
@@ -193,10 +173,7 @@ fn test_hover_generic_fn_shows_fn_name() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn transform<T: Clone>(item: T) -> T\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn transform<T: Clone>(item: T) -> T\n```");
 }
 
 #[test]
@@ -211,10 +188,7 @@ fn test_hover_impl_method_shows_fn_name() {
     });
     let res = send_hover_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["contents"]["value"],
-        "```rust\nfn start(&self)\n```"
-    );
+    assert_eq!(res["result"]["contents"]["value"], "```rust\nfn start(&self)\n```");
 }
 
 #[test]

@@ -48,35 +48,17 @@ pub fn prelude_candidate_paths(short_name: &str) -> &'static [&'static str] {
         "From" => &["core::convert::From", "std::convert::From"],
         "TryFrom" => &["core::convert::TryFrom", "std::convert::TryFrom"],
         "TryInto" => &["core::convert::TryInto", "std::convert::TryInto"],
-        "Iterator" => &[
-            "core::iter::traits::iterator::Iterator",
-            "core::iter::Iterator",
-        ],
+        "Iterator" => &["core::iter::traits::iterator::Iterator", "core::iter::Iterator"],
         "Extend" => &["core::iter::traits::collect::Extend", "core::iter::Extend"],
-        "IntoIterator" => &[
-            "core::iter::traits::collect::IntoIterator",
-            "core::iter::IntoIterator",
-        ],
-        "FromIterator" => &[
-            "core::iter::traits::collect::FromIterator",
-            "core::iter::FromIterator",
-        ],
-        "DoubleEndedIterator" => &[
-            "core::iter::traits::double_ended::DoubleEndedIterator",
-            "core::iter::DoubleEndedIterator",
-        ],
-        "ExactSizeIterator" => &[
-            "core::iter::traits::exact_size::ExactSizeIterator",
-            "core::iter::ExactSizeIterator",
-        ],
+        "IntoIterator" => &["core::iter::traits::collect::IntoIterator", "core::iter::IntoIterator"],
+        "FromIterator" => &["core::iter::traits::collect::FromIterator", "core::iter::FromIterator"],
+        "DoubleEndedIterator" => &["core::iter::traits::double_ended::DoubleEndedIterator", "core::iter::DoubleEndedIterator"],
+        "ExactSizeIterator" => &["core::iter::traits::exact_size::ExactSizeIterator", "core::iter::ExactSizeIterator"],
         "Fn" => &["core::ops::function::Fn", "core::ops::Fn"],
         "FnMut" => &["core::ops::function::FnMut", "core::ops::FnMut"],
         "FnOnce" => &["core::ops::function::FnOnce", "core::ops::FnOnce"],
         "Future" => &["core::future::future::Future", "core::future::Future"],
-        "IntoFuture" => &[
-            "core::future::into_future::IntoFuture",
-            "core::future::IntoFuture",
-        ],
+        "IntoFuture" => &["core::future::into_future::IntoFuture", "core::future::IntoFuture"],
         _ => &[],
     }
 }

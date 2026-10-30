@@ -21,13 +21,7 @@ use serde_json::json;
 fn test_workspace_symbol_single_letter_query() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_single_let", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_single_let",
-        "src/lib.rs",
-        "pub struct «XRay»;\npub struct «Alpha»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_single_let", "src/lib.rs", "pub struct «XRay»;\npub struct «Alpha»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -45,13 +39,7 @@ fn test_workspace_symbol_single_letter_query() {
 fn test_workspace_symbol_null_query_treated_as_empty() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_null_q", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_null_q",
-        "src/lib.rs",
-        "pub struct «NullTarget»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_null_q", "src/lib.rs", "pub struct «NullTarget»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -69,13 +57,7 @@ fn test_workspace_symbol_null_query_treated_as_empty() {
 fn test_workspace_symbol_special_chars_in_filename_uri() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_special_fn", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_special_fn",
-        "src/my_util.rs",
-        "pub struct «SpecialUtil»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_special_fn", "src/my_util.rs", "pub struct «SpecialUtil»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -117,13 +99,7 @@ fn test_workspace_symbol_many_symbols_below_limit() {
 fn test_workspace_symbol_utf16_multibyte_name_location() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_multibyte", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_multibyte",
-        "src/lib.rs",
-        "// UTF8 prefix 🦀\npub struct «UnicodeAnchor»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_multibyte", "src/lib.rs", "// UTF8 prefix 🦀\npub struct «UnicodeAnchor»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -168,13 +144,7 @@ fn test_workspace_symbol_nested_modules_with_struct_and_enum() {
 fn test_workspace_symbol_query_matching_case_variations() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_case_var", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_case_var",
-        "src/lib.rs",
-        "pub struct «TargetVariant»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_case_var", "src/lib.rs", "pub struct «TargetVariant»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 

@@ -32,9 +32,7 @@ fn make_ref_req(uri: &str, line: u32, col: u32, include_decl: bool) -> Value {
 fn test_references_cross_file_two_files_same_crate() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_1", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_1", "src/models.rs", "pub struct «SharedRecord»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_1", "src/models.rs", "pub struct «SharedRecord»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_refs_to_def("pkg_r5_1", "src/consumer_a.rs", "use crate::models::SharedRecord;\npub fn a() { let _ = «SharedRecord»; }\n", ids[0]).unwrap();
@@ -63,9 +61,7 @@ fn test_references_cross_file_two_files_same_crate() {
 fn test_references_cross_file_three_files_same_crate() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_2", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_2", "src/defs.rs", "pub struct «TripleTarget»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_2", "src/defs.rs", "pub struct «TripleTarget»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_refs_to_def("pkg_r5_2", "src/f1.rs", "«TripleTarget»;\n", ids[0]).unwrap();
@@ -88,9 +84,7 @@ fn test_references_cross_file_three_files_same_crate() {
 fn test_references_submodule_definition_referenced_in_root() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_3", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_3", "src/sub/inner.rs", "pub struct «InnerType»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_3", "src/sub/inner.rs", "pub struct «InnerType»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_refs_to_def("pkg_r5_3", "src/lib.rs", "use crate::sub::inner::InnerType;\npub fn root() { let _ = «InnerType»; }\n", ids[0]).unwrap();
@@ -113,9 +107,7 @@ fn test_references_submodule_definition_referenced_in_root() {
 fn test_references_root_definition_referenced_in_deep_submodule() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_4", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_4", "src/lib.rs", "pub struct «RootConfig»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_4", "src/lib.rs", "pub struct «RootConfig»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     ws.add_refs_to_def("pkg_r5_4", "src/a/b/c.rs", "use crate::RootConfig;\npub fn leaf() { let _ = «RootConfig»; }\n", ids[0]).unwrap();
@@ -138,9 +130,7 @@ fn test_references_root_definition_referenced_in_deep_submodule() {
 fn test_references_trait_definition_multiple_usages() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_5", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_5", "src/lib.rs", "pub trait «Displayable»;\n", DefKind::Trait)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_5", "src/lib.rs", "pub trait «Displayable»;\n", DefKind::Trait).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub trait Displayable;\npub fn u1<T: «Displayable»>() {}\npub fn u2<T: «Displayable»>() {}\n";
@@ -162,9 +152,7 @@ fn test_references_trait_definition_multiple_usages() {
 fn test_references_with_clean_overlay_mapping() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_6", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_6", "src/lib.rs", "pub struct «CleanRefTarget»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_6", "src/lib.rs", "pub struct «CleanRefTarget»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct CleanRefTarget;\npub fn run() { let _ = «CleanRefTarget»; }\n";
@@ -215,9 +203,7 @@ fn test_references_overlay_local_bindings_exact_positions() {
 fn test_references_overlay_on_unrelated_file_preserves_target() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_8", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_8", "src/lib.rs", "pub struct «IsolatedRef»;\n", DefKind::Struct)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_8", "src/lib.rs", "pub struct «IsolatedRef»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub struct IsolatedRef;\npub fn run() { let _ = «IsolatedRef»; }\n";
@@ -244,9 +230,7 @@ fn test_references_overlay_on_unrelated_file_preserves_target() {
 fn test_references_generic_function_usages() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_9", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_9", "src/lib.rs", "pub fn «process_item»<T>(x: T) { let _ = x; }\n", DefKind::Fn)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_9", "src/lib.rs", "pub fn «process_item»<T>(x: T) { let _ = x; }\n", DefKind::Fn).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub fn process_item<T>(x: T) { let _ = x; }\npub fn call() { «process_item»(42); }\n";
@@ -269,9 +253,7 @@ fn test_references_generic_function_usages() {
 fn test_references_type_alias_usages() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_r5_10", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs("pkg_r5_10", "src/lib.rs", "pub type «Handle» = usize;\n", DefKind::TyAlias)
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_r5_10", "src/lib.rs", "pub type «Handle» = usize;\n", DefKind::TyAlias).unwrap();
     assert_eq!(ids.len(), 1);
 
     let code = "pub type Handle = usize;\npub fn use_h() -> «Handle» { 0 }\n";

@@ -19,21 +19,9 @@ impl WorkspaceIndex {
     /// Returns the index in `self.readers` for the crate that contains or owns the specified file path.
     pub fn reader_index_for_file(&self, file_path: &str) -> Option<usize> {
         let indices = self.reader_indices_for_file(file_path);
-        let has_file = |i: usize| {
-            self.target_file_for_reader(i, file_path)
-                .is_some_and(|tf| self.readers[i].find_file_id(tf.as_ref()).is_some())
-        };
+        let has_file = |i: usize| self.target_file_for_reader(i, file_path).is_some_and(|tf| self.readers[i].find_file_id(tf.as_ref()).is_some());
         let is_lib = |i: usize| {
-            self.target_kinds
-                .get(i)
-                .copied()
-                .flatten()
-                .is_some_and(|k| k.is_lib())
-                || self
-                    .unit_keys
-                    .get(i)
-                    .and_then(|u| u.as_deref())
-                    .is_some_and(|uk| uk.contains("(lib)"))
+            self.target_kinds.get(i).copied().flatten().is_some_and(|k| k.is_lib()) || self.unit_keys.get(i).and_then(|u| u.as_deref()).is_some_and(|uk| uk.contains("(lib)"))
         };
         if let Some(i) = indices.iter().copied().find(|&i| is_lib(i) && has_file(i)) {
             return Some(i);
@@ -41,11 +29,7 @@ impl WorkspaceIndex {
         if let Some(i) = indices.iter().copied().find(|&i| !is_lib(i) && has_file(i)) {
             return Some(i);
         }
-        indices
-            .iter()
-            .copied()
-            .find(|&i| is_lib(i))
-            .or_else(|| indices.first().copied())
+        indices.iter().copied().find(|&i| is_lib(i)).or_else(|| indices.first().copied())
     }
 
     /// Returns the target kind for the reader at index `idx` if known.
@@ -72,11 +56,7 @@ impl WorkspaceIndex {
     /// rather than broader ancestor workspace roots, invariant to reader insertion order.
     pub fn reader_indices_for_file(&self, file_path: &str) -> Vec<usize> {
         let p = Path::new(file_path);
-        let abs_p = if p.is_absolute() {
-            None
-        } else {
-            self.workspace_root.as_ref().map(|ws| ws.join(p))
-        };
+        let abs_p = if p.is_absolute() { None } else { self.workspace_root.as_ref().map(|ws| ws.join(p)) };
 
         // 1. Longest prefix match against source_roots
         let mut matching_roots: Vec<(usize, usize, usize)> = Vec::new(); // (reader_idx, comps, len)
@@ -84,56 +64,26 @@ impl WorkspaceIndex {
             if let Some(root) = self.reader_root(i) {
                 if !root.as_os_str().is_empty() {
                     let matches = p.starts_with(root)
-                        || abs_p
-                            .as_deref()
-                            .map(|ap| ap.starts_with(root))
-                            .unwrap_or(false)
-                        || (p.is_absolute()
-                            && self
-                                .workspace_root
-                                .as_ref()
-                                .map(|ws| p.starts_with(ws.join(root)))
-                                .unwrap_or(false));
+                        || abs_p.as_deref().map(|ap| ap.starts_with(root)).unwrap_or(false)
+                        || (p.is_absolute() && self.workspace_root.as_ref().map(|ws| p.starts_with(ws.join(root))).unwrap_or(false));
                     if matches {
                         matching_roots.push((i, root.components().count(), root.as_os_str().len()));
                     }
                 }
             }
         }
-        if let Some((_, max_comps, max_len)) = matching_roots
-            .iter()
-            .max_by_key(|(_, comps, len)| (*comps, *len))
-            .copied()
-        {
-            let top: Vec<usize> = matching_roots
-                .into_iter()
-                .filter(|(_, comps, len)| *comps == max_comps && *len == max_len)
-                .map(|(i, _, _)| i)
-                .collect();
+        if let Some((_, max_comps, max_len)) = matching_roots.iter().max_by_key(|(_, comps, len)| (*comps, *len)).copied() {
+            let top: Vec<usize> = matching_roots.into_iter().filter(|(_, comps, len)| *comps == max_comps && *len == max_len).map(|(i, _, _)| i).collect();
             if top.len() > 1 {
-                let ws_rel = self
-                    .workspace_root
-                    .as_deref()
-                    .and_then(|ws| p.strip_prefix(ws).ok())
-                    .and_then(|r| r.to_str());
+                let ws_rel = self.workspace_root.as_deref().and_then(|ws| p.strip_prefix(ws).ok()).and_then(|r| r.to_str());
                 let has_exact = |i: usize| {
                     let r = &self.readers[i];
-                    r.find_file_id(file_path).is_some()
-                        || ws_rel.is_some_and(|rel| r.find_file_id(rel).is_some())
+                    r.find_file_id(file_path).is_some() || ws_rel.is_some_and(|rel| r.find_file_id(rel).is_some())
                 };
                 if top.iter().copied().any(has_exact) {
                     return top
                         .into_iter()
-                        .filter(|&i| {
-                            has_exact(i)
-                                || self.readers[i].files_count() == 0
-                                || self
-                                    .target_kinds
-                                    .get(i)
-                                    .copied()
-                                    .flatten()
-                                    .is_some_and(|k| k.is_lib())
-                        })
+                        .filter(|&i| has_exact(i) || self.readers[i].files_count() == 0 || self.target_kinds.get(i).copied().flatten().is_some_and(|k| k.is_lib()))
                         .collect();
                 }
             }
@@ -148,13 +98,7 @@ impl WorkspaceIndex {
                 .readers
                 .iter()
                 .enumerate()
-                .filter(|&(i, r)| {
-                    r.find_file_id(ap).is_some()
-                        || self
-                            .reader_file_hashes
-                            .get(i)
-                            .is_some_and(|h| h.contains_key(ap))
-                })
+                .filter(|&(i, r)| r.find_file_id(ap).is_some() || self.reader_file_hashes.get(i).is_some_and(|h| h.contains_key(ap)))
                 .map(|(i, _)| i)
                 .collect();
             if !indices.is_empty() {
@@ -163,25 +107,13 @@ impl WorkspaceIndex {
         }
 
         // 3. reader.find_file_id match (direct index match)
-        let indices: Vec<usize> = self
-            .readers
-            .iter()
-            .enumerate()
-            .filter(|&(_, r)| r.find_file_id(file_path).is_some())
-            .map(|(i, _)| i)
-            .collect();
+        let indices: Vec<usize> = self.readers.iter().enumerate().filter(|&(_, r)| r.find_file_id(file_path).is_some()).map(|(i, _)| i).collect();
         if !indices.is_empty() {
             return indices;
         }
 
         // 4. reader_file_hashes exact match
-        let indices: Vec<usize> = self
-            .reader_file_hashes
-            .iter()
-            .enumerate()
-            .filter(|&(_, h)| h.contains_key(file_path))
-            .map(|(i, _)| i)
-            .collect();
+        let indices: Vec<usize> = self.reader_file_hashes.iter().enumerate().filter(|&(_, h)| h.contains_key(file_path)).map(|(i, _)| i).collect();
         if !indices.is_empty() {
             let cname_matches: Vec<usize> = indices
                 .iter()
@@ -191,11 +123,7 @@ impl WorkspaceIndex {
                     file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
                 })
                 .collect();
-            return if cname_matches.is_empty() {
-                indices
-            } else {
-                cname_matches
-            };
+            return if cname_matches.is_empty() { indices } else { cname_matches };
         }
 
         // 5. Crate name contained in path
@@ -219,13 +147,7 @@ impl WorkspaceIndex {
         }
 
         // 6. Fallback for single non-sysroot crate
-        let non_sysroot: Vec<usize> = self
-            .readers
-            .iter()
-            .enumerate()
-            .filter(|(_, r)| !matches!(r.crate_name(), "core" | "alloc" | "std"))
-            .map(|(i, _)| i)
-            .collect();
+        let non_sysroot: Vec<usize> = self.readers.iter().enumerate().filter(|(_, r)| !matches!(r.crate_name(), "core" | "alloc" | "std")).map(|(i, _)| i).collect();
         if non_sysroot.len() == 1 {
             return non_sysroot;
         }
@@ -242,10 +164,7 @@ impl WorkspaceIndex {
 
         // 1. Inspect definitions declared directly in this file; a reader that does not store
         //    the file contributes nothing here and the path-based fallback below decides.
-        if let Some(fid) = self
-            .target_file_for_reader(idx, file_path)
-            .and_then(|target| reader.find_file_id(target.as_ref()))
-        {
+        if let Some(fid) = self.target_file_for_reader(idx, file_path).and_then(|target| reader.find_file_id(target.as_ref())) {
             let defs = reader.definitions();
             for &(_, _, def_idx) in self.unit_match.defs_in_file_up_to(idx, fid, u32::MAX) {
                 let Some(def) = defs.get(def_idx as usize) else {
@@ -296,12 +215,7 @@ impl WorkspaceIndex {
         Some(segs.join("::"))
     }
 
-    pub(crate) fn enclosing_inline_mod_path(
-        &self,
-        file: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<&str> {
+    pub(crate) fn enclosing_inline_mod_path(&self, file: &str, line: u32, col: u32) -> Option<&str> {
         for i in self.reader_indices_for_file(file) {
             let reader = &self.readers[i];
             let Some(tf) = self.target_file_for_reader(i, file) else {

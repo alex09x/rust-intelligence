@@ -69,15 +69,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -99,10 +91,18 @@ fn test_prepare_rename_index_static_definition_exact_range() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Static, visibility: 1, is_macro_expansion: false,
-        name: "GLOBAL_COUNTER".to_string(), path: "test_crate::GLOBAL_COUNTER".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Static,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "GLOBAL_COUNTER".to_string(),
+        path: "test_crate::GLOBAL_COUNTER".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 22,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "static GLOBAL_COUNTER: i32 = 0;\n").unwrap();
@@ -134,19 +134,31 @@ fn test_prepare_rename_index_reference_site_prepares_target() {
 
     let mut writer = IndexWriter::new("test_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_fn".to_string(), path: "test_crate::target_fn".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_fn".to_string(),
+        path: "test_crate::target_fn".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 13,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 3, start_col: 5, end_line: 3, end_col: 14,
+        start_line: 3,
+        start_col: 5,
+        end_line: 3,
+        end_col: 14,
         target_def_id: Some(1),
         target_path: "test_crate::target_fn".to_string(),
         target_file: Some(lib_str.clone()),
         target_unit: None,
-        target_line: 1, target_col: 4,
+        target_line: 1,
+        target_col: 4,
         kind: DefKind::Fn,
         is_write: false,
         is_macro_expansion: false,
@@ -183,19 +195,31 @@ fn test_prepare_rename_external_crate_symbol_rejected_with_exact_message() {
 
     let mut writer = IndexWriter::new("ext_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "external_fn".to_string(), path: "dependency::external_fn".to_string(),
-        signature: None, file: "/opt/.cargo/registry/src/index.crates.io-0000000000000000/dep-1.0.0/src/lib.rs".to_string(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "external_fn".to_string(),
+        path: "dependency::external_fn".to_string(),
+        signature: None,
+        file: "/opt/.cargo/registry/src/index.crates.io-0000000000000000/dep-1.0.0/src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 15,
     });
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 2, start_col: 5, end_line: 2, end_col: 16,
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 16,
         target_def_id: Some(1),
         target_path: "dependency::external_fn".to_string(),
         target_file: Some("/opt/.cargo/registry/src/index.crates.io-0000000000000000/dep-1.0.0/src/lib.rs".to_string()),
         target_unit: None,
-        target_line: 1, target_col: 4,
+        target_line: 1,
+        target_col: 4,
         kind: DefKind::Fn,
         is_write: false,
         is_macro_expansion: false,

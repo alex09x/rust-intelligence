@@ -38,10 +38,7 @@ pub struct CacheObjectResolver {
 impl CacheObjectResolver {
     /// Creates a new resolver backed by the specified global cache directory.
     pub fn new(cache_dir: PathBuf) -> Self {
-        Self {
-            cache_dir,
-            cache_map: None,
-        }
+        Self { cache_dir, cache_map: None }
     }
 
     /// Resolves an existing `.ridx` shard file for the given dependency shard.
@@ -89,10 +86,7 @@ impl CacheObjectResolver {
         // across targets or features is an accepted compromise to preserve cross-crate intelligence
         // and avoid full dependency re-indexing when the driver or toolchain updates;
         // steps 1 and 2 are tried first.
-        candidates
-            .iter()
-            .find(|c| c.version == dep.version && c.generation == expected_gen)
-            .map(|c| c.path.clone())
+        candidates.iter().find(|c| c.version == dep.version && c.generation == expected_gen).map(|c| c.path.clone())
     }
 
     fn populate_cache_map(&mut self) {

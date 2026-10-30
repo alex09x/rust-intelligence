@@ -53,14 +53,9 @@ impl TestDispatcher {
         d.writer.clear();
         d
     }
-
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
-
     fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
@@ -77,17 +72,23 @@ fn test_semantic_tokens_delta_whitespace_did_change_returns_empty_edits() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("ws_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "bar".to_string(), path: "ws_crate::bar".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "bar".to_string(),
+        path: "ws_crate::bar".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn bar() {}\n").unwrap();
-
     let mut dsp = TestDispatcher::new(shard);
     let full_req = json!({
         "jsonrpc": "2.0", "id": 127, "method": "textDocument/semanticTokens/full",
@@ -96,7 +97,6 @@ fn test_semantic_tokens_delta_whitespace_did_change_returns_empty_edits() {
     assert!(dsp.dispatch(&full_req));
     let full_resp = dsp.parse_response();
     let prev_id = full_resp["result"]["resultId"].as_str().unwrap();
-
     let did_open = json!({
         "jsonrpc": "2.0", "method": "textDocument/didOpen",
         "params": {
@@ -107,7 +107,6 @@ fn test_semantic_tokens_delta_whitespace_did_change_returns_empty_edits() {
         }
     });
     assert!(dsp.dispatch(&did_open));
-
     let delta_req = json!({
         "jsonrpc": "2.0", "id": 128, "method": "textDocument/semanticTokens/full/delta",
         "params": {
@@ -129,29 +128,51 @@ fn test_semantic_tokens_range_single_line_slice() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("rslice_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f1".to_string(), path: "rslice_crate::f1".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 6,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f1".to_string(),
+        path: "rslice_crate::f1".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 6,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f2".to_string(), path: "rslice_crate::f2".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 4, end_line: 3, end_col: 6,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f2".to_string(),
+        path: "rslice_crate::f2".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 4,
+        end_line: 3,
+        end_col: 6,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f3".to_string(), path: "rslice_crate::f3".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 4, end_line: 5, end_col: 6,
+        def_id: 3,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f3".to_string(),
+        path: "rslice_crate::f3".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 5,
+        start_col: 4,
+        end_line: 5,
+        end_col: 6,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn f1() {}\n\nfn f2() {}\n\nfn f3() {}\n").unwrap();
-
     let mut dsp = TestDispatcher::new(shard);
     let req = json!({
         "jsonrpc": "2.0", "id": 129, "method": "textDocument/semanticTokens/range",
@@ -174,35 +195,65 @@ fn test_semantic_tokens_range_spanning_subset_of_lines() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("subset_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f1".to_string(), path: "subset_crate::f1".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 6,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f1".to_string(),
+        path: "subset_crate::f1".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 6,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f2".to_string(), path: "subset_crate::f2".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 4, end_line: 2, end_col: 6,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f2".to_string(),
+        path: "subset_crate::f2".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 4,
+        end_line: 2,
+        end_col: 6,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f3".to_string(), path: "subset_crate::f3".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 4, end_line: 3, end_col: 6,
+        def_id: 3,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f3".to_string(),
+        path: "subset_crate::f3".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 4,
+        end_line: 3,
+        end_col: 6,
     });
     writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "f4".to_string(), path: "subset_crate::f4".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 4, end_line: 4, end_col: 6,
+        def_id: 4,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "f4".to_string(),
+        path: "subset_crate::f4".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 4,
+        end_line: 4,
+        end_col: 6,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn f1() {}\nfn f2() {}\nfn f3() {}\nfn f4() {}\n").unwrap();
-
     let mut dsp = TestDispatcher::new(shard);
     let req = json!({
         "jsonrpc": "2.0", "id": 130, "method": "textDocument/semanticTokens/range",
@@ -225,17 +276,23 @@ fn test_semantic_tokens_range_boundary_start_line_exact() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("bstart_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "bstart_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 4, end_line: 2, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "bstart_crate::foo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 4,
+        end_line: 2,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "\nfn foo() {}\n").unwrap();
-
     let mut dsp = TestDispatcher::new(shard);
     let req = json!({
         "jsonrpc": "2.0", "id": 131, "method": "textDocument/semanticTokens/range",
@@ -258,17 +315,23 @@ fn test_semantic_tokens_range_boundary_end_line_exact() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("bend_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "bend_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 4, end_line: 2, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "bend_crate::foo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 4,
+        end_line: 2,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "\nfn foo() {}\n").unwrap();
-
     let mut dsp = TestDispatcher::new(shard);
     let req = json!({
         "jsonrpc": "2.0", "id": 132, "method": "textDocument/semanticTokens/range",
@@ -291,17 +354,23 @@ fn test_semantic_tokens_range_inverted_lines_returns_empty() {
     let shard = dir.join("index.ridx");
     let file = dir.join("src/lib.rs");
     let lib_str = file.to_str().unwrap().to_string();
-
     let mut writer = IndexWriter::new("inv_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "inv_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "inv_crate::foo".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn foo() {}\n").unwrap();
-
     let mut dsp = TestDispatcher::new(shard);
     let req = json!({
         "jsonrpc": "2.0", "id": 133, "method": "textDocument/semanticTokens/range",

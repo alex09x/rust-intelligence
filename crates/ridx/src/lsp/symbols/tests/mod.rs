@@ -37,11 +37,11 @@ impl Drop for SymbolsTestHarness {
 
 pub fn setup_test_symbols() -> SymbolsTestHarness {
     let id = SYM_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_syms_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_syms_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
-    let code = "pub fn my_symbol() {}\npub struct MyStruct;\npub enum MyEnum { VariantA, VariantB }\npub trait MyTrait { fn trait_method(&self); }\npub const MY_CONST: usize = 42;\n";
+    let code =
+        "pub fn my_symbol() {}\npub struct MyStruct;\npub enum MyEnum { VariantA, VariantB }\npub trait MyTrait { fn trait_method(&self); }\npub const MY_CONST: usize = 42;\n";
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_syms", "0.1.0");
@@ -142,12 +142,5 @@ pub fn setup_test_symbols() -> SymbolsTestHarness {
     let conv = PositionConverter::new();
     let uri = format!("file://{}", src_file.to_str().unwrap());
 
-    SymbolsTestHarness {
-        temp_dir,
-        ws,
-        overlay_mgr,
-        conv,
-        src_file,
-        uri,
-    }
+    SymbolsTestHarness { temp_dir, ws, overlay_mgr, conv, src_file, uri }
 }

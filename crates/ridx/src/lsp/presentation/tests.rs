@@ -21,12 +21,10 @@ static TEST_DIR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn setup_test_presentation() -> (PathBuf, WorkspaceIndex, OverlayManager, PositionConverter) {
     let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_pres_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_pres_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
-    let code =
-        "// link https://example.com/test\npub fn hello() {\n    let a = 1;\n    let b = 2;\n}\n";
+    let code = "// link https://example.com/test\npub fn hello() {\n    let a = 1;\n    let b = 2;\n}\n";
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_pres", "0.1.0");
@@ -166,12 +164,7 @@ fn test_presentation_handlers_comprehensive() {
     // Diagnostics: invalid syntax reports error
     let invalid_file = temp_dir.join("src/invalid.rs");
     let invalid_uri = format!("file://{}", invalid_file.to_str().unwrap());
-    overlay_mgr.open_document(
-        &invalid_uri,
-        invalid_file.to_str().unwrap(),
-        1,
-        "fn broken() {\n".to_string(),
-    );
+    overlay_mgr.open_document(&invalid_uri, invalid_file.to_str().unwrap(), 1, "fn broken() {\n".to_string());
     let invalid_req = json!({
         "params": { "textDocument": { "uri": &invalid_uri } }
     });
@@ -191,47 +184,22 @@ fn test_presentation_handlers_comprehensive() {
         let f = temp_dir.join("src/delim.rs");
         let u = format!("file://{}", f.to_str().unwrap());
         overlay_mgr.open_document(&u, f.to_str().unwrap(), 1, code_sample.to_string());
-        let res = handle_diagnostic(
-            &json!({ "params": { "textDocument": { "uri": &u } } }),
-            &overlay_mgr,
-        );
+        let res = handle_diagnostic(&json!({ "params": { "textDocument": { "uri": &u } } }), &overlay_mgr);
         let items = res["items"].as_array().unwrap();
-        assert!(
-            items
-                .iter()
-                .any(|item| item["message"].as_str().unwrap().contains(expected_msg)),
-            "Expected '{}' in diagnostics for '{}'",
-            expected_msg,
-            code_sample
-        );
+        assert!(items.iter().any(|item| item["message"].as_str().unwrap().contains(expected_msg)), "Expected '{}' in diagnostics for '{}'", expected_msg, code_sample);
     }
 
     // Diagnostics and links for missing file
     let missing_uri = "file:///nonexistent/file.rs";
     let missing_req = json!({ "params": { "textDocument": { "uri": missing_uri } } });
-    assert_eq!(
-        handle_diagnostic(&missing_req, &overlay_mgr)["items"]
-            .as_array()
-            .unwrap()
-            .len(),
-        0
-    );
+    assert_eq!(handle_diagnostic(&missing_req, &overlay_mgr)["items"].as_array().unwrap().len(), 0);
     assert_eq!(handle_document_link(&missing_req, &overlay_mgr), json!([]));
-    assert_eq!(
-        handle_selection_range(&missing_req, &overlay_mgr),
-        json!([])
-    );
-    assert_eq!(
-        handle_moniker(&missing_req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
+    assert_eq!(handle_selection_range(&missing_req, &overlay_mgr), json!([]));
+    assert_eq!(handle_moniker(&missing_req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
 
     // Document link, diagnostic, and content from disk file (not in overlay)
     let disk_file = temp_dir.join("src/disk.rs");
-    let _ = fs::write(
-        &disk_file,
-        "// see https://example.com/disk\nfn disk() { let _arr = [1, 2]; }\n",
-    );
+    let _ = fs::write(&disk_file, "// see https://example.com/disk\nfn disk() { let _arr = [1, 2]; }\n");
     let disk_uri = format!("file://{}", disk_file.to_str().unwrap());
     let disk_req = json!({ "params": { "textDocument": { "uri": &disk_uri }, "uri": &disk_uri } });
     let disk_diag = handle_diagnostic(&disk_req, &overlay_mgr);
@@ -242,10 +210,7 @@ fn test_presentation_handlers_comprehensive() {
     assert!(disk_content["text"].as_str().unwrap().contains("disk"));
 
     // Semantic tokens, folding range, and code lens when document is not in overlay
-    assert_eq!(
-        handle_semantic_tokens_full(&missing_req, Some(&ws), &overlay_mgr, &mut conv)["data"],
-        json!([])
-    );
+    assert_eq!(handle_semantic_tokens_full(&missing_req, Some(&ws), &overlay_mgr, &mut conv)["data"], json!([]));
     assert_eq!(handle_folding_range(&missing_req, &overlay_mgr), json!([]));
     assert_eq!(handle_code_lens(&missing_req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
 
@@ -265,22 +230,11 @@ fn test_workspace_diagnostic_discovers_closed_files() {
     let req = json!({ "params": {} });
     let res = handle_workspace_diagnostic(&req, &overlay_mgr, &multi_root);
     let items = res["items"].as_array().expect("items array");
-    assert!(
-        !items.is_empty(),
-        "Must discover closed file in workspace index"
-    );
-    let err_item = items
-        .iter()
-        .find(|it| it["uri"].as_str().unwrap().contains("lib.rs"));
-    assert!(
-        err_item.is_some(),
-        "Must report diagnostic for closed lib.rs"
-    );
+    assert!(!items.is_empty(), "Must discover closed file in workspace index");
+    let err_item = items.iter().find(|it| it["uri"].as_str().unwrap().contains("lib.rs"));
+    assert!(err_item.is_some(), "Must report diagnostic for closed lib.rs");
     let report = err_item.unwrap();
-    assert!(
-        !report["items"].as_array().unwrap().is_empty(),
-        "Must contain syntax error for broken closed file"
-    );
+    assert!(!report["items"].as_array().unwrap().is_empty(), "Must contain syntax error for broken closed file");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -290,8 +244,7 @@ fn test_workspace_diagnostic_filters_external_dependencies() {
     use crate::lsp::protocol::path_to_uri;
 
     let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_ws_diag_ext_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_ws_diag_ext_{}_{}", std::process::id(), id));
 
     // 1. Workspace member crate
     let ws_crate_dir = temp_dir.join("my_crate");
@@ -301,10 +254,18 @@ fn test_workspace_diagnostic_filters_external_dependencies() {
     let ws_ridx = ws_crate_dir.join("index.ridx");
     let mut ws_writer = IndexWriter::new("my_crate", "0.1.0");
     ws_writer.add_definition(RawDefinition {
-        def_id: 1, kind: ridx_format::DefKind::Fn, visibility: 0, is_macro_expansion: false,
-        file: "src/lib.rs".to_string(), name: "ws_fn".to_string(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 13,
-        path: "my_crate::ws_fn".to_string(), signature: Some("fn ws_fn()".to_string()),
+        def_id: 1,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "ws_fn".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 13,
+        path: "my_crate::ws_fn".to_string(),
+        signature: Some("fn ws_fn()".to_string()),
     });
     let mut f = fs::File::create(&ws_ridx).unwrap();
     ws_writer.write_to(&mut f).unwrap();
@@ -317,10 +278,18 @@ fn test_workspace_diagnostic_filters_external_dependencies() {
     let dep_ridx = dep_crate_dir.join("index.ridx");
     let mut dep_writer = IndexWriter::new("dep_crate", "0.1.0");
     dep_writer.add_definition(RawDefinition {
-        def_id: 2, kind: ridx_format::DefKind::Fn, visibility: 0, is_macro_expansion: false,
-        file: "src/lib.rs".to_string(), name: "dep_fn".to_string(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 14,
-        path: "dep_crate::dep_fn".to_string(), signature: Some("fn dep_fn()".to_string()),
+        def_id: 2,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "dep_fn".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 14,
+        path: "dep_crate::dep_fn".to_string(),
+        signature: Some("fn dep_fn()".to_string()),
     });
     let mut f = fs::File::create(&dep_ridx).unwrap();
     dep_writer.write_to(&mut f).unwrap();
@@ -347,8 +316,7 @@ fn test_workspace_diagnostic_excludes_external_files_in_workspace_reader() {
     use crate::lsp::protocol::path_to_uri;
 
     let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir = std::env::temp_dir()
-        .join(format!("ridx_test_ws_diag_macro_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_ws_diag_macro_{}_{}", std::process::id(), id));
 
     let ws_crate_dir = temp_dir.join("ws_crate");
     fs::create_dir_all(ws_crate_dir.join("src")).unwrap();
@@ -363,16 +331,32 @@ fn test_workspace_diagnostic_excludes_external_files_in_workspace_reader() {
     let ws_ridx = ws_crate_dir.join("index.ridx");
     let mut writer = IndexWriter::new("ws_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: ridx_format::DefKind::Fn, visibility: 0, is_macro_expansion: false,
-        file: "src/lib.rs".to_string(), name: "a".to_string(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 9,
-        path: "ws_crate::a".to_string(), signature: None,
+        def_id: 1,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "a".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 9,
+        path: "ws_crate::a".to_string(),
+        signature: None,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: ridx_format::DefKind::Fn, visibility: 0, is_macro_expansion: true,
-        file: ext_file.to_string_lossy().to_string(), name: "b".to_string(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 9,
-        path: "ws_crate::b".to_string(), signature: None,
+        def_id: 2,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: true,
+        file: ext_file.to_string_lossy().to_string(),
+        name: "b".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 9,
+        path: "ws_crate::b".to_string(),
+        signature: None,
     });
     let mut f = fs::File::create(&ws_ridx).unwrap();
     writer.write_to(&mut f).unwrap();

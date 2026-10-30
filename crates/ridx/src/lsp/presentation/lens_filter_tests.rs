@@ -46,9 +46,7 @@ fn shard(text: &str, defs: Vec<RawDefinition>) -> Shard {
         writer.add_definition(d);
     }
     let shard = dir.join("index.ridx");
-    writer
-        .write_to(&mut fs::File::create(&shard).unwrap())
-        .unwrap();
+    writer.write_to(&mut fs::File::create(&shard).unwrap()).unwrap();
     let ws = WorkspaceIndex::open(&shard).expect("open the shard");
     Shard { dir, ws }
 }
@@ -92,30 +90,15 @@ fn lenses(sh: &Shard) -> Value {
 }
 
 fn names(result: &Value) -> Vec<String> {
-    result
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|l| l["data"]["name"].as_str().unwrap().to_string())
-        .collect()
+    result.as_array().unwrap().iter().map(|l| l["data"]["name"].as_str().unwrap().to_string()).collect()
 }
 
 /// `snippet` is line 2 of the file and spells `name`; a definition of `kind` on that span gets no
 /// lens while the `keep` function on line 1 does, so only the kind decides.
 fn assert_kind_dropped(kind: DefKind, snippet: &str, name: &str) {
     let text = format!("{KEEP}{snippet}\n");
-    let sh = shard(
-        &text,
-        vec![
-            def(DefKind::Fn, "keep", at(&text, "keep")),
-            def(kind, name, at(&text, name)),
-        ],
-    );
-    assert_eq!(
-        names(&lenses(&sh)),
-        vec!["keep"],
-        "{kind:?} must not get a lens"
-    );
+    let sh = shard(&text, vec![def(DefKind::Fn, "keep", at(&text, "keep")), def(kind, name, at(&text, name))]);
+    assert_eq!(names(&lenses(&sh)), vec!["keep"], "{kind:?} must not get a lens");
 }
 
 #[test]
@@ -136,14 +119,8 @@ fn test_code_lens_keeps_every_nameable_kind() {
         (DefKind::Static, "static COUNT: u8 = 0;", "COUNT"),
         (DefKind::Macro, "macro_rules! twice {}", "twice"),
     ];
-    let text: String = items
-        .iter()
-        .map(|(_, line, _)| format!("{line}\n"))
-        .collect();
-    let defs = items
-        .iter()
-        .map(|(kind, _, name)| def(*kind, name, at(&text, name)))
-        .collect();
+    let text: String = items.iter().map(|(_, line, _)| format!("{line}\n")).collect();
+    let defs = items.iter().map(|(kind, _, name)| def(*kind, name, at(&text, name))).collect();
     let sh = shard(&text, defs);
     let expected: Vec<String> = items.iter().map(|(_, _, n)| n.to_string()).collect();
     assert_eq!(names(&lenses(&sh)), expected);
@@ -166,11 +143,7 @@ fn test_code_lens_skips_type_parameters() {
 
 #[test]
 fn test_code_lens_skips_const_parameters() {
-    assert_kind_dropped(
-        DefKind::ConstParam,
-        "fn sized<const name: usize>() {}",
-        "name",
-    );
+    assert_kind_dropped(DefKind::ConstParam, "fn sized<const name: usize>() {}", "name");
 }
 
 #[test]
@@ -220,11 +193,7 @@ fn test_code_lens_skips_locals() {
 
 #[test]
 fn test_code_lens_skips_closures() {
-    assert_kind_dropped(
-        DefKind::Closure,
-        "fn closure() { let c = |name| name; }",
-        "name",
-    );
+    assert_kind_dropped(DefKind::Closure, "fn closure() { let c = |name| name; }", "name");
 }
 
 #[test]
@@ -234,11 +203,7 @@ fn test_code_lens_skips_anonymous_constants() {
 
 #[test]
 fn test_code_lens_skips_inline_constants() {
-    assert_kind_dropped(
-        DefKind::InlineConst,
-        "fn inline() { const { name } }",
-        "name",
-    );
+    assert_kind_dropped(DefKind::InlineConst, "fn inline() { const { name } }", "name");
 }
 
 #[test]
@@ -261,10 +226,7 @@ fn test_code_lens_skips_definitions_without_a_name() {
     let text = format!("{KEEP}mod unnamed {{}}\n");
     let mut nameless = def(DefKind::Mod, "", (2, 1, 1));
     nameless.path = "lens_crate".to_string();
-    let sh = shard(
-        &text,
-        vec![def(DefKind::Fn, "keep", at(&text, "keep")), nameless],
-    );
+    let sh = shard(&text, vec![def(DefKind::Fn, "keep", at(&text, "keep")), nameless]);
     assert_eq!(names(&lenses(&sh)), vec!["keep"]);
 }
 
@@ -273,10 +235,7 @@ fn test_code_lens_skips_macro_expanded_definitions_even_when_their_span_spells_t
     let text = format!("{KEEP}pub fn generated() {{}}\n");
     let mut generated = def(DefKind::Fn, "generated", at(&text, "generated"));
     generated.is_macro_expansion = true;
-    let sh = shard(
-        &text,
-        vec![def(DefKind::Fn, "keep", at(&text, "keep")), generated],
-    );
+    let sh = shard(&text, vec![def(DefKind::Fn, "keep", at(&text, "keep")), generated]);
     assert_eq!(names(&lenses(&sh)), vec!["keep"]);
 }
 
@@ -285,13 +244,7 @@ fn test_code_lens_skips_definitions_whose_range_does_not_spell_their_name() {
     // A proc macro generated `MockOpenOptions` from `struct OpenOptions;` and gave it the span of
     // the user's token, without the macro-expansion flag.
     let text = format!("{KEEP}struct OpenOptions;\n");
-    let sh = shard(
-        &text,
-        vec![
-            def(DefKind::Fn, "keep", at(&text, "keep")),
-            def(DefKind::Struct, "MockOpenOptions", at(&text, "OpenOptions")),
-        ],
-    );
+    let sh = shard(&text, vec![def(DefKind::Fn, "keep", at(&text, "keep")), def(DefKind::Struct, "MockOpenOptions", at(&text, "OpenOptions"))]);
     assert_eq!(names(&lenses(&sh)), vec!["keep"]);
 }
 
@@ -330,8 +283,5 @@ fn test_code_lens_checks_the_name_in_characters_and_reports_utf16_columns() {
     // in UTF-16 units.
     let start = prefix.encode_utf16().count() as u32;
     assert_eq!(result[0]["range"]["start"]["character"], start);
-    assert_eq!(
-        result[0]["range"]["end"]["character"],
-        start + name.encode_utf16().count() as u32
-    );
+    assert_eq!(result[0]["range"]["end"]["character"], start + name.encode_utf16().count() as u32);
 }

@@ -196,11 +196,7 @@ impl DocumentOverlay {
         Some((cl, col))
     }
 
-    pub fn map_compiled_to_live(
-        &self,
-        compiled_line: u32,
-        compiled_col: u32,
-    ) -> Option<(u32, u32)> {
+    pub fn map_compiled_to_live(&self, compiled_line: u32, compiled_col: u32) -> Option<(u32, u32)> {
         let ll = self.map_compiled_line_to_live(compiled_line)?;
         Some((ll, compiled_col))
     }
@@ -233,10 +229,6 @@ pub fn compute_line_starts(text: &str) -> Vec<usize> {
 /// Maps a 1-based line number from baseline text to live text based on prefix and suffix diffs.
 /// Single-line form of [`LineMap`]; callers that map many lines of one text pair build the map
 /// once instead.
-pub fn map_text_line_to_live(
-    baseline_text: &str,
-    live_text: &str,
-    baseline_line: u32,
-) -> Option<u32> {
+pub fn map_text_line_to_live(baseline_text: &str, live_text: &str, baseline_line: u32) -> Option<u32> {
     LineMap::new(baseline_text, live_text).to_live(baseline_line)
 }

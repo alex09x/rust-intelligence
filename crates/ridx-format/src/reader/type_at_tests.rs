@@ -62,16 +62,12 @@ fn test_reader_corrupted_offsets_and_bounds() {
         unit_key: None,
         reader_idx: None,
     };
-    assert_eq!(
-        resolved.resolved_path(),
-        std::path::PathBuf::from("src/lib.rs")
-    );
+    assert_eq!(resolved.resolved_path(), std::path::PathBuf::from("src/lib.rs"));
 }
 
 #[test]
 fn test_type_at_binary_search_vs_linear_property() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_types_prop_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_types_prop_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let idx_path = temp_dir.join("nested_types.ridx");
     let mut writer = crate::writer::IndexWriter::new("test_types", "0.1.0");
@@ -93,94 +89,24 @@ fn test_type_at_binary_search_vs_linear_property() {
 
     // File 1: src/lib.rs
     // Outer expression: foo(...) spanning line 10, col 5 to line 12, col 20 (size: 2*80 + 20 = 180)
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 10,
-        start_col: 5,
-        end_line: 12,
-        end_col: 20,
-        type_name: "TypeFoo".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 10, start_col: 5, end_line: 12, end_col: 20, type_name: "TypeFoo".to_string() });
     // Middle expression: bar(...) spanning line 11, col 8 to line 11, col 30 (size: 22)
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 11,
-        start_col: 8,
-        end_line: 11,
-        end_col: 30,
-        type_name: "TypeBar".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 11, start_col: 8, end_line: 11, end_col: 30, type_name: "TypeBar".to_string() });
     // Inner expression: baz(...) spanning line 11, col 12 to line 11, col 25 (size: 13)
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 11,
-        start_col: 12,
-        end_line: 11,
-        end_col: 25,
-        type_name: "TypeBaz".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 11, start_col: 12, end_line: 11, end_col: 25, type_name: "TypeBaz".to_string() });
     // Innermost expression: x spanning line 11, col 16 to line 11, col 17 (size: 1)
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 11,
-        start_col: 16,
-        end_line: 11,
-        end_col: 17,
-        type_name: "TypeX".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 11, start_col: 16, end_line: 11, end_col: 17, type_name: "TypeX".to_string() });
     // Sibling expression: y spanning line 11, col 20 to line 11, col 22 (size: 2)
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 11,
-        start_col: 20,
-        end_line: 11,
-        end_col: 22,
-        type_name: "TypeY".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 11, start_col: 20, end_line: 11, end_col: 22, type_name: "TypeY".to_string() });
 
     // Same start pos expressions: a.b.c()
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 20,
-        start_col: 5,
-        end_line: 20,
-        end_col: 6,
-        type_name: "TypeA".to_string(),
-    });
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 20,
-        start_col: 5,
-        end_line: 20,
-        end_col: 8,
-        type_name: "TypeAB".to_string(),
-    });
-    writer.add_type(crate::writer::RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 20,
-        start_col: 5,
-        end_line: 20,
-        end_col: 12,
-        type_name: "TypeABC".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 20, start_col: 5, end_line: 20, end_col: 6, type_name: "TypeA".to_string() });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 20, start_col: 5, end_line: 20, end_col: 8, type_name: "TypeAB".to_string() });
+    writer.add_type(crate::writer::RawType { file: "src/lib.rs".to_string(), start_line: 20, start_col: 5, end_line: 20, end_col: 12, type_name: "TypeABC".to_string() });
 
     // File 2: src/other.rs with adjacent spans
-    writer.add_type(crate::writer::RawType {
-        file: "src/other.rs".to_string(),
-        start_line: 5,
-        start_col: 0,
-        end_line: 5,
-        end_col: 10,
-        type_name: "OtherSpan1".to_string(),
-    });
-    writer.add_type(crate::writer::RawType {
-        file: "src/other.rs".to_string(),
-        start_line: 5,
-        start_col: 10,
-        end_line: 5,
-        end_col: 20,
-        type_name: "OtherSpan2".to_string(),
-    });
+    writer.add_type(crate::writer::RawType { file: "src/other.rs".to_string(), start_line: 5, start_col: 0, end_line: 5, end_col: 10, type_name: "OtherSpan1".to_string() });
+    writer.add_type(crate::writer::RawType { file: "src/other.rs".to_string(), start_line: 5, start_col: 10, end_line: 5, end_col: 20, type_name: "OtherSpan2".to_string() });
 
     let mut f = std::fs::File::create(&idx_path).unwrap();
     writer.write_to(&mut f).unwrap();
@@ -212,10 +138,7 @@ fn test_type_at_binary_search_vs_linear_property() {
             for col in 0..40 {
                 let expected = type_at_linear(file, line, col);
                 let actual = reader.type_at(file, line, col).map(|s| s.to_string());
-                assert_eq!(
-                    actual, expected,
-                    "Mismatch at file={file}, line={line}, col={col}: actual={actual:?}, expected={expected:?}"
-                );
+                assert_eq!(actual, expected, "Mismatch at file={file}, line={line}, col={col}: actual={actual:?}, expected={expected:?}");
             }
         }
     }
@@ -225,8 +148,7 @@ fn test_type_at_binary_search_vs_linear_property() {
 
 #[test]
 fn test_type_at_large_scale_benchmark() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_types_scale_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_types_scale_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let idx_path = temp_dir.join("large_types.ridx");
     let mut writer = crate::writer::IndexWriter::new("test_scale", "0.1.0");

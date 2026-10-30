@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Compiler-backed, mmap-indexed code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 use ridx_format::{DefKind, IndexReader, IndexWriter, RawDefinition, RawReference, RawType};
 use std::fs::{self, File};
 use std::io::BufWriter;
@@ -62,14 +72,7 @@ fn test_cli_fixture_generation_and_query() {
     });
 
     // Add expression type for the call
-    writer.add_type(RawType {
-        file: "src/main.rs".to_string(),
-        start_line: 42,
-        start_col: 9,
-        end_line: 42,
-        end_col: 30,
-        type_name: "Result<usize, String>".to_string(),
-    });
+    writer.add_type(RawType { file: "src/main.rs".to_string(), start_line: 42, start_col: 9, end_line: 42, end_col: 30, type_name: "Result<usize, String>".to_string() });
 
     let f = File::create(&index_path).unwrap();
     let mut buf = BufWriter::new(f);
@@ -83,14 +86,9 @@ fn test_cli_fixture_generation_and_query() {
     assert_eq!(reader.header().types_count, 1);
 
     // Def query by symbol
-    let def = reader
-        .find_definition_by_path("sample_crate::processor::process_data")
-        .unwrap();
+    let def = reader.find_definition_by_path("sample_crate::processor::process_data").unwrap();
     assert_eq!(reader.get_str(def.name_offset()), "process_data");
-    assert_eq!(
-        reader.get_str(def.sig_offset()),
-        "fn(&[u8]) -> Result<usize, String>"
-    );
+    assert_eq!(reader.get_str(def.sig_offset()), "fn(&[u8]) -> Result<usize, String>");
 
     // Def query at cursor position
     let target = reader.find_definition_at("src/main.rs", 42, 12).unwrap();
@@ -109,9 +107,7 @@ fn test_cli_fixture_generation_and_query() {
     assert_eq!(ty, "Result<usize, String>");
 
     // Verify cursor on definition returns innermost definition (Struct rather than enclosing Mod)
-    let def_cursor = reader
-        .find_definition_at("src/processor.rs", 10, 5)
-        .unwrap();
+    let def_cursor = reader.find_definition_at("src/processor.rs", 10, 5).unwrap();
     assert_eq!(def_cursor.name, "DataProcessor");
     assert_eq!(def_cursor.start_line, 10);
 }

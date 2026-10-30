@@ -10,9 +10,7 @@
 
 //! End-to-end tests for compiler flycheck diagnostics and auto-import intelligence.
 
-use ridx::lsp::intelligence::auto_import::{
-    compute_auto_import_edit, find_use_insert_line, is_already_imported,
-};
+use ridx::lsp::intelligence::auto_import::{compute_auto_import_edit, find_use_insert_line, is_already_imported};
 use ridx::lsp::presentation::flycheck::{parse_compiler_message, FlycheckState};
 use serde_json::json;
 use std::fs;
@@ -26,10 +24,7 @@ fn test_auto_import_standard_collection() {
     let edit_opt = compute_auto_import_edit(doc, "std::collections::HashMap");
     assert!(edit_opt.is_some(), "Expected auto-import edit for HashMap");
     let edit = edit_opt.unwrap();
-    assert_eq!(
-        edit["newText"].as_str().unwrap(),
-        "use std::collections::HashMap;\n"
-    );
+    assert_eq!(edit["newText"].as_str().unwrap(), "use std::collections::HashMap;\n");
     assert_eq!(edit["range"]["start"]["line"].as_u64().unwrap(), 0);
     assert_eq!(edit["range"]["start"]["character"].as_u64().unwrap(), 0);
 }
@@ -46,10 +41,7 @@ fn main() {
 }
 "#;
     let line = find_use_insert_line(doc);
-    assert_eq!(
-        line, 5,
-        "Should insert after inner doc comments and inner attributes"
-    );
+    assert_eq!(line, 5, "Should insert after inner doc comments and inner attributes");
 
     let edit_opt = compute_auto_import_edit(doc, "std::collections::BTreeMap");
     assert!(edit_opt.is_some());
@@ -75,27 +67,15 @@ fn main() {}
 #[test]
 fn test_auto_import_detects_already_imported_symbols() {
     let doc1 = "use std::collections::HashMap;\nfn main() {}";
-    assert!(is_already_imported(
-        doc1,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc1, "std::collections::HashMap", "HashMap"));
     assert!(compute_auto_import_edit(doc1, "std::collections::HashMap").is_none());
 
     let doc2 = "use std::collections::{BTreeMap, HashMap, HashSet};\nfn main() {}";
-    assert!(is_already_imported(
-        doc2,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc2, "std::collections::HashMap", "HashMap"));
     assert!(compute_auto_import_edit(doc2, "std::collections::HashMap").is_none());
 
     let doc3 = "use std::collections::HashMap as MyMap;\nfn main() {}";
-    assert!(is_already_imported(
-        doc3,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc3, "std::collections::HashMap", "HashMap"));
 }
 
 #[test]
@@ -154,11 +134,7 @@ fn test_parse_compiler_message_error_with_spans() {
     assert!(uri.starts_with("file://"));
     assert!(uri.ends_with("src/main.rs"));
 
-    assert_eq!(
-        diag["severity"].as_u64().unwrap(),
-        1,
-        "Error severity must be 1"
-    );
+    assert_eq!(diag["severity"].as_u64().unwrap(), 1, "Error severity must be 1");
     assert_eq!(diag["code"].as_str().unwrap(), "E0308");
     assert_eq!(diag["source"].as_str().unwrap(), "rustc");
     assert_eq!(diag["message"].as_str().unwrap(), "mismatched types");
@@ -200,48 +176,29 @@ fn test_auto_import_inserts_after_multiline_use_not_inside() {
 fn test_auto_import_detects_braced_spaces_and_glob_imports() {
     // Spaced braces
     let doc1 = "use std::collections::{ HashMap };\nfn main() {}";
-    assert!(is_already_imported(
-        doc1,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc1, "std::collections::HashMap", "HashMap"));
     assert!(compute_auto_import_edit(doc1, "std::collections::HashMap").is_none());
 
     // Glob import
     let doc2 = "use std::collections::*;\nfn main() {}";
-    assert!(is_already_imported(
-        doc2,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc2, "std::collections::HashMap", "HashMap"));
     assert!(compute_auto_import_edit(doc2, "std::collections::HashMap").is_none());
 
     // Multiline braced group
     let doc3 = "use std::collections::{\n    HashMap,\n    HashSet,\n};\nfn main() {}";
-    assert!(is_already_imported(
-        doc3,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc3, "std::collections::HashMap", "HashMap"));
     assert!(compute_auto_import_edit(doc3, "std::collections::HashMap").is_none());
 
     // Nested braced groups
     let doc4 = "use std::{collections::{HashMap}, io};\nfn main() {}";
-    assert!(is_already_imported(
-        doc4,
-        "std::collections::HashMap",
-        "HashMap"
-    ));
+    assert!(is_already_imported(doc4, "std::collections::HashMap", "HashMap"));
     assert!(compute_auto_import_edit(doc4, "std::collections::HashMap").is_none());
 
     // Neighbor module with common prefix must NOT trigger glob match
     let doc5 = "use foo::bar_ext::*;\nfn main() {}";
     assert!(!is_already_imported(doc5, "foo::bar::Baz", "Baz"));
     let edit5 = compute_auto_import_edit(doc5, "foo::bar::Baz");
-    assert!(
-        edit5.is_some(),
-        "Neighbor glob must not suppress target import"
-    );
+    assert!(edit5.is_some(), "Neighbor glob must not suppress target import");
 }
 
 #[test]
@@ -250,18 +207,12 @@ fn test_prelude_allows_fmt_result_and_requires_hash() {
     // std::fmt::Result is NOT prelude and must produce an auto-import edit!
     let edit = compute_auto_import_edit(doc, "std::fmt::Result");
     assert!(edit.is_some(), "std::fmt::Result should be imported!");
-    assert_eq!(
-        edit.unwrap()["newText"].as_str().unwrap(),
-        "use std::fmt::Result;\n"
-    );
+    assert_eq!(edit.unwrap()["newText"].as_str().unwrap(), "use std::fmt::Result;\n");
 
     // core::hash::Hash is NOT in the Rust prelude (only #[derive(Hash)]) and should be imported!
     let edit_hash = compute_auto_import_edit(doc, "core::hash::Hash");
     assert!(edit_hash.is_some(), "core::hash::Hash should be imported!");
-    assert_eq!(
-        edit_hash.unwrap()["newText"].as_str().unwrap(),
-        "use core::hash::Hash;\n"
-    );
+    assert_eq!(edit_hash.unwrap()["newText"].as_str().unwrap(), "use core::hash::Hash;\n");
 }
 
 #[test]
@@ -307,14 +258,8 @@ fn test_parse_compiler_message_includes_children_notes_and_utf16_columns() {
     let (_, diag) = res;
 
     let msg = diag["message"].as_str().unwrap();
-    assert!(
-        msg.contains("type mismatch"),
-        "Must contain primary message"
-    );
-    assert!(
-        msg.contains("help: try using .as_ref() instead"),
-        "Must contain child message"
-    );
+    assert!(msg.contains("type mismatch"), "Must contain primary message");
+    assert!(msg.contains("help: try using .as_ref() instead"), "Must contain child message");
 
     let _ = fs::remove_dir_all(&tmp);
 }
@@ -322,10 +267,6 @@ fn test_parse_compiler_message_includes_children_notes_and_utf16_columns() {
 #[test]
 fn test_same_crate_auto_import_produces_crate_prefix() {
     let doc = "fn main() {}\n";
-    let edit =
-        compute_auto_import_edit(doc, "crate::my_mod::MyStruct").expect("Should produce edit");
-    assert_eq!(
-        edit["newText"].as_str().unwrap(),
-        "use crate::my_mod::MyStruct;\n"
-    );
+    let edit = compute_auto_import_edit(doc, "crate::my_mod::MyStruct").expect("Should produce edit");
+    assert_eq!(edit["newText"].as_str().unwrap(), "use crate::my_mod::MyStruct;\n");
 }

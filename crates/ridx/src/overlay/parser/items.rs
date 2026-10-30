@@ -62,20 +62,12 @@ impl<'a> OverlayParser<'a> {
         // Allocate a dedicated scope for this function's parameters and body
         let sel_start_byte = self.find_fn_item_start(start);
         let fn_scope_id = self.scopes.len();
-        self.scopes.push(Scope {
-            id: fn_scope_id,
-            parent: Some(current_scope),
-            start_byte: start,
-            end_byte: len,
-            sel_start_byte,
-            body_start_byte: None,
-        });
+        self.scopes.push(Scope { id: fn_scope_id, parent: Some(current_scope), start_byte: start, end_byte: len, sel_start_byte, body_start_byte: None });
 
         // Parse parameters inside `(...)` and assign them to fn_scope_id
         if let Some(open_paren) = self.text[start..sig_end].find('(') {
             if let Some(close_paren) = self.text[start + open_paren..sig_end].find(')') {
-                let params_text =
-                    self.text[start + open_paren + 1..start + open_paren + close_paren].to_string();
+                let params_text = self.text[start + open_paren + 1..start + open_paren + close_paren].to_string();
                 self.extract_params(&params_text, start + open_paren + 1, fn_scope_id);
             }
         }
@@ -92,11 +84,7 @@ impl<'a> OverlayParser<'a> {
     pub(crate) fn extract_params(&mut self, params_text: &str, base_byte: usize, scope_id: usize) {
         for part in params_text.split(',') {
             let trimmed = part.trim();
-            if trimmed.is_empty()
-                || trimmed == "self"
-                || trimmed == "&self"
-                || trimmed == "&mut self"
-            {
+            if trimmed.is_empty() || trimmed == "self" || trimmed == "&self" || trimmed == "&mut self" {
                 continue;
             }
             if let Some((p_name, _)) = trimmed.split_once(':') {
@@ -108,9 +96,7 @@ impl<'a> OverlayParser<'a> {
                 }
                 if !p_name.is_empty() && is_ident(p_name) {
                     let offset = part.find(p_name).unwrap();
-                    let abs_offset = base_byte
-                        + (part.as_ptr() as usize - params_text.as_ptr() as usize)
-                        + offset;
+                    let abs_offset = base_byte + (part.as_ptr() as usize - params_text.as_ptr() as usize) + offset;
                     let (s_line, s_col) = self.byte_to_char_line_col(abs_offset);
                     let (e_line, e_col) = self.byte_to_char_line_col(abs_offset + p_name.len());
                     self.symbols.push(OverlaySymbol {
@@ -131,12 +117,7 @@ impl<'a> OverlayParser<'a> {
         }
     }
 
-    pub(crate) fn parse_named_item(
-        &mut self,
-        pos: &mut usize,
-        kind: DefKind,
-        current_scope: usize,
-    ) {
+    pub(crate) fn parse_named_item(&mut self, pos: &mut usize, kind: DefKind, current_scope: usize) {
         let Some((name, start, end)) = self.parse_ident(pos) else {
             return;
         };

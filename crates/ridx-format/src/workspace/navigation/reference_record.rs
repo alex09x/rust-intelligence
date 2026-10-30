@@ -89,11 +89,7 @@ pub(super) fn is_raw_ident_keyword(name: &str) -> bool {
 }
 
 /// Checks whether `r` matches the target definition kind, token width, and definition line.
-pub(super) fn matches_reference_target(
-    reader: &IndexReader<Mmap>,
-    r: &RefEntry,
-    target: &ReferenceTarget<'_>,
-) -> bool {
+pub(super) fn matches_reference_target(reader: &IndexReader<Mmap>, r: &RefEntry, target: &ReferenceTarget<'_>) -> bool {
     let r_kind = DefKind::from(r.kind);
     if let Some(t_kind) = target.kind {
         if r_kind != DefKind::Other {
@@ -117,13 +113,11 @@ pub(super) fn matches_reference_target(
         });
         let name_chars = name.chars().count();
         let width = span.end_col().saturating_sub(span.start_col()) as usize;
-        if r.is_macro_expansion() && r_kind != DefKind::Macro && target.kind != Some(DefKind::Macro)
-        {
+        if r.is_macro_expansion() && r_kind != DefKind::Macro && target.kind != Some(DefKind::Macro) {
             if width != name_chars {
                 return false;
             }
-        } else if !r.is_macro_expansion() && width == name_chars + 2 && !is_raw_ident_keyword(name)
-        {
+        } else if !r.is_macro_expansion() && width == name_chars + 2 && !is_raw_ident_keyword(name) {
             return false;
         }
     }
@@ -141,11 +135,7 @@ pub(super) fn matches_reference_target(
 
 /// Whether the reference `r` of `reader`, which records no target unit, points at the
 /// definition `coords`: its target line and target file agree where it records them.
-pub(super) fn points_at_definition(
-    reader: &IndexReader<Mmap>,
-    r: &RefEntry,
-    coords: &DefCoords,
-) -> bool {
+pub(super) fn points_at_definition(reader: &IndexReader<Mmap>, r: &RefEntry, coords: &DefCoords) -> bool {
     let (def_file, def_full, def_line) = coords;
     if r.target_line() != 0 && r.target_line() != *def_line {
         return false;
@@ -154,11 +144,7 @@ pub(super) fn points_at_definition(
         let ref_file = reader.get_str(r.target_file_offset());
         if !ref_file.is_empty() && !def_file.is_empty() {
             let r_p = Path::new(ref_file);
-            if r_p != Path::new(def_file)
-                && r_p != Path::new(def_full)
-                && !ref_file.ends_with(def_file.as_str())
-                && !def_file.ends_with(ref_file)
-            {
+            if r_p != Path::new(def_file) && r_p != Path::new(def_full) && !ref_file.ends_with(def_file.as_str()) && !def_file.ends_with(ref_file) {
                 return false;
             }
         }
@@ -187,13 +173,7 @@ pub(super) fn push_reference<'a>(
             p.to_path_buf()
         }
     };
-    let key = (
-        resolved_path,
-        span.start_line(),
-        span.start_col(),
-        span.end_line(),
-        span.end_col(),
-    );
+    let key = (resolved_path, span.start_line(), span.start_col(), span.end_line(), span.end_col());
     if !seen.insert(key) {
         return;
     }

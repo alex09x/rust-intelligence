@@ -36,15 +36,7 @@ fn send_lsp(
     index_path: Option<&PathBuf>,
 ) -> Value {
     let mut out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        cancelled,
-        index_path,
-    );
+    let _ = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, cancelled, index_path);
     let bytes = out.into_inner();
     if bytes.is_empty() {
         return Value::Null;
@@ -129,14 +121,7 @@ fn test_ntm_hierarchy_and_protocol_invariants() {
         "jsonrpc": "2.0", "id": 1, "method": "textDocument/definition",
         "params": { "textDocument": { "uri": &uri }, "position": { "line": 0, "character": 0 } }
     });
-    let prem_resp = send_lsp(
-        premature_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let prem_resp = send_lsp(premature_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(prem_resp["error"]["code"], -32002);
 
     // Initialize
@@ -148,14 +133,7 @@ fn test_ntm_hierarchy_and_protocol_invariants() {
         &cancelled,
         Some(&index_dir),
     );
-    let _ = send_lsp(
-        json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }),
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let _ = send_lsp(json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }), &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
 
     // Open document
     let _ = send_lsp(
@@ -267,14 +245,7 @@ fn test_ntm_hierarchy_and_protocol_invariants() {
     assert_eq!(unknown["error"]["code"], -32601);
 
     // Shutdown
-    let _ = send_lsp(
-        json!({ "jsonrpc": "2.0", "id": 99, "method": "shutdown", "params": {} }),
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let _ = send_lsp(json!({ "jsonrpc": "2.0", "id": 99, "method": "shutdown", "params": {} }), &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
 
     // Post-shutdown request -> -32600
     let post_sd = send_lsp(

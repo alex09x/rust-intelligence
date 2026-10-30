@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,10 +77,18 @@ fn test_semantic_tokens_full_utf16_multibyte_token_coordinates() {
 
     let mut writer = IndexWriter::new("utf16_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "test_fn".to_string(), path: "utf16_crate::test_fn".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 10, end_line: 1, end_col: 17,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "test_fn".to_string(),
+        path: "utf16_crate::test_fn".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 10,
+        end_line: 1,
+        end_col: 17,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "// Γειάσα fn test_fn() {}\n").unwrap();
@@ -110,10 +115,18 @@ fn test_semantic_tokens_full_overlay_live_symbols_precedence() {
 
     let mut writer = IndexWriter::new("live_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "disk_fn".to_string(), path: "live_crate::disk_fn".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 11,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "disk_fn".to_string(),
+        path: "live_crate::disk_fn".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 11,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn disk_fn() {}\n").unwrap();
@@ -153,10 +166,18 @@ fn test_semantic_tokens_full_overlay_dirty_line_shift() {
 
     let mut writer = IndexWriter::new("shift_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "shifted".to_string(), path: "shift_crate::shifted".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 11,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "shifted".to_string(),
+        path: "shift_crate::shifted".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 11,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn shifted() {}\n").unwrap();
@@ -210,10 +231,18 @@ fn test_semantic_tokens_full_overlay_dirty_deletion_removes_token() {
 
     let mut writer = IndexWriter::new("del_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "deleted_fn".to_string(), path: "del_crate::deleted_fn".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 14,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "deleted_fn".to_string(),
+        path: "del_crate::deleted_fn".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 14,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn deleted_fn() {}\n").unwrap();
@@ -265,10 +294,18 @@ fn test_semantic_tokens_delta_single_token_appended() {
 
     let mut writer = IndexWriter::new("app_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "first".to_string(), path: "app_crate::first".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 9,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "first".to_string(),
+        path: "app_crate::first".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 9,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn first() {}\n").unwrap();

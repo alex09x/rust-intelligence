@@ -79,13 +79,7 @@ mod tests {
 
     #[test]
     fn an_impl_keyword_elsewhere_or_a_longer_word_is_no_header() {
-        for line in [
-            "fn take(x: impl Tr) {}",
-            "impl_tr!(S);",
-            "implement(Tr);",
-            "// impl Tr for S",
-            "let f: Box<dyn Tr> = make();",
-        ] {
+        for line in ["fn take(x: impl Tr) {}", "impl_tr!(S);", "implement(Tr);", "// impl Tr for S", "let f: Box<dyn Tr> = make();"] {
             assert!(!is_impl_header(line), "{line}");
         }
     }

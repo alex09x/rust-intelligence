@@ -113,14 +113,7 @@ fn test_cross_crate_navigation_candidates_and_type_at() {
     });
 
     // Add a type in caller
-    w_caller.add_type(RawType {
-        file: "src/main.rs".to_string(),
-        start_line: 15,
-        start_col: 5,
-        end_line: 15,
-        end_col: 15,
-        type_name: "MyType".to_string(),
-    });
+    w_caller.add_type(RawType { file: "src/main.rs".to_string(), start_line: 15, start_col: 5, end_line: 15, end_col: 15, type_name: "MyType".to_string() });
 
     let var_dir = test_dir.0.join("variants/var_nav");
     fs::create_dir_all(&var_dir).unwrap();
@@ -188,14 +181,7 @@ fn test_cross_crate_navigation_candidates_and_type_at() {
     // Dep shard with source_root
     let mut w_dep = IndexWriter::new("dep_crate", "0.1.0");
     w_dep.set_unit_key("dep_key");
-    w_dep.add_type(RawType {
-        file: "src/lib.rs".to_string(),
-        start_line: 1,
-        start_col: 1,
-        end_line: 1,
-        end_col: 10,
-        type_name: "DepType".to_string(),
-    });
+    w_dep.add_type(RawType { file: "src/lib.rs".to_string(), start_line: 1, start_col: 1, end_line: 1, end_col: 10, type_name: "DepType".to_string() });
     let dep_file = test_dir.0.join("dep.ridx");
     let mut f_dep = File::create(&dep_file).unwrap();
     w_dep.write_to(&mut f_dep).unwrap();
@@ -228,11 +214,7 @@ fn test_cross_crate_navigation_candidates_and_type_at() {
             }
         ]
     });
-    fs::write(
-        &manifest_file,
-        serde_json::to_string(&manifest_data).unwrap(),
-    )
-    .unwrap();
+    fs::write(&manifest_file, serde_json::to_string(&manifest_data).unwrap()).unwrap();
 
     let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
 

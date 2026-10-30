@@ -90,20 +90,14 @@ fn main() {
         path: "core_lib::compute_hash".to_string(),
         signature: Some("pub fn compute_hash(data: &[u8]) -> u64".to_string()),
     });
-    lib_writer.add_file_hash(
-        lib_src.to_str().unwrap(),
-        ridx_format::normalized_source_hash(lib_code.as_bytes()),
-    );
+    lib_writer.add_file_hash(lib_src.to_str().unwrap(), ridx_format::normalized_source_hash(lib_code.as_bytes()));
     let mut f_lib = File::create(&lib_ridx).unwrap();
     lib_writer.write_to(&mut f_lib).unwrap();
 
     // Write app_bin.ridx
     let app_ridx = root.join("target/ridx/app_bin.ridx");
     let mut app_writer = IndexWriter::new("app_bin", "0.1.0");
-    app_writer.add_file_hash(
-        app_src.to_str().unwrap(),
-        ridx_format::normalized_source_hash(app_code.as_bytes()),
-    );
+    app_writer.add_file_hash(app_src.to_str().unwrap(), ridx_format::normalized_source_hash(app_code.as_bytes()));
     app_writer.add_definition(RawDefinition {
         def_id: 10,
         kind: DefKind::Fn,
@@ -150,22 +144,11 @@ fn main() {
         is_write: false,
         is_macro_expansion: false,
     });
-    app_writer.add_type(RawType {
-        file: app_src.to_str().unwrap().to_string(),
-        start_line: 5,
-        start_col: 9,
-        end_line: 5,
-        end_col: 13,
-        type_name: "u64".to_string(),
-    });
+    app_writer.add_type(RawType { file: app_src.to_str().unwrap().to_string(), start_line: 5, start_col: 9, end_line: 5, end_col: 13, type_name: "u64".to_string() });
     let mut f_app = File::create(&app_ridx).unwrap();
     app_writer.write_to(&mut f_app).unwrap();
 
-    TestFixture {
-        root_dir: root,
-        lib_src,
-        app_src,
-    }
+    TestFixture { root_dir: root, lib_src, app_src }
 }
 
 fn send_req(
@@ -177,15 +160,7 @@ fn send_req(
     index_path: Option<&PathBuf>,
 ) -> Value {
     let mut out = Cursor::new(Vec::new());
-    let _ = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        cancelled,
-        index_path,
-    );
+    let _ = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, cancelled, index_path);
     let bytes = out.into_inner();
     if bytes.is_empty() {
         return Value::Null;
@@ -222,32 +197,14 @@ fn test_ntm_end_to_end_lsp_pipeline() {
             }]
         }
     });
-    let init_resp = send_req(
-        init_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let init_resp = send_req(init_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(init_resp["id"], 1);
-    assert!(init_resp["result"]["capabilities"]["definitionProvider"]
-        .as_bool()
-        .unwrap());
-    assert!(init_resp["result"]["capabilities"]["referencesProvider"]
-        .as_bool()
-        .unwrap());
+    assert!(init_resp["result"]["capabilities"]["definitionProvider"].as_bool().unwrap());
+    assert!(init_resp["result"]["capabilities"]["referencesProvider"].as_bool().unwrap());
 
     // 2. initialized notification
     let initialized = json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} });
-    let _ = send_req(
-        initialized,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let _ = send_req(initialized, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
 
     // 3. didOpen app_bin/src/main.rs
     let app_text = fs::read_to_string(&fixture.app_src).unwrap();
@@ -258,14 +215,7 @@ fn test_ntm_end_to_end_lsp_pipeline() {
             "textDocument": { "uri": &app_uri, "version": 1, "text": &app_text }
         }
     });
-    let _ = send_req(
-        did_open,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let _ = send_req(did_open, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
 
     // 4. textDocument/definition on compute_hash at line 5 (0-indexed line 4, col 18)
     let def_req = json!({
@@ -277,14 +227,7 @@ fn test_ntm_end_to_end_lsp_pipeline() {
             "position": { "line": 4, "character": 18 }
         }
     });
-    let def_resp = send_req(
-        def_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let def_resp = send_req(def_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(def_resp["id"], 2);
     let def_uri = def_resp["result"]["uri"].as_str().unwrap_or("");
     assert!(def_uri.contains("core_lib"));
@@ -300,14 +243,7 @@ fn test_ntm_end_to_end_lsp_pipeline() {
             "context": { "includeDeclaration": true }
         }
     });
-    let refs_resp = send_req(
-        refs_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let refs_resp = send_req(refs_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(refs_resp["id"], 3);
     assert!(!refs_resp["result"].as_array().unwrap().is_empty());
 
@@ -321,19 +257,9 @@ fn test_ntm_end_to_end_lsp_pipeline() {
             "position": { "line": 4, "character": 18 }
         }
     });
-    let hover_resp = send_req(
-        hover_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let hover_resp = send_req(hover_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(hover_resp["id"], 4);
-    assert!(hover_resp["result"]["contents"]["value"]
-        .as_str()
-        .unwrap()
-        .contains("compute_hash"));
+    assert!(hover_resp["result"]["contents"]["value"].as_str().unwrap().contains("compute_hash"));
 
     // 7. workspace/symbol query
     let sym_req = json!({
@@ -342,42 +268,16 @@ fn test_ntm_end_to_end_lsp_pipeline() {
         "method": "workspace/symbol",
         "params": { "query": "Engine" }
     });
-    let sym_resp = send_req(
-        sym_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let sym_resp = send_req(sym_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(sym_resp["id"], 5);
-    assert!(sym_resp["result"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|s| s["name"] == "Engine"));
+    assert!(sym_resp["result"].as_array().unwrap().iter().any(|s| s["name"] == "Engine"));
 
     // 8. shutdown and exit
     let shutdown_req = json!({ "jsonrpc": "2.0", "id": 6, "method": "shutdown", "params": {} });
-    let shutdown_resp = send_req(
-        shutdown_req,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let shutdown_resp = send_req(shutdown_req, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
     assert_eq!(shutdown_resp["id"], 6);
 
     let exit_req = json!({ "jsonrpc": "2.0", "method": "exit", "params": {} });
     let mut exit_buf = Vec::new();
-    let _ = dispatch_lsp_message(
-        exit_req,
-        &mut exit_buf,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        Some(&index_dir),
-    );
+    let _ = dispatch_lsp_message(exit_req, &mut exit_buf, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, Some(&index_dir));
 }

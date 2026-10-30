@@ -25,11 +25,7 @@ fn workspace(ref_path: &str, ref_line: u32) -> (tempfile::TempDir, WorkspaceInde
     workspace_of_kind(ref_path, ref_line, DefKind::Variant)
 }
 
-fn workspace_of_kind(
-    ref_path: &str,
-    ref_line: u32,
-    kind: DefKind,
-) -> (tempfile::TempDir, WorkspaceIndex, PathBuf) {
+fn workspace_of_kind(ref_path: &str, ref_line: u32, kind: DefKind) -> (tempfile::TempDir, WorkspaceIndex, PathBuf) {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().to_path_buf();
     let a = dir.path().join("a.ridx");
@@ -70,23 +66,8 @@ fn workspace_of_kind(
         is_macro_expansion: false,
     });
     w.write_to(&mut File::create(&b).unwrap()).unwrap();
-    let infos = [("a", &a), ("b", &b)]
-        .map(|(n, p)| (p.clone(), Some(root.join(n)), Some(format!("unit_{n}"))));
-    let mut ws = create_test_workspace(
-        infos
-            .iter()
-            .map(|(p, r, u)| {
-                (
-                    p.as_path(),
-                    r.clone(),
-                    u.clone(),
-                    Some(TargetKind::Lib),
-                    false,
-                )
-            })
-            .collect(),
-        root.clone(),
-    );
+    let infos = [("a", &a), ("b", &b)].map(|(n, p)| (p.clone(), Some(root.join(n)), Some(format!("unit_{n}"))));
+    let mut ws = create_test_workspace(infos.iter().map(|(p, r, u)| (p.as_path(), r.clone(), u.clone(), Some(TargetKind::Lib), false)).collect(), root.clone());
     ws.reader_dependencies[1] = vec!["unit_a".to_string()];
     (dir, ws, root)
 }
@@ -95,10 +76,7 @@ fn workspace_of_kind(
 fn a_use_of_a_variant_is_not_taken_for_the_struct_of_the_same_name() {
     let (_dir, ws, _root) = workspace("a::Ty::Foo", 5);
     let def = ws.find_definition_at("src/use.rs", 3, 6).unwrap();
-    assert_eq!(
-        (def.path, def.kind, def.start_line),
-        ("a::Ty::Foo", DefKind::Variant, 5)
-    );
+    assert_eq!((def.path, def.kind, def.start_line), ("a::Ty::Foo", DefKind::Variant, 5));
 }
 
 #[test]
@@ -113,18 +91,12 @@ fn the_definition_of_a_variant_use_is_rooted_in_the_unit_that_holds_it() {
 fn a_target_on_the_line_of_the_struct_is_still_found_by_file_and_name() {
     let (_dir, ws, _root) = workspace("a::reexport::Foo", 1);
     let def = ws.find_definition_at("src/use.rs", 3, 6).unwrap();
-    assert_eq!(
-        (def.path, def.kind, def.start_line),
-        ("a::Foo", DefKind::Struct, 1)
-    );
+    assert_eq!((def.path, def.kind, def.start_line), ("a::Foo", DefKind::Struct, 1));
 }
 
 #[test]
 fn a_target_that_is_no_variant_keeps_the_match_by_file_and_name_whatever_its_line() {
     let (_dir, ws, _root) = workspace_of_kind("a::reexport::Foo", 99, DefKind::Struct);
     let def = ws.find_definition_at("src/use.rs", 3, 6).unwrap();
-    assert_eq!(
-        (def.path, def.kind, def.start_line),
-        ("a::Foo", DefKind::Struct, 1)
-    );
+    assert_eq!((def.path, def.kind, def.start_line), ("a::Foo", DefKind::Struct, 1));
 }

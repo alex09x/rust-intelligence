@@ -16,10 +16,7 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
     // 1. normalize_path with root .. and leading components
     assert_eq!(normalize_path(Path::new("/..")), PathBuf::from("/"));
     assert_eq!(normalize_path(Path::new("a/b/../../c")), PathBuf::from("c"));
-    assert_eq!(
-        normalize_path(Path::new("../../a")),
-        PathBuf::from("../../a")
-    );
+    assert_eq!(normalize_path(Path::new("../../a")), PathBuf::from("../../a"));
 
     // 2. Symlink parent traversal
     let temp_dir = std::env::temp_dir().join(format!("ridx_prov_edge_{}", std::process::id()));
@@ -39,18 +36,8 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
     }
 
     // 3. file_entry_matches relative matches
-    assert!(file_entry_matches(
-        "src/lib.rs",
-        None,
-        Path::new("src/lib.rs"),
-        None
-    ));
-    assert!(!file_entry_matches(
-        "src/lib.rs",
-        None,
-        Path::new("src/other.rs"),
-        None
-    ));
+    assert!(file_entry_matches("src/lib.rs", None, Path::new("src/lib.rs"), None));
+    assert!(!file_entry_matches("src/lib.rs", None, Path::new("src/other.rs"), None));
     assert!(!file_entry_matches("", None, Path::new("src/lib.rs"), None));
 
     // 4. Shard mtime and source hash when file not found
@@ -71,14 +58,7 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
     let meta_file = temp_dir.join("test.meta");
     fs::write(&meta_file, b"{ corrupted_json").unwrap();
     let embedded = HashMap::new();
-    let meta = WorkspaceIndex::load_file_metadata(
-        &test_idx,
-        &temp_dir,
-        "prov_crate",
-        "uk",
-        "gen",
-        &embedded,
-    );
+    let meta = WorkspaceIndex::load_file_metadata(&test_idx, &temp_dir, "prov_crate", "uk", "gen", &embedded);
     assert_eq!(meta.source_root, None);
     assert_eq!(meta.unit_key, Some("uk".to_string()));
     assert_eq!(meta.generation, Some("gen".to_string()));
@@ -88,8 +68,7 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
     assert!(meta.meta_path.is_some());
     assert_eq!(meta.meta_mtime, None);
 
-    let meta_empty =
-        WorkspaceIndex::load_file_metadata(&test_idx, &temp_dir, "prov_crate", "", "", &embedded);
+    let meta_empty = WorkspaceIndex::load_file_metadata(&test_idx, &temp_dir, "prov_crate", "", "", &embedded);
     assert_eq!(meta_empty.unit_key, None);
     assert_eq!(meta_empty.generation, None);
 
@@ -119,23 +98,11 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
     let lib_sub = sub_dir.join("lib.rs");
     let _ = fs::write(&lib_sub, b"// content");
     let non_norm_entry = temp2.join("sub_dir/../sub_dir/lib.rs");
-    assert!(file_entry_matches(
-        non_norm_entry.to_str().unwrap(),
-        Some(&temp2),
-        Path::new("sub_dir/lib.rs"),
-        None,
-    ));
+    assert!(file_entry_matches(non_norm_entry.to_str().unwrap(), Some(&temp2), Path::new("sub_dir/lib.rs"), None,));
 
     // 8. CurDir in symlink traversal (line 67) & relative entry match with no reader_origin (line 142)
-    assert!(!path_traverses_symlink_parent(Path::new(
-        "./sub_dir/lib.rs"
-    )));
-    assert!(file_entry_matches(
-        "sub_dir/lib.rs",
-        None,
-        Path::new("sub_dir/lib.rs"),
-        None
-    ));
+    assert!(!path_traverses_symlink_parent(Path::new("./sub_dir/lib.rs")));
+    assert!(file_entry_matches("sub_dir/lib.rs", None, Path::new("sub_dir/lib.rs"), None));
 
     // 9. Sidecar with h == 0 or empty key (line 384)
     ws_cand.reader_file_hashes[0].insert("".to_string(), 12345);
@@ -170,10 +137,7 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
     let mut ws_abs = WorkspaceIndex::open(&abs_idx_file).unwrap();
     ws_abs.workspace_root = Some(temp2.clone());
     assert!(ws_abs.shard_mtime_for_file("sub_dir/lib.rs").is_some());
-    assert_eq!(
-        ws_abs.source_hash_for_file("sub_dir/lib.rs"),
-        Some(crate::format::normalized_source_hash(b"// content"))
-    );
+    assert_eq!(ws_abs.source_hash_for_file("sub_dir/lib.rs"), Some(crate::format::normalized_source_hash(b"// content")));
 
     // 11. load_file_metadata with computed digest generation matching and mismatching (lines 440-448)
     let deps_dir = temp2.join(".deps");
@@ -200,32 +164,14 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
         compiler_args: vec![],
         env: HashMap::new(),
     };
-    fs::write(
-        deps_dir.join("computed_crate.json"),
-        serde_json::to_string(&dep_info).unwrap(),
-    )
-    .unwrap();
+    fs::write(deps_dir.join("computed_crate.json"), serde_json::to_string(&dep_info).unwrap()).unwrap();
 
     // Mismatching expected generation (lines 445-447)
-    let meta_mismatch = WorkspaceIndex::load_file_metadata(
-        &temp2.join("computed_crate.ridx"),
-        &temp2,
-        "computed_crate",
-        "comp_uk",
-        "wrong_gen_12345678",
-        &HashMap::new(),
-    );
+    let meta_mismatch = WorkspaceIndex::load_file_metadata(&temp2.join("computed_crate.ridx"), &temp2, "computed_crate", "comp_uk", "wrong_gen_12345678", &HashMap::new());
     assert_eq!(meta_mismatch.source_root, None);
 
     // Matching expected generation (lines 441-444, 463-472)
-    let meta_match = WorkspaceIndex::load_file_metadata(
-        &temp2.join("computed_crate.ridx"),
-        &temp2,
-        "computed_crate",
-        "comp_uk",
-        &expected_gen_str,
-        &HashMap::new(),
-    );
+    let meta_match = WorkspaceIndex::load_file_metadata(&temp2.join("computed_crate.ridx"), &temp2, "computed_crate", "comp_uk", &expected_gen_str, &HashMap::new());
     assert_eq!(meta_match.source_root, Some(temp2.clone()));
     assert_eq!(meta_match.unit_key, Some("comp_uk".to_string()));
     assert_eq!(meta_match.generation, Some(expected_gen_str));

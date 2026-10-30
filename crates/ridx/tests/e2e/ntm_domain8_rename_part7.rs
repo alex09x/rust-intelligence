@@ -11,12 +11,12 @@
 //! Integration tests for textDocument/rename (Domain 8, Part 7).
 //! Tests workspace index-backed symbols: type aliases, constants, statics, and external symbol rejection.
 
-use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference};
 use ridx::lsp::dispatch::dispatch_lsp_message;
 use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::path_to_uri;
 use ridx::lsp::workspace::MultiRootWorkspace;
 use ridx::overlay::OverlayManager;
+use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::fs::File;
@@ -55,15 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -85,17 +77,34 @@ fn test_rename_index_type_alias_edits_declaration_and_usages() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-        name: "ResultCode".to_string(), path: "pkg::ResultCode".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 10, end_line: 1, end_col: 20,
+        def_id: 1,
+        kind: DefKind::TyAlias,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ResultCode".to_string(),
+        path: "pkg::ResultCode".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 10,
+        end_line: 1,
+        end_col: 20,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 2, start_col: 18, end_line: 2, end_col: 28,
-        target_def_id: Some(1), target_path: "pkg::ResultCode".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 10, kind: DefKind::TyAlias,
-        is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 18,
+        end_line: 2,
+        end_col: 28,
+        target_def_id: Some(1),
+        target_path: "pkg::ResultCode".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 10,
+        kind: DefKind::TyAlias,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub type ResultCode = i32;\npub fn code() -> ResultCode { 0 }\n").unwrap();
@@ -131,17 +140,34 @@ fn test_rename_index_const_edits_declaration_and_usages() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Const, visibility: 1, is_macro_expansion: false,
-        name: "MAX_SIZE".to_string(), path: "pkg::MAX_SIZE".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 11, end_line: 1, end_col: 19,
+        def_id: 1,
+        kind: DefKind::Const,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MAX_SIZE".to_string(),
+        path: "pkg::MAX_SIZE".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 11,
+        end_line: 1,
+        end_col: 19,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 2, start_col: 27, end_line: 2, end_col: 35,
-        target_def_id: Some(1), target_path: "pkg::MAX_SIZE".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 11, kind: DefKind::Const,
-        is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 27,
+        end_line: 2,
+        end_col: 35,
+        target_def_id: Some(1),
+        target_path: "pkg::MAX_SIZE".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 11,
+        kind: DefKind::Const,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub const MAX_SIZE: usize = 1024;\npub fn limit() -> usize { MAX_SIZE }\n").unwrap();
@@ -177,17 +203,34 @@ fn test_rename_index_static_edits_declaration_and_usages() {
 
     let mut writer = IndexWriter::new("pkg", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Static, visibility: 1, is_macro_expansion: false,
-        name: "COUNTER".to_string(), path: "pkg::COUNTER".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 12, end_line: 1, end_col: 19,
+        def_id: 1,
+        kind: DefKind::Static,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "COUNTER".to_string(),
+        path: "pkg::COUNTER".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 12,
+        end_line: 1,
+        end_col: 19,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 2, start_col: 23, end_line: 2, end_col: 30,
-        target_def_id: Some(1), target_path: "pkg::COUNTER".to_string(),
-        target_file: Some(lib_str.clone()), target_unit: None,
-        target_line: 1, target_col: 12, kind: DefKind::Static,
-        is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 23,
+        end_line: 2,
+        end_col: 30,
+        target_def_id: Some(1),
+        target_path: "pkg::COUNTER".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: None,
+        target_line: 1,
+        target_col: 12,
+        kind: DefKind::Static,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&lib_file, "pub static COUNTER: i32 = 0;\npub fn get() -> i32 { COUNTER }\n").unwrap();
@@ -223,17 +266,34 @@ fn test_rename_index_external_symbol_rejected_with_exact_error() {
 
     let mut writer = IndexWriter::new("ext_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "external_fn".to_string(), path: "dependency::external_fn".to_string(),
-        signature: None, file: "/opt/.cargo/registry/src/index.crates.io-0000000000000000/dep-1.0.0/src/lib.rs".to_string(),
-        start_line: 1, start_col: 4, end_line: 1, end_col: 15,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "external_fn".to_string(),
+        path: "dependency::external_fn".to_string(),
+        signature: None,
+        file: "/opt/.cargo/registry/src/index.crates.io-0000000000000000/dep-1.0.0/src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 4,
+        end_line: 1,
+        end_col: 15,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 2, start_col: 5, end_line: 2, end_col: 16,
-        target_def_id: Some(1), target_path: "dependency::external_fn".to_string(),
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 16,
+        target_def_id: Some(1),
+        target_path: "dependency::external_fn".to_string(),
         target_file: Some("/opt/.cargo/registry/src/index.crates.io-0000000000000000/dep-1.0.0/src/lib.rs".to_string()),
-        target_unit: None, target_line: 1, target_col: 4,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 4,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn main() {\n    external_fn();\n}\n").unwrap();

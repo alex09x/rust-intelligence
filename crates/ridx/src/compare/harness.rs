@@ -33,12 +33,7 @@ pub fn find_pinned_rust_analyzer() -> Option<PathBuf> {
     None
 }
 
-pub fn query_pinned_rust_analyzer(
-    root: Option<&Path>,
-    capability: &str,
-    target: &str,
-    loc_opt: Option<(&str, u32, u32)>,
-) -> ExternalLspResult {
+pub fn query_pinned_rust_analyzer(root: Option<&Path>, capability: &str, target: &str, loc_opt: Option<(&str, u32, u32)>) -> ExternalLspResult {
     let t_start = Instant::now();
 
     // 1. Direct pinned rust-analyzer execution if configured
@@ -63,8 +58,7 @@ pub fn query_pinned_rust_analyzer(
         cmd.current_dir(r);
     }
     let prodcode_output = if let Some((file, line, col)) = loc_opt {
-        cmd.args([capability, file, &line.to_string(), &col.to_string()])
-            .output()
+        cmd.args([capability, file, &line.to_string(), &col.to_string()]).output()
     } else {
         cmd.args([capability, "--symbol", target]).output()
     };
@@ -78,29 +72,15 @@ pub fn query_pinned_rust_analyzer(
                 (false, "Not found".to_string(), 0)
             } else {
                 let lines_count = text.lines().count();
-                (
-                    true,
-                    text.lines().next().unwrap_or(&text).to_string(),
-                    lines_count,
-                )
+                (true, text.lines().next().unwrap_or(&text).to_string(), lines_count)
             }
         }
         Ok(out) => {
             let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
             (false, format!("Error ({err})"), 0)
         }
-        Err(e) => (
-            false,
-            format!("pinned rust-analyzer / prod-code unavailable ({e})"),
-            0,
-        ),
+        Err(e) => (false, format!("pinned rust-analyzer / prod-code unavailable ({e})"), 0),
     };
 
-    ExternalLspResult {
-        found: prodcode_found,
-        span: prodcode_span,
-        count: prodcode_count,
-        latency_micros: prodcode_latency,
-        rss_bytes: prodcode_rss_bytes,
-    }
+    ExternalLspResult { found: prodcode_found, span: prodcode_span, count: prodcode_count, latency_micros: prodcode_latency, rss_bytes: prodcode_rss_bytes }
 }

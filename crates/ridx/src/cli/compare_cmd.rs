@@ -29,33 +29,16 @@ pub struct CompareArgs {
 }
 
 pub fn cmd_compare(args: CompareArgs) {
-    let CompareArgs {
-        arg1,
-        arg2,
-        symbol,
-        scenarios_path,
-        ridx_cmd_str,
-        ra_cmd_str,
-        capability,
-        json,
-        scip_path,
-    } = args;
+    let CompareArgs { arg1, arg2, symbol, scenarios_path, ridx_cmd_str, ra_cmd_str, capability, json, scip_path } = args;
     if let Some(scenarios_file) = scenarios_path {
         let Ok(data) = std::fs::read_to_string(&scenarios_file) else {
-            eprintln!(
-                "{}: Failed to read scenarios file: {}",
-                "Error".red().bold(),
-                scenarios_file.display()
-            );
+            eprintln!("{}: Failed to read scenarios file: {}", "Error".red().bold(), scenarios_file.display());
             return;
         };
         let scenarios: Vec<SymmetricScenario> = match serde_json::from_str(&data) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!(
-                    "{}: Failed to parse scenarios JSON: {e}",
-                    "Error".red().bold()
-                );
+                eprintln!("{}: Failed to parse scenarios JSON: {e}", "Error".red().bold());
                 return;
             }
         };
@@ -65,50 +48,30 @@ pub fn cmd_compare(args: CompareArgs) {
         let ridx_cmd: Vec<String> = if let Some(cmd) = ridx_cmd_str {
             cmd.split_whitespace().map(|s| s.to_string()).collect()
         } else {
-            let current_exe = std::env::current_exe()
-                .map(|p| p.display().to_string())
-                .unwrap_or_else(|_| "ridx".to_string());
+            let current_exe = std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "ridx".to_string());
             vec![current_exe, "lsp".to_string()]
         };
 
-        let ra_cmd: Vec<String> = ra_cmd_str
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
+        let ra_cmd: Vec<String> = ra_cmd_str.split_whitespace().map(|s| s.to_string()).collect();
 
-        let summary =
-            run_symmetric_comparison(root, &ridx_cmd, &ra_cmd, scip_path.as_deref(), &scenarios);
+        let summary = run_symmetric_comparison(root, &ridx_cmd, &ra_cmd, scip_path.as_deref(), &scenarios);
         match summary {
             Some(sum) => {
                 if json {
                     println!("{}", serde_json::to_string_pretty(&sum).unwrap());
                 } else {
                     println!("Symmetric comparison completed on {}", sum.workspace_root);
-                    println!(
-                        "RIDX init: {} µs, warmup: {} µs, peak RSS: {} bytes",
-                        sum.ridx.spawn_and_init_micros,
-                        sum.ridx.readiness_warmup_micros,
-                        sum.ridx.peak_rss_bytes
-                    );
+                    println!("RIDX init: {} µs, warmup: {} µs, peak RSS: {} bytes", sum.ridx.spawn_and_init_micros, sum.ridx.readiness_warmup_micros, sum.ridx.peak_rss_bytes);
                     println!(
                         "RA init: {} µs, warmup: {} µs, peak RSS: {} bytes",
-                        sum.rust_analyzer.spawn_and_init_micros,
-                        sum.rust_analyzer.readiness_warmup_micros,
-                        sum.rust_analyzer.peak_rss_bytes
+                        sum.rust_analyzer.spawn_and_init_micros, sum.rust_analyzer.readiness_warmup_micros, sum.rust_analyzer.peak_rss_bytes
                     );
                     let matches_count = sum.scenario_matches.values().filter(|&&m| m).count();
-                    println!(
-                        "Scenario matches: {}/{}",
-                        matches_count,
-                        sum.scenario_matches.len()
-                    );
+                    println!("Scenario matches: {}/{}", matches_count, sum.scenario_matches.len());
                 }
             }
             None => {
-                eprintln!(
-                    "{}: Symmetric comparison failed to run",
-                    "Error".red().bold()
-                );
+                eprintln!("{}: Symmetric comparison failed to run", "Error".red().bold());
             }
         }
         return;

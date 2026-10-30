@@ -19,16 +19,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 #[allow(clippy::type_complexity)]
-pub(super) fn create_test_workspace(
-    readers_info: Vec<(
-        &Path,
-        Option<PathBuf>,
-        Option<String>,
-        Option<TargetKind>,
-        bool,
-    )>,
-    workspace_root: PathBuf,
-) -> WorkspaceIndex {
+pub(super) fn create_test_workspace(readers_info: Vec<(&Path, Option<PathBuf>, Option<String>, Option<TargetKind>, bool)>, workspace_root: PathBuf) -> WorkspaceIndex {
     let mut readers = Vec::with_capacity(readers_info.len());
     let mut paths = Vec::with_capacity(readers_info.len());
     let mut mtimes = Vec::with_capacity(readers_info.len());
@@ -160,30 +151,14 @@ fn test_sibling_units_reference_only_in_test_shard() {
 
     let ws = create_test_workspace(
         vec![
-            (
-                &lib_idx_path,
-                Some(pkg_root.clone()),
-                Some("unit_lib".to_string()),
-                Some(TargetKind::Lib),
-                false,
-            ),
-            (
-                &test_idx_path,
-                Some(pkg_root.clone()),
-                Some("unit_test".to_string()),
-                Some(TargetKind::Test),
-                false,
-            ),
+            (&lib_idx_path, Some(pkg_root.clone()), Some("unit_lib".to_string()), Some(TargetKind::Lib), false),
+            (&test_idx_path, Some(pkg_root.clone()), Some("unit_test".to_string()), Some(TargetKind::Test), false),
         ],
         ws_root,
     );
 
     let refs = ws.find_references_for_unit("my_pkg::compute", Some("unit_lib"));
-    assert_eq!(
-        refs.len(),
-        1,
-        "Reference in sibling test shard must be found when querying unit_lib"
-    );
+    assert_eq!(refs.len(), 1, "Reference in sibling test shard must be found when querying unit_lib");
     assert_eq!(refs[0].file, "src/runtime/tests/inject.rs");
     assert_eq!(refs[0].span.start_line(), 10);
     assert_eq!(refs[0].span.start_col(), 5);
@@ -273,30 +248,14 @@ fn test_sibling_units_reference_in_common_file_deduplicated() {
 
     let ws = create_test_workspace(
         vec![
-            (
-                &lib_idx_path,
-                Some(pkg_root.clone()),
-                Some("unit_lib".to_string()),
-                Some(TargetKind::Lib),
-                false,
-            ),
-            (
-                &test_idx_path,
-                Some(pkg_root.clone()),
-                Some("unit_test".to_string()),
-                Some(TargetKind::Test),
-                false,
-            ),
+            (&lib_idx_path, Some(pkg_root.clone()), Some("unit_lib".to_string()), Some(TargetKind::Lib), false),
+            (&test_idx_path, Some(pkg_root.clone()), Some("unit_test".to_string()), Some(TargetKind::Test), false),
         ],
         ws_root,
     );
 
     let refs = ws.find_references_for_unit("my_pkg::compute", Some("unit_lib"));
-    assert_eq!(
-        refs.len(),
-        1,
-        "Reference in common file src/lib.rs present in both lib and lib test must be deduplicated to exactly one"
-    );
+    assert_eq!(refs.len(), 1, "Reference in common file src/lib.rs present in both lib and lib test must be deduplicated to exactly one");
     assert_eq!(refs[0].file, "src/lib.rs");
     assert_eq!(refs[0].span.start_line(), 5);
     assert_eq!(refs[0].span.start_col(), 10);
@@ -358,28 +317,12 @@ fn test_unrelated_package_with_same_crate_name_is_excluded() {
 
     let ws = create_test_workspace(
         vec![
-            (
-                &lib_a_path,
-                Some(pkg_root_a),
-                Some("unit_pkg_a".to_string()),
-                Some(TargetKind::Lib),
-                false,
-            ),
-            (
-                &lib_b_path,
-                Some(pkg_root_b),
-                Some("unit_pkg_b".to_string()),
-                Some(TargetKind::Lib),
-                false,
-            ),
+            (&lib_a_path, Some(pkg_root_a), Some("unit_pkg_a".to_string()), Some(TargetKind::Lib), false),
+            (&lib_b_path, Some(pkg_root_b), Some("unit_pkg_b".to_string()), Some(TargetKind::Lib), false),
         ],
         ws_root,
     );
 
     let refs = ws.find_references_for_unit("my_pkg::compute", Some("unit_pkg_a"));
-    assert_eq!(
-        refs.len(),
-        0,
-        "Distinct package B with the same crate_name but different source_root must NOT be treated as sibling"
-    );
+    assert_eq!(refs.len(), 0, "Distinct package B with the same crate_name but different source_root must NOT be treated as sibling");
 }

@@ -20,10 +20,7 @@ use crate::format::*;
 /// source identifier (`""` crate root, `"{use#N}"`, `"{impl#N}"`, `"{closure#N}"`, or a numeric
 /// tuple-struct field `"0"`, `"1"`, ... whose span covers the field's type).
 pub(crate) fn is_synthetic_def_name(kind: DefKind, name: &str) -> bool {
-    kind == DefKind::Impl
-        || name.is_empty()
-        || name.starts_with('{')
-        || (kind == DefKind::Field && name.bytes().all(|b| b.is_ascii_digit()))
+    kind == DefKind::Impl || name.is_empty() || name.starts_with('{') || (kind == DefKind::Field && name.bytes().all(|b| b.is_ascii_digit()))
 }
 
 impl<B: AsRef<[u8]>> IndexReader<B> {
@@ -37,12 +34,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// the smallest named definition containing the cursor answers; the nameless crate-root module
     /// the driver records with the span of the whole file never does, so a position on no name
     /// has no definition.
-    pub fn find_definition_at(
-        &self,
-        file: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<ResolvedDefinition<'_>> {
+    pub fn find_definition_at(&self, file: &str, line: u32, col: u32) -> Option<ResolvedDefinition<'_>> {
         let file_id = self.find_file_id(file)?;
         let inner = self.find_innermost_ref_at_file_id(file_id, line, col);
         if let Some(r) = inner {
@@ -80,12 +72,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
     /// Finds the innermost `RefEntry` at `(file_id, line, col)` via binary search on span-sorted references.
     /// References that are not uses of a name (`is_name_reference`) are skipped.
-    pub fn find_innermost_ref_at_file_id(
-        &self,
-        file_id: u32,
-        line: u32,
-        col: u32,
-    ) -> Option<&RefEntry> {
+    pub fn find_innermost_ref_at_file_id(&self, file_id: u32, line: u32, col: u32) -> Option<&RefEntry> {
         let refs = self.references();
         let key = (file_id, line, col);
         let hi = refs.partition_point(|r| {
@@ -103,11 +90,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 continue;
             }
             if let Some((_, best_size)) = best {
-                let min_size = if line > span.start_line() {
-                    (line - span.start_line()) as u64 * 80
-                } else {
-                    (col.saturating_sub(span.start_col()) as u64).min(80)
-                };
+                let min_size = if line > span.start_line() { (line - span.start_line()) as u64 * 80 } else { (col.saturating_sub(span.start_col()) as u64).min(80) };
                 if min_size > best_size {
                     break;
                 }

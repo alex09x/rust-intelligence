@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,16 +77,32 @@ fn test_semantic_tokens_full_struct_and_fields() {
 
     let mut writer = IndexWriter::new("struct_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Point".to_string(), path: "struct_crate::Point".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 8, end_line: 1, end_col: 13,
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Point".to_string(),
+        path: "struct_crate::Point".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 13,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Field, visibility: 1, is_macro_expansion: false,
-        name: "x".to_string(), path: "struct_crate::Point::x".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 5, end_line: 2, end_col: 6,
+        def_id: 2,
+        kind: DefKind::Field,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "x".to_string(),
+        path: "struct_crate::Point::x".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 6,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "struct Point {\n    x: i32,\n}\n").unwrap();
@@ -116,16 +129,32 @@ fn test_semantic_tokens_full_enum_and_variants() {
 
     let mut writer = IndexWriter::new("enum_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Enum, visibility: 1, is_macro_expansion: false,
-        name: "Color".to_string(), path: "enum_crate::Color".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 6, end_line: 1, end_col: 11,
+        def_id: 1,
+        kind: DefKind::Enum,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Color".to_string(),
+        path: "enum_crate::Color".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 6,
+        end_line: 1,
+        end_col: 11,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Variant, visibility: 1, is_macro_expansion: false,
-        name: "Red".to_string(), path: "enum_crate::Color::Red".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 5, end_line: 2, end_col: 8,
+        def_id: 2,
+        kind: DefKind::Variant,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Red".to_string(),
+        path: "enum_crate::Color::Red".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 8,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "enum Color {\n    Red,\n}\n").unwrap();
@@ -152,16 +181,32 @@ fn test_semantic_tokens_full_trait_and_associated_items() {
 
     let mut writer = IndexWriter::new("trait_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greet".to_string(), path: "trait_crate::Greet".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 7, end_line: 1, end_col: 12,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Greet".to_string(),
+        path: "trait_crate::Greet".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 7,
+        end_line: 1,
+        end_col: 12,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::AssocFn, visibility: 1, is_macro_expansion: false,
-        name: "hello".to_string(), path: "trait_crate::Greet::hello".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 8, end_line: 2, end_col: 13,
+        def_id: 2,
+        kind: DefKind::AssocFn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "hello".to_string(),
+        path: "trait_crate::Greet::hello".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 8,
+        end_line: 2,
+        end_col: 13,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "trait Greet {\n    fn hello();\n}\n").unwrap();
@@ -188,10 +233,18 @@ fn test_semantic_tokens_full_type_alias_and_type_param() {
 
     let mut writer = IndexWriter::new("alias_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::TyAlias, visibility: 1, is_macro_expansion: false,
-        name: "Number".to_string(), path: "alias_crate::Number".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 6, end_line: 1, end_col: 12,
+        def_id: 1,
+        kind: DefKind::TyAlias,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Number".to_string(),
+        path: "alias_crate::Number".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 6,
+        end_line: 1,
+        end_col: 12,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "type Number = i64;\n").unwrap();
@@ -218,16 +271,32 @@ fn test_semantic_tokens_full_constants_and_statics() {
 
     let mut writer = IndexWriter::new("const_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Const, visibility: 1, is_macro_expansion: false,
-        name: "MAX".to_string(), path: "const_crate::MAX".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 7, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Const,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MAX".to_string(),
+        path: "const_crate::MAX".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 7,
+        end_line: 1,
+        end_col: 10,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Static, visibility: 1, is_macro_expansion: false,
-        name: "GLOBAL".to_string(), path: "const_crate::GLOBAL".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 8, end_line: 2, end_col: 14,
+        def_id: 2,
+        kind: DefKind::Static,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "GLOBAL".to_string(),
+        path: "const_crate::GLOBAL".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 8,
+        end_line: 2,
+        end_col: 14,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "const MAX: u32 = 100;\nstatic GLOBAL: u32 = 200;\n").unwrap();
@@ -254,10 +323,18 @@ fn test_semantic_tokens_full_macro_definition() {
 
     let mut writer = IndexWriter::new("macro_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Macro, visibility: 1, is_macro_expansion: false,
-        name: "my_macro".to_string(), path: "macro_crate::my_macro".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 14, end_line: 1, end_col: 22,
+        def_id: 1,
+        kind: DefKind::Macro,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "my_macro".to_string(),
+        path: "macro_crate::my_macro".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 14,
+        end_line: 1,
+        end_col: 22,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "macro_rules! my_macro { () => {}; }\n").unwrap();

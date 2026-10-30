@@ -84,10 +84,7 @@ fn test_l1_document_symbol_flat_list_no_children() {
 
     // Current RIDX specification invariant: response is flat list, no children array
     for item in items {
-        assert!(
-            item.get("children").is_none(),
-            "RIDX document symbols must remain flat"
-        );
+        assert!(item.get("children").is_none(), "RIDX document symbols must remain flat");
     }
 
     let names: Vec<&str> = items.iter().filter_map(|s| s["name"].as_str()).collect();
@@ -195,8 +192,7 @@ fn test_l1_document_symbol_trait_with_methods() {
     let mut conv = PositionConverter::new();
     let uri = "file:///workspace/src/traits.rs";
     let file = "/workspace/src/traits.rs";
-    let code =
-        "pub trait Storage {\n    fn save(&self) -> bool;\n    fn load(&self) -> i32 { 0 }\n}\n";
+    let code = "pub trait Storage {\n    fn save(&self) -> bool;\n    fn load(&self) -> i32 { 0 }\n}\n";
     overlay_mgr.open_document(uri, file, 1, code.to_string());
 
     let req = make_doc_req(uri);
@@ -270,11 +266,7 @@ fn test_l1_document_symbol_did_change_dynamic_refresh() {
     assert_eq!(items1[0]["name"], "initial_func");
 
     // Version 2: append another function
-    overlay_mgr.update(
-        file,
-        2,
-        "pub fn initial_func() {}\npub fn appended_func() {}\n".to_string(),
-    );
+    overlay_mgr.update(file, 2, "pub fn initial_func() {}\npub fn appended_func() {}\n".to_string());
     let res2 = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items2 = res2.as_array().expect("array v2");
     assert_eq!(items2.len(), 2);

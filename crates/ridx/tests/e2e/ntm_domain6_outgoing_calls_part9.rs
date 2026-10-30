@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,23 +77,48 @@ fn test_call_hierarchy_outgoing_calls_caller_at_eof() {
 
     let mut writer = IndexWriter::new("eof_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target".to_string(), path: "eof_crate::target".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target".to_string(),
+        path: "eof_crate::target".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "eof_fn".to_string(), path: "eof_crate::eof_fn".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 22,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "eof_fn".to_string(),
+        path: "eof_crate::eof_fn".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 22,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 3, start_col: 14, end_line: 3, end_col: 20,
-        target_def_id: Some(1), target_path: "eof_crate::target".to_string(),
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 14,
+        end_line: 3,
+        end_col: 20,
+        target_def_id: Some(1),
+        target_path: "eof_crate::target".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target() {}\n\nfn eof_fn() { target(); }").unwrap();
@@ -131,42 +153,92 @@ fn test_call_hierarchy_outgoing_calls_consecutive_requests_different_callers() {
 
     let mut writer = IndexWriter::new("consec_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_a".to_string(), path: "consec_crate::target_a".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 9,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_a".to_string(),
+        path: "consec_crate::target_a".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 9,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "target_b".to_string(), path: "consec_crate::target_b".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 9,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "target_b".to_string(),
+        path: "consec_crate::target_b".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 9,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller_a".to_string(), path: "consec_crate::caller_a".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 5, start_col: 1, end_line: 7, end_col: 2,
+        def_id: 3,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "caller_a".to_string(),
+        path: "consec_crate::caller_a".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 5,
+        start_col: 1,
+        end_line: 7,
+        end_col: 2,
     });
     writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller_b".to_string(), path: "consec_crate::caller_b".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 9, start_col: 1, end_line: 11, end_col: 2,
+        def_id: 4,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "caller_b".to_string(),
+        path: "consec_crate::caller_b".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 9,
+        start_col: 1,
+        end_line: 11,
+        end_col: 2,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 6, start_col: 5, end_line: 6, end_col: 13,
-        target_def_id: Some(1), target_path: "consec_crate::target_a".to_string(),
+        file: lib_str.clone(),
+        start_line: 6,
+        start_col: 5,
+        end_line: 6,
+        end_col: 13,
+        target_def_id: Some(1),
+        target_path: "consec_crate::target_a".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(), start_line: 10, start_col: 5, end_line: 10, end_col: 13,
-        target_def_id: Some(2), target_path: "consec_crate::target_b".to_string(),
+        file: lib_str.clone(),
+        start_line: 10,
+        start_col: 5,
+        end_line: 10,
+        end_col: 13,
+        target_def_id: Some(2),
+        target_path: "consec_crate::target_b".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 3, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 3,
+        target_col: 1,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn target_a() {}\n\nfn target_b() {}\n\nfn caller_a() {\n    target_a();\n}\n\nfn caller_b() {\n    target_b();\n}\n").unwrap();
@@ -218,10 +290,18 @@ fn test_call_hierarchy_outgoing_calls_range_outside_file_returns_empty() {
 
     let mut writer = IndexWriter::new("oob_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "simple".to_string(), path: "oob_crate::simple".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "simple".to_string(),
+        path: "oob_crate::simple".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn simple() {}\n").unwrap();
@@ -254,10 +334,18 @@ fn test_call_hierarchy_outgoing_calls_closure_call_ignored_if_not_indexed() {
 
     let mut writer = IndexWriter::new("clos_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "outer".to_string(), path: "clos_crate::outer".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 9,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "outer".to_string(),
+        path: "clos_crate::outer".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 9,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn outer() {\n    let f = || 42;\n    f();\n}\n").unwrap();

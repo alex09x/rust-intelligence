@@ -106,12 +106,7 @@ pub struct DocumentOverlay {
 }
 
 /// Resolves the compiled baseline text by checking whether the live buffer hash or on-disk file hash matches `expected_hash`.
-pub(crate) fn resolve_compiled_text(
-    content_hash: u64,
-    text: &str,
-    disk_text: Option<&str>,
-    expected_hash: Option<u64>,
-) -> Option<String> {
+pub(crate) fn resolve_compiled_text(content_hash: u64, text: &str, disk_text: Option<&str>, expected_hash: Option<u64>) -> Option<String> {
     let expected = expected_hash?;
     if content_hash == expected {
         Some(text.to_owned())
@@ -142,78 +137,34 @@ impl DocumentOverlay {
     }
 
     /// Creates and parses a new DocumentOverlay with explicit provenance tracking.
-    pub fn new_with_provenance(
-        uri: impl Into<String>,
-        file_path: impl Into<String>,
-        version: i32,
-        text: String,
-        is_compiled: bool,
-    ) -> Self {
+    pub fn new_with_provenance(uri: impl Into<String>, file_path: impl Into<String>, version: i32, text: String, is_compiled: bool) -> Self {
         let uri = uri.into();
         let file_path = file_path.into();
         let content_hash = normalized_source_hash(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
-        let compiled_text = if is_compiled {
-            Some(text.clone())
-        } else {
-            None
-        };
-        let mut overlay = Self {
-            uri,
-            file_path,
-            version,
-            content_hash,
-            text,
-            compiled_text,
-            disk_text,
-            line_starts: Vec::new(),
-            symbols: Vec::new(),
-            scopes: Vec::new(),
-            opaque: Vec::new(),
-        };
+        let compiled_text = if is_compiled { Some(text.clone()) } else { None };
+        let mut overlay =
+            Self { uri, file_path, version, content_hash, text, compiled_text, disk_text, line_starts: Vec::new(), symbols: Vec::new(), scopes: Vec::new(), opaque: Vec::new() };
         overlay.reparse();
         overlay
     }
 
     /// Creates and parses a new DocumentOverlay resolving `compiled_text` from buffer or disk against `expected_hash`.
-    pub fn new_with_source_hash(
-        uri: impl Into<String>,
-        file_path: impl Into<String>,
-        version: i32,
-        text: String,
-        expected_hash: Option<u64>,
-    ) -> Self {
+    pub fn new_with_source_hash(uri: impl Into<String>, file_path: impl Into<String>, version: i32, text: String, expected_hash: Option<u64>) -> Self {
         let uri = uri.into();
         let file_path = file_path.into();
         let content_hash = normalized_source_hash(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
-        let compiled_text =
-            resolve_compiled_text(content_hash, &text, disk_text.as_deref(), expected_hash);
-        let mut overlay = Self {
-            uri,
-            file_path,
-            version,
-            content_hash,
-            text,
-            compiled_text,
-            disk_text,
-            line_starts: Vec::new(),
-            symbols: Vec::new(),
-            scopes: Vec::new(),
-            opaque: Vec::new(),
-        };
+        let compiled_text = resolve_compiled_text(content_hash, &text, disk_text.as_deref(), expected_hash);
+        let mut overlay =
+            Self { uri, file_path, version, content_hash, text, compiled_text, disk_text, line_starts: Vec::new(), symbols: Vec::new(), scopes: Vec::new(), opaque: Vec::new() };
         overlay.reparse();
         overlay
     }
 
     /// Creates and parses a new DocumentOverlay from buffer text assuming compiled baseline.
     #[allow(dead_code)]
-    pub fn new(
-        uri: impl Into<String>,
-        file_path: impl Into<String>,
-        version: i32,
-        text: String,
-    ) -> Self {
+    pub fn new(uri: impl Into<String>, file_path: impl Into<String>, version: i32, text: String) -> Self {
         Self::new_with_provenance(uri, file_path, version, text, true)
     }
 
@@ -256,55 +207,24 @@ impl DocumentOverlay {
         }
         for change in changes {
             if let Some(range) = change.get("range") {
-                let Some(text_to_insert) = change
-                    .get("newText")
-                    .or_else(|| change.get("text"))
-                    .and_then(|t| t.as_str())
-                else {
+                let Some(text_to_insert) = change.get("newText").or_else(|| change.get("text")).and_then(|t| t.as_str()) else {
                     continue;
                 };
-                let start_line = range
-                    .get("start")
-                    .and_then(|p| p.get("line"))
-                    .and_then(|l| l.as_u64())
-                    .unwrap_or(0) as u32;
-                let start_char = range
-                    .get("start")
-                    .and_then(|p| p.get("character"))
-                    .and_then(|c| c.as_u64())
-                    .unwrap_or(0) as u32;
-                let end_line = range
-                    .get("end")
-                    .and_then(|p| p.get("line"))
-                    .and_then(|l| l.as_u64())
-                    .unwrap_or(0) as u32;
-                let end_char = range
-                    .get("end")
-                    .and_then(|p| p.get("character"))
-                    .and_then(|c| c.as_u64())
-                    .unwrap_or(0) as u32;
+                let start_line = range.get("start").and_then(|p| p.get("line")).and_then(|l| l.as_u64()).unwrap_or(0) as u32;
+                let start_char = range.get("start").and_then(|p| p.get("character")).and_then(|c| c.as_u64()).unwrap_or(0) as u32;
+                let end_line = range.get("end").and_then(|p| p.get("line")).and_then(|l| l.as_u64()).unwrap_or(0) as u32;
+                let end_char = range.get("end").and_then(|p| p.get("character")).and_then(|c| c.as_u64()).unwrap_or(0) as u32;
 
-                let start_byte = self
-                    .position_to_byte_offset(start_line, start_char)
-                    .min(self.text.len());
-                let end_byte = self
-                    .position_to_byte_offset(end_line, end_char)
-                    .min(self.text.len())
-                    .max(start_byte);
+                let start_byte = self.position_to_byte_offset(start_line, start_char).min(self.text.len());
+                let end_byte = self.position_to_byte_offset(end_line, end_char).min(self.text.len()).max(start_byte);
 
-                let mut new_text = String::with_capacity(
-                    start_byte + text_to_insert.len() + (self.text.len() - end_byte),
-                );
+                let mut new_text = String::with_capacity(start_byte + text_to_insert.len() + (self.text.len() - end_byte));
                 new_text.push_str(&self.text[..start_byte]);
                 new_text.push_str(text_to_insert);
                 new_text.push_str(&self.text[end_byte..]);
                 self.text = new_text;
                 self.rebuild_line_starts();
-            } else if let Some(full_text) = change
-                .get("newText")
-                .or_else(|| change.get("text"))
-                .and_then(|t| t.as_str())
-            {
+            } else if let Some(full_text) = change.get("newText").or_else(|| change.get("text")).and_then(|t| t.as_str()) {
                 self.text = full_text.to_string();
                 self.rebuild_line_starts();
             }

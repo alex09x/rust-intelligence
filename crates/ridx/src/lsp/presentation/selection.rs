@@ -35,10 +35,7 @@ fn utf16_col_to_byte(line: &str, col: u32) -> Option<usize> {
 
 /// Number of leading bytes of `s` that continue an identifier.
 fn ident_continue_len(s: &str) -> usize {
-    s.chars()
-        .take_while(|&c| is_rust_ident_continue(c))
-        .map(char::len_utf8)
-        .sum()
+    s.chars().take_while(|&c| is_rust_ident_continue(c)).map(char::len_utf8).sum()
 }
 
 /// Length of the identifier (plain or `r#raw`) at the start of `s`, if there is one.
@@ -80,21 +77,13 @@ fn opaque_end_after(spans: &[(usize, usize)], pos: usize) -> Option<usize> {
 /// boundary of such a token still selects it. A cursor inside a comment or a string/char
 /// literal selects that whole comment or literal, as rust-analyzer's token node does.
 /// Whitespace, punctuation and numbers give `None`.
-fn token_range_at(
-    overlay: &DocumentOverlay,
-    line_0based: u32,
-    utf16_col_0based: u32,
-) -> Option<(usize, usize)> {
+fn token_range_at(overlay: &DocumentOverlay, line_0based: u32, utf16_col_0based: u32) -> Option<(usize, usize)> {
     let line_idx = line_0based as usize;
     if line_idx >= overlay.line_starts.len() {
         return None;
     }
     let line_start = overlay.line_starts[line_idx];
-    let raw_end = overlay
-        .line_starts
-        .get(line_idx + 1)
-        .copied()
-        .unwrap_or(overlay.text.len());
+    let raw_end = overlay.line_starts.get(line_idx + 1).copied().unwrap_or(overlay.text.len());
     let line = overlay.text[line_start..raw_end].trim_end_matches(['\r', '\n']);
     let target_rel = utf16_col_to_byte(line, utf16_col_0based)?;
 
@@ -144,16 +133,13 @@ fn selection_ranges_for_overlay(overlay: &DocumentOverlay, pos_list: &[Value]) -
                 candidates.push((s.sel_start_byte, s.end_byte));
             }
         }
-        candidates
-            .sort_by_key(|&(start, end)| (end.saturating_sub(start), std::cmp::Reverse(start)));
+        candidates.sort_by_key(|&(start, end)| (end.saturating_sub(start), std::cmp::Reverse(start)));
 
         // Innermost first; every further range must strictly contain the previous one.
         let mut chain: Vec<(usize, usize)> = Vec::with_capacity(candidates.len());
         for (start, end) in candidates {
             if let Some(&(prev_start, prev_end)) = chain.last() {
-                let strictly_contains = start <= prev_start
-                    && end >= prev_end
-                    && (start, end) != (prev_start, prev_end);
+                let strictly_contains = start <= prev_start && end >= prev_end && (start, end) != (prev_start, prev_end);
                 if !strictly_contains {
                     continue;
                 }
@@ -191,10 +177,7 @@ fn selection_ranges_for_overlay(overlay: &DocumentOverlay, pos_list: &[Value]) -
 pub fn handle_selection_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
-    let Some(pos_list) = msg["params"]["positions"]
-        .as_array()
-        .filter(|p| !p.is_empty())
-    else {
+    let Some(pos_list) = msg["params"]["positions"].as_array().filter(|p| !p.is_empty()) else {
         return json!([]);
     };
 

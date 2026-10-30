@@ -39,15 +39,7 @@ fn dispatch_did_close_with_converter(
 ) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -75,7 +67,10 @@ fn test_did_close_invalidates_position_converter_cache() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -92,7 +87,10 @@ fn test_did_close_followed_by_reopen_starts_fresh_version() {
     // Close
     let (ok_close, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
     assert_eq!(ok_close, true);
     assert_eq!(om.open_count(), 0);
@@ -106,8 +104,14 @@ fn test_did_close_followed_by_reopen_starts_fresh_version() {
             "method": "textDocument/didOpen",
             "params": { "textDocument": { "uri": uri, "version": 10, "text": "fresh v10\n" } }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok_open, true);
     assert_eq!(om.open_count(), 1);
@@ -124,7 +128,10 @@ fn test_did_close_reopen_with_different_text() {
 
     let _ = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
@@ -135,7 +142,12 @@ fn test_did_close_reopen_with_different_text() {
             "method": "textDocument/didOpen",
             "params": { "textDocument": { "uri": uri, "version": 1, "text": "pub struct NewPoint;\n" } }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
     );
 
     let overlay = om.get(&file).expect("overlay must exist");
@@ -154,7 +166,10 @@ fn test_did_close_does_not_affect_unrelated_open_files() {
 
     let (ok, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri1 } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -174,7 +189,10 @@ fn test_did_close_preserves_unrelated_file_version_and_symbols() {
 
     let (ok, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri1 } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -195,7 +213,10 @@ fn test_did_close_empty_uri_safe() {
             "method": "textDocument/didClose",
             "params": { "textDocument": { "uri": "" } }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -211,7 +232,10 @@ fn test_did_close_windows_file_uri_eviction() {
     assert_eq!(om.open_count(), 1);
     let (ok, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -228,7 +252,10 @@ fn test_did_close_url_encoded_space_uri_eviction() {
     assert_eq!(om.open_count(), 1);
     let (ok, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -245,7 +272,10 @@ fn test_did_close_does_not_modify_disk_file() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(&uri, "overlay dirty\n");
     let (ok, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);
@@ -265,7 +295,10 @@ fn test_did_close_discards_unsaved_dirty_overlay() {
 
     let (ok, _) = dispatch_did_close_with_converter(
         json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
 
     assert_eq!(ok, true);

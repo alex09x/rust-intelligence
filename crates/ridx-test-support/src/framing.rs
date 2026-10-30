@@ -39,11 +39,7 @@ pub fn parse_lsp_responses_strict(bytes: &[u8]) -> Result<Vec<Value>, String> {
         }
 
         let Some(header_end) = slice.windows(4).position(|w| w == b"\r\n\r\n") else {
-            return Err(format!(
-                "Incomplete LSP header at offset {}: missing \\r\\n\\r\\n. Hexdump:\n{}",
-                cur,
-                hexdump(slice)
-            ));
+            return Err(format!("Incomplete LSP header at offset {}: missing \\r\\n\\r\\n. Hexdump:\n{}", cur, hexdump(slice)));
         };
 
         let header_str = String::from_utf8_lossy(&slice[..header_end]);
@@ -57,10 +53,7 @@ pub fn parse_lsp_responses_strict(bytes: &[u8]) -> Result<Vec<Value>, String> {
         }
 
         let Some(len) = content_len else {
-            return Err(format!(
-                "Malformed LSP header at offset {}: missing Content-Length header. Header:\n{}",
-                cur, header_str
-            ));
+            return Err(format!("Malformed LSP header at offset {}: missing Content-Length header. Header:\n{}", cur, header_str));
         };
 
         let body_start = cur + header_end + 4;
@@ -127,10 +120,7 @@ pub struct TestLspSession {
 
 impl TestLspSession {
     pub fn new() -> Self {
-        Self {
-            bytes: Vec::new(),
-            req_id: 1,
-        }
+        Self { bytes: Vec::new(), req_id: 1 }
     }
 
     /// Appends standard initialize with default capabilities.
@@ -232,9 +222,6 @@ mod tests {
         session.initialize_with_encodings("file:///test", &["utf-8", "utf-16"]);
         let bytes = session.into_bytes();
         let msgs = parse_lsp_responses(&bytes);
-        assert_eq!(
-            msgs[0]["params"]["capabilities"]["general"]["positionEncodings"],
-            json!(["utf-8", "utf-16"])
-        );
+        assert_eq!(msgs[0]["params"]["capabilities"]["general"]["positionEncodings"], json!(["utf-8", "utf-16"]));
     }
 }

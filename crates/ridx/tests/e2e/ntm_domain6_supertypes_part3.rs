@@ -46,22 +46,46 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_str = lib_file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: format!("{}::Greeter", name),
-        signature: Some("pub trait Greeter".to_string()), file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Greeter".to_string(),
+        path: format!("{}::Greeter", name),
+        signature: Some("pub trait Greeter".to_string()),
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 18,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Robot".to_string(), path: format!("{}::Robot", name),
-        signature: Some("pub struct Robot".to_string()), file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Robot".to_string(),
+        path: format!("{}::Robot", name),
+        signature: Some("pub struct Robot".to_string()),
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Robot as Greeter>".to_string(), path: "<Robot as Greeter>".to_string(),
-        signature: Some("impl Greeter for Robot".to_string()), file: lib_str,
-        start_line: 5, start_col: 1, end_line: 7, end_col: 2,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<Robot as Greeter>".to_string(),
+        path: "<Robot as Greeter>".to_string(),
+        signature: Some("impl Greeter for Robot".to_string()),
+        file: lib_str,
+        start_line: 5,
+        start_col: 1,
+        end_line: 7,
+        end_col: 2,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -110,10 +134,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -252,22 +273,46 @@ fn test_type_hierarchy_supertypes_multiline_impl_header() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("ml_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "Greeter".to_string(), path: "ml_crate::Greeter".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 18,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Greeter".to_string(),
+        path: "ml_crate::Greeter".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 18,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "Robot".to_string(), path: "ml_crate::Robot".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 17,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "Robot".to_string(),
+        path: "ml_crate::Robot".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<Robot as Greeter>".to_string(), path: "<Robot as Greeter>".to_string(),
-        signature: None, file: lib_str,
-        start_line: 5, start_col: 1, end_line: 8, end_col: 2,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<Robot as Greeter>".to_string(),
+        path: "<Robot as Greeter>".to_string(),
+        signature: None,
+        file: lib_str,
+        start_line: 5,
+        start_col: 1,
+        end_line: 8,
+        end_col: 2,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "trait Greeter {}\n\nstruct Robot;\n\nimpl Greeter\n    for Robot\n{\n}\n").unwrap();

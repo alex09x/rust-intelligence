@@ -45,11 +45,18 @@ fn create_temp_shard(name: &str) -> TempShard {
     let lib_str = dir.join("src/lib.rs").to_str().unwrap().to_string();
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "compute".to_string(), path: format!("{}::compute", name),
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "compute".to_string(),
+        path: format!("{}::compute", name),
         signature: Some("pub fn compute(x: i32) -> i32".to_string()),
         file: lib_str,
-        start_line: 1, start_col: 1, end_line: 1, end_col: 8,
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 8,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -84,10 +91,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -106,16 +110,32 @@ fn test_prepare_call_hierarchy_multiple_functions_selection() {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new("multi_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "func_a".to_string(), path: "multi_crate::func_a".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 7,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "func_a".to_string(),
+        path: "multi_crate::func_a".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 7,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "func_b".to_string(), path: "multi_crate::func_b".to_string(),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 7,
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "func_b".to_string(),
+        path: "multi_crate::func_b".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 7,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let file = dir.join("src/lib.rs");

@@ -29,11 +29,7 @@ pub(crate) fn parse_location(loc: &str) -> Option<(&str, u32, u32)> {
 }
 
 pub(crate) fn find_enclosing_workspace(start: &Path) -> Option<PathBuf> {
-    let mut cur = if start.is_dir() {
-        Some(start)
-    } else {
-        start.parent()
-    };
+    let mut cur = if start.is_dir() { Some(start) } else { start.parent() };
     let mut nearest_package = None;
     while let Some(dir) = cur {
         let cargo_toml = dir.join("Cargo.toml");
@@ -76,9 +72,7 @@ pub(crate) fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::
         let v_manifest_file = dir.join("variant_manifest.json");
         if v_manifest_file.is_file() {
             if let Ok(content) = fs::read(&v_manifest_file) {
-                if let Ok(manifest) =
-                    serde_json::from_slice::<ridx_format::VariantManifest>(&content)
-                {
+                if let Ok(manifest) = serde_json::from_slice::<ridx_format::VariantManifest>(&content) {
                     return Some((dir.clone(), manifest));
                 }
             }
@@ -90,9 +84,7 @@ pub(crate) fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::
         let manifest_file = dir.join("ridx_manifest.json");
         if manifest_file.is_file() {
             if let Ok(content) = fs::read(&manifest_file) {
-                if let Ok(manifest) =
-                    serde_json::from_slice::<ridx_format::VariantManifest>(&content)
-                {
+                if let Ok(manifest) = serde_json::from_slice::<ridx_format::VariantManifest>(&content) {
                     // If p specifies a variant directory or shard under variants/<id>, verify that
                     // it matches manifest.active_variant_id. If p targets an inactive variant shard
                     // whose recipe is not the root active manifest, return None rather than substituting
@@ -101,10 +93,7 @@ pub(crate) fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::
                     if let Some(pos) = p_str.find("variants/") {
                         let sub = &p_str[pos + "variants/".len()..];
                         let var_id = sub.split('/').next().unwrap_or("");
-                        if !var_id.is_empty()
-                            && !manifest.active_variant_id.is_empty()
-                            && var_id != manifest.active_variant_id
-                        {
+                        if !var_id.is_empty() && !manifest.active_variant_id.is_empty() && var_id != manifest.active_variant_id {
                             return None;
                         }
                     }
@@ -128,51 +117,28 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                 Ok(ws)
             }
             Err(e) => {
-                if ridx_format::is_version_mismatch(&e) || e.kind() == std::io::ErrorKind::NotFound
-                {
+                if ridx_format::is_version_mismatch(&e) || e.kind() == std::io::ErrorKind::NotFound {
                     eprintln!(
                         "{} Index at {:?} is missing or incompatible with format v{}. Automatically reindexing...",
-                        "Notice:".yellow().bold(), p, ridx_format::CURRENT_FORMAT_VERSION
+                        "Notice:".yellow().bold(),
+                        p,
+                        ridx_format::CURRENT_FORMAT_VERSION
                     );
-                    let (
-                        work_dir,
-                        out_dir_opt,
-                        package,
-                        release,
-                        features,
-                        no_default_features,
-                        all_features,
-                        target,
-                    ) = if let Some((manifest_dir, manifest)) = find_manifest_for_path(&p) {
-                        let ws_dir = if !manifest.workspace_root.is_empty()
-                            && Path::new(&manifest.workspace_root).exists()
-                        {
+                    let (work_dir, out_dir_opt, package, release, features, no_default_features, all_features, target) = if let Some((manifest_dir, manifest)) =
+                        find_manifest_for_path(&p)
+                    {
+                        let ws_dir = if !manifest.workspace_root.is_empty() && Path::new(&manifest.workspace_root).exists() {
                             PathBuf::from(manifest.workspace_root)
                         } else if let Some(ws) = find_enclosing_workspace(&p) {
                             ws
                         } else {
-                            return Err(format!(
-                                "Cannot find Cargo workspace for index at {:?}.",
-                                p
-                            ));
+                            return Err(format!("Cannot find Cargo workspace for index at {:?}.", p));
                         };
                         let base_dir = if let Some(ref b) = manifest.base_out_dir {
                             PathBuf::from(b)
-                        } else if manifest_dir
-                            .parent()
-                            .and_then(|pr| pr.file_name())
-                            .and_then(|s| s.to_str())
-                            == Some("variants")
-                        {
-                            manifest_dir
-                                .parent()
-                                .unwrap()
-                                .parent()
-                                .unwrap()
-                                .to_path_buf()
-                        } else if manifest_dir.file_name().and_then(|s| s.to_str())
-                            == Some("variants")
-                        {
+                        } else if manifest_dir.parent().and_then(|pr| pr.file_name()).and_then(|s| s.to_str()) == Some("variants") {
+                            manifest_dir.parent().unwrap().parent().unwrap().to_path_buf()
+                        } else if manifest_dir.file_name().and_then(|s| s.to_str()) == Some("variants") {
                             manifest_dir.parent().unwrap().to_path_buf()
                         } else {
                             manifest_dir
@@ -198,10 +164,7 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                         if let Some(ws) = find_enclosing_workspace(&p) {
                             (ws, None, None, false, None, false, false, None)
                         } else {
-                            return Err(format!(
-                                "Cannot determine Cargo workspace for {:?}. No Cargo.toml found in path or parent directories.\nSpecify the path to a Cargo workspace or run 'ridx index' first.",
-                                p
-                            ));
+                            return Err(format!("Cannot determine Cargo workspace for {:?}. No Cargo.toml found in path or parent directories.\nSpecify the path to a Cargo workspace or run 'ridx index' first.", p));
                         }
                     };
 
@@ -239,10 +202,7 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                         }
                     }
 
-                    return Err(format!(
-                        "Failed to open reindexed workspace after variant publish {:?}.",
-                        published.variant_out_dir
-                    ));
+                    return Err(format!("Failed to open reindexed workspace after variant publish {:?}.", published.variant_out_dir));
                 }
                 Err(format!("Failed to open index {:?}: {e}", p))
             }
@@ -251,49 +211,35 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
             Ok(ws) => Ok(ws),
             Err(e) => {
                 let cur = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-                let (
-                    work_dir,
-                    out_dir_opt,
-                    package,
-                    release,
-                    features,
-                    no_default_features,
-                    all_features,
-                    target,
-                ) = if let Some((manifest_dir, manifest)) = find_manifest_for_path(&cur) {
-                    let ws_dir = if !manifest.workspace_root.is_empty()
-                        && Path::new(&manifest.workspace_root).exists()
-                    {
-                        PathBuf::from(manifest.workspace_root)
+                let (work_dir, out_dir_opt, package, release, features, no_default_features, all_features, target) =
+                    if let Some((manifest_dir, manifest)) = find_manifest_for_path(&cur) {
+                        let ws_dir = if !manifest.workspace_root.is_empty() && Path::new(&manifest.workspace_root).exists() {
+                            PathBuf::from(manifest.workspace_root)
+                        } else if let Some(ws) = find_enclosing_workspace(&cur) {
+                            ws
+                        } else {
+                            return Err(format!("Cannot find Cargo workspace for manifest at {:?}.", manifest_dir));
+                        };
+                        (
+                            ws_dir,
+                            Some(manifest_dir),
+                            manifest.package_filter,
+                            manifest.profile == "release",
+                            manifest.features,
+                            manifest.no_default_features,
+                            manifest.all_features,
+                            manifest.target,
+                        )
                     } else if let Some(ws) = find_enclosing_workspace(&cur) {
-                        ws
+                        (ws, None, None, false, None, false, false, None)
                     } else {
-                        return Err(format!(
-                            "Cannot find Cargo workspace for manifest at {:?}.",
-                            manifest_dir
-                        ));
+                        return Err(format!("{e}\nSpecify the path to a .ridx file or directory, or run from a workspace with target/ridx/."));
                     };
-                    (
-                        ws_dir,
-                        Some(manifest_dir),
-                        manifest.package_filter,
-                        manifest.profile == "release",
-                        manifest.features,
-                        manifest.no_default_features,
-                        manifest.all_features,
-                        manifest.target,
-                    )
-                } else if let Some(ws) = find_enclosing_workspace(&cur) {
-                    (ws, None, None, false, None, false, false, None)
-                } else {
-                    return Err(format!(
-                        "{e}\nSpecify the path to a .ridx file or directory, or run from a workspace with target/ridx/."
-                    ));
-                };
 
                 eprintln!(
                     "{} No valid RIDX index found for current workspace (expected format v{}). Automatically indexing...",
-                    "Notice:".yellow().bold(), ridx_format::CURRENT_FORMAT_VERSION
+                    "Notice:".yellow().bold(),
+                    ridx_format::CURRENT_FORMAT_VERSION
                 );
                 if let Err(err) = try_run_indexing(IndexOptions {
                     path: work_dir,
@@ -332,10 +278,7 @@ pub(crate) fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
     }
 }
 
-pub(crate) fn try_resolve_index_and_target(
-    arg1: String,
-    arg2: Option<String>,
-) -> Result<(WorkspaceIndex, String), String> {
+pub(crate) fn try_resolve_index_and_target(arg1: String, arg2: Option<String>) -> Result<(WorkspaceIndex, String), String> {
     match arg2 {
         Some(target) => Ok((try_resolve_workspace(Some(PathBuf::from(arg1)))?, target)),
         None => {
@@ -377,10 +320,7 @@ pub(crate) fn try_resolve_index_and_target(
     }
 }
 
-pub(crate) fn resolve_index_and_target(
-    arg1: String,
-    arg2: Option<String>,
-) -> (WorkspaceIndex, String) {
+pub(crate) fn resolve_index_and_target(arg1: String, arg2: Option<String>) -> (WorkspaceIndex, String) {
     try_resolve_index_and_target(arg1, arg2).unwrap_or_else(|e| {
         eprintln!("{}: {e}", "Error".red().bold());
         #[cfg(not(test))]

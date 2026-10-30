@@ -30,12 +30,7 @@ fn to_uri(p: &Path) -> String {
 
 fn temp_file(tag: &str) -> PathBuf {
     let id = SEL_P7_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-        "ridx_sel_p7_{}_{}_{}.rs",
-        tag,
-        std::process::id(),
-        id
-    ))
+    std::env::temp_dir().join(format!("ridx_sel_p7_{}_{}_{}.rs", tag, std::process::id(), id))
 }
 
 struct TestDispatcher {
@@ -62,16 +57,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -102,16 +88,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -126,22 +104,10 @@ fn selection_ranges(
 fn test_selection_range_overlay_did_close_falls_back_to_empty() {
     let file = temp_file("close");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn close_test() {\n    let active = true;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn close_test() {\n    let active = true;\n}\n");
 
     let result = selection_ranges(&mut dsp, 701, &file, &[(1, 8)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 8, 1, 14),
-            (0, 16, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 8, 1, 14), (0, 16, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
 
     let close_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didClose",
@@ -173,27 +139,14 @@ fn test_selection_range_did_change_nested_block_added() {
     assert!(dsp.dispatch(&change_msg));
 
     let result = selection_ranges(&mut dsp, 703, &file, &[(2, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 12, 2, 18),
-            (1, 4, 3, 5),
-            (0, 13, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 12, 2, 18), (1, 4, 3, 5), (0, 13, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_did_change_block_removed() {
     let file = temp_file("delblock");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn block_del() {\n    {\n        let inner = 1;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn block_del() {\n    {\n        let inner = 1;\n    }\n}\n");
 
     // Replace the nested block with a flat statement.
     let change_msg = json!({
@@ -209,15 +162,7 @@ fn test_selection_range_did_change_block_removed() {
     assert!(dsp.dispatch(&change_msg));
 
     let result = selection_ranges(&mut dsp, 704, &file, &[(1, 8)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 8, 1, 12),
-            (0, 15, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 8, 1, 12), (0, 15, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
 }
 
 #[test]
@@ -259,12 +204,7 @@ fn test_selection_range_consecutive_requests_idempotent() {
     let mut dsp = TestDispatcher::new();
     open_doc(&mut dsp, &file, "fn idem() {\n    let val = 99;\n}\n");
 
-    let expected = json!([chain(&[
-        (1, 8, 1, 11),
-        (0, 10, 2, 1),
-        (0, 0, 2, 1),
-        (0, 0, 3, 0)
-    ])]);
+    let expected = json!([chain(&[(1, 8, 1, 11), (0, 10, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]);
     assert_eq!(selection_ranges(&mut dsp, 707, &file, &[(1, 8)]), expected);
     assert_eq!(selection_ranges(&mut dsp, 708, &file, &[(1, 8)]), expected);
 }

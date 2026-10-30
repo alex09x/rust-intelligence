@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -91,14 +86,8 @@ fn test_signature_help_single_param_fn_active_zero() {
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeSignature"], 0);
     assert_eq!(res["result"]["activeParameter"], 0);
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn process_value(x: i32) -> i32"
-    );
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "x: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn process_value(x: i32) -> i32");
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "x: i32");
 }
 
 #[test]
@@ -114,10 +103,7 @@ fn test_signature_help_multi_param_fn_first_param() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 0);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][0]["label"],
-        "a: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][0]["label"], "a: i32");
 }
 
 #[test]
@@ -133,10 +119,7 @@ fn test_signature_help_multi_param_fn_second_param() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "b: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "b: i32");
 }
 
 #[test]
@@ -152,10 +135,7 @@ fn test_signature_help_multi_param_fn_third_param() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 2);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][2]["label"],
-        "max: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][2]["label"], "max: i32");
 }
 
 #[test]
@@ -187,10 +167,7 @@ fn test_signature_help_nested_call_inner_active_param() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn inner(x: i32) -> i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn inner(x: i32) -> i32");
     assert_eq!(res["result"]["activeParameter"], 0);
 }
 
@@ -206,10 +183,7 @@ fn test_signature_help_nested_call_outer_second_param() {
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    assert_eq!(
-        res["result"]["signatures"][0]["label"],
-        "fn outer(a: i32, b: i32)"
-    );
+    assert_eq!(res["result"]["signatures"][0]["label"], "fn outer(a: i32, b: i32)");
     assert_eq!(res["result"]["activeParameter"], 1);
 }
 

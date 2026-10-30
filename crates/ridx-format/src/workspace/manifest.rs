@@ -106,11 +106,7 @@ impl<'a> LocationReferences<'a> {
                 return true;
             }
         }
-        ws.is_external_target(
-            self.target_file,
-            &self.target_resolved_path(),
-            self.target_unit_key,
-        )
+        ws.is_external_target(self.target_file, &self.target_resolved_path(), self.target_unit_key)
     }
 }
 
@@ -290,10 +286,7 @@ mod tests {
         };
         assert_eq!(sym_rel.resolved_path(), root.join(rel_file));
 
-        let sym_no_root = WorkspaceSymbol {
-            source_root: None,
-            ..sym_rel
-        };
+        let sym_no_root = WorkspaceSymbol { source_root: None, ..sym_rel };
         assert_eq!(sym_no_root.resolved_path(), PathBuf::from(rel_file));
 
         let r_abs = WorkspaceReference {
@@ -308,17 +301,10 @@ mod tests {
         };
         assert_eq!(r_abs.resolved_path(), PathBuf::from(abs_file));
 
-        let r_rel = WorkspaceReference {
-            file: rel_file,
-            source_root: Some(root),
-            ..r_abs
-        };
+        let r_rel = WorkspaceReference { file: rel_file, source_root: Some(root), ..r_abs };
         assert_eq!(r_rel.resolved_path(), root.join(rel_file));
 
-        let r_no_root = WorkspaceReference {
-            source_root: None,
-            ..r_rel
-        };
+        let r_no_root = WorkspaceReference { source_root: None, ..r_rel };
         assert_eq!(r_no_root.resolved_path(), PathBuf::from(rel_file));
 
         let loc_refs = LocationReferences {
@@ -337,11 +323,7 @@ mod tests {
         };
         assert_eq!(loc_refs.target_resolved_path(), root.join(rel_file));
 
-        let loc_refs_abs = LocationReferences {
-            target_file: abs_file,
-            target_source_root: None,
-            ..loc_refs
-        };
+        let loc_refs_abs = LocationReferences { target_file: abs_file, target_source_root: None, ..loc_refs };
         assert_eq!(loc_refs_abs.target_resolved_path(), PathBuf::from(abs_file));
     }
 
@@ -350,16 +332,13 @@ mod tests {
         assert_eq!(default_format_version(), CURRENT_FORMAT_VERSION);
         assert_eq!(default_manifest_version(), "2.0");
 
-        let err_unsupported =
-            io::Error::new(io::ErrorKind::InvalidData, "Unsupported RIDX version 99");
+        let err_unsupported = io::Error::new(io::ErrorKind::InvalidData, "Unsupported RIDX version 99");
         assert!(is_version_mismatch(&err_unsupported));
 
-        let err_format =
-            io::Error::new(io::ErrorKind::InvalidData, "Format version mismatch: got 1");
+        let err_format = io::Error::new(io::ErrorKind::InvalidData, "Format version mismatch: got 1");
         assert!(is_version_mismatch(&err_format));
 
-        let err_extractor =
-            io::Error::new(io::ErrorKind::InvalidData, "Extractor version mismatch");
+        let err_extractor = io::Error::new(io::ErrorKind::InvalidData, "Extractor version mismatch");
         assert!(is_version_mismatch(&err_extractor));
 
         let err_missing = io::Error::new(io::ErrorKind::InvalidData, "Extractor version missing");

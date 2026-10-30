@@ -32,8 +32,7 @@ fn test_signature_help_disk_file_and_delimiters() {
     assert!(!sig_disk.is_null());
 
     // 2. Delimiters handling: angle brackets in arguments and whitespace before :: (lines 83-100, 136-137 in signature.rs)
-    let delim_code =
-        "fn run() {\n    calculate  ::<Option<i32>>(std::sync::Arc::<i32>::new(1), 30);\n}\n";
+    let delim_code = "fn run() {\n    calculate  ::<Option<i32>>(std::sync::Arc::<i32>::new(1), 30);\n}\n";
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, delim_code.to_string());
     let req_delim = json!({
         "params": {
@@ -45,14 +44,8 @@ fn test_signature_help_disk_file_and_delimiters() {
     assert!(!sig_delim.is_null());
 
     // 3. Callee signature with no parens and unclosed parens (lines 216, 219 in signature.rs)
-    let no_paren_code =
-        "fn dummy_call() { no_paren(1); unclosed(2); empty_sig_fn(3); missing_ov(4); }\n";
-    overlay_mgr.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        2,
-        no_paren_code.to_string(),
-    );
+    let no_paren_code = "fn dummy_call() { no_paren(1); unclosed(2); empty_sig_fn(3); missing_ov(4); }\n";
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 2, no_paren_code.to_string());
     if let Some(ov) = overlay_mgr.get_mut(file_path.to_str().unwrap()) {
         ov.symbols.push(crate::overlay::OverlaySymbol {
             name: "no_paren".to_string(),
@@ -100,8 +93,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 27 }
         }
     });
-    let sig_no_paren =
-        handle_signature_help(&req_no_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_no_paren = handle_signature_help(&req_no_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_no_paren.is_null());
 
     let req_unclosed = json!({
@@ -110,8 +102,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 40 }
         }
     });
-    let sig_unclosed =
-        handle_signature_help(&req_unclosed, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_unclosed = handle_signature_help(&req_unclosed, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_unclosed.is_null());
 
     let req_empty_sig = json!({
@@ -120,8 +111,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 57 }
         }
     });
-    let sig_empty =
-        handle_signature_help(&req_empty_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_empty = handle_signature_help(&req_empty_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(sig_empty.is_null());
 
     let req_missing_ov = json!({
@@ -130,8 +120,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 73 }
         }
     });
-    let sig_missing_ov =
-        handle_signature_help(&req_missing_ov, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_missing_ov = handle_signature_help(&req_missing_ov, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(sig_missing_ov.is_null());
 
     let _ = fs::remove_dir_all(&temp_dir);

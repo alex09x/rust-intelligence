@@ -55,10 +55,7 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
     visitor.writer.set_generation(&generation);
     visitor.writer.set_file_hashes(file_hashes.clone());
 
-    let tmp_file_path = out_dir.join(format!(
-        "{crate_name}{suffix}.ridx.tmp.{}",
-        std::process::id()
-    ));
+    let tmp_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx.tmp.{}", std::process::id()));
 
     match File::create(&tmp_file_path) {
         Ok(f) => {
@@ -73,17 +70,13 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
             } else {
                 drop(writer);
                 if let Err(e) = fs::rename(&tmp_file_path, &out_file_path) {
-                    eprintln!(
-                        "ridx-driver: failed to atomically rename {:?} to {:?}: {e}",
-                        tmp_file_path, out_file_path
-                    );
+                    eprintln!("ridx-driver: failed to atomically rename {:?} to {:?}: {e}", tmp_file_path, out_file_path);
                     let _ = fs::remove_file(&tmp_file_path);
                 } else {
                     // Publish sidecar metadata only after .ridx file is published
                     let mut env_map = std::collections::HashMap::new();
                     for (k, v) in std::env::vars() {
-                        if k.starts_with("CARGO_") || k == "OUT_DIR" || k == "TARGET" || k == "HOST"
-                        {
+                        if k.starts_with("CARGO_") || k == "OUT_DIR" || k == "TARGET" || k == "HOST" {
                             env_map.insert(k, v);
                         }
                     }
@@ -95,15 +88,10 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
                                 if let Ok(contents) = fs::read_to_string(&cand_file) {
                                     for line in contents.lines() {
                                         let trimmed = line.trim();
-                                        let env_payload = trimmed
-                                            .strip_prefix("cargo:rustc-env=")
-                                            .or_else(|| trimmed.strip_prefix("cargo::rustc-env="));
+                                        let env_payload = trimmed.strip_prefix("cargo:rustc-env=").or_else(|| trimmed.strip_prefix("cargo::rustc-env="));
                                         if let Some(payload) = env_payload {
                                             if let Some((k, v)) = payload.split_once('=') {
-                                                env_map.insert(
-                                                    k.trim().to_string(),
-                                                    v.trim().to_string(),
-                                                );
+                                                env_map.insert(k.trim().to_string(), v.trim().to_string());
                                             }
                                         }
                                     }
@@ -134,13 +122,7 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
                         "caught_panics": caught_panics,
                         "sysroot_cas_key": cas_key,
                     });
-                    write_sidecar_metadata(
-                        &deps_dir,
-                        &crate_name,
-                        &suffix,
-                        local_stable_crate_id,
-                        &dep_info,
-                    );
+                    write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
 
                     let file_size = fs::metadata(&out_file_path).map(|m| m.len()).unwrap_or(0);
                     if caught_panics > 0 {
@@ -169,10 +151,7 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
             }
         }
         Err(e) => {
-            eprintln!(
-                "ridx-driver: failed to create temporary index {:?}: {e}",
-                tmp_file_path
-            );
+            eprintln!("ridx-driver: failed to create temporary index {:?}: {e}", tmp_file_path);
         }
     }
 }

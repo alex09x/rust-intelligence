@@ -30,12 +30,7 @@ fn to_uri(p: &Path) -> String {
 
 fn temp_file(tag: &str) -> PathBuf {
     let id = SEL_P5_COUNTER.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-        "ridx_sel_p5_{}_{}_{}.rs",
-        tag,
-        std::process::id(),
-        id
-    ))
+    std::env::temp_dir().join(format!("ridx_sel_p5_{}_{}_{}.rs", tag, std::process::id(), id))
 }
 
 struct TestDispatcher {
@@ -62,16 +57,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -102,16 +88,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -126,68 +104,33 @@ fn selection_ranges(
 fn test_selection_range_cursor_on_line_comment_inside_fn() {
     let file = temp_file("lcomment");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn with_comment() {\n    // helper comment\n    let x = 5;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn with_comment() {\n    // helper comment\n    let x = 5;\n}\n");
 
     // Inside a comment the whole comment is the innermost node, not a word of it.
     let result = selection_ranges(&mut dsp, 501, &file, &[(1, 8)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 4, 1, 21),
-            (0, 18, 3, 1),
-            (0, 0, 3, 1),
-            (0, 0, 4, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 4, 1, 21), (0, 18, 3, 1), (0, 0, 3, 1), (0, 0, 4, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_on_block_comment_inside_fn() {
     let file = temp_file("bcomment");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp, &file,
-        "fn with_bcomment() {\n    /* block comment\n       spanning lines */\n    let y = 10;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn with_bcomment() {\n    /* block comment\n       spanning lines */\n    let y = 10;\n}\n");
 
     // A multi-line block comment is one node from `/*` to `*/`.
     let result = selection_ranges(&mut dsp, 502, &file, &[(2, 8)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 4, 2, 24),
-            (0, 19, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 4, 2, 24), (0, 19, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
 fn test_selection_range_cursor_on_leading_whitespace_of_block() {
     let file = temp_file("ws");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn ws_test() {\n    {\n        let z = 20;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn ws_test() {\n    {\n        let z = 20;\n    }\n}\n");
 
     // Indentation carries no token: the inner block is the innermost node.
     let result = selection_ranges(&mut dsp, 503, &file, &[(2, 4)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 4, 3, 5),
-            (0, 13, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 4, 3, 5), (0, 13, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
@@ -198,10 +141,7 @@ fn test_selection_range_cursor_on_opening_brace_boundary() {
 
     // Cursor on `{`: the body starts here; `)` before it is not a token.
     let result = selection_ranges(&mut dsp, 504, &file, &[(0, 16)]);
-    assert_eq!(
-        result,
-        json!([chain(&[(0, 16, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])])
-    );
+    assert_eq!(result, json!([chain(&[(0, 16, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
 }
 
 #[test]
@@ -220,19 +160,10 @@ fn test_selection_range_cursor_on_closing_brace_boundary() {
 fn test_selection_range_cursor_between_nested_blocks() {
     let file = temp_file("between");
     let mut dsp = TestDispatcher::new();
-    open_doc(
-        &mut dsp, &file,
-        "fn two_blocks() {\n    {\n        let a = 1;\n    }\n    // gap\n    {\n        let b = 2;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn two_blocks() {\n    {\n        let a = 1;\n    }\n    // gap\n    {\n        let b = 2;\n    }\n}\n");
 
     // In the gap neither block is an ancestor; on the indentation the chain starts at the fn
     // body, on the `// gap` comment it starts at that comment.
     let result = selection_ranges(&mut dsp, 506, &file, &[(4, 2), (4, 5)]);
-    assert_eq!(
-        result,
-        json!([
-            chain(&[(0, 16, 8, 1), (0, 0, 8, 1), (0, 0, 9, 0)]),
-            chain(&[(4, 4, 4, 10), (0, 16, 8, 1), (0, 0, 8, 1), (0, 0, 9, 0)]),
-        ])
-    );
+    assert_eq!(result, json!([chain(&[(0, 16, 8, 1), (0, 0, 8, 1), (0, 0, 9, 0)]), chain(&[(4, 4, 4, 10), (0, 16, 8, 1), (0, 0, 8, 1), (0, 0, 9, 0)]),]));
 }

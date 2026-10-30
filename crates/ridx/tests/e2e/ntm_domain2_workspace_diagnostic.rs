@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -177,10 +172,7 @@ fn test_workspace_diagnostic_previous_result_ids_accepted() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     open_test_file(&mut ov, "file:///tmp/f1.rs", 1, "fn foo() {}\n");
 
-    let val = send_ws_diagnostic_req(
-        json!({ "previousResultIds": [{ "uri": "file:///tmp/f1.rs", "value": "prev-123" }] }),
-        &mut mr, &mut ov, &mut lc, &can,
-    );
+    let val = send_ws_diagnostic_req(json!({ "previousResultIds": [{ "uri": "file:///tmp/f1.rs", "value": "prev-123" }] }), &mut mr, &mut ov, &mut lc, &can);
     assert_eq!(val["id"], 200);
 }
 

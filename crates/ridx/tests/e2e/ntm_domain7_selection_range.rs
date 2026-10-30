@@ -93,16 +93,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(),
-            &mut self.writer,
-            &mut self.lifecycle,
-            &mut self.multi_root,
-            &mut self.overlay_mgr,
-            &self.cancelled,
-            None,
-        )
-        .unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -133,16 +124,8 @@ fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     assert!(dsp.dispatch(&open_msg));
 }
 
-fn selection_ranges(
-    dsp: &mut TestDispatcher,
-    id: u64,
-    file: &Path,
-    positions: &[(u32, u32)],
-) -> Value {
-    let positions: Vec<Value> = positions
-        .iter()
-        .map(|&(l, c)| json!({ "line": l, "character": c }))
-        .collect();
+fn selection_ranges(dsp: &mut TestDispatcher, id: u64, file: &Path, positions: &[(u32, u32)]) -> Value {
+    let positions: Vec<Value> = positions.iter().map(|&(l, c)| json!({ "line": l, "character": c })).collect();
     let req = json!({
         "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
         "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
@@ -162,15 +145,7 @@ fn test_selection_range_single_position_nested_scope() {
 
     // Cursor on `val`: token, fn body, fn item, file.
     let result = selection_ranges(&mut dsp, 201, &file, &[(1, 8)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (1, 8, 1, 11),
-            (0, 13, 2, 1),
-            (0, 0, 2, 1),
-            (0, 0, 3, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(1, 8, 1, 11), (0, 13, 2, 1), (0, 0, 2, 1), (0, 0, 3, 0)])]));
 }
 
 #[test]
@@ -178,24 +153,11 @@ fn test_selection_range_cursor_inside_inner_block() {
     let ts = create_temp_shard("inner_block");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn outer() {\n    if true {\n        let inner_val = 100;\n    }\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn outer() {\n    if true {\n        let inner_val = 100;\n    }\n}\n");
 
     // `inner_val` token, `if` block, fn body, fn item, file.
     let result = selection_ranges(&mut dsp, 202, &file, &[(2, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (2, 12, 2, 21),
-            (1, 12, 3, 5),
-            (0, 11, 4, 1),
-            (0, 0, 4, 1),
-            (0, 0, 5, 0)
-        ])])
-    );
+    assert_eq!(result, json!([chain(&[(2, 12, 2, 21), (1, 12, 3, 5), (0, 11, 4, 1), (0, 0, 4, 1), (0, 0, 5, 0)])]));
 }
 
 #[test]
@@ -203,20 +165,10 @@ fn test_selection_range_multiple_positions_batch() {
     let ts = create_temp_shard("batch_pos");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn f1() {\n    let a = 1;\n}\nfn f2() {\n    let b = 2;\n}\n",
-    );
+    open_doc(&mut dsp, &file, "fn f1() {\n    let a = 1;\n}\nfn f2() {\n    let b = 2;\n}\n");
 
     let result = selection_ranges(&mut dsp, 203, &file, &[(1, 8), (4, 8)]);
-    assert_eq!(
-        result,
-        json!([
-            chain(&[(1, 8, 1, 9), (0, 8, 2, 1), (0, 0, 2, 1), (0, 0, 6, 0)]),
-            chain(&[(4, 8, 4, 9), (3, 8, 5, 1), (3, 0, 5, 1), (0, 0, 6, 0)]),
-        ])
-    );
+    assert_eq!(result, json!([chain(&[(1, 8, 1, 9), (0, 8, 2, 1), (0, 0, 2, 1), (0, 0, 6, 0)]), chain(&[(4, 8, 4, 9), (3, 8, 5, 1), (3, 0, 5, 1), (0, 0, 6, 0)]),]));
 }
 
 #[test]
@@ -230,10 +182,7 @@ fn test_selection_range_empty_positions_returns_empty() {
 
     // Positive control: cursor on `simple` sits in the fn item but before its body.
     let ctrl = selection_ranges(&mut dsp, 2040, &file, &[(0, 4)]);
-    assert_eq!(
-        ctrl,
-        json!([chain(&[(0, 3, 0, 9), (0, 0, 0, 14), (0, 0, 1, 0)])])
-    );
+    assert_eq!(ctrl, json!([chain(&[(0, 3, 0, 9), (0, 0, 0, 14), (0, 0, 1, 0)])]));
 }
 
 #[test]
@@ -253,10 +202,7 @@ fn test_selection_range_missing_positions_key() {
     assert_eq!(resp["result"], json!([]));
 
     let ctrl = selection_ranges(&mut dsp, 2050, &file, &[(0, 4)]);
-    assert_eq!(
-        ctrl,
-        json!([chain(&[(0, 3, 0, 9), (0, 0, 0, 14), (0, 0, 1, 0)])])
-    );
+    assert_eq!(ctrl, json!([chain(&[(0, 3, 0, 9), (0, 0, 0, 14), (0, 0, 1, 0)])]));
 }
 
 #[test]
@@ -271,10 +217,7 @@ fn test_selection_range_unopened_document_returns_empty() {
     // Positive control after didOpen: the `fn` keyword is the innermost token.
     open_doc(&mut dsp, &file, "fn opened() {}\n");
     let ctrl = selection_ranges(&mut dsp, 2060, &file, &[(0, 0)]);
-    assert_eq!(
-        ctrl,
-        json!([chain(&[(0, 0, 0, 2), (0, 0, 0, 14), (0, 0, 1, 0)])])
-    );
+    assert_eq!(ctrl, json!([chain(&[(0, 0, 0, 2), (0, 0, 0, 14), (0, 0, 1, 0)])]));
 }
 
 #[test]
@@ -285,10 +228,7 @@ fn test_selection_range_cursor_at_start_of_file() {
     open_doc(&mut dsp, &file, "fn simple() {\n}\n");
 
     let result = selection_ranges(&mut dsp, 207, &file, &[(0, 0)]);
-    assert_eq!(
-        result,
-        json!([chain(&[(0, 0, 0, 2), (0, 0, 1, 1), (0, 0, 2, 0)])])
-    );
+    assert_eq!(result, json!([chain(&[(0, 0, 0, 2), (0, 0, 1, 1), (0, 0, 2, 0)])]));
 }
 
 #[test]

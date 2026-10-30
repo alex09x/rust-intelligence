@@ -31,12 +31,7 @@ fn test_hover_missing_or_empty_uri() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    assert_eq!(
-        handle_hover(&req_missing, Some(&ws), &overlay_mgr, &mut conv)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_hover(&req_missing, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code, INVALID_PARAMS);
 
     let req_empty = json!({
         "params": {
@@ -44,12 +39,7 @@ fn test_hover_missing_or_empty_uri() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    assert_eq!(
-        handle_hover(&req_empty, Some(&ws), &overlay_mgr, &mut conv)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_hover(&req_empty, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code, INVALID_PARAMS);
 }
 
 #[test]
@@ -63,12 +53,7 @@ fn test_hover_missing_position() {
             "textDocument": { "uri": &uri }
         }
     });
-    assert_eq!(
-        handle_hover(&req_no_pos, Some(&ws), &overlay_mgr, &mut conv)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_hover(&req_no_pos, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code, INVALID_PARAMS);
 
     let req_no_line = json!({
         "params": {
@@ -76,12 +61,7 @@ fn test_hover_missing_position() {
             "position": { "character": 0 }
         }
     });
-    assert_eq!(
-        handle_hover(&req_no_line, Some(&ws), &overlay_mgr, &mut conv)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_hover(&req_no_line, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code, INVALID_PARAMS);
 
     let req_no_char = json!({
         "params": {
@@ -89,12 +69,7 @@ fn test_hover_missing_position() {
             "position": { "line": 0 }
         }
     });
-    assert_eq!(
-        handle_hover(&req_no_char, Some(&ws), &overlay_mgr, &mut conv)
-            .unwrap_err()
-            .code,
-        INVALID_PARAMS
-    );
+    assert_eq!(handle_hover(&req_no_char, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code, INVALID_PARAMS);
 }
 
 #[test]
@@ -196,11 +171,7 @@ fn test_hover_dirty_overlay_mapped_position() {
 
     let clean = "pub fn calculate(a: i32, b: i32) -> i32 { a + b }\n";
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, clean.to_string());
-    overlay_mgr.update(
-        file.to_str().unwrap(),
-        2,
-        format!("// prepended\n{}", clean),
-    );
+    overlay_mgr.update(file.to_str().unwrap(), 2, format!("// prepended\n{}", clean));
 
     let req = json!({
         "params": {
@@ -257,11 +228,7 @@ fn test_hover_dirty_overlay_unmapped_position() {
     let uri = format!("file://{}", file.to_str().unwrap());
 
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, "\n\n\n".to_string());
-    overlay_mgr.update(
-        file.to_str().unwrap(),
-        2,
-        "// inserted comment\n\n\n".to_string(),
-    );
+    overlay_mgr.update(file.to_str().unwrap(), 2, "// inserted comment\n\n\n".to_string());
 
     let req = json!({
         "params": {
@@ -275,8 +242,7 @@ fn test_hover_dirty_overlay_unmapped_position() {
 
 #[test]
 fn test_hover_generic_and_trait_bounds() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_intel_generic_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_intel_generic_{}", std::process::id()));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let src_str = src_file.to_str().unwrap().to_string();
@@ -294,10 +260,7 @@ fn test_hover_generic_and_trait_bounds() {
         end_line: 1,
         end_col: 17,
         path: "generic_pkg::transform".to_string(),
-        signature: Some(
-            "fn transform<T: Clone + Send, U>(item: T) -> Result<U, String> where U: Default"
-                .to_string(),
-        ),
+        signature: Some("fn transform<T: Clone + Send, U>(item: T) -> Result<U, String> where U: Default".to_string()),
     });
     let ridx_file = temp_dir.join("index.ridx");
     let mut f = fs::File::create(&ridx_file).unwrap();
@@ -369,24 +332,12 @@ fn test_hover_variant_trait_assoc_and_macro_headers() {
         inferred_type,
     };
 
-    let v_val = format_hover(
-        &mk(
-            DefKind::Variant,
-            "Some",
-            "hdr_pkg::MyEnum::Some",
-            Some("Some(T)"),
-            Some("MyEnum<i32>"),
-        ),
-        Some(&ws),
-    );
+    let v_val = format_hover(&mk(DefKind::Variant, "Some", "hdr_pkg::MyEnum::Some", Some("Some(T)"), Some("MyEnum<i32>")), Some(&ws));
     let v_str = v_val["contents"]["value"].as_str().unwrap();
     assert!(v_str.contains("hdr_pkg::MyEnum\n```\n\n```rust\nSome(T)"));
     assert!(!v_str.contains("Type:"));
 
-    let m_val = format_hover(
-        &mk(DefKind::Macro, "my_mac", "hdr_pkg::my_mac", None, None),
-        Some(&ws),
-    );
+    let m_val = format_hover(&mk(DefKind::Macro, "my_mac", "hdr_pkg::my_mac", None, None), Some(&ws));
     let m_str = m_val["contents"]["value"].as_str().unwrap();
     assert!(m_str.contains("macro_rules! my_mac"));
 }

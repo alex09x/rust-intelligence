@@ -30,25 +30,12 @@ fn make_pos_req(uri: &str, line: u32, col: u32) -> Value {
 fn test_l1_type_definition_single_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_a", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_a",
-            "src/lib.rs",
-            "pub struct «Bar»;\n",
-            DefKind::Struct,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_a", "src/lib.rs", "pub struct «Bar»;\n", DefKind::Struct).unwrap();
     assert_eq!(ids.len(), 1);
 
-    ws.add_source_file(
-        "pkg_a",
-        "src/lib.rs",
-        "pub struct Bar;\npub fn foo() { let val = 42; }\n",
-    )
-    .unwrap();
+    ws.add_source_file("pkg_a", "src/lib.rs", "pub struct Bar;\npub fn foo() { let val = 42; }\n").unwrap();
     // Inferred type of `val` at line 2 cols 20..23 is "Bar"
-    ws.add_type_at("pkg_a", "src/lib.rs", 2, 20, 2, 23, "Bar")
-        .unwrap();
+    ws.add_type_at("pkg_a", "src/lib.rs", 2, 20, 2, 23, "Bar").unwrap();
 
     let shard = ws.build_crate_index("pkg_a").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -72,23 +59,11 @@ fn test_l1_type_definition_cross_file() {
     ws.add_crate("pkg_cross", "0.1.0").unwrap();
 
     // Type `UserToken` defined in types.rs
-    ws.add_source_file_with_defs(
-        "pkg_cross",
-        "src/types.rs",
-        "pub struct «UserToken»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_cross", "src/types.rs", "pub struct «UserToken»;\n", DefKind::Struct).unwrap();
 
     // Function parameter in handler.rs with type UserToken
-    ws.add_source_file(
-        "pkg_cross",
-        "src/handler.rs",
-        "use crate::types::UserToken;\npub fn handle(token: UserToken) {}\n",
-    )
-    .unwrap();
-    ws.add_type_at("pkg_cross", "src/handler.rs", 2, 15, 2, 20, "UserToken")
-        .unwrap();
+    ws.add_source_file("pkg_cross", "src/handler.rs", "use crate::types::UserToken;\npub fn handle(token: UserToken) {}\n").unwrap();
+    ws.add_type_at("pkg_cross", "src/handler.rs", 2, 15, 2, 20, "UserToken").unwrap();
 
     let shard = ws.build_crate_index("pkg_cross").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -109,21 +84,9 @@ fn test_l1_type_definition_cross_file() {
 fn test_l1_type_definition_enum_binding() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_enum", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_enum",
-        "src/lib.rs",
-        "pub enum «Status» { Active, Inactive }\n",
-        DefKind::Enum,
-    )
-    .unwrap();
-    ws.add_source_file(
-        "pkg_enum",
-        "src/lib.rs",
-        "pub enum Status { Active, Inactive }\npub fn check() { let s = Status::Active; }\n",
-    )
-    .unwrap();
-    ws.add_type_at("pkg_enum", "src/lib.rs", 2, 22, 2, 24, "Status")
-        .unwrap();
+    ws.add_source_file_with_defs("pkg_enum", "src/lib.rs", "pub enum «Status» { Active, Inactive }\n", DefKind::Enum).unwrap();
+    ws.add_source_file("pkg_enum", "src/lib.rs", "pub enum Status { Active, Inactive }\npub fn check() { let s = Status::Active; }\n").unwrap();
+    ws.add_type_at("pkg_enum", "src/lib.rs", 2, 22, 2, 24, "Status").unwrap();
 
     let shard = ws.build_crate_index("pkg_enum").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -142,15 +105,8 @@ fn test_l1_type_definition_enum_binding() {
 fn test_l1_type_definition_dirty_overlay_returns_null() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_dirty", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_dirty",
-        "src/lib.rs",
-        "pub struct «Target»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
-    ws.add_type_at("pkg_dirty", "src/lib.rs", 1, 12, 1, 18, "Target")
-        .unwrap();
+    ws.add_source_file_with_defs("pkg_dirty", "src/lib.rs", "pub struct «Target»;\n", DefKind::Struct).unwrap();
+    ws.add_type_at("pkg_dirty", "src/lib.rs", 1, 12, 1, 18, "Target").unwrap();
 
     let shard = ws.build_crate_index("pkg_dirty").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -162,31 +118,18 @@ fn test_l1_type_definition_dirty_overlay_returns_null() {
 
     // Open overlay and make it dirty
     overlay_mgr.open_document(&uri, file_str, 1, "pub struct Target;\n".to_string());
-    overlay_mgr.update(
-        file_str,
-        2,
-        "// dirty edit\npub struct Target;\n".to_string(),
-    );
+    overlay_mgr.update(file_str, 2, "// dirty edit\npub struct Target;\n".to_string());
 
     let req = make_pos_req(&uri, 1, 12);
     let res = handle_type_definition(&req, Some(&index), &overlay_mgr, &mut conv);
-    assert!(
-        res.is_null(),
-        "Dirty overlay must return null for typeDefinition"
-    );
+    assert!(res.is_null(), "Dirty overlay must return null for typeDefinition");
 }
 
 #[test]
 fn test_l1_type_definition_whitespace_and_oob_bounds() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_bounds", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_bounds",
-        "src/lib.rs",
-        "pub struct «Entity»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_bounds", "src/lib.rs", "pub struct «Entity»;\n", DefKind::Struct).unwrap();
 
     let shard = ws.build_crate_index("pkg_bounds").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -213,23 +156,9 @@ fn test_l1_type_definition_whitespace_and_oob_bounds() {
 fn test_l1_implementation_trait_single_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_impl", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_impl",
-            "src/lib.rs",
-            "pub trait «Greeter» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_impl", "src/lib.rs", "pub trait «Greeter» {}\n", DefKind::Trait).unwrap();
 
-    ws.add_source_file_with_impl_refs(
-        "pkg_impl",
-        "src/lib.rs",
-        "pub trait Greeter {}\npub struct Person;\n«impl Greeter for Person» {}\n",
-        "pkg_impl",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_impl", "src/lib.rs", "pub trait Greeter {}\npub struct Person;\n«impl Greeter for Person» {}\n", "pkg_impl", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_impl").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -251,14 +180,7 @@ fn test_l1_implementation_trait_cross_file() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_cross_impl", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_cross_impl",
-            "src/traits.rs",
-            "pub trait «Renderer» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_cross_impl", "src/traits.rs", "pub trait «Renderer» {}\n", DefKind::Trait).unwrap();
 
     ws.add_source_file_with_impl_refs(
         "pkg_cross_impl",
@@ -290,34 +212,13 @@ fn test_l1_implementation_multiple_implementations() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_multi", "0.1.0").unwrap();
 
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_multi",
-            "src/traits.rs",
-            "pub trait «Worker» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_multi", "src/traits.rs", "pub trait «Worker» {}\n", DefKind::Trait).unwrap();
 
     // First impl in cpu.rs
-    ws.add_source_file_with_impl_refs(
-        "pkg_multi",
-        "src/cpu.rs",
-        "use crate::traits::Worker;\npub struct Cpu;\n«impl Worker for Cpu» {}\n",
-        "pkg_multi",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_multi", "src/cpu.rs", "use crate::traits::Worker;\npub struct Cpu;\n«impl Worker for Cpu» {}\n", "pkg_multi", ids[0]).unwrap();
 
     // Second impl in gpu.rs
-    ws.add_source_file_with_impl_refs(
-        "pkg_multi",
-        "src/gpu.rs",
-        "use crate::traits::Worker;\npub struct Gpu;\n«impl Worker for Gpu» {}\n",
-        "pkg_multi",
-        ids[0],
-    )
-    .unwrap();
+    ws.add_source_file_with_impl_refs("pkg_multi", "src/gpu.rs", "use crate::traits::Worker;\npub struct Gpu;\n«impl Worker for Gpu» {}\n", "pkg_multi", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_multi").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -335,22 +236,8 @@ fn test_l1_implementation_multiple_implementations() {
 fn test_l1_implementation_dirty_overlay_and_boundaries() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_bounds", "0.1.0").unwrap();
-    let (_, ids) = ws
-        .add_source_file_with_defs(
-            "pkg_bounds",
-            "src/lib.rs",
-            "pub trait «Serializable» {}\n",
-            DefKind::Trait,
-        )
-        .unwrap();
-    ws.add_source_file_with_impl_refs(
-        "pkg_bounds",
-        "src/lib.rs",
-        "pub trait Serializable {}\npub struct Data;\n«impl Serializable for Data» {}\n",
-        "pkg_bounds",
-        ids[0],
-    )
-    .unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_bounds", "src/lib.rs", "pub trait «Serializable» {}\n", DefKind::Trait).unwrap();
+    ws.add_source_file_with_impl_refs("pkg_bounds", "src/lib.rs", "pub trait Serializable {}\npub struct Data;\n«impl Serializable for Data» {}\n", "pkg_bounds", ids[0]).unwrap();
 
     let shard = ws.build_crate_index("pkg_bounds").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
@@ -362,11 +249,7 @@ fn test_l1_implementation_dirty_overlay_and_boundaries() {
 
     // Dirty overlay returns empty array
     overlay_mgr.open_document(&uri, file_str, 1, "pub trait Serializable {}\n".to_string());
-    overlay_mgr.update(
-        file_str,
-        2,
-        "// dirty\npub trait Serializable {}\n".to_string(),
-    );
+    overlay_mgr.update(file_str, 2, "// dirty\npub trait Serializable {}\n".to_string());
 
     let req = make_pos_req(&uri, 0, 11);
     let res = handle_implementation(&req, Some(&index), &overlay_mgr, &mut conv);

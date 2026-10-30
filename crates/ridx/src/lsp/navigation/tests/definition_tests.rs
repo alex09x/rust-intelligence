@@ -92,12 +92,7 @@ fn test_def_overlay_dirty_unmapped_returns_null() {
     let file_path = temp_dir.join("src/lib.rs");
     let uri = format!("file://{}", file_path.to_str().unwrap());
 
-    overlay_mgr.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        1,
-        "line1\nline2\n".to_string(),
-    );
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, "line1\nline2\n".to_string());
     overlay_mgr.update(file_path.to_str().unwrap(), 2, "new text\n".to_string());
 
     let def_req = json!({
@@ -120,11 +115,7 @@ fn test_def_overlay_dirty_modified_imports_aborts() {
     let code = fs::read_to_string(&file_path).unwrap();
 
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.clone());
-    overlay_mgr.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("use std::collections::HashMap;\n{}", code),
-    );
+    overlay_mgr.update(file_path.to_str().unwrap(), 2, format!("use std::collections::HashMap;\n{}", code));
 
     let def_req = json!({
         "params": {
@@ -147,11 +138,7 @@ fn test_def_overlay_target_file_dirty_line_shift() {
 
     let mut ov_target_dirty = OverlayManager::new();
     ov_target_dirty.open_document(&uri, file_path.to_str().unwrap(), 1, target_code.clone());
-    ov_target_dirty.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("// prepended line\n{}", target_code),
-    );
+    ov_target_dirty.update(file_path.to_str().unwrap(), 2, format!("// prepended line\n{}", target_code));
     if let Some(ov) = ov_target_dirty.get_mut(file_path.to_str().unwrap()) {
         ov.symbols.clear(); // fallback to workspace definition, mapped through dirty target
     }
@@ -176,12 +163,7 @@ fn test_def_overlay_local_definition_symbol() {
     let uri = format!("file://{}", file_path.to_str().unwrap());
 
     let mut ov_local = OverlayManager::new();
-    ov_local.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        1,
-        "pub fn local_item() {}\n".to_string(),
-    );
+    ov_local.open_document(&uri, file_path.to_str().unwrap(), 1, "pub fn local_item() {}\n".to_string());
 
     let def_req = json!({
         "params": {
@@ -269,8 +251,7 @@ fn test_def_zero_end_span_fallback() {
 
 #[test]
 fn test_def_file_backed_mod_jumps_to_backing_file_root() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_def_mod_file_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_def_mod_file_{}", std::process::id()));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let lib_file = temp_dir.join("src/lib.rs");
     let sub_file = temp_dir.join("src/sub.rs");
@@ -293,9 +274,7 @@ fn test_def_file_backed_mod_jumps_to_backing_file_root() {
         signature: None,
     });
     let ridx_file = temp_dir.join("index.ridx");
-    writer
-        .write_to(&mut fs::File::create(&ridx_file).unwrap())
-        .unwrap();
+    writer.write_to(&mut fs::File::create(&ridx_file).unwrap()).unwrap();
 
     let mut ws = ridx_format::WorkspaceIndex::open(&ridx_file).unwrap();
     ws.set_workspace_root(Some(temp_dir.clone()));
@@ -311,10 +290,7 @@ fn test_def_file_backed_mod_jumps_to_backing_file_root() {
     });
     let def_res = handle_definition(&def_req, Some(&ws), &overlay_mgr, &mut conv);
     assert!(!def_res.is_null());
-    assert_eq!(
-        def_res["uri"].as_str().unwrap(),
-        format!("file://{}", sub_file.to_str().unwrap())
-    );
+    assert_eq!(def_res["uri"].as_str().unwrap(), format!("file://{}", sub_file.to_str().unwrap()));
     assert_eq!(def_res["range"]["start"]["line"], 0);
     assert_eq!(def_res["range"]["start"]["character"], 0);
 

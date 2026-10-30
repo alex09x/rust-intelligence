@@ -76,31 +76,13 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
         }
     });
     let mut out = Vec::new();
-    dispatch_lsp_message(
-        LspMessage::Client(init_req),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(init_req), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
-    assert!(
-        lifecycle.client_pull_diagnostics(),
-        "Must recognize pull diagnostic client"
-    );
-    assert!(
-        lifecycle.client_refresh_diagnostics(),
-        "Must recognize workspace diagnostic refresh support"
-    );
+    assert!(lifecycle.client_pull_diagnostics(), "Must recognize pull diagnostic client");
+    assert!(lifecycle.client_refresh_diagnostics(), "Must recognize workspace diagnostic refresh support");
 
     let out_str = String::from_utf8_lossy(&out);
-    assert!(
-        out_str.contains("diagnosticProvider"),
-        "Must advertise diagnosticProvider in initialize result"
-    );
+    assert!(out_str.contains("diagnosticProvider"), "Must advertise diagnosticProvider in initialize result");
 
     let uri = "file:///tmp/dummy_workspace/src/lib.rs";
 
@@ -118,16 +100,7 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
             }
         }
     });
-    dispatch_lsp_message(
-        LspMessage::Client(open_notif),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(open_notif), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     // 3. didChange with unclosed delimiter error
     out.clear();
@@ -144,23 +117,11 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
             ]
         }
     });
-    dispatch_lsp_message(
-        LspMessage::Client(change_notif),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(change_notif), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     // Verify: Pull client receives NO push publishDiagnostics on didChange!
     let published = extract_published_diagnostics(&out);
-    assert!(
-        published.is_empty(),
-        "Pull clients must not receive push publishDiagnostics on didChange"
-    );
+    assert!(published.is_empty(), "Pull clients must not receive push publishDiagnostics on didChange");
 
     // 4. Client pulls textDocument/diagnostic
     out.clear();
@@ -172,23 +133,11 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
             "textDocument": { "uri": uri }
         }
     });
-    dispatch_lsp_message(
-        LspMessage::Client(pull_req),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(pull_req), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     let pull_str = String::from_utf8_lossy(&out);
     assert!(pull_str.contains("\"kind\":\"full\""));
-    assert!(
-        pull_str.contains("unclosed delimiter"),
-        "Pull response must contain the syntax diagnostic"
-    );
+    assert!(pull_str.contains("unclosed delimiter"), "Pull response must contain the syntax diagnostic");
 
     // 5. InternalDiagnostic from flycheck triggers workspace/diagnostic/refresh with unique ID
     out.clear();
@@ -212,29 +161,13 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
             ]
         }
     });
-    dispatch_lsp_message(
-        LspMessage::InternalDiagnostic(gen, flycheck_diag),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::InternalDiagnostic(gen, flycheck_diag), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     let refresh_msgs = extract_messages_by_method(&out, "workspace/diagnostic/refresh");
-    assert_eq!(
-        refresh_msgs.len(),
-        1,
-        "Must send workspace/diagnostic/refresh for pull clients on flycheck completion"
-    );
+    assert_eq!(refresh_msgs.len(), 1, "Must send workspace/diagnostic/refresh for pull clients on flycheck completion");
     assert_eq!(refresh_msgs[0]["id"], "ridx-refresh-1");
     let published_after_flycheck = extract_published_diagnostics(&out);
-    assert!(
-        published_after_flycheck.is_empty(),
-        "Must not send push publishDiagnostics to pull client after flycheck"
-    );
+    assert!(published_after_flycheck.is_empty(), "Must not send push publishDiagnostics to pull client after flycheck");
 
     // 6. Client responds to server-initiated workspace/diagnostic/refresh request
     out.clear();
@@ -243,20 +176,8 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
         "id": "ridx-refresh-1",
         "result": null
     });
-    dispatch_lsp_message(
-        LspMessage::Client(client_response),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
-    assert!(
-        out.is_empty(),
-        "Client response without method must be silently accepted without errors or output"
-    );
+    dispatch_lsp_message(LspMessage::Client(client_response), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
+    assert!(out.is_empty(), "Client response without method must be silently accepted without errors or output");
 }
 
 #[test]
@@ -281,16 +202,7 @@ fn test_e2e_pull_client_without_refresh_support_no_server_refresh_request() {
         }
     });
     let mut out = Vec::new();
-    dispatch_lsp_message(
-        LspMessage::Client(init_req),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::Client(init_req), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     assert!(lifecycle.client_pull_diagnostics());
     assert!(!lifecycle.client_refresh_diagnostics());
@@ -306,20 +218,8 @@ fn test_e2e_pull_client_without_refresh_support_no_server_refresh_request() {
             "diagnostics": []
         }
     });
-    dispatch_lsp_message(
-        LspMessage::InternalDiagnostic(gen, flycheck_diag),
-        &mut out,
-        &mut lifecycle,
-        &mut multi_root,
-        &mut overlay_mgr,
-        &cancelled,
-        None,
-    )
-    .unwrap();
+    dispatch_lsp_message(LspMessage::InternalDiagnostic(gen, flycheck_diag), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
     let refresh_msgs = extract_messages_by_method(&out, "workspace/diagnostic/refresh");
-    assert!(
-        refresh_msgs.is_empty(),
-        "Must NOT send workspace/diagnostic/refresh if client lacks refreshSupport"
-    );
+    assert!(refresh_msgs.is_empty(), "Must NOT send workspace/diagnostic/refresh if client lacks refreshSupport");
 }

@@ -32,8 +32,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
 
     let is_valid_cache = if obj_path.is_file() {
         if let Ok(reader) = ridx_format::IndexReader::open(&obj_path) {
-            reader.header().version == ridx_format::CURRENT_FORMAT_VERSION
-                && reader.unit_key() == unit_key
+            reader.header().version == ridx_format::CURRENT_FORMAT_VERSION && reader.unit_key() == unit_key
         } else {
             false
         }
@@ -46,13 +45,8 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
             let reader = ridx_format::IndexReader::open(&obj_path).unwrap();
             let gen = reader.generation().to_string();
             let embedded = reader.embedded_file_hashes();
-            let mut hashes =
-                collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
-            ridx_format::merge_embedded_hashes_authoritative(
-                &mut hashes,
-                &embedded,
-                manifest_dir.as_deref(),
-            );
+            let mut hashes = collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
+            ridx_format::merge_embedded_hashes_authoritative(&mut hashes, &embedded, manifest_dir.as_deref());
             (gen, hashes)
         };
         let cas_key = sysroot::compute_sysroot_cas_key(tcx);
@@ -75,13 +69,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
             "caught_panics": caught_panics,
             "sysroot_cas_key": cas_key,
         });
-        write_sidecar_metadata(
-            &deps_dir,
-            &crate_name,
-            &suffix,
-            local_stable_crate_id,
-            &dep_info,
-        );
+        write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
 
         let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
         eprintln!(
@@ -136,10 +124,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
             } else {
                 drop(writer);
                 if let Err(e) = fs::rename(&tmp_file_path, &obj_path) {
-                    eprintln!(
-                        "ridx-driver: failed to atomically rename {:?} to {:?}: {e}",
-                        tmp_file_path, obj_path
-                    );
+                    eprintln!("ridx-driver: failed to atomically rename {:?} to {:?}: {e}", tmp_file_path, obj_path);
                     let _ = fs::remove_file(&tmp_file_path);
                 } else {
                     // Publish sidecar metadata only after .ridx file is published
@@ -163,49 +148,40 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
                         "caught_panics": caught_panics,
                         "sysroot_cas_key": cas_key,
                     });
-                    write_sidecar_metadata(
-                        &deps_dir,
-                        &crate_name,
-                        &suffix,
-                        local_stable_crate_id,
-                        &dep_info,
-                    );
+                    write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
 
                     let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
                     if caught_panics > 0 {
                         eprintln!(
-                                "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {}, CAUGHT PANICS: {})",
-                                crate_name,
-                                crate_version,
-                                def_count,
-                                ref_count,
-                                type_count,
-                                file_size / 1024,
-                                start.elapsed().as_secs_f64() * 1000.0,
-                                &unit_key[..unit_key.len().min(8)],
-                                caught_panics
-                            );
+                            "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {}, CAUGHT PANICS: {})",
+                            crate_name,
+                            crate_version,
+                            def_count,
+                            ref_count,
+                            type_count,
+                            file_size / 1024,
+                            start.elapsed().as_secs_f64() * 1000.0,
+                            &unit_key[..unit_key.len().min(8)],
+                            caught_panics
+                        );
                     } else {
                         eprintln!(
-                                "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
-                                crate_name,
-                                crate_version,
-                                def_count,
-                                ref_count,
-                                type_count,
-                                file_size / 1024,
-                                start.elapsed().as_secs_f64() * 1000.0,
-                                &unit_key[..unit_key.len().min(8)]
-                            );
+                            "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
+                            crate_name,
+                            crate_version,
+                            def_count,
+                            ref_count,
+                            type_count,
+                            file_size / 1024,
+                            start.elapsed().as_secs_f64() * 1000.0,
+                            &unit_key[..unit_key.len().min(8)]
+                        );
                     }
                 }
             }
         }
         Err(e) => {
-            eprintln!(
-                "ridx-driver: failed to create temporary index {:?}: {e}",
-                tmp_file_path
-            );
+            eprintln!("ridx-driver: failed to create temporary index {:?}: {e}", tmp_file_path);
         }
     }
 }

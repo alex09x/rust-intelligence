@@ -46,10 +46,7 @@ fn test_resolve_qualifier_sysroot_not_shadowed_by_use() {
 
     // "core" qualifier must NOT resolve to the local Use entry
     let res = ws.resolve_qualifier("src/system_registry.rs", "core");
-    assert!(
-        res.is_none() || res.as_ref().unwrap().path != "test_crate::system::system_registry::core",
-        "sysroot qualifier 'core' must not be shadowed by local Use entry"
-    );
+    assert!(res.is_none() || res.as_ref().unwrap().path != "test_crate::system::system_registry::core", "sysroot qualifier 'core' must not be shadowed by local Use entry");
 }
 
 #[test]
@@ -94,9 +91,7 @@ fn test_sysroot_reexport_alias_and_owner_completion() {
         vec!["core::net::socket_addr::SocketAddr".to_string()],
     );
     let mut core_buf = Vec::new();
-    core_writer
-        .write_to(&mut Cursor::new(&mut core_buf))
-        .unwrap();
+    core_writer.write_to(&mut Cursor::new(&mut core_buf)).unwrap();
     fs::write(target_dir.join("core.ridx"), core_buf).unwrap();
 
     // 2. Build std.ridx with native TcpStream and re-exported SocketAddr alias
@@ -144,11 +139,7 @@ fn test_sysroot_reexport_alias_and_owner_completion() {
 
     // Verify find_definitions_by_owner("std::net") returns both items without duplicates
     let defs = ws.find_definitions_by_owner("std::net");
-    assert_eq!(
-        defs.len(),
-        2,
-        "std::net should contain exactly TcpStream and SocketAddr"
-    );
+    assert_eq!(defs.len(), 2, "std::net should contain exactly TcpStream and SocketAddr");
     let names: Vec<&str> = defs.iter().map(|d| d.name).collect();
     assert!(names.contains(&"TcpStream"));
     assert!(names.contains(&"SocketAddr"));
@@ -157,14 +148,8 @@ fn test_sysroot_reexport_alias_and_owner_completion() {
     let socket_def = ws.find_definition_by_path("std::net::SocketAddr");
     assert!(socket_def.is_some());
     let socket_def = socket_def.unwrap();
-    assert!(
-        socket_def.is_reexport,
-        "SocketAddr alias must be marked as is_reexport"
-    );
-    assert_eq!(
-        socket_def.signature,
-        Some("core::net::socket_addr::SocketAddr")
-    );
+    assert!(socket_def.is_reexport, "SocketAddr alias must be marked as is_reexport");
+    assert_eq!(socket_def.signature, Some("core::net::socket_addr::SocketAddr"));
 
     // Verify canonical methods are found under the canonical owner
     let target_owner = socket_def.signature.unwrap();
@@ -201,12 +186,7 @@ fn test_type_alias_not_treated_as_reexport() {
     fs::write(target_dir.join("my_crate.ridx"), buf).unwrap();
 
     let ws = WorkspaceIndex::open(target_dir).unwrap();
-    let foo_def = ws
-        .find_definition_by_path("my_crate::Foo")
-        .expect("Foo should exist");
-    assert!(
-        !foo_def.is_reexport,
-        "Type alias must NOT have is_reexport set"
-    );
+    let foo_def = ws.find_definition_by_path("my_crate::Foo").expect("Foo should exist");
+    assert!(!foo_def.is_reexport, "Type alias must NOT have is_reexport set");
     assert_eq!(foo_def.signature, Some("core::cell::Cell<u8>"));
 }

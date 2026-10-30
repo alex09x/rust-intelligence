@@ -173,9 +173,7 @@ fn test_lsp_server_stream_stage3_completion_and_diagnostic() {
 
     let comp_resp = &responses[1];
     assert_eq!(comp_resp["id"], 40);
-    let items = comp_resp["result"]["items"]
-        .as_array()
-        .expect("items array");
+    let items = comp_resp["result"]["items"].as_array().expect("items array");
     assert!(items.iter().any(|i| i["label"] == "candidate_var"));
 
     let diag_resp = &responses[2];
@@ -271,8 +269,7 @@ fn test_lsp_server_stream_stage4_structure_and_presentation() {
 
 #[test]
 fn test_lsp_server_stream_file_rename_delete_didchange_unopened() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_rename_del_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_rename_del_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let f1 = temp_dir.join("f1.rs");
     let f2 = temp_dir.join("f2.rs");

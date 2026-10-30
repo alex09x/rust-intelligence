@@ -24,11 +24,7 @@ pub struct CompactImpl {
     pub line: u32,
 }
 
-pub(crate) fn intern_str(
-    names: &mut Vec<Box<str>>,
-    map: &mut HashMap<Box<str>, u32>,
-    s: &str,
-) -> u32 {
+pub(crate) fn intern_str(names: &mut Vec<Box<str>>, map: &mut HashMap<Box<str>, u32>, s: &str) -> u32 {
     if let Some(&id) = map.get(s) {
         return id;
     }
@@ -38,11 +34,7 @@ pub(crate) fn intern_str(
     id
 }
 
-pub(crate) fn intern_path(
-    files: &mut Vec<PathBuf>,
-    map: &mut HashMap<PathBuf, u32>,
-    p: &Path,
-) -> u32 {
+pub(crate) fn intern_path(files: &mut Vec<PathBuf>, map: &mut HashMap<PathBuf, u32>, p: &Path) -> u32 {
     if let Some(&id) = map.get(p) {
         return id;
     }

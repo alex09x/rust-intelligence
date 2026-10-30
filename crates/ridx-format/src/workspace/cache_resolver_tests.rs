@@ -24,46 +24,28 @@ fn test_classification_manifest_relative_fallback() {
 
     // 1. Bench relative to manifest
     let args = vec!["rustc".to_string(), "benches/main.rs".to_string()];
-    assert_eq!(
-        classify_target_with_manifest(None, &args, Some(manifest_dir)),
-        TargetKind::Bench
-    );
+    assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::Bench);
 
     // 2. Example relative to manifest
     let args = vec!["rustc".to_string(), "examples/demo.rs".to_string()];
-    assert_eq!(
-        classify_target_with_manifest(None, &args, Some(manifest_dir)),
-        TargetKind::Example
-    );
+    assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::Example);
 
     // 3. Test relative to manifest
     let args = vec!["rustc".to_string(), "tests/integration.rs".to_string()];
-    assert_eq!(
-        classify_target_with_manifest(None, &args, Some(manifest_dir)),
-        TargetKind::Test
-    );
+    assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::Test);
 
     // 4. Build script
     let args = vec!["rustc".to_string(), "build.rs".to_string()];
-    assert_eq!(
-        classify_target_with_manifest(None, &args, Some(manifest_dir)),
-        TargetKind::CustomBuild
-    );
+    assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::CustomBuild);
 
     // 5. Absolute bench path stripped relative to manifest_dir
     let abs_bench = "/workspace/crates/my_crate/benches/bench_ops.rs".to_string();
     let args = vec!["rustc".to_string(), abs_bench];
-    assert_eq!(
-        classify_target_with_manifest(None, &args, Some(manifest_dir)),
-        TargetKind::Bench
-    );
+    assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::Bench);
 
     // 6. Primary library unit
     let args = vec!["rustc".to_string(), "src/lib.rs".to_string()];
-    assert_eq!(
-        classify_target_with_manifest(None, &args, Some(manifest_dir)),
-        TargetKind::Lib
-    );
+    assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::Lib);
 }
 
 #[test]
@@ -107,24 +89,15 @@ fn test_resilient_cache_resolver_finds_shard_by_generation_and_version() {
     assert_eq!(resolved, Some(shard_file.clone()));
 
     // Case 2: Reject when generation is omitted (strict generation match required)
-    let dep_no_gen = DependencyShardInfo {
-        generation: None,
-        ..dep.clone()
-    };
+    let dep_no_gen = DependencyShardInfo { generation: None, ..dep.clone() };
     assert_eq!(resolver.resolve(&dep_no_gen), None);
 
     // Case 3: Reject when generation is mismatched
-    let dep_mismatched_gen = DependencyShardInfo {
-        generation: Some("different_gen_digest".to_string()),
-        ..dep.clone()
-    };
+    let dep_mismatched_gen = DependencyShardInfo { generation: Some("different_gen_digest".to_string()), ..dep.clone() };
     assert_eq!(resolver.resolve(&dep_mismatched_gen), None);
 
     // Case 4: Completely unknown crate name -> None
-    let dep_unknown = DependencyShardInfo {
-        name: "unknown_crate".to_string(),
-        ..dep
-    };
+    let dep_unknown = DependencyShardInfo { name: "unknown_crate".to_string(), ..dep };
     assert_eq!(resolver.resolve(&dep_unknown), None);
 }
 

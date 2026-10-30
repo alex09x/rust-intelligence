@@ -57,8 +57,14 @@ fn test_will_save_with_windows_uri() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(out.into_inner().len(), 0);
@@ -78,8 +84,14 @@ fn test_will_save_wait_until_with_windows_uri() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
@@ -99,8 +111,14 @@ fn test_will_save_with_url_encoded_space_uri() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(out.into_inner().len(), 0);
@@ -120,8 +138,14 @@ fn test_will_save_wait_until_with_url_encoded_space_uri() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
@@ -144,8 +168,14 @@ fn test_will_save_on_closed_document_remains_closed() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(om.open_count(), 0);
@@ -167,8 +197,14 @@ fn test_will_save_wait_until_on_closed_document() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
@@ -189,7 +225,12 @@ fn test_will_save_notification_returns_true_in_dispatch() {
             "method": "textDocument/willSave",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
     );
 
     assert_eq!(res.unwrap_or(false), true);
@@ -209,8 +250,14 @@ fn test_will_save_wait_until_jsonrpc_version_2_0() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());
@@ -234,8 +281,14 @@ fn test_will_save_with_arbitrary_client_extensions() {
                 "clientExtraInfo": { "ide": "vscode", "session": 123 }
             }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     assert_eq!(out.into_inner().len(), 0);
@@ -259,8 +312,14 @@ fn test_will_save_wait_until_with_arbitrary_client_extensions() {
                 "clientExtraInfo": { "ide": "neovim" }
             }
         }),
-        &mut out, &mut lc, &mut mr, &mut om, &cancelled, None,
-    ).unwrap_or(false);
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        &cancelled,
+        None,
+    )
+    .unwrap_or(false);
 
     assert_eq!(ok, true);
     let resp = extract_response(&out.into_inner());

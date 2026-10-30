@@ -152,39 +152,20 @@ fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
         crate_a.join("src/lib.rs").display().to_string(),
         crate_a.join("src/mod_67.rs").display().to_string(),
         crate_a.join("src/sidecar_only.rs").display().to_string(),
-        ws_root
-            .join("link_crate_a/src/mod_10.rs")
-            .display()
-            .to_string(),
+        ws_root.join("link_crate_a/src/mod_10.rs").display().to_string(),
         ws_root.join("shortcut/../file.rs").display().to_string(),
         dep_ext.join("src/lib.rs").display().to_string(),
         dep_ext.join("src/../src/lib.rs").display().to_string(),
     ];
 
     for q in &queries {
-        assert_eq!(
-            ws.source_hash_for_file(q),
-            source_hash_for_file_oracle(&ws, q),
-            "hash: {q}"
-        );
-        assert_eq!(
-            ws.shard_mtime_for_file(q),
-            shard_mtime_for_file_oracle(&ws, q),
-            "mtime: {q}"
-        );
+        assert_eq!(ws.source_hash_for_file(q), source_hash_for_file_oracle(&ws, q), "hash: {q}");
+        assert_eq!(ws.shard_mtime_for_file(q), shard_mtime_for_file_oracle(&ws, q), "mtime: {q}");
     }
     ws.set_workspace_root(Some(crate_a));
     for q in &queries {
-        assert_eq!(
-            ws.source_hash_for_file(q),
-            source_hash_for_file_oracle(&ws, q),
-            "hash2: {q}"
-        );
-        assert_eq!(
-            ws.shard_mtime_for_file(q),
-            shard_mtime_for_file_oracle(&ws, q),
-            "mtime2: {q}"
-        );
+        assert_eq!(ws.source_hash_for_file(q), source_hash_for_file_oracle(&ws, q), "hash2: {q}");
+        assert_eq!(ws.shard_mtime_for_file(q), shard_mtime_for_file_oracle(&ws, q), "mtime2: {q}");
     }
 }
 
@@ -197,23 +178,15 @@ fn test_path_index_overwrite_existing_file_hash_and_generation_mutations() {
     assert_eq!(ws.source_hash_for_file(non_canon), Some(0xA999));
 
     let prev_len = ws.reader_file_hashes[0].len();
-    *ws.reader_file_hashes[0]
-        .get_mut("src/sidecar_only.rs")
-        .unwrap() = 0xBEEF_CAFE;
+    *ws.reader_file_hashes[0].get_mut("src/sidecar_only.rs").unwrap() = 0xBEEF_CAFE;
     assert_eq!(ws.reader_file_hashes[0].len(), prev_len);
     assert_eq!(ws.bump_generation(), 2);
     assert_eq!(ws.source_hash_for_file(non_canon), Some(0xBEEF_CAFE));
-    assert_eq!(
-        ws.source_hash_for_file(non_canon),
-        source_hash_for_file_oracle(&ws, non_canon)
-    );
+    assert_eq!(ws.source_hash_for_file(non_canon), source_hash_for_file_oracle(&ws, non_canon));
 
     ws.set_workspace_root(Some(crate_a));
     assert_eq!(ws.generation(), 3);
-    assert_eq!(
-        ws.source_hash_for_file("src/../src/sidecar_only.rs"),
-        Some(0xBEEF_CAFE)
-    );
+    assert_eq!(ws.source_hash_for_file("src/../src/sidecar_only.rs"), Some(0xBEEF_CAFE));
     ws.set_workspace_root(Some(ws_root.clone()));
     assert_eq!(ws.generation(), 4);
     ws.attach_shard_paths(&[ws_root.join("target/ridx/variants/v1/01_external_dep.ridx")]);
@@ -257,9 +230,7 @@ fn test_path_index_unindexed_path_resolves_after_attach_and_generation_bump() {
         end_col: 15,
     });
     let ridx_late = ws_root.join("target/ridx/variants/v1/02_late_crate.ridx");
-    w_late
-        .write_to(&mut File::create(&ridx_late).unwrap())
-        .unwrap();
+    w_late.write_to(&mut File::create(&ridx_late).unwrap()).unwrap();
 
     ws.attach_shard_paths(&[ridx_late]);
     assert_eq!(ws.source_hash_for_file(direct_rel), Some(0xCAFE_1234));
@@ -281,16 +252,10 @@ fn test_path_index_symlink_created_after_negative_lookup() {
     let temp = TempDir::new().unwrap();
     let (ws_root, crate_a, _dep_ext, ws) = setup_multi_reader_fixture(&temp);
     let q = ws_root.join("late_link/src/lib.rs").display().to_string();
-    let before = (
-        ws.source_hash_for_file(&q),
-        source_hash_for_file_oracle(&ws, &q),
-    );
+    let before = (ws.source_hash_for_file(&q), source_hash_for_file_oracle(&ws, &q));
     assert_eq!(before, (None, None));
     std::os::unix::fs::symlink(&crate_a, ws_root.join("late_link")).unwrap();
-    let after = (
-        ws.source_hash_for_file(&q),
-        source_hash_for_file_oracle(&ws, &q),
-    );
+    let after = (ws.source_hash_for_file(&q), source_hash_for_file_oracle(&ws, &q));
     assert_eq!(after, (Some(0xA001), Some(0xA001)));
 }
 
@@ -305,10 +270,7 @@ fn test_path_index_single_reader_without_roots_matches_lexically() {
     w.write_to(&mut File::create(&ridx).unwrap()).unwrap();
     let ws = WorkspaceIndex::open(&ridx).unwrap();
     let q = "x/b.rs";
-    let got = (
-        ws.source_hash_for_file(q),
-        source_hash_for_file_oracle(&ws, q),
-    );
+    let got = (ws.source_hash_for_file(q), source_hash_for_file_oracle(&ws, q));
     assert_eq!(got, (Some(0xB1), Some(0xB1)));
 }
 
@@ -341,10 +303,7 @@ fn test_corpus_oracle_equivalence() {
         files.sort();
         let checked = std::sync::atomic::AtomicUsize::new(0);
         let divergences = std::sync::atomic::AtomicUsize::new(0);
-        let workers = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(8)
-            .min(16);
+        let workers = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(8).min(16);
         let chunk_size = files.len().div_ceil(workers).max(1);
         std::thread::scope(|s| {
             for chunk in files.chunks(chunk_size) {
@@ -354,14 +313,8 @@ fn test_corpus_oracle_equivalence() {
                 s.spawn(move || {
                     for abs_path in chunk {
                         let abs_q = abs_path.to_string_lossy();
-                        let rel_q = abs_path
-                            .strip_prefix(repo)
-                            .ok()
-                            .map(|r| r.to_string_lossy());
-                        for q in [Some(abs_q.as_ref()), rel_q.as_deref()]
-                            .into_iter()
-                            .flatten()
-                        {
+                        let rel_q = abs_path.strip_prefix(repo).ok().map(|r| r.to_string_lossy());
+                        for q in [Some(abs_q.as_ref()), rel_q.as_deref()].into_iter().flatten() {
                             checked_ref.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             let h_new = ws_ref.source_hash_for_file(q);
                             let h_old = source_hash_for_file_oracle(ws_ref, q);
@@ -378,13 +331,7 @@ fn test_corpus_oracle_equivalence() {
         });
         let total_checked = checked.load(std::sync::atomic::Ordering::Relaxed);
         let total_div = divergences.load(std::sync::atomic::Ordering::Relaxed);
-        eprintln!(
-            "[CORPUS_ORACLE] repo={repo_str} rs_files={} queries_checked={total_checked} divergences={total_div}",
-            files.len()
-        );
-        assert_eq!(
-            total_div, 0,
-            "corpus oracle had {total_div} divergences on {repo_str}"
-        );
+        eprintln!("[CORPUS_ORACLE] repo={repo_str} rs_files={} queries_checked={total_checked} divergences={total_div}", files.len());
+        assert_eq!(total_div, 0, "corpus oracle had {total_div} divergences on {repo_str}");
     }
 }

@@ -43,10 +43,7 @@ fn expand_candidates(path: &str) -> Vec<String> {
     out
 }
 
-fn find_matching_type_defs<'a, B: AsRef<[u8]>>(
-    reader: &'a IndexReader<B>,
-    query_path: &str,
-) -> Vec<&'a DefEntry> {
+fn find_matching_type_defs<'a, B: AsRef<[u8]>>(reader: &'a IndexReader<B>, query_path: &str) -> Vec<&'a DefEntry> {
     let mut results = Vec::new();
     if let Some(def) = reader.find_definition_by_path(query_path) {
         if is_type_def_kind(DefKind::from(def.kind)) {
@@ -55,10 +52,7 @@ fn find_matching_type_defs<'a, B: AsRef<[u8]>>(
     }
     if let Some((parent, _)) = query_path.rsplit_once("::") {
         for def in reader.find_definitions_by_owner(parent) {
-            if reader.get_str(def.path_offset()) == query_path
-                && is_type_def_kind(DefKind::from(def.kind))
-                && !results.iter().any(|existing| std::ptr::eq(*existing, def))
-            {
+            if reader.get_str(def.path_offset()) == query_path && is_type_def_kind(DefKind::from(def.kind)) && !results.iter().any(|existing| std::ptr::eq(*existing, def)) {
                 results.push(def);
             }
         }
@@ -75,19 +69,12 @@ pub(super) fn lookup_type_by_path(
     conv: &mut PositionConverter,
 ) -> Option<Value> {
     let query_path = Path::new(query_file);
-    let crate_units: Vec<(&str, &str)> = file_readers
-        .iter()
-        .filter_map(|&idx| ws.readers().get(idx))
-        .map(|reader| (reader.crate_name(), reader.unit_key()))
-        .collect();
+    let crate_units: Vec<(&str, &str)> = file_readers.iter().filter_map(|&idx| ws.readers().get(idx)).map(|reader| (reader.crate_name(), reader.unit_key())).collect();
 
     let in_same_crate = |idx: usize| -> bool {
         ws.readers().get(idx).is_some_and(|reader| {
             let (crate_name, unit_key) = (reader.crate_name(), reader.unit_key());
-            crate_units.iter().any(|(c, u)| {
-                (!crate_name.is_empty() && *c == crate_name)
-                    || (!unit_key.is_empty() && *u == unit_key)
-            })
+            crate_units.iter().any(|(c, u)| (!crate_name.is_empty() && *c == crate_name) || (!unit_key.is_empty() && *u == unit_key))
         })
     };
 
@@ -112,30 +99,13 @@ pub(super) fn lookup_type_by_path(
                         if raw_file == "external" || raw_file.is_empty() {
                             continue;
                         }
-                        let in_dep_graph = *in_dep_opt.get_or_insert_with(|| {
-                            ws.is_reader_in_dep_graph(file_readers, reader_idx)
-                        });
+                        let in_dep_graph = *in_dep_opt.get_or_insert_with(|| ws.is_reader_in_dep_graph(file_readers, reader_idx));
                         let resolved_path = resolve_reader_file(ws, reader_idx, raw_file);
                         let is_local = !ws.is_reader_dependency(reader_idx);
                         let same_file = resolved_path == query_path;
-                        let score = (
-                            !def.is_reexport(),
-                            same_file,
-                            same_crate,
-                            in_dep_graph,
-                            crate_match,
-                            is_local,
-                        );
-                        if best
-                            .as_ref()
-                            .is_none_or(|(best_score, ..)| score > *best_score)
-                        {
-                            let coords = (
-                                span.start_line(),
-                                span.start_col(),
-                                span.end_line(),
-                                span.end_col(),
-                            );
+                        let score = (!def.is_reexport(), same_file, same_crate, in_dep_graph, crate_match, is_local);
+                        if best.as_ref().is_none_or(|(best_score, ..)| score > *best_score) {
+                            let coords = (span.start_line(), span.start_col(), span.end_line(), span.end_col());
                             best = Some((score, resolved_path, raw_file, coords));
                         }
                     }
@@ -157,9 +127,7 @@ pub(super) fn lookup_type_by_path(
 fn candidate_queries(cand: &str, crate_name: &str) -> Vec<String> {
     match (cand.contains("::"), crate_name.is_empty()) {
         (true, false) => {
-            let alt = cand
-                .strip_prefix(&format!("{crate_name}::"))
-                .map_or_else(|| format!("{crate_name}::{cand}"), str::to_string);
+            let alt = cand.strip_prefix(&format!("{crate_name}::")).map_or_else(|| format!("{crate_name}::{cand}"), str::to_string);
             vec![cand.to_string(), alt]
         }
         (false, false) => vec![format!("{crate_name}::{cand}"), cand.to_string()],
@@ -167,36 +135,19 @@ fn candidate_queries(cand: &str, crate_name: &str) -> Vec<String> {
     }
 }
 
-pub(super) fn resolve_reader_file(
-    ws: &WorkspaceIndex,
-    reader_idx: usize,
-    raw_file: &str,
-) -> PathBuf {
+pub(super) fn resolve_reader_file(ws: &WorkspaceIndex, reader_idx: usize, raw_file: &str) -> PathBuf {
     let rel_path = Path::new(raw_file);
     if rel_path.is_absolute() {
         return rel_path.to_path_buf();
     }
-    let primary = ws
-        .source_root_at(reader_idx)
-        .or_else(|| ws.workspace_root())
-        .map_or_else(
-            || rel_path.to_path_buf(),
-            |root| join_resolving_overlap(root, rel_path),
-        );
+    let primary = ws.source_root_at(reader_idx).or_else(|| ws.workspace_root()).map_or_else(|| rel_path.to_path_buf(), |root| join_resolving_overlap(root, rel_path));
     match (!primary.exists(), ws.workspace_root()) {
-        (true, Some(root)) if join_resolving_overlap(root, rel_path).exists() => {
-            join_resolving_overlap(root, rel_path)
-        }
+        (true, Some(root)) if join_resolving_overlap(root, rel_path).exists() => join_resolving_overlap(root, rel_path),
         _ => primary,
     }
 }
 
-pub(super) fn format_location(
-    resolved_path: &Path,
-    raw_file: &str,
-    (start_line, start_col, end_line, end_col): (u32, u32, u32, u32),
-    conv: &mut PositionConverter,
-) -> Value {
+pub(super) fn format_location(resolved_path: &Path, raw_file: &str, (start_line, start_col, end_line, end_col): (u32, u32, u32, u32), conv: &mut PositionConverter) -> Value {
     let path_str = resolved_path.to_str().unwrap_or(raw_file);
     let start_col_u16 = conv.char_col_to_utf16_col(path_str, start_line, start_col);
     let end_col_u16 = conv.char_col_to_utf16_col(path_str, end_line, end_col);

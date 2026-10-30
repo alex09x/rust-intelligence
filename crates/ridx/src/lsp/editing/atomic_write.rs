@@ -55,28 +55,14 @@ pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
 
     let pid = std::process::id();
     let tx_id = TX_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let now_nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
+    let now_nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
 
     let mut tmp_files: Vec<(PathBuf, PathBuf)> = Vec::with_capacity(resolved_targets.len());
 
     for (i, (real_path, new_text, perms)) in resolved_targets.iter().enumerate() {
-        let tmp_path = PathBuf::from(format!(
-            "{}.ridx_tmp_{}_{}_{}_{}",
-            real_path.display(),
-            pid,
-            now_nanos,
-            tx_id,
-            i
-        ));
+        let tmp_path = PathBuf::from(format!("{}.ridx_tmp_{}_{}_{}_{}", real_path.display(), pid, now_nanos, tx_id, i));
 
-        let mut file = match fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&tmp_path)
-        {
+        let mut file = match fs::OpenOptions::new().write(true).create_new(true).open(&tmp_path) {
             Ok(f) => f,
             Err(_) => {
                 for (_, tmp) in &tmp_files {
@@ -107,14 +93,7 @@ pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
     let mut publish_success = true;
 
     for (i, (real_path, tmp_path)) in tmp_files.iter().enumerate() {
-        let bak_path = PathBuf::from(format!(
-            "{}.ridx_bak_{}_{}_{}_{}",
-            real_path.display(),
-            pid,
-            now_nanos,
-            tx_id,
-            i
-        ));
+        let bak_path = PathBuf::from(format!("{}.ridx_bak_{}_{}_{}_{}", real_path.display(), pid, now_nanos, tx_id, i));
 
         if real_path.exists() {
             if bak_path.exists() || fs::rename(real_path, &bak_path).is_err() {
@@ -148,10 +127,7 @@ pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
 }
 
 /// Checks whether a path is an external read-only dependency (e.g. in cargo cache or toolchains).
-pub fn is_readonly_dependency(
-    path: &Path,
-    workspace: Option<&ridx_format::WorkspaceIndex>,
-) -> bool {
+pub fn is_readonly_dependency(path: &Path, workspace: Option<&ridx_format::WorkspaceIndex>) -> bool {
     if let Some(ws) = workspace {
         ws.is_external_path(path)
     } else {
@@ -160,40 +136,27 @@ pub fn is_readonly_dependency(
 }
 
 /// Validates that none of the URIs in a WorkspaceEdit target read-only external dependencies.
-pub fn validate_workspace_edit(
-    edit: &serde_json::Value,
-    workspace: Option<&ridx_format::WorkspaceIndex>,
-) -> crate::lsp::error::LspResult<()> {
+pub fn validate_workspace_edit(edit: &serde_json::Value, workspace: Option<&ridx_format::WorkspaceIndex>) -> crate::lsp::error::LspResult<()> {
     if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
         for uri in changes.keys() {
             let p = crate::lsp::protocol::uri_to_path(uri);
             if is_readonly_dependency(Path::new(&p), workspace) {
-                return Err(crate::lsp::error::LspError::request_failed(format!(
-                    "Cannot modify read-only external dependency: {p}"
-                )));
+                return Err(crate::lsp::error::LspError::request_failed(format!("Cannot modify read-only external dependency: {p}")));
             }
         }
     }
 
     if let Some(doc_changes) = edit.get("documentChanges").and_then(|c| c.as_array()) {
         for dc in doc_changes {
-            if let Some(uri) = dc
-                .get("textDocument")
-                .and_then(|td| td.get("uri"))
-                .and_then(|u| u.as_str())
-            {
+            if let Some(uri) = dc.get("textDocument").and_then(|td| td.get("uri")).and_then(|u| u.as_str()) {
                 let p = crate::lsp::protocol::uri_to_path(uri);
                 if is_readonly_dependency(Path::new(&p), workspace) {
-                    return Err(crate::lsp::error::LspError::request_failed(format!(
-                        "Cannot modify read-only external dependency: {p}"
-                    )));
+                    return Err(crate::lsp::error::LspError::request_failed(format!("Cannot modify read-only external dependency: {p}")));
                 }
             } else if let Some(uri) = dc.get("uri").and_then(|u| u.as_str()) {
                 let p = crate::lsp::protocol::uri_to_path(uri);
                 if is_readonly_dependency(Path::new(&p), workspace) {
-                    return Err(crate::lsp::error::LspError::request_failed(format!(
-                        "Cannot modify read-only external dependency: {p}"
-                    )));
+                    return Err(crate::lsp::error::LspError::request_failed(format!("Cannot modify read-only external dependency: {p}")));
                 }
             }
         }

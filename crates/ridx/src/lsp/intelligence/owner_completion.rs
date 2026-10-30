@@ -11,11 +11,8 @@
 //! Fast owner-index and autoderef-based completion handler.
 
 use super::super::protocol::lsp_completion_kind;
+use super::scope_cache::{get_or_collect_file_referenced_traits, get_or_resolve_deref_chain, is_profile_completion_enabled};
 use ridx_format::{DefKind, WorkspaceIndex};
-use super::scope_cache::{
-    get_or_collect_file_referenced_traits, get_or_resolve_deref_chain,
-    is_profile_completion_enabled,
-};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -38,25 +35,7 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
         || path == "slice"
         || path == "array"
         || path == "pointer"
-        || matches!(
-            path,
-            "bool"
-                | "char"
-                | "i8"
-                | "i16"
-                | "i32"
-                | "i64"
-                | "i128"
-                | "isize"
-                | "u8"
-                | "u16"
-                | "u32"
-                | "u64"
-                | "u128"
-                | "usize"
-                | "f32"
-                | "f64"
-        )
+        || matches!(path, "bool" | "char" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "f32" | "f64")
 }
 
 /// Context parameters for owner-based scoped completion.
@@ -100,27 +79,15 @@ fn collect_prioritized_items(buckets: [Vec<Value>; 4]) -> Option<Vec<Value>> {
 ///
 /// Returns `Some(items)` if the owner index resolved candidate items directly (sub-100 µs),
 /// or `None` if fallback to workspace symbol scanning is required (e.g. sysroot types, unknown types).
-pub fn try_owner_completion(
-    ws: &WorkspaceIndex,
-    ctx: &OwnerCompletionContext<'_>,
-) -> Option<Vec<Value>> {
+pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_>) -> Option<Vec<Value>> {
     if ctx.is_dot {
         let before_dot = ctx.trimmed_before[..ctx.trimmed_before.len() - 1].trim_end();
-        let rname: String = before_dot
-            .chars()
-            .rev()
-            .take_while(|c| c.is_alphanumeric() || *c == '_')
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect();
+        let rname: String = before_dot.chars().rev().take_while(|c| c.is_alphanumeric() || *c == '_').collect::<Vec<_>>().into_iter().rev().collect();
         let rstart = before_dot.len().saturating_sub(rname.len());
         let rcol = ctx.line_slice[..rstart].chars().count() as u32 + 1;
         let rend_col = ctx.line_slice[..before_dot.len()].chars().count() as u32;
 
-        let type_entry = ws
-            .type_entry_at(ctx.file, ctx.line_1based, rend_col)
-            .or_else(|| ws.type_entry_at(ctx.file, ctx.line_1based, rcol));
+        let type_entry = ws.type_entry_at(ctx.file, ctx.line_1based, rend_col).or_else(|| ws.type_entry_at(ctx.file, ctx.line_1based, rcol));
 
         let Some((ty_name, Some(owner))) = type_entry else {
             return None;
@@ -153,16 +120,16 @@ pub fn try_owner_completion(
                     }
                 }
             }
-            if let Some(t) = t_d0 { t_deref = t.elapsed(); }
+            if let Some(t) = t_d0 {
+                t_deref = t.elapsed();
+            }
         } else if !is_non_deref_type(owner) {
             let t_d0 = profile_active.then(std::time::Instant::now);
             for item in get_or_resolve_deref_chain(ws, owner, 2).iter() {
                 if !item.is_trait {
                     owners.push(item.target.clone());
                 } else {
-                    let f_traits = file_traits.get_or_insert_with(|| {
-                        get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
-                    });
+                    let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
                     let target_str = item.target.as_str();
                     if is_in_prelude(target_str)
                         || f_traits.contains(target_str)
@@ -173,7 +140,9 @@ pub fn try_owner_completion(
                     }
                 }
             }
-            if let Some(t) = t_d0 { t_deref = t.elapsed(); }
+            if let Some(t) = t_d0 {
+                t_deref = t.elapsed();
+            }
         }
 
         let mut seen_labels = HashSet::new();
@@ -190,37 +159,37 @@ pub fn try_owner_completion(
                 if def.kind == DefKind::Field {
                     // Struct fields are always accessible via dot
                 } else if matches!(def.kind, DefKind::AssocFn | DefKind::Fn) {
-                    let has_receiver = def
-                        .signature
-                        .as_ref()
-                        .is_some_and(|sig| signature_takes_receiver(sig));
+                    let has_receiver = def.signature.as_ref().is_some_and(|sig| signature_takes_receiver(sig));
                     if !has_receiver {
-                        if let Some(t) = t_c0 { t_cat += t.elapsed(); }
+                        if let Some(t) = t_c0 {
+                            t_cat += t.elapsed();
+                        }
                         continue;
                     }
                 } else {
-                    if let Some(t) = t_c0 { t_cat += t.elapsed(); }
+                    if let Some(t) = t_c0 {
+                        t_cat += t.elapsed();
+                    }
                     continue;
                 }
                 if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
-                    if let Some(t) = t_c0 { t_cat += t.elapsed(); }
+                    if let Some(t) = t_c0 {
+                        t_cat += t.elapsed();
+                    }
                     continue;
                 }
 
-                let f_traits = file_traits.get_or_insert_with(|| {
-                    get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
-                });
+                let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
                 let category = categorize_definition(def.kind, def.path, o, owner, f_traits.as_ref());
 
                 if category == DefScopeCategory::OutOfScopeTrait {
-                    if let Some(t) = t_c0 { t_cat += t.elapsed(); }
+                    if let Some(t) = t_c0 {
+                        t_cat += t.elapsed();
+                    }
                     continue;
                 }
 
-                let detail = def
-                    .signature
-                    .map(|sig| format!("{sig} (in {})", def.path))
-                    .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+                let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
                 let item = json!({
                     "label": def.name,
                     "kind": lsp_completion_kind(def.kind),
@@ -228,13 +197,22 @@ pub fn try_owner_completion(
                 });
 
                 match category {
-                    DefScopeCategory::Field => { seen_labels.insert(def.name); fields.push(item); }
-                    DefScopeCategory::Inherent => { if seen_labels.insert(def.name) { inherent.push(item); } }
+                    DefScopeCategory::Field => {
+                        seen_labels.insert(def.name);
+                        fields.push(item);
+                    }
+                    DefScopeCategory::Inherent => {
+                        if seen_labels.insert(def.name) {
+                            inherent.push(item);
+                        }
+                    }
                     DefScopeCategory::PreludeTrait => prelude_traits.push(item),
                     DefScopeCategory::InScopeTrait => in_scope_traits.push(item),
                     DefScopeCategory::OutOfScopeTrait => {}
                 }
-                if let Some(t) = t_c0 { t_cat += t.elapsed(); }
+                if let Some(t) = t_c0 {
+                    t_cat += t.elapsed();
+                }
                 if fields.len() + inherent.len() >= 100 {
                     break;
                 }
@@ -269,22 +247,8 @@ pub fn try_owner_completion(
         }
 
         let target_owners: Vec<String> = if qual == "Self" {
-            super::self_completion::resolve_self_owners(
-                ws,
-                ctx.file,
-                ctx.line_1based,
-                ctx.line_slice,
-                ctx.overlay_text,
-            )?
-        } else if let Some(owners) = super::generic_completion::resolve_generic_param_owners(
-            ws,
-            ctx.file,
-            ctx.line_1based,
-            ctx.line_slice,
-            ctx.overlay_text,
-            ctx.is_dirty,
-            &qual,
-        ) {
+            super::self_completion::resolve_self_owners(ws, ctx.file, ctx.line_1based, ctx.line_slice, ctx.overlay_text)?
+        } else if let Some(owners) = super::generic_completion::resolve_generic_param_owners(ws, ctx.file, ctx.line_1based, ctx.line_slice, ctx.overlay_text, ctx.is_dirty, &qual) {
             owners
         } else {
             let def_opt = ws.resolve_qualifier(ctx.file, &qual);
@@ -301,13 +265,9 @@ pub fn try_owner_completion(
                 })
                 .unwrap_or_else(|| {
                     if qual == "crate" {
-                        ws.crate_name_for_file(ctx.file)
-                            .map(|c| c.to_string())
-                            .unwrap_or_else(|| qual.clone())
+                        ws.crate_name_for_file(ctx.file).map(|c| c.to_string()).unwrap_or_else(|| qual.clone())
                     } else if let Some(rest) = qual.strip_prefix("crate::") {
-                        ws.crate_name_for_file(ctx.file)
-                            .map(|c| format!("{c}::{rest}"))
-                            .unwrap_or_else(|| qual.clone())
+                        ws.crate_name_for_file(ctx.file).map(|c| format!("{c}::{rest}")).unwrap_or_else(|| qual.clone())
                     } else {
                         qual.clone()
                     }
@@ -338,25 +298,14 @@ pub fn try_owner_completion(
                     continue;
                 }
 
-                let f_traits = file_traits.get_or_insert_with(|| {
-                    get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
-                });
-                let category = categorize_definition(
-                    def.kind,
-                    def.path,
-                    target_owner,
-                    target_owner,
-                    f_traits.as_ref(),
-                );
+                let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
+                let category = categorize_definition(def.kind, def.path, target_owner, target_owner, f_traits.as_ref());
 
                 if category == DefScopeCategory::OutOfScopeTrait {
                     continue;
                 }
 
-                let detail = def
-                    .signature
-                    .map(|sig| format!("{sig} (in {})", def.path))
-                    .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+                let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
                 let item = json!({
                     "label": def.name,
                     "kind": lsp_completion_kind(def.kind),

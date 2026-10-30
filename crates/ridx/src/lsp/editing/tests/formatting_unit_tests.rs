@@ -18,11 +18,7 @@ use serde_json::json;
 use std::fs;
 
 fn has_rustfmt() -> bool {
-    std::process::Command::new("rustfmt")
-        .arg("--version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    std::process::Command::new("rustfmt").arg("--version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 #[test]
@@ -47,11 +43,7 @@ fn test_find_crate_edition_detection() {
     fs::write(&ws_cargo, "[workspace.package]\nedition = \"2018\"\n").unwrap();
     let sub_cargo = root.join("ws/crates/sub/Cargo.toml");
     fs::create_dir_all(sub_cargo.parent().unwrap()).unwrap();
-    fs::write(
-        &sub_cargo,
-        "[package]\nname = \"sub\"\nedition.workspace = true\n",
-    )
-    .unwrap();
+    fs::write(&sub_cargo, "[package]\nname = \"sub\"\nedition.workspace = true\n").unwrap();
     let sub_src = root.join("ws/crates/sub/src/lib.rs");
     fs::create_dir_all(sub_src.parent().unwrap()).unwrap();
     fs::write(&sub_src, "").unwrap();
@@ -95,13 +87,8 @@ fn test_formatting_whole_document() {
     });
 
     let res = handle_formatting(&req, &overlay_mgr);
-    let edits = res
-        .as_array()
-        .expect("Formatting must return array of TextEdits");
-    assert!(
-        !edits.is_empty(),
-        "Must return at least one formatting edit"
-    );
+    let edits = res.as_array().expect("Formatting must return array of TextEdits");
+    assert!(!edits.is_empty(), "Must return at least one formatting edit");
 
     let formatted = apply_text_edits(unformatted, edits);
     assert_eq!(formatted, "fn add(x: i32, y: i32) -> i32 {\n    x + y\n}\n");
@@ -131,13 +118,8 @@ fn test_formatting_already_formatted_returns_empty() {
     });
 
     let res = handle_formatting(&req, &overlay_mgr);
-    let edits = res
-        .as_array()
-        .expect("Formatting must return array of TextEdits");
-    assert!(
-        edits.is_empty(),
-        "Already formatted document must return empty edits"
-    );
+    let edits = res.as_array().expect("Formatting must return array of TextEdits");
+    assert!(edits.is_empty(), "Already formatted document must return empty edits");
 }
 
 #[test]

@@ -55,10 +55,7 @@ impl TestDispatcher {
     }
 
     fn dispatch(&mut self, msg: &Value) -> bool {
-        dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+        dispatch_lsp_message(msg.clone(), &mut self.writer, &mut self.lifecycle, &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None).unwrap()
     }
 
     fn parse_response(&mut self) -> Value {
@@ -80,19 +77,35 @@ fn test_type_hierarchy_subtypes_reference_without_matching_impl_line_ignored() {
 
     let mut writer = IndexWriter::new("nonimplref_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "ArgTrait".to_string(), path: "nonimplref_sub_crate::ArgTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 19,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ArgTrait".to_string(),
+        path: "nonimplref_sub_crate::ArgTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 19,
     });
     // Reference in a function parameter
     writer.add_reference(RawReference {
         file: lib_str.clone(),
-        start_line: 3, start_col: 18, end_line: 3, end_col: 26,
-        target_def_id: Some(1), target_path: "nonimplref_sub_crate::ArgTrait".to_string(),
+        start_line: 3,
+        start_col: 18,
+        end_line: 3,
+        end_col: 26,
+        target_def_id: Some(1),
+        target_path: "nonimplref_sub_crate::ArgTrait".to_string(),
         target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Trait, is_write: false, is_macro_expansion: false,
+        target_unit: None,
+        target_line: 1,
+        target_col: 1,
+        kind: DefKind::Trait,
+        is_write: false,
+        is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -121,40 +134,88 @@ fn test_type_hierarchy_subtypes_consecutive_requests_different_traits() {
 
     let mut writer = IndexWriter::new("consec_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "FirstTrait".to_string(), path: "consec_sub_crate::FirstTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 21,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "FirstTrait".to_string(),
+        path: "consec_sub_crate::FirstTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 21,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "SecondTrait".to_string(), path: "consec_sub_crate::SecondTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 22,
+        def_id: 2,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "SecondTrait".to_string(),
+        path: "consec_sub_crate::SecondTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 22,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "TargetAlpha".to_string(), path: "consec_sub_crate::TargetAlpha".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 3, start_col: 1, end_line: 3, end_col: 20,
+        def_id: 3,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TargetAlpha".to_string(),
+        path: "consec_sub_crate::TargetAlpha".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 3,
+        start_col: 1,
+        end_line: 3,
+        end_col: 20,
     });
     writer.add_definition(RawDefinition {
-        def_id: 4, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "TargetBeta".to_string(), path: "consec_sub_crate::TargetBeta".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 19,
+        def_id: 4,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "TargetBeta".to_string(),
+        path: "consec_sub_crate::TargetBeta".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 19,
     });
     writer.add_definition(RawDefinition {
-        def_id: 5, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TargetAlpha as FirstTrait>".to_string(), path: "<TargetAlpha as FirstTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 6, start_col: 1, end_line: 6, end_col: 33,
+        def_id: 5,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<TargetAlpha as FirstTrait>".to_string(),
+        path: "<TargetAlpha as FirstTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 6,
+        start_col: 1,
+        end_line: 6,
+        end_col: 33,
     });
     writer.add_definition(RawDefinition {
-        def_id: 6, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<TargetBeta as SecondTrait>".to_string(), path: "<TargetBeta as SecondTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 7, start_col: 1, end_line: 7, end_col: 33,
+        def_id: 6,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<TargetBeta as SecondTrait>".to_string(),
+        path: "<TargetBeta as SecondTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 7,
+        start_col: 1,
+        end_line: 7,
+        end_col: 33,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -198,22 +259,46 @@ fn test_type_hierarchy_subtypes_self_as_struct_not_matched() {
 
     let mut writer = IndexWriter::new("roleinv_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "AnyTrait".to_string(), path: "roleinv_sub_crate::AnyTrait".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 19,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "AnyTrait".to_string(),
+        path: "roleinv_sub_crate::AnyTrait".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 19,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "MyStruct".to_string(), path: "roleinv_sub_crate::MyStruct".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 17,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyStruct".to_string(),
+        path: "roleinv_sub_crate::MyStruct".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 17,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<MyStruct as AnyTrait>".to_string(), path: "<MyStruct as AnyTrait>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 29,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<MyStruct as AnyTrait>".to_string(),
+        path: "<MyStruct as AnyTrait>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 29,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 
@@ -243,22 +328,46 @@ fn test_type_hierarchy_subtypes_trait_with_lifetime_bounds() {
 
     let mut writer = IndexWriter::new("lt_sub_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Trait, visibility: 1, is_macro_expansion: false,
-        name: "BorrowedView".to_string(), path: "lt_sub_crate::BorrowedView".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 23,
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "BorrowedView".to_string(),
+        path: "lt_sub_crate::BorrowedView".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 23,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Struct, visibility: 1, is_macro_expansion: false,
-        name: "ViewHolder".to_string(), path: "lt_sub_crate::ViewHolder".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 25,
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "ViewHolder".to_string(),
+        path: "lt_sub_crate::ViewHolder".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 25,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Impl, visibility: 1, is_macro_expansion: false,
-        name: "<ViewHolder as BorrowedView>".to_string(), path: "<ViewHolder as BorrowedView>".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 4, end_col: 51,
+        def_id: 3,
+        kind: DefKind::Impl,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "<ViewHolder as BorrowedView>".to_string(),
+        path: "<ViewHolder as BorrowedView>".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 4,
+        start_col: 1,
+        end_line: 4,
+        end_col: 51,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
 

@@ -68,14 +68,7 @@ fn test_workspace_symbol_resolve_multi_crate_second_shard_when_first_lacks() {
 fn test_workspace_symbol_resolve_container_name_deep_nested_module() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_deep_res", "0.1.0").unwrap();
-    ws.add_source_file_with_prefix_defs(
-        "pkg_deep_res",
-        "src/a/b/c.rs",
-        "pub struct «DeepNestRecord»;\n",
-        "pkg_deep_res::a::b::c",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_prefix_defs("pkg_deep_res", "src/a/b/c.rs", "pub struct «DeepNestRecord»;\n", "pkg_deep_res::a::b::c", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -92,13 +85,7 @@ fn test_workspace_symbol_resolve_container_name_deep_nested_module() {
 fn test_workspace_symbol_resolve_utf16_surrogate_emoji_offset() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_utf16_res", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_utf16_res",
-        "src/lib.rs",
-        "// Emoji line: 🦀🦀\npub struct «EmojiTarget»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_utf16_res", "src/lib.rs", "// Emoji line: 🦀🦀\npub struct «EmojiTarget»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -117,13 +104,7 @@ fn test_workspace_symbol_resolve_utf16_surrogate_emoji_offset() {
 fn test_workspace_symbol_resolve_crlf_offsets_preserved() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_crlf_res", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_crlf_res",
-        "src/lib.rs",
-        "pub struct «CrlfTarget»;\r\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_crlf_res", "src/lib.rs", "pub struct «CrlfTarget»;\r\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -140,13 +121,7 @@ fn test_workspace_symbol_resolve_crlf_offsets_preserved() {
 fn test_workspace_symbol_resolve_macro_def_kind() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_macro_res", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_macro_res",
-        "src/lib.rs",
-        "macro_rules! «my_macro» { () => {} }\n",
-        DefKind::Macro,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_macro_res", "src/lib.rs", "macro_rules! «my_macro» { () => {} }\n", DefKind::Macro).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -164,13 +139,7 @@ fn test_workspace_symbol_resolve_macro_def_kind() {
 fn test_workspace_symbol_resolve_union_def_kind() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_union_res", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_union_res",
-        "src/lib.rs",
-        "pub union «ResolvedUnion» { f: f32, u: u32 }\n",
-        DefKind::Union,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_union_res", "src/lib.rs", "pub union «ResolvedUnion» { f: f32, u: u32 }\n", DefKind::Union).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -188,13 +157,7 @@ fn test_workspace_symbol_resolve_union_def_kind() {
 fn test_workspace_symbol_resolve_id_preservation() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_id_pres", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_id_pres",
-        "src/lib.rs",
-        "pub struct «IdPreserveTarget»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_id_pres", "src/lib.rs", "pub struct «IdPreserveTarget»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -215,13 +178,7 @@ fn test_workspace_symbol_resolve_id_preservation() {
 fn test_workspace_symbol_resolve_client_version_field_preservation() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_ver_pres", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_ver_pres",
-        "src/lib.rs",
-        "pub struct «VersionedSymbol»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_ver_pres", "src/lib.rs", "pub struct «VersionedSymbol»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 

@@ -29,11 +29,7 @@ fn test_cache_helpers() {
 
 #[test]
 fn test_format_struct_accessors() {
-    let fe = FileEntry {
-        path_offset: 12,
-        _pad: 0,
-        source_hash: 12345,
-    };
+    let fe = FileEntry { path_offset: 12, _pad: 0, source_hash: 12345 };
     assert_eq!(fe.path_offset(), 12);
     assert_eq!(fe.source_hash(), 12345);
 
@@ -74,17 +70,7 @@ fn test_format_struct_accessors() {
     assert_eq!(hdr_from.unit_key_offset(), 42);
     assert_eq!(hdr_from.generation_offset(), 84);
 
-    let def = DefEntry {
-        def_id: 1,
-        name_offset: 10,
-        path_offset: 20,
-        sig_offset: 30,
-        span: Span::new(0, 1, 1, 2, 2),
-        kind: 1,
-        visibility: 0,
-        flags: 1,
-        _pad: 0,
-    };
+    let def = DefEntry { def_id: 1, name_offset: 10, path_offset: 20, sig_offset: 30, span: Span::new(0, 1, 1, 2, 2), kind: 1, visibility: 0, flags: 1, _pad: 0 };
     let def_le = def.to_le();
     let def_from = def_le.from_le();
     assert_eq!(def.def_id, def_from.def_id);
@@ -110,21 +96,13 @@ fn test_format_struct_accessors() {
     assert_eq!(r_from.target_col(), 4);
     assert!(r_from.is_macro_expansion());
 
-    let ty = TypeEntry {
-        span: Span::new(0, 1, 1, 2, 2),
-        type_offset: 50,
-        owner_path_offset: 120,
-    };
+    let ty = TypeEntry { span: Span::new(0, 1, 1, 2, 2), type_offset: 50, owner_path_offset: 120 };
     let ty_le = ty.to_le();
     let ty_from = ty_le.from_le();
     assert_eq!(ty.type_offset, ty_from.type_offset);
     assert_eq!(ty.owner_path_offset, ty_from.owner_path_offset);
 
-    let h_entry = HashIndexEntry {
-        hash: 9999,
-        index: 7,
-        _pad: [0; 4],
-    };
+    let h_entry = HashIndexEntry { hash: 9999, index: 7, _pad: [0; 4] };
     let h_le = h_entry.to_le();
     let h_from = h_le.from_le();
     assert_eq!(h_from.hash(), 9999);
@@ -178,10 +156,7 @@ fn test_resolve_cache_dir_and_object_path() {
     let _lock = crate::workspace::ENV_LOCK.lock().unwrap();
     std::env::set_var("RIDX_CACHE_DIR", "/custom/ridx_cache");
 
-    assert_eq!(
-        resolve_cache_dir(),
-        std::path::PathBuf::from("/custom/ridx_cache")
-    );
+    assert_eq!(resolve_cache_dir(), std::path::PathBuf::from("/custom/ridx_cache"));
     std::env::remove_var("RIDX_CACHE_DIR");
 
     std::env::set_var("XDG_CACHE_HOME", "/custom/xdg");
@@ -207,10 +182,7 @@ fn test_resolve_cache_dir_and_object_path() {
     assert_eq!(obj1, std::path::PathBuf::from("/cache/objects/00/a.ridx"));
 
     let obj2 = cache_object_path(Path::new("/cache"), "12345");
-    assert_eq!(
-        obj2,
-        std::path::PathBuf::from("/cache/objects/12/12345.ridx")
-    );
+    assert_eq!(obj2, std::path::PathBuf::from("/cache/objects/12/12345.ridx"));
 }
 
 #[test]
@@ -232,10 +204,7 @@ fn test_join_resolving_overlap_variants() {
     let _ = std::fs::create_dir_all(temp.join("src"));
     let test_file = temp.join("src/main.rs");
     let _ = std::fs::write(&test_file, b"fn main() {}");
-    assert_eq!(
-        join_resolving_overlap(&temp, Path::new("src/main.rs")),
-        test_file
-    );
+    assert_eq!(join_resolving_overlap(&temp, Path::new("src/main.rs")), test_file);
     let _ = std::fs::remove_dir_all(&temp);
 
     // Span contains with mismatched file_id (line 418)
@@ -304,36 +273,26 @@ fn test_index_writer_golden_bytes() {
     w.add_file_hash("src/lib.rs", 0x1111_2222_3333_4444);
     w.add_file_hash("src/model.rs", 0x5555_6666_7777_8888);
     w.add_file_hash("src/util.rs", 0x9999_aaaa_bbbb_cccc);
-    let mk_def =
-        |id, kind, vis, mac, path: &str, sig: Option<&str>, f: &str, l: u32| RawDefinition {
-            def_id: id,
-            kind,
-            visibility: vis,
-            is_macro_expansion: mac,
-            name: path.rsplit("::").next().unwrap().into(),
-            path: path.into(),
-            signature: sig.map(Into::into),
-            file: f.into(),
-            start_line: l,
-            start_col: 1,
-            end_line: l + 2,
-            end_col: 2,
-        };
+    let mk_def = |id, kind, vis, mac, path: &str, sig: Option<&str>, f: &str, l: u32| RawDefinition {
+        def_id: id,
+        kind,
+        visibility: vis,
+        is_macro_expansion: mac,
+        name: path.rsplit("::").next().unwrap().into(),
+        path: path.into(),
+        signature: sig.map(Into::into),
+        file: f.into(),
+        start_line: l,
+        start_col: 1,
+        end_line: l + 2,
+        end_col: 2,
+    };
     let (p1, s1) = ("golden_crate::model::Widget", Some("pub struct Widget"));
-    let (p2, s2) = (
-        "golden_crate::model::Widget::render",
-        Some("pub fn render(&self) -> usize"),
-    );
-    let (p3, s3) = (
-        "golden_crate::util::helper",
-        Some("pub(crate) fn helper(x: u32) -> u32"),
-    );
+    let (p2, s2) = ("golden_crate::model::Widget::render", Some("pub fn render(&self) -> usize"));
+    let (p3, s3) = ("golden_crate::util::helper", Some("pub(crate) fn helper(x: u32) -> u32"));
     let (m, p4) = ("src/model.rs", "golden_crate::Widget");
     w.add_definition(mk_def(1, DefKind::Struct, 0, false, p1, s1, m, 1));
-    w.add_definition_with_owners(
-        mk_def(2, DefKind::AssocFn, 0, false, p2, s2, m, 12),
-        vec![p1.into()],
-    );
+    w.add_definition_with_owners(mk_def(2, DefKind::AssocFn, 0, false, p2, s2, m, 12), vec![p1.into()]);
     w.add_definition(mk_def(3, DefKind::Fn, 1, true, p3, s3, "src/util.rs", 3));
     let d4 = mk_def(4, DefKind::Use, 0, false, p4, None, "src/lib.rs", 5);
     w.add_reexport_with_owners(d4, vec!["golden_crate".into()]);
@@ -356,14 +315,7 @@ fn test_index_writer_golden_bytes() {
     let u_key = Some("golden_crate-0123456789abcdef");
     w.add_reference(mk_ref(10, 11, 1, p1, u_key, 1, 1, DefKind::Struct, false));
     w.add_reference(mk_ref(11, 15, 2, p2, None, 12, 5, DefKind::AssocFn, true));
-    let mk_ty = |f: &str, l, c2, name: &str| RawType {
-        file: f.into(),
-        start_line: l,
-        start_col: 5,
-        end_line: l,
-        end_col: c2,
-        type_name: name.into(),
-    };
+    let mk_ty = |f: &str, l, c2, name: &str| RawType { file: f.into(), start_line: l, start_col: 5, end_line: l, end_col: c2, type_name: name.into() };
     w.add_type_with_owner(mk_ty("src/lib.rs", 10, 20, p1), Some(p1.into()));
     w.add_type(mk_ty("src/util.rs", 4, 6, "u32"));
     w.add_deref(p1, "golden_crate::util::Target");

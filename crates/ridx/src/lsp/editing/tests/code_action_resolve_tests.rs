@@ -146,10 +146,7 @@ fn test_code_action_resolve_version_conflict_modified_returns_content_modified()
     });
 
     let err = handle_code_action_resolve(&req, None, &overlay_mgr).unwrap_err();
-    assert_eq!(
-        err.code, CONTENT_MODIFIED,
-        "Stale action resolution after document change must return ContentModified (-32801)"
-    );
+    assert_eq!(err.code, CONTENT_MODIFIED, "Stale action resolution after document change must return ContentModified (-32801)");
 }
 
 #[test]
@@ -288,24 +285,14 @@ fn test_code_action_resolve_closed_file_disk_modified_returns_content_modified()
 
     // 1. Resolve succeeds while disk content hash matches
     let res = handle_code_action_resolve(&req, None, &overlay_mgr);
-    assert!(
-        res.is_ok(),
-        "Resolve should succeed when disk content matches hash"
-    );
+    assert!(res.is_ok(), "Resolve should succeed when disk content matches hash");
 
     // 2. Modify disk content
-    std::fs::write(
-        &file_path,
-        "use b::B;\nuse a::A;\n// modified\nfn main() {}\n",
-    )
-    .unwrap();
+    std::fs::write(&file_path, "use b::B;\nuse a::A;\n// modified\nfn main() {}\n").unwrap();
 
     // 3. Resolve must fail with ContentModified (-32801)
     let err = handle_code_action_resolve(&req, None, &overlay_mgr).unwrap_err();
-    assert_eq!(
-        err.code, CONTENT_MODIFIED,
-        "Resolving action for modified closed file must return ContentModified error"
-    );
+    assert_eq!(err.code, CONTENT_MODIFIED, "Resolving action for modified closed file must return ContentModified error");
 }
 
 #[test]

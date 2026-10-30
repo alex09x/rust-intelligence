@@ -21,22 +21,10 @@ use serde_json::json;
 fn test_workspace_symbol_cross_crate_disjoint_names() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("crate_alpha", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "crate_alpha",
-        "src/lib.rs",
-        "pub struct «RecordAlpha»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("crate_alpha", "src/lib.rs", "pub struct «RecordAlpha»;\n", DefKind::Struct).unwrap();
 
     ws.add_crate("crate_beta", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "crate_beta",
-        "src/lib.rs",
-        "pub struct «RecordBeta»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("crate_beta", "src/lib.rs", "pub struct «RecordBeta»;\n", DefKind::Struct).unwrap();
 
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
@@ -56,13 +44,7 @@ fn test_workspace_symbol_cross_crate_disjoint_names() {
 fn test_workspace_symbol_container_name_root_module() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_root_mod", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_root_mod",
-        "src/lib.rs",
-        "pub struct «RootStruct»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_root_mod", "src/lib.rs", "pub struct «RootStruct»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -80,14 +62,7 @@ fn test_workspace_symbol_container_name_root_module() {
 fn test_workspace_symbol_container_name_single_submodule() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_submod", "0.1.0").unwrap();
-    ws.add_source_file_with_prefix_defs(
-        "pkg_submod",
-        "src/storage.rs",
-        "pub struct «StorageEngine»;\n",
-        "pkg_submod::storage",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_prefix_defs("pkg_submod", "src/storage.rs", "pub struct «StorageEngine»;\n", "pkg_submod::storage", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -105,13 +80,7 @@ fn test_workspace_symbol_container_name_single_submodule() {
 fn test_workspace_symbol_uri_scheme_and_prefix() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_uri_check", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_uri_check",
-        "src/lib.rs",
-        "pub struct «TargetEntity»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_uri_check", "src/lib.rs", "pub struct «TargetEntity»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -130,13 +99,7 @@ fn test_workspace_symbol_uri_scheme_and_prefix() {
 fn test_workspace_symbol_range_start_end_valid() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_range_val", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_range_val",
-        "src/lib.rs",
-        "pub struct «ValidRangeRecord»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_range_val", "src/lib.rs", "pub struct «ValidRangeRecord»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -158,20 +121,8 @@ fn test_workspace_symbol_range_start_end_valid() {
 fn test_workspace_symbol_multi_file_same_crate() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_multifile", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_multifile",
-        "src/lib.rs",
-        "pub struct «ItemInLib»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_multifile",
-        "src/models.rs",
-        "pub struct «ItemInModels»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_multifile", "src/lib.rs", "pub struct «ItemInLib»;\n", DefKind::Struct).unwrap();
+    ws.add_source_file_with_defs("pkg_multifile", "src/models.rs", "pub struct «ItemInModels»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -190,13 +141,7 @@ fn test_workspace_symbol_multi_file_same_crate() {
 fn test_workspace_symbol_empty_query_lists_all_symbols() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_all_sym", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_all_sym",
-        "src/lib.rs",
-        "pub struct «SymOne»;\npub struct «SymTwo»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_all_sym", "src/lib.rs", "pub struct «SymOne»;\npub struct «SymTwo»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
@@ -213,13 +158,7 @@ fn test_workspace_symbol_empty_query_lists_all_symbols() {
 fn test_workspace_symbol_missing_query_field_treated_as_empty() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_missing_q", "0.1.0").unwrap();
-    ws.add_source_file_with_defs(
-        "pkg_missing_q",
-        "src/lib.rs",
-        "pub struct «DefaultItem»;\n",
-        DefKind::Struct,
-    )
-    .unwrap();
+    ws.add_source_file_with_defs("pkg_missing_q", "src/lib.rs", "pub struct «DefaultItem»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 

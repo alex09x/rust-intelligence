@@ -13,23 +13,15 @@ use super::*;
 pub(crate) fn is_immutable_package(manifest_dir: &Path) -> bool {
     if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
         let ch = Path::new(&cargo_home);
-        if manifest_dir.starts_with(ch.join("registry")) || manifest_dir.starts_with(ch.join("git"))
-        {
+        if manifest_dir.starts_with(ch.join("registry")) || manifest_dir.starts_with(ch.join("git")) {
             return true;
         }
     }
     let s = manifest_dir.to_string_lossy();
-    s.contains("/.cargo/registry/")
-        || s.contains("\\.cargo\\registry\\")
-        || s.contains("/.cargo/git/")
-        || s.contains("\\.cargo\\git\\")
+    s.contains("/.cargo/registry/") || s.contains("\\.cargo\\registry\\") || s.contains("/.cargo/git/") || s.contains("\\.cargo\\git\\")
 }
 
-pub(crate) fn collect_file_hashes<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    package_root: Option<&Path>,
-    manifest_dir: Option<&Path>,
-) -> std::collections::HashMap<String, u64> {
+pub(crate) fn collect_file_hashes<'tcx>(tcx: TyCtxt<'tcx>, package_root: Option<&Path>, manifest_dir: Option<&Path>) -> std::collections::HashMap<String, u64> {
     let mut hashes = std::collections::HashMap::new();
     let root_scope = package_root.or(manifest_dir);
     let source_map = tcx.sess.source_map();
@@ -60,8 +52,7 @@ pub(crate) fn collect_file_hashes<'tcx>(
             Some(ridx_format::normalized_source_hash(src.as_bytes()))
         } else {
             let p = Path::new(&name_str);
-            hash_file_contents(p)
-                .or_else(|| manifest_dir.and_then(|m| hash_file_contents(&m.join(p))))
+            hash_file_contents(p).or_else(|| manifest_dir.and_then(|m| hash_file_contents(&m.join(p))))
         };
 
         if let Some(h) = hash_opt {
@@ -87,24 +78,12 @@ pub(crate) fn collect_file_hashes<'tcx>(
     hashes
 }
 
-pub(crate) fn write_sidecar_metadata(
-    deps_dir: &Path,
-    crate_name: &str,
-    suffix: &str,
-    stable_crate_id: u64,
-    dep_info: &serde_json::Value,
-) {
+pub(crate) fn write_sidecar_metadata(deps_dir: &Path, crate_name: &str, suffix: &str, stable_crate_id: u64, dep_info: &serde_json::Value) {
     let content = serde_json::to_string_pretty(dep_info).unwrap_or_default();
     // 1. By crate name + suffix (e.g. syn-3d995041387dd824.json or serde.json)
-    let _ = fs::write(
-        deps_dir.join(format!("{crate_name}{suffix}.json")),
-        &content,
-    );
+    let _ = fs::write(deps_dir.join(format!("{crate_name}{suffix}.json")), &content);
     // 2. By crate name + stable crate id (e.g. syn_a1b2c3d4e5f60718.json)
-    let _ = fs::write(
-        deps_dir.join(format!("{crate_name}_{stable_crate_id:016x}.json")),
-        &content,
-    );
+    let _ = fs::write(deps_dir.join(format!("{crate_name}_{stable_crate_id:016x}.json")), &content);
     // 3. By bare crate name (only if it does not exist yet)
     let bare = deps_dir.join(format!("{crate_name}.json"));
     if !bare.is_file() {
@@ -132,9 +111,7 @@ fn load_target_kind_from_env(entry_path: &Path) -> Option<String> {
 }
 
 pub(crate) fn determine_target_kind(compiler_args: &[String]) -> ridx_format::TargetKind {
-    let entry_rs = compiler_args
-        .iter()
-        .find(|a| !a.starts_with('-') && a.ends_with(".rs"));
+    let entry_rs = compiler_args.iter().find(|a| !a.starts_with('-') && a.ends_with(".rs"));
 
     let base_kind = entry_rs.and_then(|entry| {
         let p = Path::new(entry);

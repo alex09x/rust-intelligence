@@ -28,12 +28,7 @@ use impl_line::{is_head_position, is_impl_header};
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
-pub fn handle_definition(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
@@ -79,9 +74,7 @@ pub fn handle_definition(
         if query_line > 0 {
             if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
                 let resolved_path = def.resolved_path();
-                if matches!(def.kind, DefKind::Mod | DefKind::Use | DefKind::ExternCrate)
-                    && !def.name.is_empty()
-                {
+                if matches!(def.kind, DefKind::Mod | DefKind::Use | DefKind::ExternCrate) && !def.name.is_empty() {
                     if let Some(mod_file) = resolve_backing_module_file(ws, &def, &resolved_path) {
                         if let Some(mod_str) = mod_file.to_str() {
                             return json!({
@@ -96,9 +89,7 @@ pub fn handle_definition(
                 }
                 let path_str = resolved_path.to_str().unwrap_or(def.file);
                 let uri = path_to_uri(path_str);
-                let (start_line, end_line, start_char, end_char) = if let Some(target_ov) =
-                    overlay_mgr.get(path_str).filter(|o| o.is_dirty())
-                {
+                let (start_line, end_line, start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str).filter(|o| o.is_dirty()) {
                     let sl = target_ov.map_compiled_to_live(def.start_line, def.start_col);
                     let el = target_ov.map_compiled_to_live(def.end_line, def.end_col);
                     match (sl, el) {
@@ -136,21 +127,13 @@ pub fn handle_definition(
     let ident = overlay_opt.and_then(|ov| ov.get_ident_at(line_1based, col_1based));
     let path_prefix = overlay_opt.and_then(|ov| ov.get_path_prefix_at(line_1based, col_1based));
     if let Some(ident_str) = ident {
-        if let Some(def) =
-            overlay_mgr.find_global_symbol_definition(&file, &ident_str, path_prefix.as_deref())
-        {
+        if let Some(def) = overlay_mgr.find_global_symbol_definition(&file, &ident_str, path_prefix.as_deref()) {
             let path_str = &def.file;
             let uri = path_to_uri(path_str);
             let (start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str) {
-                (
-                    target_ov.char_col_to_utf16_col(def.start_line, def.start_col),
-                    target_ov.char_col_to_utf16_col(def.end_line, def.end_col),
-                )
+                (target_ov.char_col_to_utf16_col(def.start_line, def.start_col), target_ov.char_col_to_utf16_col(def.end_line, def.end_col))
             } else {
-                (
-                    conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col),
-                    conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col),
-                )
+                (conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col), conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col))
             };
             return json!({
                 "uri": uri,
@@ -165,11 +148,7 @@ pub fn handle_definition(
     Value::Null
 }
 
-fn resolve_backing_module_file(
-    ws: &WorkspaceIndex,
-    def: &ridx_format::ResolvedDefinition<'_>,
-    decl_file: &std::path::Path,
-) -> Option<std::path::PathBuf> {
+fn resolve_backing_module_file(ws: &WorkspaceIndex, def: &ridx_format::ResolvedDefinition<'_>, decl_file: &std::path::Path) -> Option<std::path::PathBuf> {
     let mod_name = def.name;
     if def.kind == DefKind::Mod {
         let parent = decl_file.parent()?;
@@ -180,10 +159,7 @@ fn resolve_backing_module_file(
         }
         dirs.push(parent.to_path_buf());
         for dir in &dirs {
-            for cand in [
-                dir.join(format!("{mod_name}.rs")),
-                dir.join(mod_name).join("mod.rs"),
-            ] {
+            for cand in [dir.join(format!("{mod_name}.rs")), dir.join(mod_name).join("mod.rs")] {
                 if cand != decl_file && cand.is_file() {
                     return Some(cand);
                 }
@@ -199,10 +175,7 @@ fn resolve_backing_module_file(
                 }
                 raw_dirs.push(raw_parent.to_path_buf());
                 for dir in &raw_dirs {
-                    for cand in [
-                        dir.join(format!("{mod_name}.rs")),
-                        dir.join(mod_name).join("mod.rs"),
-                    ] {
+                    for cand in [dir.join(format!("{mod_name}.rs")), dir.join(mod_name).join("mod.rs")] {
                         if let Some(cs) = cand.to_str() {
                             if cs != def.file && reader.find_file_id(cs).is_some() {
                                 return Some(cand);
@@ -210,9 +183,7 @@ fn resolve_backing_module_file(
                         }
                     }
                     let sub_prefix = format!("{}/", dir.join(mod_name).display());
-                    if (0..reader.files_count())
-                        .any(|fid| reader.get_file(fid).starts_with(&sub_prefix))
-                    {
+                    if (0..reader.files_count()).any(|fid| reader.get_file(fid).starts_with(&sub_prefix)) {
                         return Some(dir.join(mod_name).join("mod.rs"));
                     }
                 }
@@ -258,11 +229,7 @@ fn is_ident_on_line(text: &str, line_starts: &[usize], line_1based: u32, name: &
     if start_byte > text.len() {
         return false;
     }
-    let end_byte = if line_idx + 1 < line_starts.len() {
-        line_starts[line_idx + 1].min(text.len())
-    } else {
-        text.len()
-    };
+    let end_byte = if line_idx + 1 < line_starts.len() { line_starts[line_idx + 1].min(text.len()) } else { text.len() };
     if start_byte > end_byte {
         return false;
     }
@@ -288,12 +255,7 @@ fn is_ident_on_line(text: &str, line_starts: &[usize], line_1based: u32, name: &
     false
 }
 
-fn is_def_valid_in_overlay(
-    target_ov: &crate::overlay::DocumentOverlay,
-    name: &str,
-    start_line: u32,
-    end_line: u32,
-) -> bool {
+fn is_def_valid_in_overlay(target_ov: &crate::overlay::DocumentOverlay, name: &str, start_line: u32, end_line: u32) -> bool {
     if is_ident_on_line(&target_ov.text, &target_ov.line_starts, start_line, name) {
         return true;
     }
@@ -306,21 +268,11 @@ fn is_def_valid_in_overlay(
     false
 }
 
-pub fn handle_declaration(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_declaration(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     handle_definition(msg, workspace, overlay_mgr, conv)
 }
 
-pub fn handle_implementation(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
+pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
@@ -353,15 +305,8 @@ pub fn handle_implementation(
                 let resolved_path = r.resolved_path();
                 let path_str = resolved_path.to_str().unwrap_or(r.file);
                 if let Ok(content) = std::fs::read_to_string(path_str) {
-                    let line_text = content
-                        .lines()
-                        .nth(r.span.start_line().saturating_sub(1) as usize)
-                        .unwrap_or("");
-                    is_impl_header(line_text)
-                        && is_head_position(
-                            line_text,
-                            r.span.start_col().saturating_sub(1) as usize,
-                        )
+                    let line_text = content.lines().nth(r.span.start_line().saturating_sub(1) as usize).unwrap_or("");
+                    is_impl_header(line_text) && is_head_position(line_text, r.span.start_col().saturating_sub(1) as usize)
                 } else {
                     false
                 }
@@ -372,10 +317,8 @@ pub fn handle_implementation(
                 let path_str = resolved_path.to_str().unwrap_or(r.file);
                 let uri = path_to_uri(path_str);
                 let span = r.span;
-                let start_char =
-                    conv.char_col_to_utf16_col(path_str, span.start_line(), span.start_col());
-                let end_char =
-                    conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
+                let start_char = conv.char_col_to_utf16_col(path_str, span.start_line(), span.start_col());
+                let end_char = conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
                 results.push(json!({
                     "uri": uri,
                     "range": {

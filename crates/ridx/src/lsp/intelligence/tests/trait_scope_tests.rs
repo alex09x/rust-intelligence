@@ -182,14 +182,7 @@ fn test_completion_trait_scope_filtering() {
 
         // Type for `val` at line 3, col 5
         writer.add_type_with_owner(
-            RawType {
-                file: src_path.clone(),
-                start_line: 3,
-                start_col: 5,
-                end_line: 3,
-                end_col: 8,
-                type_name: "MyType".to_string(),
-            },
+            RawType { file: src_path.clone(), start_line: 3, start_col: 5, end_line: 3, end_col: 8, type_name: "MyType".to_string() },
             Some("test_traits::MyType".to_string()),
         );
 
@@ -244,43 +237,22 @@ fn test_completion_trait_scope_filtering() {
     let labels: HashSet<&str> = items.iter().filter_map(|i| i["label"].as_str()).collect();
 
     assert!(labels.contains("inherent_op"), "must contain inherent_op");
-    assert!(
-        !labels.contains("new"),
-        "must NOT contain function without self receiver"
-    );
-    assert!(
-        labels.contains("clone"),
-        "must contain canonical prelude trait method clone"
-    );
-    assert!(
-        !labels.contains("special_op"),
-        "must NOT contain non-prelude trait method without import"
-    );
-    assert!(
-        !labels.contains("custom_step"),
-        "must NOT treat custom user Iterator trait as prelude without canonical core path"
-    );
+    assert!(!labels.contains("new"), "must NOT contain function without self receiver");
+    assert!(labels.contains("clone"), "must contain canonical prelude trait method clone");
+    assert!(!labels.contains("special_op"), "must NOT contain non-prelude trait method without import");
+    assert!(!labels.contains("custom_step"), "must NOT treat custom user Iterator trait as prelude without canonical core path");
 
     // 2. With reference to SpecialTrait: special_op is now present
     let ws_with_ref = build_index(true);
     let res_with = handle_completion(&req, Some(&ws_with_ref), &overlay_mgr, &mut conv).unwrap();
     let items_with = res_with["items"].as_array().unwrap();
-    let labels_with: HashSet<&str> = items_with
-        .iter()
-        .filter_map(|i| i["label"].as_str())
-        .collect();
+    let labels_with: HashSet<&str> = items_with.iter().filter_map(|i| i["label"].as_str()).collect();
 
     assert!(labels_with.contains("inherent_op"));
     assert!(!labels_with.contains("new"));
     assert!(labels_with.contains("clone"));
-    assert!(
-        labels_with.contains("special_op"),
-        "must contain non-prelude trait method when imported/referenced"
-    );
-    assert!(
-        !labels_with.contains("custom_step"),
-        "custom trait still not in scope"
-    );
+    assert!(labels_with.contains("special_op"), "must contain non-prelude trait method when imported/referenced");
+    assert!(!labels_with.contains("custom_step"), "custom trait still not in scope");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -312,8 +284,7 @@ fn test_signature_takes_receiver_lifetimes() {
 fn test_collect_file_referenced_traits_single_use() {
     use crate::lsp::intelligence::scope_cache::collect_file_referenced_traits;
 
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_single_use_test_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_single_use_test_{}", std::process::id()));
     let _ = fs::create_dir_all(&temp_dir);
     let ridx_file = temp_dir.join("test.ridx");
 
@@ -378,18 +349,9 @@ fn test_collect_file_referenced_traits_single_use() {
     let ws = WorkspaceIndex::open(&ridx_file).unwrap();
     let traits = collect_file_referenced_traits(&ws, "src/main.rs");
 
-    assert!(
-        traits.contains("MyCustomTrait"),
-        "Expected MyCustomTrait from single use reference"
-    );
-    assert!(
-        traits.contains("test_single_use_crate::traits::MyCustomTrait"),
-        "Expected full trait path from single use reference"
-    );
-    assert!(
-        !traits.contains("MacroExpandedTrait"),
-        "Macro expanded reference must NOT be collected into file_traits"
-    );
+    assert!(traits.contains("MyCustomTrait"), "Expected MyCustomTrait from single use reference");
+    assert!(traits.contains("test_single_use_crate::traits::MyCustomTrait"), "Expected full trait path from single use reference");
+    assert!(!traits.contains("MacroExpandedTrait"), "Macro expanded reference must NOT be collected into file_traits");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

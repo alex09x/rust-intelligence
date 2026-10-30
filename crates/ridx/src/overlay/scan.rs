@@ -83,10 +83,7 @@ pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<
                         line += 1;
                         line_start_byte = i + 1;
                     }
-                    if bytes[i] == b'"'
-                        && i + hashes < n
-                        && (0..hashes).all(|k| bytes[i + 1 + k] == b'#')
-                    {
+                    if bytes[i] == b'"' && i + hashes < n && (0..hashes).all(|k| bytes[i + 1 + k] == b'#') {
                         i += 1 + hashes;
                         break;
                     }

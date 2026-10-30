@@ -125,12 +125,8 @@ pub fn spans_match(span_a: &str, span_b: &str) -> bool {
     if norm_a == norm_b {
         return true;
     }
-    if let (Some((file_a, col_a)), Some((file_b, col_b))) =
-        (norm_a.rsplit_once(':'), norm_b.rsplit_once(':'))
-    {
-        if let (Some((f_a, line_a)), Some((f_b, line_b))) =
-            (file_a.rsplit_once(':'), file_b.rsplit_once(':'))
-        {
+    if let (Some((file_a, col_a)), Some((file_b, col_b))) = (norm_a.rsplit_once(':'), norm_b.rsplit_once(':')) {
+        if let (Some((f_a, line_a)), Some((f_b, line_b))) = (file_a.rsplit_once(':'), file_b.rsplit_once(':')) {
             if f_a == f_b && line_a == line_b {
                 // Exact file and line; allow at most 1-col offset for 0- vs 1-based indexing
                 if let (Ok(c_a), Ok(c_b)) = (col_a.parse::<i64>(), col_b.parse::<i64>()) {
@@ -150,12 +146,8 @@ pub fn spans_match_line_level(span_a: &str, span_b: &str) -> bool {
     if norm_a == norm_b {
         return true;
     }
-    if let (Some((file_a, _col_a)), Some((file_b, _col_b))) =
-        (norm_a.rsplit_once(':'), norm_b.rsplit_once(':'))
-    {
-        if let (Some((f_a, line_a)), Some((f_b, line_b))) =
-            (file_a.rsplit_once(':'), file_b.rsplit_once(':'))
-        {
+    if let (Some((file_a, _col_a)), Some((file_b, _col_b))) = (norm_a.rsplit_once(':'), norm_b.rsplit_once(':')) {
+        if let (Some((f_a, line_a)), Some((f_b, line_b))) = (file_a.rsplit_once(':'), file_b.rsplit_once(':')) {
             if f_a == f_b {
                 if let (Ok(l_a), Ok(l_b)) = (line_a.parse::<i64>(), line_b.parse::<i64>()) {
                     if (l_a - l_b).abs() <= 1 {
@@ -175,36 +167,13 @@ pub struct SetMetrics {
     pub f1: f64,
 }
 
-pub fn calculate_set_metrics(
-    candidate: &HashSet<String>,
-    ground_truth: &HashSet<String>,
-) -> SetMetrics {
+pub fn calculate_set_metrics(candidate: &HashSet<String>, ground_truth: &HashSet<String>) -> SetMetrics {
     if candidate.is_empty() && ground_truth.is_empty() {
-        return SetMetrics {
-            precision: 1.0,
-            recall: 1.0,
-            f1: 1.0,
-        };
+        return SetMetrics { precision: 1.0, recall: 1.0, f1: 1.0 };
     }
     let intersection = candidate.intersection(ground_truth).count() as f64;
-    let prec = if candidate.is_empty() {
-        0.0
-    } else {
-        intersection / (candidate.len() as f64)
-    };
-    let rec = if ground_truth.is_empty() {
-        0.0
-    } else {
-        intersection / (ground_truth.len() as f64)
-    };
-    let f1 = if prec + rec > 0.0 {
-        (2.0 * prec * rec) / (prec + rec)
-    } else {
-        0.0
-    };
-    SetMetrics {
-        precision: prec,
-        recall: rec,
-        f1,
-    }
+    let prec = if candidate.is_empty() { 0.0 } else { intersection / (candidate.len() as f64) };
+    let rec = if ground_truth.is_empty() { 0.0 } else { intersection / (ground_truth.len() as f64) };
+    let f1 = if prec + rec > 0.0 { (2.0 * prec * rec) / (prec + rec) } else { 0.0 };
+    SetMetrics { precision: prec, recall: rec, f1 }
 }

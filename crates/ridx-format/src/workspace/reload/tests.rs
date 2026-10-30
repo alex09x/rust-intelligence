@@ -71,10 +71,7 @@ fn test_reload_format_and_extractor_version_errors() {
 
     let err = ws.reload_if_modified();
     assert!(err.is_err());
-    assert!(err
-        .unwrap_err()
-        .to_string()
-        .contains("Format version mismatch"));
+    assert!(err.unwrap_err().to_string().contains("Format version mismatch"));
 
     // Extractor version mismatch
     let manifest_data_ext = serde_json::json!({
@@ -90,10 +87,7 @@ fn test_reload_format_and_extractor_version_errors() {
 
     let err2 = ws.reload_if_modified();
     assert!(err2.is_err());
-    assert!(err2
-        .unwrap_err()
-        .to_string()
-        .contains("Extractor version mismatch"));
+    assert!(err2.unwrap_err().to_string().contains("Extractor version mismatch"));
 }
 
 #[test]

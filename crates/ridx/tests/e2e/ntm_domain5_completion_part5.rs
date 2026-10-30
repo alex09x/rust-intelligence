@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -81,12 +76,7 @@ fn send_completion_req(
 fn test_completion_utf16_surrogate_pair_column_indexing() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_utf16_completion.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "// 🦀 emoji\nfn sample() {\n    let my_special_var = 1;\n    my_sp\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "// 🦀 emoji\nfn sample() {\n    let my_special_var = 1;\n    my_sp\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -94,12 +84,7 @@ fn test_completion_utf16_surrogate_pair_column_indexing() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["my_special_var"]);
 }
 
@@ -107,12 +92,7 @@ fn test_completion_utf16_surrogate_pair_column_indexing() {
 fn test_completion_in_comment_line_returns_empty_or_items() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_comment_completion.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "// this is a regular comment\nfn foo() {}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "// this is a regular comment\nfn foo() {}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -128,12 +108,7 @@ fn test_completion_in_comment_line_returns_empty_or_items() {
 fn test_completion_in_string_literal_returns_valid_array() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_string_completion.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn run() { let msg = \"hello world\"; }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn run() { let msg = \"hello world\"; }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -149,12 +124,7 @@ fn test_completion_in_string_literal_returns_valid_array() {
 fn test_completion_at_exact_file_boundary_start() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_boundary_start.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "use std::collections::HashMap;\nfn start() {}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "use std::collections::HashMap;\nfn start() {}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -162,12 +132,7 @@ fn test_completion_at_exact_file_boundary_start() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["start"]);
 }
 
@@ -175,12 +140,7 @@ fn test_completion_at_exact_file_boundary_start() {
 fn test_completion_at_exact_file_boundary_end() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_boundary_end.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn finish() {\n    let done = true;\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn finish() {\n    let done = true;\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -188,12 +148,7 @@ fn test_completion_at_exact_file_boundary_end() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["finish", "done"]);
 }
 
@@ -201,12 +156,7 @@ fn test_completion_at_exact_file_boundary_end() {
 fn test_completion_data_field_for_resolve_request() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_data_field.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn helper() {}\nfn main() { hel }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn helper() {}\nfn main() { hel }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -226,12 +176,7 @@ fn test_completion_data_field_for_resolve_request() {
 fn test_completion_deprecated_item_tag_if_applicable() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_deprecated_tag.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "#[deprecated] fn old_func() {}\nfn call() { old }\n",
-    );
+    open_test_file(&mut ov, uri, 1, "#[deprecated] fn old_func() {}\nfn call() { old }\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -239,12 +184,7 @@ fn test_completion_deprecated_item_tag_if_applicable() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["old_func"]);
 }
 
@@ -252,12 +192,7 @@ fn test_completion_deprecated_item_tag_if_applicable() {
 fn test_completion_whitespace_only_line() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_whitespace_line.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn run() {\n    let val = 1;\n    \n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn run() {\n    let val = 1;\n    \n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -265,12 +200,7 @@ fn test_completion_whitespace_only_line() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["run", "val"]);
 }
 
@@ -278,12 +208,7 @@ fn test_completion_whitespace_only_line() {
 fn test_completion_multiline_raw_string_literal() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_raw_string.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn text() {\n    let r = r#\"first line\nsecond line\"#;\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn text() {\n    let r = r#\"first line\nsecond line\"#;\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -299,12 +224,7 @@ fn test_completion_multiline_raw_string_literal() {
 fn test_completion_tab_indentation_column_handling() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_tab_indent.rs";
-    open_test_file(
-        &mut ov,
-        uri,
-        1,
-        "fn tabs() {\n\tlet tab_var = 42;\n\ttab\n}\n",
-    );
+    open_test_file(&mut ov, uri, 1, "fn tabs() {\n\tlet tab_var = 42;\n\ttab\n}\n");
 
     let params = json!({
         "textDocument": { "uri": uri },
@@ -312,11 +232,6 @@ fn test_completion_tab_indentation_column_handling() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    let labels: Vec<&str> = res["result"]["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|it| it["label"].as_str().unwrap())
-        .collect();
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().map(|it| it["label"].as_str().unwrap()).collect();
     assert_eq!(labels, vec!["tabs", "tab_var"]);
 }

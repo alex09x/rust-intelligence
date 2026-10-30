@@ -141,11 +141,7 @@ pub fn base_trait_path(trait_path: &str) -> &str {
 /// E.g. `"core::option::Option<T>"` -> `"core::option::Option"`.
 pub fn base_type_path(type_path: &str) -> &str {
     let s = type_path.trim();
-    let s = if s.starts_with('<') && s.ends_with('>') && s.len() >= 2 {
-        &s[1..s.len() - 1]
-    } else {
-        s
-    };
+    let s = if s.starts_with('<') && s.ends_with('>') && s.len() >= 2 { &s[1..s.len() - 1] } else { s };
     if let Some(pos) = s.find('<') {
         s[..pos].trim_end_matches(':').trim()
     } else {
@@ -308,13 +304,7 @@ pub fn signature_takes_receiver(sig: &str) -> bool {
     let is_lowercase_self = p.starts_with("self");
     let is_capital_self = p.starts_with("Self");
     let is_self = is_lowercase_self || is_capital_self;
-    is_self
-        && (p.len() == 4
-            || p[4..].starts_with(',')
-            || p[4..].starts_with(')')
-            || p[4..].starts_with(':')
-            || p[4..].starts_with(' ')
-            || p[4..].starts_with('<'))
+    is_self && (p.len() == 4 || p[4..].starts_with(',') || p[4..].starts_with(')') || p[4..].starts_with(':') || p[4..].starts_with(' ') || p[4..].starts_with('<'))
 }
 
 pub use super::super::scope_cache::collect_file_referenced_traits;
@@ -328,13 +318,7 @@ pub use super::super::scope_cache::collect_file_referenced_traits;
 /// 3. InScopeTrait if in file-referenced traits (no lookup).
 /// 4. Inherent if matches current_owner from autoderef (no lookup).
 /// 5. OutOfScopeTrait otherwise.
-pub fn categorize_definition(
-    def_kind: DefKind,
-    def_path: &str,
-    current_owner: &str,
-    target_owner: &str,
-    file_traits: &HashSet<String>,
-) -> DefScopeCategory {
+pub fn categorize_definition(def_kind: DefKind, def_path: &str, current_owner: &str, target_owner: &str, file_traits: &HashSet<String>) -> DefScopeCategory {
     if def_kind == DefKind::Field {
         return DefScopeCategory::Field;
     }
@@ -342,8 +326,7 @@ pub fn categorize_definition(
     // 1. Check if the definition's path is an explicit trait implementation:
     // `<SelfType as Trait>::method` or `<impl Trait for SelfType>::method`
     if let Some((trait_ref, self_ty)) = extract_trait_and_self_from_def_path(def_path) {
-        if !type_matches_owner(self_ty, target_owner) && !type_matches_owner(self_ty, current_owner)
-        {
+        if !type_matches_owner(self_ty, target_owner) && !type_matches_owner(self_ty, current_owner) {
             return DefScopeCategory::OutOfScopeTrait;
         }
         if is_in_prelude(trait_ref) {
@@ -351,10 +334,7 @@ pub fn categorize_definition(
         }
         let base = base_trait_path(trait_ref);
         let short = trait_short_name(trait_ref);
-        if file_traits.contains(base)
-            || file_traits.contains(trait_ref)
-            || file_traits.contains(short)
-        {
+        if file_traits.contains(base) || file_traits.contains(trait_ref) || file_traits.contains(short) {
             return DefScopeCategory::InScopeTrait;
         }
         return DefScopeCategory::OutOfScopeTrait;
@@ -378,10 +358,7 @@ pub fn categorize_definition(
         // 3. Trait method in scope via file imports or globs
         let base = base_trait_path(parent_type);
         let short = trait_short_name(parent_type);
-        if file_traits.contains(base)
-            || file_traits.contains(parent_type)
-            || file_traits.contains(short)
-        {
+        if file_traits.contains(base) || file_traits.contains(parent_type) || file_traits.contains(short) {
             return DefScopeCategory::InScopeTrait;
         }
 

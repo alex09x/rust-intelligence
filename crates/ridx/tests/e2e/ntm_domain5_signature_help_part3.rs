@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -90,10 +85,7 @@ fn test_signature_help_array_expression_in_argument() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "label: &str"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "label: &str");
 }
 
 #[test]
@@ -109,10 +101,7 @@ fn test_signature_help_closure_expression_in_argument() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "count: usize"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "count: usize");
 }
 
 #[test]
@@ -128,10 +117,7 @@ fn test_signature_help_generic_type_args_in_argument() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "tag: u32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "tag: u32");
 }
 
 #[test]
@@ -147,10 +133,7 @@ fn test_signature_help_tuple_expression_in_argument() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "third: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "third: i32");
 }
 
 #[test]
@@ -166,10 +149,7 @@ fn test_signature_help_block_expression_in_argument() {
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
     assert_eq!(res["result"]["activeParameter"], 1);
-    assert_eq!(
-        res["result"]["signatures"][0]["parameters"][1]["label"],
-        "b: i32"
-    );
+    assert_eq!(res["result"]["signatures"][0]["parameters"][1]["label"], "b: i32");
 }
 
 #[test]

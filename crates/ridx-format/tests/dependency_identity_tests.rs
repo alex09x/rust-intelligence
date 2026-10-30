@@ -90,38 +90,24 @@ fn test_dependency_shard_loading() {
             }
         ]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
     // 4. Open workspace and verify both local and dependency crates are accessible
-    let ws =
-        WorkspaceIndex::open(&test_dir).expect("failed to open workspace with dependency shards");
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace with dependency shards");
     assert_eq!(ws.crate_count(), 2);
 
     let stats = ws.stats();
     assert_eq!(stats.total_crates, 2);
-    let dep_summary = stats
-        .crate_summaries
-        .iter()
-        .find(|c| c.name == "dep_lib")
-        .unwrap();
+    let dep_summary = stats.crate_summaries.iter().find(|c| c.name == "dep_lib").unwrap();
     assert!(dep_summary.is_dependency);
 
     // Cross-crate query reaches dependency definition
-    let def = ws
-        .find_definition_by_path("dep_lib::DepConfig")
-        .expect("should find dep definition");
+    let def = ws.find_definition_by_path("dep_lib::DepConfig").expect("should find dep definition");
     assert_eq!(def.name, "DepConfig");
 
     // Path resolution for dependency crate
     let resolved = ws.resolve_path_for_crate("dep_lib", def.file);
-    assert_eq!(
-        resolved,
-        PathBuf::from("/cargo/registry/dep_lib-1.2.0/src/lib.rs")
-    );
+    assert_eq!(resolved, PathBuf::from("/cargo/registry/dep_lib-1.2.0/src/lib.rs"));
 
     // Find definition at cursor inside dependency file (given absolute path)
     let def_at = ws.find_definition_at("/cargo/registry/dep_lib-1.2.0/src/lib.rs", 12, 5);
@@ -158,11 +144,7 @@ fn test_reviewer_cursor_keeps_owning_dependency_unit() {
         end_line: 5,
         end_col: 2,
     });
-    writer_local
-        .write_to(&mut BufWriter::new(
-            File::create(var_dir.join("local_app.ridx")).unwrap(),
-        ))
-        .unwrap();
+    writer_local.write_to(&mut BufWriter::new(File::create(var_dir.join("local_app.ridx")).unwrap())).unwrap();
 
     // Both shard A and shard B define `dep::Thing`
     let mut writer_a = IndexWriter::new("dep", "1.0.0");
@@ -180,9 +162,7 @@ fn test_reviewer_cursor_keeps_owning_dependency_unit() {
         end_line: 15,
         end_col: 2,
     });
-    writer_a
-        .write_to(&mut BufWriter::new(File::create(&dep_a_path).unwrap()))
-        .unwrap();
+    writer_a.write_to(&mut BufWriter::new(File::create(&dep_a_path).unwrap())).unwrap();
 
     let mut writer_b = IndexWriter::new("dep", "2.0.0");
     writer_b.add_definition(RawDefinition {
@@ -199,9 +179,7 @@ fn test_reviewer_cursor_keeps_owning_dependency_unit() {
         end_line: 25,
         end_col: 2,
     });
-    writer_b
-        .write_to(&mut BufWriter::new(File::create(&dep_b_path).unwrap()))
-        .unwrap();
+    writer_b.write_to(&mut BufWriter::new(File::create(&dep_b_path).unwrap())).unwrap();
 
     // Manifest with both dependency shards
     let manifest = serde_json::json!({
@@ -230,27 +208,18 @@ fn test_reviewer_cursor_keeps_owning_dependency_unit() {
             }
         ]
     });
-    fs::write(
-        test_dir.join("ridx_manifest.json"),
-        serde_json::to_string_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
 
-    let ws = WorkspaceIndex::open(&test_dir)
-        .expect("failed to open workspace with multi-version dependency shards");
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace with multi-version dependency shards");
 
     // Querying cursor inside dep-b (/registry/dep-b/src/lib.rs at line 20) MUST resolve to unitB, NOT unitA!
-    let def_b = ws
-        .find_definition_at("/registry/dep-b/src/lib.rs", 20, 1)
-        .expect("should resolve in unit B");
+    let def_b = ws.find_definition_at("/registry/dep-b/src/lib.rs", 20, 1).expect("should resolve in unit B");
     assert_eq!(def_b.name, "Thing");
     assert_eq!(def_b.unit_key, Some("unitB"));
     assert_eq!(def_b.start_line, 20);
 
     // Querying cursor inside dep-a (/registry/dep-a/src/lib.rs at line 10) MUST resolve to unitA!
-    let def_a = ws
-        .find_definition_at("/registry/dep-a/src/lib.rs", 10, 1)
-        .expect("should resolve in unit A");
+    let def_a = ws.find_definition_at("/registry/dep-a/src/lib.rs", 10, 1).expect("should resolve in unit A");
     assert_eq!(def_a.name, "Thing");
     assert_eq!(def_a.unit_key, Some("unitA"));
     assert_eq!(def_a.start_line, 10);

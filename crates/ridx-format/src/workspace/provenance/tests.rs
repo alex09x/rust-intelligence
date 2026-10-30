@@ -36,51 +36,26 @@ fn new_test_dir(prefix: &str) -> TestDir {
 fn test_normalize_path_variants() {
     assert_eq!(normalize_path(Path::new("a/b/../c")), PathBuf::from("a/c"));
     assert_eq!(normalize_path(Path::new("./a/./b")), PathBuf::from("a/b"));
-    assert_eq!(
-        normalize_path(Path::new("/a/b/../../c")),
-        PathBuf::from("/c")
-    );
+    assert_eq!(normalize_path(Path::new("/a/b/../../c")), PathBuf::from("/c"));
     assert_eq!(normalize_path(Path::new("")), PathBuf::from(""));
-    assert_eq!(
-        normalize_path(Path::new("a/../../b")),
-        PathBuf::from("../b")
-    );
+    assert_eq!(normalize_path(Path::new("a/../../b")), PathBuf::from("../b"));
 }
 
 #[test]
 fn test_path_traverses_symlink_parent() {
-    assert!(!path_traverses_symlink_parent(Path::new(
-        "/tmp/normal/path"
-    )));
-    assert!(!path_traverses_symlink_parent(Path::new(
-        "relative/path/../foo"
-    )));
+    assert!(!path_traverses_symlink_parent(Path::new("/tmp/normal/path")));
+    assert!(!path_traverses_symlink_parent(Path::new("relative/path/../foo")));
 }
 
 #[test]
 fn test_file_entry_matches_empty_and_lexical() {
     assert!(!file_entry_matches("", None, Path::new("/tmp/test"), None));
-    assert!(file_entry_matches(
-        "/tmp/foo",
-        None,
-        Path::new("/tmp/foo"),
-        None
-    ));
-    assert!(!file_entry_matches(
-        "/tmp/foo",
-        None,
-        Path::new("/tmp/bar"),
-        None
-    ));
+    assert!(file_entry_matches("/tmp/foo", None, Path::new("/tmp/foo"), None));
+    assert!(!file_entry_matches("/tmp/foo", None, Path::new("/tmp/bar"), None));
 
     let rel_entry = "src/lib.rs";
     let base = Path::new("/workspace");
-    assert!(file_entry_matches(
-        rel_entry,
-        Some(base),
-        Path::new("/workspace/src/lib.rs"),
-        None
-    ));
+    assert!(file_entry_matches(rel_entry, Some(base), Path::new("/workspace/src/lib.rs"), None));
 }
 
 #[test]
@@ -116,13 +91,8 @@ fn test_shard_mtime_and_source_hash_for_file() {
     drop(f);
 
     let ws = WorkspaceIndex::open(&ridx_path).unwrap();
-    assert_eq!(
-        ws.source_hash_for_file(src_file.to_str().unwrap()),
-        Some(hash)
-    );
-    assert!(ws
-        .shard_mtime_for_file(src_file.to_str().unwrap())
-        .is_some());
+    assert_eq!(ws.source_hash_for_file(src_file.to_str().unwrap()), Some(hash));
+    assert!(ws.shard_mtime_for_file(src_file.to_str().unwrap()).is_some());
     assert_eq!(ws.source_hash_for_file("/nonexistent/file.rs"), None);
     assert_eq!(ws.shard_mtime_for_file("/nonexistent/file.rs"), None);
 

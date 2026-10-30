@@ -41,24 +41,13 @@ fn reader_fallback_with_an_enclosing_reference_answers_the_item_inside_it() {
     let (dir, ws) = workspace();
     let reader = &ws.readers()[0];
     let file_id = reader.find_file_id("src/lib.rs").unwrap();
-    let inner = reader
-        .find_innermost_ref_at_file_id(file_id, 5, 14)
-        .unwrap();
-    assert_eq!(
-        reader.get_str(inner.target_path_offset()),
-        "alloc::sync::Arc"
-    );
-    let at_name = ws
-        .find_def_at_in_reader(0, file_id, 5, 14, Some(inner))
-        .unwrap();
+    let inner = reader.find_innermost_ref_at_file_id(file_id, 5, 14).unwrap();
+    assert_eq!(reader.get_str(inner.target_path_offset()), "alloc::sync::Arc");
+    let at_name = ws.find_def_at_in_reader(0, file_id, 5, 14, Some(inner)).unwrap();
     assert_eq!((at_name.path, at_name.kind), ("fx::socket", DefKind::Fn));
     // On no item the reference answers.
-    let inner = reader
-        .find_innermost_ref_at_file_id(file_id, 20, 1)
-        .unwrap();
-    let through_ref = ws
-        .find_def_at_in_reader(0, file_id, 20, 1, Some(inner))
-        .unwrap();
+    let inner = reader.find_innermost_ref_at_file_id(file_id, 20, 1).unwrap();
+    let through_ref = ws.find_def_at_in_reader(0, file_id, 20, 1, Some(inner)).unwrap();
     assert_eq!(through_ref.path, "alloc::sync::Arc");
     let _ = std::fs::remove_dir_all(dir);
 }

@@ -44,23 +44,10 @@ fn setup_server_with_doc(uri: &str, text: &str) -> (LifecycleManager, MultiRootW
     (lc, mr, om)
 }
 
-fn dispatch_request(
-    msg: Value,
-    lifecycle: &mut LifecycleManager,
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut OverlayManager,
-) -> (bool, Value) {
+fn dispatch_request(msg: Value, lifecycle: &mut LifecycleManager, multi_root: &mut MultiRootWorkspace, overlay_mgr: &mut OverlayManager) -> (bool, Value) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     let bytes = out.into_inner();
     (res.unwrap_or(false), extract_response(&bytes))
 }
@@ -80,7 +67,9 @@ fn test_will_save_wait_until_returns_empty_text_edits_array() {
                 "reason": 1
             }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -101,7 +90,9 @@ fn test_will_save_wait_until_preserves_numeric_id() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -121,7 +112,9 @@ fn test_will_save_wait_until_preserves_string_id() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -141,7 +134,9 @@ fn test_will_save_wait_until_reason_manual() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -160,7 +155,9 @@ fn test_will_save_wait_until_reason_after_delay() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 2 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -179,7 +176,9 @@ fn test_will_save_wait_until_reason_focus_out() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 3 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -198,7 +197,9 @@ fn test_will_save_wait_until_missing_reason_safe() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri } }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -221,7 +222,9 @@ fn test_will_save_wait_until_unopened_document() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -244,7 +247,9 @@ fn test_will_save_wait_until_empty_params_safe() {
             "method": "textDocument/willSaveWaitUntil",
             "params": {}
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);
@@ -265,7 +270,9 @@ fn test_will_save_wait_until_does_not_mutate_overlay() {
             "method": "textDocument/willSaveWaitUntil",
             "params": { "textDocument": { "uri": uri }, "reason": 1 }
         }),
-        &mut lc, &mut mr, &mut om,
+        &mut lc,
+        &mut mr,
+        &mut om,
     );
 
     assert_eq!(ok, true);

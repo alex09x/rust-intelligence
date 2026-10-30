@@ -32,12 +32,7 @@ fn extract_response(out: &[u8]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-fn setup_initialized_server() -> (
-    MultiRootWorkspace,
-    OverlayManager,
-    LifecycleManager,
-    Arc<Mutex<HashSet<serde_json::Value>>>,
-) {
+fn setup_initialized_server() -> (MultiRootWorkspace, OverlayManager, LifecycleManager, Arc<Mutex<HashSet<serde_json::Value>>>) {
     let mut mr = MultiRootWorkspace::new();
     let mut ov = OverlayManager::new();
     let mut lc = LifecycleManager::new();
@@ -193,16 +188,19 @@ fn test_inline_value_response_is_json_array() {
     open_test_file(&mut ov, uri, 1, "let test_resp = 0;\n");
 
     let res = send_inline_val_req(uri, 0, 0, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(res["result"], json!([
-        {
-            "caseSensitiveLookup": true,
-            "range": {
-                "start": { "line": 0, "character": 4 },
-                "end": { "line": 0, "character": 13 }
-            },
-            "variableName": "test_resp"
-        }
-    ]));
+    assert_eq!(
+        res["result"],
+        json!([
+            {
+                "caseSensitiveLookup": true,
+                "range": {
+                    "start": { "line": 0, "character": 4 },
+                    "end": { "line": 0, "character": 13 }
+                },
+                "variableName": "test_resp"
+            }
+        ])
+    );
 }
 
 #[test]

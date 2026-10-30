@@ -42,15 +42,7 @@ fn dispatch_did_change_with_converter(
 ) -> (bool, Vec<u8>) {
     let mut out = Cursor::new(Vec::new());
     let cancelled = Arc::new(Mutex::new(HashSet::new()));
-    let res = dispatch_lsp_message(
-        msg,
-        &mut out,
-        lifecycle,
-        multi_root,
-        overlay_mgr,
-        &cancelled,
-        None,
-    );
+    let res = dispatch_lsp_message(msg, &mut out, lifecycle, multi_root, overlay_mgr, &cancelled, None);
     (res.unwrap_or(false), out.into_inner())
 }
 
@@ -59,7 +51,6 @@ fn test_did_change_out_of_bounds_range_clamped_safely() {
     let uri = "file:///tmp/oob_range.rs";
     let (mut lc, mut mr, mut om) = setup_open_doc(uri, "short");
     let file = uri_to_path(uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -75,9 +66,11 @@ fn test_did_change_out_of_bounds_range_clamped_safely() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "short app");
@@ -88,7 +81,6 @@ fn test_did_change_inverted_range_clamped_safely() {
     let uri = "file:///tmp/inverted_range.rs";
     let (mut lc, mut mr, mut om) = setup_open_doc(uri, "abcdef");
     let file = uri_to_path(uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -104,9 +96,11 @@ fn test_did_change_inverted_range_clamped_safely() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "abcdXef");
@@ -120,17 +114,13 @@ fn test_did_change_invalidates_position_converter_cache() {
     let _ = fs::write(&path, "line1_initial\nline2\n");
     let uri = format!("file://{}", path.display());
     let file = uri_to_path(&uri);
-
     let (mut lc, mut mr, mut om) = setup_open_doc(&uri, "line1_initial\nline2\n");
-
     // Populate converter cache
     let cached = lc.conv.get_line(&file, 1);
     assert_eq!(cached, Some("line1_initial"));
-
     // Write updated content to disk behind converter cache
     let _ = fs::write(&path, "line1_disk_updated\nline2\n");
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_initial"));
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -140,9 +130,11 @@ fn test_did_change_invalidates_position_converter_cache() {
                 "contentChanges": [{ "text": "line1_overlay\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_disk_updated"));
     let _ = fs::remove_dir_all(&temp_dir);
@@ -153,12 +145,10 @@ fn test_did_change_unopened_document_reads_from_disk_fallback() {
     let mut lc = LifecycleManager::new();
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
-
     let path = std::env::temp_dir().join("disk_fallback_change.rs");
     let _ = fs::write(&path, "initial content\n");
     let uri = format!("file://{}", path.display());
     let file = uri_to_path(&uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -174,9 +164,11 @@ fn test_did_change_unopened_document_reads_from_disk_fallback() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     let _ = fs::remove_file(&path);
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
@@ -188,10 +180,8 @@ fn test_did_change_unopened_document_missing_on_disk_uses_empty() {
     let mut lc = LifecycleManager::new();
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
-
     let uri = "file:///tmp/nonexistent_change_doc.rs";
     let file = uri_to_path(uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -207,9 +197,11 @@ fn test_did_change_unopened_document_missing_on_disk_uses_empty() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fresh text\n");
@@ -220,7 +212,6 @@ fn test_did_change_supports_new_text_key_variant() {
     let uri = "file:///tmp/new_text_key.rs";
     let (mut lc, mut mr, mut om) = setup_open_doc(uri, "aaa");
     let file = uri_to_path(uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -236,9 +227,11 @@ fn test_did_change_supports_new_text_key_variant() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "aZa");
@@ -249,7 +242,6 @@ fn test_did_change_supports_text_key_variant() {
     let uri = "file:///tmp/text_key.rs";
     let (mut lc, mut mr, mut om) = setup_open_doc(uri, "aaa");
     let file = uri_to_path(uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -265,9 +257,11 @@ fn test_did_change_supports_text_key_variant() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "aWa");
@@ -280,7 +274,6 @@ fn test_did_change_preserves_other_open_documents() {
     let (mut lc, mut mr, mut om) = setup_open_doc(uri1, "doc one text\n");
     let file2 = uri_to_path(uri2);
     om.open_with_provenance(uri2, &file2, 1, "doc two text\n".to_string(), true);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -290,9 +283,11 @@ fn test_did_change_preserves_other_open_documents() {
                 "contentChanges": [{ "text": "doc one modified\n" }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay2 = om.get(&file2).expect("doc2 must be untouched");
     assert_eq!(overlay2.text, "doc two text\n");
@@ -304,7 +299,6 @@ fn test_did_change_crlf_incremental_replacement() {
     let uri = "file:///tmp/crlf_inc.rs";
     let (mut lc, mut mr, mut om) = setup_open_doc(uri, "first\r\nsecond\r\n");
     let file = uri_to_path(uri);
-
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
             "jsonrpc": "2.0",
@@ -320,9 +314,11 @@ fn test_did_change_crlf_incremental_replacement() {
                 }]
             }
         }),
-        &mut lc, &mut mr, &mut om, None,
+        &mut lc,
+        &mut mr,
+        &mut om,
+        None,
     );
-
     assert_eq!(ok, true);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "first\r\nmodified\r\n");
@@ -332,30 +328,23 @@ fn test_did_change_crlf_incremental_replacement() {
 fn test_did_change_short_overlay_definition_on_past_eof_returns_null() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_trunc", "0.1.0").unwrap();
-
     let mut source_lines = String::new();
     for i in 0..50 {
         source_lines.push_str(&format!("// line {i}\n"));
     }
     source_lines.push_str("pub struct «TruncatedTarget»;\n");
-
-    ws.add_source_file_with_defs("pkg_trunc", "src/lib.rs", &source_lines, DefKind::Struct)
-        .unwrap();
-
+    ws.add_source_file_with_defs("pkg_trunc", "src/lib.rs", &source_lines, DefKind::Struct).unwrap();
     let shard = ws.build_crate_index("pkg_trunc").unwrap();
     let index = WorkspaceIndex::open(&shard).unwrap();
     let lib_uri = ws.file_uri("pkg_trunc", "src/lib.rs").unwrap();
     let lib_path = ws.file_path("pkg_trunc", "src/lib.rs").unwrap();
     let lib_str = lib_path.to_str().unwrap();
-
     let mut lc = LifecycleManager::new();
     let mut mr = MultiRootWorkspace::new();
     let mut om = OverlayManager::new();
     let mut conv = PositionConverter::new();
-
     // 1. Initially open with the full 51-line text (clean overlay)
     om.open_with_provenance(&lib_uri, lib_str, 1, source_lines.clone(), true);
-
     let def_req = json!({
         "jsonrpc": "2.0",
         "id": 1,
@@ -365,12 +354,10 @@ fn test_did_change_short_overlay_definition_on_past_eof_returns_null() {
             "position": { "line": 50, "character": 12 }
         }
     });
-
     // Clean overlay finds the definition at line 50
     let res_clean = handle_definition(&def_req, Some(&index), &om, &mut conv);
     assert_eq!(res_clean["uri"], lib_uri);
     assert_eq!(res_clean["range"]["start"]["line"], 50);
-
     // 2. didChange: document truncated to 1 line, becoming dirty
     let (ok, _) = dispatch_did_change_with_converter(
         json!({
@@ -387,9 +374,7 @@ fn test_did_change_short_overlay_definition_on_past_eof_returns_null() {
         Some(&mut conv),
     );
     assert_eq!(ok, true);
-
     // 3. Request definition at line 50 (which is now past EOF in live overlay)
     let res_dirty = handle_definition(&def_req, Some(&index), &om, &mut conv);
     assert_eq!(res_dirty, Value::Null);
 }
-

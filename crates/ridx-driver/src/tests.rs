@@ -24,133 +24,42 @@ fn test_map_def_kind() {
     assert_eq!(map_def_kind(hir::def::DefKind::Variant), RDefKind::Variant);
     assert_eq!(map_def_kind(hir::def::DefKind::Trait), RDefKind::Trait);
     assert_eq!(map_def_kind(hir::def::DefKind::TyAlias), RDefKind::TyAlias);
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::ForeignTy),
-        RDefKind::ForeignTy
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::TraitAlias),
-        RDefKind::TraitAlias
-    );
+    assert_eq!(map_def_kind(hir::def::DefKind::ForeignTy), RDefKind::ForeignTy);
+    assert_eq!(map_def_kind(hir::def::DefKind::TraitAlias), RDefKind::TraitAlias);
     assert_eq!(map_def_kind(hir::def::DefKind::AssocTy), RDefKind::AssocTy);
     assert_eq!(map_def_kind(hir::def::DefKind::TyParam), RDefKind::TyParam);
     assert_eq!(map_def_kind(hir::def::DefKind::Fn), RDefKind::Fn);
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::Const {
-            is_type_const: false
-        }),
-        RDefKind::Const
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::ConstParam),
-        RDefKind::ConstParam
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::Static {
-            mutability: hir::Mutability::Not,
-            safety: hir::Safety::Safe,
-            nested: false
-        }),
-        RDefKind::Static
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::Ctor(
-            hir::def::CtorOf::Struct,
-            hir::def::CtorKind::Fn
-        )),
-        RDefKind::StructCtor
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::Ctor(
-            hir::def::CtorOf::Variant,
-            hir::def::CtorKind::Fn
-        )),
-        RDefKind::VariantCtor
-    );
+    assert_eq!(map_def_kind(hir::def::DefKind::Const { is_type_const: false }), RDefKind::Const);
+    assert_eq!(map_def_kind(hir::def::DefKind::ConstParam), RDefKind::ConstParam);
+    assert_eq!(map_def_kind(hir::def::DefKind::Static { mutability: hir::Mutability::Not, safety: hir::Safety::Safe, nested: false }), RDefKind::Static);
+    assert_eq!(map_def_kind(hir::def::DefKind::Ctor(hir::def::CtorOf::Struct, hir::def::CtorKind::Fn)), RDefKind::StructCtor);
+    assert_eq!(map_def_kind(hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, hir::def::CtorKind::Fn)), RDefKind::VariantCtor);
     assert_eq!(map_def_kind(hir::def::DefKind::AssocFn), RDefKind::AssocFn);
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::AssocConst {
-            is_type_const: false
-        }),
-        RDefKind::AssocConst
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::Macro(
-            rustc_span::hygiene::MacroKind::Bang.into()
-        )),
-        RDefKind::Macro
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::ExternCrate),
-        RDefKind::ExternCrate
-    );
+    assert_eq!(map_def_kind(hir::def::DefKind::AssocConst { is_type_const: false }), RDefKind::AssocConst);
+    assert_eq!(map_def_kind(hir::def::DefKind::Macro(rustc_span::hygiene::MacroKind::Bang.into())), RDefKind::Macro);
+    assert_eq!(map_def_kind(hir::def::DefKind::ExternCrate), RDefKind::ExternCrate);
     assert_eq!(map_def_kind(hir::def::DefKind::Use), RDefKind::Use);
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::ForeignMod),
-        RDefKind::ForeignMod
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::AnonConst),
-        RDefKind::AnonConst
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::OpaqueTy),
-        RDefKind::OpaqueTy
-    );
+    assert_eq!(map_def_kind(hir::def::DefKind::ForeignMod), RDefKind::ForeignMod);
+    assert_eq!(map_def_kind(hir::def::DefKind::AnonConst), RDefKind::AnonConst);
+    assert_eq!(map_def_kind(hir::def::DefKind::OpaqueTy), RDefKind::OpaqueTy);
     assert_eq!(map_def_kind(hir::def::DefKind::Field), RDefKind::Field);
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::LifetimeParam),
-        RDefKind::LifetimeParam
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::GlobalAsm),
-        RDefKind::GlobalAsm
-    );
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::Impl { of_trait: false }),
-        RDefKind::Impl
-    );
+    assert_eq!(map_def_kind(hir::def::DefKind::LifetimeParam), RDefKind::LifetimeParam);
+    assert_eq!(map_def_kind(hir::def::DefKind::GlobalAsm), RDefKind::GlobalAsm);
+    assert_eq!(map_def_kind(hir::def::DefKind::Impl { of_trait: false }), RDefKind::Impl);
     assert_eq!(map_def_kind(hir::def::DefKind::Closure), RDefKind::Closure);
-    assert_eq!(
-        map_def_kind(hir::def::DefKind::SyntheticCoroutineBody),
-        RDefKind::Other
-    );
+    assert_eq!(map_def_kind(hir::def::DefKind::SyntheticCoroutineBody), RDefKind::Other);
 }
 
 #[test]
 fn test_extract_target_disambiguator() {
-    assert_eq!(
-        extract_target_disambiguator(&["-Cextra-filename=123".to_string()]),
-        Some("123".to_string())
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["-C".to_string(), "extra-filename=456".to_string()]),
-        Some("456".to_string())
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["--crate-type=lib".to_string()]),
-        Some("_lib".to_string())
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["--crate-type".to_string(), "bin".to_string()]),
-        Some("_bin".to_string())
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["-Cextra-filename=".to_string()]),
-        None
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["-C".to_string(), "extra-filename=".to_string()]),
-        None
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["--crate-type=".to_string()]),
-        None
-    );
-    assert_eq!(
-        extract_target_disambiguator(&["--crate-type".to_string(), "".to_string()]),
-        Some("_".to_string())
-    );
+    assert_eq!(extract_target_disambiguator(&["-Cextra-filename=123".to_string()]), Some("123".to_string()));
+    assert_eq!(extract_target_disambiguator(&["-C".to_string(), "extra-filename=456".to_string()]), Some("456".to_string()));
+    assert_eq!(extract_target_disambiguator(&["--crate-type=lib".to_string()]), Some("_lib".to_string()));
+    assert_eq!(extract_target_disambiguator(&["--crate-type".to_string(), "bin".to_string()]), Some("_bin".to_string()));
+    assert_eq!(extract_target_disambiguator(&["-Cextra-filename=".to_string()]), None);
+    assert_eq!(extract_target_disambiguator(&["-C".to_string(), "extra-filename=".to_string()]), None);
+    assert_eq!(extract_target_disambiguator(&["--crate-type=".to_string()]), None);
+    assert_eq!(extract_target_disambiguator(&["--crate-type".to_string(), "".to_string()]), Some("_".to_string()));
     assert_eq!(extract_target_disambiguator(&["rustc".to_string()]), None);
 }
 
@@ -170,26 +79,8 @@ fn test_hash_helpers() {
 
 #[test]
 fn test_compute_dependency_unit_key() {
-    let key1 = compute_dependency_unit_key(
-        "my_crate",
-        "0.1.0",
-        Some("abc"),
-        Some(Path::new("/path")),
-        &[
-            "--target".to_string(),
-            "x86_64-unknown-linux-gnu".to_string(),
-        ],
-    );
-    let key2 = compute_dependency_unit_key(
-        "my_crate",
-        "0.2.0",
-        Some("abc"),
-        Some(Path::new("/path")),
-        &[
-            "--target".to_string(),
-            "x86_64-unknown-linux-gnu".to_string(),
-        ],
-    );
+    let key1 = compute_dependency_unit_key("my_crate", "0.1.0", Some("abc"), Some(Path::new("/path")), &["--target".to_string(), "x86_64-unknown-linux-gnu".to_string()]);
+    let key2 = compute_dependency_unit_key("my_crate", "0.2.0", Some("abc"), Some(Path::new("/path")), &["--target".to_string(), "x86_64-unknown-linux-gnu".to_string()]);
     assert_eq!(key1.len(), 16);
     assert_eq!(key2.len(), 16);
     assert_ne!(key1, key2);
@@ -232,23 +123,9 @@ fn test_run_driver_queries() {
     let _ = run_driver(vec!["ridx-driver".into(), "-h".into()]);
     let _ = run_driver(vec!["ridx-driver".into(), "--print".into(), "cfg".into()]);
     let _ = run_driver(vec!["ridx-driver".into(), "--print=cfg".into()]);
-    let _ = run_driver(vec![
-        "ridx-driver".into(),
-        "foo-driver".into(),
-        "rustc".into(),
-        "--version".into(),
-    ]);
-    let _ = run_driver(vec![
-        "ridx-driver".into(),
-        "--crate-name".into(),
-        "build_script_build".into(),
-    ]);
-    let _ = run_driver(vec![
-        "ridx-driver".into(),
-        "rustc".into(),
-        "--crate-name".into(),
-        "build_script_main".into(),
-    ]);
+    let _ = run_driver(vec!["ridx-driver".into(), "foo-driver".into(), "rustc".into(), "--version".into()]);
+    let _ = run_driver(vec!["ridx-driver".into(), "--crate-name".into(), "build_script_build".into()]);
+    let _ = run_driver(vec!["ridx-driver".into(), "rustc".into(), "--crate-name".into(), "build_script_main".into()]);
 }
 
 #[test]
@@ -258,8 +135,7 @@ fn test_driver_index_compilation() {
     std::env::remove_var("CARGO_PKG_VERSION");
     std::env::remove_var("CARGO_HOME");
 
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_driver_compile_test_{}", std::process::id()));
+    let temp_dir = std::env::temp_dir().join(format!("ridx_driver_compile_test_{}", std::process::id()));
     let _ = fs::create_dir_all(&temp_dir);
     let src_file = temp_dir.join("lib.rs");
     let code = r#"
@@ -308,10 +184,7 @@ pub fn compute<T: Greeter>(p: &Point, g: &T) -> i32 {
     fs::create_dir_all(&out_dir).unwrap();
     let rmeta_file = temp_dir.join("libtest_sample.rmeta");
 
-    let sysroot = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .unwrap();
+    let sysroot = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
     let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
 
     let args = vec![
@@ -337,20 +210,12 @@ pub fn compute<T: Greeter>(p: &Point, g: &T) -> i32 {
 #[test]
 fn test_is_immutable_package() {
     let _lock = DRIVER_TEST_LOCK.lock().unwrap();
-    assert!(is_immutable_package(Path::new(
-        "/home/user/.cargo/registry/src/github.com-1ecc6299db9ec823/foo-0.1.0"
-    )));
-    assert!(is_immutable_package(Path::new(
-        "/home/user/.cargo/git/checkouts/bar-12345/abc"
-    )));
-    assert!(!is_immutable_package(Path::new(
-        "/home/user/project/my_crate"
-    )));
+    assert!(is_immutable_package(Path::new("/home/user/.cargo/registry/src/github.com-1ecc6299db9ec823/foo-0.1.0")));
+    assert!(is_immutable_package(Path::new("/home/user/.cargo/git/checkouts/bar-12345/abc")));
+    assert!(!is_immutable_package(Path::new("/home/user/project/my_crate")));
 
     std::env::set_var("CARGO_HOME", "/custom/cargo");
-    assert!(is_immutable_package(Path::new(
-        "/custom/cargo/registry/foo"
-    )));
+    assert!(is_immutable_package(Path::new("/custom/cargo/registry/foo")));
     assert!(is_immutable_package(Path::new("/custom/cargo/git/foo")));
     assert!(!is_immutable_package(Path::new("/custom/cargo/other/foo")));
     std::env::remove_var("CARGO_HOME");
