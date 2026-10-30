@@ -57,7 +57,7 @@ fn test_initialize_basic_root_uri() {
     let resp = extract_response(&out);
     assert_eq!(resp["id"], 1);
     assert_eq!(resp["result"]["serverInfo"]["name"], "ridx");
-    assert_eq!(resp["result"]["serverInfo"]["version"], "0.1.0");
+    assert_eq!(resp["result"]["serverInfo"]["version"], env!("CARGO_PKG_VERSION"));
 }
 
 #[test]

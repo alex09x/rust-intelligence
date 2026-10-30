@@ -1,8 +1,8 @@
 [package]
 name = "ridx"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "CLI code intelligence tool for ultra-fast, zero-memory Rust code navigation"
+description = "Compiler-backed, mmap-indexed CLI and LSP code intelligence tool for Rust"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 license = "MIT OR Apache-2.0"
 

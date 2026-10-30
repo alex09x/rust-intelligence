@@ -287,5 +287,5 @@ fn test_initialize_server_info_exact() {
 
     let val = extract_response(&out);
     assert_eq!(val["result"]["serverInfo"]["name"], "ridx");
-    assert_eq!(val["result"]["serverInfo"]["version"], "0.1.0");
+    assert_eq!(val["result"]["serverInfo"]["version"], env!("CARGO_PKG_VERSION"));
 }

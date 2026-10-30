@@ -16,7 +16,7 @@
 pub const MAGIC: [u8; 4] = *b"RIDX";
 pub const CURRENT_VERSION: u32 = 3;
 pub const CURRENT_FORMAT_VERSION: u32 = 3;
-pub const EXTRACTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const EXTRACTOR_VERSION: &str = "0.1.0";
 
 pub use crate::driver_hash::*;
 
@@ -48,10 +48,7 @@ pub fn resolve_cache_dir() -> std::path::PathBuf {
     if let Ok(home) = std::env::var("HOME") {
         let p = std::path::PathBuf::from(home.trim());
         if !p.as_os_str().is_empty() {
-            return p
-                .join(".cache")
-                .join("ridx")
-                .join(format!("v{}", CURRENT_VERSION));
+            return p.join(".cache").join("ridx").join(format!("v{}", CURRENT_VERSION));
         }
     }
     #[cfg(windows)]
@@ -66,15 +63,8 @@ pub fn resolve_cache_dir() -> std::path::PathBuf {
 
 /// Returns the path to an object shard inside the global cache for a given unit key.
 pub fn cache_object_path(cache_dir: &std::path::Path, unit_key: &str) -> std::path::PathBuf {
-    let prefix = if unit_key.len() >= 2 {
-        &unit_key[..2]
-    } else {
-        "00"
-    };
-    cache_dir
-        .join("objects")
-        .join(prefix)
-        .join(format!("{}.ridx", unit_key))
+    let prefix = if unit_key.len() >= 2 { &unit_key[..2] } else { "00" };
+    cache_dir.join("objects").join(prefix).join(format!("{}.ridx", unit_key))
 }
 
 /// Joins a base root directory with a relative path, resolving any overlapping path prefix.
@@ -105,11 +95,7 @@ pub fn join_resolving_overlap(root: &std::path::Path, rel: &std::path::Path) -> 
 /// Computes a 64-bit FNV-1a hash over source bytes after stripping UTF-8 BOM and normalizing CRLF to LF,
 /// exactly matching rustc's internal SourceFile.src normalization.
 pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
-    let b = if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
-        &bytes[3..]
-    } else {
-        bytes
-    };
+    let b = if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) { &bytes[3..] } else { bytes };
     let mut normalized = Vec::with_capacity(b.len());
     let mut i = 0;
     while i < b.len() {
@@ -170,13 +156,7 @@ pub fn merge_embedded_hashes_authoritative(
     // 1. Drop any conflicting aliases in file_hashes
     file_hashes.retain(|k, &mut v| {
         let p = std::path::Path::new(k);
-        let rel_match = if let Some(root) = source_root {
-            p.strip_prefix(root)
-                .ok()
-                .map(|r| r.to_string_lossy().to_string())
-        } else {
-            None
-        };
+        let rel_match = if let Some(root) = source_root { p.strip_prefix(root).ok().map(|r| r.to_string_lossy().to_string()) } else { None };
         let target_rel = rel_match.as_deref().unwrap_or(k);
         if let Some(&emb_h) = embedded.get(target_rel).or_else(|| embedded.get(k)) {
             v == emb_h

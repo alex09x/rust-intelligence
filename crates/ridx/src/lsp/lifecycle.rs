@@ -71,19 +71,8 @@ impl LifecycleManager {
         self.apply_registry.get_next_id()
     }
 
-    pub fn register_pending_apply(
-        &self,
-        apply_req_id: Value,
-        command_req_id: Option<Value>,
-        total_count: usize,
-        combined_edit: Value,
-    ) {
-        self.apply_registry.register_pending(
-            apply_req_id,
-            command_req_id,
-            total_count,
-            combined_edit,
-        );
+    pub fn register_pending_apply(&self, apply_req_id: Value, command_req_id: Option<Value>, total_count: usize, combined_edit: Value) {
+        self.apply_registry.register_pending(apply_req_id, command_req_id, total_count, combined_edit);
     }
 
     pub fn handle_apply_edit_response(&self, msg: &Value) -> Option<(Option<Value>, Value)> {
@@ -103,23 +92,14 @@ impl LifecycleManager {
         self.state == ServerState::ShutDown
     }
 
-    pub fn handle_initialize(
-        &mut self,
-        msg: &Value,
-    ) -> Result<(Value, Vec<PathBuf>), super::error::LspError> {
+    pub fn handle_initialize(&mut self, msg: &Value) -> Result<(Value, Vec<PathBuf>), super::error::LspError> {
         if self.state != ServerState::Uninitialized {
-            return Err(super::error::LspError::invalid_request(
-                "Server is already initialized",
-            ));
+            return Err(super::error::LspError::invalid_request("Server is already initialized"));
         }
 
         self.state = ServerState::Initialized;
-        self.client_pull_diagnostics =
-            msg["params"]["capabilities"]["textDocument"]["diagnostic"].is_object();
-        self.client_refresh_diagnostics = msg["params"]["capabilities"]["workspace"]["diagnostics"]
-            ["refreshSupport"]
-            .as_bool()
-            .unwrap_or(false);
+        self.client_pull_diagnostics = msg["params"]["capabilities"]["textDocument"]["diagnostic"].is_object();
+        self.client_refresh_diagnostics = msg["params"]["capabilities"]["workspace"]["diagnostics"]["refreshSupport"].as_bool().unwrap_or(false);
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {
@@ -235,7 +215,7 @@ impl LifecycleManager {
             "capabilities": caps,
             "serverInfo": {
                 "name": "ridx",
-                "version": "0.1.0"
+                "version": env!("CARGO_PKG_VERSION")
             }
         });
 
@@ -244,9 +224,7 @@ impl LifecycleManager {
 
     pub fn handle_shutdown(&mut self) -> Result<Value, super::error::LspError> {
         if self.state == ServerState::ShutDown {
-            return Err(super::error::LspError::invalid_request(
-                "Server is already shut down",
-            ));
+            return Err(super::error::LspError::invalid_request("Server is already shut down"));
         }
         self.state = ServerState::ShutDown;
         self.flycheck.shutdown();
@@ -259,9 +237,7 @@ impl LifecycleManager {
         if self.state == ServerState::ShutDown {
             Ok(())
         } else {
-            Err(std::io::Error::other(
-                "exit notification received before shutdown",
-            ))
+            Err(std::io::Error::other("exit notification received before shutdown"))
         }
     }
 
@@ -273,34 +249,22 @@ impl LifecycleManager {
         writer: &mut W,
     ) -> Result<Option<bool>, std::io::Error> {
         if method == "exit" {
-            return self
-                .handle_exit()
-                .map(|_| Some(false))
-                .map_err(|_| std::io::Error::other("exit notification received before shutdown"));
+            return self.handle_exit().map(|_| Some(false)).map_err(|_| std::io::Error::other("exit notification received before shutdown"));
         }
         let req_id = match id {
             Some(r) => r,
             None => return Ok(None),
         };
         if self.is_shutdown() {
-            super::protocol::send_response(
-                writer,
-                &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32600, "message": "Server is shutting down" } }),
-            )?;
+            super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32600, "message": "Server is shutting down" } }))?;
             return Ok(Some(true));
         }
         if !self.is_initialized() && method != "initialize" {
-            super::protocol::send_response(
-                writer,
-                &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32002, "message": "Server not initialized" } }),
-            )?;
+            super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32002, "message": "Server not initialized" } }))?;
             return Ok(Some(true));
         }
         if cancelled_requests.lock().unwrap().remove(req_id) {
-            let _ = super::protocol::send_response(
-                writer,
-                &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32800, "message": "Request cancelled" } }),
-            );
+            let _ = super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32800, "message": "Request cancelled" } }));
             return Ok(Some(true));
         }
         Ok(None)
@@ -382,12 +346,6 @@ mod tests {
         lm1.register_pending_apply(json!(10000), Some(json!(404)), 2, json!({"test": 1}));
         let ack = json!({ "id": 10000, "result": { "applied": true } });
         assert_eq!(lm2.handle_apply_edit_response(&ack), None);
-        assert_eq!(
-            lm1.handle_apply_edit_response(&ack),
-            Some((
-                Some(json!(404)),
-                json!({ "applied": true, "count": 2, "edit": { "test": 1 } })
-            ))
-        );
+        assert_eq!(lm1.handle_apply_edit_response(&ack), Some((Some(json!(404)), json!({ "applied": true, "count": 2, "edit": { "test": 1 } }))));
     }
 }

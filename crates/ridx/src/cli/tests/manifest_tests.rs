@@ -19,6 +19,7 @@ use std::path::PathBuf;
 #[test]
 fn test_manifest_discovery_and_auto_reindexing() {
     let _lock = lock_cli_test();
+    let _ra_guard = EnvGuard::set("RUST_ANALYZER_BIN", "/nonexistent/ra");
     std::env::remove_var("RIDX_INDEX_DIR");
     let (test_dir, dir_str) = create_indexed_workspace();
     let deep_file = test_dir.0.join("a/b/c/nested_file.rs");
@@ -37,11 +38,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
         "workspace_root": test_dir.0.display().to_string(),
         "shards": []
     });
-    fs::write(
-        sub_dir.join("variant_manifest.json"),
-        serde_json::to_string(&v_manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(sub_dir.join("variant_manifest.json"), serde_json::to_string(&v_manifest).unwrap()).unwrap();
 
     let found_vm = find_manifest_for_path(&sub_dir.join("shard.ridx"));
     assert!(found_vm.is_some());
@@ -69,27 +66,11 @@ fn test_manifest_discovery_and_auto_reindexing() {
     let _ = fs::remove_file(&root_manifest);
 
     // 3. CLI commands execution: TypeAt, Hover, Compare
-    run_cli(Commands::TypeAt {
-        arg1: dir_str.clone(),
-        arg2: Some("src/lib.rs:1:1".to_string()),
-        json: false,
-    });
-    run_cli(Commands::TypeAt {
-        arg1: dir_str.clone(),
-        arg2: Some("src/lib.rs:1:1".to_string()),
-        json: true,
-    });
+    run_cli(Commands::TypeAt { arg1: dir_str.clone(), arg2: Some("src/lib.rs:1:1".to_string()), json: false });
+    run_cli(Commands::TypeAt { arg1: dir_str.clone(), arg2: Some("src/lib.rs:1:1".to_string()), json: true });
 
-    run_cli(Commands::Hover {
-        arg1: dir_str.clone(),
-        arg2: Some("src/lib.rs:1:1".to_string()),
-        json: false,
-    });
-    run_cli(Commands::Hover {
-        arg1: dir_str.clone(),
-        arg2: Some("src/lib.rs:1:1".to_string()),
-        json: true,
-    });
+    run_cli(Commands::Hover { arg1: dir_str.clone(), arg2: Some("src/lib.rs:1:1".to_string()), json: false });
+    run_cli(Commands::Hover { arg1: dir_str.clone(), arg2: Some("src/lib.rs:1:1".to_string()), json: true });
 
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
@@ -125,23 +106,13 @@ fn test_manifest_discovery_and_auto_reindexing() {
         "workspace_root": "/nonexistent/workspace/root",
         "shards": []
     });
-    fs::write(
-        test_bad_ws.0.join("variant_manifest.json"),
-        serde_json::to_string(&bad_manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(test_bad_ws.0.join("variant_manifest.json"), serde_json::to_string(&bad_manifest).unwrap()).unwrap();
     let res_bad = try_resolve_workspace(Some(test_bad_ws.0.join("shard.ridx")));
-    assert!(res_bad
-        .unwrap_err()
-        .contains("Cannot find Cargo workspace for index"));
+    assert!(res_bad.unwrap_err().contains("Cannot find Cargo workspace for index"));
 
     // try_resolve_workspace where manifest.workspace_root is empty and find_enclosing_workspace succeeds (line 280)
     let test_empty_root_ws = new_test_dir("empty_root_ws");
-    fs::write(
-            test_empty_root_ws.0.join("Cargo.toml"),
-            "[package]\nname = \"empty_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n",
-        )
-        .unwrap();
+    fs::write(test_empty_root_ws.0.join("Cargo.toml"), "[package]\nname = \"empty_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n").unwrap();
     let empty_src = test_empty_root_ws.0.join("src");
     fs::create_dir_all(&empty_src).unwrap();
     fs::write(empty_src.join("lib.rs"), "pub fn empty_fn() {}\n").unwrap();
@@ -156,11 +127,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
         "workspace_root": "",
         "shards": []
     });
-    fs::write(
-        target_ridx.join("variant_manifest.json"),
-        serde_json::to_string(&empty_root_manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(target_ridx.join("variant_manifest.json"), serde_json::to_string(&empty_root_manifest).unwrap()).unwrap();
     let _ = try_resolve_workspace(Some(target_ridx.join("shard.ridx")));
 
     // Base out dir resolution from parent variants dir (lines 289-305)
@@ -175,21 +142,13 @@ fn test_manifest_discovery_and_auto_reindexing() {
         "workspace_root": "/nonexistent/workspace/root",
         "shards": []
     });
-    fs::write(
-        var_dir.join("variant_manifest.json"),
-        serde_json::to_string(&v1_manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(var_dir.join("variant_manifest.json"), serde_json::to_string(&v1_manifest).unwrap()).unwrap();
     let res_v1 = try_resolve_workspace(Some(var_dir.join("shard.ridx")));
     assert!(res_v1.is_err());
 
     let variants_dir = test_bad_ws.0.join("target2/ridx/variants");
     fs::create_dir_all(&variants_dir).unwrap();
-    fs::write(
-        variants_dir.join("variant_manifest.json"),
-        serde_json::to_string(&v1_manifest).unwrap(),
-    )
-    .unwrap();
+    fs::write(variants_dir.join("variant_manifest.json"), serde_json::to_string(&v1_manifest).unwrap()).unwrap();
     let res_v2 = try_resolve_workspace(Some(variants_dir.join("shard.ridx")));
     assert!(res_v2.is_err());
 
@@ -208,11 +167,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
         let ws_auto = test_auto.0.join("ws");
         let src_auto = ws_auto.join("src");
         fs::create_dir_all(&src_auto).unwrap();
-        fs::write(
-                ws_auto.join("Cargo.toml"),
-                "[package]\nname = \"auto_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n",
-            )
-            .unwrap();
+        fs::write(ws_auto.join("Cargo.toml"), "[package]\nname = \"auto_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n").unwrap();
         fs::write(src_auto.join("lib.rs"), "pub fn auto_fn() {}\n").unwrap();
 
         let _no_deps = EnvGuard::set("RIDX_NO_DEPS", "1");
@@ -248,11 +203,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
             "dependency_shards": [],
             "crates": []
         });
-        fs::write(
-            out_dir.join("ridx_manifest.json"),
-            serde_json::to_string(&v_manifest).unwrap(),
-        )
-        .unwrap();
+        fs::write(out_dir.join("ridx_manifest.json"), serde_json::to_string(&v_manifest).unwrap()).unwrap();
 
         // Point current_dir to out_dir where ridx_manifest.json has workspace_root
         {
@@ -262,21 +213,14 @@ fn test_manifest_discovery_and_auto_reindexing() {
         }
 
         // Test manifest with non-existent workspace_root and no enclosing workspace (lines 405-408)
-        v_manifest["workspace_root"] =
-            serde_json::Value::String("/nonexistent/ws/root".to_string());
+        v_manifest["workspace_root"] = serde_json::Value::String("/nonexistent/ws/root".to_string());
         let isolated_manifest_dir = test_auto.0.join("isolated_manifest");
         fs::create_dir_all(&isolated_manifest_dir).unwrap();
-        fs::write(
-            isolated_manifest_dir.join("ridx_manifest.json"),
-            serde_json::to_string(&v_manifest).unwrap(),
-        )
-        .unwrap();
+        fs::write(isolated_manifest_dir.join("ridx_manifest.json"), serde_json::to_string(&v_manifest).unwrap()).unwrap();
         {
             let _cwd = CwdGuard::change(&isolated_manifest_dir).unwrap();
             let res_isolated = try_resolve_workspace(None);
-            assert!(res_isolated
-                .unwrap_err()
-                .contains("Cannot find Cargo workspace"));
+            assert!(res_isolated.unwrap_err().contains("Cannot find Cargo workspace"));
         }
 
         // Test manifest with empty workspace_root where enclosing workspace exists (line 403)
@@ -285,19 +229,11 @@ fn test_manifest_discovery_and_auto_reindexing() {
         let cur_src = cur_empty_ws.join("src");
         fs::create_dir_all(&cur_src).unwrap();
         fs::write(cur_src.join("lib.rs"), "pub fn cur_fn() {}\n").unwrap();
-        fs::write(
-                cur_empty_ws.join("Cargo.toml"),
-                "[package]\nname = \"cur_empty\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n",
-            )
-            .unwrap();
+        fs::write(cur_empty_ws.join("Cargo.toml"), "[package]\nname = \"cur_empty\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n").unwrap();
         let cur_target_ridx = cur_empty_ws.join("target/ridx");
         fs::create_dir_all(&cur_target_ridx).unwrap();
         v_manifest["workspace_root"] = serde_json::Value::String("".to_string());
-        fs::write(
-            cur_target_ridx.join("ridx_manifest.json"),
-            serde_json::to_string(&v_manifest).unwrap(),
-        )
-        .unwrap();
+        fs::write(cur_target_ridx.join("ridx_manifest.json"), serde_json::to_string(&v_manifest).unwrap()).unwrap();
         {
             let _cwd = CwdGuard::change(&cur_empty_ws).unwrap();
             let _ = try_resolve_workspace(None);
@@ -319,11 +255,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
 
     // Test manifest_dir inside variants/var_id with base_out_dir None (lines 295-300)
     let var_base = new_test_dir("var_base_test");
-    fs::write(
-            var_base.0.join("Cargo.toml"),
-            "[package]\nname = \"var_base\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n",
-        )
-        .unwrap();
+    fs::write(var_base.0.join("Cargo.toml"), "[package]\nname = \"var_base\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[lib]\npath = \"src/lib.rs\"\n").unwrap();
     let var_src = var_base.0.join("src");
     fs::create_dir_all(&var_src).unwrap();
     fs::write(var_src.join("lib.rs"), "pub fn v() {}\n").unwrap();
@@ -349,31 +281,20 @@ fn test_manifest_discovery_and_auto_reindexing() {
         "dependency_shards": [],
         "crates": []
     });
-    fs::write(
-        dev_dir.join("ridx_manifest.json"),
-        serde_json::to_string(&no_base_mf).unwrap(),
-    )
-    .unwrap();
+    fs::write(dev_dir.join("ridx_manifest.json"), serde_json::to_string(&no_base_mf).unwrap()).unwrap();
     let (m_dir, m_obj) = find_manifest_for_path(&dev_dir).unwrap();
     assert_eq!(m_dir, dev_dir);
     assert_eq!(m_obj.base_out_dir, None);
     let _ = try_resolve_workspace(Some(dev_dir));
 
     // Also test with manifest_dir ending in variants (line 304)
-    fs::write(
-        variants_dir.join("ridx_manifest.json"),
-        serde_json::to_string(&no_base_mf).unwrap(),
-    )
-    .unwrap();
+    fs::write(variants_dir.join("ridx_manifest.json"), serde_json::to_string(&no_base_mf).unwrap()).unwrap();
     let (v_dir, _) = find_manifest_for_path(&variants_dir).unwrap();
     assert_eq!(v_dir, variants_dir);
     let _ = try_resolve_workspace(Some(variants_dir));
 
     // Test try_resolve_index_and_target (lines 461-465)
-    let _ = try_resolve_index_and_target(
-        var_base.0.display().to_string(),
-        Some("sample_target".to_string()),
-    );
+    let _ = try_resolve_index_and_target(var_base.0.display().to_string(), Some("sample_target".to_string()));
     {
         let _cwd = CwdGuard::change(&var_base.0).unwrap();
         let _ = try_resolve_index_and_target("sample_target".to_string(), None);

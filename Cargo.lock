@@ -256,7 +256,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "ridx"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "colored",
@@ -273,7 +273,7 @@ dependencies = [
 
 [[package]]
 name = "ridx-driver"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ridx-format",
  "serde_json",
@@ -281,7 +281,7 @@ dependencies = [
 
 [[package]]
 name = "ridx-format"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "memmap2",
  "serde",
@@ -291,7 +291,7 @@ dependencies = [
 
 [[package]]
 name = "ridx-test-support"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ridx-format",
  "serde_json",

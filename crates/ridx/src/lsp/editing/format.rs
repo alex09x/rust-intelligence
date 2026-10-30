@@ -51,10 +51,7 @@ pub fn find_crate_edition(file_path: &str) -> String {
                                 return val.to_string();
                             }
                         }
-                        if (in_workspace_package || is_workspace_inherited)
-                            && key.starts_with("edition")
-                            && matches!(val, "2015" | "2018" | "2021" | "2024")
-                        {
+                        if (in_workspace_package || is_workspace_inherited) && key.starts_with("edition") && matches!(val, "2015" | "2018" | "2021" | "2024") {
                             return val.to_string();
                         }
                     }
@@ -96,10 +93,11 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let edition = find_crate_edition(&file);
 
     let mut cmd = Command::new("rustfmt");
+    if let Some(dir) = Path::new(&file).parent().filter(|p| p.is_dir()) {
+        cmd.current_dir(dir);
+    }
     cmd.arg("--edition").arg(&edition);
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
     let Ok(mut child) = cmd.spawn() else {
         return json!([]);
@@ -129,11 +127,7 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let last_line = doc_text.lines().last().unwrap_or("");
     let last_char = last_line.chars().count() as u32;
 
-    let (end_line, end_char) = if doc_text.ends_with('\n') {
-        (line_count, 0)
-    } else {
-        (line_count.saturating_sub(1), last_char)
-    };
+    let (end_line, end_char) = if doc_text.ends_with('\n') { (line_count, 0) } else { (line_count.saturating_sub(1), last_char) };
 
     json!([
         {
@@ -158,12 +152,8 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
         return json!([]);
     };
 
-    let start_line = msg["params"]["range"]["start"]["line"]
-        .as_u64()
-        .unwrap_or(0) as u32;
-    let end_line = msg["params"]["range"]["end"]["line"]
-        .as_u64()
-        .unwrap_or(u32::MAX as u64) as u32;
+    let start_line = msg["params"]["range"]["start"]["line"].as_u64().unwrap_or(0) as u32;
+    let end_line = msg["params"]["range"]["end"]["line"].as_u64().unwrap_or(u32::MAX as u64) as u32;
 
     let doc_lines: Vec<&str> = doc_text.lines().collect();
     if doc_lines.is_empty() || start_line as usize >= doc_lines.len() {
@@ -175,7 +165,7 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
     let orig_text = orig_slice.join("\n");
     let edition = find_crate_edition(&file);
 
-    let Some(formatted_snippet) = format_range_snippet(&orig_text, &edition) else {
+    let Some(formatted_snippet) = format_range_snippet(&orig_text, &edition, &file) else {
         return json!([]);
     };
 
@@ -197,13 +187,14 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
     ])
 }
 
-fn format_range_snippet(snippet: &str, edition: &str) -> Option<String> {
+fn format_range_snippet(snippet: &str, edition: &str, file: &str) -> Option<String> {
     // 1. Try formatting the range snippet directly as Rust items
     let mut cmd = Command::new("rustfmt");
+    if let Some(dir) = Path::new(file).parent().filter(|p| p.is_dir()) {
+        cmd.current_dir(dir);
+    }
     cmd.arg("--edition").arg(edition);
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
     if let Ok(mut child) = cmd.spawn() {
         if let Some(mut stdin) = child.stdin.take() {
@@ -224,10 +215,11 @@ fn format_range_snippet(snippet: &str, edition: &str) -> Option<String> {
     // 2. Wrap snippet inside a function body if it contains statements
     let wrapped = format!("fn __ridx_wrap() {{\n{snippet}\n}}\n");
     let mut cmd = Command::new("rustfmt");
+    if let Some(dir) = Path::new(file).parent().filter(|p| p.is_dir()) {
+        cmd.current_dir(dir);
+    }
     cmd.arg("--edition").arg(edition);
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
     if let Ok(mut child) = cmd.spawn() {
         if let Some(mut stdin) = child.stdin.take() {
@@ -237,24 +229,10 @@ fn format_range_snippet(snippet: &str, edition: &str) -> Option<String> {
             if output.status.success() {
                 if let Ok(formatted) = String::from_utf8(output.stdout) {
                     let lines: Vec<&str> = formatted.lines().collect();
-                    if lines.len() >= 2
-                        && lines
-                            .first()
-                            .map(|l| l.contains("__ridx_wrap"))
-                            .unwrap_or(false)
-                        && lines.last() == Some(&"}")
-                    {
+                    if lines.len() >= 2 && lines.first().map(|l| l.contains("__ridx_wrap")).unwrap_or(false) && lines.last() == Some(&"}") {
                         let inner_lines = &lines[1..lines.len() - 1];
-                        let unwrapped: Vec<String> = inner_lines
-                            .iter()
-                            .map(|l| {
-                                if let Some(stripped) = l.strip_prefix("    ") {
-                                    stripped.to_string()
-                                } else {
-                                    l.to_string()
-                                }
-                            })
-                            .collect();
+                        let unwrapped: Vec<String> =
+                            inner_lines.iter().map(|l| if let Some(stripped) = l.strip_prefix("    ") { stripped.to_string() } else { l.to_string() }).collect();
                         let res = unwrapped.join("\n").trim_end().to_string();
                         if !res.is_empty() {
                             return Some(res);

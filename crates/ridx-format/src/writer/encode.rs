@@ -67,13 +67,7 @@ impl IndexWriter {
                 name_offset,
                 path_offset,
                 sig_offset,
-                span: Span::new(
-                    file_id,
-                    def.start_line,
-                    def.start_col,
-                    def.end_line,
-                    def.end_col,
-                ),
+                span: Span::new(file_id, def.start_line, def.start_col, def.end_line, def.end_col),
             };
             def_entries.push(entry);
         }
@@ -81,11 +75,7 @@ impl IndexWriter {
         // Build defs hash index
         for (i, def) in definitions.iter().enumerate() {
             let hash = fnv1a_64(def.path.as_bytes());
-            def_hashes.push(HashIndexEntry {
-                hash,
-                index: i as u32,
-                _pad: [0; 4],
-            });
+            def_hashes.push(HashIndexEntry { hash, index: i as u32, _pad: [0; 4] });
         }
         def_hashes.sort_by_key(|e| e.hash);
 
@@ -115,11 +105,7 @@ impl IndexWriter {
                 let source_type_offset = self.intern_string(src);
                 let target_type_offset = self.intern_string(tgt);
                 let source_type_hash = fnv1a_64(src.as_bytes());
-                deref_entries.push(DerefEntry::new(
-                    source_type_hash,
-                    source_type_offset,
-                    target_type_offset,
-                ));
+                deref_entries.push(DerefEntry::new(source_type_hash, source_type_offset, target_type_offset));
             }
         }
         deref_entries.sort_by_key(|e| e.source_type_hash);
@@ -148,35 +134,21 @@ impl IndexWriter {
                 target_col: r.target_col,
                 kind: r.kind as u8,
                 is_write: if r.is_write { 1 } else { 0 },
-                flags: if r.is_macro_expansion {
-                    FLAG_MACRO_EXPANSION
-                } else {
-                    0
-                },
+                flags: if r.is_macro_expansion { FLAG_MACRO_EXPANSION } else { 0 },
                 _pad: 0,
             };
             ref_entries.push(entry);
         }
 
         // Sort references by source span for binary search position lookup
-        ref_entries.sort_by(|a, b| {
-            (a.span.file_id, a.span.start_line, a.span.start_col).cmp(&(
-                b.span.file_id,
-                b.span.start_line,
-                b.span.start_col,
-            ))
-        });
+        ref_entries.sort_by_key(|a| (a.span.file_id, a.span.start_line, a.span.start_col));
 
         // Build references target path hash index
         let mut ref_hashes = Vec::with_capacity(ref_entries.len());
         for (i, r) in ref_entries.iter().enumerate() {
             let target_path_bytes = self.get_interned_str(r.target_path_offset);
             let hash = fnv1a_64(target_path_bytes);
-            ref_hashes.push(HashIndexEntry {
-                hash,
-                index: i as u32,
-                _pad: [0; 4],
-            });
+            ref_hashes.push(HashIndexEntry { hash, index: i as u32, _pad: [0; 4] });
         }
         ref_hashes.sort_by_key(|e| e.hash);
 
@@ -190,22 +162,12 @@ impl IndexWriter {
                 None => 0,
             };
 
-            let entry = TypeEntry::new(
-                Span::new(file_id, t.start_line, t.start_col, t.end_line, t.end_col),
-                type_offset,
-                owner_path_offset,
-            );
+            let entry = TypeEntry::new(Span::new(file_id, t.start_line, t.start_col, t.end_line, t.end_col), type_offset, owner_path_offset);
             type_entries.push(entry);
         }
 
         // Sort types by source span
-        type_entries.sort_by(|a, b| {
-            (a.span.file_id, a.span.start_line, a.span.start_col).cmp(&(
-                b.span.file_id,
-                b.span.start_line,
-                b.span.start_col,
-            ))
-        });
+        type_entries.sort_by_key(|a| (a.span.file_id, a.span.start_line, a.span.start_col));
 
         // Restore original collections on self
         self.definitions = definitions;
@@ -223,8 +185,7 @@ impl IndexWriter {
         current_offset = align_up(string_pool_offset + string_pool_len, 8);
 
         let files_offset = current_offset;
-        let files_len =
-            (self.file_offsets.len() * std::mem::size_of::<crate::format::FileEntry>()) as u64;
+        let files_len = (self.file_offsets.len() * std::mem::size_of::<crate::format::FileEntry>()) as u64;
         current_offset = align_up(files_offset + files_len, 8);
 
         let defs_offset = current_offset;
@@ -248,8 +209,7 @@ impl IndexWriter {
         current_offset = align_up(types_offset + types_len, 8);
 
         let defs_by_owner_offset = current_offset;
-        let defs_by_owner_len =
-            (owner_entries.len() * std::mem::size_of::<OwnerIndexEntry>()) as u64;
+        let defs_by_owner_len = (owner_entries.len() * std::mem::size_of::<OwnerIndexEntry>()) as u64;
         current_offset = align_up(defs_by_owner_offset + defs_by_owner_len, 8);
 
         let derefs_offset = current_offset;
@@ -365,11 +325,7 @@ impl IndexWriter {
         if start >= self.string_pool.len() {
             return b"";
         }
-        let end = self.string_pool[start..]
-            .iter()
-            .position(|&b| b == 0)
-            .map(|p| start + p)
-            .unwrap_or(self.string_pool.len());
+        let end = self.string_pool[start..].iter().position(|&b| b == 0).map(|p| start + p).unwrap_or(self.string_pool.len());
         &self.string_pool[start..end]
     }
 }

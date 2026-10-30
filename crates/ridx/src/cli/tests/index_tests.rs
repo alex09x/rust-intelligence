@@ -19,10 +19,7 @@ use std::path::Path;
 #[test]
 fn test_parse_location_and_workspace_helpers() {
     let _lock = lock_cli_test();
-    assert_eq!(
-        parse_location("src/lib.rs:10:5"),
-        Some(("src/lib.rs", 10, 5))
-    );
+    assert_eq!(parse_location("src/lib.rs:10:5"), Some(("src/lib.rs", 10, 5)));
     assert_eq!(parse_location("invalid"), None);
     assert_eq!(parse_location("src/lib.rs:bad:5"), None);
     assert_eq!(parse_location("src/lib.rs:10:bad"), None);
@@ -40,11 +37,7 @@ fn test_cli_index_command() {
     let _lock = lock_cli_test();
     let (test_dir, _) = create_indexed_workspace();
     let cargo_toml = test_dir.0.join("Cargo.toml");
-    fs::write(
-        &cargo_toml,
-        "[package]\nname = \"cli_sample\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-    )
-    .unwrap();
+    fs::write(&cargo_toml, "[package]\nname = \"cli_sample\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let src_dir = test_dir.0.join("src");
     fs::create_dir_all(&src_dir).unwrap();
     fs::write(src_dir.join("lib.rs"), "pub fn sample() {}\n").unwrap();
@@ -69,11 +62,7 @@ fn test_cli_index_command() {
         // Test resolve_workspace for missing shard without variant manifest (lines 326-327, 353-355)
         let no_man_ws = new_test_dir("no_man_ws");
         let cargo_toml = no_man_ws.0.join("Cargo.toml");
-        fs::write(
-            &cargo_toml,
-            "[package]\nname = \"no_man\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
-        )
-        .unwrap();
+        fs::write(&cargo_toml, "[package]\nname = \"no_man\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
         let src_dir = no_man_ws.0.join("src");
         fs::create_dir_all(&src_dir).unwrap();
         fs::write(src_dir.join("lib.rs"), "pub fn f() {}\n").unwrap();
@@ -82,9 +71,7 @@ fn test_cli_index_command() {
         assert!(ws_no_man.crate_count() > 0);
 
         // Test inactive variant path in find_manifest_for_path
-        let inactive_path = test_dir
-            .0
-            .join("target/ridx/variants/inactive_var/shard.ridx");
+        let inactive_path = test_dir.0.join("target/ridx/variants/inactive_var/shard.ridx");
         assert!(find_manifest_for_path(&inactive_path).is_none());
     }
 }
@@ -92,6 +79,7 @@ fn test_cli_index_command() {
 #[test]
 fn test_cli_single_arg_auto_discover() {
     let _lock = lock_cli_test();
+    let _ra_guard = EnvGuard::set("RUST_ANALYZER_BIN", "/nonexistent/ra");
     let (test_dir, dir_str) = create_indexed_workspace();
 
     // Write variant manifest so Inspect prints active variant
@@ -104,108 +92,39 @@ fn test_cli_single_arg_auto_discover() {
         "workspace_root": dir_str,
         "dependency_shards": []
     });
-    let _ = fs::write(
-        test_dir.0.join("variant_manifest.json"),
-        serde_json::to_string(&manifest_data).unwrap(),
-    );
+    let _ = fs::write(test_dir.0.join("variant_manifest.json"), serde_json::to_string(&manifest_data).unwrap());
 
     std::env::set_var("RIDX_INDEX_DIR", &dir_str);
 
     // 1. Inspect with None (triggers auto_discover and active variant print)
-    run_cli(Commands::Inspect {
-        index_path: None,
-        json: false,
-    });
-    run_cli(Commands::Inspect {
-        index_path: None,
-        json: true,
-    });
+    run_cli(Commands::Inspect { index_path: None, json: false });
+    run_cli(Commands::Inspect { index_path: None, json: true });
 
     // 2. Def with arg2 = None (target as arg1)
-    run_cli(Commands::Def {
-        arg1: "test_crate::test_fn".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::Def {
-        arg1: "test_crate::test_fn".to_string(),
-        arg2: None,
-        json: true,
-    });
-    run_cli(Commands::Def {
-        arg1: "src/lib.rs:10:1".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::Def {
-        arg1: "src/lib.rs:10:1".to_string(),
-        arg2: None,
-        json: true,
-    });
+    run_cli(Commands::Def { arg1: "test_crate::test_fn".to_string(), arg2: None, json: false });
+    run_cli(Commands::Def { arg1: "test_crate::test_fn".to_string(), arg2: None, json: true });
+    run_cli(Commands::Def { arg1: "src/lib.rs:10:1".to_string(), arg2: None, json: false });
+    run_cli(Commands::Def { arg1: "src/lib.rs:10:1".to_string(), arg2: None, json: true });
 
     // 3. Refs with arg2 = None (target as arg1)
-    run_cli(Commands::Refs {
-        arg1: "test_crate::test_fn".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::Refs {
-        arg1: "test_crate::test_fn".to_string(),
-        arg2: None,
-        json: true,
-    });
-    run_cli(Commands::Refs {
-        arg1: "src/main.rs:20:5".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::Refs {
-        arg1: "src/main.rs:20:5".to_string(),
-        arg2: None,
-        json: true,
-    });
+    run_cli(Commands::Refs { arg1: "test_crate::test_fn".to_string(), arg2: None, json: false });
+    run_cli(Commands::Refs { arg1: "test_crate::test_fn".to_string(), arg2: None, json: true });
+    run_cli(Commands::Refs { arg1: "src/main.rs:20:5".to_string(), arg2: None, json: false });
+    run_cli(Commands::Refs { arg1: "src/main.rs:20:5".to_string(), arg2: None, json: true });
 
     // 4. TypeAt with arg2 = None
-    run_cli(Commands::TypeAt {
-        arg1: "src/lib.rs:10:1".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::TypeAt {
-        arg1: "src/lib.rs:10:1".to_string(),
-        arg2: None,
-        json: true,
-    });
+    run_cli(Commands::TypeAt { arg1: "src/lib.rs:10:1".to_string(), arg2: None, json: false });
+    run_cli(Commands::TypeAt { arg1: "src/lib.rs:10:1".to_string(), arg2: None, json: true });
 
     // 5. Hover with arg2 = None
-    run_cli(Commands::Hover {
-        arg1: "src/lib.rs:10:1".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::Hover {
-        arg1: "src/lib.rs:10:1".to_string(),
-        arg2: None,
-        json: true,
-    });
+    run_cli(Commands::Hover { arg1: "src/lib.rs:10:1".to_string(), arg2: None, json: false });
+    run_cli(Commands::Hover { arg1: "src/lib.rs:10:1".to_string(), arg2: None, json: true });
     // Hover on definition without signature (line 912)
-    run_cli(Commands::Hover {
-        arg1: "src/lib.rs:15:1".to_string(),
-        arg2: None,
-        json: false,
-    });
+    run_cli(Commands::Hover { arg1: "src/lib.rs:15:1".to_string(), arg2: None, json: false });
 
     // 6. Symbols with arg2 = None
-    run_cli(Commands::Symbols {
-        arg1: "test_fn".to_string(),
-        arg2: None,
-        json: false,
-    });
-    run_cli(Commands::Symbols {
-        arg1: "test_fn".to_string(),
-        arg2: None,
-        json: true,
-    });
+    run_cli(Commands::Symbols { arg1: "test_fn".to_string(), arg2: None, json: false });
+    run_cli(Commands::Symbols { arg1: "test_fn".to_string(), arg2: None, json: true });
 
     // 7. Compare with arg2 = None
     run_cli(Commands::Compare {
@@ -248,37 +167,18 @@ fn test_cli_parser_and_resolve_errors() {
     let no_sub = Cli::try_parse_from(["ridx"]).unwrap();
     assert_eq!(no_sub.into_command(), Commands::Lsp { index_path: None });
 
-    let ra_flags = Cli::try_parse_from([
-        "ridx",
-        "--log-file",
-        "/tmp/ridx-ra.log",
-        "--no-log-buffering",
-        "-vv",
-        "--stdio",
-        "--index-path",
-        "target/ridx",
-    ])
-    .unwrap();
+    let ra_flags = Cli::try_parse_from(["ridx", "--log-file", "/tmp/ridx-ra.log", "--no-log-buffering", "-vv", "--stdio", "--index-path", "target/ridx"]).unwrap();
     assert_eq!(ra_flags.verbose, 2);
     assert!(ra_flags.no_log_buffering);
     assert!(ra_flags.stdio);
-    assert_eq!(
-        ra_flags.into_command(),
-        Commands::Lsp {
-            index_path: Some(std::path::PathBuf::from("target/ridx"))
-        }
-    );
+    assert_eq!(ra_flags.into_command(), Commands::Lsp { index_path: Some(std::path::PathBuf::from("target/ridx")) });
 
     let schema_flag = Cli::try_parse_from(["ridx", "--print-config-schema"]).unwrap();
     assert!(schema_flag.print_config_schema);
 
     // 2. try_resolve_index_and_target (lines 308-316 in resolve.rs)
-    assert!(
-        try_resolve_index_and_target("test_target".to_string(), None).is_ok()
-            || try_resolve_index_and_target("test_target".to_string(), None).is_err()
-    );
-    let _ =
-        try_resolve_index_and_target("/nonexistent/idx".to_string(), Some("target".to_string()));
+    assert!(try_resolve_index_and_target("test_target".to_string(), None).is_ok() || try_resolve_index_and_target("test_target".to_string(), None).is_err());
+    let _ = try_resolve_index_and_target("/nonexistent/idx".to_string(), Some("target".to_string()));
 
     // 3. Invalid variant_manifest.json and ridx_manifest.json (lines 75, 104 in resolve.rs)
     let temp = std::env::temp_dir().join(format!("ridx_invalid_manifest_{}", std::process::id()));

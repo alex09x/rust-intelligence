@@ -1,7 +1,8 @@
 [package]
 name = "ridx-driver"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+description = "Compiler-backed rustc_driver extractor for Rust Intelligence (ridx)"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 license = "MIT OR Apache-2.0"
 
