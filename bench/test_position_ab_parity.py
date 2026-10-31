@@ -118,6 +118,16 @@ class TestPositionAbParityRules(unittest.TestCase):
         a_var = {"outcome": "a", "res": {"contents": {"kind": "markdown", "value": "```rust\ncrate::Value\n```\n\n```rust\nSeq(Vec<Value>)\n```"}}}
         self.assertEqual(evaluate_row(row_var, r_var, a_var, REPO)[:2], ("mismatch", "p_hover_variant_header"))
 
+        r_fn_local_var = {"outcome": "a", "res": {"contents": {"kind": "markdown", "value": "```rust\nderive::value_enum::fn_scope::ArgChoice\n```\n\n```rust\nFooBar\n```"}}}
+        a_fn_local_var = {"outcome": "a", "res": {"contents": {"kind": "markdown", "value": "```rust\nderive::value_enum::ArgChoice\n```\n\n```rust\nFooBar = 0\n```"}}}
+        self.assertEqual(evaluate_row(row_var, r_fn_local_var, a_fn_local_var, REPO)[:2], ("mismatch", "p_hover_variant_header"))
+
+        row_drv = {"method": "definition", "file": "src/lib.rs", "line": 1, "character": 15, "symbol": "ValueEnum", "cursor_kind": "path", "target_kind": "test"}
+        r_drv = {"outcome": "a", "res": {"uri": "file:///workspace/serde/src/trait_def.rs", "range": {"start": {"line": 10, "character": 0}}}}
+        a_drv = {"outcome": "a", "res": [{"targetUri": "file:///workspace/serde/src/derive_macro.rs", "targetSelectionRange": {"start": {"line": 20, "character": 0}}}]}
+        drv_lines = ["#[derive(pkg::ValueEnum, Debug)]", "enum E { A }"]
+        self.assertEqual(evaluate_row(row_drv, r_drv, a_drv, REPO, lambda _: drv_lines)[:2], ("mismatch", "p_nav_derive_macro_expansion"))
+
     def test_completion_single_label_overlap_is_partial_not_core_match(self):
         row = {"method": "completion", "file": "src/lib.rs", "line": 12, "character": 8, "symbol": "len", "cursor_kind": "method_call", "target_kind": "lib"}
         r_one = {"outcome": "a", "res": [{"label": "len"}] + [{"label": f"junk_{i}"} for i in range(19)]}

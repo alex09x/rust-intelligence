@@ -93,8 +93,8 @@ def cursor_cfg_gated(lines, idx):
 
 
 def in_derive_item(lines, idx, lookback=40):
-    """True when line `idx` is on or inside a `struct`/`enum` annotated with `#[derive(...)]`."""
-    if derive_above(lines, idx, lookback):
+    """True when line `idx` is on a `#[derive(...)]` attribute or on/inside a derived `struct`/`enum`."""
+    if (0 <= idx < len(lines) and "derive" in lines[idx] and lines[idx].lstrip().startswith("#[")) or derive_above(lines, idx, lookback):
         return True
     for j in range(idx - 1, max(-1, idx - lookback), -1):
         stripped = lines[j].lstrip()
@@ -247,7 +247,10 @@ def compare_hover(row, r_norm, a_norm, read_lines_fn=None):
     a_ty = re.sub(r"'[A-Za-z0-9_]+\s*", "", a_norm["type_line"] or a_norm["sig_line"]).strip()
     if not rd and not ad and r_ty and r_ty == a_ty:
         return "core_match", "c_hover_same_decl_head", {"ridx": r_norm["type_line"] or r_norm["sig_line"], "ra": a_norm["sig_line"]}
-    if r_norm["sig_line"].startswith("variant "):
+    if r_norm["sig_line"].startswith("variant ") or (
+        not rd and not ad and "::" in r_norm["sig_line"] and "::" in a_norm["sig_line"]
+        and r_norm["sig_line"].rsplit("::", 1)[-1] == a_norm["sig_line"].rsplit("::", 1)[-1]
+    ):
         return "mismatch", "p_hover_variant_header", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if r_norm["sig_line"].startswith("macro ") and ad and ad[0] == "macro_rules!":
         return "mismatch", "p_hover_macro_keyword_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
