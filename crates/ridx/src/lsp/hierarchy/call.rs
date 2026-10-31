@@ -17,7 +17,7 @@ use crate::lsp::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionCo
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[cfg(test)]
 pub(crate) use super::scan::is_call_site;
@@ -105,7 +105,7 @@ pub fn handle_call_hierarchy_incoming_calls(msg: &Value, workspace: Option<&Work
     };
 
     let item_name = item["name"].as_str().unwrap_or("");
-    let mut incoming_map: HashMap<String, (Value, Vec<Value>)> = HashMap::new();
+    let mut incoming_map: BTreeMap<String, (Value, Vec<Value>)> = BTreeMap::new();
     let mut file_cache: HashMap<String, String> = HashMap::new();
 
     for r in refs {
@@ -173,7 +173,23 @@ pub fn handle_call_hierarchy_incoming_calls(msg: &Value, workspace: Option<&Work
 
     let incoming: Vec<Value> = incoming_map
         .into_values()
-        .map(|(from, from_ranges)| {
+        .map(|(from, mut from_ranges)| {
+            from_ranges.sort_by(|a, b| {
+                let a_key = (
+                    a["start"]["line"].as_u64().unwrap_or(0),
+                    a["start"]["character"].as_u64().unwrap_or(0),
+                    a["end"]["line"].as_u64().unwrap_or(0),
+                    a["end"]["character"].as_u64().unwrap_or(0),
+                );
+                let b_key = (
+                    b["start"]["line"].as_u64().unwrap_or(0),
+                    b["start"]["character"].as_u64().unwrap_or(0),
+                    b["end"]["line"].as_u64().unwrap_or(0),
+                    b["end"]["character"].as_u64().unwrap_or(0),
+                );
+                a_key.cmp(&b_key)
+            });
+            from_ranges.dedup();
             json!({
                 "from": from,
                 "fromRanges": from_ranges

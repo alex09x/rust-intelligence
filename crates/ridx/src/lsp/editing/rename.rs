@@ -249,8 +249,11 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
 
     validate_and_dedup_edits(&mut changes_map)?;
 
-    let mut doc_changes = Vec::new();
-    for (doc_uri, edits) in &changes_map {
+    let mut sorted_uris: Vec<&String> = changes_map.keys().collect();
+    sorted_uris.sort();
+    let mut doc_changes = Vec::with_capacity(sorted_uris.len());
+    for doc_uri in sorted_uris {
+        let edits = &changes_map[doc_uri];
         let doc_path = uri_to_path(doc_uri);
         let version = overlay_mgr.get(&doc_path).map(|ov| json!(ov.version)).unwrap_or(Value::Null);
 
