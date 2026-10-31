@@ -18,6 +18,7 @@ from position_ab_gap_cursor import block_open_at, derive_above
 from position_ab_gap_reverse import cfg_context
 from position_ab_gap_rules import store_kind
 from position_ab_parity_norm import normalize_answer
+from position_ab_parity_rules_ext import classify_b_to_a_ext, compare_extended_method
 
 NAV_KEYS = frozenset({"definition", "declaration", "type_definition", "implementation"})
 REF_KEYS = frozenset({"references", "document_highlight"})
@@ -80,14 +81,12 @@ def cursor_cfg_gated(lines, idx):
     """Returns the enclosing or directly preceding `#[cfg(...)]` / `cfg_*!` gate for 0-based line `idx`."""
     if not lines or idx < 0 or idx >= len(lines):
         return None
-    ctx = cfg_context(lines, idx)
-    if ctx:
-        return ctx
+    if cfg_context(lines, idx):
+        return cfg_context(lines, idx)
     k = idx - 1
     while k >= 0 and (not lines[k].strip() or lines[k].strip().startswith(("#[", "///", "//"))):
-        s = lines[k].strip()
-        if s.startswith(("#[cfg(", "#![cfg(")):
-            return "cfg_attr:" + s[:60]
+        if lines[k].strip().startswith(("#[cfg(", "#![cfg(")):
+            return "cfg_attr:" + lines[k].strip()[:60]
         k -= 1
     return None
 
@@ -97,8 +96,7 @@ def in_derive_item(lines, idx, lookback=40):
     if (0 <= idx < len(lines) and "derive" in lines[idx] and lines[idx].lstrip().startswith("#[")) or derive_above(lines, idx, lookback):
         return True
     for j in range(idx - 1, max(-1, idx - lookback), -1):
-        stripped = lines[j].lstrip()
-        if any(stripped.startswith(k) for k in ("struct ", "pub struct ", "enum ", "pub enum ")):
+        if any(lines[j].lstrip().startswith(k) for k in ("struct ", "pub struct ", "enum ", "pub enum ")):
             if block_open_at(lines, j, idx, "{", "}") and derive_above(lines, j, lookback):
                 return True
     return False
@@ -109,17 +107,14 @@ def is_build_script(path):
 
 
 def cursor_line_text(row, read_lines_fn):
-    if read_lines_fn is None or not row.get("file") or not row.get("line"):
-        return ""
-    lines = read_lines_fn(row["file"])
-    idx = int(row["line"]) - 1
+    lines = read_lines_fn(row["file"]) if read_lines_fn and row.get("file") and row.get("line") else []
+    idx = int(row.get("line") or 1) - 1
     return lines[idx] if 0 <= idx < len(lines) else ""
 
 
-def read_ws_line(ws_path, line_1based, read_lines_fn):
-    if read_lines_fn is None or not ws_path.startswith("ws:"):
-        return ""
-    lines = read_lines_fn(ws_path[len("ws:"):])
+def read_ws_line(ws_path, line_1based, read_lines_fn, fallback_file=None):
+    rel = ws_path[len("ws:"):] if ws_path.startswith("ws:") else (fallback_file if ws_path == "doc:" else "")
+    lines = read_lines_fn(rel) if read_lines_fn and rel else []
     idx = int(line_1based) - 1
     return lines[idx] if 0 <= idx < len(lines) else ""
 
@@ -147,15 +142,18 @@ def compare_navigation(row, r_norm, a_norm, read_lines_fn=None):
         return "exact_match", None, {"targets": sorted(rt)}
     if rt and rt.issubset(at):
         return "partial", "c_nav_subset_of_ra_targets", {"ridx": sorted(rt), "ra": sorted(at)}
+    if at and at.issubset(rt):
+        cls = "c_nav_superset_of_ra_targets" if len(rt) <= 1.25 * len(at) else "p_nav_ridx_superset_excess"
+        return ("core_match" if cls.startswith("c_") else "partial"), cls, {"ridx": sorted(rt), "ra": sorted(at)}
     full = a_norm["full_ranges"]
     if rt and len(rt) == len(at) and all(any(p == fp and fs <= ln <= fe for fp, fs, fe in full) for p, ln in rt):
         return "core_match", "c_nav_within_ra_target_range", {"ridx": sorted(rt), "ra_ranges": full}
+    if rt & at:
+        return "partial", "p_nav_partial_target_overlap", {"ridx": sorted(rt), "ra": sorted(at), "common": sorted(rt & at)}
     sym = row.get("symbol") or ""
-    r_files = {p for p, _ in rt}
-    a_files = {p for p, _ in at}
+    r_files, a_files = {p for p, _ in rt}, {p for p, _ in at}
     line_text = cursor_line_text(row, read_lines_fn)
-    col = int(row.get("character") or 0)
-    after_tok = suffix_after_cursor_symbol(line_text, col, sym).lstrip()
+    after_tok = suffix_after_cursor_symbol(line_text, int(row.get("character") or 0), sym).lstrip()
     if {(REG_VER_RE.sub("", p), ln) for p, ln in rt} == {(REG_VER_RE.sub("", p), ln) for p, ln in at}:
         return "mismatch", "p_nav_registry_crate_version_skew", {"ridx": sorted(rt), "ra": sorted(at)}
     if after_tok.startswith("!"):
@@ -169,6 +167,8 @@ def compare_navigation(row, r_norm, a_norm, read_lines_fn=None):
     lines = read_lines_fn(row["file"]) if read_lines_fn and row.get("file") else []
     if lines and row.get("line") and in_derive_item(lines, int(row["line"]) - 1):
         return "mismatch", "p_nav_derive_macro_expansion", {"ridx": sorted(rt), "ra": sorted(at), "in_derive_item": True}
+    if row["method"] in ("type_definition", "implementation", "declaration"):
+        return "mismatch", f"p_{row['method']}_different_target", {"ridx": sorted(rt), "ra": sorted(at)}
     return "mismatch", "unclassified", {"ridx": sorted(rt), "ra": sorted(at)}
 
 
@@ -191,7 +191,7 @@ def compare_references(row, r_norm, a_norm, read_lines_fn=None):
     if common:
         ra_only = sorted(aw - rw)
         sym = row.get("symbol") or ""
-        all_lines = [read_ws_line(p, ln, read_lines_fn) for p, ln in ra_only]
+        all_lines = [read_ws_line(p, ln, read_lines_fn, row.get("file")) for p, ln in ra_only]
         ra_only_total = len(ra_only)
         sym_pat = re.compile(rf"\b{re.escape(sym)}\b") if sym else None
         decl_pat = re.compile(rf"\b(?:fn|type|const)\s+(?:derive_)?{re.escape(sym)}\b") if sym else None
@@ -227,7 +227,7 @@ def compare_references(row, r_norm, a_norm, read_lines_fn=None):
         return "mismatch", "p_refs_external_decl_only", {**base_ev, "ridx_external": len(rs), "ridx_sample": sorted(rs)[:3]}
     sym = row.get("symbol") or ""
     after_tok = suffix_after_cursor_symbol(cursor_line_text(row, read_lines_fn), int(row.get("character") or 0), sym)
-    if rw and aw and after_tok.startswith("::"):
+    if rw and aw and (after_tok.startswith("::") or row["method"] == "document_highlight"):
         return "mismatch", "p_refs_path_segment_cursor_line", {**base_ev, "symbol": sym}
     return "mismatch", "unclassified", base_ev
 
@@ -255,25 +255,20 @@ def compare_hover(row, r_norm, a_norm, read_lines_fn=None):
     if r_norm["sig_line"].startswith("macro ") and ad and ad[0] == "macro_rules!":
         return "mismatch", "p_hover_macro_keyword_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if rd and rd[0] == "fn" and ad and ad[0] == "trait":
-        return "mismatch", "p_hover_trait_method_container_header", {
-            "ridx_decl": rd, "ra_decl": ad, "ridx": r_norm["sig_line"], "ra": a_norm["sig_line"],
-        }
+        return "mismatch", "p_hover_trait_method_container_header", {"ridx_decl": rd, "ra_decl": ad, "ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if ad and ad[0] == "type" and not rd and r_norm["sig_line"]:
         return "mismatch", "p_hover_assoc_type_decl_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if rd and ad and rd != ad:
         return "mismatch", "p_hover_different_decl_head", {"ridx_decl": rd, "ra_decl": ad}
     if r_norm["type_line"] or r_norm["sig_line"].startswith(("use ", "impl ", "fn ", "field ", "mod ")):
-        return "mismatch", "p_hover_enclosing_expr_or_use", {
-            "ridx": r_norm["sig_line"] or r_norm["type_line"], "ra": a_norm["sig_line"],
-        }
+        return "mismatch", "p_hover_enclosing_expr_or_use", {"ridx": r_norm["sig_line"] or r_norm["type_line"], "ra": a_norm["sig_line"]}
     return "mismatch", "unclassified", {"ridx": r_norm, "ra": a_norm}
 
 
 def compare_completion(row, r_norm, a_norm, read_lines_fn=None):
     rl, al = set(r_norm["labels"]), set(a_norm["labels"])
     sym = row.get("symbol") or ""
-    target_in_ra = bool(sym and sym in al)
-    target_in_ridx = bool(sym and sym in rl)
+    target_in_ra, target_in_ridx = bool(sym and sym in al), bool(sym and sym in rl)
     target_in_top20 = bool(sym and sym in set(r_norm["top_n"]))
     overlap = len(rl & al)
     ra_recall = (overlap / len(al)) if al else 1.0
@@ -288,13 +283,12 @@ def compare_completion(row, r_norm, a_norm, read_lines_fn=None):
     if al and rl and ra_recall >= COMP_RECALL_THRESHOLD and ridx_outside <= COMP_OUTSIDE_MAX and (not target_in_ra or target_in_ridx):
         return "core_match", "c_comp_label_set_parity", ev
     if overlap > 0:
-        if target_in_ra and target_in_ridx:
-            return "partial", "p_comp_partial_target_present", ev
-        if target_in_ra and not target_in_ridx:
-            return "partial", "p_comp_partial_target_missing", ev
-        if not target_in_ra and target_in_ridx:
-            return "partial", "p_comp_partial_target_in_ridx_only", ev
-        return "partial", "p_comp_partial_no_target", ev
+        cls = (
+            "p_comp_partial_target_present" if target_in_ra and target_in_ridx else
+            "p_comp_partial_target_missing" if target_in_ra else
+            "p_comp_partial_target_in_ridx_only" if target_in_ridx else "p_comp_partial_no_target"
+        )
+        return "partial", cls, ev
     line_text = cursor_line_text(row, read_lines_fn)
     if overlap == 0 and ("." in line_text or "::" in line_text or row.get("cursor_kind") in ("method_call", "let", "path", "ident")):
         ev["cursor_line"] = line_text.strip()[:120]
@@ -303,13 +297,11 @@ def compare_completion(row, r_norm, a_norm, read_lines_fn=None):
 
 
 def prefix_before_cursor_symbol(line_text, col, sym):
-    """Returns the line prefix immediately before the identifier token covering 0-based `col`."""
     if not line_text:
         return ""
-    if sym:
-        for m in re.finditer(rf"\b{re.escape(sym)}\b", line_text):
-            if m.start() <= col <= m.end():
-                return line_text[:m.start()]
+    for m in (re.finditer(rf"\b{re.escape(sym)}\b", line_text) if sym else ()):
+        if m.start() <= col <= m.end():
+            return line_text[:m.start()]
     c = min(max(0, col), len(line_text))
     while c > 0 and (line_text[c - 1].isalnum() or line_text[c - 1] == "_"):
         c -= 1
@@ -317,13 +309,11 @@ def prefix_before_cursor_symbol(line_text, col, sym):
 
 
 def suffix_after_cursor_symbol(line_text, col, sym):
-    """Returns the line suffix immediately after the identifier token covering 0-based `col`."""
     if not line_text:
         return ""
-    if sym:
-        for m in re.finditer(rf"\b{re.escape(sym)}\b", line_text):
-            if m.start() <= col <= m.end():
-                return line_text[m.end():]
+    for m in (re.finditer(rf"\b{re.escape(sym)}\b", line_text) if sym else ()):
+        if m.start() <= col <= m.end():
+            return line_text[m.end():]
     c = min(max(0, col), len(line_text))
     while c < len(line_text) and (line_text[c].isalnum() or line_text[c] == "_"):
         c += 1
@@ -365,28 +355,38 @@ def classify_b_to_a(row, repo, a_res, read_lines_fn=None, ws_table=None):
     cfg = cursor_cfg_gated(lines, idx)
     if cfg and not cfg.endswith("#[cfg(test)]"):
         return "p_b_to_a_cfg_gated_item", {"cfg": cfg, "symbol": sym, "cursor_line": line_text.strip()[:120]}
+    if method not in ("definition", "references", "hover", "completion"):
+        return classify_b_to_a_ext(row, a_norm, line_text)
     return "unclassified", {"method": method, "symbol": sym, "cursor_line": line_text.strip()[:120]}
 
 
 def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
-    """Evaluates one row's RIDX (`r_ans`) and rust-analyzer (`a_ans`) answers.
-    Returns `(parity, cls, evidence)`."""
+    """Evaluates one row's RIDX (`r_ans`) and rust-analyzer (`a_ans`) answers."""
     ro, ao = r_ans["outcome"], a_ans["outcome"]
-    if ro == "b" and ao == "b":
-        return "both_empty", None, {}
+    if ro in ("b", "c") and ao in ("b", "c"):
+        if ro == "b" and ao == "b":
+            return "both_empty", None, {}
+        if ro == "b" and ao == "c":
+            return "both_empty", "c_ridx_empty_ra_err", {"ra_error": a_ans.get("error")}
+        if ro == "c" and ao == "b":
+            return "both_empty", "c_ridx_err_ra_empty", {"ridx_error": r_ans.get("error")}
+        return "both_empty", "c_both_error", {"ridx_error": r_ans.get("error"), "ra_error": a_ans.get("error")}
     if ro == "a" and ao in ("b", "c"):
         return "ridx_only", "c_ridx_answers_ra_empty_or_err", {"ridx_outcome": ro, "ra_outcome": ao, "ra_error": a_ans.get("error")}
     if ro in ("b", "c") and ao == "a":
-        cls, ev = classify_b_to_a(row, repo, a_ans.get("res"), read_lines_fn, ws_table)
+        cls, ev = (("p_ridx_error_or_timeout", {"ridx_error": r_ans.get("error"), "method": row["method"]}) if ro == "c"
+                   else classify_b_to_a(row, repo, a_ans.get("res"), read_lines_fn, ws_table))
         if row["method"] in REF_KEYS:
             aw = active_ws_lines(normalize_answer(row["method"], a_ans.get("res"), repo)["ws_lines"], read_lines_fn)
             ev.update({"ridx_ws": 0, "ra_ws": len(aw), "common_ws": 0, "row_precision": 0.0, "row_recall": 0.0})
+        elif row["method"] == "completion":
+            al = set(normalize_answer("completion", a_ans.get("res"), repo)["labels"])
+            sym = row.get("symbol") or ""
+            ev.update({"ra_label_recall": 0.0, "ridx_outside_ra_ratio": 0.0, "target_in_ra": bool(sym and sym in al), "target_in_ridx": False, "target_in_top20": False})
         return "mismatch", cls, ev
-    if ro == "c" and ao == "c":
-        return "both_empty", "c_both_error", {"ridx_error": r_ans.get("error"), "ra_error": a_ans.get("error")}
     method = row["method"]
-    r_norm = normalize_answer(method, r_ans.get("res"), repo)
-    a_norm = normalize_answer(method, a_ans.get("res"), repo)
+    r_norm = normalize_answer(method, r_ans.get("res"), repo, legend=r_ans.get("legend"))
+    a_norm = normalize_answer(method, a_ans.get("res"), repo, legend=a_ans.get("legend"))
     if method in NAV_KEYS:
         return compare_navigation(row, r_norm, a_norm, read_lines_fn)
     if method in REF_KEYS:
@@ -395,6 +395,4 @@ def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
         return compare_hover(row, r_norm, a_norm, read_lines_fn)
     if method == "completion":
         return compare_completion(row, r_norm, a_norm, read_lines_fn)
-    if r_norm == a_norm:
-        return "exact_match", None, {}
-    return "mismatch", "unclassified", {"method": method}
+    return compare_extended_method(row, r_norm, a_norm, repo=repo, ws_table=ws_table)

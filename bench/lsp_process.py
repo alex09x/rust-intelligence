@@ -58,6 +58,7 @@ class SimpleLspProcess:
         self.active_token_titles = {}
         self.last_msg_time = time.perf_counter()
         self.open_docs = set()
+        self.semantic_token_types = ()
 
         self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
         self.reader_thread.start()
@@ -248,7 +249,9 @@ class SimpleLspProcess:
         ev.wait(timeout=30.0)
         with self.lock:
             self.events.pop(init_id, None)
-            self.responses.pop(init_id, None)
+            init_msg = self.responses.pop(init_id, None)
+        caps = ((init_msg or {}).get("result") or {}).get("capabilities") or {}
+        self.semantic_token_types = tuple(((caps.get("semanticTokensProvider") or {}).get("legend") or {}).get("tokenTypes") or ())
 
         if not self.exited:
             self.send_msg({"jsonrpc": "2.0", "method": "initialized", "params": {}})

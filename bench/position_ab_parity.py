@@ -42,13 +42,32 @@ from position_ab_classify import (  # noqa: E402
     REQUEST_KEYS, classify_outcome, load_target_entries, scenario_from_record,
 )
 from position_ab_content import load_file_table  # noqa: E402
+from position_ab_parity_exec import execute_parity_request, prepare_parity_rows  # noqa: E402
+from position_ab_parity_norm import normalize_answer  # noqa: E402
 from position_ab_parity_rules import evaluate_row  # noqa: E402
 
 RPC_OF = {key: rpc for _, key, rpc, _, _ in LSP_SPECS}
 DEFAULT_METHODS = ("definition", "references", "hover", "completion")
+ALL_PARITY_METHODS = (
+    "definition", "declaration", "type_definition", "implementation", "references", "document_highlight",
+    "hover", "signature_help", "inlay_hint", "document_symbol", "workspace_symbol", "folding_range",
+    "selection_range", "document_link", "semantic_tokens_full", "semantic_tokens_delta", "semantic_tokens_range",
+    "prepare_call_hierarchy", "incoming_calls", "outgoing_calls", "prepare_type_hierarchy", "supertypes", "subtypes",
+    "completion", "completion_resolve", "prepare_rename", "rename", "code_action", "formatting",
+    "range_formatting", "on_type_formatting", "document_diagnostic", "workspace_diagnostic",
+    "code_lens", "code_lens_resolve", "linked_editing_range", "moniker",
+)
 
 
-def ask_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
+def _pct(vals, q):
+    if not vals:
+        return 0.0
+    s = sorted(vals)
+    idx = min(len(s) - 1, max(0, int(round((len(s) - 1) * q))))
+    return round(s[idx], 1)
+
+
+def ask_server(name, cmd, is_ra, rows, repo_dir, timeout, canary, read_lines_fn=None):
     """Queries one server process across all `rows` and stores raw responses in `row['_raw'][name]`."""
     srv = SimpleLspProcess(cmd, str(repo_dir), is_ra=is_ra)
     t0 = time.perf_counter()
@@ -63,11 +82,9 @@ def ask_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
                 current = key
                 srv.drain(timeout=600.0)
                 barrier(srv, timeout=600.0)
-            params = build_params(key, row["scenario"], str(repo_dir), is_ra=is_ra)
-            res, us, err = srv.request(RPC_OF[key], params, timeout=timeout)
-            outcome, code = classify_outcome(key, res, err)
+            outcome, res, code, us, extra = execute_parity_request(srv, key, row, repo_dir, is_ra, timeout, read_lines_fn or (lambda _: []))
             row.setdefault("_raw", {})[name] = {
-                "outcome": outcome, "res": res, "error": code, "us": round(us, 1),
+                "outcome": outcome, "res": res, "error": code, "us": round(us, 1), **extra,
             }
     finally:
         srv.close()
@@ -75,7 +92,7 @@ def ask_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
     return ready, round(time.perf_counter() - t0, 1)
 
 
-def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_table=None):
+def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_table=None, ridx2_name=None):
     """Evaluates normalized content parity for all rows and builds per-method and overall summaries."""
     per_method = {}
     classes_overall = Counter()
@@ -103,8 +120,20 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
             "target_in_ra": 0, "target_in_ridx": 0, "target_in_top20": 0, "target_eval": 0,
             "ref_precisions": [], "ref_recalls": [],
             "ref_ridx_ws": 0, "ref_ra_ws": 0, "ref_common_ws": 0,
+            "sem_span_recalls": [], "sem_raw_span_recalls": [], "sem_type_agreements": [],
+            "sem_ra_sym": 0, "sem_ra_lex": 0,
+            "ridx_us": [], "ra_us": [], "self_diff_raw": 0, "self_diff_norm": 0,
         })
         m["n"] += 1
+        m["ridx_us"].append(float(r_ans.get("us") or 0.0))
+        if a_ans.get("us"):
+            m["ra_us"].append(float(a_ans.get("us") or 0.0))
+        if ridx2_name and ridx2_name in raw:
+            r2_ans = raw[ridx2_name]
+            if r_ans.get("res") != r2_ans.get("res") or r_ans.get("outcome") != r2_ans.get("outcome"):
+                m["self_diff_raw"] += 1
+                if normalize_answer(row["method"], r_ans.get("res"), str(repo_dir), legend=r_ans.get("legend")) != normalize_answer(row["method"], r2_ans.get("res"), str(repo_dir), legend=r2_ans.get("legend")):
+                    m["self_diff_norm"] += 1
         if a_ans["outcome"] == "a":
             m["ra_non_empty"] += 1
             if parity in ("exact_match", "core_match"):
@@ -115,6 +144,15 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
                 m["ref_ridx_ws"] += int(ev.get("ridx_ws", 0))
                 m["ref_ra_ws"] += int(ev.get("ra_ws", 0))
                 m["ref_common_ws"] += int(ev.get("common_ws", 0))
+            if row["method"].startswith("semantic_tokens_") and "span_recall" in ev:
+                if ev.get("ra_sym", 0) > 0:
+                    m["sem_span_recalls"].append(ev["span_recall"])
+                if ev.get("ra_all", 0) > 0:
+                    m["sem_raw_span_recalls"].append(ev["raw_span_recall"])
+                if ev.get("shared_spans", 0) > 0:
+                    m["sem_type_agreements"].append(ev["type_agreement"])
+                m["sem_ra_sym"] += int(ev.get("ra_sym", 0))
+                m["sem_ra_lex"] += int(ev.get("ra_lexical_only", 0))
             if row["method"] == "completion" and "ra_label_recall" in ev:
                 m["ra_recalls"].append(ev["ra_label_recall"])
                 m["ridx_outsides"].append(ev["ridx_outside_ra_ratio"])
@@ -144,6 +182,14 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
                 100.0 * (m["exact_match"] + m["core_match"] + m["both_empty"]) / max(1, m["n"]), 1
             ),
             "matched_on_ra_non_empty_pct": round(100.0 * m["matched_on_ra_non_empty"] / denom, 1),
+            "ridx_p50_us": _pct(m["ridx_us"], 0.50),
+            "ridx_p95_us": _pct(m["ridx_us"], 0.95),
+            "ridx_p99_us": _pct(m["ridx_us"], 0.99),
+            "ra_p50_us": _pct(m["ra_us"], 0.50),
+            "ra_p95_us": _pct(m["ra_us"], 0.95),
+            "ra_p99_us": _pct(m["ra_us"], 0.99),
+            "self_diff_raw": m["self_diff_raw"],
+            "self_diff_norm": m["self_diff_norm"],
             "classes": dict(sorted(m["classes"].items())),
         }
         if m["ref_precisions"]:
@@ -155,6 +201,14 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
                 "total_ridx_ws_lines": m["ref_ridx_ws"],
                 "total_ra_ws_lines": m["ref_ra_ws"],
                 "total_common_ws_lines": m["ref_common_ws"],
+            })
+        if key.startswith("semantic_tokens_") and (m["sem_span_recalls"] or m["sem_raw_span_recalls"]):
+            entry.update({
+                "mean_span_recall_pct": round(100.0 * sum(m["sem_span_recalls"]) / max(1, len(m["sem_span_recalls"])), 1),
+                "mean_raw_span_recall_pct": round(100.0 * sum(m["sem_raw_span_recalls"]) / max(1, len(m["sem_raw_span_recalls"])), 1),
+                "mean_type_agreement_pct": round(100.0 * sum(m["sem_type_agreements"]) / max(1, len(m["sem_type_agreements"])), 1),
+                "total_ra_sym_tokens": m["sem_ra_sym"],
+                "total_ra_lexical_only_tokens": m["sem_ra_lex"],
             })
         if key == "completion" and m["ra_recalls"]:
             teval = m["target_eval"] or 1
@@ -172,6 +226,8 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
         "parity_totals": dict(sorted(parity_overall.items())),
         "classes_totals": dict(sorted(classes_overall.items())),
         "unclassified": classes_overall.get("unclassified", 0),
+        "self_diff_raw_total": sum(m["self_diff_raw"] for m in methods_summary.values()),
+        "self_diff_norm_total": sum(m["self_diff_norm"] for m in methods_summary.values()),
         "methods": methods_summary,
     }
 
@@ -197,7 +253,12 @@ def main(argv=None):
     shards = check_ridx_index(repo_dir)
     payload = json.loads(args.positions.read_text(encoding="utf-8"))
     positions = payload["positions"]
-    methods = [m.strip() for m in args.methods.split(",") if m.strip()]
+    if args.methods == "all":
+        methods = list(ALL_PARITY_METHODS)
+    elif args.methods == "full_matrix":
+        methods = list(REQUEST_KEYS)
+    else:
+        methods = [m.strip() for m in args.methods.split(",") if m.strip()]
     unknown = [m for m in methods if m not in REQUEST_KEYS]
     if unknown:
         ap.error(f"unknown matrix request methods: {unknown}")
@@ -215,13 +276,14 @@ def main(argv=None):
         return cache[rel]
 
     raw_rows = build_rows(positions, methods, args.limit, repo_dir, entries, read_lines)
+    prepare_parity_rows(raw_rows, positions, repo_dir, entries, read_lines)
     canary = [scenario_from_record("definition", rec, repo_dir) for rec in (positions.get("definition") or [])[:3]]
     repo_head = subprocess.run(["git", "-C", str(repo_dir), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     started = datetime.now(timezone.utc).isoformat()
     runs_by_name = {}
     for name, cmd, is_ra, binary in [*ridx_srvs, ra_srv]:
         print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(raw_rows)} requests ...", flush=True)
-        ready, seconds = ask_server(name, cmd, is_ra, raw_rows, repo_dir, args.timeout, canary)
+        ready, seconds = ask_server(name, cmd, is_ra, raw_rows, repo_dir, args.timeout, canary, read_lines)
         runs_by_name[name] = {
             "name": name, "kind": "rust-analyzer" if is_ra else "ridx", "binary": binary_label(binary),
             **parse_version(version_of(binary)), "ready": ready, "duration_s": seconds,
@@ -230,15 +292,18 @@ def main(argv=None):
     rc = 0
     for idx, out_path in enumerate(args.out):
         ridx_srv = ridx_srvs[min(idx, len(ridx_srvs) - 1)]
+        ridx2_name = next((s[0] for s in ridx_srvs if s[0] != ridx_srv[0]), None)
         rows = [dict(r, _raw=dict(r["_raw"])) for r in raw_rows]
-        summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines, ws_table)
+        summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines, ws_table, ridx2_name)
         print(f"[{ridx_srv[0]} vs {ra_srv[0]}]", flush=True)
         for key, m in summary["methods"].items():
             print(
-                f"  {key:20s} exact={m['exact_match']:3d} core={m['core_match']:3d} "
+                f"  {key:24s} exact={m['exact_match']:3d} core={m['core_match']:3d} "
                 f"partial={m['partial']:3d} ridx_only={m['ridx_only']:2d} "
                 f"empty={m['both_empty']:3d} mismatch={m['mismatch']:3d} "
-                f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}% classes={m['classes']}",
+                f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}% "
+                f"p50={m['ridx_p50_us']:.0f}/{m['ra_p50_us']:.0f}us "
+                f"self_diff={m['self_diff_raw']}/{m['self_diff_norm']} classes={m['classes']}",
                 flush=True,
             )
         runs = [runs_by_name[ridx_srv[0]], runs_by_name[ra_srv[0]]] + [

@@ -9,7 +9,8 @@
 rust-analyzer into comparable canonical structures across 19 request methods."""
 
 import re
-from position_ab_content_rules import decode_tokens, scrub_path, token_data, uri_path
+from position_ab_content_rules import scrub_path, uri_path
+from position_ab_parity_norm_ext import normalize_answer_ext
 
 CODE_BLOCK_RE = re.compile(r"```(?:rust)?\n(.*?)```", re.DOTALL)
 DECL_HEAD_RE = re.compile(
@@ -17,11 +18,6 @@ DECL_HEAD_RE = re.compile(
     r"(fn|struct|enum|trait|type|mod|const|static|union|macro_rules!|proc_macro)\s+([A-Za-z_][A-Za-z0-9_]*)"
 )
 PAREN_SUFFIX_RE = re.compile(r"\s*\(.*\)$")
-TOKEN_TYPES = (
-    "comment", "keyword", "string", "number", "regexp", "operator", "namespace",
-    "type", "struct", "class", "interface", "enum", "typeParameter", "function",
-    "method", "decorator", "macro", "variable", "parameter", "property", "label",
-)
 
 
 def clean_path(uri, repo):
@@ -128,13 +124,6 @@ def normalize_completion(res, top_n=20):
     return {"labels": sorted(set(labels)), "top_n": labels[:top_n], "count": len(items)}
 
 
-def normalize_signature_help(res):
-    if not isinstance(res, dict) or not res.get("signatures"):
-        return {"signatures": [], "active_sig": 0, "active_param": None}
-    sigs = [str(s.get("label") or "").strip() for s in res.get("signatures", []) if isinstance(s, dict)]
-    return {"signatures": sigs, "active_sig": int(res.get("activeSignature") or 0), "active_param": res.get("activeParameter")}
-
-
 def normalize_prepare_rename(res):
     if not isinstance(res, dict):
         return None
@@ -187,7 +176,7 @@ def normalize_symbols(res):
     return sorted(out)
 
 
-def normalize_answer(method, res, repo):
+def normalize_answer(method, res, repo, legend=None):
     """Dispatches `method` to its canonical normalizer."""
     if method in ("definition", "declaration", "type_definition", "implementation"):
         return normalize_locations(res, repo)
@@ -197,16 +186,8 @@ def normalize_answer(method, res, repo):
         return normalize_hover(res)
     if method == "completion":
         return normalize_completion(res)
-    if method == "signature_help":
-        return normalize_signature_help(res)
     if method == "prepare_rename":
         return normalize_prepare_rename(res)
     if method == "rename":
         return normalize_rename(res, repo)
-    if method in ("document_symbol", "workspace_symbol"):
-        return normalize_symbols(res)
-    if method == "semantic_tokens_full":
-        data = token_data(res)
-        return [(t[0] + 1, t[1], t[2], TOKEN_TYPES[t[3]] if 0 <= t[3] < len(TOKEN_TYPES) else str(t[3]))
-                for t in (decode_tokens(data) if data else [])]
-    return res
+    return normalize_answer_ext(method, res, repo, legend=legend)

@@ -285,6 +285,66 @@ class TestPositionAbParityRules(unittest.TestCase):
         self.assertEqual(cfg["zed_binary_path"], "ridx")
         self.assertEqual(cfg["neovim_cmd"], ["ridx"])
 
+    def test_extended_methods_parity_and_self_diff(self):
+        # signature_help: pub fn vs fn with same arity and activeParameter -> core_match
+        row_sig = {"method": "signature_help", "file": "src/lib.rs", "line": 3, "character": 12, "symbol": "foo", "cursor_kind": "ident", "target_kind": "lib"}
+        r_sig = {"outcome": "a", "res": {"signatures": [{"label": "pub fn foo(a: i32, b: u8) -> bool", "parameters": [{"label": "a: i32"}, {"label": "b: u8"}]}], "activeSignature": 0, "activeParameter": 1}}
+        a_sig = {"outcome": "a", "res": {"signatures": [{"label": "fn foo(a: i32, b: u8) -> bool", "parameters": [{"label": "a: i32"}, {"label": "b: u8"}]}], "activeSignature": 0, "activeParameter": 1}}
+        self.assertEqual(evaluate_row(row_sig, r_sig, a_sig, REPO)[:2], ("core_match", "c_sig_same_fn_and_active_param"))
+
+        # semantic_tokens_delta: full insert edit at start=0 decodes identically to full tokens
+        row_st = {"method": "semantic_tokens_delta", "file": "src/lib.rs", "line": 1, "character": 0, "symbol": None, "cursor_kind": None, "target_kind": "lib"}
+        r_st = {"outcome": "a", "res": {"resultId": "2", "data": [0, 4, 3, 12, 0]}, "legend": ("namespace", "type", "class", "enum", "interface", "struct", "typeParameter", "parameter", "variable", "property", "enumMember", "function", "method")}
+        a_st = {"outcome": "a", "res": {"resultId": "2", "edits": [{"start": 0, "deleteCount": 0, "data": [0, 4, 3, 4, 0, 0, 8, 2, 6, 0]}]}, "legend": ("comment", "decorator", "enumMember", "enum", "function", "interface", "keyword")}
+        par_st, cls_st, ev_st = evaluate_row(row_st, r_st, a_st, REPO)
+        self.assertEqual((par_st, cls_st), ("core_match", "c_semtok_exact_symbol_tokens_ra_has_lexical"))
+        self.assertEqual(ev_st["span_recall"], 1.0)
+        self.assertEqual(ev_st["type_agreement"], 1.0)
+        self.assertEqual(ev_st["ra_lexical_only"], 1)
+
+        # call_arg_positions shifts cursor from symbol onto ( and ,
+        from position_ab_parity_exec import call_arg_positions
+        cands = call_arg_positions(["    foo.bar(a, b + 1)"], 1, 9)
+        self.assertEqual(cands, [(1, 13), (1, 16)])
+
+        # inlay_hint normalizes module prefixes on type hints
+        row_ih = {"method": "inlay_hint", "file": "src/lib.rs", "line": 1, "character": 1, "symbol": None, "cursor_kind": None, "target_kind": "lib"}
+        r_ih = {"outcome": "a", "res": [{"position": {"line": 10, "character": 8}, "label": ": syn::DeriveInput", "kind": 1}]}
+        a_ih = {"outcome": "a", "res": [{"position": {"line": 10, "character": 8}, "label": ": DeriveInput", "kind": 1}, {"position": {"line": 20, "character": 4}, "label": "arg:", "kind": 2}]}
+        self.assertEqual(evaluate_row(row_ih, r_ih, a_ih, REPO)[:2], ("core_match", "c_inlay_same_type_hints"))
+
+        # code_lens_resolve extracts command.title
+        row_clr = {"method": "code_lens_resolve", "file": "src/lib.rs", "line": 1, "character": 1, "symbol": None, "cursor_kind": None, "target_kind": "lib"}
+        r_clr = {"outcome": "a", "res": {"range": {"start": {"line": 9, "character": 4}, "end": {"line": 9, "character": 10}}, "command": {"title": "3 references", "command": "ridx.showReferences"}}}
+        a_clr = {"outcome": "a", "res": {"range": {"start": {"line": 9, "character": 4}, "end": {"line": 9, "character": 10}}, "command": {"title": "1 implementation", "command": "rust-analyzer.showReferences"}}}
+        self.assertEqual(evaluate_row(row_clr, r_clr, a_clr, REPO)[:2], ("partial", "p_codelens_resolve_same_line_refs_vs_impl_title"))
+
+        # document_diagnostic: both 0 errors/warnings with RA inactive-code hint -> core_match
+        row_diag = {"method": "document_diagnostic", "file": "src/lib.rs", "line": 1, "character": 0, "symbol": None, "cursor_kind": None, "target_kind": "lib"}
+        r_diag = {"outcome": "a", "res": {"kind": "full", "items": []}}
+        a_diag = {"outcome": "a", "res": {"kind": "full", "items": [{"range": {"start": {"line": 5, "character": 0}, "end": {"line": 8, "character": 1}}, "severity": 4, "code": "inactive-code", "message": "code is inactive"}]}}
+        self.assertEqual(evaluate_row(row_diag, r_diag, a_diag, REPO)[:2], ("core_match", "c_diag_both_zero_errors_ra_hints_only"))
+
+        # incoming_calls self_diff_raw vs self_diff_norm when order differs between ridx1 and ridx2
+        c1 = {"from": {"name": "caller_a", "kind": 12, "uri": "file:///workspace/serde/src/a.rs", "range": {"start": {"line": 1, "character": 0}}, "selectionRange": {"start": {"line": 1, "character": 3}}}, "fromRanges": [{"start": {"line": 2, "character": 4}}]}
+        c2 = {"from": {"name": "caller_b", "kind": 12, "uri": "file:///workspace/serde/src/b.rs", "range": {"start": {"line": 5, "character": 0}}, "selectionRange": {"start": {"line": 5, "character": 3}}}, "fromRanges": [{"start": {"line": 6, "character": 4}}]}
+        rows = [{
+            "method": "incoming_calls", "file": "src/lib.rs", "line": 1, "character": 0, "symbol": "target_fn",
+            "cursor_kind": "fn_def", "target_kind": "lib",
+            "_raw": {
+                "ridx1": {"outcome": "a", "res": [c1, c2], "us": 100.0, "error": None},
+                "ridx2": {"outcome": "a", "res": [c2, c1], "us": 110.0, "error": None},
+                "ra": {"outcome": "a", "res": [c1, c2], "us": 800.0, "error": None},
+            },
+        }]
+        summary = evaluate_all_rows(rows, "ridx1", "ra", REPO, None, None, "ridx2")
+        m = summary["methods"]["incoming_calls"]
+        self.assertEqual(m["exact_match"], 1)
+        self.assertEqual(m["self_diff_raw"], 1)
+        self.assertEqual(m["self_diff_norm"], 0)
+        self.assertEqual(m["ridx_p50_us"], 100.0)
+        self.assertEqual(m["ra_p50_us"], 800.0)
+
 
 if __name__ == "__main__":
     unittest.main()
