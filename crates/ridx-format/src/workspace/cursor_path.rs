@@ -333,6 +333,41 @@ impl WorkspaceIndex {
                 }
             }
         }
-        self.resolve_qualifier(file, &full_qual).or_else(|| self.find_definition_by_path(&full_qual))
+        self.resolve_qualifier(file, &full_qual).or_else(|| self.find_definition_by_path(&full_qual)).or_else(|| {
+            if !has_trailing_colons || !full_qual.contains("::") {
+                return None;
+            }
+            let prefix_colon = format!("{full_qual}::");
+            for (i, fid) in self.resolved_reader_file_ids(file) {
+                let r = &self.readers[i];
+                let refs = r.references();
+                let lo = refs.partition_point(|re| re.span().file_id() < fid);
+                let hi = refs.partition_point(|re| re.span().file_id() <= fid);
+                for re in &refs[lo..hi] {
+                    let tp = r.get_str(re.target_path_offset());
+                    if tp.starts_with(&prefix_colon) {
+                        let path_slice = &tp[..full_qual.len()];
+                        let name_slice = path_slice.rsplit("::").next().unwrap_or(path_slice);
+                        return Some(ResolvedDefinition {
+                            name: name_slice,
+                            path: path_slice,
+                            kind: crate::format::DefKind::Mod,
+                            signature: None,
+                            file: "external",
+                            start_line: 0,
+                            start_col: 0,
+                            end_line: 0,
+                            end_col: 0,
+                            is_macro_expansion: false,
+                            is_reexport: false,
+                            source_root: None,
+                            unit_key: None,
+                            reader_idx: Some(i),
+                        });
+                    }
+                }
+            }
+            None
+        })
     }
 }

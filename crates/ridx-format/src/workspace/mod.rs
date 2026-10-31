@@ -132,7 +132,7 @@ impl WorkspaceIndex {
 
     /// Rebuilds the internal unit matching index after readers or extern units change.
     pub(crate) fn rebuild_unit_match(&mut self) {
-        self.unit_match = UnitMatchIndex::build(&self.readers, &self.unit_keys, &self.reader_extern_units);
+        self.unit_match = UnitMatchIndex::build_with_deps(&self.readers, &self.unit_keys, &self.reader_extern_units, &self.reader_dependencies);
     }
 
     /// Bumps generation and rebuilds the internal file path provenance lookup index.
@@ -296,6 +296,11 @@ impl WorkspaceIndex {
         let p = self.paths.get(idx).map(|p| p.as_path());
         let path_to_check = sroot.or(p).unwrap_or_else(|| Path::new(""));
         let file_str = path_to_check.to_str().unwrap_or("");
+        if let Some(u) = uk.filter(|s| !s.is_empty()) {
+            if file_str != "external" && self.unit_match.readers_for_unit(u) == Some(std::slice::from_ref(&idx)) {
+                return false;
+            }
+        }
 
         self.is_external_target(file_str, path_to_check, uk)
     }

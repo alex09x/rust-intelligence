@@ -120,11 +120,13 @@ impl WorkspaceIndex {
                 continue;
             }
 
-            let is_wide_enclosing_ref = def_inside.is_none() && inner_ref.is_some_and(|r| reader.may_enclose_definition(r));
-            if is_wide_enclosing_ref {
+            let may_enclose_other_ident =
+                (inner_ref.is_none() && res.kind == DefKind::Use) || (def_inside.is_none() && inner_ref.is_some_and(|r| reader.may_enclose_definition(r)));
+            if may_enclose_other_ident {
                 let ident_opt = cursor_ident_cache.get_or_insert_with(|| self.cursor_ident_at(file, line, col));
                 if let Some((ref cid, _, _)) = ident_opt {
-                    if cid != res.name && !res.path.ends_with(&format!("::{cid}")) {
+                    let raw_cid = cid.strip_prefix("r#").unwrap_or(cid);
+                    if raw_cid != res.name && !res.path.ends_with(&format!("::{raw_cid}")) && raw_cid != "self" && raw_cid != "Self" {
                         if fallback_wide_ref.is_none() {
                             fallback_wide_ref = Some((i, res));
                         }

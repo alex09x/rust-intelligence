@@ -112,7 +112,13 @@ impl WorkspaceIndex {
             for &i in first_readers.iter() {
                 let reader = &self.readers[i];
                 let sub = strip_crate_prefix(candidate_str, first_seg).unwrap_or(candidate_str);
-                if let Some(def) = reader.find_definition_by_path(candidate_str).or_else(|| (sub != candidate_str).then(|| reader.find_definition_by_path(sub)).flatten()) {
+                if let Some(def) =
+                    reader.find_definition_by_path(candidate_str).or_else(|| (sub != candidate_str).then(|| reader.find_definition_by_path(sub)).flatten()).or_else(|| {
+                        (sub != candidate_str && !sub.contains("::"))
+                            .then(|| reader.definitions().iter().find(|d| DefKind::from(d.kind) == DefKind::Macro && reader.get_str(d.name_offset()) == sub))
+                            .flatten()
+                    })
+                {
                     return Some(resolve_def(self.make_resolved_definition(i, def)));
                 }
                 if candidate_str == first_seg && self.target_kinds.get(i).copied().flatten().is_none_or(|k| k.is_lib()) {

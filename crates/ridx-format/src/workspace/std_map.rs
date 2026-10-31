@@ -23,11 +23,44 @@
 ///
 /// Otherwise, returns only the original path.
 pub fn std_path_candidates(path: &str) -> Vec<String> {
-    let mut candidates = Vec::with_capacity(3);
+    let mut candidates = Vec::with_capacity(6);
     candidates.push(path.to_string());
-    if let Some(rest) = path.strip_prefix("std::") {
-        candidates.push(format!("core::{rest}"));
-        candidates.push(format!("alloc::{rest}"));
+    let rest_and_others: Option<(&str, [&str; 2])> = if let Some(r) = path.strip_prefix("std::") {
+        Some((r, ["core", "alloc"]))
+    } else if let Some(r) = path.strip_prefix("core::") {
+        Some((r, ["std", "alloc"]))
+    } else if let Some(r) = path.strip_prefix("alloc::") {
+        Some((r, ["std", "core"]))
+    } else {
+        None
+    };
+    if let Some((rest, others)) = rest_and_others {
+        for o in others {
+            candidates.push(format!("{o}::{rest}"));
+        }
+        if rest.contains("::<impl ") {
+            let extra: Vec<String> = candidates
+                .iter()
+                .flat_map(|c| {
+                    let mut v = Vec::new();
+                    for from in ["::<impl core::", "::<impl alloc::", "::<impl std::"] {
+                        if c.contains(from) {
+                            for to in ["::<impl std::", "::<impl core::", "::<impl alloc::"] {
+                                if from != to {
+                                    v.push(c.replacen(from, to, 1));
+                                }
+                            }
+                        }
+                    }
+                    v
+                })
+                .collect();
+            for e in extra {
+                if !candidates.contains(&e) {
+                    candidates.push(e);
+                }
+            }
+        }
     }
     candidates
 }

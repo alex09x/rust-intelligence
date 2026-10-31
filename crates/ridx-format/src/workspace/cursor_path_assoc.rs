@@ -165,19 +165,19 @@ impl WorkspaceIndex {
         }
         let exact = format!("{owner_name}::{variant_name}");
         let suffix = format!("::{owner_name}::{variant_name}");
-        for i in 0..self.readers.len() {
-            let reader = &self.readers[i];
-            for r in reader.find_references(&exact) {
-                if matches!(DefKind::from(r.kind), DefKind::Variant | DefKind::VariantCtor) && r.target_line() > 0 {
-                    return Some(self.finalize_reader_resolution(i, reader.resolve_ref_definition(r)));
+        for require_line in [true, false] {
+            for i in 0..self.readers.len() {
+                let reader = &self.readers[i];
+                for r in reader.find_references(&exact) {
+                    if matches!(DefKind::from(r.kind), DefKind::Variant | DefKind::VariantCtor) && (!require_line || r.target_line() > 0) {
+                        return Some(self.finalize_reader_resolution(i, reader.resolve_ref_definition(r)));
+                    }
                 }
             }
-        }
-        if let Some(i) = preferred_reader {
-            if let Some(reader) = self.readers.get(i) {
-                if reader.references().len() <= 20_000 {
+            if let Some(i) = preferred_reader {
+                if let Some(reader) = self.readers.get(i).filter(|r| r.references().len() <= 100_000) {
                     for r in reader.references() {
-                        if !matches!(DefKind::from(r.kind), DefKind::Variant | DefKind::VariantCtor) || r.target_line() == 0 {
+                        if !matches!(DefKind::from(r.kind), DefKind::Variant | DefKind::VariantCtor) || (require_line && r.target_line() == 0) {
                             continue;
                         }
                         let tp = reader.get_str(r.target_path_offset());
@@ -209,6 +209,9 @@ impl WorkspaceIndex {
             .or_else(|| has_cname.then(|| self.find_definition_by_path(&format!("{cname}::{ty}"))).flatten())
         {
             if let Some(def) = self.find_definition_by_path(&format!("{}::{ident}", base.path)) {
+                return Some(def);
+            }
+            if let Some(def) = self.find_definitions_by_owner(base.path).into_iter().find(|d| d.name == ident) {
                 return Some(def);
             }
             for sup in self.resolve_deref_chain(base.path, 4) {

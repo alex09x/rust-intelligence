@@ -26,24 +26,60 @@ impl WorkspaceIndex {
         let target_unit_key = target_unit_key.filter(|k| !k.is_empty());
         let mut all_refs = Vec::new();
         let mut seen_refs = std::collections::HashSet::new();
-        let mut target_crate = target_path.split("::").next().unwrap_or(target_path);
-        if !self.readers.iter().any(|r| r.crate_name() == target_crate) {
-            for r in &self.readers {
-                if r.find_definition_by_path(target_path).is_some() {
+        let raw_target_idx = if let Some(target_unit) = target_unit_key { self.unit_keys.iter().position(|u| u.as_deref() == Some(target_unit)) } else { None };
+        let mut target_crate = super::qualified_path::extract_root_crate(target_path);
+        if !self.has_crate(target_crate) && !matches!(target_crate, "core" | "alloc" | "std" | "proc_macro") {
+            let parent_path = target_path.rsplit_once("::").map(|(p, _)| p);
+            let mut resolved = false;
+            if let Some(t_idx) = raw_target_idx {
+                let r = &self.readers[t_idx];
+                if !target_path.contains("::") || r.find_definition_by_path(target_path).is_some() || parent_path.is_some_and(|p| r.find_definition_by_path(p).is_some()) {
                     target_crate = r.crate_name();
-                    break;
+                    resolved = true;
+                }
+            }
+            if !resolved {
+                for r in &self.readers {
+                    if r.find_definition_by_path(target_path).is_some() {
+                        target_crate = r.crate_name();
+                        resolved = true;
+                        break;
+                    }
+                }
+            }
+            if !resolved {
+                for r in &self.readers {
+                    if parent_path.is_some_and(|p| r.find_definition_by_path(p).is_some_and(|d| DefKind::from(d.kind) == DefKind::Enum)) {
+                        target_crate = r.crate_name();
+                        break;
+                    }
                 }
             }
         }
-        let target_idx = if let Some(target_unit) = target_unit_key {
-            self.unit_keys.iter().position(|u| u.as_deref() == Some(target_unit))
+        let target_idx = if target_unit_key.is_some() {
+            raw_target_idx
         } else {
-            self.readers.iter().position(|r| r.crate_name() == target_crate && r.find_definition_by_path(target_path).is_some())
+            let fast = self.readers_for_crate_fast(target_crate);
+            fast.iter()
+                .copied()
+                .find(|&idx| {
+                    let r = &self.readers[idx];
+                    let sub = target_path.strip_prefix(&format!("{target_crate}::")).unwrap_or(target_path);
+                    r.find_definition_by_path(target_path).is_some() || r.find_definition_by_path(sub).is_some()
+                })
+                .or_else(|| fast.first().copied())
         };
 
         if let Some(t_idx) = target_idx {
-            target_crate = self.readers[t_idx].crate_name();
+            if (!target_path.starts_with('<')
+                && !matches!(target_crate, "core" | "alloc" | "std" | "proc_macro")
+                && (explicit_def.is_none_or(|(ef, _, _, _)| ef != "external") || !self.has_crate(target_crate)))
+                || self.readers[t_idx].crate_name() == target_crate
+            {
+                target_crate = self.readers[t_idx].crate_name();
+            }
         }
+        let effective_unit_key = target_unit_key;
 
         let resolve_full = |t_idx: usize, f: &str| -> String {
             self.source_roots
@@ -72,27 +108,69 @@ impl WorkspaceIndex {
             None
         };
 
-        let prefix = target_path.split("::").next().unwrap_or(target_path);
+        let prefix = super::qualified_path::extract_root_crate(target_path);
         let is_alias_for_target =
-            if let Some(target_unit) = target_unit_key { self.reader_extern_units.iter().any(|m| m.get(prefix).is_some_and(|uk| uk == target_unit)) } else { false };
+            if let Some(target_unit) = effective_unit_key { self.reader_extern_units.iter().any(|m| m.get(prefix).is_some_and(|uk| uk == target_unit)) } else { false };
 
         let local_path = if target_path.starts_with(&format!("{target_crate}::")) {
             &target_path[target_crate.len() + 2..]
-        } else if is_alias_for_target && target_path.contains("::") {
+        } else if !target_path.starts_with('<') && is_alias_for_target && target_path.contains("::") {
             &target_path[prefix.len() + 2..]
         } else {
             target_path
         };
-        let global_path_buf = format!("{target_crate}::{local_path}");
+        let is_global_angle = local_path.starts_with('<') && {
+            let c = super::qualified_path::extract_root_crate(local_path);
+            c == target_crate || matches!(c, "core" | "alloc" | "std" | "proc_macro") || self.has_crate(c)
+        };
+        let global_path_buf = if is_global_angle { local_path.to_string() } else { format!("{target_crate}::{local_path}") };
         let global_path = global_path_buf.as_str();
-        let spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
+        let mut spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
+        for imp_sp in super::qualified_path::impl_consumer_spellings(local_path, target_crate) {
+            if !spellings.contains(&imp_sp) {
+                spellings.push(imp_sp);
+            }
+        }
+        for cand in super::std_map::std_path_candidates(global_path) {
+            if cand != global_path && cand != local_path && cand != target_path && !spellings.contains(&cand) {
+                spellings.push(cand);
+            }
+        }
+        if explicit_def.map(|d| d.2) == Some(DefKind::Macro) {
+            if let Some((_, macro_name)) = local_path.rsplit_once("::") {
+                let root_macro = format!("{target_crate}::{macro_name}");
+                if !spellings.contains(&root_macro) {
+                    spellings.push(root_macro);
+                }
+                if !spellings.contains(&macro_name.to_string()) {
+                    spellings.push(macro_name.to_string());
+                }
+            }
+        }
+        if let Some((ty, tr, tail)) = super::qualified_path::split_qualified_parts(target_path) {
+            let tr_crate = super::qualified_path::extract_root_crate(tr);
+            if ty.len() == 1 && ty.as_bytes()[0].is_ascii_uppercase() && matches!(tr_crate, "core" | "alloc" | "std") {
+                let trait_item = format!("{tr}{tail}");
+                for cand in super::std_map::std_path_candidates(&trait_item) {
+                    if !spellings.contains(&cand) {
+                        spellings.push(cand);
+                    }
+                }
+            }
+        }
 
         let disambiguate_line = explicit_def.is_some()
             && target_idx.is_some_and(|t| {
                 let r = &self.readers[t];
                 r.has_multiple_definitions_at_path(target_path) || r.has_multiple_definitions_at_path(local_path) || r.has_multiple_definitions_at_path(global_path)
             });
-        let ref_target = ReferenceTarget { kind: explicit_def.map(|d| d.2), name: explicit_def.map(|d| d.3), coords: target_def_coords.clone(), disambiguate_line };
+        let ref_target = ReferenceTarget {
+            kind: explicit_def.map(|d| d.2),
+            name: explicit_def.map(|d| d.3),
+            coords: target_def_coords.clone(),
+            disambiguate_line,
+            is_qualified_path: target_path.contains("::"),
+        };
 
         // The target and the other builds of its crate and version (feature sets compile one
         // source into several units): a consumer reaching any of them uses the item.
@@ -113,14 +191,14 @@ impl WorkspaceIndex {
             let reader_crate = reader.crate_name();
 
             let is_exact_target_unit =
-                if let (Some(target_unit), Some(ru)) = (target_unit_key, reader_unit) { ru == target_unit } else { target_idx == Some(i) || reader_crate == target_crate };
+                if let (Some(target_unit), Some(ru)) = (effective_unit_key, reader_unit) { ru == target_unit } else { target_idx == Some(i) || reader_crate == target_crate };
 
             let is_sibling_unit = target_idx.map(|t| self.are_sibling_workspace_units(t, i)).unwrap_or(false);
 
             let is_same_package = is_exact_target_unit || is_sibling_unit;
 
             if !is_same_package {
-                let is_consumer_of_target = target_unit_key
+                let is_consumer_of_target = effective_unit_key
                     .map(|tu| {
                         let in_deps = self.reader_dependencies.get(i).map(|d| d.iter().any(|dep| dep == tu)).unwrap_or(false);
                         let in_extern = self.reader_extern_units.get(i).map(|m| m.values().any(|uk| uk == tu)).unwrap_or(false);
@@ -133,8 +211,8 @@ impl WorkspaceIndex {
                     continue;
                 }
                 // The reader is an external/referring crate.
-                // If target_unit_key is given:
-                if let Some(target_unit) = target_unit_key {
+                // If effective_unit_key is given:
+                if let Some(target_unit) = effective_unit_key {
                     let has_deps = self.reader_dependencies.get(i).map(|d| !d.is_empty()).unwrap_or(false);
                     let has_extern_units = self.reader_extern_units.get(i).map(|m| !m.is_empty()).unwrap_or(false);
 
@@ -169,15 +247,21 @@ impl WorkspaceIndex {
             } else if is_same_package {
                 query_path_vec.push(local_path);
                 query_path_vec.push(global_path);
+                if target_path != local_path && target_path != global_path {
+                    query_path_vec.push(target_path);
+                }
             } else {
                 query_path_vec.push(global_path);
+                if target_path != global_path && target_path != local_path {
+                    query_path_vec.push(target_path);
+                }
             }
             query_path_vec.extend(spellings.iter().map(String::as_str));
             for &q_path in &query_path_vec {
                 let refs = reader.find_references(q_path);
                 for r in refs {
                     let r_target_unit = reader.target_unit(r);
-                    if let Some(target_unit) = target_unit_key {
+                    if let Some(target_unit) = effective_unit_key {
                         if !r_target_unit.is_empty() {
                             if !self.matches_unit_memoized(&mut match_memo, i, r_target_unit, target_unit, target_crate) {
                                 continue;

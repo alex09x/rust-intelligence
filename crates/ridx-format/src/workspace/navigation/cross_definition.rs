@@ -20,7 +20,7 @@ fn is_on_line_of(res: &ResolvedDefinition<'_>, line: u32) -> bool {
 
 impl WorkspaceIndex {
     /// Resolves a cross-crate definition target with compilation-unit and path/signature awareness.
-    pub(super) fn find_cross_definition<'a>(&'a self, referrer_idx: usize, res: &ResolvedDefinition<'_>) -> Option<ResolvedDefinition<'a>> {
+    pub(super) fn find_cross_definition<'a>(&'a self, referrer_idx: usize, res: &ResolvedDefinition<'a>) -> Option<ResolvedDefinition<'a>> {
         let target_path = res.path;
         let extern_alias = target_path.split("::").next().unwrap_or(target_path);
 
@@ -49,24 +49,31 @@ impl WorkspaceIndex {
         if !candidate_readers.is_empty() {
             let mut resolved_candidates = Vec::new();
             for &(j, r) in &candidate_readers {
-                let cand_def = if let Some(def) = r.find_definition_by_path(target_path) {
-                    Some(def)
-                } else if target_path.starts_with(&format!("{extern_alias}::")) {
-                    let mapped_path = format!("{}::{}", r.crate_name(), &target_path[extern_alias.len() + 2..]);
-                    r.find_definition_by_path(&mapped_path)
-                } else if res.file != "external" && !res.file.is_empty() {
+                let mut cand_def = r.find_definition_by_path(target_path);
+                if cand_def.is_none() && target_path.starts_with(&format!("{extern_alias}::")) {
+                    let sub = &target_path[extern_alias.len() + 2..];
+                    let mapped_path = format!("{}::{sub}", r.crate_name());
+                    cand_def = r.find_definition_by_path(&mapped_path);
+                }
+                if cand_def.is_none() && res.file != "external" && !res.file.is_empty() {
                     let file_id_opt = (0..r.header().files_count).find(|&fid| {
                         let f_name = r.get_file(fid);
                         f_name == res.file || res.file.ends_with(f_name) || f_name.ends_with(res.file)
                     });
                     if let Some(fid) = file_id_opt {
-                        r.definitions().iter().find(|d| d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name && is_on_line_of(res, d.span().start_line()))
-                    } else {
-                        None
+                        cand_def = r
+                            .definitions()
+                            .iter()
+                            .find(|d| d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name && res.start_line != 0 && d.span().start_line() == res.start_line)
+                            .or_else(|| {
+                                r.definitions().iter().find(|d| d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name && is_on_line_of(res, d.span().start_line()))
+                            });
                     }
-                } else {
-                    None
-                };
+                }
+                if cand_def.is_none() && (res.file == "external" || res.file.is_empty() || res.start_line == 0) && target_path.starts_with(&format!("{extern_alias}::")) {
+                    let sub = &target_path[extern_alias.len() + 2..];
+                    cand_def = r.find_definition_by_path(sub).filter(|d| DefKind::from(d.kind) != DefKind::Use);
+                }
                 if let Some(def) = cand_def {
                     let def_span = def.span();
                     let file = r.get_file(def_span.file_id());
@@ -120,15 +127,25 @@ impl WorkspaceIndex {
         }
 
         // 3. Fallback when referrer has no dependency metadata: search all readers matching target_crate
-        let target_crate = extern_alias;
+        let target_crate = target_path.split("::").next().unwrap_or("");
         let mut candidates = Vec::new();
         for &j in self.readers_for_crate_fast(target_crate).iter() {
             let r = &self.readers[j];
-            if let Some(def) = r.find_definition_by_path(target_path) {
+            let def_opt = r.find_definition_by_path(target_path).or_else(|| {
+                let rest = target_path.strip_prefix(&format!("{target_crate}::"))?;
+                let d = r.find_definition_by_path(rest)?;
+                (DefKind::from(d.kind) != DefKind::Use
+                    && (res.start_line == 0 || is_on_line_of(res, d.span().start_line()))
+                    && (res.file == "external" || res.file.is_empty() || res.start_line == 0 || !r.has_multiple_definitions_at_path(rest)))
+                .then_some(d)
+            });
+            if let Some(def) = def_opt {
                 let def_span = def.span();
+                let def_path = r.get_str(def.path_offset());
+                let full_path = if !def_path.starts_with(r.crate_name()) && target_path.starts_with(&format!("{}::", r.crate_name())) { target_path } else { def_path };
                 candidates.push(ResolvedDefinition {
                     name: r.get_str(def.name_offset()),
-                    path: r.get_str(def.path_offset()),
+                    path: full_path,
                     kind: DefKind::from(def.kind),
                     signature: (def.sig_offset() != 0).then(|| r.get_str(def.sig_offset())),
 

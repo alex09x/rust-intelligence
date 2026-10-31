@@ -263,6 +263,7 @@ impl WorkspaceIndex {
             name: Some(def.name),
             coords: (!def.file.is_empty() && def.start_line > 0).then(|| (def.file.to_string(), def.file.to_string(), def.start_line)),
             disambiguate_line,
+            is_qualified_path: def.path.contains("::"),
         };
 
         let mut seen_refs: HashSet<(String, u32, u32, u32)> = HashSet::new();

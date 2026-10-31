@@ -247,7 +247,11 @@ impl WorkspaceIndex {
         let crate_prefix = format!("{}::", reader.crate_name());
         let current_uk = self.unit_keys.get(i).and_then(|u| u.as_deref()).unwrap_or_else(|| reader.unit_key());
         let is_explicit_remote = res.unit_key.is_some() && res.unit_key != Some(current_uk);
-        let is_local = !is_explicit_remote && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name());
+        let local_fid = (res.file != "external" && !res.file.starts_with("library/")).then(|| reader.find_file_id(res.file)).flatten();
+        let has_local_def = local_fid.is_some_and(|fid| {
+            res.kind == DefKind::Local || !res.path.contains("::") || self.unit_match.defs_in_file_up_to(i, fid, res.start_line).iter().any(|&(_, sl, _)| sl == res.start_line)
+        });
+        let is_local = !is_explicit_remote && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name() || has_local_def);
         if is_local && res.file != "external" {
             res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
                 self.source_roots.get(i).and_then(|r| r.as_deref())
@@ -261,13 +265,28 @@ impl WorkspaceIndex {
         if let Some(cross_def) = self.find_cross_definition(i, &res) {
             return cross_def;
         }
+        if !is_explicit_remote && local_fid.is_some() {
+            res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                self.source_roots.get(i).and_then(|r| r.as_deref())
+            } else {
+                self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())
+            };
+            res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+            res.reader_idx = Some(i);
+            return res;
+        }
         if res.unit_key.is_none() {
             res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
         }
         let owner =
             res.unit_key.filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref())).and_then(|uk| self.readers_for_unit_fast(uk).first().copied()).unwrap_or(i);
-        if res.source_root.is_none() {
-            res.source_root = if self.reader_is_dependency.get(owner).copied().unwrap_or(false) {
+        if res.source_root.is_none() && res.file != "external" {
+            let owner_crate = self.readers.get(owner).map(|r| r.crate_name()).unwrap_or("");
+            let is_sysroot_owner = matches!(owner_crate, "core" | "alloc" | "std" | "proc_macro");
+            let is_dep = self.reader_is_dependency.get(owner).copied().unwrap_or(false);
+            res.source_root = if res.file.starts_with("library/") && !is_sysroot_owner {
+                None
+            } else if is_dep {
                 self.source_roots.get(owner).and_then(|r| r.as_deref())
             } else {
                 self.source_roots.get(owner).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())

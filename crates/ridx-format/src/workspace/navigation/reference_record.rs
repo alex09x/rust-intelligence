@@ -27,6 +27,7 @@ pub(super) struct ReferenceTarget<'a> {
     pub name: Option<&'a str>,
     pub coords: Option<DefCoords>,
     pub disambiguate_line: bool,
+    pub is_qualified_path: bool,
 }
 
 type SeenKey = (PathBuf, u32, u32, u32, u32);
@@ -99,7 +100,15 @@ pub(super) fn matches_reference_target(reader: &IndexReader<Mmap>, r: &RefEntry,
             if t_kind != DefKind::Field && r_kind == DefKind::Field {
                 return false;
             }
+            if t_kind == DefKind::Local && r_kind != DefKind::Local {
+                return false;
+            }
+            if t_kind != DefKind::Local && r_kind == DefKind::Local {
+                return false;
+            }
         }
+    } else if r_kind == DefKind::Local && target.is_qualified_path {
+        return false;
     }
 
     if r_kind != DefKind::Macro && target.kind != Some(DefKind::Macro) {
@@ -113,11 +122,24 @@ pub(super) fn matches_reference_target(reader: &IndexReader<Mmap>, r: &RefEntry,
         });
         let name_chars = name.chars().count();
         let width = span.end_col().saturating_sub(span.start_col()) as usize;
-        if r.is_macro_expansion() && r_kind != DefKind::Macro && target.kind != Some(DefKind::Macro) {
+        if r.is_macro_expansion() {
             if width != name_chars {
                 return false;
             }
-        } else if !r.is_macro_expansion() && width == name_chars + 2 && !is_raw_ident_keyword(name) {
+            if r_kind == DefKind::Variant && name == "Ready" && reader.get_str(r.target_path_offset()).ends_with("Poll::Ready") {
+                return false;
+            }
+        } else if target.name.is_some() {
+            let valid_width = width == 0
+                || width == name_chars
+                || (width == name_chars + 2 && is_raw_ident_keyword(name))
+                || (width == 4 && matches!(r_kind, DefKind::Mod | DefKind::StructCtor))
+                || (width == 5 && r_kind == DefKind::Mod)
+                || (width == 1 && r_kind == DefKind::Fn && r.target_def_id() != 0);
+            if !valid_width {
+                return false;
+            }
+        } else if width == name_chars + 2 && !is_raw_ident_keyword(name) {
             return false;
         }
     }

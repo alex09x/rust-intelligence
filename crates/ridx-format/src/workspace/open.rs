@@ -51,7 +51,7 @@ impl WorkspaceIndex {
             let meta_paths = vec![meta.meta_path];
             let meta_mtimes = vec![meta.meta_mtime];
 
-            let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
+            let unit_match = UnitMatchIndex::build_with_deps(&readers, &unit_keys, &reader_extern_units, &reader_dependencies);
             let mut ws = Self {
                 readers,
                 paths,
@@ -282,7 +282,7 @@ impl WorkspaceIndex {
                 },
             );
 
-        let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
+        let unit_match = UnitMatchIndex::build_with_deps(&readers, &unit_keys, &reader_extern_units, &reader_dependencies);
         let mut ws = Self {
             readers,
             paths,
