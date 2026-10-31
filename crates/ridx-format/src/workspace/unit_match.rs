@@ -124,9 +124,7 @@ impl UnitMatchIndex {
 
     #[inline]
     pub fn is_valid_for_readers<B: AsRef<[u8]>>(&self, readers: &[IndexReader<B>]) -> bool {
-        self.reader_fingerprints.len() == readers.len()
-            && readers.first().map(reader_fingerprint) == self.reader_fingerprints.first().copied()
-            && readers.last().map(reader_fingerprint) == self.reader_fingerprints.last().copied()
+        self.reader_fingerprints.len() == readers.len() && self.reader_fingerprints.iter().zip(readers.iter()).all(|(&fp, r)| fp == reader_fingerprint(r))
     }
 
     #[inline]
@@ -289,23 +287,34 @@ impl super::WorkspaceIndex {
         let reader_has_dep = |r_idx: usize, uk: &str| -> bool {
             self.reader_extern_units.get(r_idx).is_some_and(|m| m.values().any(|v| v == uk)) || self.reader_dependencies.get(r_idx).is_some_and(|d| d.iter().any(|v| v == uk))
         };
-        for &sr in source_readers {
-            if reader_has_dep(sr, target_uk) {
-                return true;
+        let mut visited: HashSet<usize> = source_readers.iter().copied().collect();
+        let mut frontier: Vec<usize> = source_readers.to_vec();
+        for _ in 0..6 {
+            if frontier.is_empty() {
+                break;
             }
-            let mid_uks = self
-                .reader_extern_units
-                .get(sr)
-                .into_iter()
-                .flat_map(|m| m.values().map(String::as_str))
-                .chain(self.reader_dependencies.get(sr).into_iter().flat_map(|d| d.iter().map(String::as_str)));
-            for mid_uk in mid_uks {
-                if let Some(mid_indices) = self.unit_match.readers_for_unit(mid_uk) {
-                    if mid_indices.iter().any(|&mid_idx| reader_has_dep(mid_idx, target_uk)) {
-                        return true;
+            let mut next_frontier = Vec::new();
+            for sr in frontier {
+                if reader_has_dep(sr, target_uk) {
+                    return true;
+                }
+                let mid_uks = self
+                    .reader_extern_units
+                    .get(sr)
+                    .into_iter()
+                    .flat_map(|m| m.values().map(String::as_str))
+                    .chain(self.reader_dependencies.get(sr).into_iter().flat_map(|d| d.iter().map(String::as_str)));
+                for mid_uk in mid_uks {
+                    if let Some(mid_indices) = self.unit_match.readers_for_unit(mid_uk) {
+                        for &mid_idx in mid_indices {
+                            if visited.insert(mid_idx) {
+                                next_frontier.push(mid_idx);
+                            }
+                        }
                     }
                 }
             }
+            frontier = next_frontier;
         }
         false
     }

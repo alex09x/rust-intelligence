@@ -76,9 +76,21 @@ pub fn join_resolving_overlap(root: &std::path::Path, rel: &std::path::Path) -> 
     if rel.is_absolute() {
         return rel.to_path_buf();
     }
+    let normalize_if_dot = |p: std::path::PathBuf| -> std::path::PathBuf {
+        let rel_str = rel.to_string_lossy();
+        if rel_str.contains("..") || rel_str.contains("/.") || rel_str.starts_with("./") {
+            if !crate::workspace::provenance::path_traverses_symlink_parent(&p) {
+                return crate::paths::normalize_path(&p);
+            }
+            if let Ok(canon) = p.canonicalize() {
+                return canon;
+            }
+        }
+        p
+    };
     let direct = root.join(rel);
     if direct.exists() {
-        return direct;
+        return normalize_if_dot(direct);
     }
     let rel_comps: Vec<_> = rel.components().collect();
     for i in (1..rel_comps.len()).rev() {
@@ -86,10 +98,10 @@ pub fn join_resolving_overlap(root: &std::path::Path, rel: &std::path::Path) -> 
         if root.ends_with(&prefix) {
             let stripped: std::path::PathBuf = rel_comps[i..].iter().collect();
             let cand = root.join(stripped);
-            return cand;
+            return normalize_if_dot(cand);
         }
     }
-    direct
+    normalize_if_dot(direct)
 }
 
 /// Computes a 64-bit FNV-1a hash over source bytes after stripping UTF-8 BOM and normalizing CRLF to LF,
@@ -153,36 +165,60 @@ pub fn merge_embedded_hashes_authoritative(
     embedded: &std::collections::HashMap<String, u64>,
     source_root: Option<&std::path::Path>,
 ) {
-    // 1. Drop any conflicting aliases in file_hashes
-    file_hashes.retain(|k, &mut v| {
-        let p = std::path::Path::new(k);
-        let rel_match = if let Some(root) = source_root { p.strip_prefix(root).ok().map(|r| r.to_string_lossy().to_string()) } else { None };
-        let target_rel = rel_match.as_deref().unwrap_or(k);
-        if let Some(&emb_h) = embedded.get(target_rel).or_else(|| embedded.get(k)) {
-            v == emb_h
-        } else {
-            true
+    let mut canon_dirs: std::collections::HashMap<std::path::PathBuf, Option<std::path::PathBuf>> = std::collections::HashMap::new();
+    let mut resolve_canon = |abs: &std::path::Path, rel_path: &str| -> Option<std::path::PathBuf> {
+        let is_symlink = std::fs::symlink_metadata(abs).is_ok_and(|m| m.file_type().is_symlink());
+        if is_symlink || rel_path.contains("..") {
+            return abs.canonicalize().ok();
         }
-    });
+        let parent = abs.parent()?;
+        let file_name = abs.file_name()?;
+        let canon_parent = canon_dirs.entry(parent.to_path_buf()).or_insert_with(|| parent.canonicalize().ok()).as_ref()?;
+        Some(canon_parent.join(file_name))
+    };
 
-    // 2. Authoritatively insert embedded relative paths and their absolute aliases under source_root
-    let canon_root = source_root.and_then(|r| r.canonicalize().ok());
+    let mut resolved_embedded: Vec<(&String, u64, Option<std::path::PathBuf>, Option<std::path::PathBuf>)> = Vec::with_capacity(embedded.len());
+    let mut authoritative_by_path: std::collections::HashMap<String, u64> = std::collections::HashMap::with_capacity(embedded.len() * 3);
     for (rel_path, &h) in embedded {
-        file_hashes.insert(rel_path.clone(), h);
+        authoritative_by_path.insert(rel_path.clone(), h);
         if let Some(root) = source_root {
             let abs = root.join(rel_path);
+            let canon = resolve_canon(&abs, rel_path);
+            authoritative_by_path.insert(abs.to_string_lossy().to_string(), h);
+            if let Some(ref c) = canon {
+                authoritative_by_path.insert(c.to_string_lossy().to_string(), h);
+            }
+            resolved_embedded.push((rel_path, h, Some(abs), canon));
+        } else {
+            resolved_embedded.push((rel_path, h, None, None));
+        }
+    }
+
+    // 1. Drop any conflicting aliases in file_hashes
+    file_hashes.retain(|k, &mut v| {
+        if let Some(&emb_h) = authoritative_by_path.get(k) {
+            return v == emb_h;
+        }
+        let p = std::path::Path::new(k);
+        if let Some(root) = source_root {
+            if let Ok(rel) = p.strip_prefix(root) {
+                if let Some(&emb_h) = embedded.get(rel.to_string_lossy().as_ref()) {
+                    return v == emb_h;
+                }
+            }
+        }
+        true
+    });
+
+    // 2. Authoritatively insert embedded relative paths and their absolute/canonical aliases under source_root
+    for (rel_path, h, abs_opt, canon_opt) in resolved_embedded {
+        file_hashes.insert(rel_path.clone(), h);
+        if let Some(abs) = abs_opt {
             file_hashes.insert(abs.to_string_lossy().to_string(), h);
-            if !rel_path.contains("..") {
-                if let Some(ref cr) = canon_root {
-                    let canon = cr.join(rel_path);
-                    if canon != abs {
-                        file_hashes.insert(canon.to_string_lossy().to_string(), h);
-                    }
-                } else if let Ok(canon) = abs.canonicalize() {
+            if let Some(canon) = canon_opt {
+                if canon != abs {
                     file_hashes.insert(canon.to_string_lossy().to_string(), h);
                 }
-            } else if let Ok(canon) = abs.canonicalize() {
-                file_hashes.insert(canon.to_string_lossy().to_string(), h);
             }
         }
     }

@@ -128,4 +128,13 @@ fn test_unit_match_fast_file_and_crate_lookups() {
     assert_eq!(idx.find_file_id_fast(0, &readers[0], "src/other.rs"), Some(None));
     assert_eq!(idx.find_file_id_fast(2, &readers[2], "src/helper.rs"), None);
     assert_eq!(readers[2].find_file_id("src/helper.rs"), Some(0));
+
+    // Replacing a middle shard invalidates is_valid_for_readers
+    let mid_path = temp.path().join("fast_mid_replacement.ridx");
+    let mut writer = IndexWriter::new("delta", "0.3.0");
+    writer.get_or_insert_file("src/delta.rs");
+    writer.write_to(&mut File::create(&mid_path).unwrap()).unwrap();
+    readers[1] = IndexReader::open(&mid_path).unwrap();
+    assert!(!idx.is_valid_for_readers(&readers));
+    assert_eq!(idx.find_file_id_fast(1, &readers[1], "src/main.rs"), None);
 }

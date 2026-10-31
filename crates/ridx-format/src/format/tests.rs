@@ -140,6 +140,27 @@ fn test_merge_embedded_hashes_and_digest() {
     merge_embedded_hashes_authoritative(&mut existing, &embedded, None);
     assert_eq!(existing.get("src/lib.rs"), Some(&12345u64));
     assert_eq!(existing.get("src/other.rs"), Some(&88888u64));
+
+    #[cfg(unix)]
+    {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let crate_root = tmp.path().join("crate_root");
+        let real_sub = tmp.path().join("real_subdir");
+        std::fs::create_dir_all(crate_root.join("src")).unwrap();
+        std::fs::create_dir_all(&real_sub).unwrap();
+        let real_file = real_sub.join("mod.rs");
+        std::fs::write(&real_file, "pub fn linked() {}\n").unwrap();
+        std::os::unix::fs::symlink(&real_sub, crate_root.join("src/linked")).unwrap();
+
+        let real_canon = real_file.canonicalize().unwrap().to_string_lossy().to_string();
+        let mut hashes = HashMap::new();
+        hashes.insert(real_canon.clone(), 0xdead_beefu64);
+        let mut emb = HashMap::new();
+        emb.insert("src/linked/mod.rs".to_string(), 0x1234_5678u64);
+        merge_embedded_hashes_authoritative(&mut hashes, &emb, Some(&crate_root));
+        assert_eq!(hashes.get("src/linked/mod.rs"), Some(&0x1234_5678u64));
+        assert_eq!(hashes.get(&real_canon), Some(&0x1234_5678u64));
+    }
 }
 
 #[test]
