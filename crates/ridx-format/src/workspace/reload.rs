@@ -61,11 +61,16 @@ impl WorkspaceIndex {
     /// If an active variant manifest exists and was switched, atomically reloads the new variant's reader set.
     /// Returns true if any index was updated, added, removed, or switched.
     pub fn reload_if_modified(&mut self) -> io::Result<bool> {
+        self.reload_if_modified_with_cache_dir(crate::format::resolve_cache_dir())
+    }
+
+    /// Checks timestamps of indexed files and reloads any that have changed, using an explicit cache directory.
+    pub fn reload_if_modified_with_cache_dir(&mut self, cache_dir: impl AsRef<Path>) -> io::Result<bool> {
         let mut changed = false;
         self.last_reloaded_files.clear();
 
         // 0. Check if active variant manifest was updated or switched
-        if self.reload_active_variant_if_switched()? {
+        if self.reload_active_variant_if_switched(cache_dir.as_ref().to_path_buf())? {
             return Ok(true);
         }
 

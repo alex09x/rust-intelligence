@@ -65,11 +65,11 @@ pub fn test_sub<S: SubTrait>(s: S) {
         sysroot_str,
     ];
 
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    std::env::set_var("CARGO_MANIFEST_DIR", &ws_dir);
-    std::env::set_var("CARGO_PKG_VERSION", "0.1.0");
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.manifest_dir = Some(ws_dir.clone());
+    env.pkg_version = "0.1.0".to_string();
 
-    let res = run_driver(args);
+    let res = run_driver_with_env(args, env);
     assert!(res.is_ok());
 
     let out_ridx = fs::read_dir(&out_dir)
@@ -104,9 +104,6 @@ pub fn test_sub<S: SubTrait>(s: S) {
     assert!(chain.contains(&"BaseTrait"), "BFS chain must contain BaseTrait");
     assert!(chain.contains(&"SecondBaseTrait"), "BFS chain must contain SecondBaseTrait");
 
-    std::env::remove_var("RIDX_OUT_DIR");
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
@@ -159,11 +156,11 @@ impl std::fmt::Display for MyDisplay {
         sysroot_str,
     ];
 
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    std::env::set_var("CARGO_MANIFEST_DIR", &ws_dir);
-    std::env::set_var("CARGO_PKG_VERSION", "0.1.0");
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.manifest_dir = Some(ws_dir.clone());
+    env.pkg_version = "0.1.0".to_string();
 
-    let res = run_driver(args);
+    let res = run_driver_with_env(args, env);
     assert!(res.is_ok());
 
     let out_ridx = fs::read_dir(&out_dir)
@@ -183,8 +180,5 @@ impl std::fmt::Display for MyDisplay {
     let disp_targets = reader.find_deref_targets("MyDisplay");
     assert!(disp_targets.iter().any(|&t| t.contains("Display")), "MyDisplay must link to Display, got: {:?}", disp_targets);
 
-    std::env::remove_var("RIDX_OUT_DIR");
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }

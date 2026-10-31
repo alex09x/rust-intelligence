@@ -25,10 +25,11 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
         extern_units,
         krate_to_unit,
         out_dir: _,
+        cache_dir,
+        driver_hash,
         compiler_args,
     } = ctx;
-    let cache_dir = ridx_format::resolve_cache_dir();
-    let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
+    let obj_path = ridx_format::cache_object_path(cache_dir, &unit_key);
 
     let is_valid_cache = if obj_path.is_file() {
         if let Ok(reader) = ridx_format::IndexReader::open(&obj_path) {
@@ -54,7 +55,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
             "name": crate_name,
             "version": crate_version,
             "unit_key": unit_key,
-            "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
+            "driver_hash": format!("{:016x}", driver_hash),
             "format_version": ridx_format::CURRENT_FORMAT_VERSION,
             "generation": generation,
             "object_path": obj_path.display().to_string(),
@@ -133,7 +134,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
                         "name": crate_name,
                         "version": crate_version,
                         "unit_key": unit_key,
-                        "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
+                        "driver_hash": format!("{:016x}", driver_hash),
                         "format_version": ridx_format::CURRENT_FORMAT_VERSION,
                         "generation": generation,
                         "object_path": obj_path.display().to_string(),

@@ -33,19 +33,23 @@ pub use self::header::{FileEntry, Header, HeaderV2};
 /// - Unix: `$XDG_CACHE_HOME/ridx/v{CURRENT_VERSION}` or `$HOME/.cache/ridx/v{CURRENT_VERSION}`
 /// - Windows: `%LOCALAPPDATA%/ridx/v{CURRENT_VERSION}` or `$USERPROFILE/.cache/ridx/v{CURRENT_VERSION}`
 pub fn resolve_cache_dir() -> std::path::PathBuf {
-    if let Ok(dir) = std::env::var("RIDX_CACHE_DIR") {
+    resolve_cache_dir_with(std::env::var("RIDX_CACHE_DIR").ok().as_deref(), std::env::var("XDG_CACHE_HOME").ok().as_deref(), std::env::var("HOME").ok().as_deref())
+}
+
+pub fn resolve_cache_dir_with(ridx_cache_dir: Option<&str>, xdg_cache_home: Option<&str>, home: Option<&str>) -> std::path::PathBuf {
+    if let Some(dir) = ridx_cache_dir {
         let p = std::path::PathBuf::from(dir.trim());
         if !p.as_os_str().is_empty() {
             return p;
         }
     }
-    if let Ok(xdg) = std::env::var("XDG_CACHE_HOME") {
+    if let Some(xdg) = xdg_cache_home {
         let p = std::path::PathBuf::from(xdg.trim());
         if !p.as_os_str().is_empty() {
             return p.join("ridx").join(format!("v{}", CURRENT_VERSION));
         }
     }
-    if let Ok(home) = std::env::var("HOME") {
+    if let Some(home) = home {
         let p = std::path::PathBuf::from(home.trim());
         if !p.as_os_str().is_empty() {
             return p.join(".cache").join("ridx").join(format!("v{}", CURRENT_VERSION));

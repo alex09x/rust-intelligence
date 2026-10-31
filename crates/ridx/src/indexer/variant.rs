@@ -24,6 +24,35 @@ pub fn compute_variant_id(
     all_features: bool,
     manifest_path: &Path,
 ) -> String {
+    compute_variant_id_with_env(
+        profile,
+        target,
+        package,
+        features,
+        no_default_features,
+        all_features,
+        manifest_path,
+        std::env::var("CARGO_BUILD_TARGET").ok().as_deref(),
+        std::env::var("RUSTFLAGS").ok().as_deref(),
+        std::env::var("CARGO_ENCODED_RUSTFLAGS").ok().as_deref(),
+        std::env::var("RUSTUP_TOOLCHAIN").ok().as_deref(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn compute_variant_id_with_env(
+    profile: &str,
+    target: Option<&str>,
+    package: Option<&str>,
+    features: Option<&str>,
+    no_default_features: bool,
+    all_features: bool,
+    manifest_path: &Path,
+    env_target: Option<&str>,
+    rustflags: Option<&str>,
+    encoded_flags: Option<&str>,
+    toolchain: Option<&str>,
+) -> String {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     profile.hash(&mut hasher);
@@ -44,8 +73,7 @@ pub fn compute_variant_id(
     }
 
     // 2. Effective target: CLI target -> CARGO_BUILD_TARGET -> .cargo/config target -> "host"
-    let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
-    let effective_target = target.or(env_target.as_deref()).or(config_target.as_deref()).unwrap_or("host");
+    let effective_target = target.or(env_target).or(config_target.as_deref()).unwrap_or("host");
     effective_target.hash(&mut hasher);
 
     // 3. Package filter and feature flags
@@ -79,15 +107,18 @@ pub fn compute_variant_id(
         if out.status.success() {
             out.stdout.hash(&mut hasher);
         }
-    } else if let Ok(toolchain) = std::env::var("RUSTUP_TOOLCHAIN") {
+    } else if let Some(toolchain) = toolchain {
+        toolchain.hash(&mut hasher);
+    }
+    if let Some(toolchain) = toolchain {
         toolchain.hash(&mut hasher);
     }
 
     // 7. Flags affecting rustc compilation
-    if let Ok(rustflags) = std::env::var("RUSTFLAGS") {
+    if let Some(rustflags) = rustflags {
         rustflags.hash(&mut hasher);
     }
-    if let Ok(encoded_flags) = std::env::var("CARGO_ENCODED_RUSTFLAGS") {
+    if let Some(encoded_flags) = encoded_flags {
         encoded_flags.hash(&mut hasher);
     }
 

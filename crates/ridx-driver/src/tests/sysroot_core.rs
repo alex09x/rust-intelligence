@@ -12,6 +12,7 @@ use super::*;
 
 #[test]
 fn test_sysroot_core_metadata_prototype() {
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
     struct SysrootTestCallbacks {
         crates_stats: Vec<sysroot::SysrootExtractStats>,
         crates_data: Vec<(String, Vec<u8>)>,

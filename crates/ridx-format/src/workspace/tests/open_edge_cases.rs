@@ -126,12 +126,8 @@ fn test_corrupted_index_skipping_and_auto_discover() {
     // Test auto_discover fallback (lines 549-552)
     let deep_empty = new_test_dir("ws_empty_discover").0.join("deep/sub/dir");
     fs::create_dir_all(&deep_empty).unwrap();
-    let orig_dir = std::env::current_dir().unwrap();
-    std::env::remove_var("RIDX_INDEX_DIR");
-    std::env::set_current_dir(&deep_empty).unwrap();
-    let res = WorkspaceIndex::auto_discover();
+    let res = WorkspaceIndex::auto_discover_with(None, &deep_empty);
     assert!(res.is_err());
-    std::env::set_current_dir(orig_dir).unwrap();
 }
 
 #[test]
@@ -214,10 +210,8 @@ fn test_workspace_open_edge_cases() {
     assert_eq!(ws_v.workspace_root, Some(v_dir.0.clone()));
 
     // 5. Test auto_discover with RIDX_INDEX_DIR set (line 531)
-    std::env::set_var("RIDX_INDEX_DIR", v_dir.0.display().to_string());
-    let ws_auto = WorkspaceIndex::auto_discover().unwrap();
+    let ws_auto = WorkspaceIndex::auto_discover_with(v_dir.0.to_str(), &v_dir.0).unwrap();
     assert_eq!(ws_auto.readers.len(), 1);
-    std::env::remove_var("RIDX_INDEX_DIR");
 
     // Test Debug formatting for WorkspaceIndex (lines 52-57)
     let dbg_str = format!("{:?}", ws_auto);
@@ -248,7 +242,6 @@ fn test_workspace_open_edge_cases() {
     // digest mismatch with null generation (lines 425, 427), and corrupt reader (lines 468-469)
     let cache_dir = ws_m_dir.0.join("cache");
     let _ = fs::create_dir_all(&cache_dir);
-    std::env::set_var("RIDX_CACHE_DIR", cache_dir.display().to_string());
     let cached_obj = crate::format::cache_object_path(&cache_dir, "cached_unit");
     let _ = fs::create_dir_all(cached_obj.parent().unwrap());
     let mut w_cached = IndexWriter::new("cached_dep", "0.1.0");
@@ -303,10 +296,9 @@ fn test_workspace_open_edge_cases() {
     ]);
     let _ = fs::remove_file(ws_m_dir.0.join("ridx_manifest.json"));
     fs::write(ws_m_dir.0.join("variant_manifest.json"), serde_json::to_string(&m_cache).unwrap()).unwrap();
-    let ws_cache = WorkspaceIndex::open(&ws_m_dir.0).unwrap();
+    let ws_cache = WorkspaceIndex::open_with_cache_dir(&ws_m_dir.0, &cache_dir).unwrap();
     assert!(ws_cache.readers.iter().any(|r| r.crate_name() == "cached_dep"));
     let _ = fs::remove_file(&cached_obj);
-    std::env::remove_var("RIDX_CACHE_DIR");
 
     // 8. Opening single file with no manifest yields None workspace_root (line 494)
     let single_dir = new_test_dir("single_file_ws");
@@ -319,9 +311,7 @@ fn test_workspace_open_edge_cases() {
     assert_eq!(ws_single.workspace_root, None);
 
     // 9. auto_discover with nonexistent RIDX_INDEX_DIR (line 526)
-    std::env::set_var("RIDX_INDEX_DIR", "/nonexistent/index_dir_9999");
-    let _ = WorkspaceIndex::auto_discover();
-    std::env::remove_var("RIDX_INDEX_DIR");
+    let _ = WorkspaceIndex::auto_discover_with(Some("/nonexistent/index_dir_9999"), &single_dir.0);
 
     // 10. collect_ridx_files with non-ridx file and variants dir (lines 634, 640)
     let coll_dir = new_test_dir("collect_test");

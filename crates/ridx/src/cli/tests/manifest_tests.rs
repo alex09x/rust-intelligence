@@ -20,7 +20,7 @@ use std::path::PathBuf;
 fn test_manifest_discovery_and_auto_reindexing() {
     let _lock = lock_cli_test();
     let _ra_guard = EnvGuard::set("RUST_ANALYZER_BIN", "/nonexistent/ra");
-    std::env::remove_var("RIDX_INDEX_DIR");
+    let _idx_guard = EnvGuard::remove("RIDX_INDEX_DIR");
     let (test_dir, dir_str) = create_indexed_workspace();
     let deep_file = test_dir.0.join("a/b/c/nested_file.rs");
     assert!(find_manifest_for_path(&deep_file).is_none());

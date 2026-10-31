@@ -11,8 +11,11 @@
 use super::*;
 
 pub(crate) fn is_immutable_package(manifest_dir: &Path) -> bool {
-    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
-        let ch = Path::new(&cargo_home);
+    is_immutable_package_with_home(manifest_dir, std::env::var("CARGO_HOME").ok().as_deref().map(Path::new))
+}
+
+pub(crate) fn is_immutable_package_with_home(manifest_dir: &Path, cargo_home: Option<&Path>) -> bool {
+    if let Some(ch) = cargo_home {
         if manifest_dir.starts_with(ch.join("registry")) || manifest_dir.starts_with(ch.join("git")) {
             return true;
         }

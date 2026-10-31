@@ -90,8 +90,7 @@ fn test_compute_dependency_unit_key() {
     let ext_file = temp_dir.join("dep.rmeta");
     fs::write(&ext_file, b"rmeta_bytes").unwrap();
 
-    std::env::set_var("OUT_DIR", &temp_dir);
-    let key3 = compute_dependency_unit_key(
+    let key3 = compute_dependency_unit_key_with_out_dir(
         "my_crate",
         "0.1.0",
         None,
@@ -106,9 +105,9 @@ fn test_compute_dependency_unit_key() {
             "--extern=plain_dep".to_string(),
             "--extern=missing_dep=/nonexistent/path.rmeta".to_string(),
         ],
+        Some(&temp_dir),
     );
     assert_eq!(key3.len(), 16);
-    std::env::remove_var("OUT_DIR");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
@@ -116,6 +115,7 @@ static DRIVER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[test]
 fn test_run_driver_queries() {
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
     let _ = run_driver(vec!["ridx-driver".into(), "--version".into()]);
     let _ = run_driver(vec!["ridx-driver".into(), "--help".into()]);
     let _ = run_driver(vec!["ridx-driver".into(), "-vV".into()]);
@@ -131,9 +131,6 @@ fn test_run_driver_queries() {
 #[test]
 fn test_driver_index_compilation() {
     let _lock = DRIVER_TEST_LOCK.lock().unwrap();
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
-    std::env::remove_var("CARGO_HOME");
 
     let temp_dir = std::env::temp_dir().join(format!("ridx_driver_compile_test_{}", std::process::id()));
     let _ = fs::create_dir_all(&temp_dir);
@@ -201,22 +198,19 @@ pub fn compute<T: Greeter>(p: &Point, g: &T) -> i32 {
         sysroot_str,
     ];
 
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    let _ = run_driver(args);
+    let _ = run_driver_with_env(args, DriverEnv::for_test(&out_dir));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_is_immutable_package() {
-    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
-    assert!(is_immutable_package(Path::new("/home/user/.cargo/registry/src/github.com-1ecc6299db9ec823/foo-0.1.0")));
-    assert!(is_immutable_package(Path::new("/home/user/.cargo/git/checkouts/bar-12345/abc")));
-    assert!(!is_immutable_package(Path::new("/home/user/project/my_crate")));
+    assert!(is_immutable_package_with_home(Path::new("/home/user/.cargo/registry/src/github.com-1ecc6299db9ec823/foo-0.1.0"), None));
+    assert!(is_immutable_package_with_home(Path::new("/home/user/.cargo/git/checkouts/bar-12345/abc"), None));
+    assert!(!is_immutable_package_with_home(Path::new("/home/user/project/my_crate"), None));
 
-    std::env::set_var("CARGO_HOME", "/custom/cargo");
-    assert!(is_immutable_package(Path::new("/custom/cargo/registry/foo")));
-    assert!(is_immutable_package(Path::new("/custom/cargo/git/foo")));
-    assert!(!is_immutable_package(Path::new("/custom/cargo/other/foo")));
-    std::env::remove_var("CARGO_HOME");
+    let custom_cargo = Path::new("/custom/cargo");
+    assert!(is_immutable_package_with_home(Path::new("/custom/cargo/registry/foo"), Some(custom_cargo)));
+    assert!(is_immutable_package_with_home(Path::new("/custom/cargo/git/foo"), Some(custom_cargo)));
+    assert!(!is_immutable_package_with_home(Path::new("/custom/cargo/other/foo"), Some(custom_cargo)));
 }

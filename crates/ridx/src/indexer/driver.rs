@@ -18,7 +18,11 @@ pub fn find_driver_binary() -> Option<PathBuf> {
 }
 
 pub fn find_driver_binary_internal(exe: Option<&Path>) -> Option<PathBuf> {
-    if let Ok(driver_env) = std::env::var("RIDX_DRIVER_BIN") {
+    find_driver_binary_with(std::env::var("RIDX_DRIVER_BIN").ok().as_deref(), exe, std::env::current_dir().ok().as_deref(), std::env::var("PATH").ok().as_deref())
+}
+
+pub fn find_driver_binary_with(driver_env: Option<&str>, exe: Option<&Path>, cwd: Option<&Path>, path_env: Option<&str>) -> Option<PathBuf> {
+    if let Some(driver_env) = driver_env {
         let p = PathBuf::from(driver_env);
         if p.is_file() {
             return p.canonicalize().ok();
@@ -40,17 +44,31 @@ pub fn find_driver_binary_internal(exe: Option<&Path>) -> Option<PathBuf> {
             cur = dir.parent();
         }
     }
-    for candidate in [
-        PathBuf::from("target/llvm-cov-target/debug/ridx-driver"),
-        PathBuf::from("target/release/ridx-driver"),
-        PathBuf::from("target/debug/ridx-driver"),
-        PathBuf::from("../target/llvm-cov-target/debug/ridx-driver"),
-        PathBuf::from("../target/release/ridx-driver"),
-        PathBuf::from("../target/debug/ridx-driver"),
+    let base_cwd = cwd.map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+    for rel in [
+        "target/llvm-cov-target/debug/ridx-driver",
+        "target/release/ridx-driver",
+        "target/debug/ridx-driver",
+        "../target/llvm-cov-target/debug/ridx-driver",
+        "../target/release/ridx-driver",
+        "../target/debug/ridx-driver",
     ] {
+        let candidate = base_cwd.join(rel);
         if candidate.is_file() {
             return candidate.canonicalize().ok();
         }
+    }
+    if let Some(path_str) = path_env {
+        for dir in std::env::split_paths(path_str) {
+            if dir.as_os_str().is_empty() {
+                continue;
+            }
+            let cand = dir.join("ridx-driver");
+            if cand.is_file() {
+                return Some(cand);
+            }
+        }
+        return None;
     }
     if let Ok(out) = Command::new("which").arg("ridx-driver").output() {
         if out.status.success() {

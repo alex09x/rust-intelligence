@@ -132,10 +132,8 @@ fn test_workspace_index_accessors_and_stats() {
     assert_eq!(collected[0], idx);
 
     // 4. Auto-discover with RIDX_INDEX_DIR
-    std::env::set_var("RIDX_INDEX_DIR", test_dir.0.to_str().unwrap());
-    let ws_auto = WorkspaceIndex::auto_discover().unwrap();
+    let ws_auto = WorkspaceIndex::auto_discover_with(test_dir.0.to_str(), &test_dir.0).unwrap();
     assert_eq!(ws_auto.crate_count(), 1);
-    std::env::remove_var("RIDX_INDEX_DIR");
 }
 
 #[test]

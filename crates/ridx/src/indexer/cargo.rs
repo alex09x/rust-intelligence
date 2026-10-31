@@ -14,13 +14,17 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn resolve_cargo_home() -> Option<PathBuf> {
-    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+    resolve_cargo_home_with(std::env::var("CARGO_HOME").ok().as_deref(), std::env::var("HOME").ok().as_deref())
+}
+
+pub fn resolve_cargo_home_with(cargo_home: Option<&str>, home: Option<&str>) -> Option<PathBuf> {
+    if let Some(cargo_home) = cargo_home {
         let p = PathBuf::from(cargo_home.trim());
         if !p.as_os_str().is_empty() {
             return Some(p);
         }
     }
-    if let Ok(home) = std::env::var("HOME") {
+    if let Some(home) = home {
         let trimmed = home.trim();
         if !trimmed.is_empty() {
             return Some(PathBuf::from(trimmed).join(".cargo"));
@@ -37,6 +41,10 @@ pub fn resolve_cargo_home() -> Option<PathBuf> {
 }
 
 pub fn find_cargo_configs(work_dir: &Path) -> Vec<PathBuf> {
+    find_cargo_configs_with_home(work_dir, resolve_cargo_home().as_deref())
+}
+
+pub fn find_cargo_configs_with_home(work_dir: &Path, cargo_home: Option<&Path>) -> Vec<PathBuf> {
     let mut configs = Vec::new();
     let mut cur = Some(work_dir);
     while let Some(dir) = cur {
@@ -48,7 +56,7 @@ pub fn find_cargo_configs(work_dir: &Path) -> Vec<PathBuf> {
         }
         cur = dir.parent();
     }
-    if let Some(home_dir) = resolve_cargo_home() {
+    if let Some(home_dir) = cargo_home {
         for name in ["config.toml", "config"] {
             let p = home_dir.join(name);
             if p.is_file() && !configs.contains(&p) {

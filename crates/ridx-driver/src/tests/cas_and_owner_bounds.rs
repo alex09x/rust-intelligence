@@ -44,35 +44,35 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
         sysroot_str,
     ];
 
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    std::env::set_var("RIDX_CACHE_DIR", &cache_dir);
     // Point manifest_dir to a path containing .cargo/registry so is_immutable = true
     let reg_dir = temp_dir.join(".cargo").join("registry").join("src").join("dep_crate-1.0.0");
     fs::create_dir_all(&reg_dir).unwrap();
-    std::env::set_var("CARGO_MANIFEST_DIR", &reg_dir);
-    std::env::set_var("CARGO_PKG_VERSION", "1.0.0");
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.cache_dir = cache_dir.clone();
+    env.manifest_dir = Some(reg_dir.clone());
+    env.pkg_version = "1.0.0".to_string();
 
     // 1. Build initial shard with driver hash v1
-    std::env::set_var("RIDX_DRIVER_HASH", "0xaaaa1111");
-    let res1 = run_driver(args.clone());
+    env.driver_hash = 0xaaaa_1111;
+    let res1 = run_driver_with_env(args.clone(), env.clone());
     assert!(res1.is_ok());
 
     let disam = extract_target_disambiguator(&args);
-    let unit1 = compute_dependency_unit_key("dep_crate", "1.0.0", disam.as_deref(), Some(&reg_dir), &args);
+    let unit1 = compute_dependency_unit_key_with_env("dep_crate", "1.0.0", disam.as_deref(), Some(&reg_dir), &args, None, env.driver_hash);
     let shard1_path = ridx_format::cache_object_path(&cache_dir, &unit1);
     assert!(shard1_path.is_file(), "expected shard 1 at {:?}", shard1_path);
     let reader1 = ridx_format::IndexReader::open(&shard1_path).unwrap();
     assert_eq!(reader1.unit_key(), unit1);
 
     // 2. Change driver hash to v2 -> must NOT hit shard 1, must build shard 2
-    std::env::set_var("RIDX_DRIVER_HASH", "0xbbbb2222");
-    let unit2 = compute_dependency_unit_key("dep_crate", "1.0.0", disam.as_deref(), Some(&reg_dir), &args);
+    env.driver_hash = 0xbbbb_2222;
+    let unit2 = compute_dependency_unit_key_with_env("dep_crate", "1.0.0", disam.as_deref(), Some(&reg_dir), &args, None, env.driver_hash);
     assert_ne!(unit1, unit2, "unit keys must differ between driver versions");
 
     let shard2_path = ridx_format::cache_object_path(&cache_dir, &unit2);
     assert!(!shard2_path.exists(), "shard 2 must not exist before rebuild");
 
-    let res2 = run_driver(args.clone());
+    let res2 = run_driver_with_env(args.clone(), env.clone());
     assert!(res2.is_ok());
     assert!(shard2_path.is_file(), "expected shard 2 to be rebuilt at {:?}", shard2_path);
     let reader2 = ridx_format::IndexReader::open(&shard2_path).unwrap();
@@ -81,16 +81,12 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
     // 3. Stale file mismatch check: write corrupted/mismatched data into shard2_path
     // When driver runs again, it must detect the mismatch, remove the stale file, and rebuild
     fs::write(&shard2_path, b"corrupted header bytes").unwrap();
-    let res3 = run_driver(args.clone());
+    let res3 = run_driver_with_env(args.clone(), env);
     assert!(res3.is_ok());
     assert!(shard2_path.is_file(), "expected shard 2 to be recovered and rebuilt");
     let reader3 = ridx_format::IndexReader::open(&shard2_path).unwrap();
     assert_eq!(reader3.unit_key(), unit2);
 
-    std::env::remove_var("RIDX_DRIVER_HASH");
-    std::env::remove_var("RIDX_CACHE_DIR");
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
@@ -134,11 +130,11 @@ pub fn test_generic<V: Visitor>(mut visitor: V) {
         sysroot_str,
     ];
 
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    std::env::set_var("CARGO_MANIFEST_DIR", &ws_dir);
-    std::env::set_var("CARGO_PKG_VERSION", "0.1.0");
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.manifest_dir = Some(ws_dir.clone());
+    env.pkg_version = "0.1.0".to_string();
 
-    let res = run_driver(args);
+    let res = run_driver_with_env(args, env);
     assert!(res.is_ok());
 
     let out_ridx = fs::read_dir(&out_dir)
@@ -155,8 +151,5 @@ pub fn test_generic<V: Visitor>(mut visitor: V) {
     let has_owner = visitor_types.iter().any(|t| reader.get_str(t.owner_path_offset) == "Visitor");
     assert!(has_owner, "generic parameter V must resolve owner to Visitor, got {:?}", visitor_types.iter().map(|t| reader.get_str(t.owner_path_offset)).collect::<Vec<_>>());
 
-    std::env::remove_var("RIDX_OUT_DIR");
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }

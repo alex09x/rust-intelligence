@@ -275,12 +275,13 @@ fn test_try_run_indexing_syntax_error() {
 #[test]
 fn test_cargo_config_and_manifest_discovery() {
     let test_dir = new_test_dir("ridx_cargo_disc_test");
-    let dot_cargo = test_dir.0.join(".cargo");
-    fs::create_dir_all(&dot_cargo).unwrap();
-    let cfg_file = dot_cargo.join("config");
+    let home_dir = test_dir.0.join("home");
+    let home_cargo = home_dir.join(".cargo");
+    fs::create_dir_all(&home_cargo).unwrap();
+    let cfg_file = home_cargo.join("config");
     fs::write(&cfg_file, "[build]\ntarget = \"thumbv7m-none-eabi\"\n").unwrap();
 
-    let configs = find_cargo_configs(&test_dir.0);
+    let configs = find_cargo_configs_with_home(&test_dir.0, Some(&home_cargo));
     assert!(configs.contains(&cfg_file));
 
     let mut manifests = Vec::new();

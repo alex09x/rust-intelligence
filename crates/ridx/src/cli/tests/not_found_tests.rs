@@ -136,8 +136,7 @@ fn test_cli_not_found_branches_and_helpers() {
     let res_no_ws = try_resolve_workspace(Some(no_ws));
     assert!(res_no_ws.is_err());
 
-    std::env::set_var("RIDX_INDEX_DIR", &test_dir.0);
+    let _idx_guard = EnvGuard::set("RIDX_INDEX_DIR", &test_dir.0);
     let res_auto = try_resolve_workspace(None);
     assert!(res_auto.is_ok());
-    std::env::remove_var("RIDX_INDEX_DIR");
 }

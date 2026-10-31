@@ -66,10 +66,10 @@ fn test_driver_immutable_cache_hit_and_extern() {
         "--sysroot".to_string(),
         sysroot_str.clone(),
     ];
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    std::env::set_var("CARGO_MANIFEST_DIR", &reg_dir);
-    std::env::set_var("CARGO_PKG_VERSION", "0.1.0");
-    let _ = run_driver(mock_args);
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.manifest_dir = Some(reg_dir.clone());
+    env.pkg_version = "0.1.0".to_string();
+    let _ = run_driver_with_env(mock_args, env.clone());
 
     let core_json = serde_json::json!({
         "name": "core",
@@ -100,41 +100,39 @@ fn test_driver_immutable_cache_hit_and_extern() {
     ];
 
     // Run 1: Cache miss
-    let res_d1 = run_driver(args.clone());
+    let res_d1 = run_driver_with_env(args.clone(), env.clone());
     assert!(res_d1.is_ok());
 
-    let cache_dir = ridx_format::resolve_cache_dir();
+    let cache_dir = &env.cache_dir;
     let disambiguator = extract_target_disambiguator(&args);
-    let unit_key = compute_dependency_unit_key("dep_pkg", "0.1.0", disambiguator.as_deref(), Some(&reg_dir), &args);
-    let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
+    let unit_key = compute_dependency_unit_key_with_env("dep_pkg", "0.1.0", disambiguator.as_deref(), Some(&reg_dir), &args, None, env.driver_hash);
+    let obj_path = ridx_format::cache_object_path(cache_dir, &unit_key);
     assert!(obj_path.is_file());
 
     // Run 2: Cache hit (lines 773-785)
-    let _ = run_driver(args.clone());
+    let _ = run_driver_with_env(args.clone(), env.clone());
 
     // Run 3: Cache hit with invalid reader (lines 787-791)
     if obj_path.is_file() {
         fs::write(&obj_path, b"NOT_A_VALID_RIDX_INDEX").unwrap();
-        let _ = run_driver(args.clone());
+        let _ = run_driver_with_env(args.clone(), env.clone());
     }
 
     // Run 4: Dependency atomic rename failure (lines 864-869)
     let _ = fs::remove_file(&obj_path);
     let conflict_dep_dir = obj_path.join("nested");
     if fs::create_dir_all(&conflict_dep_dir).is_ok() {
-        let _ = run_driver(args.clone());
+        let _ = run_driver_with_env(args.clone(), env.clone());
         let _ = fs::remove_dir_all(&obj_path);
     }
 
     // Run 5: Temporary file create error for dependency (lines 904-909)
     let tmp_file_path = obj_path.with_extension(format!("tmp.{}", std::process::id()));
     if fs::create_dir_all(tmp_file_path.join("nested")).is_ok() {
-        let _ = run_driver(args);
+        let _ = run_driver_with_env(args, env);
         let _ = fs::remove_dir_all(&tmp_file_path);
     }
 
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
@@ -184,11 +182,11 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
         "core".to_string(),
     ];
 
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
-    std::env::set_var("CARGO_MANIFEST_DIR", &ws_dir);
-    std::env::set_var("CARGO_PKG_VERSION", "0.2.0");
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.manifest_dir = Some(ws_dir.clone());
+    env.pkg_version = "0.2.0".to_string();
 
-    let res = run_driver(args.clone());
+    let res = run_driver_with_env(args.clone(), env.clone());
     assert!(res.is_ok());
 
     let out_ridx = out_dir.join("ws_pkg_custom123.ridx");
@@ -209,39 +207,39 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
     // Test out_dir creation failure (lines 916-917)
     let not_a_dir = temp_dir.join("file_not_dir");
     fs::write(&not_a_dir, b"file").unwrap();
-    std::env::set_var("RIDX_OUT_DIR", &not_a_dir);
-    let _ = run_driver(args.clone());
-    std::env::set_var("RIDX_OUT_DIR", &out_dir);
+    let mut bad_env = env.clone();
+    bad_env.out_dir = not_a_dir;
+    let _ = run_driver_with_env(args.clone(), bad_env);
 
     // Test workspace crate atomic rename failure (lines 958-963)
     let _ = fs::remove_file(&out_ridx);
     let conflict_dir = out_ridx.join("nested");
     if fs::create_dir_all(&conflict_dir).is_ok() {
-        let _ = run_driver(args.clone());
+        let _ = run_driver_with_env(args.clone(), env.clone());
         let _ = fs::remove_dir_all(&out_ridx);
     }
 
     // Test workspace crate temp file creation failure (lines 996-1001)
     let tmp_file_path = out_dir.join(format!("ws_pkg_custom123.ridx.tmp.{}", std::process::id()));
     if fs::create_dir_all(tmp_file_path.join("nested")).is_ok() {
-        let _ = run_driver(args.clone());
+        let _ = run_driver_with_env(args.clone(), env.clone());
         let _ = fs::remove_dir_all(&tmp_file_path);
     }
 
     // Also test driver wrapper stripping and query flags
     let query_args = vec!["ridx-driver".to_string(), "rustc".to_string(), "-vV".to_string()];
-    assert!(run_driver(query_args).is_ok());
+    assert!(run_driver_with_env(query_args, env.clone()).is_ok());
 
     // Also test help and print query flags
-    assert!(run_driver(vec!["ridx-driver".to_string(), "--help".to_string()]).is_ok());
-    assert!(run_driver(vec!["ridx-driver".to_string(), "--print=sysroot".to_string()]).is_ok());
+    assert!(run_driver_with_env(vec!["ridx-driver".to_string(), "--help".to_string()], env.clone()).is_ok());
+    assert!(run_driver_with_env(vec!["ridx-driver".to_string(), "--print=sysroot".to_string()], env.clone()).is_ok());
 
     // Also test build script skipping
     let mut bs_args = args.clone();
     if let Some(pos) = bs_args.iter().position(|a| a == "ws_pkg") {
         bs_args[pos] = "build_script_build".to_string();
     }
-    assert!(run_driver(bs_args).is_ok());
+    assert!(run_driver_with_env(bs_args, env).is_ok());
 
     // Disambiguator extraction edge cases (lines 325-348)
     assert_eq!(extract_target_disambiguator(&["-C".to_string(), "extra-filename=bar".to_string()]), Some("bar".to_string()));
@@ -250,8 +248,6 @@ pub fn add_point(p: Point) -> i32 { p.x + p.y }
     assert_eq!(extract_target_disambiguator(&["--crate-type=rlib".to_string()]), Some("_rlib".to_string()));
     assert_eq!(extract_target_disambiguator(&["--crate-type".to_string(), "dylib".to_string()]), Some("_dylib".to_string()));
 
-    std::env::remove_var("CARGO_MANIFEST_DIR");
-    std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
@@ -270,6 +266,7 @@ fn test_hash_directory_source_with_subdirs() {
 
 #[test]
 fn test_driver_main_and_disambiguator_extra() {
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
     // Disambiguator -C without extra-filename (line 335)
     assert_eq!(extract_target_disambiguator(&["-C".to_string(), "opt-level=3".to_string()]), None);
 

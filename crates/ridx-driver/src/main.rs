@@ -57,15 +57,50 @@ use unit_key::*;
 
 static CAUGHT_PANICS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
+#[derive(Clone)]
+pub struct DriverEnv {
+    pub out_dir: PathBuf,
+    pub cache_dir: PathBuf,
+    pub manifest_dir: Option<PathBuf>,
+    pub build_out_dir: Option<PathBuf>,
+    pub pkg_version: String,
+    pub driver_hash: u64,
+}
+
+impl DriverEnv {
+    pub fn from_process_env() -> Self {
+        Self {
+            out_dir: std::env::var("RIDX_OUT_DIR").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from("target/ridx")),
+            cache_dir: ridx_format::resolve_cache_dir(),
+            manifest_dir: std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from),
+            build_out_dir: std::env::var("OUT_DIR").ok().map(PathBuf::from),
+            pkg_version: std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string()),
+            driver_hash: ridx_format::get_driver_hash(),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn for_test(out_dir: impl Into<PathBuf>) -> Self {
+        Self {
+            out_dir: out_dir.into(),
+            cache_dir: ridx_format::resolve_cache_dir(),
+            manifest_dir: None,
+            build_out_dir: None,
+            pkg_version: "0.1.0".to_string(),
+            driver_hash: ridx_format::get_driver_hash(),
+        }
+    }
+}
+
 struct IndexCallbacks {
-    out_dir: PathBuf,
+    env: DriverEnv,
     disambiguator: Option<String>,
     compiler_args: Vec<String>,
 }
 
 impl Callbacks for IndexCallbacks {
     fn after_analysis<'tcx>(&mut self, _compiler: &rustc_interface::interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        build_crate_index(tcx, &self.out_dir, self.disambiguator.as_deref(), &self.compiler_args);
+        build_crate_index(tcx, &self.env, self.disambiguator.as_deref(), &self.compiler_args);
         Compilation::Continue
     }
 }
@@ -84,7 +119,12 @@ struct NoopCallbacks;
 impl Callbacks for NoopCallbacks {}
 
 #[allow(clippy::result_unit_err)]
-pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
+pub fn run_driver(args: Vec<String>) -> Result<(), ()> {
+    run_driver_with_env(args, DriverEnv::from_process_env())
+}
+
+#[allow(clippy::result_unit_err)]
+pub fn run_driver_with_env(mut args: Vec<String>, env: DriverEnv) -> Result<(), ()> {
     let is_direct_version = args.len() == 2 && (args[1] == "--version" || args[1] == "-V");
     if is_direct_version || args.iter().any(|a| a == "--ridx-version") {
         println!("ridx-driver {} (commit: {}, dirty: {})", env!("CARGO_PKG_VERSION"), env!("RIDX_BUILD_COMMIT"), env!("RIDX_BUILD_DIRTY"),);
@@ -136,10 +176,9 @@ pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
         return res.map_err(|_| ());
     }
 
-    let out_dir = std::env::var("RIDX_OUT_DIR").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from("target/ridx"));
     let disambiguator = extract_target_disambiguator(&args);
 
-    let mut callbacks = IndexCallbacks { out_dir, disambiguator, compiler_args: args.clone() };
+    let mut callbacks = IndexCallbacks { env, disambiguator, compiler_args: args.clone() };
     run_with_callbacks(&args, &mut callbacks)
 }
 

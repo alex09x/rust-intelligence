@@ -194,7 +194,8 @@ where
         return Ok(0);
     }
 
-    let mut cmd = Command::new("cargo");
+    let cargo_bin = workspace_root.parent().map(|p| p.join("bin").join("cargo")).filter(|p| p.is_file()).unwrap_or_else(|| PathBuf::from("cargo"));
+    let mut cmd = Command::new(cargo_bin);
     cmd.args(["check", "--message-format=json", "--workspace", "--all-targets"]);
     cmd.current_dir(workspace_root);
     cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null());

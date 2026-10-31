@@ -25,6 +25,8 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
         extern_units,
         krate_to_unit,
         out_dir,
+        cache_dir: _,
+        driver_hash: _,
         compiler_args,
     } = ctx;
     // Workspace crate: write to out_dir

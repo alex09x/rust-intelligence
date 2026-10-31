@@ -94,7 +94,7 @@ fn test_cli_single_arg_auto_discover() {
     });
     let _ = fs::write(test_dir.0.join("variant_manifest.json"), serde_json::to_string(&manifest_data).unwrap());
 
-    std::env::set_var("RIDX_INDEX_DIR", &dir_str);
+    let _idx_guard = EnvGuard::set("RIDX_INDEX_DIR", &dir_str);
 
     // 1. Inspect with None (triggers auto_discover and active variant print)
     run_cli(Commands::Inspect { index_path: None, json: false });
@@ -149,8 +149,6 @@ fn test_cli_single_arg_auto_discover() {
         json: true,
         scip_file: None,
     });
-
-    std::env::remove_var("RIDX_INDEX_DIR");
 }
 
 #[test]

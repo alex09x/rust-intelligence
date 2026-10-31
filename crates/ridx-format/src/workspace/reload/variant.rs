@@ -19,7 +19,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 impl WorkspaceIndex {
-    pub(super) fn reload_active_variant_if_switched(&mut self) -> io::Result<bool> {
+    pub(super) fn reload_active_variant_if_switched(&mut self, cache_dir: PathBuf) -> io::Result<bool> {
         // 0. Check if active variant manifest was updated or switched
         if self.manifest_path.is_none() {
             if let Some(ref dir) = self.root_dir {
@@ -128,7 +128,6 @@ impl WorkspaceIndex {
                                     }
 
                                     // Load dependency shards for new variant if any
-                                    let cache_dir = crate::format::resolve_cache_dir();
                                     let mut cache_resolver = CacheObjectResolver::new(cache_dir);
                                     let mut canon_path_to_idx: HashMap<PathBuf, usize> = HashMap::with_capacity(new_paths.len() + manifest.dependency_shards.len());
                                     for (i, existing) in new_paths.iter().enumerate() {

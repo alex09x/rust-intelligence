@@ -21,7 +21,13 @@ use std::path::{Path, PathBuf};
 impl WorkspaceIndex {
     /// Opens a single .ridx file or scans a directory containing .ridx files.
     pub fn open(path: impl AsRef<Path>) -> io::Result<Self> {
+        Self::open_with_cache_dir(path, crate::format::resolve_cache_dir())
+    }
+
+    /// Opens a single .ridx file or directory using an explicit global cache directory.
+    pub fn open_with_cache_dir(path: impl AsRef<Path>, cache_dir: impl AsRef<Path>) -> io::Result<Self> {
         let p = path.as_ref();
+        let cache_dir = cache_dir.as_ref().to_path_buf();
 
         if p.is_file() {
             let mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
@@ -141,7 +147,6 @@ impl WorkspaceIndex {
 
         // Load external dependency shards from global cache if specified in manifest
         if let Some(ref info) = manifest_info {
-            let cache_dir = crate::format::resolve_cache_dir();
             let mut cache_resolver = cache_resolver::CacheObjectResolver::new(cache_dir);
             let mut canon_path_to_idx: HashMap<PathBuf, usize> = HashMap::with_capacity(paths.len() + info.dependency_shards.len());
             for (i, existing) in paths.iter().enumerate() {

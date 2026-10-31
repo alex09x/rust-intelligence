@@ -40,8 +40,6 @@ fn test_indexer_additional_edge_cases() {
     // 3. run_indexing with base_out_dir having a file named "variants" (triggers variant directory creation failure)
     let dummy_driver = temp.0.join("dummy_driver");
     fs::write(&dummy_driver, b"dummy").unwrap();
-    let orig_driver = std::env::var("RIDX_DRIVER_BIN").ok();
-    std::env::set_var("RIDX_DRIVER_BIN", &dummy_driver);
 
     let out_dir_with_variants_file = temp.0.join("out_dir_var_err");
     fs::create_dir_all(&out_dir_with_variants_file).unwrap();
@@ -56,13 +54,12 @@ fn test_indexer_additional_edge_cases() {
         all_features: false,
         target: None,
         cache_dir: None,
-        driver_bin: None,
+        driver_bin: Some(dummy_driver),
         capture_child_output: false,
     });
     assert!(err_mkdir.unwrap_err().contains("failed to create variant directory"));
 
     // 4. run_indexing when driver binary is not found
-    std::env::set_var("RIDX_DRIVER_BIN", "/nonexistent/ridx-driver-bogus");
     let err_no_driver = try_run_indexing(IndexOptions {
         path: manifest_file,
         out_dir_opt: None,
@@ -73,13 +70,8 @@ fn test_indexer_additional_edge_cases() {
         all_features: false,
         target: None,
         cache_dir: None,
-        driver_bin: None,
+        driver_bin: Some(PathBuf::from("/nonexistent/ridx-driver-bogus")),
         capture_child_output: false,
     });
     assert!(err_no_driver.unwrap_err().contains("could not find ridx-driver binary"));
-    if let Some(d) = orig_driver {
-        std::env::set_var("RIDX_DRIVER_BIN", d);
-    } else {
-        std::env::remove_var("RIDX_DRIVER_BIN");
-    }
 }

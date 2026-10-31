@@ -74,7 +74,32 @@ pub(crate) fn hash_file_contents(path: &Path) -> Option<u64> {
     Some(ridx_format::fnv1a_64(&bytes))
 }
 
+#[cfg(test)]
 pub(crate) fn compute_dependency_unit_key(crate_name: &str, crate_version: &str, disambiguator: Option<&str>, manifest_dir: Option<&Path>, compiler_args: &[String]) -> String {
+    compute_dependency_unit_key_with_out_dir(crate_name, crate_version, disambiguator, manifest_dir, compiler_args, std::env::var("OUT_DIR").ok().as_deref().map(Path::new))
+}
+
+#[cfg(test)]
+pub(crate) fn compute_dependency_unit_key_with_out_dir(
+    crate_name: &str,
+    crate_version: &str,
+    disambiguator: Option<&str>,
+    manifest_dir: Option<&Path>,
+    compiler_args: &[String],
+    out_dir: Option<&Path>,
+) -> String {
+    compute_dependency_unit_key_with_env(crate_name, crate_version, disambiguator, manifest_dir, compiler_args, out_dir, ridx_format::get_driver_hash())
+}
+
+pub(crate) fn compute_dependency_unit_key_with_env(
+    crate_name: &str,
+    crate_version: &str,
+    disambiguator: Option<&str>,
+    manifest_dir: Option<&Path>,
+    compiler_args: &[String],
+    out_dir: Option<&Path>,
+    driver_hash: u64,
+) -> String {
     let mut key_str = format!(
         "{}:{}:{}:v{}:ext{}:drv={:016x}",
         crate_name,
@@ -82,7 +107,7 @@ pub(crate) fn compute_dependency_unit_key(crate_name: &str, crate_version: &str,
         disambiguator.unwrap_or(""),
         ridx_format::CURRENT_FORMAT_VERSION,
         ridx_format::EXTRACTOR_VERSION,
-        ridx_format::get_driver_hash(),
+        driver_hash,
     );
     if let Some(m) = manifest_dir {
         key_str.push(':');
@@ -144,8 +169,7 @@ pub(crate) fn compute_dependency_unit_key(crate_name: &str, crate_version: &str,
     }
 
     // Hash OUT_DIR contents if present
-    if let Ok(out_dir_str) = std::env::var("OUT_DIR") {
-        let out_dir_path = Path::new(&out_dir_str);
+    if let Some(out_dir_path) = out_dir {
         if let Some(out_hash) = hash_directory_contents(out_dir_path) {
             key_str.push_str(&format!(":outdir={:016x}", out_hash));
         }

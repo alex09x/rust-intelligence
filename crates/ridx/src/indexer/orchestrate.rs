@@ -67,11 +67,17 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     }
     let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
 
-    let driver_bin = match opts.driver_bin.clone().or_else(find_driver_binary) {
-        Some(b) => b,
-        None => {
+    let driver_bin = match opts.driver_bin.clone() {
+        Some(b) if b.is_file() => b,
+        Some(_) => {
             return Err("could not find ridx-driver binary. Please build ridx-driver first (e.g. cargo build -p ridx-driver) or place it in PATH.".to_string());
         }
+        None => match find_driver_binary() {
+            Some(b) => b,
+            None => {
+                return Err("could not find ridx-driver binary. Please build ridx-driver first (e.g. cargo build -p ridx-driver) or place it in PATH.".to_string());
+            }
+        },
     };
 
     let profile_name = if release { "release" } else { "dev" };

@@ -98,10 +98,6 @@ exit 0
         fs::set_permissions(&mock_cargo, perms).unwrap();
     }
 
-    let orig_path = std::env::var("PATH").unwrap_or_default();
-    let new_path = format!("{}:{}", bin_dir.display(), orig_path);
-    std::env::set_var("PATH", &new_path);
-
     fs::write(ws_dir.join("Cargo.toml"), "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let main_file = src_dir.join("main.rs");
     let extra_file = src_dir.join("extra.rs");
@@ -172,7 +168,6 @@ exit 0
     drop(pipe_tx);
 
     let (res, output) = server_handle.join().unwrap();
-    std::env::set_var("PATH", orig_path);
     let _ = fs::remove_dir_all(&tmp);
 
     assert!(res.is_ok(), "Server should complete cleanly");

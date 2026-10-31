@@ -14,10 +14,8 @@ use std::path::{Path, PathBuf};
 
 #[test]
 fn test_cache_helpers() {
-    std::env::set_var("RIDX_CACHE_DIR", "/custom/cache");
-    let dir = resolve_cache_dir();
+    let dir = resolve_cache_dir_with(Some("/custom/cache"), None, None);
     assert_eq!(dir, PathBuf::from("/custom/cache"));
-    std::env::remove_var("RIDX_CACHE_DIR");
 
     let cache_base = Path::new("/var/cache/ridx");
     let p1 = cache_object_path(cache_base, "abcdef");
@@ -174,30 +172,18 @@ fn test_def_kind_all_variants_and_as_str() {
 
 #[test]
 fn test_resolve_cache_dir_and_object_path() {
-    let _lock = crate::workspace::ENV_LOCK.lock().unwrap();
-    std::env::set_var("RIDX_CACHE_DIR", "/custom/ridx_cache");
+    assert_eq!(resolve_cache_dir_with(Some("/custom/ridx_cache"), None, None), std::path::PathBuf::from("/custom/ridx_cache"));
 
-    assert_eq!(resolve_cache_dir(), std::path::PathBuf::from("/custom/ridx_cache"));
-    std::env::remove_var("RIDX_CACHE_DIR");
-
-    std::env::set_var("XDG_CACHE_HOME", "/custom/xdg");
-    let xdg_res = resolve_cache_dir();
+    let xdg_res = resolve_cache_dir_with(None, Some("/custom/xdg"), None);
     assert!(xdg_res.starts_with("/custom/xdg/ridx"));
-    std::env::remove_var("XDG_CACHE_HOME");
 
-    // Empty string variants and fallback (lines 30, 36, 45-46, 54)
-    std::env::set_var("RIDX_CACHE_DIR", "   ");
-    std::env::set_var("XDG_CACHE_HOME", "   ");
-    std::env::set_var("HOME", "/custom/home");
-    let home_res = resolve_cache_dir();
+    let home_res = resolve_cache_dir_with(Some("   "), Some("   "), Some("/custom/home"));
     assert!(home_res.starts_with("/custom/home/.cache/ridx"));
 
-    std::env::set_var("HOME", "   ");
-    let fallback_res = resolve_cache_dir();
+    let fallback_res = resolve_cache_dir_with(Some("   "), Some("   "), Some("   "));
     assert!(fallback_res.starts_with(".ridx_cache"));
-    std::env::remove_var("RIDX_CACHE_DIR");
-    std::env::remove_var("XDG_CACHE_HOME");
-    std::env::remove_var("HOME");
+
+    let _ = resolve_cache_dir();
 
     let obj1 = cache_object_path(Path::new("/cache"), "a");
     assert_eq!(obj1, std::path::PathBuf::from("/cache/objects/00/a.ridx"));

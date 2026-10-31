@@ -222,7 +222,6 @@ fn test_reload_additional_coverage() {
     // unit_key mismatch (line 205), and computed digest mismatch (line 229)
     let cache_dir = temp.0.join("cache");
     let _ = fs::create_dir_all(&cache_dir);
-    std::env::set_var("RIDX_CACHE_DIR", cache_dir.display().to_string());
     let cached_obj = crate::format::cache_object_path(&cache_dir, "cache_reload_uk");
     let _ = fs::create_dir_all(cached_obj.parent().unwrap());
     let mut w_cached = IndexWriter::new("cached_reload_dep", "0.1.0");
@@ -359,7 +358,7 @@ fn test_reload_additional_coverage() {
     fs::write(&mf_path, serde_json::to_string(&mf_cov).unwrap()).unwrap();
     ws.manifest_path = Some(mf_path);
     ws.manifest_mtime = Some(std::time::SystemTime::UNIX_EPOCH);
-    let reloaded_v = ws.reload_if_modified().unwrap();
+    let reloaded_v = ws.reload_if_modified_with_cache_dir(&cache_dir).unwrap();
     assert!(reloaded_v);
 
     // Test is_file_reloaded (lines 535-538)
@@ -370,5 +369,4 @@ fn test_reload_additional_coverage() {
     let _ = fs::remove_file(&cached_obj);
     let _ = fs::remove_file(&cached_mismatch_obj);
     let _ = fs::remove_file(&no_gen_obj);
-    std::env::remove_var("RIDX_CACHE_DIR");
 }

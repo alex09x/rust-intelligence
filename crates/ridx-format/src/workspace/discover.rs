@@ -175,14 +175,19 @@ impl WorkspaceIndex {
 
     /// Auto-discovers .ridx indices starting from current directory up to root or target/ridx.
     pub fn auto_discover() -> io::Result<Self> {
-        if let Ok(dir) = std::env::var("RIDX_INDEX_DIR") {
+        let cur = std::env::current_dir()?;
+        Self::auto_discover_with(std::env::var("RIDX_INDEX_DIR").ok().as_deref(), &cur)
+    }
+
+    /// Auto-discovers .ridx indices using explicit environment and working directory parameters.
+    pub fn auto_discover_with(index_dir_env: Option<&str>, cur: &Path) -> io::Result<Self> {
+        if let Some(dir) = index_dir_env {
             let p = PathBuf::from(dir);
             if p.exists() {
                 return Self::open(p);
             }
         }
 
-        let cur = std::env::current_dir()?;
         let mut candidates = vec![cur.join("target/ridx"), cur.join("../target/ridx")];
         let mut nearest_pkg = None;
         let mut enclosing_ws = None;
@@ -209,9 +214,9 @@ impl WorkspaceIndex {
 
         let has_ridx_indicators = cur.join("ridx_manifest.json").is_file()
             || cur.join("variant_manifest.json").is_file()
-            || fs::read_dir(&cur).ok().map(|mut rd| rd.any(|e| e.map(|e| e.path().extension().is_some_and(|ext| ext == "ridx")).unwrap_or(false))).unwrap_or(false);
+            || fs::read_dir(cur).ok().map(|mut rd| rd.any(|e| e.map(|e| e.path().extension().is_some_and(|ext| ext == "ridx")).unwrap_or(false))).unwrap_or(false);
         if has_ridx_indicators {
-            candidates.push(cur.clone());
+            candidates.push(cur.to_path_buf());
         }
 
         for cand in candidates {

@@ -30,6 +30,8 @@ struct CrateIndexBuildContext<'a> {
     extern_units: std::collections::HashMap<String, String>,
     krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
     out_dir: &'a Path,
+    cache_dir: &'a Path,
+    driver_hash: u64,
     compiler_args: &'a [String],
 }
 
@@ -165,14 +167,15 @@ fn resolve_extern_and_crate_units(
     (dep_keys_or_names, extern_units, krate_to_unit)
 }
 
-pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>, compiler_args: &[String]) {
+pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, env: &DriverEnv, disambiguator: Option<&str>, compiler_args: &[String]) {
+    let out_dir = &env.out_dir;
     let start = Instant::now();
     let local_stable_crate_id = tcx.stable_crate_id(rustc_span::def_id::LOCAL_CRATE).as_u64();
     let caught_panics = CAUGHT_PANICS.load(std::sync::atomic::Ordering::Relaxed);
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
-    let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
+    let crate_version = env.pkg_version.clone();
 
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
+    let manifest_dir = env.manifest_dir.clone();
     let is_immutable = manifest_dir.as_ref().map(|m| is_immutable_package(m)).unwrap_or(false);
 
     let suffix = match disambiguator {
@@ -181,7 +184,8 @@ pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: 
         _ => String::new(),
     };
 
-    let unit_key = compute_dependency_unit_key(&crate_name, &crate_version, disambiguator, manifest_dir.as_deref(), compiler_args);
+    let unit_key =
+        compute_dependency_unit_key_with_env(&crate_name, &crate_version, disambiguator, manifest_dir.as_deref(), compiler_args, env.build_out_dir.as_deref(), env.driver_hash);
 
     let deps_dir = out_dir.join(".deps");
     let _ = fs::create_dir_all(&deps_dir);
@@ -201,6 +205,8 @@ pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: 
         extern_units,
         krate_to_unit,
         out_dir,
+        cache_dir: &env.cache_dir,
+        driver_hash: env.driver_hash,
         compiler_args,
     };
     if is_immutable {

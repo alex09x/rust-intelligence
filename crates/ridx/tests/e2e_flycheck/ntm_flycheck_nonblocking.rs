@@ -42,10 +42,6 @@ fn test_didsave_does_not_block_dispatch_loop_and_hover_responds_immediately() {
         fs::set_permissions(&mock_cargo, perms).unwrap();
     }
 
-    let orig_path = std::env::var("PATH").unwrap_or_default();
-    let new_path = format!("{}:{}", bin_dir.display(), orig_path);
-    std::env::set_var("PATH", &new_path);
-
     fs::write(ws_dir.join("Cargo.toml"), "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let main_file = src_dir.join("main.rs");
     fs::write(&main_file, "fn main() {\n    let val = 42;\n}\n").unwrap();
@@ -114,7 +110,6 @@ fn test_didsave_does_not_block_dispatch_loop_and_hover_responds_immediately() {
     let res = run_lsp_server_stream(Cursor::new(input), &mut output, Some(ws_dir.clone()));
     let elapsed = t_start.elapsed();
 
-    std::env::set_var("PATH", orig_path);
     let _ = fs::remove_dir_all(&tmp);
 
     assert!(res.is_ok(), "Server should complete cleanly");
@@ -173,10 +168,6 @@ exit 0
         fs::set_permissions(&mock_cargo, perms).unwrap();
     }
 
-    let orig_path = std::env::var("PATH").unwrap_or_default();
-    let new_path = format!("{}:{}", bin_dir.display(), orig_path);
-    std::env::set_var("PATH", &new_path);
-
     fs::write(ws_dir.join("Cargo.toml"), "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let main_file = src_dir.join("main.rs");
     fs::write(&main_file, "fn main() {}\n").unwrap();
@@ -210,6 +201,5 @@ exit 0
     state.cancel();
     state.shutdown();
 
-    std::env::set_var("PATH", orig_path);
     let _ = fs::remove_dir_all(&tmp);
 }
