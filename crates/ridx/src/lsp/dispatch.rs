@@ -95,7 +95,10 @@ pub fn dispatch_lsp_message<W: Write>(
             Err(err) => Err(err),
         },
 
-        "initialized" => return Ok(true),
+        "initialized" => {
+            mr.warm_background_caches();
+            return Ok(true);
+        }
 
         "shutdown" => {
             super::logger::log_info("LSP shutdown requested");

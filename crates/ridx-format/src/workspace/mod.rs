@@ -30,6 +30,7 @@ pub mod std_map;
 pub mod sysroot;
 pub mod target_kind;
 pub mod unit_match;
+mod warmup;
 
 #[cfg(test)]
 mod cache_resolver_tests;

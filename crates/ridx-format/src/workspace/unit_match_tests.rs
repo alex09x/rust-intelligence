@@ -161,3 +161,32 @@ fn test_unit_match_same_version_multi_unit_with_older_dep_version() {
     assert!(!idx.matches_unit(0, "u_pkg_old_dep", "u_pkg_lib", "pkg", &reader_extern_units));
     assert!(!idx.matches_unit(2, "u_pkg_lib", "u_pkg_old_dep", "pkg", &reader_extern_units));
 }
+
+#[test]
+fn test_warm_background_caches_populates_reachability_and_assoc_ty() {
+    let temp = TempDir::new().unwrap();
+    let p0 = temp.path().join("c0.ridx");
+    let p1 = temp.path().join("c1.ridx");
+    let mut w0 = IndexWriter::new("c0", "0.1.0");
+    w0.set_unit_key("u0");
+    w0.write_to(&mut File::create(&p0).unwrap()).unwrap();
+    let mut w1 = IndexWriter::new("c1", "0.1.0");
+    w1.set_unit_key("u1");
+    w1.write_to(&mut File::create(&p1).unwrap()).unwrap();
+
+    let mut ws = super::WorkspaceIndex::open(temp.path()).unwrap();
+    let idx0 = ws.readers.iter().position(|r| r.crate_name() == "c0").unwrap();
+    let idx1 = ws.readers.iter().position(|r| r.crate_name() == "c1").unwrap();
+    ws.reader_dependencies[idx0].push("u1".to_string());
+    ws.rebuild_unit_match();
+
+    assert!(ws.unit_match.reachable_reader_bits.get().is_none());
+    ws.warm_background_caches();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while ws.unit_match.reachable_reader_bits.get().is_none() && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert!(ws.unit_match.reachable_reader_bits.get().is_some());
+    assert!(ws.is_reader_in_dep_graph(&[idx0], idx1));
+    assert!(!ws.is_reader_in_dep_graph(&[idx1], idx0));
+}

@@ -133,6 +133,12 @@ impl MultiRootWorkspace {
         self.roots.iter_mut().map(|(_, ws)| ws)
     }
 
+    pub fn warm_background_caches(&self) {
+        for (_, ws) in &self.roots {
+            ws.warm_background_caches();
+        }
+    }
+
     pub fn reload_all_if_modified(&mut self) -> bool {
         let mut any_reloaded = false;
         for (_, ws) in &mut self.roots {

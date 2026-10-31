@@ -16,9 +16,9 @@
 use crate::format::{DefEntry, DefKind};
 use crate::reader::{IndexReader, ResolvedDefinition};
 use std::collections::{HashMap, HashSet};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
-type ReachableCache = (Vec<(usize, usize)>, Vec<Vec<u64>>);
+pub(crate) type ReachableCache = (Vec<(usize, usize)>, Vec<Vec<u64>>);
 
 /// Precomputed lookup index for workspace unit matching and file-scoped definition positions.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -28,14 +28,14 @@ pub struct UnitMatchIndex {
     unit_to_version: HashMap<(String, String), String>,
     crate_defined_units: HashMap<String, HashSet<String>>,
     crate_all_units: HashMap<String, HashSet<String>>,
-    unit_to_readers: HashMap<String, Vec<usize>>,
+    pub(crate) unit_to_readers: HashMap<String, Vec<usize>>,
     crate_to_readers: HashMap<String, Vec<usize>>,
     file_to_readers: HashMap<String, Vec<(usize, u32)>>,
     reader_has_special_files: Vec<bool>,
     defs_by_pos: Vec<Vec<(u32, u32, u32)>>,
-    assoc_ty_defs: Vec<OnceLock<Vec<u32>>>,
-    resolved_uks: Vec<Option<String>>,
-    reachable_reader_bits: OnceLock<ReachableCache>,
+    pub(crate) assoc_ty_defs: Arc<Vec<OnceLock<Vec<u32>>>>,
+    pub(crate) resolved_uks: Vec<Option<String>>,
+    pub(crate) reachable_reader_bits: Arc<OnceLock<ReachableCache>>,
 }
 
 #[inline]
@@ -67,7 +67,7 @@ impl UnitMatchIndex {
         let mut file_to_readers: HashMap<String, Vec<(usize, u32)>> = HashMap::with_capacity(readers.len() * 2);
         let mut reader_has_special_files: Vec<bool> = Vec::with_capacity(readers.len());
         let mut defs_by_pos: Vec<Vec<(u32, u32, u32)>> = Vec::with_capacity(readers.len());
-        let assoc_ty_defs: Vec<OnceLock<Vec<u32>>> = (0..readers.len()).map(|_| OnceLock::new()).collect();
+        let assoc_ty_defs = Arc::new((0..readers.len()).map(|_| OnceLock::new()).collect());
         let mut resolved_uks: Vec<Option<String>> = Vec::with_capacity(readers.len());
 
         for (j, r) in readers.iter().enumerate() {
@@ -129,7 +129,7 @@ impl UnitMatchIndex {
             defs_by_pos,
             assoc_ty_defs,
             resolved_uks,
-            reachable_reader_bits: OnceLock::new(),
+            reachable_reader_bits: Arc::new(OnceLock::new()),
         }
     }
 
@@ -163,25 +163,7 @@ impl UnitMatchIndex {
     }
 
     fn reachable_bits(&self, reader_extern_units: &[HashMap<String, String>], reader_dependencies: &[Vec<String>]) -> &ReachableCache {
-        self.reachable_reader_bits.get_or_init(|| {
-            let n = self.resolved_uks.len();
-            let words = n.div_ceil(64);
-            let mut bits_vec = Vec::with_capacity(n);
-            let mut counts = Vec::with_capacity(n);
-            for sr in 0..n {
-                counts.push((reader_extern_units.get(sr).map_or(0, HashMap::len), reader_dependencies.get(sr).map_or(0, Vec::len)));
-                let reachable_uks = self.reachable_uks_from(&[sr], reader_extern_units, reader_dependencies);
-                let mut bits = vec![0u64; words];
-                bits[sr >> 6] |= 1u64 << (sr & 63);
-                for (t, uk_opt) in self.resolved_uks.iter().enumerate() {
-                    if uk_opt.as_deref().is_some_and(|uk| reachable_uks.contains(uk)) {
-                        bits[t >> 6] |= 1u64 << (t & 63);
-                    }
-                }
-                bits_vec.push(bits);
-            }
-            (counts, bits_vec)
-        })
+        self.reachable_reader_bits.get_or_init(|| Self::compute_reachable_bits(self.resolved_uks.len(), &self.unit_to_readers, reader_extern_units, reader_dependencies))
     }
 
     #[inline]
@@ -189,19 +171,7 @@ impl UnitMatchIndex {
         let Some(cell) = self.assoc_ty_defs.get(reader_idx) else {
             return &[];
         };
-        cell.get_or_init(|| {
-            reader
-                .definitions()
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, d)| {
-                    (matches!(DefKind::from(d.kind), DefKind::AssocTy | DefKind::AssocFn | DefKind::AssocConst)
-                        && !d.is_macro_expansion()
-                        && (d.kind == DefKind::AssocTy as u8 || reader.get_str(d.path_offset()).starts_with('<')))
-                    .then_some(idx as u32)
-                })
-                .collect()
-        })
+        cell.get_or_init(|| Self::compute_assoc_ty_defs(reader))
     }
 
     #[inline]
