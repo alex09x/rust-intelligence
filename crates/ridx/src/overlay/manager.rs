@@ -155,49 +155,56 @@ impl OverlayManager {
             }
         }
 
+        let is_item_symbol = |sym: &OverlaySymbol| {
+            sym.name == ident
+                && matches!(
+                    sym.kind,
+                    DefKind::Fn | DefKind::Struct | DefKind::Enum | DefKind::Trait | DefKind::TyAlias | DefKind::Const | DefKind::Static | DefKind::Mod | DefKind::Macro
+                )
+        };
+
+        let Some(prefix) = path_prefix else {
+            // Without a module path prefix, an unqualified identifier can only resolve within the same file.
+            let current_ov = self.overlays.get(current_file)?;
+            return current_ov.document_symbols().iter().find(|s| is_item_symbol(s)).map(|s| s.to_definition(current_file));
+        };
+
+        let mut stripped = prefix;
+        while let Some(rest) = stripped.strip_prefix("crate::").or_else(|| stripped.strip_prefix("super::")).or_else(|| stripped.strip_prefix("self::")) {
+            stripped = rest;
+        }
+        if matches!(stripped, "" | "crate" | "super" | "self") {
+            return None;
+        }
+        let normalized_prefix = stripped.replace("::", "/");
+
         let mut candidates = Vec::new();
         for (file_path, overlay) in &self.overlays {
             for sym in overlay.document_symbols() {
-                if sym.name == ident {
-                    let is_item_level = matches!(
-                        sym.kind,
-                        DefKind::Fn | DefKind::Struct | DefKind::Enum | DefKind::Trait | DefKind::TyAlias | DefKind::Const | DefKind::Static | DefKind::Mod | DefKind::Macro
-                    );
-                    if is_item_level {
-                        candidates.push((file_path, sym));
-                    }
+                if is_item_symbol(sym) {
+                    candidates.push((file_path.as_str(), sym));
                 }
             }
         }
-
         if candidates.is_empty() {
             return None;
         }
+        candidates.sort_by(|(fa, sa), (fb, sb)| {
+            (*fa != current_file).cmp(&(*fb != current_file)).then_with(|| fa.cmp(fb)).then_with(|| sa.start_line.cmp(&sb.start_line)).then_with(|| sa.start_col.cmp(&sb.start_col))
+        });
 
-        if let Some(prefix) = path_prefix {
-            let normalized_prefix = prefix.trim_start_matches("crate::").trim_start_matches("super::").trim_start_matches("self::").replace("::", "/");
-
-            if normalized_prefix.is_empty() {
-                return None;
-            }
-
-            for (file_path, sym) in &candidates {
-                let p = file_path.replace(std::path::MAIN_SEPARATOR, "/");
-                if p.ends_with(&format!("{}.rs", normalized_prefix)) || p.ends_with(&format!("{}/mod.rs", normalized_prefix)) || p.contains(&format!("/{}", normalized_prefix)) {
-                    return Some(sym.to_definition(file_path));
-                }
-            }
-            // If path prefix was specified but no candidate matched the module path, do not fall back.
-            return None;
-        }
-
-        // Without a module path prefix, an unqualified identifier can only resolve within the same file.
-        for (file_path, sym) in &candidates {
-            if *file_path == current_file {
+        let suffix_rs = format!("/{normalized_prefix}.rs");
+        let suffix_mod = format!("/{normalized_prefix}/mod.rs");
+        let rel_rs = format!("{normalized_prefix}.rs");
+        let rel_mod = format!("{normalized_prefix}/mod.rs");
+        let dir_seg = format!("/{normalized_prefix}/");
+        for (file_path, sym) in candidates {
+            let p = file_path.replace(std::path::MAIN_SEPARATOR, "/");
+            if p.ends_with(&suffix_rs) || p.ends_with(&suffix_mod) || p == rel_rs || p == rel_mod || p.contains(&dir_seg) {
                 return Some(sym.to_definition(file_path));
             }
         }
-
+        // If path prefix was specified but no candidate matched the module path, do not fall back.
         None
     }
 
@@ -229,7 +236,9 @@ impl OverlayManager {
     }
 
     pub fn open_file_paths(&self) -> Vec<String> {
-        self.overlays.keys().cloned().collect()
+        let mut paths: Vec<String> = self.overlays.keys().cloned().collect();
+        paths.sort();
+        paths
     }
 }
 

@@ -175,3 +175,58 @@ fn test_find_definition_at_multiline_span() {
     let mid = overlay.find_definition_at(2, 5);
     assert_eq!(mid.map(|d| d.name), Some("BigStruct".to_string()));
 }
+
+#[test]
+fn test_definition_fallback_independent_of_polluting_did_open_history() {
+    use crate::lsp::navigation::handle_definition;
+    use crate::lsp::protocol::PositionConverter;
+    use crate::overlay::OverlayManager;
+    use serde_json::json;
+
+    let mut mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    let arch_file = "/ws/crates/bevy_ecs/src/archetype.rs";
+    let arch_uri = "file:///ws/crates/bevy_ecs/src/archetype.rs";
+    let arch_src = "\
+/// [module level documentation]: crate::archetype
+pub struct Archetype {
+    edges: Edges,
+    entities: Vec<ArchetypeEntity>,
+}
+
+impl Archetype {
+    pub fn entities(&self) -> &[ArchetypeEntity] {
+        &self.entities
+    }
+}
+";
+    mgr.open_with_source_hash(arch_uri, arch_file, 1, arch_src.to_string(), Some(ridx_format::normalized_source_hash(arch_src.as_bytes())));
+    let ov = mgr.get(arch_file).unwrap();
+    // Unqualified `entities:` on line 4 col 13 must NOT pick up `crate` from line 1 doc comment
+    assert_eq!(ov.get_path_prefix_at(4, 13), None);
+
+    let req = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": arch_uri },
+            "position": { "line": 3, "character": 12 }
+        }
+    });
+    let before = handle_definition(&req, None, &mgr, &mut conv);
+    assert_eq!(before["uri"], arch_uri);
+    assert_eq!(before["range"]["start"]["line"], 7);
+
+    // Open a polluting sequence of other files under `/crates/` with a same-named `pub fn entities`
+    for idx in 0..64 {
+        let other_file = format!("/ws/crates/bevy_ecs/src/world/pollute_{idx}.rs");
+        let other_uri = format!("file://{other_file}");
+        let other_src = "impl UnsafeWorldCell {\n    pub fn entities(self) {}\n}\n";
+        mgr.open_with_source_hash(&other_uri, &other_file, 1, other_src.to_string(), Some(ridx_format::normalized_source_hash(other_src.as_bytes())));
+    }
+
+    let after = handle_definition(&req, None, &mgr, &mut conv);
+    assert_eq!(after, before);
+}

@@ -126,8 +126,8 @@ impl DocumentOverlay {
         let line_start = *self.line_starts.get(line_idx)?;
         let ident_start = line_start + start_b;
         let prefix = strip_trailing_whitespace_and_comments(&self.text[..ident_start]);
-        if let Some(pos) = prefix.rfind("::") {
-            let path_part = prefix[..pos].trim_end();
+        if let Some(raw_path) = prefix.strip_suffix("::") {
+            let path_part = raw_path.trim_end();
             let mut start_pos = path_part.len();
             let bytes = path_part.as_bytes();
             while start_pos > 0 {

@@ -128,20 +128,23 @@ pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     let path_prefix = overlay_opt.and_then(|ov| ov.get_path_prefix_at(line_1based, col_1based));
     if let Some(ident_str) = ident {
         if let Some(def) = overlay_mgr.find_global_symbol_definition(&file, &ident_str, path_prefix.as_deref()) {
-            let path_str = &def.file;
-            let uri = path_to_uri(path_str);
-            let (start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str) {
-                (target_ov.char_col_to_utf16_col(def.start_line, def.start_col), target_ov.char_col_to_utf16_col(def.end_line, def.end_col))
-            } else {
-                (conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col), conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col))
-            };
-            return json!({
-                "uri": uri,
-                "range": {
-                    "start": { "line": def.start_line.saturating_sub(1), "character": start_char },
-                    "end": { "line": def.end_line.saturating_sub(1), "character": end_char }
-                }
-            });
+            let allow_hit = def.file == file || workspace.is_none() || overlay_opt.is_some_and(|o| o.is_dirty()) || overlay_mgr.get(&def.file).is_some_and(|o| o.is_dirty());
+            if allow_hit {
+                let path_str = &def.file;
+                let uri = path_to_uri(path_str);
+                let (start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str) {
+                    (target_ov.char_col_to_utf16_col(def.start_line, def.start_col), target_ov.char_col_to_utf16_col(def.end_line, def.end_col))
+                } else {
+                    (conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col), conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col))
+                };
+                return json!({
+                    "uri": uri,
+                    "range": {
+                        "start": { "line": def.start_line.saturating_sub(1), "character": start_char },
+                        "end": { "line": def.end_line.saturating_sub(1), "character": end_char }
+                    }
+                });
+            }
         }
     }
 
