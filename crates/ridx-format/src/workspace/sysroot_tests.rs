@@ -254,3 +254,92 @@ fn test_workspace_references_exclude_dependency_and_sysroot_readers() {
     assert_eq!(refs[0].crate_name, "app");
     assert_eq!(refs[0].file, "src/main.rs");
 }
+
+#[test]
+fn test_sysroot_trait_impl_reference_does_not_stamp_referrer_unit_key() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ws_root = temp_dir.path().to_path_buf();
+    let sysroot_file = "/home/user/.rustup/toolchains/stable/lib/rustlib/src/rust/library/alloc/src/string.rs";
+    let target_path = "<T as alloc::string::ToString>::to_string";
+
+    let a_idx_path = temp_dir.path().join("crate_a.ridx");
+    let mut a_writer = IndexWriter::new("crate_a", "0.1.0");
+    a_writer.set_unit_key("unit_a");
+    a_writer.add_reference(RawReference {
+        file: "src/a.rs".to_string(),
+        start_line: 5,
+        start_col: 10,
+        end_line: 5,
+        end_col: 19,
+        target_def_id: None,
+        target_path: target_path.to_string(),
+        target_file: Some(sysroot_file.to_string()),
+        target_unit: None,
+        target_line: 2500,
+        target_col: 5,
+        kind: DefKind::AssocFn,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    a_writer.write_to(&mut File::create(&a_idx_path).unwrap()).unwrap();
+
+    let b_idx_path = temp_dir.path().join("crate_b.ridx");
+    let mut b_writer = IndexWriter::new("crate_b", "0.1.0");
+    b_writer.set_unit_key("unit_b");
+    b_writer.add_reference(RawReference {
+        file: "src/b.rs".to_string(),
+        start_line: 12,
+        start_col: 8,
+        end_line: 12,
+        end_col: 17,
+        target_def_id: None,
+        target_path: target_path.to_string(),
+        target_file: Some(sysroot_file.to_string()),
+        target_unit: None,
+        target_line: 2500,
+        target_col: 5,
+        kind: DefKind::AssocFn,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    b_writer.write_to(&mut File::create(&b_idx_path).unwrap()).unwrap();
+
+    let readers = vec![IndexReader::open(&a_idx_path).unwrap(), IndexReader::open(&b_idx_path).unwrap()];
+    let unit_keys = vec![Some("unit_a".to_string()), Some("unit_b".to_string())];
+    let reader_extern_units = vec![HashMap::new(), HashMap::new()];
+    let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
+    let ws = WorkspaceIndex {
+        readers,
+        paths: vec![a_idx_path, b_idx_path],
+        mtimes: vec![None, None],
+        source_roots: vec![Some(ws_root.clone()), Some(ws_root.clone())],
+        unit_keys,
+        unit_match,
+        path_index: super::PathIndex::default(),
+        target_kinds: vec![Some(TargetKind::Lib), Some(TargetKind::Lib)],
+        reader_generations: vec![None, None],
+        reader_dependencies: vec![Vec::new(), Vec::new()],
+        reader_extern_units,
+        reader_file_hashes: vec![HashMap::new(), HashMap::new()],
+        reader_is_dependency: vec![false, false],
+        meta_paths: vec![None, None],
+        meta_mtimes: vec![None, None],
+        last_reloaded_files: HashSet::new(),
+        root_dir: None,
+        workspace_root: Some(ws_root),
+        manifest_path: None,
+        manifest_mtime: None,
+        manifest_len: None,
+        manifest_hash: None,
+        manifest_generation: None,
+        manifest_ino: None,
+        active_variant_id: None,
+        sysroot_cas_key: None,
+        instance_id: 1,
+        generation: 1,
+    };
+
+    let res = ws.find_references_at("src/a.rs", 5, 12).expect("should resolve references at src/a.rs:5:12");
+    assert_eq!(res.target_unit_key, None, "Unloaded sysroot target must not inherit referring crate unit_key");
+    assert_eq!(res.references.len(), 2, "Must unite references to sysroot trait method across both workspace units");
+}

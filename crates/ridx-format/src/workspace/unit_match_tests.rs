@@ -138,3 +138,26 @@ fn test_unit_match_fast_file_and_crate_lookups() {
     assert!(!idx.is_valid_for_readers(&readers));
     assert_eq!(idx.find_file_id_fast(1, &readers[1], "src/main.rs"), None);
 }
+
+#[test]
+fn test_unit_match_same_version_multi_unit_with_older_dep_version() {
+    let temp = TempDir::new().unwrap();
+    let specs = [("pkg", "2.0.0", "u_pkg_lib"), ("pkg", "2.0.0", "u_pkg_test"), ("pkg", "1.0.0", "u_pkg_old_dep")];
+    let mut readers = Vec::new();
+    let mut unit_keys = Vec::new();
+    for (i, &(name, ver, ukey)) in specs.iter().enumerate() {
+        let path = temp.path().join(format!("multi_{i}.ridx"));
+        let mut writer = IndexWriter::new(name, ver);
+        writer.write_to(&mut File::create(&path).unwrap()).unwrap();
+        readers.push(IndexReader::open(&path).unwrap());
+        unit_keys.push(Some(ukey.to_string()));
+    }
+    let reader_extern_units = vec![HashMap::new(); 3];
+    let idx = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
+
+    assert_eq!(idx.crate_versions_count("pkg"), 2);
+    assert!(idx.matches_unit(0, "u_pkg_test", "u_pkg_lib", "pkg", &reader_extern_units));
+    assert!(idx.matches_unit(1, "u_pkg_lib", "u_pkg_test", "pkg", &reader_extern_units));
+    assert!(!idx.matches_unit(0, "u_pkg_old_dep", "u_pkg_lib", "pkg", &reader_extern_units));
+    assert!(!idx.matches_unit(2, "u_pkg_lib", "u_pkg_old_dep", "pkg", &reader_extern_units));
+}

@@ -247,7 +247,11 @@ impl WorkspaceIndex {
         let crate_prefix = format!("{}::", reader.crate_name());
         let current_uk = self.unit_keys.get(i).and_then(|u| u.as_deref()).unwrap_or_else(|| reader.unit_key());
         let is_explicit_remote = res.unit_key.is_some() && res.unit_key != Some(current_uk);
-        let local_fid = (res.file != "external" && !res.file.starts_with("library/")).then(|| reader.find_file_id(res.file)).flatten();
+        let root_crate = super::qualified_path::extract_root_crate(res.path);
+        let is_foreign_sysroot_or_ext = (matches!(root_crate, "core" | "alloc" | "std" | "proc_macro") && root_crate != reader.crate_name())
+            || res.file.starts_with("library/")
+            || (!self.reader_is_dependency.get(i).copied().unwrap_or(false) && super::super::is_external_dependency_path(Path::new(res.file)));
+        let local_fid = (res.file != "external" && !is_foreign_sysroot_or_ext).then(|| reader.find_file_id(res.file)).flatten();
         let has_local_def = local_fid.is_some_and(|fid| {
             res.kind == DefKind::Local || !res.path.contains("::") || self.unit_match.defs_in_file_up_to(i, fid, res.start_line).iter().any(|&(_, sl, _)| sl == res.start_line)
         });
@@ -275,8 +279,12 @@ impl WorkspaceIndex {
             res.reader_idx = Some(i);
             return res;
         }
-        if res.unit_key.is_none() {
-            res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+        if res.unit_key.is_none() && !is_foreign_sysroot_or_ext {
+            if root_crate == reader.crate_name() || !self.has_crate(root_crate) {
+                res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+            } else {
+                res.unit_key = self.reader_extern_units.get(i).and_then(|m| m.get(root_crate)).map(String::as_str);
+            }
         }
         let owner =
             res.unit_key.filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref())).and_then(|uk| self.readers_for_unit_fast(uk).first().copied()).unwrap_or(i);

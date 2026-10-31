@@ -205,36 +205,34 @@ impl WorkspaceIndex {
                 }
             }
 
-            if def.kind == DefKind::AssocTy {
-                let defs = reader.definitions();
-                for &def_idx in self.unit_match.assoc_ty_defs(i) {
-                    let Some(impl_def) = defs.get(def_idx as usize) else {
-                        continue;
-                    };
-                    if reader.get_str(impl_def.name_offset()) != item_name {
-                        continue;
-                    }
-                    let impl_path = reader.get_str(impl_def.path_offset());
-                    let Some(impl_trait) = super::qualified_path::extract_impl_trait(impl_path) else {
-                        continue;
-                    };
-                    if !path_matches_trait(impl_trait, raw_parent, local_trait, global_trait, &std_cands) {
-                        continue;
-                    };
-                    let span = impl_def.span();
-                    let file = reader.get_file(span.file_id());
-                    if seen_locs.insert((file.to_string(), span.start_line(), span.start_col())) {
-                        out_refs.push(WorkspaceReference {
-                            crate_name: reader.crate_name(),
-                            file,
-                            span,
-                            kind: DefKind::from(impl_def.kind),
-                            is_write: false,
-                            is_macro_expansion: false,
-                            source_root,
-                            unit_key,
-                        });
-                    }
+            let defs = reader.definitions();
+            for &def_idx in self.unit_match.assoc_ty_defs(i, reader) {
+                let Some(impl_def) = defs.get(def_idx as usize) else {
+                    continue;
+                };
+                if DefKind::from(impl_def.kind) != def.kind || reader.get_str(impl_def.name_offset()) != item_name {
+                    continue;
+                }
+                let impl_path = reader.get_str(impl_def.path_offset());
+                let Some(impl_trait) = super::qualified_path::extract_impl_trait(impl_path) else {
+                    continue;
+                };
+                if !path_matches_trait(impl_trait, raw_parent, local_trait, global_trait, &std_cands) {
+                    continue;
+                };
+                let span = impl_def.span();
+                let file = reader.get_file(span.file_id());
+                if seen_locs.insert((file.to_string(), span.start_line(), span.start_col())) {
+                    out_refs.push(WorkspaceReference {
+                        crate_name: reader.crate_name(),
+                        file,
+                        span,
+                        kind: DefKind::from(impl_def.kind),
+                        is_write: false,
+                        is_macro_expansion: false,
+                        source_root,
+                        unit_key,
+                    });
                 }
             }
         }

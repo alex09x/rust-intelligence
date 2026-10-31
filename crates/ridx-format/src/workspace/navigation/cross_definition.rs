@@ -316,7 +316,24 @@ impl WorkspaceIndex {
     /// assigned different unit hashes (e.g. lib vs test vs dep compilation).
     #[inline]
     pub(crate) fn matches_unit(&self, reader_idx: usize, ref_target_unit: &str, target_unit: &str, target_crate: &str) -> bool {
-        self.unit_match.matches_unit(reader_idx, ref_target_unit, target_unit, target_crate, &self.reader_extern_units)
+        if !self.unit_match.matches_unit(reader_idx, ref_target_unit, target_unit, target_crate, &self.reader_extern_units) {
+            return false;
+        }
+        if ref_target_unit != target_unit {
+            let ws_sr = |uk: &str| {
+                self.readers_for_unit_fast(uk)
+                    .iter()
+                    .copied()
+                    .find(|&r| !self.reader_is_dependency.get(r).copied().unwrap_or(false))
+                    .and_then(|r| self.source_roots.get(r).and_then(|s| s.as_deref()))
+            };
+            if let (Some(sr1), Some(sr2)) = (ws_sr(target_unit), ws_sr(ref_target_unit)) {
+                if sr1 != sr2 {
+                    return false;
+                }
+            }
+        }
+        true
     }
 
     #[inline]

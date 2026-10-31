@@ -222,7 +222,7 @@ impl WorkspaceIndex {
         }
         if refs.is_empty() && def.kind == DefKind::Macro && used_cursor_fallback {
             if let (_, Some(wide), _) = self.find_indexed_definition_candidates(file, line, col) {
-                let wide_explicit = Some((wide.file, wide.start_line, wide.kind, wide.name));
+                let wide_explicit = Some((wide.file, wide.start_line, DefKind::Macro, wide.name));
                 refs = self.find_references_for_unit_with_target(wide.path, wide.unit_key, wide_explicit);
             }
         }

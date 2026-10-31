@@ -16,12 +16,16 @@
 use crate::format::{DefEntry, DefKind};
 use crate::reader::{IndexReader, ResolvedDefinition};
 use std::collections::{HashMap, HashSet};
+use std::sync::OnceLock;
+
+type ReachableCache = (Vec<(usize, usize)>, Vec<Vec<u64>>);
 
 /// Precomputed lookup index for workspace unit matching and file-scoped definition positions.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UnitMatchIndex {
     reader_fingerprints: Vec<(u32, u32, u64, u32)>,
     crate_version_counts: HashMap<String, usize>,
+    unit_to_version: HashMap<(String, String), String>,
     crate_defined_units: HashMap<String, HashSet<String>>,
     crate_all_units: HashMap<String, HashSet<String>>,
     unit_to_readers: HashMap<String, Vec<usize>>,
@@ -29,9 +33,9 @@ pub struct UnitMatchIndex {
     file_to_readers: HashMap<String, Vec<(usize, u32)>>,
     reader_has_special_files: Vec<bool>,
     defs_by_pos: Vec<Vec<(u32, u32, u32)>>,
-    assoc_ty_defs: Vec<Vec<u32>>,
-    reachable_reader_bits: Vec<Vec<u64>>,
-    dep_graph_counts: Vec<(usize, usize)>,
+    assoc_ty_defs: Vec<OnceLock<Vec<u32>>>,
+    resolved_uks: Vec<Option<String>>,
+    reachable_reader_bits: OnceLock<ReachableCache>,
 }
 
 #[inline]
@@ -46,15 +50,16 @@ impl UnitMatchIndex {
         Self::build_with_deps(readers, unit_keys, reader_extern_units, &[])
     }
 
-    /// Builds a precomputed `UnitMatchIndex` including 6-hop dependency reachability bitsets.
+    /// Builds a precomputed `UnitMatchIndex` with lazy 6-hop dependency reachability bitsets.
     pub fn build_with_deps<B: AsRef<[u8]>>(
         readers: &[IndexReader<B>],
         unit_keys: &[Option<String>],
         reader_extern_units: &[HashMap<String, String>],
-        reader_dependencies: &[Vec<String>],
+        _reader_dependencies: &[Vec<String>],
     ) -> Self {
         let mut reader_fingerprints = Vec::with_capacity(readers.len());
         let mut versions_by_crate: HashMap<String, HashSet<String>> = HashMap::new();
+        let mut unit_to_version: HashMap<(String, String), String> = HashMap::new();
         let mut crate_defined_units: HashMap<String, HashSet<String>> = HashMap::new();
         let mut crate_all_units: HashMap<String, HashSet<String>> = HashMap::new();
         let mut unit_to_readers: HashMap<String, Vec<usize>> = HashMap::new();
@@ -62,7 +67,7 @@ impl UnitMatchIndex {
         let mut file_to_readers: HashMap<String, Vec<(usize, u32)>> = HashMap::with_capacity(readers.len() * 2);
         let mut reader_has_special_files: Vec<bool> = Vec::with_capacity(readers.len());
         let mut defs_by_pos: Vec<Vec<(u32, u32, u32)>> = Vec::with_capacity(readers.len());
-        let mut assoc_ty_defs: Vec<Vec<u32>> = Vec::with_capacity(readers.len());
+        let assoc_ty_defs: Vec<OnceLock<Vec<u32>>> = (0..readers.len()).map(|_| OnceLock::new()).collect();
         let mut resolved_uks: Vec<Option<String>> = Vec::with_capacity(readers.len());
 
         for (j, r) in readers.iter().enumerate() {
@@ -75,6 +80,9 @@ impl UnitMatchIndex {
             }
             let uk_opt = unit_keys.get(j).and_then(|u| u.as_deref()).filter(|s| !s.is_empty()).or_else(|| Some(r.unit_key()).filter(|s| !s.is_empty()));
             if let Some(uk) = uk_opt {
+                if !ver.is_empty() {
+                    unit_to_version.insert((crate_name.to_string(), uk.to_string()), ver.to_string());
+                }
                 crate_defined_units.entry(crate_name.to_string()).or_default().insert(uk.to_string());
                 crate_all_units.entry(crate_name.to_string()).or_default().insert(uk.to_string());
                 unit_to_readers.entry(uk.to_string()).or_default().push(j);
@@ -95,17 +103,12 @@ impl UnitMatchIndex {
             reader_has_special_files.push(has_special);
             let defs = r.definitions();
             let mut pos_entries: Vec<(u32, u32, u32)> = Vec::with_capacity(defs.len());
-            let mut atys: Vec<u32> = Vec::new();
             for (idx, d) in defs.iter().enumerate() {
                 let s = d.span();
                 pos_entries.push((s.file_id(), s.start_line(), idx as u32));
-                if d.kind == DefKind::AssocTy as u8 && !d.is_macro_expansion() {
-                    atys.push(idx as u32);
-                }
             }
             pos_entries.sort_by_key(|&(fid, sl, _)| (fid, sl));
             defs_by_pos.push(pos_entries);
-            assoc_ty_defs.push(atys);
         }
         for m in reader_extern_units {
             for (crate_name, uk) in m {
@@ -113,51 +116,10 @@ impl UnitMatchIndex {
             }
         }
         let crate_version_counts = versions_by_crate.into_iter().map(|(k, v)| (k, v.len())).collect();
-        let n = readers.len();
-        let words = n.div_ceil(64);
-        let mut reachable_reader_bits = Vec::with_capacity(n);
-        let mut dep_graph_counts = Vec::with_capacity(n);
-        for sr in 0..n {
-            dep_graph_counts.push((reader_extern_units.get(sr).map_or(0, HashMap::len), reader_dependencies.get(sr).map_or(0, Vec::len)));
-            let mut visited = vec![false; n];
-            visited[sr] = true;
-            let mut frontier = vec![sr];
-            let mut reachable_uks: HashSet<&str> = HashSet::new();
-            for _ in 0..6 {
-                if frontier.is_empty() {
-                    break;
-                }
-                let mut next_frontier = Vec::new();
-                for cur in frontier {
-                    for uk in reader_extern_units
-                        .get(cur)
-                        .into_iter()
-                        .flat_map(|m| m.values().map(String::as_str))
-                        .chain(reader_dependencies.get(cur).into_iter().flat_map(|d| d.iter().map(String::as_str)))
-                    {
-                        reachable_uks.insert(uk);
-                        for &mid_idx in unit_to_readers.get(uk).map(Vec::as_slice).unwrap_or(&[]) {
-                            if !visited[mid_idx] {
-                                visited[mid_idx] = true;
-                                next_frontier.push(mid_idx);
-                            }
-                        }
-                    }
-                }
-                frontier = next_frontier;
-            }
-            let mut bits = vec![0u64; words];
-            bits[sr >> 6] |= 1u64 << (sr & 63);
-            for (t, uk_opt) in resolved_uks.iter().enumerate() {
-                if uk_opt.as_deref().is_some_and(|uk| reachable_uks.contains(uk)) {
-                    bits[t >> 6] |= 1u64 << (t & 63);
-                }
-            }
-            reachable_reader_bits.push(bits);
-        }
         Self {
             reader_fingerprints,
             crate_version_counts,
+            unit_to_version,
             crate_defined_units,
             crate_all_units,
             unit_to_readers,
@@ -166,14 +128,80 @@ impl UnitMatchIndex {
             reader_has_special_files,
             defs_by_pos,
             assoc_ty_defs,
-            reachable_reader_bits,
-            dep_graph_counts,
+            resolved_uks,
+            reachable_reader_bits: OnceLock::new(),
         }
     }
 
+    fn reachable_uks_from<'a>(&'a self, start: &[usize], reader_extern_units: &'a [HashMap<String, String>], reader_dependencies: &'a [Vec<String>]) -> HashSet<&'a str> {
+        let mut visited: HashSet<usize> = start.iter().copied().collect();
+        let mut frontier = start.to_vec();
+        let mut reachable_uks: HashSet<&'a str> = HashSet::new();
+        for _ in 0..6 {
+            if frontier.is_empty() {
+                break;
+            }
+            let mut next_frontier = Vec::new();
+            for cur in frontier {
+                for uk in reader_extern_units
+                    .get(cur)
+                    .into_iter()
+                    .flat_map(|m| m.values().map(String::as_str))
+                    .chain(reader_dependencies.get(cur).into_iter().flat_map(|d| d.iter().map(String::as_str)))
+                {
+                    reachable_uks.insert(uk);
+                    for &mid_idx in self.unit_to_readers.get(uk).map(Vec::as_slice).unwrap_or(&[]) {
+                        if visited.insert(mid_idx) {
+                            next_frontier.push(mid_idx);
+                        }
+                    }
+                }
+            }
+            frontier = next_frontier;
+        }
+        reachable_uks
+    }
+
+    fn reachable_bits(&self, reader_extern_units: &[HashMap<String, String>], reader_dependencies: &[Vec<String>]) -> &ReachableCache {
+        self.reachable_reader_bits.get_or_init(|| {
+            let n = self.resolved_uks.len();
+            let words = n.div_ceil(64);
+            let mut bits_vec = Vec::with_capacity(n);
+            let mut counts = Vec::with_capacity(n);
+            for sr in 0..n {
+                counts.push((reader_extern_units.get(sr).map_or(0, HashMap::len), reader_dependencies.get(sr).map_or(0, Vec::len)));
+                let reachable_uks = self.reachable_uks_from(&[sr], reader_extern_units, reader_dependencies);
+                let mut bits = vec![0u64; words];
+                bits[sr >> 6] |= 1u64 << (sr & 63);
+                for (t, uk_opt) in self.resolved_uks.iter().enumerate() {
+                    if uk_opt.as_deref().is_some_and(|uk| reachable_uks.contains(uk)) {
+                        bits[t >> 6] |= 1u64 << (t & 63);
+                    }
+                }
+                bits_vec.push(bits);
+            }
+            (counts, bits_vec)
+        })
+    }
+
     #[inline]
-    pub fn assoc_ty_defs(&self, reader_idx: usize) -> &[u32] {
-        self.assoc_ty_defs.get(reader_idx).map(Vec::as_slice).unwrap_or(&[])
+    pub fn assoc_ty_defs<B: AsRef<[u8]>>(&self, reader_idx: usize, reader: &IndexReader<B>) -> &[u32] {
+        let Some(cell) = self.assoc_ty_defs.get(reader_idx) else {
+            return &[];
+        };
+        cell.get_or_init(|| {
+            reader
+                .definitions()
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, d)| {
+                    (matches!(DefKind::from(d.kind), DefKind::AssocTy | DefKind::AssocFn | DefKind::AssocConst)
+                        && !d.is_macro_expansion()
+                        && (d.kind == DefKind::AssocTy as u8 || reader.get_str(d.path_offset()).starts_with('<')))
+                    .then_some(idx as u32)
+                })
+                .collect()
+        })
     }
 
     #[inline]
@@ -215,8 +243,15 @@ impl UnitMatchIndex {
         if ref_target_unit == target_unit {
             return true;
         }
-        if !self.crate_all_units.get(target_crate).is_some_and(|units| units.contains(target_unit)) || *self.crate_version_counts.get(target_crate).unwrap_or(&0) > 1 {
+        if !self.crate_all_units.get(target_crate).is_some_and(|units| units.contains(target_unit)) {
             return false;
+        }
+        if *self.crate_version_counts.get(target_crate).unwrap_or(&0) > 1 {
+            let v1 = self.unit_to_version.get(&(target_crate.to_string(), target_unit.to_string()));
+            let v2 = self.unit_to_version.get(&(target_crate.to_string(), ref_target_unit.to_string()));
+            if v1.is_none() || v1 != v2 {
+                return false;
+            }
         }
         self.crate_defined_units.get(target_crate).is_some_and(|units| units.contains(ref_target_unit))
             || reader_extern_units.get(reader_idx).and_then(|m| m.get(target_crate)).map(String::as_str) == Some(ref_target_unit)
@@ -299,15 +334,16 @@ impl super::WorkspaceIndex {
         if source_readers.contains(&target_reader_idx) {
             return true;
         }
-        if self.unit_match.dep_graph_counts.len() == self.readers.len()
-            && source_readers.iter().all(|&sr| {
-                self.unit_match.dep_graph_counts.get(sr).copied()
-                    == Some((self.reader_extern_units.get(sr).map_or(0, HashMap::len), self.reader_dependencies.get(sr).map_or(0, Vec::len)))
-            })
-        {
-            return source_readers.iter().any(|&sr| {
-                self.unit_match.reachable_reader_bits.get(sr).and_then(|bits| bits.get(target_reader_idx >> 6)).is_some_and(|&w| (w & (1u64 << (target_reader_idx & 63))) != 0)
-            });
+        if self.unit_match.resolved_uks.len() == self.readers.len() {
+            let (counts, bits_vec) = self.unit_match.reachable_bits(&self.reader_extern_units, &self.reader_dependencies);
+            if source_readers
+                .iter()
+                .all(|&sr| counts.get(sr).copied() == Some((self.reader_extern_units.get(sr).map_or(0, HashMap::len), self.reader_dependencies.get(sr).map_or(0, Vec::len))))
+            {
+                return source_readers
+                    .iter()
+                    .any(|&sr| bits_vec.get(sr).and_then(|bits| bits.get(target_reader_idx >> 6)).is_some_and(|&w| (w & (1u64 << (target_reader_idx & 63))) != 0));
+            }
         }
         let target_uk = self
             .unit_keys
@@ -318,37 +354,7 @@ impl super::WorkspaceIndex {
         let Some(target_uk) = target_uk else {
             return false;
         };
-        let reader_has_dep = |r_idx: usize, uk: &str| -> bool {
-            self.reader_extern_units.get(r_idx).is_some_and(|m| m.values().any(|v| v == uk)) || self.reader_dependencies.get(r_idx).is_some_and(|d| d.iter().any(|v| v == uk))
-        };
-        let mut visited: HashSet<usize> = source_readers.iter().copied().collect();
-        let mut frontier: Vec<usize> = source_readers.to_vec();
-        for _ in 0..6 {
-            if frontier.is_empty() {
-                break;
-            }
-            let mut next_frontier = Vec::new();
-            for sr in frontier {
-                if reader_has_dep(sr, target_uk) {
-                    return true;
-                }
-                for mid_uk in self
-                    .reader_extern_units
-                    .get(sr)
-                    .into_iter()
-                    .flat_map(|m| m.values().map(String::as_str))
-                    .chain(self.reader_dependencies.get(sr).into_iter().flat_map(|d| d.iter().map(String::as_str)))
-                {
-                    for &mid_idx in self.unit_match.readers_for_unit(mid_uk).unwrap_or(&[]) {
-                        if visited.insert(mid_idx) {
-                            next_frontier.push(mid_idx);
-                        }
-                    }
-                }
-            }
-            frontier = next_frontier;
-        }
-        false
+        self.unit_match.reachable_uks_from(source_readers, &self.reader_extern_units, &self.reader_dependencies).contains(target_uk)
     }
 
     /// Finds the nearest preceding `Impl`, `AssocFn`, `AssocTy`, `AssocConst`, or `Trait`
