@@ -90,6 +90,12 @@ pub fn peel_type_modifiers(mut s: &str) -> &str {
                 continue;
             }
         }
+        if let Some(rest) = s.strip_prefix("impl") {
+            if rest.starts_with(char::is_whitespace) {
+                s = rest.trim_start();
+                continue;
+            }
+        }
         break;
     }
     s

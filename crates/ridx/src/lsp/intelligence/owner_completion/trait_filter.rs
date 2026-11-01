@@ -264,16 +264,23 @@ pub fn is_in_prelude(trait_path: &str) -> bool {
     let base = base_trait_path(trait_path);
     is_prelude_trait(base)
         || is_prelude_trait(trait_path)
+        || (base.contains("::") && (is_prelude_trait(&format!("core::{base}")) || is_prelude_trait(&format!("alloc::{base}"))))
         || matches!(
             base,
             "core::fmt::Debug"
                 | "std::fmt::Debug"
+                | "fmt::Debug"
                 | "core::fmt::Display"
                 | "std::fmt::Display"
+                | "fmt::Display"
                 | "core::ops::deref::Deref"
                 | "core::ops::deref::DerefMut"
                 | "std::ops::Deref"
                 | "std::ops::DerefMut"
+                | "ops::deref::Deref"
+                | "ops::deref::DerefMut"
+                | "ops::Deref"
+                | "ops::DerefMut"
                 | "Debug"
                 | "Display"
                 | "Deref"

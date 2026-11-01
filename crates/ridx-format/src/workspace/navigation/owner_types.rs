@@ -101,11 +101,20 @@ impl WorkspaceIndex {
             if depth >= max_depth {
                 continue;
             }
-            for reader in &self.readers {
-                for target in reader.find_deref_targets(current) {
-                    if !target.is_empty() && visited.insert(target) {
-                        chain.push(target);
-                        queue.push_back((target, depth + 1));
+            for cand in super::std_map::std_path_candidates(current) {
+                let cand_str = cand.as_str();
+                for reader in &self.readers {
+                    let prefix = format!("{}::", reader.crate_name());
+                    let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
+                    let is_sysroot = matches!(reader.crate_name(), "core" | "alloc" | "std");
+                    let with_prefix = (!is_sysroot && !cand_str.starts_with(&prefix)).then(|| format!("{prefix}{cand_str}"));
+                    for q in [Some(cand_str), (sub != cand_str).then_some(sub), with_prefix.as_deref()].into_iter().flatten() {
+                        for target in reader.find_deref_targets(q) {
+                            if !target.is_empty() && visited.insert(target) {
+                                chain.push(target);
+                                queue.push_back((target, depth + 1));
+                            }
+                        }
                     }
                 }
             }

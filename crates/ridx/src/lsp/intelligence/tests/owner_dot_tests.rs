@@ -240,3 +240,61 @@ fn test_dot_fallback_completion_empty_prefix_finds_methods() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_completion_multiline_chained_dot() {
+    let temp_dir = std::env::temp_dir().join(format!("ridx_multiline_dot_{}", std::process::id()));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let src_file = temp_dir.join("src/lib.rs");
+    let code = "fn main() {\n    builder\n        .step()\n        .b\n}\n";
+    let _ = fs::write(&src_file, code);
+
+    let src_path = src_file.to_str().unwrap().to_string();
+    let mut writer = IndexWriter::new("test_chain", "0.1.0");
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 1,
+            kind: DefKind::AssocFn,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "build".to_string(),
+            start_line: 10,
+            start_col: 5,
+            end_line: 10,
+            end_col: 10,
+            path: "test_chain::Builder::build".to_string(),
+            signature: Some("fn build(&mut self)".to_string()),
+        },
+        vec!["Builder".to_string()],
+    );
+    writer.add_type_with_owner(
+        RawType { file: src_path.clone(), start_line: 2, start_col: 5, end_line: 3, end_col: 15, type_name: "&mut Builder".to_string() },
+        Some("test_chain::Builder".to_string()),
+    );
+
+    let ridx_file = temp_dir.join("index.ridx");
+    let mut f = fs::File::create(&ridx_file).unwrap();
+    writer.write_to(&mut f).unwrap();
+    drop(f);
+
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    let uri = format!("file://{}", src_file.to_str().unwrap());
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 3, "character": 10 }
+        }
+    });
+
+    let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let items = res["items"].as_array().unwrap();
+    let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
+    assert!(labels.contains(&"build"), "Multiline chained dot completion must resolve receiver on previous line, got: {:?}", labels);
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

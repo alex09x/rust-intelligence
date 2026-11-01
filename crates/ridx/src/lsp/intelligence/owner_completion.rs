@@ -11,20 +11,56 @@
 //! Fast owner-index and autoderef-based completion handler.
 
 use super::super::protocol::lsp_completion_kind;
-use super::scope_cache::{get_or_collect_file_referenced_traits, get_or_resolve_deref_chain, is_profile_completion_enabled};
+use super::scope_cache::{get_or_collect_file_referenced_traits, is_profile_completion_enabled};
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::Arc;
 
 pub mod qualifier;
+pub mod receiver;
 pub mod smart_pointer;
 pub mod trait_filter;
 pub mod ufcs;
 pub use qualifier::*;
+pub use receiver::*;
 pub use smart_pointer::*;
 pub use trait_filter::*;
 pub use ufcs::*;
+
+const MAX_COMPLETION_ITEMS: usize = 500;
+
+const UNIVERSAL_BLANKET_TRAITS: &[&str] = &[
+    "core::convert::Into",
+    "core::convert::TryInto",
+    "alloc::borrow::ToOwned",
+    "alloc::string::ToString",
+    "core::clone::Clone",
+    "core::borrow::Borrow",
+    "core::borrow::BorrowMut",
+];
+
+const POSTFIX_SNIPPETS: &[(&str, &str)] = &[
+    ("arc", "Arc::new(expr)"),
+    ("box", "Box::new(expr)"),
+    ("call", "function(expr)"),
+    ("const", "const { expr }"),
+    ("dbg", "dbg!(expr)"),
+    ("dbgr", "dbg!(&expr)"),
+    ("deref", "*expr"),
+    ("err", "Err(expr)"),
+    ("let", "let"),
+    ("letm", "let mut"),
+    ("match", "match expr {}"),
+    ("ok", "Ok(expr)"),
+    ("pinbox", "Box::pin(expr)"),
+    ("rc", "Rc::new(expr)"),
+    ("ref", "&expr"),
+    ("refm", "&mut expr"),
+    ("return", "return expr"),
+    ("some", "Some(expr)"),
+    ("unsafe", "unsafe { expr }"),
+];
 
 /// Returns true if the path belongs to standard/sysroot crates not yet indexed in `.ridx`.
 pub(crate) fn is_sysroot_path(path: &str) -> bool {
@@ -51,20 +87,20 @@ pub struct OwnerCompletionContext<'a> {
     pub is_dirty: bool,
 }
 
-fn collect_prioritized_items(buckets: [Vec<Value>; 4]) -> Option<Vec<Value>> {
-    let mut items = Vec::with_capacity(100);
+fn collect_prioritized_items<const N: usize>(buckets: [Vec<Value>; N]) -> Option<Vec<Value>> {
+    let mut items = Vec::with_capacity(128);
     let mut seen = HashSet::new();
     for bucket in buckets {
         for item in bucket {
             let name = item["label"].as_str().unwrap_or_default();
             if seen.insert(name.to_string()) {
                 items.push(item);
-                if items.len() >= 100 {
+                if items.len() >= MAX_COMPLETION_ITEMS {
                     break;
                 }
             }
         }
-        if items.len() >= 100 {
+        if items.len() >= MAX_COMPLETION_ITEMS {
             break;
         }
     }
@@ -81,17 +117,9 @@ fn collect_prioritized_items(buckets: [Vec<Value>; 4]) -> Option<Vec<Value>> {
 /// or `None` if fallback to workspace symbol scanning is required (e.g. sysroot types, unknown types).
 pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_>) -> Option<Vec<Value>> {
     if ctx.is_dot {
-        let before_dot = ctx.trimmed_before[..ctx.trimmed_before.len() - 1].trim_end();
-        let rname: String = before_dot.chars().rev().take_while(|c| c.is_alphanumeric() || *c == '_').collect::<Vec<_>>().into_iter().rev().collect();
-        let rstart = before_dot.len().saturating_sub(rname.len());
-        let rcol = ctx.line_slice[..rstart].chars().count() as u32 + 1;
-        let rend_col = ctx.line_slice[..before_dot.len()].chars().count() as u32;
-
-        let type_entry = ws.type_entry_at(ctx.file, ctx.line_1based, rend_col).or_else(|| ws.type_entry_at(ctx.file, ctx.line_1based, rcol));
-
-        let Some((ty_name, Some(owner))) = type_entry else {
-            return None;
-        };
+        let (ty_name, owner) = resolve_dot_receiver(ws, ctx)?;
+        let owner = owner.as_str();
+        let ty_name = ty_name.as_str();
 
         let mut fields = Vec::new();
         let mut inherent = Vec::new();
@@ -101,49 +129,13 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
 
         let profile_active = is_profile_completion_enabled();
         let t_start_all = profile_active.then(std::time::Instant::now);
-        let mut t_deref = std::time::Duration::ZERO;
         let mut t_find = std::time::Duration::ZERO;
         let mut t_cat = std::time::Duration::ZERO;
         let mut defs_count = 0usize;
 
-        let mut owners = vec![owner.to_string()];
-        if is_smart_pointer(owner) {
-            let t_d0 = profile_active.then(std::time::Instant::now);
-            if let Some(inner) = extract_smart_pointer_inner_type(ty_name) {
-                if !owners.contains(&inner.to_string()) {
-                    owners.push(inner.to_string());
-                }
-                if let Some(target) = ws.find_definition_by_path(inner) {
-                    let t_path = target.path;
-                    if !owners.iter().any(|o| o == t_path) {
-                        owners.push(t_path.to_string());
-                    }
-                }
-            }
-            if let Some(t) = t_d0 {
-                t_deref = t.elapsed();
-            }
-        } else if !is_non_deref_type(owner) {
-            let t_d0 = profile_active.then(std::time::Instant::now);
-            for item in get_or_resolve_deref_chain(ws, owner, 2).iter() {
-                if !item.is_trait {
-                    owners.push(item.target.clone());
-                } else {
-                    let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
-                    let target_str = item.target.as_str();
-                    if is_in_prelude(target_str)
-                        || f_traits.contains(target_str)
-                        || f_traits.contains(trait_short_name(target_str))
-                        || f_traits.contains(base_trait_path(target_str))
-                    {
-                        owners.push(item.target.clone());
-                    }
-                }
-            }
-            if let Some(t) = t_d0 {
-                t_deref = t.elapsed();
-            }
-        }
+        let t_d0 = profile_active.then(std::time::Instant::now);
+        let (owners, impl_traits) = expand_dot_owners(ws, ctx, ty_name, owner, &mut file_traits);
+        let t_deref = t_d0.map(|t| t.elapsed()).unwrap_or_default();
 
         let mut seen_labels = HashSet::new();
         for o in &owners {
@@ -151,8 +143,8 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
             let defs = ws.find_definitions_by_owner_for_file(ctx.file, o);
             if let Some(t) = t_f0 {
                 t_find += t.elapsed();
-                defs_count += defs.len();
             }
+            defs_count += defs.len();
 
             for def in defs {
                 let t_c0 = profile_active.then(std::time::Instant::now);
@@ -213,17 +205,23 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
                 if let Some(t) = t_c0 {
                     t_cat += t.elapsed();
                 }
-                if fields.len() + inherent.len() >= 100 {
+                if fields.len() + inherent.len() >= MAX_COMPLETION_ITEMS {
                     break;
                 }
             }
-            if fields.len() + inherent.len() >= 100 {
+            if fields.len() + inherent.len() >= MAX_COMPLETION_ITEMS {
                 break;
             }
         }
 
+        let blanket_and_postfix = if defs_count > 0 || (ws.has_sysroot() && (owner == "tuple" || ws.find_definition_by_path(owner).is_some())) {
+            collect_extension_and_blanket_items(ws, ctx, &owners, &impl_traits, &mut file_traits, &mut in_scope_traits)
+        } else {
+            Vec::new()
+        };
+
         let t_col0 = profile_active.then(std::time::Instant::now);
-        let res = collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits]);
+        let res = collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits, blanket_and_postfix]);
         let t_collect = t_col0.map(|t| t.elapsed()).unwrap_or_default();
 
         if let Some(t_all) = t_start_all {
@@ -326,4 +324,71 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
     } else {
         None
     }
+}
+
+fn collect_extension_and_blanket_items(
+    ws: &WorkspaceIndex,
+    ctx: &OwnerCompletionContext<'_>,
+    visited_owners: &[String],
+    impl_traits: &[String],
+    file_traits: &mut Option<Arc<HashSet<String>>>,
+    in_scope_traits: &mut Vec<Value>,
+) -> Vec<Value> {
+    let mut blanket_and_postfix = Vec::new();
+    if !ws.has_sysroot() {
+        return blanket_and_postfix;
+    }
+
+    for (tr, is_universal) in UNIVERSAL_BLANKET_TRAITS.iter().copied().map(|t| (t, true)).chain(impl_traits.iter().map(|t| (t.as_str(), false))) {
+        if is_universal && visited_owners.iter().any(|o| o == tr) {
+            continue;
+        }
+        for def in ws.find_definitions_by_owner_for_file(ctx.file, tr) {
+            if !matches!(def.kind, DefKind::AssocFn | DefKind::Fn) || !def.signature.is_some_and(signature_takes_receiver) {
+                continue;
+            }
+            if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
+                continue;
+            }
+            let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+            in_scope_traits.push(json!({
+                "label": def.name,
+                "kind": lsp_completion_kind(def.kind),
+                "detail": detail
+            }));
+        }
+    }
+
+    for &(label, detail) in POSTFIX_SNIPPETS {
+        if !ctx.prefix.is_empty() && !label.starts_with(ctx.prefix) {
+            continue;
+        }
+        blanket_and_postfix.push(json!({
+            "label": label,
+            "kind": 15,
+            "detail": detail
+        }));
+    }
+
+    let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
+    let mut sorted_traits: Vec<&String> = f_traits.iter().filter(|tr| tr.contains("::") && !visited_owners.iter().any(|o| o == *tr)).collect();
+    sorted_traits.sort();
+    for tr in sorted_traits {
+        for def in ws.find_definitions_by_owner_for_file(ctx.file, tr) {
+            if !matches!(def.kind, DefKind::AssocFn | DefKind::Fn) || !def.signature.is_some_and(signature_takes_receiver) {
+                continue;
+            }
+            if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
+                continue;
+            }
+            let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+            blanket_and_postfix.push(json!({
+                "label": def.name,
+                "kind": lsp_completion_kind(def.kind),
+                "detail": detail
+            }));
+        }
+    }
+
+    blanket_and_postfix
 }
