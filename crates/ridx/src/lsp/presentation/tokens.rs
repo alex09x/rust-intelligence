@@ -138,6 +138,13 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
 
             if let Some(file_id) = reader.find_file_id(target.as_ref()) {
                 for def in reader.definitions() {
+                    let dk = DefKind::from(def.kind);
+                    if matches!(dk, DefKind::Impl | DefKind::ForeignMod | DefKind::GlobalAsm | DefKind::AnonConst | DefKind::InlineConst | DefKind::Closure | DefKind::Other) {
+                        continue;
+                    }
+                    if def.is_macro_expansion() && !matches!(dk, DefKind::Struct | DefKind::Enum | DefKind::Trait) {
+                        continue;
+                    }
                     if def.span.file_id == file_id && def.span.start_line == def.span.end_line {
                         let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
                             if let Some((live_l, live_c)) = overlay.map_compiled_to_live(def.span.start_line, def.span.start_col) {
@@ -157,8 +164,14 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                         };
 
                         if length > 0 {
-                            let (tt, tm) = defkind_to_token(DefKind::from(def.kind));
-                            tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: tm });
+                            let tok_pair = if dk == DefKind::Use {
+                                super::tokens_scan::resolve_use_token(reader.get_str(def.name_offset()), length, reader)
+                            } else {
+                                Some(defkind_to_token(dk))
+                            };
+                            if let Some((tt, tm)) = tok_pair {
+                                tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: tm });
+                            }
                         }
                     }
                 }
@@ -189,6 +202,10 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                     }
                 }
             }
+        }
+        if ws.readers().len() > 2 {
+            let has_compiled = !tokens.is_empty();
+            super::tokens_scan::scan_source_tokens(file, overlay_mgr, has_compiled, &mut tokens);
         }
     }
 

@@ -19,6 +19,7 @@ pub mod lens;
 pub mod reconcile;
 pub mod selection;
 pub mod tokens;
+pub mod tokens_scan;
 pub mod workspace_diag;
 
 #[cfg(test)]

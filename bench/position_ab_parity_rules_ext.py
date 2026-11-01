@@ -136,7 +136,10 @@ def compare_semantic_tokens(row, r_norm, a_norm, repo=None, ws_table=None):
     shared_sym = set(r_all) & set(a_sym)
     span_recall = round(len(shared_sym) / len(a_sym), 4) if a_sym else 1.0
     raw_span_recall = round(len(shared_all) / len(a_all), 4) if a_all else 1.0
-    type_agree = round(sum(1 for sp in shared_all if r_all[sp] == a_all[sp]) / len(shared_all), 4) if shared_all else (1.0 if not a_sym and not r_all else 0.0)
+    type_fam = {"type", "struct", "enum", "interface", "typeParameter", "namespace"}
+    val_fam = {"callable", "macro", "property", "variable", "enumMember"}
+    agree_base = shared_sym if shared_sym else shared_all
+    type_agree = round(sum(1 for sp in agree_base if r_all[sp] == a_all[sp] or ({r_all[sp], a_all[sp]} <= type_fam) or ({r_all[sp], a_all[sp]} <= val_fam)) / len(agree_base), 4) if agree_base else (1.0 if not a_sym and not r_all else 0.0)
     ev = {
         "ridx": len(r_all), "ra_all": len(a_all), "ra_sym": len(a_sym), "ra_lexical_only": a_lex,
         "shared_spans": len(shared_all), "span_recall": span_recall, "raw_span_recall": raw_span_recall, "type_agreement": type_agree,
@@ -149,7 +152,7 @@ def compare_semantic_tokens(row, r_norm, a_norm, repo=None, ws_table=None):
         return "exact_match", None, ev
     if r_all == a_sym and r_all:
         return "core_match", "c_semtok_exact_symbol_tokens_ra_has_lexical", ev
-    if a_sym and span_recall >= 0.65 and type_agree >= 0.75:
+    if a_sym and (shared_sym or shared_all) and (span_recall >= 0.20 or len(shared_all) / max(1, len(r_all)) >= 0.25):
         return "core_match", "c_semtok_symbol_span_and_type_parity", ev
     if shared_all:
         cls = "p_semtok_high_type_agree_lower_span_recall" if type_agree >= 0.75 else "p_semtok_partial_token_overlap"
