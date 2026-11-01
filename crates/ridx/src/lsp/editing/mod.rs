@@ -14,6 +14,7 @@ pub mod actions;
 pub mod apply_registry;
 pub mod atomic_write;
 pub mod commands;
+pub mod detached_rename;
 pub mod extract;
 pub mod format;
 pub mod ident;

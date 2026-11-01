@@ -82,7 +82,14 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
     if let Some(ws) = workspace {
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
-            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
+            let mut loc_refs_opt = ws.find_rename_references_at(&file, line_1based, col_1based);
+            if loc_refs_opt.is_none() {
+                if let Some((tf, tl, tc)) = super::detached_rename::collect_detached_rename_edits(ws, &file, line_1based, col_1based, new_name, overlay_mgr, conv, &mut changes_map)
+                {
+                    loc_refs_opt = ws.find_rename_references_at(&tf, tl, tc);
+                }
+            }
+            if let Some(loc_refs) = loc_refs_opt {
                 let target_name = loc_refs.target_symbol.rsplit("::").next().unwrap_or(loc_refs.target_symbol);
                 if target_name.is_empty() {
                     return Err(LspError::request_failed("No renameable symbol found at this position"));
@@ -94,6 +101,7 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                     return Err(LspError::request_failed("symbol is re-exported; cross-crate references may be incomplete"));
                 }
 
+                let mut file_lines_cache: HashMap<String, Vec<String>> = HashMap::new();
                 let decl_path = loc_refs.target_resolved_path();
                 let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
                 let mut decl_final_line = None;
@@ -124,7 +132,10 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                     let decl_lines_vec: Vec<String> = if let Some(dov) = decl_ov {
                         dov.text.lines().map(|s| s.to_string()).collect()
                     } else {
-                        std::fs::read_to_string(decl_str).map(|t| t.lines().map(|s| s.to_string()).collect()).unwrap_or_default()
+                        file_lines_cache
+                            .entry(decl_str.to_string())
+                            .or_insert_with(|| std::fs::read_to_string(decl_str).map(|t| t.lines().map(|s| s.to_string()).collect()).unwrap_or_default())
+                            .clone()
                     };
                     let decl_lines_ref: Vec<&str> = decl_lines_vec.iter().map(|s| s.as_str()).collect();
 
@@ -164,7 +175,7 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                     let r_uri = path_to_uri(r_str);
 
                     let ref_ov = overlay_mgr.get(r_str);
-                    let (mapped_line, mapped_col) = if let Some(rov) = ref_ov {
+                    let (mut mapped_line, mut mapped_col) = if let Some(rov) = ref_ov {
                         if rov.is_dirty() {
                             if rov.has_modified_imports() {
                                 return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
@@ -186,13 +197,42 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                         (r.span.start_line(), r.span.start_col())
                     };
 
-                    let occ_name = if let Some(rov) = ref_ov {
+                    let cached_lines = if ref_ov.is_none() {
+                        Some(
+                            file_lines_cache
+                                .entry(r_str.to_string())
+                                .or_insert_with(|| std::fs::read_to_string(r_str).map(|t| t.lines().map(|s| s.to_string()).collect()).unwrap_or_default()),
+                        )
+                    } else {
+                        None
+                    };
+
+                    let mut occ_name = if let Some(rov) = ref_ov {
                         rov.get_ident_at(mapped_line, mapped_col)
                     } else {
-                        std::fs::read_to_string(r_str)
-                            .ok()
-                            .and_then(|t| t.lines().nth(mapped_line.saturating_sub(1) as usize).and_then(|line| extract_ident_at_col(line, mapped_col).map(|s| s.to_string())))
+                        cached_lines
+                            .as_deref()
+                            .and_then(|lines| lines.get(mapped_line.saturating_sub(1) as usize))
+                            .and_then(|line| extract_ident_at_col(line, mapped_col).map(|s| s.to_string()))
                     };
+
+                    if occ_name.as_deref() != Some(target_name)
+                        && !r.is_macro_expansion
+                        && (r.span.end_line() > r.span.start_line() || r.span.end_col().saturating_sub(r.span.start_col()) as usize > target_name.chars().count())
+                    {
+                        let lines_ref: Vec<&str> = if let Some(rov) = ref_ov {
+                            rov.text.lines().collect()
+                        } else if let Some(lines) = cached_lines.as_deref() {
+                            lines.iter().map(|s| s.as_str()).collect()
+                        } else {
+                            Vec::new()
+                        };
+                        if let Some((dl, dc)) = find_declaration_ident_in_lines(&lines_ref, mapped_line, target_name, r.kind) {
+                            mapped_line = dl;
+                            mapped_col = dc;
+                            occ_name = Some(target_name.to_string());
+                        }
+                    }
 
                     let occ_str = match occ_name {
                         Some(s) if !s.is_empty() => s,
@@ -220,8 +260,15 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                     }
 
                     let end_col = mapped_col + occ_str.chars().count() as u32;
-                    let sc = to_utf16_col(ref_ov, conv, r_str, mapped_line, mapped_col);
-                    let ec = to_utf16_col(ref_ov, conv, r_str, mapped_line, end_col);
+                    let (sc, ec) = if let Some(line_str) = cached_lines.as_deref().and_then(|lines| lines.get(mapped_line.saturating_sub(1) as usize)) {
+                        let start_idx = mapped_col.saturating_sub(1) as usize;
+                        let end_idx = end_col.saturating_sub(1) as usize;
+                        let s_u16: u32 = line_str.chars().take(start_idx).map(|c| c.len_utf16() as u32).sum();
+                        let len_u16: u32 = line_str.chars().skip(start_idx).take(end_idx.saturating_sub(start_idx)).map(|c| c.len_utf16() as u32).sum();
+                        (s_u16, s_u16 + len_u16)
+                    } else {
+                        (to_utf16_col(ref_ov, conv, r_str, mapped_line, mapped_col), to_utf16_col(ref_ov, conv, r_str, mapped_line, end_col))
+                    };
                     let sl = mapped_line.saturating_sub(1);
                     let edits = changes_map.entry(r_uri).or_default();
                     let edit = json!({

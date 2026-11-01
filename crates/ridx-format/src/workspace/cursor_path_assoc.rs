@@ -15,37 +15,107 @@ use super::WorkspaceIndex;
 use crate::format::DefKind;
 use crate::reader::ResolvedDefinition;
 
-fn scan_type_param_bounds(lines: &[&str], line_idx: usize, param: &str) -> Vec<String> {
+fn collect_param_bounds_in_line(code: &str, pat: &str, bounds: &mut Vec<String>) {
+    for (idx, _) in code.match_indices(pat) {
+        if idx > 0 && is_ident_byte(code.as_bytes()[idx - 1]) {
+            continue;
+        }
+        let after = &code[idx + pat.len()..];
+        if after.starts_with(':') {
+            continue;
+        }
+        let stop = after.find(['>', ',', '{', '=', ';', ')']).unwrap_or(after.len());
+        for part in after[..stop].split('+') {
+            let b = strip_generics_and_refs(part.trim().trim_start_matches('?'));
+            if !b.is_empty() && !b.starts_with('\'') && !matches!(b, "Sized" | "Send" | "Sync" | "Unpin" | "Copy" | "Clone") && !bounds.iter().any(|x| x == b) {
+                bounds.push(b.to_string());
+            }
+        }
+    }
+}
+
+fn strip_item_modifiers(mut s: &str) -> &str {
+    s = s.trim_start();
+    if let Some(rest) = s.strip_prefix("pub") {
+        let mut r = rest.trim_start();
+        if r.starts_with('(') {
+            if let Some(close) = r.find(')') {
+                r = r[close + 1..].trim_start();
+            }
+        }
+        s = r;
+    }
+    for kw in ["default ", "const ", "async ", "unsafe "] {
+        if let Some(r) = s.strip_prefix(kw) {
+            s = r.trim_start();
+        }
+    }
+    s
+}
+
+pub(super) fn scan_type_param_bounds(lines: &[&str], line_idx: usize, param: &str) -> Vec<String> {
     let mut bounds = Vec::new();
-    let start = line_idx.saturating_sub(80);
-    let end = (line_idx + 15).min(lines.len().saturating_sub(1));
+    if line_idx >= lines.len() {
+        return bounds;
+    }
     let pat = format!("{param}:");
-    for idx_ln in (line_idx..=end).chain((start..line_idx).rev()) {
-        let ln = lines[idx_ln];
+    let end = (line_idx + 15).min(lines.len().saturating_sub(1));
+    for &ln in &lines[line_idx..=end] {
         let code = ln.split("//").next().unwrap_or(ln);
-        for (idx, _) in code.match_indices(&pat) {
-            if idx > 0 && is_ident_byte(code.as_bytes()[idx - 1]) {
-                continue;
-            }
-            let after = &code[idx + pat.len()..];
-            if after.starts_with(':') {
-                continue;
-            }
-            let stop = after.find([',', '{', '=', ';', ')']).unwrap_or(after.len());
-            for part in after[..stop].split('+') {
-                let b = strip_generics_and_refs(part.trim().trim_start_matches('?'));
-                if !b.is_empty() && !b.starts_with('\'') && !matches!(b, "Sized" | "Send" | "Sync" | "Unpin" | "Copy" | "Clone") && !bounds.iter().any(|x| x == b) {
-                    bounds.push(b.to_string());
+        collect_param_bounds_in_line(code, &pat, &mut bounds);
+        if code.contains(['{', ';', '}']) {
+            break;
+        }
+    }
+    let cur_code = lines[line_idx].split("//").next().unwrap_or(lines[line_idx]);
+    let cur_item = strip_item_modifiers(cur_code);
+    if cur_item.starts_with("fn ") && !bounds.is_empty() {
+        return bounds;
+    }
+    let mut in_header = !cur_code.contains(['{', ';', '}']) && !(cur_item.starts_with("fn ") || cur_item.starts_with("impl") || cur_item.starts_with("trait "));
+    let mut brace_depth = 0i32;
+    let mut min_depth = 0i32;
+    let start = line_idx.saturating_sub(250);
+    for idx_ln in (start..line_idx).rev() {
+        let code = lines[idx_ln].split("//").next().unwrap_or(lines[idx_ln]);
+        for ch in code.chars().rev() {
+            match ch {
+                '}' => {
+                    brace_depth += 1;
+                    in_header = false;
                 }
+                ';' if brace_depth == min_depth => {
+                    in_header = false;
+                }
+                '{' => {
+                    brace_depth -= 1;
+                    if brace_depth < min_depth {
+                        min_depth = brace_depth;
+                        in_header = true;
+                    }
+                }
+                _ => {}
+            }
+        }
+        if in_header {
+            collect_param_bounds_in_line(code, &pat, &mut bounds);
+            let item_s = strip_item_modifiers(code);
+            if item_s.starts_with("fn ") {
+                in_header = false;
+                if !bounds.is_empty() {
+                    break;
+                }
+            } else if item_s.starts_with("impl") || item_s.starts_with("trait ") {
+                in_header = false;
             }
         }
     }
     bounds
 }
 
-fn scan_enclosing_impl_or_trait_headers(lines: &[&str], line_idx: usize) -> Vec<String> {
+pub(super) fn scan_enclosing_impl_or_trait_headers(lines: &[&str], line_idx: usize) -> Vec<String> {
     let mut out = Vec::new();
-    let start = line_idx.saturating_sub(120);
+    let start = line_idx.saturating_sub(250);
     for &ln in lines[start..=line_idx].iter().rev() {
         let code = ln.split("//").next().unwrap_or(ln).trim();
         let rest_opt = code

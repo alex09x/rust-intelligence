@@ -220,6 +220,19 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         }
                     }
                 }
+                hir::ExprKind::Struct(_, fields, _) => {
+                    if let Some(adt) = typeck.expr_ty_opt(expr).and_then(|t| t.ty_adt_def()) {
+                        if !adt.is_enum() {
+                            for f in fields {
+                                if !f.is_shorthand {
+                                    if let Some(def) = adt.non_enum_variant().fields.iter().find(|it| it.name == f.ident.name) {
+                                        self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 _ => {}
             }
 
@@ -242,15 +255,31 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     fn visit_pat(&mut self, pat: &'tcx hir::Pat<'tcx>) {
         if !pat.span.from_expansion() {
             if let Some(typeck) = self.typeck {
-                if let hir::PatKind::Binding(..) = pat.kind {
-                    if let Some((file, s_line, s_col, e_line, e_col, _)) = resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref()) {
-                        let ty = typeck.pat_ty(pat);
-                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
-                        self.writer.add_type_with_owner(
-                            RawType { file, start_line: s_line, start_col: s_col, end_line: e_line, end_col: e_col, type_name: sanitize_type_name(&ty.to_string()) },
-                            owner_path,
-                        );
+                match pat.kind {
+                    hir::PatKind::Binding(..) => {
+                        if let Some((file, s_line, s_col, e_line, e_col, _)) = resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref()) {
+                            let ty = typeck.pat_ty(pat);
+                            let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
+                            self.writer.add_type_with_owner(
+                                RawType { file, start_line: s_line, start_col: s_col, end_line: e_line, end_col: e_col, type_name: sanitize_type_name(&ty.to_string()) },
+                                owner_path,
+                            );
+                        }
                     }
+                    hir::PatKind::Struct(_, fields, _) => {
+                        if let Some(adt) = typeck.pat_ty(pat).ty_adt_def() {
+                            if !adt.is_enum() {
+                                for f in fields {
+                                    if !f.is_shorthand {
+                                        if let Some(def) = adt.non_enum_variant().fields.iter().find(|it| it.name == f.ident.name) {
+                                            self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
         }

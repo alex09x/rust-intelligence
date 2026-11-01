@@ -47,10 +47,13 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// `find_references`) skip references that fail this test; `IndexReader::references` still
     /// returns every record.
     pub fn is_name_reference(&self, r: &RefEntry) -> bool {
+        let path = self.get_str(r.target_path_offset());
+        if DefKind::from(r.kind) == DefKind::Local && path.rsplit("::").next().unwrap_or(path).starts_with("__") {
+            return false;
+        }
         if r.target_def_id() == u32::MAX {
             return true;
         }
-        let path = self.get_str(r.target_path_offset());
         let Some(def) = self.find_definition_by_id_under_path(r.target_def_id(), path) else {
             return true;
         };

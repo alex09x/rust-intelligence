@@ -293,6 +293,31 @@ impl WorkspaceIndex {
                 }
             }
 
+            if let Some(ref coords) = target_def_coords {
+                if !target_path.starts_with('<') && !target_path.contains("<impl ") && local_path.contains("::") {
+                    if let Some((mod_prefix, item_name)) = local_path.rsplit_once("::") {
+                        let parent_mod = mod_prefix.rsplit_once("::").map(|(p, _)| p);
+                        for cname in [target_crate, reader_crate] {
+                            for cand in [
+                                Some(format!("{cname}::{item_name}")),
+                                (cname != target_crate).then(|| format!("{cname}::{local_path}")),
+                                parent_mod.map(|pm| format!("{cname}::{pm}::{item_name}")),
+                                (cname == target_crate).then(|| parent_mod.map(|pm| format!("{pm}::{item_name}"))).flatten(),
+                            ]
+                            .into_iter()
+                            .flatten()
+                            {
+                                for r in reader.find_references(&cand) {
+                                    if r.target_line() != 0 && points_at_definition(reader, r, coords) && matches_reference_target(reader, r, &ref_target) {
+                                        push_reference(reader, r, (reader_crate, reader_unit, source_root), &mut seen_refs, &mut all_refs);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Also check if reader refers to target_path via an extern alias (e.g. `a1::foo` instead of `a::foo`)
             if let Some(extern_map) = self.reader_extern_units.get(i) {
                 for (alias, uk) in extern_map {

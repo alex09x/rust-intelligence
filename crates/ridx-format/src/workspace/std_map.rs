@@ -22,8 +22,22 @@
 /// 3. The `"alloc::..."` path equivalent.
 ///
 /// Otherwise, returns only the original path.
+const STD_INTERNAL_PUBLIC_PAIRS: &[(&str, &str)] = &[
+    ("future::future::Future", "future::Future"),
+    ("future::into_future::IntoFuture", "future::IntoFuture"),
+    ("iter::traits::iterator::Iterator", "iter::Iterator"),
+    ("iter::traits::collect::IntoIterator", "iter::IntoIterator"),
+    ("iter::traits::collect::FromIterator", "iter::FromIterator"),
+    ("iter::traits::collect::Extend", "iter::Extend"),
+    ("iter::traits::double_ended::DoubleEndedIterator", "iter::DoubleEndedIterator"),
+    ("iter::traits::exact_size::ExactSizeIterator", "iter::ExactSizeIterator"),
+    ("ops::deref::Deref", "ops::Deref"),
+    ("ops::deref::DerefMut", "ops::DerefMut"),
+    ("ops::drop::Drop", "ops::Drop"),
+];
+
 pub fn std_path_candidates(path: &str) -> Vec<String> {
-    let mut candidates = Vec::with_capacity(6);
+    let mut candidates = Vec::with_capacity(8);
     candidates.push(path.to_string());
     let rest_and_others: Option<(&str, [&str; 2])> = if let Some(r) = path.strip_prefix("std::") {
         Some((r, ["core", "alloc"]))
@@ -37,6 +51,23 @@ pub fn std_path_candidates(path: &str) -> Vec<String> {
     if let Some((rest, others)) = rest_and_others {
         for o in others {
             candidates.push(format!("{o}::{rest}"));
+        }
+        for &(internal, public) in STD_INTERNAL_PUBLIC_PAIRS {
+            let mapped = if let Some(tail) = rest.strip_prefix(internal) {
+                (tail.is_empty() || tail.starts_with("::") || tail.starts_with('<')).then(|| format!("{public}{tail}"))
+            } else if let Some(tail) = rest.strip_prefix(public) {
+                (tail.is_empty() || tail.starts_with("::") || tail.starts_with('<')).then(|| format!("{internal}{tail}"))
+            } else {
+                None
+            };
+            if let Some(alt_rest) = mapped {
+                for root in ["core", "std"] {
+                    let cand = format!("{root}::{alt_rest}");
+                    if !candidates.contains(&cand) {
+                        candidates.push(cand);
+                    }
+                }
+            }
         }
         if rest.contains("::<impl ") {
             let extra: Vec<String> = candidates

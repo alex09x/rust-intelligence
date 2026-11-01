@@ -80,7 +80,7 @@ impl WorkspaceIndex {
     }
 
     /// Returns prioritized `(reader_idx, file_id)` pairs for `file` (library targets first).
-    pub(crate) fn resolved_reader_file_ids(&self, file: &str) -> Vec<(usize, u32)> {
+    pub fn resolved_reader_file_ids(&self, file: &str) -> Vec<(usize, u32)> {
         let mut direct: Vec<(usize, u32)> = self.reader_indices_for_file(file).into_iter().filter_map(|i| self.target_file_id_for_reader(i, file).map(|fid| (i, fid))).collect();
         if !direct.is_empty() {
             direct.sort_by_key(|&(idx, _)| usize::from(!self.target_kinds.get(idx).copied().flatten().is_some_and(|k| k.is_lib())));

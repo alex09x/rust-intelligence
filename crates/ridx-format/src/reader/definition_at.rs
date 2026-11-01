@@ -20,7 +20,11 @@ use crate::format::*;
 /// source identifier (`""` crate root, `"{use#N}"`, `"{impl#N}"`, `"{closure#N}"`, or a numeric
 /// tuple-struct field `"0"`, `"1"`, ... whose span covers the field's type).
 pub(crate) fn is_synthetic_def_name(kind: DefKind, name: &str) -> bool {
-    kind == DefKind::Impl || name.is_empty() || name.starts_with('{') || (kind == DefKind::Field && name.bytes().all(|b| b.is_ascii_digit()))
+    kind == DefKind::Impl
+        || name.is_empty()
+        || name.starts_with('{')
+        || (kind == DefKind::Field && name.bytes().all(|b| b.is_ascii_digit()))
+        || (kind == DefKind::Local && name.starts_with("__"))
 }
 
 impl<B: AsRef<[u8]>> IndexReader<B> {

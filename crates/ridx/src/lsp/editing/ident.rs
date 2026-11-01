@@ -103,25 +103,46 @@ pub fn is_rust_keyword(s: &str) -> bool {
     )
 }
 
+fn declaration_keyword(target_kind: DefKind) -> &'static str {
+    match target_kind {
+        DefKind::Fn | DefKind::AssocFn => "fn",
+        DefKind::Struct => "struct",
+        DefKind::Enum => "enum",
+        DefKind::Trait => "trait",
+        DefKind::TyAlias | DefKind::AssocTy => "type",
+        DefKind::Const | DefKind::AssocConst => "const",
+        DefKind::Static => "static",
+        DefKind::Mod => "mod",
+        _ => "",
+    }
+}
+
+fn find_standalone_keyword_after_pos(line: &str, kw: &str) -> Option<usize> {
+    if kw.is_empty() {
+        return None;
+    }
+    let mut from = 0;
+    while let Some(rel) = line[from..].find(kw) {
+        let abs = from + rel;
+        let end = abs + kw.len();
+        let prev_ok = abs == 0 || !is_ident_continue(line[..abs].chars().next_back().unwrap_or(' '));
+        let next_ok = end >= line.len() || !is_ident_continue(line[end..].chars().next().unwrap_or(' '));
+        if prev_ok && next_ok && !is_byte_in_string_or_comment(line, abs) {
+            return Some(end);
+        }
+        from = end.max(from + 1);
+    }
+    None
+}
+
 /// Locates the 1-based character column where `target_name` begins on `line`.
 pub fn find_declaration_ident_col(line: &str, target_name: &str, target_kind: DefKind) -> Option<u32> {
     if target_name.is_empty() {
         return None;
     }
 
-    let kw = match target_kind {
-        DefKind::Fn => "fn",
-        DefKind::Struct => "struct",
-        DefKind::Enum => "enum",
-        DefKind::Trait => "trait",
-        DefKind::TyAlias => "type",
-        DefKind::Const => "const",
-        DefKind::Static => "static",
-        DefKind::Mod => "mod",
-        _ => "",
-    };
-
-    let kw_after_pos = if !kw.is_empty() { line.find(kw).map(|pos| pos + kw.len()) } else { None };
+    let kw = declaration_keyword(target_kind);
+    let kw_after_pos = find_standalone_keyword_after_pos(line, kw);
 
     let mut first_match = None;
     let mut search_from = 0;
@@ -152,13 +173,20 @@ pub fn find_declaration_ident_col(line: &str, target_name: &str, target_kind: De
 /// Locates (line_1based, col_1based) of `target_name` in multiline declaration text.
 pub fn find_declaration_ident_in_lines(lines: &[&str], start_line_1based: u32, target_name: &str, target_kind: DefKind) -> Option<(u32, u32)> {
     let start_idx = start_line_1based.saturating_sub(1) as usize;
-    for (offset, line) in lines.iter().skip(start_idx).take(10).enumerate() {
+    let kw = declaration_keyword(target_kind);
+    let mut fallback = None;
+    for (offset, line) in lines.iter().skip(start_idx).take(60).enumerate() {
         let curr_line = start_line_1based + offset as u32;
         if let Some(col) = find_declaration_ident_col(line, target_name, target_kind) {
-            return Some((curr_line, col));
+            if kw.is_empty() || find_standalone_keyword_after_pos(line, kw).is_some() {
+                return Some((curr_line, col));
+            }
+            if fallback.is_none() {
+                fallback = Some((curr_line, col));
+            }
         }
     }
-    None
+    fallback
 }
 
 /// Extracts identifier string at 1-based character column.

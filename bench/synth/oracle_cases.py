@@ -96,6 +96,14 @@ def build_oracle_cases(manifest: dict) -> List[dict]:
                 "new_name": f"{sym_id}_renamed",
                 "expected_spans": _all_keys(syms, sym_id),
             })
+        for sym_id, role in ((fn_compute, "decl"), (fam["field_val"], "def"), (local_item, "local_def")):
+            cases.append({
+                "method": "rename",
+                "case_id": f"rename_{sym_id}",
+                "cursor": _first_role(syms, sym_id, role),
+                "new_name": f"{sym_id}_renamed",
+                "expected_spans": _all_keys(syms, sym_id),
+            })
 
         cases.append({
             "method": "implementation",

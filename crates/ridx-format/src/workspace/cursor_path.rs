@@ -32,7 +32,7 @@ pub(super) fn strip_generics_and_refs(s: &str) -> &str {
             }
         }
     }
-    let end = t.find(['<', '(', '[', ' ']).unwrap_or(t.len());
+    let end = t.find(['<', '>', '(', '[', ' ']).unwrap_or(t.len());
     t[..end].trim_end_matches("::")
 }
 

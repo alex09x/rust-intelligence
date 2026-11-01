@@ -77,9 +77,9 @@ impl UnitMatchIndex {
             .iter()
             .enumerate()
             .filter_map(|(idx, d)| {
+                let p = reader.get_str(d.path_offset());
                 (matches!(DefKind::from(d.kind), DefKind::AssocTy | DefKind::AssocFn | DefKind::AssocConst)
-                    && !d.is_macro_expansion()
-                    && (d.kind == DefKind::AssocTy as u8 || reader.get_str(d.path_offset()).starts_with('<')))
+                    && (d.kind == DefKind::AssocTy as u8 || p.starts_with('<') || p.contains("<impl ")))
                 .then_some(idx as u32)
             })
             .collect()

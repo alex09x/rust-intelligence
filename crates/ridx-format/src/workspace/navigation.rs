@@ -20,6 +20,7 @@ mod search;
 #[cfg(test)]
 mod tests;
 pub mod trait_impl_refs;
+mod trait_rename_ext;
 
 pub use blast_radius::{BlastRadiusIndex, DirectBlastRadius};
 

@@ -261,10 +261,16 @@ impl WorkspaceIndex {
 
     /// Collects any known re-export alias paths for a symbol within the workspace.
     pub fn collect_reexport_aliases(&self, target_path: &str) -> Vec<String> {
+        if !target_path.contains("::") || target_path.starts_with('<') || target_path.contains("<impl ") {
+            return Vec::new();
+        }
         let mut aliases = Vec::new();
         let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
 
-        for r in &self.readers {
+        for (i, r) in self.readers.iter().enumerate() {
+            if self.is_reader_external(i) {
+                continue;
+            }
             let crate_name = r.crate_name();
             let mut matches_crate = target_path.starts_with(&format!("{crate_name}::"));
             if !matches_crate {
@@ -296,9 +302,32 @@ impl WorkspaceIndex {
         if aliases.is_empty() {
             return false;
         }
+        let target_def = self.find_definition_by_path(target_path);
+        if let Some(ref def) = target_def {
+            if matches!(def.kind, DefKind::AssocFn | DefKind::AssocConst | DefKind::AssocTy | DefKind::Field | DefKind::Variant | DefKind::VariantCtor | DefKind::Local) {
+                return false;
+            }
+        }
         for alias in &aliases {
-            for r in &self.readers {
+            for (i, r) in self.readers.iter().enumerate() {
+                if self.is_reader_external(i) {
+                    continue;
+                }
                 for aref in r.find_references(alias) {
+                    if let Some(ref def) = target_def {
+                        if DefKind::from(aref.kind) != def.kind {
+                            continue;
+                        }
+                        if def.start_line > 0 && aref.target_line() > 0 && aref.target_line() != def.start_line {
+                            continue;
+                        }
+                        if aref.target_file_offset() != 0 && !def.file.is_empty() {
+                            let rf = r.get_str(aref.target_file_offset());
+                            if !rf.is_empty() && rf != def.file && !rf.ends_with(def.file) && !def.file.ends_with(rf) {
+                                continue;
+                            }
+                        }
+                    }
                     let span = aref.span();
                     let file = r.get_file(span.file_id());
                     let merged = found_refs.iter().any(|fr| fr.file == file && fr.span.start_line() == span.start_line() && fr.span.start_col() == span.start_col());

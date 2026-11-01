@@ -208,6 +208,26 @@ impl WorkspaceIndex {
         })
     }
 
+    /// Finds all references and sibling trait/impl declarations required to rename the symbol at cursor.
+    pub fn find_rename_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<LocationReferences<'a>> {
+        let (def, mut refs) = self.resolve_direct_references_at(file, line, col)?;
+        self.expand_trait_impl_for_rename(&def, &mut refs);
+        Some(LocationReferences {
+            target_symbol: def.name,
+            target_kind: def.kind,
+            target_path: def.path,
+            target_file: def.file,
+            target_line: def.start_line,
+            target_col: def.start_col,
+            target_end_line: def.end_line,
+            target_end_col: def.end_col,
+            target_source_root: def.source_root,
+            target_unit_key: def.unit_key,
+            target_reader_idx: def.reader_idx,
+            references: refs,
+        })
+    }
+
     fn resolve_direct_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<(ResolvedDefinition<'a>, Vec<WorkspaceReference<'a>>)> {
         let (exact, fallback_wide_ref, fallback_mod) = self.find_indexed_definition_candidates(file, line, col);
         let used_cursor_fallback = exact.is_none();
