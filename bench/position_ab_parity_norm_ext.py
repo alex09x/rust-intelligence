@@ -49,7 +49,7 @@ def normalize_signature_help_ext(res):
         lbl = str(s.get("label") or "").strip()
         sigs.append(lbl)
         params = s.get("parameters")
-        if isinstance(params, list) and params:
+        if isinstance(params, list):
             arities.append(len(params))
         elif "(" in lbl and ")" in lbl:
             inner = lbl[lbl.find("(") + 1:lbl.rfind(")")].strip()

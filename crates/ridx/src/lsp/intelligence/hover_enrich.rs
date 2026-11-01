@@ -153,7 +153,7 @@ pub(crate) fn extract_source_decl_header(
         || d.file.is_empty()
         || d.file == "external"
         || d.reader_idx.is_some_and(|idx| ws.is_some_and(|w| w.is_reader_external(idx)))
-        || !matches!(d.kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TyAlias)
+        || !matches!(d.kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TyAlias | DefKind::Fn | DefKind::AssocFn)
     {
         return None;
     }

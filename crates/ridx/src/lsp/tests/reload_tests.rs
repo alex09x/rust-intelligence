@@ -351,7 +351,7 @@ fn test_lsp_hover_inferred_type_and_signature_help_workspace() {
 
     let sig_resp = &responses[2];
     assert_eq!(sig_resp["id"], 11);
-    assert!(sig_resp["result"]["signatures"][0]["label"].as_str().unwrap().contains("fn(x: i32) -> i32"));
+    assert!(sig_resp["result"]["signatures"][0]["label"].as_str().unwrap().contains("fn calculate(x: i32) -> i32"));
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }

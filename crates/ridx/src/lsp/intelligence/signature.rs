@@ -12,6 +12,8 @@
 
 use super::super::error::LspResult;
 use super::super::protocol::{uri_to_path, PositionConverter};
+use super::hover::format_signature;
+use super::signature_fmt::{extract_callee_before_delim, extract_parameters_from_sig, format_resolved_def_sig};
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
@@ -44,7 +46,6 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
     };
 
-    // Extract text preceding cursor across multiple lines if needed
     let text_preceding = if let Some(overlay) = overlay_opt {
         let byte_pos = overlay.line_char_col_to_byte(line_1based, col_1based);
         let start_byte = byte_pos.saturating_sub(8192);
@@ -67,12 +68,12 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         return Ok(Value::Null);
     };
 
-    let mut paren_depth = 0;
-    let mut bracket_depth = 0;
-    let mut brace_depth = 0;
-    let mut angle_depth = 0;
-    let mut active_param = 0;
-    let mut open_paren_pos = None;
+    let mut paren_depth = 0usize;
+    let mut bracket_depth = 0usize;
+    let mut brace_depth = 0usize;
+    let mut angle_depth = 0usize;
+    let mut active_param = 0usize;
+    let mut found_call: Option<(usize, usize, usize, bool, bool)> = None;
 
     let chars: Vec<char> = text_preceding.chars().collect();
     for (i, &c) in chars.iter().enumerate().rev() {
@@ -82,27 +83,39 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                 if paren_depth > 0 {
                     paren_depth -= 1;
                 } else if bracket_depth == 0 && brace_depth == 0 {
-                    open_paren_pos = Some(i);
-                    break;
+                    if let Some((ns, ne, is_macro)) = extract_callee_before_delim(&chars, i) {
+                        found_call = Some((i, ns, ne, false, is_macro));
+                        break;
+                    }
+                    active_param = 0;
+                    angle_depth = 0;
                 }
             }
             ']' => bracket_depth += 1,
             '[' => {
                 if bracket_depth > 0 {
                     bracket_depth -= 1;
+                } else if paren_depth == 0 && brace_depth == 0 {
+                    active_param = 0;
+                    angle_depth = 0;
                 }
             }
             '}' => brace_depth += 1,
             '{' => {
                 if brace_depth > 0 {
                     brace_depth -= 1;
+                } else if paren_depth == 0 && bracket_depth == 0 {
+                    if let Some((ns, ne, false)) = extract_callee_before_delim(&chars, i) {
+                        found_call = Some((i, ns, ne, true, false));
+                    }
+                    break;
+                } else {
+                    break;
                 }
             }
             '>' => angle_depth += 1,
             '<' => {
-                if angle_depth > 0 {
-                    angle_depth -= 1;
-                }
+                angle_depth = angle_depth.saturating_sub(1);
             }
             ',' if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 && angle_depth == 0 => {
                 active_param += 1;
@@ -111,95 +124,43 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         }
     }
 
-    let Some(call_start) = open_paren_pos else {
+    let Some((_call_start, name_start, name_end, is_brace_literal, is_macro)) = found_call else {
         return Ok(Value::Null);
     };
 
-    let mut name_end = call_start;
-    while name_end > 0 && chars[name_end - 1].is_whitespace() {
-        name_end -= 1;
-    }
-    if name_end > 0 && chars[name_end - 1] == '>' {
-        let mut depth = 1;
-        name_end -= 1;
-        while name_end > 0 && depth > 0 {
-            name_end -= 1;
-            if chars[name_end] == '>' {
-                depth += 1;
-            } else if chars[name_end] == '<' {
-                depth -= 1;
-            }
-        }
-        if name_end >= 2 && chars[name_end - 1] == ':' && chars[name_end - 2] == ':' {
-            name_end -= 2;
-        }
-    }
-    while name_end > 0 && chars[name_end - 1].is_whitespace() {
-        name_end -= 1;
-    }
-
-    let mut name_start = name_end;
-    while name_start > 0 && (chars[name_start - 1] == '_' || chars[name_start - 1].is_alphanumeric()) {
-        name_start -= 1;
-    }
-
-    if name_start == name_end {
-        return Ok(Value::Null);
-    }
-
     let callee_name: String = chars[name_start..name_end].iter().collect();
+    let mut qual_end = name_start;
+    while qual_end > 0 && chars[qual_end - 1].is_whitespace() {
+        qual_end -= 1;
+    }
+    let is_colon_call = qual_end >= 2 && chars[qual_end - 1] == ':' && chars[qual_end - 2] == ':';
+    let is_dot_call = !is_brace_literal && qual_end >= 1 && chars[qual_end - 1] == '.';
 
     let mut sig_opt = None;
 
-    // 1. Try resolving exact call-site definition from compiled index
-    if let Some(ws) = workspace {
-        let newlines_between = chars[name_start..].iter().filter(|&&c| c == '\n').count() as u32;
-        let callee_line_1based = line_1based.saturating_sub(newlines_between);
-        let last_nl = chars[..name_start].iter().rposition(|&c| c == '\n');
-        let callee_col_1based = if let Some(nl_pos) = last_nl {
-            (name_start - nl_pos) as u32
-        } else {
-            let chars_from_cursor = chars.len() - name_start;
-            col_1based.saturating_sub(chars_from_cursor as u32) + 1
-        };
-
-        if let Some(def) = ws.find_definition_at(&file, callee_line_1based, callee_col_1based) {
-            if def.name == callee_name {
-                if let Some(sig) = def.signature {
-                    sig_opt = Some(sig.to_string());
-                }
-            }
-        }
+    if is_macro && matches!(callee_name.as_str(), "assert_eq" | "assert_ne" | "debug_assert_eq" | "debug_assert_ne") {
+        sig_opt = Some(format!("fn {callee_name}(left, right)"));
     }
 
-    // 2. Check for qualified call (e.g. ExternalCoreService::new or receiver.method)
+    // 1. Try resolving exact call-site definition from compiled index
     if sig_opt.is_none() {
-        let mut qual_end = name_start;
-        while qual_end > 0 && chars[qual_end - 1].is_whitespace() {
-            qual_end -= 1;
-        }
-        let is_colon_call = qual_end >= 2 && chars[qual_end - 1] == ':' && chars[qual_end - 2] == ':';
-        let is_dot_call = qual_end >= 1 && chars[qual_end - 1] == '.';
+        if let Some(ws) = workspace {
+            let newlines_between = chars[name_start..].iter().filter(|&&c| c == '\n').count() as u32;
+            let callee_line_1based = line_1based.saturating_sub(newlines_between);
+            let last_nl = chars[..name_start].iter().rposition(|&c| c == '\n');
+            let callee_col_1based = if let Some(nl_pos) = last_nl {
+                (name_start - nl_pos) as u32
+            } else {
+                let chars_from_cursor = chars.len() - name_start;
+                col_1based.saturating_sub(chars_from_cursor as u32)
+            };
 
-        if is_colon_call || is_dot_call {
-            let qual_sep_len = if is_colon_call { 2 } else { 1 };
-            let mut qual_tok_end = qual_end - qual_sep_len;
-            while qual_tok_end > 0 && chars[qual_tok_end - 1].is_whitespace() {
-                qual_tok_end -= 1;
-            }
-            let mut qual_tok_start = qual_tok_end;
-            while qual_tok_start > 0 && (chars[qual_tok_start - 1] == '_' || chars[qual_tok_start - 1].is_alphanumeric() || chars[qual_tok_start - 1] == ':') {
-                qual_tok_start -= 1;
-            }
-            if qual_tok_start < qual_tok_end {
-                let qualifier: String = chars[qual_tok_start..qual_tok_end].iter().collect();
-                if let Some(ws) = workspace {
-                    let def_opt = ws.find_definition_by_path(&qualifier);
-                    let target_path = def_opt.as_ref().map(|d| d.path).unwrap_or(&qualifier);
-                    let method_path = format!("{target_path}::{callee_name}");
-                    if let Some(method_def) = ws.find_definition_by_path(&method_path) {
-                        if let Some(sig) = method_def.signature {
-                            sig_opt = Some(sig.to_string());
+            for probe_col in [callee_col_1based, callee_col_1based.saturating_add(1)] {
+                if let Some(def) = ws.find_definition_at(&file, callee_line_1based, probe_col) {
+                    if def.name == callee_name {
+                        sig_opt = format_resolved_def_sig(&def, &callee_name, is_brace_literal, ws, overlay_mgr, conv);
+                        if sig_opt.is_some() {
+                            break;
                         }
                     }
                 }
@@ -207,13 +168,37 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         }
     }
 
+    // 2. Check for qualified call (e.g. ExternalCoreService::new or receiver.method)
+    if sig_opt.is_none() && (is_colon_call || is_dot_call) {
+        let qual_sep_len = if is_colon_call { 2 } else { 1 };
+        let mut qual_tok_end = qual_end - qual_sep_len;
+        while qual_tok_end > 0 && chars[qual_tok_end - 1].is_whitespace() {
+            qual_tok_end -= 1;
+        }
+        let mut qual_tok_start = qual_tok_end;
+        while qual_tok_start > 0 && (chars[qual_tok_start - 1] == '_' || chars[qual_tok_start - 1].is_alphanumeric() || chars[qual_tok_start - 1] == ':') {
+            qual_tok_start -= 1;
+        }
+        if qual_tok_start < qual_tok_end {
+            let qualifier: String = chars[qual_tok_start..qual_tok_end].iter().collect();
+            if let Some(ws) = workspace {
+                let def_opt = ws.find_definition_by_path(&qualifier);
+                let target_path = def_opt.as_ref().map(|d| d.path).unwrap_or(&qualifier);
+                let method_path = format!("{target_path}::{callee_name}");
+                if let Some(method_def) = ws.find_definition_by_path(&method_path) {
+                    sig_opt = format_resolved_def_sig(&method_def, &callee_name, is_brace_literal, ws, overlay_mgr, conv);
+                }
+            }
+        }
+    }
+
     // 3. Fallback to overlay symbols
-    if sig_opt.is_none() {
+    if sig_opt.is_none() && !is_brace_literal {
         if let Some(overlay) = overlay_opt {
             for s in &overlay.symbols {
                 if s.name == callee_name && s.kind == DefKind::Fn {
                     if let Some(ref sig) = s.signature {
-                        sig_opt = Some(sig.clone());
+                        sig_opt = Some(format_signature(&callee_name, sig));
                         break;
                     }
                 }
@@ -224,11 +209,27 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
     // 4. Fallback to workspace symbol search
     if sig_opt.is_none() {
         if let Some(ws) = workspace {
-            let syms = ws.search_symbols(&callee_name);
-            for s in syms {
-                if s.name == callee_name && matches!(s.kind, DefKind::Fn | DefKind::AssocFn) {
+            for s in ws.search_symbols(&callee_name) {
+                if s.name != callee_name {
+                    continue;
+                }
+                if is_brace_literal {
+                    if matches!(s.kind, DefKind::Struct | DefKind::Variant | DefKind::Union) {
+                        sig_opt = Some(format!("struct {callee_name} {{ }}"));
+                        break;
+                    }
+                } else if matches!(s.kind, DefKind::Fn | DefKind::AssocFn | DefKind::Variant | DefKind::VariantCtor | DefKind::StructCtor) {
                     if let Some(sig) = s.signature {
-                        sig_opt = Some(sig.to_string());
+                        let clean = sig.strip_prefix("variant ").unwrap_or(sig);
+                        sig_opt = Some(if matches!(s.kind, DefKind::Variant | DefKind::VariantCtor) {
+                            if clean.contains('(') {
+                                format!("enum {clean}")
+                            } else {
+                                format!("enum {clean}(_)")
+                            }
+                        } else {
+                            format_signature(&callee_name, sig)
+                        });
                         break;
                     }
                 }
@@ -240,45 +241,7 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         return Ok(Value::Null);
     };
 
-    let parameters: Vec<Value> = if let Some(start) = sig.find('(') {
-        if let Some(end) = sig.rfind(')') {
-            let inner = &sig[start + 1..end];
-            let mut params = Vec::new();
-            let mut cur_param = String::new();
-            let mut depth = 0;
-            for c in inner.chars() {
-                match c {
-                    '<' | '(' | '[' => {
-                        depth += 1;
-                        cur_param.push(c);
-                    }
-                    '>' | ')' | ']' => {
-                        if depth > 0 {
-                            depth -= 1;
-                        }
-                        cur_param.push(c);
-                    }
-                    ',' if depth == 0 => {
-                        let trimmed = cur_param.trim();
-                        if !trimmed.is_empty() {
-                            params.push(json!({ "label": trimmed }));
-                        }
-                        cur_param.clear();
-                    }
-                    _ => cur_param.push(c),
-                }
-            }
-            let trimmed = cur_param.trim();
-            if !trimmed.is_empty() {
-                params.push(json!({ "label": trimmed }));
-            }
-            params
-        } else {
-            Vec::new()
-        }
-    } else {
-        Vec::new()
-    };
+    let parameters = extract_parameters_from_sig(&sig, is_dot_call);
 
     Ok(json!({
         "signatures": [

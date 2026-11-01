@@ -203,7 +203,7 @@ pub(crate) fn format_hover_full(
     })
 }
 
-fn format_signature(name: &str, sig: &str) -> String {
+pub(crate) fn format_signature(name: &str, sig: &str) -> String {
     let s = if let Some(stripped) = sig.strip_prefix("for<") {
         if let Some(idx) = stripped.find("> ") {
             &stripped[idx + 2..]

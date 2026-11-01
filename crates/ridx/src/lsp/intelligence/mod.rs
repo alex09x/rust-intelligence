@@ -21,6 +21,7 @@ pub mod owner_completion;
 pub mod scope_cache;
 pub mod self_completion;
 pub mod signature;
+pub(crate) mod signature_fmt;
 pub mod syntax_pos;
 
 #[cfg(test)]
