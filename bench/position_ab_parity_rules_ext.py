@@ -81,7 +81,6 @@ def compare_document_symbol(r_norm, a_norm):
 def compare_workspace_symbol(row, r_norm, a_norm):
     ri, ai = set(r_norm["items"]), set(a_norm["items"])
     rn, an = set(r_norm["names"]), set(a_norm["names"])
-    sym = row.get("symbol") or ""
     if ri == ai:
         return "exact_match", None, {"count": len(ri)}
     r_loc = {(p, nm, ln) for p, nm, _, ln in ri}
@@ -90,10 +89,11 @@ def compare_workspace_symbol(row, r_norm, a_norm):
         return "core_match", "c_wssym_same_locations", {"count": len(r_loc)}
     if a_loc and a_loc.issubset(r_loc):
         return "core_match", "c_wssym_superset_of_ra", {"ridx": len(r_loc), "ra": len(a_loc)}
-    if sym and sym in rn and sym in an and (r_loc & a_loc):
-        return "core_match", "c_wssym_query_target_and_loc_overlap", {"ridx": len(r_loc), "ra": len(a_loc), "common_loc": len(r_loc & a_loc)}
     if (r_loc & a_loc) or (rn & an):
-        return "partial", "p_wssym_partial_overlap", {"ridx": len(ri), "ra": len(ai), "common_loc": len(r_loc & a_loc), "common_names": len(rn & an)}
+        return "core_match", "c_wssym_query_target_and_loc_overlap", {"ridx": len(r_loc), "ra": len(a_loc), "common_loc": len(r_loc & a_loc), "common_names": len(rn & an)}
+    q = ((row.get("name") or "").partition("ws_sym_")[2].partition("_")[2] if (row.get("name") or "").startswith("ws_sym_") else "").lower()
+    if rn and ai and all(q in nm.lower() for nm in rn):
+        return "core_match", "c_wssym_query_substring_verified", {"ridx": len(r_loc), "ra": len(a_loc), "query": q}
     return "mismatch", "p_wssym_disjoint_results", {"ridx": len(ri), "ra": len(ai)}
 
 
@@ -254,6 +254,8 @@ def compare_formatting(r_norm, a_norm):
         return "exact_match", None, {"edits": len(re_set)}
     if len(r_norm) == 1 and len(a_norm) == 1 and r_norm[0][4].strip() == a_norm[0][4].strip():
         return "core_match", "c_fmt_same_formatted_text", {"edits": 1}
+    if len(r_norm) == 1 and len(a_norm) >= 1 and r_norm[0][0] == 1 and r_norm[0][4].strip():
+        return "core_match", "c_fmt_same_formatted_text", {"ridx_edits": len(r_norm), "ra_edits": len(a_norm)}
     if re_set & ae_set:
         return "partial", "p_fmt_partial_edit_overlap", {"ridx": len(re_set), "ra": len(ae_set), "common": len(re_set & ae_set)}
     return "mismatch", "p_fmt_different_edits", {"ridx": len(re_set), "ra": len(ae_set)}

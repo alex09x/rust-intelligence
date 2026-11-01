@@ -24,6 +24,7 @@ mod search;
 mod tests;
 pub mod trait_impl_refs;
 mod trait_rename_ext;
+mod workspace_symbol;
 
 pub use blast_radius::{BlastRadiusIndex, DirectBlastRadius};
 

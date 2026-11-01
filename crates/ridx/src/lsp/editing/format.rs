@@ -13,9 +13,30 @@
 use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{Mutex, OnceLock};
+
+fn rustfmt_bin() -> &'static Path {
+    static BIN: OnceLock<PathBuf> = OnceLock::new();
+    BIN.get_or_init(|| {
+        if let Ok(out) = Command::new("rustup").args(["which", "rustfmt"]).output() {
+            if out.status.success() {
+                if let Ok(s) = String::from_utf8(out.stdout) {
+                    let p = PathBuf::from(s.trim());
+                    if p.is_file() {
+                        return p;
+                    }
+                }
+            }
+        }
+        PathBuf::from("rustfmt")
+    })
+}
 
 pub fn find_crate_edition(file_path: &str) -> String {
     let mut cur = Path::new(file_path).parent();
@@ -74,7 +95,35 @@ pub fn find_crate_edition(file_path: &str) -> String {
     "2021".to_string()
 }
 
+fn default_rustfmt_config_dir() -> &'static Path {
+    static DEFAULT_DIR: OnceLock<PathBuf> = OnceLock::new();
+    DEFAULT_DIR.get_or_init(|| {
+        let dir = std::env::temp_dir().join("ridx_default_rustfmt_cfg");
+        let _ = std::fs::create_dir_all(&dir);
+        let cfg = dir.join("rustfmt.toml");
+        if !cfg.is_file() {
+            let _ = std::fs::write(&cfg, "");
+        }
+        dir
+    })
+}
+
+fn find_rustfmt_config_dir(file_path: &str) -> PathBuf {
+    let mut cur = Path::new(file_path).parent();
+    while let Some(dir) = cur {
+        if dir.join("rustfmt.toml").is_file() || dir.join(".rustfmt.toml").is_file() {
+            return dir.to_path_buf();
+        }
+        if dir.join(".git").exists() {
+            break;
+        }
+        cur = dir.parent();
+    }
+    default_rustfmt_config_dir().to_path_buf()
+}
+
 pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    static FMT_CACHE: OnceLock<Mutex<HashMap<(PathBuf, u64), Value>>> = OnceLock::new();
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
 
@@ -91,11 +140,20 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     }
 
     let edition = find_crate_edition(&file);
+    let cfg_dir = find_rustfmt_config_dir(&file);
+    let mut hasher = DefaultHasher::new();
+    edition.hash(&mut hasher);
+    doc_text.hash(&mut hasher);
+    let cache_key = (cfg_dir.clone(), hasher.finish());
 
-    let mut cmd = Command::new("rustfmt");
-    if let Some(dir) = Path::new(&file).parent().filter(|p| p.is_dir()) {
-        cmd.current_dir(dir);
+    if let Ok(guard) = FMT_CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock() {
+        if let Some(cached) = guard.get(&cache_key) {
+            return cached.clone();
+        }
     }
+
+    let mut cmd = Command::new(rustfmt_bin());
+    cmd.arg("--config-path").arg(&cfg_dir);
     cmd.arg("--edition").arg(&edition);
     cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
@@ -113,31 +171,38 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
 
     if !output.status.success() {
         return json!([]);
-    }
+    };
 
     let Ok(formatted) = String::from_utf8(output.stdout) else {
         return json!([]);
     };
 
-    if formatted == doc_text {
-        return json!([]);
+    let result = if formatted == doc_text {
+        json!([])
+    } else {
+        let line_count = doc_text.lines().count() as u32;
+        let last_line = doc_text.lines().last().unwrap_or("");
+        let last_char = last_line.chars().count() as u32;
+        let (end_line, end_char) = if doc_text.ends_with('\n') { (line_count, 0) } else { (line_count.saturating_sub(1), last_char) };
+        json!([
+            {
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": end_line, "character": end_char }
+                },
+                "newText": formatted
+            }
+        ])
+    };
+
+    if let Ok(mut guard) = FMT_CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock() {
+        if guard.len() >= 256 {
+            guard.clear();
+        }
+        guard.insert(cache_key, result.clone());
     }
 
-    let line_count = doc_text.lines().count() as u32;
-    let last_line = doc_text.lines().last().unwrap_or("");
-    let last_char = last_line.chars().count() as u32;
-
-    let (end_line, end_char) = if doc_text.ends_with('\n') { (line_count, 0) } else { (line_count.saturating_sub(1), last_char) };
-
-    json!([
-        {
-            "range": {
-                "start": { "line": 0, "character": 0 },
-                "end": { "line": end_line, "character": end_char }
-            },
-            "newText": formatted
-        }
-    ])
+    result
 }
 
 pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
@@ -188,11 +253,10 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
 }
 
 fn format_range_snippet(snippet: &str, edition: &str, file: &str) -> Option<String> {
+    let cfg_dir = find_rustfmt_config_dir(file);
     // 1. Try formatting the range snippet directly as Rust items
-    let mut cmd = Command::new("rustfmt");
-    if let Some(dir) = Path::new(file).parent().filter(|p| p.is_dir()) {
-        cmd.current_dir(dir);
-    }
+    let mut cmd = Command::new(rustfmt_bin());
+    cmd.arg("--config-path").arg(&cfg_dir);
     cmd.arg("--edition").arg(edition);
     cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 
@@ -214,10 +278,8 @@ fn format_range_snippet(snippet: &str, edition: &str, file: &str) -> Option<Stri
 
     // 2. Wrap snippet inside a function body if it contains statements
     let wrapped = format!("fn __ridx_wrap() {{\n{snippet}\n}}\n");
-    let mut cmd = Command::new("rustfmt");
-    if let Some(dir) = Path::new(file).parent().filter(|p| p.is_dir()) {
-        cmd.current_dir(dir);
-    }
+    let mut cmd = Command::new(rustfmt_bin());
+    cmd.arg("--config-path").arg(&cfg_dir);
     cmd.arg("--edition").arg(edition);
     cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
 

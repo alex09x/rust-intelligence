@@ -25,7 +25,7 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
     let mut seen = std::collections::HashSet::new();
 
     for ws in workspaces {
-        let symbols = ws.search_symbols(query);
+        let symbols = ws.search_workspace_symbols(query, 100);
         for s in symbols {
             let resolved_path = s.resolved_path();
             let path_str = resolved_path.to_str().unwrap_or(s.file);
@@ -35,8 +35,9 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
             }
 
             let uri = path_to_uri(path_str);
-            let start_char = conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col());
-            let end_char = conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col());
+            let need_utf16_conv = !s.name.is_ascii() || s.span.start_line() <= 2;
+            let start_char = if need_utf16_conv { conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col()) } else { s.span.start_col().saturating_sub(1) };
+            let end_char = if need_utf16_conv { conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col()) } else { s.span.end_col().saturating_sub(1) };
             results.push(json!({
                 "name": s.name,
                 "kind": lsp_symbol_kind(s.kind),
