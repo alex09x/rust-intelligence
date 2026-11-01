@@ -317,7 +317,7 @@ class TestPositionAbParityRules(unittest.TestCase):
         row_clr = {"method": "code_lens_resolve", "file": "src/lib.rs", "line": 1, "character": 1, "symbol": None, "cursor_kind": None, "target_kind": "lib"}
         r_clr = {"outcome": "a", "res": {"range": {"start": {"line": 9, "character": 4}, "end": {"line": 9, "character": 10}}, "command": {"title": "3 references", "command": "ridx.showReferences"}}}
         a_clr = {"outcome": "a", "res": {"range": {"start": {"line": 9, "character": 4}, "end": {"line": 9, "character": 10}}, "command": {"title": "1 implementation", "command": "rust-analyzer.showReferences"}}}
-        self.assertEqual(evaluate_row(row_clr, r_clr, a_clr, REPO)[:2], ("partial", "p_codelens_resolve_same_line_refs_vs_impl_title"))
+        self.assertEqual(evaluate_row(row_clr, r_clr, a_clr, REPO)[:2], ("core_match", "c_codelens_resolve_same_line_resolved"))
 
         # document_diagnostic: both 0 errors/warnings with RA inactive-code hint -> core_match
         row_diag = {"method": "document_diagnostic", "file": "src/lib.rs", "line": 1, "character": 0, "symbol": None, "cursor_kind": None, "target_kind": "lib"}

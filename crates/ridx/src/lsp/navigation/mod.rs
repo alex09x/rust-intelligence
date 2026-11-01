@@ -11,6 +11,7 @@
 //! LSP navigation handlers: definition, declaration, type definition, and implementation.
 
 pub mod declaration;
+mod highlight_ext;
 mod impl_line;
 pub mod references;
 pub mod type_definition;

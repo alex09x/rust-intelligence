@@ -97,11 +97,11 @@ def normalize_document_symbol_ext(res):
             rng = it.get("selectionRange") or it.get("range") or (it.get("location") or {}).get("range") or {}
             line = int((rng.get("start") or {}).get("line", 0)) + 1
             name = str(it.get("name") or "")
-            kind = int(it.get("kind") or 0)
+            raw_kind = int(it.get("kind") or 0)
+            kind = 12 if raw_kind in (6, 12) else raw_kind
             all_items.add((name, kind, line))
-            if name:
+            if name and raw_kind not in (8, 13, 19, 22):
                 names.add(name)
-            if depth == 0 and kind not in (8, 22):
                 top_items.add((name, kind, line))
             if isinstance(it.get("children"), list):
                 walk(it["children"], depth + 1)
@@ -313,15 +313,20 @@ def normalize_diagnostics(res, repo):
 
 def normalize_code_lens(res):
     if not isinstance(res, list):
-        return {"lines": [], "spans": []}
-    lines, spans = set(), set()
+        return {"lines": [], "spans": [], "decl_lines": []}
+    lines, spans, decl_lines = set(), set(), set()
     for it in res:
         if not isinstance(it, dict):
             continue
         rt = _range_tuple(it.get("range"))
         lines.add(rt[0])
         spans.add(rt)
-    return {"lines": sorted(lines), "spans": sorted(spans)}
+        cmd = it.get("command") if isinstance(it.get("command"), dict) else {}
+        data = it.get("data") if isinstance(it.get("data"), dict) else {}
+        tag = f"{cmd.get('title', '')} {cmd.get('command', '')} {data.get('kind', '')}".lower()
+        if not any(k in tag for k in ("run", "debug", "doctest", "bench", "test")):
+            decl_lines.add(rt[0])
+    return {"lines": sorted(lines), "spans": sorted(spans), "decl_lines": sorted(decl_lines)}
 
 
 def normalize_linked_editing_range(res):

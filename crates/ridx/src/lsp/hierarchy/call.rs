@@ -267,7 +267,7 @@ pub fn handle_call_hierarchy_outgoing_calls(msg: &Value, workspace: Option<&Work
                     let end_col_1based = (i + 1) as u32;
 
                     if let Some(def) = ws.find_definition_at(&file, line_num, col_1based) {
-                        if matches!(def.kind, DefKind::Fn | DefKind::AssocFn) {
+                        if matches!(def.kind, DefKind::Fn | DefKind::AssocFn | DefKind::Variant | DefKind::VariantCtor) {
                             if def.file == file && def.start_line == start_line && line_num == start_line {
                                 continue;
                             }

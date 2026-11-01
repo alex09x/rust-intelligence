@@ -173,6 +173,41 @@ fn open_file_lenses(ws: &WorkspaceIndex, file: &str, uri: &str, overlay: &Docume
     lenses.iter().filter_map(|l| map.to_live(l.line).map(|live| lens_json(uri, l, live))).collect()
 }
 
+/// Fallback lenses from detached syntax parsing for unindexed Cargo target files (`examples/`,
+/// `benches/`, `tests/`) when the workspace index has no shard covering the file.
+fn detached_overlay_lenses(uri: &str, file: &str, text_str: &str, conv: &mut PositionConverter) -> Vec<Value> {
+    if text_str.lines().count() <= 2 {
+        return Vec::new();
+    }
+    let detached = DocumentOverlay::parse_detached(text_str.to_string());
+    let mut out = Vec::new();
+    let mut seen: HashSet<(u32, u32, u32, String)> = HashSet::new();
+    for sym in &detached.symbols {
+        if !LENS_KINDS.contains(&sym.kind) || sym.name.is_empty() {
+            continue;
+        }
+        let utf16_start = conv.char_col_to_utf16_col(file, sym.start_line, sym.start_col);
+        let utf16_end = conv.char_col_to_utf16_col(file, sym.end_line, sym.end_col);
+        if !seen.insert((sym.start_line.saturating_sub(1), utf16_start, utf16_end, sym.name.clone())) {
+            continue;
+        }
+        let line = sym.start_line.saturating_sub(1);
+        out.push(json!({
+            "range": {
+                "start": { "line": line, "character": utf16_start },
+                "end": { "line": line, "character": utf16_end }
+            },
+            "data": {
+                "uri": uri,
+                "line": sym.start_line,
+                "character": sym.start_col,
+                "name": sym.name
+            }
+        }));
+    }
+    out
+}
+
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
 pub fn handle_code_lens(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
@@ -180,10 +215,16 @@ pub fn handle_code_lens(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay
     let Some(ws) = workspace else {
         return json!([]);
     };
-    let lenses = match overlay_mgr.get(&file) {
+    let mut lenses: Vec<Value> = match overlay_mgr.get(&file) {
         Some(overlay) => open_file_lenses(ws, &file, uri, overlay),
         None => index_lenses(ws, &file, &mut LensText::Disk(conv)).iter().map(|l| lens_json(uri, l, l.line)).collect(),
     };
+    if lenses.is_empty() && (file.contains("/examples/") || file.contains("/benches/") || file.contains("/tests/")) {
+        let text_opt = overlay_mgr.get(&file).map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
+        if let Some(text_str) = text_opt {
+            lenses = detached_overlay_lenses(uri, &file, &text_str, conv);
+        }
+    }
     json!(lenses)
 }
 

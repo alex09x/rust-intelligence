@@ -232,6 +232,16 @@ pub fn handle_document_highlight(msg: &Value, workspace: Option<&WorkspaceIndex>
                         }));
                     }
                 }
+                super::highlight_ext::dedup_highlights(&mut highlights);
+                let doc_text = overlay_opt.map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
+                if let Some(ref text) = doc_text {
+                    super::highlight_ext::augment_resolved_highlights(&file, text, loc_refs.target_symbol, loc_refs.target_kind, conv, &mut highlights);
+                }
+            } else {
+                let doc_text = overlay_opt.map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
+                if let Some(ref text) = doc_text {
+                    super::highlight_ext::fallback_cursor_highlights(&file, text, line_1based, col_1based, conv, &mut highlights);
+                }
             }
         }
     }

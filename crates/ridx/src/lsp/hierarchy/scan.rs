@@ -147,13 +147,15 @@ pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32
                 }
             }
 
-            if ch == '{' {
-                depth += 1;
-                seen_open = true;
-            } else if ch == '}' {
-                depth -= 1;
-                if seen_open && depth <= 0 {
-                    return (idx + 1) as u32;
+            if paren_bracket_depth == 0 {
+                if ch == '{' {
+                    depth += 1;
+                    seen_open = true;
+                } else if ch == '}' {
+                    depth -= 1;
+                    if seen_open && depth <= 0 {
+                        return (idx + 1) as u32;
+                    }
                 }
             }
         }

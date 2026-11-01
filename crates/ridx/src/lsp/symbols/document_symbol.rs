@@ -37,6 +37,33 @@ fn format_overlay_symbols(overlay: &DocumentOverlay) -> Value {
             "detail": s.signature
         }));
     }
+    for (line_idx, line) in overlay.text.lines().enumerate() {
+        let code_part = line.split("//").next().unwrap_or(line);
+        if let Some(idx) = code_part.find("macro_rules!") {
+            let after = &code_part[idx + "macro_rules!".len()..];
+            let trimmed = after.trim_start();
+            let ws_skipped = after.len() - trimmed.len();
+            let name: String = trimmed.chars().take_while(|c| *c == '_' || c.is_alphanumeric()).collect();
+            if !name.is_empty() {
+                let start_col_char = (code_part[..idx + "macro_rules!".len() + ws_skipped].chars().count() + 1) as u32;
+                let end_col_char = start_col_char + name.chars().count() as u32;
+                let line_1based = (line_idx + 1) as u32;
+                let sc = overlay.char_col_to_utf16_col(line_1based, start_col_char);
+                let ec = overlay.char_col_to_utf16_col(line_1based, end_col_char);
+                let range = json!({
+                    "start": { "line": line_idx as u32, "character": sc },
+                    "end": { "line": line_idx as u32, "character": ec }
+                });
+                results.push(json!({
+                    "name": name,
+                    "kind": lsp_symbol_kind(DefKind::Macro),
+                    "range": range,
+                    "selectionRange": range,
+                    "detail": Value::Null
+                }));
+            }
+        }
+    }
     json!(results)
 }
 

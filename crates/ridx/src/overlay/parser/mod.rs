@@ -271,7 +271,10 @@ impl<'a> OverlayParser<'a> {
                                     continue;
                                 }
                             }
-                            self.parse_named_item(&mut pos, DefKind::Const, current_scope);
+                            let prev_non_ws = self.text[..start].bytes().rev().find(|b| !b.is_ascii_whitespace());
+                            if !matches!(prev_non_ws, Some(b'*' | b'<' | b',')) {
+                                self.parse_named_item(&mut pos, DefKind::Const, current_scope);
+                            }
                         }
                         "static" => {
                             self.parse_named_item(&mut pos, DefKind::Static, current_scope);

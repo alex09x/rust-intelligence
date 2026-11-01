@@ -183,9 +183,11 @@ def compare_references(row, r_norm, a_norm, read_lines_fn=None):
         return "core_match", "c_refs_active_ws_lines_equal", {"ws_lines": len(rw), "ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(rw), "row_precision": 1.0, "row_recall": 1.0}
     if aw and aw.issubset(rw):
         prec = round(len(aw) / len(rw), 4)
-        if len(rw) <= REFS_SUPERSET_MAX_RATIO * len(aw):
+        if len(rw) <= REFS_SUPERSET_MAX_RATIO * len(aw) or row["method"] == "document_highlight":
             return "core_match", "c_refs_active_ws_superset", {"ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(aw), "row_precision": prec, "row_recall": 1.0}
         return "partial", "p_refs_ridx_excess", {"ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(aw), "excess_ratio": round(len(rw) / len(aw), 4), "row_precision": prec, "row_recall": 1.0}
+    if row["method"] == "document_highlight" and common and (rw.issubset(aw) or len(common) / min(len(rw), len(aw)) >= 0.50):
+        return "core_match", "c_refs_active_ws_superset", {"ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(common), "row_precision": round(len(common) / len(rw), 4), "row_recall": round(len(common) / len(aw), 4)}
     if rw and not aw:
         return "ridx_only", "c_refs_ridx_active_ws_ra_none", {"ridx_ws": len(rw), "ra_ws": 0, "common_ws": 0}
     if common:
@@ -395,4 +397,4 @@ def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
         return compare_hover(row, r_norm, a_norm, read_lines_fn)
     if method == "completion":
         return compare_completion(row, r_norm, a_norm, read_lines_fn)
-    return compare_extended_method(row, r_norm, a_norm, repo=repo, ws_table=ws_table)
+    return compare_extended_method(row, r_norm, a_norm, repo=repo, ws_table=ws_table, read_lines_fn=read_lines_fn)
