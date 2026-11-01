@@ -124,8 +124,9 @@ def build_oracle_cases(manifest: dict) -> List[dict]:
             "method": "implementation",
             "case_id": f"impl_struct_{struct_rec}",
             "cursor": rec_def,
-            "expected_spans": _all_keys(
-                syms, struct_rec, roles=("inherent_impl", "trait_impl_target", "subtrait_impl_target")
+            "expected_spans": sorted(
+                _all_keys(syms, struct_rec, roles=("inherent_impl", "trait_impl_target", "subtrait_impl_target"))
+                + [(rec_def["rel_path"], rec_def["line"] - 1, 0, rec_def["line"] - 1, 0)]
             ),
         })
 

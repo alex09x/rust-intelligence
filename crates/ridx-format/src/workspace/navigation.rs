@@ -12,6 +12,8 @@
 
 pub mod blast_radius;
 mod cross_definition;
+mod impl_lookup;
+mod impl_parse;
 mod owner_types;
 mod qualified_path;
 mod reference_record;

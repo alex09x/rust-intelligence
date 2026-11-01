@@ -241,7 +241,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 
     #[inline]
-    fn defs_by_hash(&self) -> &[HashIndexEntry] {
+    pub(crate) fn defs_by_hash(&self) -> &[HashIndexEntry] {
         let header = self.header();
         let start = header.defs_by_hash_offset as usize;
         let count = header.defs_by_hash_count as usize;

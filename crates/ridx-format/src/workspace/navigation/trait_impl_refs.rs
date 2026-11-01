@@ -144,7 +144,7 @@ impl WorkspaceIndex {
         }
     }
 
-    fn resolve_workspace_trait_container(&self, raw_parent: &str, preferred_reader: Option<usize>, known_trait_syntax: bool) -> Option<(Option<usize>, String, String)> {
+    pub(super) fn resolve_workspace_trait_container(&self, raw_parent: &str, preferred_reader: Option<usize>, known_trait_syntax: bool) -> Option<(Option<usize>, String, String)> {
         if raw_parent.starts_with('<') || raw_parent.ends_with('>') {
             return None;
         }

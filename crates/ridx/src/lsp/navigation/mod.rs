@@ -298,40 +298,52 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         return json!([]);
     }
 
-    let mut results = Vec::new();
+    let mut keyed = Vec::new();
     if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
-        let refs = ws.find_references(def.path);
-        for r in refs {
-            let is_impl = if r.kind == DefKind::Impl {
-                true
-            } else {
-                let resolved_path = r.resolved_path();
-                let path_str = resolved_path.to_str().unwrap_or(r.file);
-                if let Ok(content) = std::fs::read_to_string(path_str) {
-                    let line_text = content.lines().nth(r.span.start_line().saturating_sub(1) as usize).unwrap_or("");
-                    is_impl_header(line_text) && is_head_position(line_text, r.span.start_col().saturating_sub(1) as usize)
+        let mut impl_refs = ws.find_implementations(&def, std::path::Path::new(&file));
+        if impl_refs.is_empty() && !ws.has_compiler_impl_defs() {
+            for r in ws.find_references(def.path) {
+                let is_impl = if r.kind == DefKind::Impl {
+                    true
                 } else {
-                    false
-                }
-            };
-
-            if is_impl {
-                let resolved_path = r.resolved_path();
-                let path_str = resolved_path.to_str().unwrap_or(r.file);
-                let uri = path_to_uri(path_str);
-                let span = r.span;
-                let start_char = conv.char_col_to_utf16_col(path_str, span.start_line(), span.start_col());
-                let end_char = conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
-                results.push(json!({
-                    "uri": uri,
-                    "range": {
-                        "start": { "line": span.start_line().saturating_sub(1), "character": start_char },
-                        "end": { "line": span.end_line().saturating_sub(1), "character": end_char }
+                    let resolved_path = r.resolved_path();
+                    let path_str = resolved_path.to_str().unwrap_or(r.file);
+                    if let Ok(content) = std::fs::read_to_string(path_str) {
+                        let line_text = content.lines().nth(r.span.start_line().saturating_sub(1) as usize).unwrap_or("");
+                        is_impl_header(line_text) && is_head_position(line_text, r.span.start_col().saturating_sub(1) as usize)
+                    } else {
+                        false
                     }
-                }));
+                };
+                if is_impl {
+                    impl_refs.push(r);
+                }
             }
         }
+        for r in impl_refs {
+            let resolved_path = r.resolved_path();
+            let path_str = resolved_path.to_str().unwrap_or(r.file);
+            let uri = path_to_uri(path_str);
+            let span = r.span;
+            let start_line = span.start_line().saturating_sub(1);
+            let end_line = span.end_line().saturating_sub(1);
+            let start_char = conv.char_col_to_utf16_col(path_str, span.start_line(), span.start_col());
+            let end_char = conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
+            keyed.push((
+                (uri.clone(), start_line, start_char, end_line, end_char),
+                json!({
+                    "uri": uri,
+                    "range": {
+                        "start": { "line": start_line, "character": start_char },
+                        "end": { "line": end_line, "character": end_char }
+                    }
+                }),
+            ));
+        }
     }
+    keyed.sort_by(|a, b| a.0.cmp(&b.0));
+    keyed.dedup_by(|a, b| a.0 == b.0);
+    let results: Vec<Value> = keyed.into_iter().map(|(_, v)| v).collect();
 
     json!(results)
 }
