@@ -12,6 +12,7 @@
 
 pub mod blast_radius;
 mod cross_definition;
+mod decl_lookup;
 mod impl_lookup;
 mod impl_parse;
 mod owner_types;

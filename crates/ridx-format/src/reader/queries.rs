@@ -177,7 +177,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             (s.file_id(), s.start_line(), s.start_col()) <= key
         });
 
-        let mut best: Option<(&TypeEntry, u64)> = None;
+        let mut best: Option<(&TypeEntry, (bool, u64))> = None;
         for entry in types[..hi].iter().rev() {
             let span = entry.span();
             if span.file_id() != file_id {
@@ -186,17 +186,19 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             if best.is_none() && line.saturating_sub(span.start_line()) > 200 {
                 break;
             }
-            if let Some((_, best_size)) = best {
-                let min_size = if line > span.start_line() { (line - span.start_line()) as u64 * 80 } else { (col.saturating_sub(span.start_col()) as u64).min(80) };
+            if let Some((_, (false, best_size))) = best {
+                let min_size = if line > span.start_line() { (line - span.start_line()) as u64 * 200 } else { 0 };
                 if min_size > best_size {
                     break;
                 }
             }
             if span.contains(file_id, line, col) {
                 let size = span.approximate_size();
+                let is_multiline_unit = span.start_line() != span.end_line() && self.get_str(entry.type_offset()) == "()";
+                let key = (is_multiline_unit, size);
                 match best {
-                    None => best = Some((entry, size)),
-                    Some((_, best_size)) if size <= best_size => best = Some((entry, size)),
+                    None => best = Some((entry, key)),
+                    Some((_, best_key)) if key < best_key => best = Some((entry, key)),
                     _ => {}
                 }
             }

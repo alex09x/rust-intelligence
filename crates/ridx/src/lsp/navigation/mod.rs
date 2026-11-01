@@ -10,15 +10,19 @@
 
 //! LSP navigation handlers: definition, declaration, type definition, and implementation.
 
+pub mod declaration;
 mod impl_line;
 pub mod references;
 pub mod type_definition;
 mod type_definition_lookup;
+mod type_definition_parse;
 mod type_definition_qual;
+mod type_definition_walk;
 
 #[cfg(test)]
 pub mod tests;
 
+pub use declaration::handle_declaration;
 pub use references::*;
 pub use type_definition::handle_type_definition;
 
@@ -258,7 +262,7 @@ fn is_ident_on_line(text: &str, line_starts: &[usize], line_1based: u32, name: &
     false
 }
 
-fn is_def_valid_in_overlay(target_ov: &crate::overlay::DocumentOverlay, name: &str, start_line: u32, end_line: u32) -> bool {
+pub(super) fn is_def_valid_in_overlay(target_ov: &crate::overlay::DocumentOverlay, name: &str, start_line: u32, end_line: u32) -> bool {
     if is_ident_on_line(&target_ov.text, &target_ov.line_starts, start_line, name) {
         return true;
     }
@@ -269,10 +273,6 @@ fn is_def_valid_in_overlay(target_ov: &crate::overlay::DocumentOverlay, name: &s
         }
     }
     false
-}
-
-pub fn handle_declaration(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
-    handle_definition(msg, workspace, overlay_mgr, conv)
 }
 
 pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {

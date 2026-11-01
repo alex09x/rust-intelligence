@@ -12,8 +12,14 @@
 //! (`defs_by_hash`, `defs_by_owner`, span-sorted `types`/`references`, and `UnitMatchIndex::defs_by_pos`)
 //! with single-line lexical checks (`PositionConverter::get_line`), avoiding full-text and full-table scans.
 
-use super::type_definition_lookup::{format_location, lookup_type_by_path, resolve_reader_file};
-use super::type_definition_qual::{is_enclosing_macro_or_raw_string, is_single_token_ref, is_use_statement_line, resolve_qualified_path_fallback, should_prefer_def_at};
+use super::type_definition_lookup::{collect_type_refs_in_range, format_location, resolve_reader_file};
+use super::type_definition_qual::{
+    extract_qualifier_ident, is_enclosing_macro_or_raw_string, is_single_token_ref, is_use_statement_line, resolve_qualified_path_fallback, resolve_self_into_locs,
+    should_prefer_def_at,
+};
+use super::type_definition_walk::{
+    collect_following_generic_args, collect_type_components, finalize_locations, push_unique_locs, resolve_path_with_alias_expansion, resolve_walked_type_entry,
+};
 use crate::lsp::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use memmap2::Mmap;
@@ -36,16 +42,6 @@ pub(super) struct FileReaderCtx<'a> {
 }
 
 /// Resolves `textDocument/typeDefinition` at the requested cursor position via indexed lookups.
-///
-/// # Compound Type Resolution Rules
-/// - **Modifiers (`&Foo`, `&mut Foo`, `&'a Foo`, `Foo<'a>`, `dyn Trait`)**: Stripped to `Foo` / `Trait`.
-/// - **Generic wrappers (`Wrapper<i32>`, `Option<Foo>`, `Result<Foo, Bar>`, `Box<Foo>`)**: Uniformly
-///   resolve to the **outer** type constructor (`Wrapper`, `Option`, `Result`, `Box`).
-/// - **Primitives and built-ins (`u32`, `bool`, `str`, `!`, `()`)**: Return `Value::Null`.
-/// - **Generic type parameters (`TyParam`, e.g. `T`)**: Resolved via [`WorkspaceIndex::find_type_param_in_reader`].
-/// - **Canonical `owner_path` lookup**: Hash lookup in each reader (`defs_by_hash` / `defs_by_owner`).
-/// - **Type identifier fallback**: Falls back to [`WorkspaceIndex::find_def_at_in_reader`] and qualified-path lookup.
-/// - **Enum variants (`Variant` / `VariantCtor`)**: Intentionally resolve to the parent `Enum` declaration (where rust-analyzer returns `[]`).
 pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
@@ -78,29 +74,8 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
                 return loc;
             }
         }
-
-        let base_ty = strip_generics(peel_type_modifiers(ty_name));
-        let is_prim = is_primitive_or_builtin(base_ty) || owner_opt.is_some_and(is_primitive_or_builtin);
-        if !is_prim {
-            if !base_ty.contains("::") {
-                if let Some(tp) = ctx.iter().find_map(|c| ws.find_type_param_in_reader(c.idx, c.file_id, base_ty, line_1based, col_1based)) {
-                    if tp.file != "external" {
-                        let coords = (tp.start_line, tp.start_col, tp.end_line, tp.end_col);
-                        return format_location(&tp.resolved_path(), tp.file, coords, conv);
-                    }
-                }
-            }
-            let owner_base = owner_opt.map(|o| strip_generics(peel_type_modifiers(o))).filter(|s| !s.is_empty());
-            if let Some(owner_path) = owner_base {
-                if let Some(loc) = lookup_type_by_path(ws, &file_readers, &file, owner_path, true, conv) {
-                    return loc;
-                }
-            }
-            if !base_ty.is_empty() {
-                if let Some(loc) = lookup_type_by_path(ws, &file_readers, &file, base_ty, false, conv) {
-                    return loc;
-                }
-            }
+        if let Some(loc) = resolve_walked_type_entry(ws, &file_readers, &ctx, (&file, pos), ty_name, owner_opt, conv) {
+            return loc;
         }
     }
 
@@ -164,13 +139,17 @@ fn inner_ref_at(ws: &WorkspaceIndex, idx: usize, file_id: u32, line: u32, col: u
 }
 
 fn extract_type_entry<'a>(ctx: &[FileReaderCtx<'a>]) -> Option<(&'a str, Option<&'a str>)> {
-    ctx.iter().find_map(|c| {
-        let entry = c.inner_type?;
-        let ty_name = c.reader.get_str(entry.type_offset());
-        let owner_offset = entry.owner_path_offset();
-        let owner = (owner_offset != 0).then(|| c.reader.get_str(owner_offset)).filter(|s| !s.is_empty());
-        Some((ty_name, owner))
-    })
+    ctx.iter()
+        .filter_map(|c| {
+            let entry = c.inner_type?;
+            let ty_name = c.reader.get_str(entry.type_offset());
+            let owner_offset = entry.owner_path_offset();
+            let owner = (owner_offset != 0).then(|| c.reader.get_str(owner_offset)).filter(|s| !s.is_empty());
+            let key = (ty_name == "()", entry.span().approximate_size());
+            Some((key, (ty_name, owner)))
+        })
+        .min_by_key(|(key, _)| *key)
+        .map(|(_, val)| val)
 }
 
 fn resolve_from_definition_at(
@@ -193,8 +172,53 @@ fn resolve_from_definition_at(
             continue;
         }
         if matches!(resolved.kind, DefKind::Variant | DefKind::VariantCtor) {
-            let (enum_path, _) = resolved.path.rsplit_once("::")?;
-            return lookup_type_by_path(ws, file_readers, file, enum_path, true, conv);
+            let (enum_path, var_name) = resolved.path.rsplit_once("::")?;
+            if type_entry.is_some_and(|(ty, _)| (ty.contains(enum_path) || ty.contains(&format!("::{var_name}"))) && ty.contains('<')) {
+                return None;
+            }
+            let mut locs = Vec::new();
+            resolve_path_with_alias_expansion(ws, file_readers, file, enum_path, true, 0, &mut locs, conv);
+            collect_following_generic_args(ws, file_readers, ctx, (file, (line, col), line_str), &mut locs, conv);
+            return finalize_locations(locs);
+        }
+        if resolved.kind == DefKind::AssocTy {
+            let mut locs = Vec::new();
+            if c.inner_ref.is_none() && line_str.contains('=') {
+                for ref_path in collect_type_refs_in_range(c.reader, c.file_id, (line, resolved.end_col), (resolved.end_line, 1000), true) {
+                    resolve_path_with_alias_expansion(ws, file_readers, file, &ref_path, ref_path.contains("::"), 0, &mut locs, conv);
+                }
+                if let Some(val) = finalize_locations(locs) {
+                    return Some(val);
+                }
+                return None;
+            }
+            let (trait_path, _) = resolved.path.rsplit_once("::")?;
+            let mut comps = Vec::new();
+            collect_type_components(trait_path, &mut comps);
+            for comp in comps {
+                resolve_path_with_alias_expansion(ws, file_readers, file, &comp, true, 0, &mut locs, conv);
+            }
+            if let Some(qual_id) = extract_qualifier_ident(line_str, col) {
+                if qual_id == "Self" {
+                    resolve_self_into_locs(ws, file_readers, ctx, file, line, true, &mut locs, conv);
+                } else {
+                    resolve_path_with_alias_expansion(ws, file_readers, file, qual_id, false, 0, &mut locs, conv);
+                }
+            }
+            return finalize_locations(locs);
+        }
+        if resolved.kind == DefKind::Field && c.inner_ref.is_none() {
+            let mut locs = Vec::new();
+            for ref_path in collect_type_refs_in_range(c.reader, c.file_id, (line, resolved.end_col), (resolved.end_line, 1000), true) {
+                resolve_path_with_alias_expansion(ws, file_readers, file, &ref_path, ref_path.contains("::"), 0, &mut locs, conv);
+            }
+            return finalize_locations(locs);
+        }
+        if resolved.kind == DefKind::AssocConst && type_entry.is_none_or(|(ty, _)| ty == "()") {
+            let (owner_path, _) = resolved.path.rsplit_once("::")?;
+            let mut locs = Vec::new();
+            resolve_path_with_alias_expansion(ws, file_readers, file, owner_path, true, 0, &mut locs, conv);
+            return finalize_locations(locs);
         }
         if !is_type_def_kind(resolved.kind) && resolved.kind != DefKind::Use {
             if resolved.kind == DefKind::Mod {
@@ -202,14 +226,23 @@ fn resolve_from_definition_at(
             }
             return None;
         }
-        if resolved.file != "external" && !resolved.is_reexport && is_type_def_kind(resolved.kind) && !is_primitive_or_builtin(resolved.name) {
-            let coords = (resolved.start_line, resolved.start_col, resolved.end_line, resolved.end_col);
-            let resolved_path = resolve_reader_file(ws, c.idx, resolved.file);
-            return Some(format_location(&resolved_path, resolved.file, coords, conv));
+        if resolved.kind == DefKind::TyParam {
+            return None;
         }
         if is_type_def_kind(resolved.kind) && !is_primitive_or_builtin(resolved.name) {
-            if let Some(loc) = lookup_type_by_path(ws, file_readers, file, resolved.path, true, conv) {
-                return Some(loc);
+            if type_entry.is_some_and(|(ty, _)| strip_generics(peel_type_modifiers(ty)) == resolved.path && ty.contains('<')) {
+                return None;
+            }
+            let mut locs = Vec::new();
+            resolve_path_with_alias_expansion(ws, file_readers, file, resolved.path, true, 0, &mut locs, conv);
+            if locs.is_empty() && resolved.file != "external" && !resolved.is_reexport {
+                let coords = (resolved.start_line, resolved.start_col, resolved.end_line, resolved.end_col);
+                let resolved_path = resolve_reader_file(ws, c.idx, resolved.file);
+                push_unique_locs(&mut locs, format_location(&resolved_path, resolved.file, coords, conv));
+            }
+            collect_following_generic_args(ws, file_readers, ctx, (file, (line, col), line_str), &mut locs, conv);
+            if let Some(val) = finalize_locations(locs) {
+                return Some(val);
             }
         }
         needs_cross = true;
@@ -219,14 +252,20 @@ fn resolve_from_definition_at(
         if let Some(def) = ws.find_definition_at(file, line, col) {
             if matches!(def.kind, DefKind::Variant | DefKind::VariantCtor) {
                 let (enum_path, _) = def.path.rsplit_once("::")?;
-                return lookup_type_by_path(ws, file_readers, file, enum_path, true, conv);
+                let mut locs = Vec::new();
+                resolve_path_with_alias_expansion(ws, file_readers, file, enum_path, true, 0, &mut locs, conv);
+                collect_following_generic_args(ws, file_readers, ctx, (file, (line, col), line_str), &mut locs, conv);
+                return finalize_locations(locs);
             }
             if is_type_def_kind(def.kind) && !is_primitive_or_builtin(def.name) {
-                if def.file != "external" && !def.is_reexport {
+                let mut locs = Vec::new();
+                resolve_path_with_alias_expansion(ws, file_readers, file, def.path, true, 0, &mut locs, conv);
+                if locs.is_empty() && def.file != "external" && !def.is_reexport {
                     let coords = (def.start_line, def.start_col, def.end_line, def.end_col);
-                    return Some(format_location(&def.resolved_path(), def.file, coords, conv));
+                    push_unique_locs(&mut locs, format_location(&def.resolved_path(), def.file, coords, conv));
                 }
-                return lookup_type_by_path(ws, file_readers, file, def.path, true, conv);
+                collect_following_generic_args(ws, file_readers, ctx, (file, (line, col), line_str), &mut locs, conv);
+                return finalize_locations(locs);
             }
         }
     }

@@ -95,7 +95,7 @@ impl Span {
         if lines == 0 {
             (s.end_col.saturating_sub(s.start_col)) as u64
         } else {
-            lines * 80 + (s.end_col as u64)
+            (lines * 200 + (s.end_col as u64)).saturating_sub((s.start_col as u64).min(199))
         }
     }
 }

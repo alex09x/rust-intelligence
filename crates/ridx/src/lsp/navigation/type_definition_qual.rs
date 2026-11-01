@@ -11,7 +11,9 @@
 //! Qualified-path, `Self::Assoc`, and macro/raw-string filters for `textDocument/typeDefinition`.
 
 use super::type_definition::{is_primitive_or_builtin, is_type_def_kind, peel_type_modifiers, strip_generics, FileReaderCtx};
-use super::type_definition_lookup::lookup_type_by_path;
+use super::type_definition_lookup::{collect_type_refs_in_range, lookup_type_by_path};
+use super::type_definition_parse::{is_fn_type, strip_leading_for_binder};
+use super::type_definition_walk::{collect_following_generic_args, collect_type_components, finalize_locations, push_unique_locs, resolve_path_with_alias_expansion};
 use crate::lsp::protocol::PositionConverter;
 use ridx_format::{DefKind, DefKind::*, IndexReader, RefEntry, WorkspaceIndex};
 use serde_json::Value;
@@ -96,12 +98,25 @@ fn token_slice(line_str: &str, start_col_1based: u32, end_col_1based: u32) -> Op
 pub(super) fn should_prefer_def_at(ctx: &[FileReaderCtx<'_>], (line, col): (u32, u32), line_str: &str) -> bool {
     let qual =
         extract_qualified_path(line_str, col).filter(|(p, _, _)| p.contains("::") && p.rsplit("::").next().is_some_and(|last| last.starts_with(|c: char| c.is_ascii_uppercase())));
-    for c in ctx {
-        let Some(entry) = c.inner_type else {
-            continue;
-        };
+    let best_entry = ctx
+        .iter()
+        .filter_map(|c| {
+            let e = c.inner_type?;
+            let ty = c.reader.get_str(e.type_offset());
+            Some(((ty == "()", e.span().approximate_size()), (e, ty)))
+        })
+        .min_by_key(|(k, _)| *k)
+        .map(|(_, pair)| pair);
+    if let Some((entry, ty)) = best_entry {
         let span = entry.span();
         if span.start_line() != span.end_line() {
+            return true;
+        }
+        if is_fn_type(strip_leading_for_binder(ty))
+            && ctx
+                .iter()
+                .any(|c| c.inner_ref.is_some_and(|r| is_single_token_ref(c.reader, r, line_str) && matches!(DefKind::from(r.kind), Struct | Enum | Union | Trait | TyAlias)))
+        {
             return true;
         }
         if let Some((_, p_sc, p_ec)) = qual {
@@ -155,13 +170,26 @@ pub(super) fn resolve_qualified_path_fallback(
                 continue;
             }
             let kind = DefKind::from(r.kind);
-            if matches!(kind, Struct | StructCtor | Enum | Union | Trait) {
-                if let Some(loc) = lookup_type_by_path(ws, file_readers, file, target_path, true, conv) {
+            if matches!(kind, Struct | StructCtor | Enum | Union | Trait | TyAlias) {
+                let mut locs = Vec::new();
+                resolve_path_with_alias_expansion(ws, file_readers, file, target_path, true, 0, &mut locs, conv);
+                collect_following_generic_args(ws, file_readers, ctx, (file, (line, span.end_col().saturating_sub(1)), line_str), &mut locs, conv);
+                if let Some(loc) = finalize_locations(locs) {
                     return Some(loc);
                 }
-            } else if matches!(kind, Variant | VariantCtor) {
-                if let Some((enum_path, _)) = target_path.rsplit_once("::") {
-                    if let Some(loc) = lookup_type_by_path(ws, file_readers, file, enum_path, true, conv) {
+            } else if matches!(kind, Variant | VariantCtor | AssocTy) {
+                if let Some((parent_path, _)) = target_path.rsplit_once("::") {
+                    let mut locs = Vec::new();
+                    let mut comps = Vec::new();
+                    collect_type_components(parent_path, &mut comps);
+                    for comp in comps {
+                        resolve_path_with_alias_expansion(ws, file_readers, file, &comp, true, 0, &mut locs, conv);
+                    }
+                    if kind == AssocTy && qual_path.starts_with("Self::") {
+                        resolve_self_into_locs(ws, file_readers, ctx, file, line, true, &mut locs, conv);
+                    }
+                    collect_following_generic_args(ws, file_readers, ctx, (file, (line, span.end_col().saturating_sub(1)), line_str), &mut locs, conv);
+                    if let Some(loc) = finalize_locations(locs) {
                         return Some(loc);
                     }
                 }
@@ -172,13 +200,92 @@ pub(super) fn resolve_qualified_path_fallback(
     if qual_path.starts_with("Self::") {
         let same_line_ty = ctx.iter().any(|c| c.inner_type.is_some_and(|e| e.span().start_line() == line));
         if !same_line_ty {
-            return resolve_self_type_in_impl(ws, file_readers, ctx, file, line, conv);
+            let mut locs = Vec::new();
+            resolve_self_into_locs(ws, file_readers, ctx, file, line, true, &mut locs, conv);
+            return finalize_locations(locs);
         }
     }
-    None
+    resolve_typaram_assoc_projection(ws, file_readers, ctx, (file, (line, col), qual_path), conv)
 }
 
-fn resolve_self_type_in_impl(ws: &WorkspaceIndex, file_readers: &[usize], ctx: &[FileReaderCtx<'_>], file: &str, line: u32, conv: &mut PositionConverter) -> Option<Value> {
+fn resolve_typaram_assoc_projection(
+    ws: &WorkspaceIndex,
+    file_readers: &[usize],
+    ctx: &[FileReaderCtx<'_>],
+    (file, (line, col), qual_path): (&str, (u32, u32), &str),
+    conv: &mut PositionConverter,
+) -> Option<Value> {
+    let (tp_ident, assoc_name) = qual_path.split_once("::")?;
+    if tp_ident.contains("::") || assoc_name.contains("::") {
+        return None;
+    }
+    let needle_prefix = format!("<{tp_ident} as ");
+    let needle_suffix = format!(">::{assoc_name}");
+    let mut locs = Vec::new();
+    for c in ctx {
+        let types = c.reader.types();
+        let lo = types.partition_point(|e| (e.span().file_id(), e.span().start_line()) < (c.file_id, line));
+        for e in &types[lo..] {
+            let s = e.span();
+            if s.file_id() != c.file_id || s.start_line() > line + 4 {
+                break;
+            }
+            let ty_str = c.reader.get_str(e.type_offset());
+            if let Some(start) = ty_str.find(&needle_prefix) {
+                let after = &ty_str[start + needle_prefix.len()..];
+                if let Some(end) = after.find(&needle_suffix) {
+                    let trait_path = &after[..end];
+                    resolve_path_with_alias_expansion(ws, file_readers, file, trait_path, true, 0, &mut locs, conv);
+                }
+            }
+        }
+        if locs.is_empty() {
+            if let Some(tp) = ws.find_type_param_in_reader(c.idx, c.file_id, tp_ident, line, col) {
+                let tp_line_txt = conv.get_line(file, tp.start_line).unwrap_or("");
+                let paren_col = tp_line_txt.find('(').map_or(1000, |b| tp_line_txt[..b].chars().count() as u32 + 1);
+                for ref_path in collect_type_refs_in_range(c.reader, c.file_id, (tp.start_line, tp.end_col), (tp.start_line, paren_col), true) {
+                    resolve_path_with_alias_expansion(ws, file_readers, file, &ref_path, ref_path.contains("::"), 0, &mut locs, conv);
+                }
+                if locs.is_empty() {
+                    for ref_path in collect_type_refs_in_range(c.reader, c.file_id, (tp.start_line + 1, 1), (tp.start_line + 3, 1000), true) {
+                        resolve_path_with_alias_expansion(ws, file_readers, file, &ref_path, ref_path.contains("::"), 0, &mut locs, conv);
+                    }
+                }
+            }
+        }
+    }
+    finalize_locations(locs)
+}
+
+pub(super) fn extract_qualifier_ident(line_str: &str, col_1based: u32) -> Option<&str> {
+    let (qual_path, _, _) = extract_qualified_path(line_str, col_1based)?;
+    let (head, _) = qual_path.rsplit_once("::")?;
+    Some(head.rsplit("::").next().unwrap_or(head))
+}
+
+pub(super) fn resolve_self_only_in_impl(
+    ws: &WorkspaceIndex,
+    file_readers: &[usize],
+    ctx: &[FileReaderCtx<'_>],
+    file: &str,
+    line: u32,
+    locs: &mut Vec<Value>,
+    conv: &mut PositionConverter,
+) {
+    resolve_self_into_locs(ws, file_readers, ctx, file, line, false, locs, conv);
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn resolve_self_into_locs(
+    ws: &WorkspaceIndex,
+    file_readers: &[usize],
+    ctx: &[FileReaderCtx<'_>],
+    file: &str,
+    line: u32,
+    include_trait: bool,
+    locs: &mut Vec<Value>,
+    conv: &mut PositionConverter,
+) {
     for c in ctx {
         let Some(def) = ws.find_enclosing_impl_or_trait_def(c.idx, c.file_id, line) else {
             continue;
@@ -187,7 +294,8 @@ fn resolve_self_type_in_impl(ws: &WorkspaceIndex, file_readers: &[usize], ctx: &
         let def_kind = DefKind::from(def.kind);
         if def_kind == Trait {
             if let Some(loc) = lookup_type_by_path(ws, file_readers, file, def_path, true, conv) {
-                return Some(loc);
+                push_unique_locs(locs, loc);
+                return;
             }
             continue;
         }
@@ -195,17 +303,28 @@ fn resolve_self_type_in_impl(ws: &WorkspaceIndex, file_readers: &[usize], ctx: &
             AssocFn | AssocTy | AssocConst => def_path.rsplit_once("::").map_or(def_path, |(p, _)| p),
             _ => def_path,
         };
-        let cands: Vec<&str> = owner_part.strip_prefix('<').and_then(|s| s.strip_suffix('>')).map_or_else(|| vec![owner_part], |inner| inner.split(" as ").collect());
+        let cands: Vec<&str> = owner_part.strip_prefix('<').and_then(|s| s.strip_suffix('>')).map_or_else(
+            || vec![owner_part],
+            |inner| {
+                let parts: Vec<&str> = inner.split(" as ").collect();
+                if include_trait {
+                    parts
+                } else {
+                    parts.into_iter().take(1).collect()
+                }
+            },
+        );
+        let before = locs.len();
         for cand_ty in cands {
             let base = strip_generics(peel_type_modifiers(cand_ty));
             if !base.is_empty() && !is_primitive_or_builtin(base) {
-                if let Some(loc) = lookup_type_by_path(ws, file_readers, file, base, true, conv) {
-                    return Some(loc);
-                }
+                resolve_path_with_alias_expansion(ws, file_readers, file, base, true, 0, locs, conv);
             }
         }
+        if locs.len() > before {
+            return;
+        }
     }
-    None
 }
 
 fn extract_qualified_path(line_str: &str, col_1based: u32) -> Option<(&str, u32, u32)> {
