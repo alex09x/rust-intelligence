@@ -175,11 +175,13 @@ pub(crate) fn augment_resolved_highlights(file: &str, text: &str, target_symbol:
     if target_symbol.is_empty() || highlights.is_empty() {
         return;
     }
-    let is_upper = target_symbol.chars().next().is_some_and(|c| c.is_ascii_uppercase());
-    let is_type_like = matches!(target_kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TyAlias);
-    let is_assoc_or_fn = matches!(target_kind, DefKind::AssocTy | DefKind::AssocConst | DefKind::AssocFn | DefKind::Fn | DefKind::Const | DefKind::Static);
+    let is_type_like = matches!(target_kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias);
+    if !is_type_like && !matches!(target_kind, DefKind::Mod | DefKind::AssocTy) {
+        return;
+    }
 
     let mut impl_header_pending = false;
+    let mut impl_in_where = false;
     let mut impl_target_matched = false;
     let mut impl_brace_depth = 0i32;
 
@@ -187,6 +189,7 @@ pub(crate) fn augment_resolved_highlights(file: &str, text: &str, target_symbol:
         if brace == '{' {
             if impl_header_pending {
                 impl_header_pending = false;
+                impl_in_where = false;
                 if impl_target_matched {
                     impl_brace_depth = 1;
                 }
@@ -206,32 +209,37 @@ pub(crate) fn augment_resolved_highlights(file: &str, text: &str, target_symbol:
         }
         if tok == "impl" && impl_brace_depth == 0 {
             impl_header_pending = true;
+            impl_in_where = false;
             impl_target_matched = false;
             return;
         }
-        if impl_header_pending && tok == target_symbol {
-            impl_target_matched = true;
+        if impl_header_pending {
+            if tok == "for" {
+                impl_target_matched = false;
+                return;
+            }
+            if tok == "where" {
+                impl_in_where = true;
+                return;
+            }
+            if !impl_in_where && tok == target_symbol && !prefix.trim_end().ends_with(':') {
+                impl_target_matched = true;
+            }
         }
 
         if target_kind == DefKind::Mod && tok == target_symbol {
             let p_trim = prefix.trim_end();
             let s_trim = suffix.trim_start();
-            if s_trim.starts_with("::") || p_trim.ends_with("::") || p_trim.ends_with("mod") {
+            if (s_trim.starts_with("::") && !p_trim.ends_with('.')) || (p_trim.ends_with("::") && !s_trim.starts_with('(')) || p_trim.split_whitespace().last() == Some("mod") {
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
         } else if is_type_like {
-            if (tok == "Self" && impl_brace_depth > 0) || (tok == target_symbol && is_upper) {
+            if (tok == "Self" && impl_brace_depth > 0) || (tok == target_symbol && suffix.trim_start().starts_with("::")) {
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
-        } else if is_assoc_or_fn && tok == target_symbol {
+        } else if target_kind == DefKind::AssocTy && tok == target_symbol {
             let p_trim = prefix.trim_end();
-            let p_start = prefix.trim_start();
-            if p_start.starts_with("use ") || p_start.starts_with("pub use ") || p_start.starts_with("pub(crate) use ") {
-                return;
-            }
-            let s_trim = suffix.trim_start();
-            let last_kw = p_trim.split_whitespace().last().unwrap_or("");
-            if p_trim.ends_with("::") || p_trim.ends_with('.') || matches!(last_kw, "fn" | "type" | "const" | "static") || s_trim.starts_with('(') || s_trim.starts_with("::<") {
+            if p_trim.ends_with("::") || p_trim.split_whitespace().last() == Some("type") {
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
         }

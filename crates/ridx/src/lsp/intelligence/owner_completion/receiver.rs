@@ -12,8 +12,8 @@
 
 use super::super::scope_cache::{get_or_collect_file_referenced_traits, get_or_parse_file_scopes, get_or_resolve_deref_chain};
 use super::{
-    base_trait_path, base_type_path, extract_nth_non_lifetime_type_arg, extract_parent_type, extract_smart_pointer_inner_type, is_array_type, is_generic_deref_wrapper,
-    is_in_prelude, is_pointer_type, is_slice_type, is_smart_pointer, peel_type_modifiers, trait_short_name, OwnerCompletionContext,
+    base_trait_path, base_type_path, extract_nth_non_lifetime_type_arg, extract_parent_type, extract_smart_pointer_inner_type, is_array_type, is_in_prelude,
+    is_indexed_generic_deref_wrapper, is_pointer_type, is_slice_type, is_smart_pointer, peel_type_modifiers, trait_short_name, OwnerCompletionContext,
 };
 use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
@@ -339,11 +339,7 @@ pub fn expand_dot_owners(
     let mut cur_ty = ty_name.to_string();
     let mut cur_owner = owner.to_string();
     for _ in 0..2 {
-        let is_wrapper = is_generic_deref_wrapper(&cur_owner) || {
-            cur_ty.contains('<')
-                && get_or_resolve_deref_chain(ws, &cur_owner, 1).iter().all(|i| i.is_trait)
-                && ws.find_definitions_by_owner_for_file(ctx.file, &cur_owner).iter().any(|d| d.name == "deref")
-        };
+        let is_wrapper = cur_ty.contains('<') && is_indexed_generic_deref_wrapper(ws, &cur_owner);
         if !is_wrapper {
             break;
         }

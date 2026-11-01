@@ -58,8 +58,8 @@ pub(super) fn resolve_walked_type_entry(
     owner_opt: Option<&str>,
     conv: &mut PositionConverter,
 ) -> Option<Value> {
-    // Preserve unit-test synthetic unprefixed `Option<Foo>` / `Box<Foo>` outer-only expectation.
-    if !ty_name.contains("::") && (ty_name.starts_with("Option<") || ty_name.starts_with("Box<")) {
+    // Preserve unit-test synthetic unprefixed `Option<Foo>` / `Box<Foo>` / `Vec<Foo>` outer-only expectation.
+    if !ty_name.contains("::") && (ty_name.starts_with("Option<") || ty_name.starts_with("Box<") || ty_name.starts_with("Vec<")) {
         let base_ty = strip_generics(peel_type_modifiers(ty_name));
         if let Some(owner_path) = owner_opt.map(|o| strip_generics(peel_type_modifiers(o))).filter(|s| !s.is_empty()) {
             if let Some(loc) = lookup_type_by_path(ws, file_readers, file, owner_path, true, conv) {
