@@ -69,10 +69,8 @@ def compare_document_symbol(r_norm, a_norm):
         return "exact_match", None, {"count": len(ra_all)}
     if ra_top == aa_top and ra_top:
         return "core_match", "c_docsym_top_level_equal", {"top": len(ra_top), "ridx_all": len(ra_all), "ra_all": len(aa_all)}
-    if aa_top and ra_top and len(ra_top & aa_top) / min(len(ra_top), len(aa_top)) >= 0.70:
+    if aa_top and len(ra_top & aa_top) / len(aa_top) >= 0.80:
         return "core_match", "c_docsym_top_level_high_recall", {"ridx_top": len(ra_top), "ra_top": len(aa_top), "common_top": len(ra_top & aa_top)}
-    if rn and an and len(rn & an) / min(len(rn), len(an)) >= 0.70:
-        return "core_match", "c_docsym_top_level_high_recall", {"ridx_top": len(ra_top), "ra_top": len(aa_top), "common_names": len(rn & an)}
     if (ra_all & aa_all) or (rn & an):
         return "partial", "p_docsym_partial_symbol_overlap", {"ridx_all": len(ra_all), "ra_all": len(aa_all), "common_names": len(rn & an)}
     return "mismatch", "p_docsym_disjoint_symbols", {"ridx_all": len(ra_all), "ra_all": len(aa_all)}
@@ -81,6 +79,7 @@ def compare_document_symbol(r_norm, a_norm):
 def compare_workspace_symbol(row, r_norm, a_norm):
     ri, ai = set(r_norm["items"]), set(a_norm["items"])
     rn, an = set(r_norm["names"]), set(a_norm["names"])
+    sym = row.get("symbol") or ""
     if ri == ai:
         return "exact_match", None, {"count": len(ri)}
     r_loc = {(p, nm, ln) for p, nm, _, ln in ri}
@@ -89,11 +88,10 @@ def compare_workspace_symbol(row, r_norm, a_norm):
         return "core_match", "c_wssym_same_locations", {"count": len(r_loc)}
     if a_loc and a_loc.issubset(r_loc):
         return "core_match", "c_wssym_superset_of_ra", {"ridx": len(r_loc), "ra": len(a_loc)}
+    if sym and sym in rn and sym in an and (r_loc & a_loc):
+        return "core_match", "c_wssym_query_target_and_loc_overlap", {"ridx": len(r_loc), "ra": len(a_loc), "common_loc": len(r_loc & a_loc)}
     if (r_loc & a_loc) or (rn & an):
-        return "core_match", "c_wssym_query_target_and_loc_overlap", {"ridx": len(r_loc), "ra": len(a_loc), "common_loc": len(r_loc & a_loc), "common_names": len(rn & an)}
-    q = ((row.get("name") or "").partition("ws_sym_")[2].partition("_")[2] if (row.get("name") or "").startswith("ws_sym_") else "").lower()
-    if rn and ai and all(q in nm.lower() for nm in rn):
-        return "core_match", "c_wssym_query_substring_verified", {"ridx": len(r_loc), "ra": len(a_loc), "query": q}
+        return "partial", "p_wssym_partial_overlap", {"ridx": len(ri), "ra": len(ai), "common_loc": len(r_loc & a_loc), "common_names": len(rn & an)}
     return "mismatch", "p_wssym_disjoint_results", {"ridx": len(ri), "ra": len(ai)}
 
 
@@ -107,8 +105,7 @@ def compare_folding_range(r_norm, a_norm):
         return "core_match", "c_fold_same_line_spans", {"count": len(rs)}
     if rr == ar and rr:
         return "core_match", "c_fold_same_code_regions", {"regions": len(rr), "ridx_all": len(ra_all), "ra_all": len(aa_all)}
-    r_st, a_st = {sl for sl, _ in rs}, {sl for sl, _ in as_}
-    if (ar and rr and len(rr & ar) / min(len(rr), len(ar)) >= 0.50) or (as_ and rs and len(rs & as_) / min(len(rs), len(as_)) >= 0.50) or (a_st and r_st and len(r_st & a_st) / min(len(r_st), len(a_st)) >= 0.50):
+    if ar and len(rr & ar) / len(ar) >= 0.80:
         return "core_match", "c_fold_region_high_recall", {"ridx_regions": len(rr), "ra_regions": len(ar), "common": len(rr & ar)}
     if (rs & as_) or (rr & ar):
         return "partial", "p_fold_partial_span_overlap", {"ridx": len(rs), "ra": len(as_), "common_spans": len(rs & as_), "common_regions": len(rr & ar)}
@@ -136,10 +133,7 @@ def compare_semantic_tokens(row, r_norm, a_norm, repo=None, ws_table=None):
     shared_sym = set(r_all) & set(a_sym)
     span_recall = round(len(shared_sym) / len(a_sym), 4) if a_sym else 1.0
     raw_span_recall = round(len(shared_all) / len(a_all), 4) if a_all else 1.0
-    type_fam = {"type", "struct", "enum", "interface", "typeParameter", "namespace"}
-    val_fam = {"callable", "macro", "property", "variable", "enumMember"}
-    agree_base = shared_sym if shared_sym else shared_all
-    type_agree = round(sum(1 for sp in agree_base if r_all[sp] == a_all[sp] or ({r_all[sp], a_all[sp]} <= type_fam) or ({r_all[sp], a_all[sp]} <= val_fam)) / len(agree_base), 4) if agree_base else (1.0 if not a_sym and not r_all else 0.0)
+    type_agree = round(sum(1 for sp in shared_all if r_all[sp] == a_all[sp]) / len(shared_all), 4) if shared_all else (1.0 if not a_sym and not r_all else 0.0)
     ev = {
         "ridx": len(r_all), "ra_all": len(a_all), "ra_sym": len(a_sym), "ra_lexical_only": a_lex,
         "shared_spans": len(shared_all), "span_recall": span_recall, "raw_span_recall": raw_span_recall, "type_agreement": type_agree,
@@ -152,7 +146,7 @@ def compare_semantic_tokens(row, r_norm, a_norm, repo=None, ws_table=None):
         return "exact_match", None, ev
     if r_all == a_sym and r_all:
         return "core_match", "c_semtok_exact_symbol_tokens_ra_has_lexical", ev
-    if a_sym and (shared_sym or shared_all) and (span_recall >= 0.20 or len(shared_all) / max(1, len(r_all)) >= 0.25):
+    if a_sym and span_recall >= 0.65 and type_agree >= 0.75:
         return "core_match", "c_semtok_symbol_span_and_type_parity", ev
     if shared_all:
         cls = "p_semtok_high_type_agree_lower_span_recall" if type_agree >= 0.75 else "p_semtok_partial_token_overlap"
@@ -192,8 +186,8 @@ def compare_incoming_calls(r_norm, a_norm):
         return "exact_match", None, {"callers": len(rc), "sites": len(rs)}
     if rn == an and rn:
         return "core_match", "c_incoming_same_caller_functions", {"callers": len(rn), "ridx_sites": len(rs), "ra_sites": len(as_)}
-    if (an and rn and (an.issubset(rn) or rn.issubset(an) or len(rn & an) / min(len(rn), len(an)) >= 0.50)) or (as_ and rs and (as_.issubset(rs) or rs.issubset(as_) or len(rs & as_) / min(len(rs), len(as_)) >= 0.50)):
-        return "core_match", "c_incoming_caller_superset", {"ridx_callers": len(rn), "ra_callers": len(an), "common": len(rn & an)}
+    if an and an.issubset(rn) and len(rn) <= 1.25 * len(an):
+        return "core_match", "c_incoming_caller_superset", {"ridx_callers": len(rn), "ra_callers": len(an)}
     if (rn & an) or (rs & as_):
         return "partial", "p_incoming_partial_caller_overlap", {"ridx_callers": len(rn), "ra_callers": len(an), "common_callers": len(rn & an), "common_sites": len(rs & as_)}
     return "mismatch", "p_incoming_disjoint_callers", {"ridx_callers": len(rn), "ra_callers": len(an)}
@@ -207,7 +201,7 @@ def compare_outgoing_calls(r_norm, a_norm):
         return "exact_match", None, {"callees": len(rc)}
     if rn == an and rn:
         return "core_match", "c_outgoing_same_callee_names", {"callees": len(rn)}
-    if (an and rn and (rn.issubset(an) or an.issubset(rn) or len(rn & an) / min(len(rn), len(an)) >= 0.50)) or (al and rl and (rl.issubset(al) or al.issubset(rl) or len(rl & al) / min(len(rl), len(al)) >= 0.50)):
+    if an and len(rn & an) / len(an) >= 0.80:
         return "core_match", "c_outgoing_high_callee_recall", {"ridx": len(rn), "ra": len(an), "common": len(rn & an)}
     if (rn & an) or (rl & al):
         return "partial", "p_outgoing_partial_callee_overlap", {"ridx": len(rn), "ra": len(an), "common_names": len(rn & an), "common_lines": len(rl & al)}
@@ -257,8 +251,6 @@ def compare_formatting(r_norm, a_norm):
         return "exact_match", None, {"edits": len(re_set)}
     if len(r_norm) == 1 and len(a_norm) == 1 and r_norm[0][4].strip() == a_norm[0][4].strip():
         return "core_match", "c_fmt_same_formatted_text", {"edits": 1}
-    if len(r_norm) == 1 and len(a_norm) >= 1 and r_norm[0][0] == 1 and r_norm[0][4].strip():
-        return "core_match", "c_fmt_same_formatted_text", {"ridx_edits": len(r_norm), "ra_edits": len(a_norm)}
     if re_set & ae_set:
         return "partial", "p_fmt_partial_edit_overlap", {"ridx": len(re_set), "ra": len(ae_set), "common": len(re_set & ae_set)}
     return "mismatch", "p_fmt_different_edits", {"ridx": len(re_set), "ra": len(ae_set)}
@@ -284,47 +276,54 @@ def compare_diagnostics(r_norm, a_norm):
     return "mismatch", "p_diag_ra_errors_missed_by_ridx", {"ridx_ew": len(rew), "ra_ew": len(aew), "ra_sample": sorted(aew)[:3]}
 
 
-def compare_code_lens(r_norm, a_norm, row=None, read_lines_fn=None):
+def compare_code_lens(r_norm, a_norm):
     rl, al = set(r_norm["lines"]), set(a_norm["lines"])
     rs, as_ = set(r_norm["spans"]), set(a_norm["spans"])
-    al_decl = set(a_norm.get("decl_lines", al))
-    if read_lines_fn and row and row.get("file"):
-        flines = read_lines_fn(row["file"])
-        al_decl = {ln for ln in al_decl if 1 <= ln <= len(flines) and not flines[ln - 1].lstrip().startswith(("///", "//!", "#", "criterion_main!"))}
     if rs == as_:
         return "exact_match", None, {"count": len(rs)}
-    if (rl == al and rl) or (rl == al_decl and rl):
+    if rl == al and rl:
         return "core_match", "c_codelens_same_target_lines", {"lines": len(rl)}
-    if (al and rl and len(rl & al) / min(len(rl), len(al)) >= 0.50) or (al_decl and rl and (al_decl.issubset(rl) or len(rl & al_decl) / min(len(rl), len(al_decl)) >= 0.50)):
+    if al and len(rl & al) / len(al) >= 0.80:
         return "core_match", "c_codelens_high_line_recall", {"ridx": len(rl), "ra": len(al), "common": len(rl & al)}
-    if rl and not al_decl and al:
-        return "core_match", "c_codelens_ridx_symbols_ra_runnables_only", {"ridx": len(rl), "ra": len(al)}
     if rl & al:
         return "partial", "p_codelens_partial_line_overlap", {"ridx": len(rl), "ra": len(al), "common": len(rl & al)}
     return "mismatch", "p_codelens_disjoint_lines", {"ridx": len(rl), "ra": len(al)}
 
 
-_EXT_SIMPLE_DISPATCH = {
-    "signature_help": compare_signature_help, "inlay_hint": compare_inlay_hint, "document_symbol": compare_document_symbol,
-    "folding_range": compare_folding_range, "selection_range": compare_selection_range, "prepare_call_hierarchy": compare_hierarchy_items,
-    "prepare_type_hierarchy": compare_hierarchy_items, "supertypes": compare_hierarchy_items, "subtypes": compare_hierarchy_items,
-    "incoming_calls": compare_incoming_calls, "outgoing_calls": compare_outgoing_calls, "prepare_rename": compare_prepare_rename,
-    "rename": compare_rename, "code_action": compare_code_action, "formatting": compare_formatting,
-    "range_formatting": compare_formatting, "on_type_formatting": compare_formatting,
-    "document_diagnostic": compare_diagnostics, "workspace_diagnostic": compare_diagnostics,
-}
-
-
-def compare_extended_method(row, r_norm, a_norm, repo=None, ws_table=None, read_lines_fn=None):
+def compare_extended_method(row, r_norm, a_norm, repo=None, ws_table=None):
     method = row["method"]
-    if method in _EXT_SIMPLE_DISPATCH:
-        return _EXT_SIMPLE_DISPATCH[method](r_norm, a_norm)
+    if method == "signature_help":
+        return compare_signature_help(r_norm, a_norm)
+    if method == "inlay_hint":
+        return compare_inlay_hint(r_norm, a_norm)
+    if method == "document_symbol":
+        return compare_document_symbol(r_norm, a_norm)
     if method == "workspace_symbol":
         return compare_workspace_symbol(row, r_norm, a_norm)
+    if method == "folding_range":
+        return compare_folding_range(r_norm, a_norm)
+    if method == "selection_range":
+        return compare_selection_range(r_norm, a_norm)
     if method in ("semantic_tokens_full", "semantic_tokens_delta", "semantic_tokens_range"):
         return compare_semantic_tokens(row, r_norm, a_norm, repo=repo, ws_table=ws_table)
+    if method in ("prepare_call_hierarchy", "prepare_type_hierarchy", "supertypes", "subtypes"):
+        return compare_hierarchy_items(r_norm, a_norm)
+    if method == "incoming_calls":
+        return compare_incoming_calls(r_norm, a_norm)
+    if method == "outgoing_calls":
+        return compare_outgoing_calls(r_norm, a_norm)
+    if method == "prepare_rename":
+        return compare_prepare_rename(r_norm, a_norm)
+    if method == "rename":
+        return compare_rename(r_norm, a_norm)
+    if method == "code_action":
+        return compare_code_action(r_norm, a_norm)
+    if method in ("formatting", "range_formatting", "on_type_formatting"):
+        return compare_formatting(r_norm, a_norm)
+    if method in ("document_diagnostic", "workspace_diagnostic"):
+        return compare_diagnostics(r_norm, a_norm)
     if method == "code_lens":
-        return compare_code_lens(r_norm, a_norm, row=row, read_lines_fn=read_lines_fn)
+        return compare_code_lens(r_norm, a_norm)
     if method == "code_lens_resolve":
         rt, at = r_norm.get("title") or "", a_norm.get("title") or ""
         rr, ar = r_norm.get("range"), a_norm.get("range")
@@ -335,9 +334,9 @@ def compare_extended_method(row, r_norm, a_norm, repo=None, ws_table=None, read_
         if rt == at and rt:
             return "core_match", "c_codelens_resolve_same_title", {"title": rt, "ridx_range": rr, "ra_range": ar}
         if rt and at and rr and ar and rr[0] == ar[0]:
-            return "core_match", "c_codelens_resolve_same_line_resolved", {"ridx_title": rt, "ra_title": at, "line": rr[0]}
+            return "partial", "p_codelens_resolve_same_line_refs_vs_impl_title", {"ridx_title": rt, "ra_title": at, "line": rr[0]}
         if rt and at:
-            return "core_match", "c_codelens_resolve_both_resolved_command", {"ridx_title": rt, "ra_title": at, "ridx_range": rr, "ra_range": ar}
+            return "partial", "p_codelens_resolve_diff_lens_title", {"ridx_title": rt, "ra_title": at, "ridx_range": rr, "ra_range": ar}
         if rt and not at:
             return "ridx_only", "c_codelens_resolve_ridx_title_ra_unresolved", {"ridx_title": rt, "ra_range": ar}
         return "mismatch", "p_codelens_resolve_ridx_unresolved", {"ra_title": at}
