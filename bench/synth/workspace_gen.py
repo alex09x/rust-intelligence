@@ -5,19 +5,22 @@
 # Author: https://prod.codes/about/
 # Project: https://github.com/alex09x/rust-intelligence
 # SPDX-License-Identifier: MIT OR Apache-2.0
-"""Deterministic multi-crate Rust workspace generator with 100% known ground-truth spans."""
+"""Deterministic multi-crate Rust workspace generator with seed-varying topology and ground-truth spans."""
 
 import json
 import random
 from pathlib import Path
 from typing import Dict, List
 
-from .source_builder import SourceBuilder, SpanRecord
+from .source_builder import SourceBuilder
+from .workspace_gen_ext import emit_rename_family_extensions
 
 
-def _write_cargo_manifests(out_dir: Path) -> None:
+def _write_cargo_manifests(out_dir: Path, extra_crates: List[str]) -> List[str]:
+    members = ["crates/core_pkg", "crates/service_pkg", "crates/app_pkg"] + [f"crates/{c}" for c in extra_crates]
+    members_toml = ", ".join(f'"{m}"' for m in members)
     (out_dir / "Cargo.toml").write_text(
-        '[workspace]\nmembers = ["crates/core_pkg", "crates/service_pkg", "crates/app_pkg"]\nresolver = "2"\n',
+        f'[workspace]\nmembers = [{members_toml}]\nresolver = "2"\n',
         encoding="utf-8",
     )
     (out_dir / "crates/core_pkg").mkdir(parents=True, exist_ok=True)
@@ -37,6 +40,14 @@ def _write_cargo_manifests(out_dir: Path) -> None:
         '[dependencies]\ncore_pkg = { path = "../core_pkg" }\nservice_pkg = { path = "../service_pkg" }\n',
         encoding="utf-8",
     )
+    for c_name in extra_crates:
+        (out_dir / f"crates/{c_name}").mkdir(parents=True, exist_ok=True)
+        (out_dir / f"crates/{c_name}/Cargo.toml").write_text(
+            f'[package]\nname = "{c_name}"\nversion = "0.1.0"\nedition = "2021"\n\n'
+            '[dependencies]\ncore_pkg = { path = "../core_pkg" }\n',
+            encoding="utf-8",
+        )
+    return members
 
 
 def _emit_core_family(sb: SourceBuilder, tag: str, factor_const: int) -> dict:
@@ -49,6 +60,8 @@ def _emit_core_family(sb: SourceBuilder, tag: str, factor_const: int) -> dict:
     field_val = f"value_{tag}"
     field_w = f"weight_{tag}"
     enum_state = f"State_{tag}"
+    var_ready = f"Ready_{tag}"
+    var_busy = f"Busy_{tag}"
     fn_new = f"new_{tag}"
     fn_scale = f"scale_{tag}"
     fn_calc = f"calc_metric_{tag}"
@@ -69,7 +82,6 @@ def _emit_core_family(sb: SourceBuilder, tag: str, factor_const: int) -> dict:
     sb.record_fold(t_sub_start, t_sub_end)
     sb.blank()
 
-    sb.raw_line("#[derive(Debug, Clone, Copy, PartialEq, Eq)]")
     s_rec_start, _ = sb.line_tokens("pub struct ", (struct_rec, "def", struct_rec), " {")
     sb.line_tokens("    pub ", (field_val, "def", field_val), ": i64,")
     s_rec_end = sb.raw_line("}")
@@ -85,8 +97,8 @@ def _emit_core_family(sb: SourceBuilder, tag: str, factor_const: int) -> dict:
 
     sb.raw_line("#[derive(Debug, Clone, Copy, PartialEq, Eq)]")
     e_start, _ = sb.line_tokens("pub enum ", (enum_state, "def", enum_state), " {")
-    sb.line_tokens("    Ready_", tag, ",")
-    sb.line_tokens("    Busy_", tag, "(i64),")
+    sb.line_tokens("    ", (var_ready, "def", var_ready), ",")
+    sb.line_tokens("    ", (var_busy, "def", var_busy), "(i64),")
     e_end = sb.raw_line("}")
     sb.record_fold(e_start, e_end)
     sb.blank()
@@ -158,6 +170,8 @@ def _emit_core_family(sb: SourceBuilder, tag: str, factor_const: int) -> dict:
         "field_val": field_val,
         "field_w": field_w,
         "enum_state": enum_state,
+        "var_ready": var_ready,
+        "var_busy": var_busy,
         "fn_new": fn_new,
         "fn_scale": fn_scale,
         "fn_calc": fn_calc,
@@ -165,27 +179,38 @@ def _emit_core_family(sb: SourceBuilder, tag: str, factor_const: int) -> dict:
     }
 
 
-def generate_synth_workspace(out_dir: Path, seed: int = 42, scale: int = 3) -> dict:
-    """Generates a compilable 3-crate workspace in `out_dir` and returns the ground-truth manifest."""
+def generate_synth_workspace(out_dir: Path, seed: int = 42, scale: int = 6) -> dict:
+    """Generates a compilable multi-crate workspace in `out_dir` with seed-varying topology."""
     out_dir = Path(out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    _write_cargo_manifests(out_dir)
-
     rng = random.Random(seed)
+    extra_crates = [f"aux_pkg_{k}_{seed % 11}" for k in range(1 + (seed % 2))]
+    members = _write_cargo_manifests(out_dir, extra_crates)
+
     families = []
     sb_models = SourceBuilder("crates/core_pkg/src/models.rs")
     sb_core_lib = SourceBuilder("crates/core_pkg/src/lib.rs")
     sb_service = SourceBuilder("crates/service_pkg/src/lib.rs")
     sb_app = SourceBuilder("crates/app_pkg/src/lib.rs")
     sb_unfmt = SourceBuilder("crates/app_pkg/src/unformatted.rs")
+    submod_builders: List[SourceBuilder] = []
+    aux_builders = [SourceBuilder(f"crates/{c}/src/lib.rs") for c in extra_crates]
 
     sb_core_lib.raw_line("pub mod models;")
 
-    for i in range(scale):
+    family_indices = list(range(scale))
+    rng.shuffle(family_indices)
+    nest_depths = []
+
+    for i in family_indices:
         tag = f"f{i}_{rng.randint(100, 999)}"
         factor_const = rng.randint(2, 9)
         fam = _emit_core_family(sb_models, tag, factor_const)
+        sb_submod = SourceBuilder(f"crates/core_pkg/src/sub_mod_{tag}.rs")
+        emit_rename_family_extensions(sb_models, sb_submod, tag, fam, rng)
+        submod_builders.append(sb_submod)
 
+        sb_core_lib.line_tokens("pub mod ", (fam["sub_mod"], "def", fam["sub_mod"]), ";")
         sb_core_lib.line_tokens(
             "pub use crate::models::{",
             (fam["trait_sub"], "reexport", fam["trait_sub"]), ", ",
@@ -238,7 +263,7 @@ def generate_synth_workspace(out_dir: Path, seed: int = 42, scale: int = 3) -> d
         fam["fn_exec"] = fn_exec
         fam["fn_test"] = fn_test
 
-        if i == 0:
+        if len(families) == 0:
             sb_app.raw_line("pub mod unformatted;")
         sb_app.line_tokens(
             "use core_pkg::models::{",
@@ -269,9 +294,23 @@ def generate_synth_workspace(out_dir: Path, seed: int = 42, scale: int = 3) -> d
         sb_unfmt.line_tokens(
             "pub fn   ", (f"messy_{tag}", "def", f"messy_{tag}"), "( x:i64,y:i64 )->i64{let   z=x+y;z}"
         )
+
+        # Seed-dependent nested inline modules in auxiliary crates
+        depth = 1 + ((seed + i) % 3)
+        nest_depths.append(depth)
+        sb_aux = aux_builders[i % len(aux_builders)]
+        indent = ""
+        for d in range(depth):
+            sb_aux.raw_line(f"{indent}pub mod layer_{d}_{tag} {{")
+            indent += "    "
+        sb_aux.raw_line(f"{indent}pub fn probe_{tag}(v: i64) -> i64 {{ v + {depth} }}")
+        for d in reversed(range(depth)):
+            indent = "    " * d
+            sb_aux.raw_line(f"{indent}}}")
+
         families.append(fam)
 
-    builders = [sb_models, sb_core_lib, sb_service, sb_app, sb_unfmt]
+    builders = [sb_models, sb_core_lib, sb_service, sb_app, sb_unfmt] + submod_builders + aux_builders
     all_by_symbol: Dict[str, List[dict]] = {}
     files_meta = {}
     for b in builders:
@@ -288,6 +327,12 @@ def generate_synth_workspace(out_dir: Path, seed: int = 42, scale: int = 3) -> d
         "seed": seed,
         "scale": scale,
         "workspace_dir": str(out_dir),
+        "topology": {
+            "members": members,
+            "extra_crates": extra_crates,
+            "family_order": family_indices,
+            "nest_depths": nest_depths,
+        },
         "families": families,
         "files": files_meta,
         "symbols": all_by_symbol,
