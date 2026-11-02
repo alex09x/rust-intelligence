@@ -20,6 +20,7 @@ gap class (`position_ab_parity_rules.py`). Exits with code 1 if any row is `uncl
 import argparse
 import hashlib
 import json
+import pickle
 import socket
 import subprocess
 import sys
@@ -103,7 +104,10 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
         r_ans, a_ans = raw[ridx_name], raw[ra_name]
         parity, cls, ev = evaluate_row(row, r_ans, a_ans, str(repo_dir), read_lines_fn, ws_table)
         row["results"] = {
-            k: {"outcome": v["outcome"], "us": v["us"], "error": v["error"]}
+            k: {
+                "outcome": v["outcome"], "us": v["us"], "error": v["error"],
+                **({"error_message": v["error_message"]} if v.get("error_message") else {}),
+            }
             for k, v in raw.items()
         }
         row["parity"] = parity
@@ -168,10 +172,14 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
     methods_summary = {}
     for key, m in per_method.items():
         denom = m["ra_non_empty"] or 1
+        ref_just = int(m["classes"].get("ridx_refusal_justified", 0))
+        adj_matched = m["matched_on_ra_non_empty"] + ref_just
         entry = {
             "n": m["n"],
             "ra_non_empty": m["ra_non_empty"],
             "matched_on_ra_non_empty": m["matched_on_ra_non_empty"],
+            "ridx_refusal_justified": ref_just,
+            "adjusted_matched_on_ra_non_empty": adj_matched,
             "exact_match": m["exact_match"],
             "core_match": m["core_match"],
             "partial": m["partial"],
@@ -182,6 +190,7 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
                 100.0 * (m["exact_match"] + m["core_match"] + m["both_empty"]) / max(1, m["n"]), 1
             ),
             "matched_on_ra_non_empty_pct": round(100.0 * m["matched_on_ra_non_empty"] / denom, 1),
+            "adjusted_on_ra_non_empty_pct": round(100.0 * adj_matched / denom, 1),
             "ridx_p50_us": _pct(m["ridx_us"], 0.50),
             "ridx_p95_us": _pct(m["ridx_us"], 0.95),
             "ridx_p99_us": _pct(m["ridx_us"], 0.99),
@@ -244,6 +253,7 @@ def main(argv=None):
     ap.add_argument("--file-table", action="append", default=[], type=Path)
     ap.add_argument("--out", action="append", required=True, type=Path)
     ap.add_argument("--out-differing", action="append", default=[], type=Path)
+    ap.add_argument("--save-raw-pkl", action="store_true", help="Also write <out>.raw.pkl with raw server responses")
     args = ap.parse_args(argv)
 
     servers = parse_servers(args.ridx, args.ra)
@@ -293,15 +303,24 @@ def main(argv=None):
     for idx, out_path in enumerate(args.out):
         ridx_srv = ridx_srvs[min(idx, len(ridx_srvs) - 1)]
         ridx2_name = next((s[0] for s in ridx_srvs if s[0] != ridx_srv[0]), None)
+        if args.save_raw_pkl:
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            pkl_path = out_path.with_name(out_path.name + ".raw.pkl")
+            with pkl_path.open("wb") as fh:
+                pickle.dump(raw_rows, fh)
         rows = [dict(r, _raw=dict(r["_raw"])) for r in raw_rows]
         summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines, ws_table, ridx2_name)
         print(f"[{ridx_srv[0]} vs {ra_srv[0]}]", flush=True)
         for key, m in summary["methods"].items():
+            adj_str = (
+                f" (adj={m['adjusted_on_ra_non_empty_pct']:5.1f}%, ref_just={m['ridx_refusal_justified']})"
+                if m.get("ridx_refusal_justified") else ""
+            )
             print(
                 f"  {key:24s} exact={m['exact_match']:3d} core={m['core_match']:3d} "
                 f"partial={m['partial']:3d} ridx_only={m['ridx_only']:2d} "
                 f"empty={m['both_empty']:3d} mismatch={m['mismatch']:3d} "
-                f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}% "
+                f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}%{adj_str} "
                 f"p50={m['ridx_p50_us']:.0f}/{m['ra_p50_us']:.0f}us "
                 f"self_diff={m['self_diff_raw']}/{m['self_diff_norm']} classes={m['classes']}",
                 flush=True,

@@ -177,4 +177,18 @@ def execute_parity_request(srv, key, row, repo_dir, is_ra, timeout, read_lines):
     res, us, err = srv.request(RPC_OF[key], params, timeout=timeout)
     outcome, code = classify_outcome(key, res, err)
     extra = {"legend": srv.semantic_token_types} if key.startswith("semantic_tokens_") else {}
+    if isinstance(err, dict) and isinstance(err.get("message"), str) and err["message"].strip():
+        extra["error_message"] = err["message"].strip()
+    if is_ra and key == "prepare_rename" and outcome == "a":
+        prior_refusal = any(
+            isinstance(v, dict) and v.get("outcome") == "c" and bool((v.get("error_message") or "").strip())
+            for v in (row.get("_raw") or {}).values()
+        )
+        if prior_refusal:
+            placeholder = res.get("placeholder") if isinstance(res, dict) else None
+            new_name = "'renamed_lt" if isinstance(placeholder, str) and placeholder.startswith("'") else "renamed_sym"
+            probe_params = build_params("rename", dict(sc, new_name=new_name), str(repo_dir), is_ra=True)
+            probe_res, _, probe_err = srv.request("textDocument/rename", probe_params, timeout=timeout)
+            if probe_err is None and isinstance(probe_res, dict):
+                extra["ra_rename_probe"] = probe_res
     return outcome, res, code, us, extra

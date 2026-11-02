@@ -18,6 +18,7 @@ from position_ab_gap_cursor import block_open_at, derive_above
 from position_ab_gap_reverse import cfg_context
 from position_ab_gap_rules import store_kind
 from position_ab_parity_norm import normalize_answer
+from position_ab_parity_refusal import classify_c_vs_a
 from position_ab_parity_rules_ext import classify_b_to_a_ext, compare_extended_method
 
 NAV_KEYS = frozenset({"definition", "declaration", "type_definition", "implementation"})
@@ -374,7 +375,7 @@ def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
     if ro == "a" and ao in ("b", "c"):
         return "ridx_only", "c_ridx_answers_ra_empty_or_err", {"ridx_outcome": ro, "ra_outcome": ao, "ra_error": a_ans.get("error")}
     if ro in ("b", "c") and ao == "a":
-        cls, ev = (("p_ridx_error_or_timeout", {"ridx_error": r_ans.get("error"), "method": row["method"]}) if ro == "c"
+        cls, ev = (classify_c_vs_a(row, r_ans, a_ans, repo) if ro == "c"
                    else classify_b_to_a(row, repo, a_ans.get("res"), read_lines_fn, ws_table))
         if row["method"] in REF_KEYS:
             aw = active_ws_lines(normalize_answer(row["method"], a_ans.get("res"), repo)["ws_lines"], read_lines_fn)
