@@ -12,8 +12,30 @@ use super::*;
 
 pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisitor<'tcx>, package_root: Option<&Path>) {
     let mut items: Vec<rustc_hir::def_id::LocalDefId> = tcx.hir_crate_items(()).definitions().collect();
+    let mut seen_items: std::collections::HashSet<rustc_hir::def_id::LocalDefId> = items.iter().copied().collect();
     for &def_id in &items.clone() {
         let kind = tcx.def_kind(def_id);
+        if matches!(kind, hir::def::DefKind::Struct | hir::def::DefKind::Enum | hir::def::DefKind::Union) {
+            let adt = tcx.adt_def(def_id);
+            for variant in adt.variants() {
+                if kind == hir::def::DefKind::Enum {
+                    if let Some(v_did) = variant.def_id.as_local() {
+                        if seen_items.insert(v_did) {
+                            items.push(v_did);
+                        }
+                    }
+                }
+                for field in &variant.fields {
+                    if !field.name.as_str().bytes().all(|b| b.is_ascii_digit()) {
+                        if let Some(f_did) = field.did.as_local() {
+                            if seen_items.insert(f_did) {
+                                items.push(f_did);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if matches!(
             kind,
             hir::def::DefKind::Fn
@@ -32,7 +54,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
                 if let rustc_middle::ty::GenericParamDefKind::Type { .. } = param.kind {
                     if param.name != rustc_span::symbol::kw::SelfUpper {
                         if let Some(local_did) = param.def_id.as_local() {
-                            if tcx.def_kind(local_did) == hir::def::DefKind::TyParam {
+                            if tcx.def_kind(local_did) == hir::def::DefKind::TyParam && seen_items.insert(local_did) {
                                 items.push(local_did);
                             }
                         }
@@ -56,6 +78,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
         let mut signature = match kind {
             hir::def::DefKind::Fn => Some(sanitize_type_name(&tcx.fn_sig(def_id).skip_binder().to_string())),
             hir::def::DefKind::AssocFn => Some(sysroot::util::format_assoc_fn_sig(tcx, def_id.to_def_id())),
+            hir::def::DefKind::Field => Some(sanitize_type_name(&tcx.type_of(def_id).skip_binder().to_string())),
             _ => None,
         };
 

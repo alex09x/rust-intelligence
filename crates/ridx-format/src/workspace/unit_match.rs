@@ -19,6 +19,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, OnceLock};
 
 pub(crate) type ReachableCache = (Vec<(usize, usize)>, Vec<Vec<u64>>);
+pub(crate) type FieldVariantDeclRefs = Vec<(u32, u32, u32, u32)>;
 
 /// Precomputed lookup index for workspace unit matching and file-scoped definition positions.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -34,6 +35,7 @@ pub struct UnitMatchIndex {
     reader_has_special_files: Vec<bool>,
     defs_by_pos: Vec<Vec<(u32, u32, u32)>>,
     pub(crate) assoc_ty_defs: Arc<Vec<OnceLock<Vec<u32>>>>,
+    pub(crate) field_variant_decl_refs: Arc<Vec<OnceLock<FieldVariantDeclRefs>>>,
     pub(crate) resolved_uks: Vec<Option<String>>,
     pub(crate) reachable_reader_bits: Arc<OnceLock<ReachableCache>>,
 }
@@ -68,6 +70,7 @@ impl UnitMatchIndex {
         let mut reader_has_special_files: Vec<bool> = Vec::with_capacity(readers.len());
         let mut defs_by_pos: Vec<Vec<(u32, u32, u32)>> = Vec::with_capacity(readers.len());
         let assoc_ty_defs = Arc::new((0..readers.len()).map(|_| OnceLock::new()).collect());
+        let field_variant_decl_refs = Arc::new((0..readers.len()).map(|_| OnceLock::new()).collect());
         let mut resolved_uks: Vec<Option<String>> = Vec::with_capacity(readers.len());
 
         for (j, r) in readers.iter().enumerate() {
@@ -128,6 +131,7 @@ impl UnitMatchIndex {
             reader_has_special_files,
             defs_by_pos,
             assoc_ty_defs,
+            field_variant_decl_refs,
             resolved_uks,
             reachable_reader_bits: Arc::new(OnceLock::new()),
         }

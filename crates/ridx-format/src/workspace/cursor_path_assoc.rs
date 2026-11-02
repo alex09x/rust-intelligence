@@ -72,7 +72,8 @@ pub(super) fn scan_type_param_bounds(lines: &[&str], line_idx: usize, param: &st
     if cur_item.starts_with("fn ") && !bounds.is_empty() {
         return bounds;
     }
-    let mut in_header = !cur_code.contains(['{', ';', '}']) && !(cur_item.starts_with("fn ") || cur_item.starts_with("impl") || cur_item.starts_with("trait "));
+    let cur_no_open = cur_code.trim_end().strip_suffix('{').unwrap_or(cur_code);
+    let mut in_header = !cur_no_open.contains(['{', ';', '}']) && !(cur_item.starts_with("fn ") || cur_item.starts_with("impl") || cur_item.starts_with("trait "));
     let mut brace_depth = 0i32;
     let mut min_depth = 0i32;
     let start = line_idx.saturating_sub(250);
@@ -116,8 +117,18 @@ pub(super) fn scan_type_param_bounds(lines: &[&str], line_idx: usize, param: &st
 pub(super) fn scan_enclosing_impl_or_trait_headers(lines: &[&str], line_idx: usize) -> Vec<String> {
     let mut out = Vec::new();
     let start = line_idx.saturating_sub(250);
-    for &ln in lines[start..=line_idx].iter().rev() {
-        let code = ln.split("//").next().unwrap_or(ln).trim();
+    let mut brace_depth = 0i32;
+    for l in (start..=line_idx).rev() {
+        let raw_code = lines[l].split("//").next().unwrap_or(lines[l]);
+        if l < line_idx {
+            for b in raw_code.bytes().rev() {
+                brace_depth += i32::from(b == b'}') - i32::from(b == b'{');
+            }
+        }
+        if brace_depth > 0 {
+            continue;
+        }
+        let code = raw_code.trim();
         let rest_opt = code
             .strip_prefix("unsafe ")
             .unwrap_or(code)
@@ -125,10 +136,18 @@ pub(super) fn scan_enclosing_impl_or_trait_headers(lines: &[&str], line_idx: usi
             .or_else(|| code.strip_prefix("pub trait "))
             .or_else(|| code.strip_prefix("trait "))
             .or_else(|| code.strip_prefix("pub(crate) trait "));
-        let Some(mut r) = rest_opt else {
+        let Some(first_r) = rest_opt else {
             continue;
         };
-        r = r.trim_start();
+        let mut combined = String::from(first_r);
+        for extra in lines.iter().take((l + 5).min(lines.len())).skip(l + 1) {
+            if combined.contains('{') || combined.contains(" where ") {
+                break;
+            }
+            combined.push(' ');
+            combined.push_str(extra.split("//").next().unwrap_or(extra).trim());
+        }
+        let mut r = combined.trim_start();
         if r.starts_with('<') {
             let mut depth = 0i32;
             let mut end_idx = 0;
@@ -157,9 +176,7 @@ pub(super) fn scan_enclosing_impl_or_trait_headers(lines: &[&str], line_idx: usi
                 out.push(ty.to_string());
             }
         }
-        if !out.is_empty() {
-            break;
-        }
+        break;
     }
     out
 }
@@ -175,6 +192,11 @@ impl WorkspaceIndex {
                 continue;
             };
             let cname = reader.crate_name();
+            for header_ty in scan_enclosing_impl_or_trait_headers(lines, line_idx) {
+                if let Some(def) = self.resolve_owner_member(file, Some(i), cname, &header_ty, ident) {
+                    return Some(def);
+                }
+            }
             if let Some(d) = self.find_enclosing_impl_or_trait_def(i, fid, line) {
                 let d_kind = DefKind::from(d.kind);
                 let d_path = reader.get_str(d.path_offset());
@@ -218,11 +240,6 @@ impl WorkspaceIndex {
                             return Some(def);
                         }
                     }
-                }
-            }
-            for header_ty in scan_enclosing_impl_or_trait_headers(lines, line_idx) {
-                if let Some(def) = self.resolve_owner_member(file, Some(i), cname, &header_ty, ident) {
-                    return Some(def);
                 }
             }
         }

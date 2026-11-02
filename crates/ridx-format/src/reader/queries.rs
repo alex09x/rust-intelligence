@@ -48,15 +48,14 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         while i > 0 && defs_hash[i - 1].hash() == hash {
             i -= 1;
         }
-        let mut first_loc: Option<(u32, u32)> = None;
+        let mut first_loc: Option<(u32, u32, u32, u8)> = None;
         while i < defs_hash.len() && defs_hash[i].hash() == hash {
             let def = &defs[defs_hash[i].index() as usize];
-            if self.get_str(def.path_offset()) == path {
+            if !matches!(DefKind::from(def.kind), DefKind::StructCtor | DefKind::VariantCtor) && self.get_str(def.path_offset()) == path {
                 let s = def.span();
-                let loc = (s.file_id(), s.start_line());
                 match first_loc {
-                    None => first_loc = Some(loc),
-                    Some(prev) if prev != loc => return true,
+                    None => first_loc = Some((s.file_id(), s.start_line(), s.end_line(), def.kind)),
+                    Some((pf, ps, pe, pk)) if def.kind != pk || s.file_id() != pf || s.start_line() > pe + 3 || ps > s.end_line() + 3 => return true,
                     _ => {}
                 }
             }
@@ -116,6 +115,54 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             unit_key: (!target_unit.is_empty()).then_some(target_unit),
             reader_idx: None,
         }
+    }
+
+    /// Resolves a field or variant definition at its declaration line when the index only recorded
+    /// references to it (e.g. in pre-existing indices where `Field`/`Variant` were not in `definitions()`).
+    pub fn find_ref_targeting_position(&self, file_id: u32, line: u32, col: u32) -> Option<ResolvedDefinition<'_>> {
+        let f_str = self.get_file(file_id);
+        if f_str.is_empty() {
+            return None;
+        }
+        for r in self.references() {
+            if r.target_line() == line && matches!(DefKind::from(r.kind), DefKind::Field | DefKind::Variant | DefKind::VariantCtor) && self.get_str(r.target_file_offset()) == f_str
+            {
+                let tp = self.get_str(r.target_path_offset());
+                let name = tp.rsplit("::").next().unwrap_or(tp);
+                let end_col = r.target_col() + name.chars().count() as u32;
+                if col >= r.target_col() && col <= end_col {
+                    let mut res = self.resolve_ref_definition(r);
+                    res.is_macro_expansion = false;
+                    return Some(res);
+                }
+            }
+        }
+        None
+    }
+
+    /// Returns the contiguous slice of span-sorted references inside `file_id`.
+    #[inline]
+    pub fn references_in_file(&self, file_id: u32) -> &[RefEntry] {
+        let refs = self.references();
+        let lo = refs.partition_point(|r| r.span().file_id() < file_id);
+        let hi = refs.partition_point(|r| r.span().file_id() <= file_id);
+        &refs[lo..hi]
+    }
+
+    /// Returns the contiguous slice of span-sorted references starting at `(file_id, start_line, start_col)`.
+    #[inline]
+    pub fn references_at_start(&self, file_id: u32, start_line: u32, start_col: u32) -> &[RefEntry] {
+        let refs = self.references();
+        let key = (file_id, start_line, start_col);
+        let lo = refs.partition_point(|r| {
+            let s = r.span();
+            (s.file_id(), s.start_line(), s.start_col()) < key
+        });
+        let hi = refs.partition_point(|r| {
+            let s = r.span();
+            (s.file_id(), s.start_line(), s.start_col()) <= key
+        });
+        &refs[lo..hi]
     }
 
     pub(crate) fn def_to_resolved(&self, def: &DefEntry) -> ResolvedDefinition<'_> {

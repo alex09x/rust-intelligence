@@ -145,14 +145,17 @@ impl ImplTable {
                 continue;
             }
 
+            let target_short = target_base.rsplit("::").next().unwrap_or(target_base);
+            let trait_short = trait_base.rsplit("::").next().unwrap_or(trait_base);
+            if matches!(trait_short, "StructuralPartialEq" | "TrivialClone" | "StructuralEq") {
+                continue;
+            }
+
             let trait_id = intern_str(&mut names, &mut name_to_id, trait_base);
             let target_id = intern_str(&mut names, &mut name_to_id, target_base);
 
             let impl_idx = impls.len() as u32;
             impls.push(CompactImpl { trait_id, target_id, file_id, line: start_line });
-
-            let target_short = target_base.rsplit("::").next().unwrap_or(target_base);
-            let trait_short = trait_base.rsplit("::").next().unwrap_or(trait_base);
 
             by_target_short.entry(target_short.into()).or_default().push(impl_idx);
             by_trait_short.entry(trait_short.into()).or_default().push(impl_idx);

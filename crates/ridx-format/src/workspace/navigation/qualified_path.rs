@@ -48,7 +48,7 @@ pub(super) fn split_qualified_parts(path: &str) -> Option<(&str, &str, &str)> {
 }
 
 /// Extracts the implemented trait from either `<Type as Trait>::tail` or `[module::]<impl Trait for Type>::tail`.
-pub(super) fn extract_impl_trait(path: &str) -> Option<&str> {
+pub(crate) fn extract_impl_trait(path: &str) -> Option<&str> {
     if let Some((_, tr, _)) = split_qualified_parts(path) {
         return Some(tr);
     }

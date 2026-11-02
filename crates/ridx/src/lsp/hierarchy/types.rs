@@ -121,6 +121,10 @@ fn process_impl_candidate(q: &mut ImplCandidateQuery<'_>, file_path: &str, start
     };
 
     let trait_base = trait_name.split('<').next().unwrap_or(&trait_name).trim();
+    let trait_short = trait_base.rsplit("::").next().unwrap_or(trait_base);
+    if matches!(trait_short, "StructuralPartialEq" | "TrivialClone" | "StructuralEq") {
+        return;
+    }
     let target_base = target_name.split('<').next().unwrap_or(&target_name).trim();
     let name_base = q.query_name.split('<').next().unwrap_or(q.query_name).trim();
 

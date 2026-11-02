@@ -93,19 +93,13 @@ pub(super) fn is_raw_ident_keyword(name: &str) -> bool {
 pub(super) fn matches_reference_target(reader: &IndexReader<Mmap>, r: &RefEntry, target: &ReferenceTarget<'_>) -> bool {
     let r_kind = DefKind::from(r.kind);
     if let Some(t_kind) = target.kind {
-        if r_kind != DefKind::Other {
-            if t_kind == DefKind::Field && r_kind != DefKind::Field {
-                return false;
-            }
-            if t_kind != DefKind::Field && r_kind == DefKind::Field {
-                return false;
-            }
-            if t_kind == DefKind::Local && r_kind != DefKind::Local {
-                return false;
-            }
-            if t_kind != DefKind::Local && r_kind == DefKind::Local {
-                return false;
-            }
+        if r_kind != DefKind::Other
+            && ((t_kind == DefKind::Field) != (r_kind == DefKind::Field)
+                || (t_kind == DefKind::Local) != (r_kind == DefKind::Local)
+                || (t_kind == DefKind::TyParam) != (r_kind == DefKind::TyParam)
+                || (t_kind == DefKind::ConstParam) != (r_kind == DefKind::ConstParam))
+        {
+            return false;
         }
     } else if r_kind == DefKind::Local && target.is_qualified_path {
         return false;
@@ -135,7 +129,8 @@ pub(super) fn matches_reference_target(reader: &IndexReader<Mmap>, r: &RefEntry,
                 || (width == name_chars + 2 && is_raw_ident_keyword(name))
                 || (width == 4 && matches!(r_kind, DefKind::Mod | DefKind::StructCtor))
                 || (width == 5 && r_kind == DefKind::Mod)
-                || (width == 1 && r_kind == DefKind::Fn && r.target_def_id() != 0);
+                || (width == 1 && r_kind == DefKind::Fn && r.target_def_id() != 0)
+                || r_kind == DefKind::Use;
             if !valid_width {
                 return false;
             }

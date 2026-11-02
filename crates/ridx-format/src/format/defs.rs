@@ -102,7 +102,7 @@ impl Span {
 
 /// Category of definition, matching common Rust HIR DefKind.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum DefKind {
     Mod = 0,
     Struct = 1,

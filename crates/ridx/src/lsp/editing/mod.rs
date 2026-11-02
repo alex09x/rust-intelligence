@@ -23,6 +23,9 @@ pub mod organize;
 pub mod prepare_rename;
 pub mod ref_span;
 pub mod rename;
+pub mod rename_alias_mod;
+pub mod rename_special;
+pub mod rename_unindexed;
 
 #[cfg(test)]
 mod tests;

@@ -212,6 +212,7 @@ impl WorkspaceIndex {
     pub fn find_rename_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<LocationReferences<'a>> {
         let (def, mut refs) = self.resolve_direct_references_at(file, line, col)?;
         self.expand_trait_impl_for_rename(&def, &mut refs);
+        self.expand_rename_type_and_sibling_refs(&def, &mut refs);
         Some(LocationReferences {
             target_symbol: def.name,
             target_kind: def.kind,
@@ -228,7 +229,7 @@ impl WorkspaceIndex {
         })
     }
 
-    fn resolve_direct_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<(ResolvedDefinition<'a>, Vec<WorkspaceReference<'a>>)> {
+    pub(super) fn resolve_direct_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<(ResolvedDefinition<'a>, Vec<WorkspaceReference<'a>>)> {
         let (exact, fallback_wide_ref, fallback_mod) = self.find_indexed_definition_candidates(file, line, col);
         let used_cursor_fallback = exact.is_none();
         let def = match exact {

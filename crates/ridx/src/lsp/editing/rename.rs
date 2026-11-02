@@ -15,11 +15,12 @@ use super::ref_span::span_covers_other_identifier;
 use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::WorkspaceIndex;
+use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
 pub use super::prepare_rename::handle_prepare_rename;
+use super::prepare_rename::{get_cached_line, split_line_offsets, utf16_cols_on_line, utf16_to_char_col_in_line};
 
 fn to_utf16_col(ov: Option<&crate::overlay::DocumentOverlay>, conv: &mut PositionConverter, file: &str, line: u32, col: u32) -> u32 {
     ov.map(|o| o.char_col_to_utf16_col(line, col)).unwrap_or_else(|| conv.char_col_to_utf16_col(file, line, col))
@@ -27,10 +28,6 @@ fn to_utf16_col(ov: Option<&crate::overlay::DocumentOverlay>, conv: &mut Positio
 
 pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let new_name = msg["params"]["newName"].as_str().unwrap_or("");
-    if !is_valid_rust_ident(new_name) {
-        return Err(LspError::request_failed(format!("Invalid name '{new_name}': not a valid Rust identifier")));
-    }
-
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
@@ -38,75 +35,103 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
     let line_1based = line_0based + 1;
 
     let overlay_opt = overlay_mgr.get(&file);
+    let mut disk_text = if overlay_opt.is_none() { std::fs::read_to_string(&file).ok() } else { None };
+    let pre = disk_text.as_deref();
+    let full_text = overlay_opt.map(|o| o.text.as_str()).or(pre);
+    let cur_line = full_text.and_then(|t| t.lines().nth(line_0based as usize));
+
     let col_1based = if let Some(overlay) = overlay_opt {
         overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else if let Some(line_s) = cur_line {
+        utf16_to_char_col_in_line(line_s, utf16_col_0based)
     } else {
         conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
     };
 
-    let mut changes_map: HashMap<String, Vec<Value>> = HashMap::new();
+    if cur_line.is_none_or(|l| l.contains('\'')) {
+        if let Some(lt_res) = super::rename_special::try_rename_lifetime(&file, line_1based, col_1based, new_name, overlay_mgr, pre, conv) {
+            let mut lt_map = lt_res?;
+            validate_and_dedup_edits(&mut lt_map)?;
+            return Ok(super::rename_unindexed::build_workspace_edit_json(lt_map, None, overlay_mgr));
+        }
+    }
+    super::rename_special::check_cursor_not_keyword(&file, line_1based, col_1based, overlay_mgr, pre, "No renameable symbol found at this position")?;
 
-    // 1. Rename overlay local variable / parameter
+    if !is_valid_rust_ident(new_name) {
+        return Err(LspError::request_failed(format!("Invalid name '{new_name}': not a valid Rust identifier")));
+    }
+
+    if full_text.is_none_or(|t| t.contains(" as ")) {
+        if let Some(mut alias_map) = super::rename_unindexed::try_rename_use_as_alias(workspace, &file, line_1based, col_1based, new_name, overlay_mgr, pre, conv) {
+            validate_and_dedup_edits(&mut alias_map)?;
+            return Ok(super::rename_unindexed::build_workspace_edit_json(alias_map, None, overlay_mgr));
+        }
+    }
+
+    let mut changes_map: HashMap<String, Vec<Value>> = HashMap::new();
+    let mut mod_file_rename: Option<(String, String)> = None;
+
     if let Some(overlay) = overlay_opt {
         let local_refs = overlay.find_local_binding_references(line_1based, col_1based);
         if !local_refs.is_empty() {
+            let ov_lines: Vec<&str> = overlay.text.lines().collect();
+            let old_ident = overlay.get_ident_at(line_1based, col_1based).unwrap_or_default();
             let mut edits = Vec::new();
             for (sl, sc, el, ec) in local_refs {
                 let start_char = overlay.char_col_to_utf16_col(sl, sc);
                 let end_char = overlay.char_col_to_utf16_col(el, ec);
+                let new_text = super::rename_special::local_edit_new_text(&ov_lines, sl, sc, ec, &old_ident, new_name);
                 let edit = json!({
                     "range": {
                         "start": { "line": sl.saturating_sub(1), "character": start_char },
                         "end": { "line": el.saturating_sub(1), "character": end_char }
                     },
-                    "newText": new_name
+                    "newText": new_text
                 });
                 if !edits.iter().any(|e: &Value| e["range"] == edit["range"]) {
                     edits.push(edit);
                 }
             }
-            changes_map.insert(uri.to_string(), edits.clone());
-            let version = json!(overlay.version);
-            let doc_changes = vec![json!({
-                "textDocument": { "uri": uri, "version": version },
-                "edits": edits
-            })];
-            return Ok(json!({
-                "changes": changes_map,
-                "documentChanges": doc_changes
-            }));
+            changes_map.insert(uri.to_string(), edits);
+            validate_and_dedup_edits(&mut changes_map)?;
+            return Ok(super::rename_unindexed::build_workspace_edit_json(changes_map, None, overlay_mgr));
         }
     }
 
-    // 2. Renaming a compiled symbol across the workspace
     if let Some(ws) = workspace {
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
-            let mut loc_refs_opt = ws.find_rename_references_at(&file, line_1based, col_1based);
-            if loc_refs_opt.is_none() {
-                if let Some((tf, tl, tc)) = super::detached_rename::collect_detached_rename_edits(ws, &file, line_1based, col_1based, new_name, overlay_mgr, conv, &mut changes_map)
+            let tok_is_self = cur_line.and_then(|l| extract_ident_at_col(l, col_1based)).is_some_and(|t| t == "Self");
+            let mut loc_res_opt = if tok_is_self {
+                if let Some(self_res) = super::rename_special::resolve_self_keyword_target(ws, &file, line_1based, col_1based, overlay_mgr, pre) {
+                    let (tf, tl, tc) = self_res?;
+                    ws.try_find_rename_references_at(&tf, tl, tc)
+                } else {
+                    ws.try_find_rename_references_at(&file, line_1based, col_1based)
+                }
+            } else {
+                ws.try_find_rename_references_at(&file, line_1based, col_1based)
+            };
+            if loc_res_opt.is_none() {
+                if let Some((tf, tl, tc)) =
+                    super::detached_rename::collect_detached_rename_edits(ws, &file, line_1based, col_1based, new_name, overlay_mgr, pre, conv, &mut changes_map)
+                        .map_err(|r| LspError::request_failed(r.message()))?
                 {
-                    loc_refs_opt = ws.find_rename_references_at(&tf, tl, tc);
+                    loc_res_opt = ws.try_find_rename_references_at(&tf, tl, tc);
                 }
             }
-            if let Some(loc_refs) = loc_refs_opt {
+            if let Some(loc_res) = loc_res_opt {
+                let loc_refs = loc_res.map_err(|r| LspError::request_failed(r.message()))?;
                 let target_name = loc_refs.target_symbol.rsplit("::").next().unwrap_or(loc_refs.target_symbol);
-                if target_name.is_empty() {
-                    return Err(LspError::request_failed("No renameable symbol found at this position"));
+                let mut file_cache: HashMap<String, (String, Vec<(usize, usize)>)> = HashMap::new();
+                if let Some(owned) = disk_text.take() {
+                    let offs = split_line_offsets(&owned);
+                    file_cache.insert(file.clone(), (owned, offs));
                 }
-                if loc_refs.is_external(ws) {
-                    return Err(LspError::request_failed(format!("Cannot rename external symbol '{target_name}'")));
-                }
-                if ws.has_unmerged_reexport_references(loc_refs.target_path, &loc_refs.references) {
-                    return Err(LspError::request_failed("symbol is re-exported; cross-crate references may be incomplete"));
-                }
-
-                let mut file_lines_cache: HashMap<String, Vec<String>> = HashMap::new();
                 let decl_path = loc_refs.target_resolved_path();
                 let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
                 let mut decl_final_line = None;
 
-                // Add declaration edit with exact identifier span
                 if !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
                     let decl_uri = path_to_uri(decl_str);
                     let decl_ov = overlay_mgr.get(decl_str);
@@ -116,57 +141,55 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                         }
                     }
 
-                    let mapped_line = if let Some(dov) = decl_ov {
-                        if dov.is_dirty() {
-                            match dov.map_compiled_to_live(loc_refs.target_line, loc_refs.target_col) {
-                                Some(pos) => pos.0,
-                                None => return Err(LspError::request_failed("Cannot map symbol position in modified file")),
-                            }
-                        } else {
-                            loc_refs.target_line
-                        }
+                    let mapped_line = if let Some(dov) = decl_ov.filter(|d| d.is_dirty()) {
+                        dov.map_compiled_to_live(loc_refs.target_line, loc_refs.target_col)
+                            .map(|p| p.0)
+                            .ok_or_else(|| LspError::request_failed("Cannot map symbol position in modified file"))?
                     } else {
                         loc_refs.target_line
                     };
 
-                    let decl_lines_vec: Vec<String> = if let Some(dov) = decl_ov {
-                        dov.text.lines().map(|s| s.to_string()).collect()
-                    } else {
-                        file_lines_cache
-                            .entry(decl_str.to_string())
-                            .or_insert_with(|| std::fs::read_to_string(decl_str).map(|t| t.lines().map(|s| s.to_string()).collect()).unwrap_or_default())
-                            .clone()
-                    };
-                    let decl_lines_ref: Vec<&str> = decl_lines_vec.iter().map(|s| s.as_str()).collect();
-
-                    let (final_line, ident_col) = match find_declaration_ident_in_lines(&decl_lines_ref, mapped_line, target_name, loc_refs.target_kind) {
-                        Some(pos) => pos,
-                        None => return Err(LspError::request_failed("Cannot find declaration identifier at mapped position")),
-                    };
-                    decl_final_line = Some(final_line);
-
-                    let end_col = ident_col + target_name.chars().count() as u32;
-                    if let Some(dov) = decl_ov {
-                        if dov.get_ident_at(final_line, ident_col).as_deref() != Some(target_name) {
-                            return Err(LspError::request_failed(format!("Identifier at mapped location does not match '{target_name}'",)));
+                    let (final_line, ident_col, decl_u16) = if let Some(dov) = decl_ov {
+                        let decl_lines_ref: Vec<&str> = dov.text.lines().collect();
+                        let (fl, ic) = find_declaration_ident_in_lines(&decl_lines_ref, mapped_line, target_name, loc_refs.target_kind)
+                            .ok_or_else(|| LspError::request_failed("Cannot find declaration identifier at mapped position"))?;
+                        if loc_refs.target_kind == DefKind::Mod {
+                            mod_file_rename = super::rename_unindexed::detect_module_file_rename(decl_str, &decl_lines_ref, fl, target_name, new_name);
                         }
-                    }
-
-                    let sc = to_utf16_col(decl_ov, conv, decl_str, final_line, ident_col);
-                    let ec = to_utf16_col(decl_ov, conv, decl_str, final_line, end_col);
+                        if dov.get_ident_at(fl, ic).as_deref() != Some(target_name) {
+                            return Err(LspError::request_failed(format!("Identifier at mapped location does not match '{target_name}'")));
+                        }
+                        let ec_char = ic + target_name.chars().count() as u32;
+                        (fl, ic, (dov.char_col_to_utf16_col(fl, ic), dov.char_col_to_utf16_col(fl, ec_char)))
+                    } else {
+                        let entry = file_cache.entry(decl_str.to_string()).or_insert_with(|| {
+                            let t = std::fs::read_to_string(decl_str).unwrap_or_default();
+                            let offs = split_line_offsets(&t);
+                            (t, offs)
+                        });
+                        let decl_lines_ref: Vec<&str> = entry.1.iter().map(|&(s, e)| &entry.0[s..e]).collect();
+                        let (fl, ic) = find_declaration_ident_in_lines(&decl_lines_ref, mapped_line, target_name, loc_refs.target_kind)
+                            .ok_or_else(|| LspError::request_failed("Cannot find declaration identifier at mapped position"))?;
+                        if loc_refs.target_kind == DefKind::Mod {
+                            mod_file_rename = super::rename_unindexed::detect_module_file_rename(decl_str, &decl_lines_ref, fl, target_name, new_name);
+                        }
+                        let ec_char = ic + target_name.chars().count() as u32;
+                        let u16_pair = get_cached_line(entry, fl)
+                            .map(|ls| utf16_cols_on_line(ls, ic, ec_char))
+                            .unwrap_or_else(|| (to_utf16_col(None, conv, decl_str, fl, ic), to_utf16_col(None, conv, decl_str, fl, ec_char)));
+                        (fl, ic, u16_pair)
+                    };
+                    let _ = ident_col;
+                    decl_final_line = Some(final_line);
+                    let (sc, ec) = decl_u16;
                     let sl = final_line.saturating_sub(1);
                     changes_map.entry(decl_uri).or_default().push(json!({
-                        "range": {
-                            "start": { "line": sl, "character": sc },
-                            "end": { "line": sl, "character": ec }
-                        },
+                        "range": { "start": { "line": sl, "character": sc }, "end": { "line": sl, "character": ec } },
                         "newText": new_name
                     }));
                 }
 
-                // Add references edits with live buffer remapping and safety checks
-                let mut skipped_macro_refs = 0usize;
-                for r in loc_refs.references {
+                for r in &loc_refs.references {
                     let r_path = r.resolved_path();
                     if ws.is_external_path(&r_path) {
                         continue;
@@ -175,59 +198,54 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                     let r_uri = path_to_uri(r_str);
 
                     let ref_ov = overlay_mgr.get(r_str);
-                    let (mut mapped_line, mut mapped_col) = if let Some(rov) = ref_ov {
-                        if rov.is_dirty() {
-                            if rov.has_modified_imports() {
-                                return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
-                            }
-                            let pos = match rov.map_compiled_to_live(r.span.start_line(), r.span.start_col()) {
-                                Some(p) => p,
-                                None => return Err(LspError::request_failed("Cannot map symbol position in modified file")),
-                            };
-                            if let Some(local_def) = rov.find_definition_at(pos.0, pos.1) {
-                                if r_str != decl_str || decl_final_line.map(|fl| local_def.start_line != fl).unwrap_or(true) {
-                                    return Err(LspError::request_failed("Symbol shadowed by local definition"));
-                                }
-                            }
-                            pos
-                        } else {
-                            (r.span.start_line(), r.span.start_col())
+                    let (mut mapped_line, mut mapped_col) = if let Some(rov) = ref_ov.filter(|o| o.is_dirty()) {
+                        if rov.has_modified_imports() {
+                            return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
                         }
+                        let pos = rov
+                            .map_compiled_to_live(r.span.start_line(), r.span.start_col())
+                            .ok_or_else(|| LspError::request_failed("Cannot map symbol position in modified file"))?;
+                        if let Some(local_def) = rov.find_definition_at(pos.0, pos.1) {
+                            if r_str != decl_str || decl_final_line != Some(local_def.start_line) {
+                                return Err(LspError::request_failed("Symbol shadowed by local definition"));
+                            }
+                        }
+                        pos
                     } else {
                         (r.span.start_line(), r.span.start_col())
                     };
 
-                    let cached_lines = if ref_ov.is_none() {
-                        Some(
-                            file_lines_cache
-                                .entry(r_str.to_string())
-                                .or_insert_with(|| std::fs::read_to_string(r_str).map(|t| t.lines().map(|s| s.to_string()).collect()).unwrap_or_default()),
-                        )
+                    let cached_entry = if ref_ov.is_none() {
+                        Some(file_cache.entry(r_str.to_string()).or_insert_with(|| {
+                            let t = std::fs::read_to_string(r_str).unwrap_or_default();
+                            let offs = split_line_offsets(&t);
+                            (t, offs)
+                        }))
                     } else {
                         None
                     };
 
-                    let mut occ_name = if let Some(rov) = ref_ov {
+                    let mut occ_name: Option<String> = if let Some(rov) = ref_ov {
                         rov.get_ident_at(mapped_line, mapped_col)
                     } else {
-                        cached_lines
-                            .as_deref()
-                            .and_then(|lines| lines.get(mapped_line.saturating_sub(1) as usize))
-                            .and_then(|line| extract_ident_at_col(line, mapped_col).map(|s| s.to_string()))
+                        cached_entry.as_deref().and_then(|e| get_cached_line(e, mapped_line)).and_then(|line| extract_ident_at_col(line, mapped_col).map(String::from))
                     };
 
                     if occ_name.as_deref() != Some(target_name)
                         && !r.is_macro_expansion
+                        && r.span.start_line() > 0
                         && (r.span.end_line() > r.span.start_line() || r.span.end_col().saturating_sub(r.span.start_col()) as usize > target_name.chars().count())
                     {
                         let lines_ref: Vec<&str> = if let Some(rov) = ref_ov {
                             rov.text.lines().collect()
-                        } else if let Some(lines) = cached_lines.as_deref() {
-                            lines.iter().map(|s| s.as_str()).collect()
+                        } else if let Some(e) = cached_entry.as_deref() {
+                            let max_l = (r.span.end_line().max(mapped_line) as usize).min(e.1.len());
+                            e.1[..max_l].iter().map(|&(s, en)| &e.0[s..en]).collect()
                         } else {
                             Vec::new()
                         };
-                        if let Some((dl, dc)) = find_declaration_ident_in_lines(&lines_ref, mapped_line, target_name, r.kind) {
+                        let max_line = (r.span.end_line().max(mapped_line) as usize).min(lines_ref.len());
+                        if let Some((dl, dc)) = find_declaration_ident_in_lines(&lines_ref[..max_line], mapped_line, target_name, r.kind) {
                             mapped_line = dl;
                             mapped_col = dc;
                             occ_name = Some(target_name.to_string());
@@ -240,52 +258,70 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                             if r.is_macro_expansion
                                 || span_covers_other_identifier(ref_ov.is_none().then_some(r_str), (r.span.start_line(), r.span.start_col(), r.span.end_line(), r.span.end_col()))
                             {
-                                skipped_macro_refs += 1;
                                 continue;
                             }
                             return Err(LspError::request_failed("Failed to locate identifier at reference position"));
                         }
                     };
-
-                    // Index records item definition spans starting at item keywords (e.g. `fn`, `mod`,
-                    // `pub`, `struct`) rather than identifier tokens. The declaration edit is already
-                    // applied above at the exact identifier column. Skipping references whose token does
-                    // not match target_name is safe and necessary: it avoids corrupting keyword tokens
-                    // and handles macro expansions where the reference span points elsewhere.
                     if occ_str != target_name {
-                        if r.is_macro_expansion {
-                            skipped_macro_refs += 1;
-                        }
                         continue;
                     }
 
                     let end_col = mapped_col + occ_str.chars().count() as u32;
-                    let (sc, ec) = if let Some(line_str) = cached_lines.as_deref().and_then(|lines| lines.get(mapped_line.saturating_sub(1) as usize)) {
-                        let start_idx = mapped_col.saturating_sub(1) as usize;
-                        let end_idx = end_col.saturating_sub(1) as usize;
-                        let s_u16: u32 = line_str.chars().take(start_idx).map(|c| c.len_utf16() as u32).sum();
-                        let len_u16: u32 = line_str.chars().skip(start_idx).take(end_idx.saturating_sub(start_idx)).map(|c| c.len_utf16() as u32).sum();
-                        (s_u16, s_u16 + len_u16)
+                    let cached_line = cached_entry.as_deref().and_then(|e| get_cached_line(e, mapped_line));
+                    if let Some(line_str) = cached_line {
+                        if loc_refs.target_kind != DefKind::Macro && line_str.chars().nth(end_col.saturating_sub(1) as usize) == Some('!') {
+                            continue;
+                        }
+                        if r_str == decl_str && matches!(loc_refs.target_kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait) {
+                            let prefix: String = line_str.chars().take(mapped_col.saturating_sub(1) as usize).collect();
+                            if let Some(before_colons) = prefix.strip_suffix("::") {
+                                let seg = before_colons.rsplit(|c: char| !c.is_ascii_alphanumeric() && c != '_').next().unwrap_or("");
+                                if !seg.is_empty() && !matches!(seg, "self" | "super" | "crate") && !loc_refs.target_path.contains(&format!("{seg}::")) {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    let (sc, ec) = if let Some(line_str) = cached_line {
+                        utf16_cols_on_line(line_str, mapped_col, end_col)
                     } else {
                         (to_utf16_col(ref_ov, conv, r_str, mapped_line, mapped_col), to_utf16_col(ref_ov, conv, r_str, mapped_line, end_col))
                     };
                     let sl = mapped_line.saturating_sub(1);
+                    let edit_new_text = if matches!(loc_refs.target_kind, DefKind::Field | DefKind::Local) {
+                        let lines_ref: Vec<&str> = if let Some(rov) = ref_ov {
+                            rov.text.lines().collect()
+                        } else if let Some(e) = cached_entry.as_deref() {
+                            e.1.iter().map(|&(s, en)| &e.0[s..en]).collect()
+                        } else {
+                            Vec::new()
+                        };
+                        let is_decl = r_str == decl_str && Some(mapped_line) == decl_final_line;
+                        if loc_refs.target_kind == DefKind::Field {
+                            super::rename_special::field_edit_new_text(&lines_ref, mapped_line, mapped_col, end_col, is_decl, target_name, new_name)
+                        } else if is_decl {
+                            new_name.to_string()
+                        } else {
+                            super::rename_special::local_edit_new_text(&lines_ref, mapped_line, mapped_col, end_col, target_name, new_name)
+                        }
+                    } else {
+                        new_name.to_string()
+                    };
                     let edits = changes_map.entry(r_uri).or_default();
                     let edit = json!({
-                        "range": {
-                            "start": { "line": sl, "character": sc },
-                            "end": { "line": sl, "character": ec }
-                        },
-                        "newText": new_name
+                        "range": { "start": { "line": sl, "character": sc }, "end": { "line": sl, "character": ec } },
+                        "newText": edit_new_text
                     });
                     if !edits.iter().any(|e| e["range"] == edit["range"]) {
                         edits.push(edit);
                     }
                 }
 
-                if skipped_macro_refs > 0 {
-                    eprintln!("[ridx:rename] Skipped {skipped_macro_refs} macro expansion reference(s) where identifier could not be located in source");
-                }
+                super::rename_unindexed::expand_generic_param_edits(&loc_refs, new_name, overlay_mgr, conv, &mut changes_map);
+                super::rename_unindexed::expand_unindexed_cargo_target_edits(ws, &loc_refs, target_name, new_name, conv, &mut changes_map)
+                    .map_err(|r| LspError::request_failed(r.message()))?;
             }
         }
     }
@@ -295,25 +331,7 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
     }
 
     validate_and_dedup_edits(&mut changes_map)?;
-
-    let mut sorted_uris: Vec<&String> = changes_map.keys().collect();
-    sorted_uris.sort();
-    let mut doc_changes = Vec::with_capacity(sorted_uris.len());
-    for doc_uri in sorted_uris {
-        let edits = &changes_map[doc_uri];
-        let doc_path = uri_to_path(doc_uri);
-        let version = overlay_mgr.get(&doc_path).map(|ov| json!(ov.version)).unwrap_or(Value::Null);
-
-        doc_changes.push(json!({
-            "textDocument": { "uri": doc_uri, "version": version },
-            "edits": edits
-        }));
-    }
-
-    Ok(json!({
-        "changes": changes_map,
-        "documentChanges": doc_changes
-    }))
+    Ok(super::rename_unindexed::build_workspace_edit_json(changes_map, mod_file_rename, overlay_mgr))
 }
 
 pub(crate) fn validate_and_dedup_edits(changes_map: &mut HashMap<String, Vec<Value>>) -> Result<(), LspError> {
@@ -334,7 +352,6 @@ pub(crate) fn validate_and_dedup_edits(changes_map: &mut HashMap<String, Vec<Val
                 let cur_sc = edit["range"]["start"]["character"].as_u64().unwrap_or(0);
                 if (cur_sl, cur_sc) < (prev_el, prev_ec) {
                     if prev["range"] == edit["range"] {
-                        // Exact duplicate range, safe to skip
                         continue;
                     }
                     let doc_file = uri_to_path(doc_uri);

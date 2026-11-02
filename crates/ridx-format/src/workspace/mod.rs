@@ -13,6 +13,7 @@
 //! Provides unified zero-copy queries across all crates in a cargo workspace.
 
 pub mod cache_resolver;
+pub mod cargo_targets;
 mod cursor_path;
 mod cursor_path_assoc;
 mod definition_at;
@@ -26,6 +27,9 @@ pub mod prelude;
 pub mod provenance;
 pub mod qualifier;
 pub mod reload;
+pub mod rename_cache;
+pub mod rename_parse;
+pub mod rename_refusal;
 pub mod std_map;
 pub mod sysroot;
 pub mod target_kind;
@@ -71,6 +75,7 @@ pub(crate) use discover::collect_ridx_files;
 pub use manifest::*;
 pub use path_index::PathIndex;
 pub use prelude::is_prelude_trait;
+pub use rename_refusal::RenameRefusal;
 pub use target_kind::{classify_target, classify_target_with_manifest, TargetKind};
 pub use unit_match::UnitMatchIndex;
 

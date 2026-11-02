@@ -103,21 +103,27 @@ impl WorkspaceIndex {
             let reader = &self.readers[i];
             let inner_ref = reader.find_innermost_ref_at_file_id(fid, line, col);
             let def_inside = inner_ref.and_then(|r| self.definition_inside_reference_at(i, fid, line, col, r));
-            let res = if let Some(def) = def_inside {
+            let mut res = if let Some(def) = def_inside {
                 reader.def_to_resolved(def)
             } else if let Some(r) = inner_ref {
                 reader.resolve_ref_definition(r)
             } else if let Some(def) = self.smallest_def_at(i, fid, line, col, None) {
                 reader.def_to_resolved(def)
+            } else if let Some(ref_def) = self.find_ref_targeting_position_in_reader(i, fid, line, col) {
+                ref_def
             } else {
                 continue;
             };
 
             if res.kind == DefKind::Mod && (res.start_line != line || col < res.start_col) {
-                if fallback_mod.is_none() {
-                    fallback_mod = Some(res);
+                if let Some(ref_def) = self.find_ref_targeting_position_in_reader(i, fid, line, col) {
+                    res = ref_def;
+                } else {
+                    if fallback_mod.is_none() {
+                        fallback_mod = Some(res);
+                    }
+                    continue;
                 }
-                continue;
             }
 
             let may_enclose_other_ident =

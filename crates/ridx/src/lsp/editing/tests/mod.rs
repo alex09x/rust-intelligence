@@ -17,6 +17,7 @@ pub mod linked_editing_tests;
 pub mod on_type_formatting_tests;
 pub mod prepare_rename_tests;
 pub mod rename_edge_tests;
+pub mod rename_general_tests;
 pub mod rename_macro_tests;
 pub mod rename_matrix_tests;
 pub mod rename_sibling_tests;

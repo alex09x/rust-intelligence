@@ -8,9 +8,9 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Trait-associated item rename expansion: external trait impl references,
+//! Trait-associated item rename expansion: qualified trait references,
 //! associated type projections (`Self::Assoc`, `T::Assoc`, `<T as Trait>::Assoc`),
-//! and associated type equality bindings (`Trait<Assoc = ...>`).
+//! and associated type equality/bound bindings (`Trait<Assoc = ...>`, `Trait<Assoc: ...>`).
 
 use super::trait_impl_refs::{path_matches_trait, reader_path_matches_trait, strip_generics};
 use super::*;
@@ -30,13 +30,9 @@ fn trait_name_matches(candidate: &str, raw_parent: &str, local_trait: &str, glob
     if cand_short == trait_short && (!base.contains("::") || trait_short != "Error") {
         return true;
     }
-    if trait_short == "Iterator" && matches!(cand_short, "DoubleEndedIterator" | "ExactSizeIterator" | "FusedIterator") {
-        return true;
-    }
-    if trait_short == "Deref" && cand_short == "DerefMut" {
-        return true;
-    }
-    false
+    (trait_short == "Iterator" && matches!(cand_short, "DoubleEndedIterator" | "ExactSizeIterator" | "FusedIterator"))
+        || (trait_short == "Deref" && cand_short == "DerefMut")
+        || std_cands.iter().any(|c| c == cand_short)
 }
 
 fn find_enclosing_angle_trait<'a>(lines: &[&'a str], line_idx: usize, pos_byte: usize) -> Option<&'a str> {
@@ -78,21 +74,15 @@ fn find_enclosing_angle_trait<'a>(lines: &[&'a str], line_idx: usize, pos_byte: 
 
 fn extract_qualified_as_trait<'a>(lines: &[&'a str], line_idx: usize, close_gt_byte: usize) -> Option<&'a str> {
     let s = &lines[line_idx][..close_gt_byte.min(lines[line_idx].len())];
-    let mut depth = 0i32;
-    let bytes = s.as_bytes();
-    let mut i = bytes.len();
+    let (mut depth, bytes, mut i) = (0i32, s.as_bytes(), s.len());
     while i > 0 {
         i -= 1;
         match bytes[i] {
             b'>' => depth += 1,
+            b'<' if depth > 0 => depth -= 1,
             b'<' => {
-                if depth > 0 {
-                    depth -= 1;
-                } else {
-                    let inner = &s[i + 1..];
-                    let (_, tr) = inner.rsplit_once(" as ")?;
-                    return Some(tr.trim());
-                }
+                let (_, tr) = s[i + 1..].rsplit_once(" as ")?;
+                return Some(tr.trim());
             }
             _ => {}
         }
@@ -113,42 +103,44 @@ impl WorkspaceIndex {
         seen_locs: &mut HashSet<(String, u32, u32)>,
         out_refs: &mut Vec<WorkspaceReference<'a>>,
     ) {
-        for (i, reader) in self.readers.iter().enumerate() {
-            if self.is_reader_external(i) {
+        let cache = self.rename_cache();
+        let Some(hits) = cache.assoc_refs_by_name.get(item_name) else {
+            return;
+        };
+        for &(r_idx_u32, ref_idx_u32) in hits {
+            let i = r_idx_u32 as usize;
+            let Some(reader) = self.readers.get(i) else { continue };
+            let Some(r) = reader.references().get(ref_idx_u32 as usize) else { continue };
+            if DefKind::from(r.kind) != def.kind || !reader.is_name_reference(r) {
                 continue;
             }
-            let source_root = self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref());
-            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
-            for r in reader.references() {
-                if DefKind::from(r.kind) != def.kind || !reader.is_name_reference(r) {
-                    continue;
-                }
-                let tp = reader.get_str(r.target_path_offset());
-                let Some(prefix) = tp.strip_suffix(item_name).and_then(|p| p.strip_suffix("::")) else {
-                    continue;
-                };
-                let matches_tr = if let Some(impl_tr) = super::qualified_path::extract_impl_trait(tp) {
-                    reader_path_matches_trait(reader, impl_tr, raw_parent, local_trait, global_trait, std_cands)
-                } else if !prefix.starts_with('<') && !prefix.contains("<impl ") {
-                    reader_path_matches_trait(reader, prefix, raw_parent, local_trait, global_trait, std_cands)
-                } else {
-                    false
-                };
-                if matches_tr {
-                    let span = r.span();
-                    let file = reader.get_file(span.file_id());
-                    if seen_locs.insert((file.to_string(), span.start_line(), span.start_col())) {
-                        out_refs.push(WorkspaceReference {
-                            crate_name: reader.crate_name(),
-                            file,
-                            span,
-                            kind: DefKind::from(r.kind),
-                            is_write: r.is_write != 0,
-                            is_macro_expansion: r.is_macro_expansion(),
-                            source_root,
-                            unit_key,
-                        });
-                    }
+            let tp = reader.get_str(r.target_path_offset());
+            let Some(prefix) = tp.strip_suffix(item_name).and_then(|p| p.strip_suffix("::")) else {
+                continue;
+            };
+            let matches_tr = if let Some(impl_tr) = super::qualified_path::extract_impl_trait(tp) {
+                reader_path_matches_trait(reader, impl_tr, raw_parent, local_trait, global_trait, std_cands)
+            } else if !prefix.starts_with('<') && !prefix.contains("<impl ") {
+                reader_path_matches_trait(reader, prefix, raw_parent, local_trait, global_trait, std_cands)
+            } else {
+                false
+            };
+            if matches_tr {
+                let span = r.span();
+                let file = reader.get_file(span.file_id());
+                if seen_locs.insert((file.to_string(), span.start_line(), span.start_col())) {
+                    let source_root = self.source_roots.get(i).and_then(|s| s.as_deref()).or(self.workspace_root.as_deref());
+                    let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+                    out_refs.push(WorkspaceReference {
+                        crate_name: reader.crate_name(),
+                        file,
+                        span,
+                        kind: DefKind::from(r.kind),
+                        is_write: r.is_write != 0,
+                        is_macro_expansion: r.is_macro_expansion(),
+                        source_root,
+                        unit_key,
+                    });
                 }
             }
         }
@@ -168,6 +160,31 @@ impl WorkspaceIndex {
         out_refs: &mut Vec<WorkspaceReference<'a>>,
     ) {
         let trait_short = local_trait.rsplit("::").next().unwrap_or(local_trait);
+        let mut all_cands: Vec<String> = std_cands.to_vec();
+        let trait_def_file = self.find_definition_by_path(global_trait).or_else(|| self.find_definition_by_path(local_trait)).map(|d| d.file);
+        for f in [Some(def.file), trait_def_file].into_iter().flatten() {
+            if let Some(def_content) = self.read_source_file(f) {
+                for ln in def_content.lines() {
+                    let code = ln.split("//").next().unwrap_or(ln).trim();
+                    if let Some((_, after_trait)) = code.split_once("trait ") {
+                        if let Some((sub_head, bounds)) = after_trait.split_once(':') {
+                            let sub_name = strip_generics(sub_head.trim()).trim();
+                            if sub_name != trait_short && bounds.split(|c: char| !is_ident_byte(c as u8)).any(|tok| tok == trait_short) {
+                                all_cands.push(sub_name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let std_cands = all_cands.as_slice();
+        let pat = format!("::{item_name}");
+        let cache = self.rename_cache();
+        for key_short in std::iter::once(trait_short).chain(std_cands.iter().map(|s| s.rsplit("::").next().unwrap_or(s.as_str()))) {
+            if let Some(fids) = cache.trait_ref_files_by_short.get(key_short) {
+                assoc_files.extend(fids.iter().map(|&(ri, fid)| (ri as usize, fid)));
+            }
+        }
         for (i, reader) in self.readers.iter().enumerate() {
             if self.is_reader_external(i) {
                 continue;
@@ -176,7 +193,7 @@ impl WorkspaceIndex {
             for d in defs {
                 if d.sig_offset() != 0 {
                     let sig = reader.get_str(d.sig_offset());
-                    if sig.contains(trait_short) || sig.contains(item_name) {
+                    if sig.contains(trait_short) || (item_name != "Item" && sig.contains(&pat)) || std_cands.iter().any(|c| sig.contains(c.as_str())) {
                         assoc_files.push((i, d.span().file_id()));
                     }
                 }
@@ -188,16 +205,10 @@ impl WorkspaceIndex {
                     }
                 }
             }
-            for r in reader.references() {
-                if reader.get_str(r.target_path_offset()).ends_with(trait_short) {
-                    assoc_files.push((i, r.span().file_id()));
-                }
-            }
         }
         assoc_files.sort_unstable();
         assoc_files.dedup();
 
-        let pat = format!("::{item_name}");
         let item_chars = item_name.chars().count() as u32;
         let mut scanned_files: HashSet<&str> = HashSet::new();
         for &(r_idx, fid) in assoc_files.iter() {
@@ -206,24 +217,54 @@ impl WorkspaceIndex {
             if !scanned_files.insert(file) {
                 continue;
             }
+            let r_crate = reader.crate_name();
+            let other_traits: Vec<&str> = reader
+                .definitions()
+                .iter()
+                .filter(|d| DefKind::from(d.kind) == DefKind::Trait && reader.get_str(d.name_offset()) == trait_short)
+                .map(|d| reader.get_str(d.path_offset()))
+                .filter(|&dp| {
+                    let dp_local = dp.strip_prefix(&format!("{r_crate}::")).unwrap_or(dp);
+                    dp_local != local_trait && dp != global_trait && dp != raw_parent
+                })
+                .collect();
+            if !other_traits.is_empty() {
+                let file_refs = reader.references_in_file(fid);
+                let uses_other = reader.definitions().iter().any(|d| d.span().file_id() == fid && other_traits.contains(&reader.get_str(d.path_offset())))
+                    || file_refs.iter().any(|r| {
+                        let tp = reader.get_str(r.target_path_offset());
+                        let tp_local = tp.strip_prefix(&format!("{r_crate}::")).unwrap_or(tp);
+                        other_traits.iter().any(|&ot| {
+                            let ot_local = ot.strip_prefix(&format!("{r_crate}::")).unwrap_or(ot);
+                            tp_local == ot_local || tp_local.starts_with(&format!("{ot_local}::"))
+                        })
+                    });
+                let uses_target = file == def.file
+                    || file_refs.iter().any(|r| {
+                        let tp = reader.get_str(r.target_path_offset());
+                        let tp_local = tp.strip_prefix(&format!("{r_crate}::")).unwrap_or(tp);
+                        tp_local == local_trait || tp == global_trait || tp_local.starts_with(&format!("{local_trait}::"))
+                    });
+                if uses_other && !uses_target {
+                    continue;
+                }
+            }
             let Some(content) = self.read_source_file(file) else {
                 continue;
             };
-            let lines: Vec<&str> = content.lines().collect();
+            if !content.contains(item_name) {
+                continue;
+            }
             let source_root = self.source_roots.get(r_idx).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref());
             let unit_key = self.unit_keys.get(r_idx).and_then(|u| u.as_deref());
+            let lines: Vec<&str> = content.lines().collect();
+
             for (l_idx, &line) in lines.iter().enumerate() {
                 let line_1based = (l_idx + 1) as u32;
                 for (b_pos, _) in line.match_indices(&pat) {
-                    if b_pos == 0 || !(line.as_bytes()[b_pos - 1] == b'>' || is_ident_byte(line.as_bytes()[b_pos - 1])) {
-                        continue;
-                    }
                     let id_start = b_pos + 2;
                     let id_end = id_start + item_name.len();
-                    if id_end < line.len() && is_ident_byte(line.as_bytes()[id_end]) {
-                        continue;
-                    }
-                    if is_in_string_or_comment(&lines, l_idx, id_start) {
+                    if (id_end < line.len() && is_ident_byte(line.as_bytes()[id_end])) || is_in_string_or_comment(&lines, l_idx, id_start) {
                         continue;
                     }
                     let col_1based = line[..id_start].chars().count() as u32 + 1;
@@ -231,24 +272,11 @@ impl WorkspaceIndex {
                         continue;
                     }
                     let mut matches_target = false;
-                    if line.as_bytes()[b_pos - 1] == b'>' {
+                    if b_pos > 0 && line.as_bytes()[b_pos - 1] == b'>' {
                         if let Some(tr) = extract_qualified_as_trait(&lines, l_idx, b_pos - 1) {
                             matches_target = trait_name_matches(tr, raw_parent, local_trait, global_trait, trait_short, std_cands);
                         }
-                    }
-                    if !matches_target {
-                        if let Some(rdef) = self.resolve_cursor_path_at(file, line_1based, col_1based) {
-                            matches_target = rdef.kind == DefKind::AssocTy
-                                && rdef.name == item_name
-                                && (rdef.path == def.path
-                                    || rdef.path == format!("{local_trait}::{item_name}")
-                                    || rdef.path == format!("{global_trait}::{item_name}")
-                                    || rdef.path.ends_with(&format!("::{local_trait}::{item_name}"))
-                                    || super::qualified_path::extract_impl_trait(rdef.path)
-                                        .is_some_and(|tr| path_matches_trait(tr, raw_parent, local_trait, global_trait, std_cands)));
-                        }
-                    }
-                    if !matches_target && is_ident_byte(line.as_bytes()[b_pos - 1]) {
+                    } else {
                         let mut p_start = b_pos;
                         while p_start > 0 && is_ident_byte(line.as_bytes()[p_start - 1]) {
                             p_start -= 1;
@@ -259,8 +287,25 @@ impl WorkspaceIndex {
                                 .iter()
                                 .any(|h| trait_name_matches(h, raw_parent, local_trait, global_trait, trait_short, std_cands));
                         } else if !prefix.is_empty() && prefix.as_bytes()[0].is_ascii_uppercase() && (p_start < 2 || &line[p_start - 2..p_start] != "::") {
-                            matches_target =
-                                scan_type_param_bounds(&lines, l_idx, prefix).iter().any(|b| trait_name_matches(b, raw_parent, local_trait, global_trait, trait_short, std_cands));
+                            matches_target = scan_type_param_bounds(&lines, l_idx, prefix).iter().any(|b| {
+                                let b_short = b.trim().split('<').next().unwrap_or("").rsplit("::").next().unwrap_or("");
+                                trait_name_matches(b, raw_parent, local_trait, global_trait, trait_short, std_cands)
+                                    || (!b_short.is_empty()
+                                        && !trait_short.is_empty()
+                                        && lines.iter().any(|l| l.contains(&format!("trait {b_short}")) && l.contains(':') && l.contains(trait_short)))
+                            });
+                        }
+                    }
+                    if !matches_target && b_pos > 0 && (line.as_bytes()[b_pos - 1] == b'>' || is_ident_byte(line.as_bytes()[b_pos - 1])) {
+                        if let Some(rdef) = self.resolve_cursor_path_at(file, line_1based, col_1based) {
+                            matches_target = rdef.kind == DefKind::AssocTy
+                                && rdef.name == item_name
+                                && (rdef.path == def.path
+                                    || rdef.path == format!("{local_trait}::{item_name}")
+                                    || rdef.path == format!("{global_trait}::{item_name}")
+                                    || rdef.path.ends_with(&format!("::{local_trait}::{item_name}"))
+                                    || super::qualified_path::extract_impl_trait(rdef.path)
+                                        .is_some_and(|tr| path_matches_trait(tr, raw_parent, local_trait, global_trait, std_cands)));
                         }
                     }
                     if matches_target && seen_locs.insert((file.to_string(), line_1based, col_1based)) {
@@ -277,14 +322,16 @@ impl WorkspaceIndex {
                     }
                 }
 
-                if line.contains('=') && line.contains(item_name) {
+                if (line.contains('=') || line.contains(':')) && line.contains(item_name) {
                     for (id_start, _) in line.match_indices(item_name) {
                         let id_end = id_start + item_name.len();
                         if (id_start > 0 && is_ident_byte(line.as_bytes()[id_start - 1])) || (id_end < line.len() && is_ident_byte(line.as_bytes()[id_end])) {
                             continue;
                         }
                         let after = line[id_end..].trim_start();
-                        if !after.starts_with('=') || after.starts_with("==") || after.starts_with("=>") {
+                        let is_eq = after.starts_with('=') && !after.starts_with("==") && !after.starts_with("=>");
+                        let is_bound = after.starts_with(':') && !after.starts_with("::");
+                        if !is_eq && !is_bound {
                             continue;
                         }
                         let before_trim = line[..id_start].trim_end();

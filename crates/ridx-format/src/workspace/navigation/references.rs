@@ -126,6 +126,17 @@ impl WorkspaceIndex {
         let global_path_buf = if is_global_angle { local_path.to_string() } else { format!("{target_crate}::{local_path}") };
         let global_path = global_path_buf.as_str();
         let mut spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
+        if target_path.starts_with(&format!("{target_crate}::")) {
+            let doubled = format!("{target_crate}::{global_path}");
+            if !spellings.contains(&doubled) {
+                spellings.push(doubled);
+            }
+            for sp in super::qualified_path::consumer_spellings(global_path, target_crate) {
+                if !spellings.contains(&sp) {
+                    spellings.push(sp);
+                }
+            }
+        }
         for imp_sp in super::qualified_path::impl_consumer_spellings(local_path, target_crate) {
             if !spellings.contains(&imp_sp) {
                 spellings.push(imp_sp);
