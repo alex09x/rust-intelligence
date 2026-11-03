@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+pub mod code_action_assists_tests;
+pub mod code_action_expanded_tests;
 pub mod code_action_resolve_tests;
 pub mod code_action_tests;
 pub mod format_tests;

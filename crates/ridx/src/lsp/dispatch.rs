@@ -245,7 +245,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/formatting" => Ok(handle_formatting(&msg, ov)),
         "textDocument/rangeFormatting" => Ok(handle_range_formatting(&msg, ov)),
         "textDocument/onTypeFormatting" => Ok(handle_on_type_formatting(&msg, ov)),
-        "textDocument/codeAction" => handle_code_action(&msg, mr.doc_ws(&msg), ov),
+        "textDocument/codeAction" => handle_code_action_with_options(&msg, mr.doc_ws(&msg), ov, lifecycle.client_resolve_code_action_edit()),
         "codeAction/resolve" => handle_code_action_resolve(&msg, mr.resolve_code_action_ws(&msg), ov),
         "workspace/executeCommand" => {
             if let Some(res) = try_dispatch_apply_edits_command(&msg, ov, lifecycle, writer, &mut id)? {

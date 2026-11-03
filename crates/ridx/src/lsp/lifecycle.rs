@@ -31,6 +31,7 @@ pub struct LifecycleManager {
     pub conv: crate::lsp::protocol::PositionConverter,
     client_pull_diagnostics: bool,
     client_refresh_diagnostics: bool,
+    client_resolve_code_action_edit: bool,
     refresh_counter: AtomicU64,
     pub apply_registry: ApplyEditRegistry,
 }
@@ -49,6 +50,7 @@ impl LifecycleManager {
             conv: crate::lsp::protocol::PositionConverter::new(),
             client_pull_diagnostics: false,
             client_refresh_diagnostics: false,
+            client_resolve_code_action_edit: false,
             refresh_counter: AtomicU64::new(0),
             apply_registry: ApplyEditRegistry::new(),
         }
@@ -60,6 +62,10 @@ impl LifecycleManager {
 
     pub fn client_refresh_diagnostics(&self) -> bool {
         self.client_refresh_diagnostics
+    }
+
+    pub fn client_resolve_code_action_edit(&self) -> bool {
+        self.client_resolve_code_action_edit
     }
 
     pub fn next_refresh_id(&self) -> String {
@@ -100,6 +106,9 @@ impl LifecycleManager {
         self.state = ServerState::Initialized;
         self.client_pull_diagnostics = msg["params"]["capabilities"]["textDocument"]["diagnostic"].is_object();
         self.client_refresh_diagnostics = msg["params"]["capabilities"]["workspace"]["diagnostics"]["refreshSupport"].as_bool().unwrap_or(false);
+        self.client_resolve_code_action_edit = msg["params"]["capabilities"]["textDocument"]["codeAction"]["resolveSupport"]["properties"]
+            .as_array()
+            .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {

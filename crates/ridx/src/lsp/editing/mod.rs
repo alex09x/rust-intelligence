@@ -10,6 +10,30 @@
 
 //! LSP editing handlers: rename, formatting, code actions, and commands.
 
+pub mod action_adt;
+pub mod action_adt_traits;
+pub mod action_assists;
+pub mod action_crate_checks;
+pub mod action_default_members;
+pub mod action_default_resolve;
+pub mod action_default_safety;
+pub mod action_default_scope;
+pub mod action_default_ufcs;
+pub mod action_doc_template;
+pub mod action_extract_lit;
+pub mod action_extract_lit_name;
+pub mod action_generics;
+pub mod action_generics_closure;
+pub mod action_generics_helpers;
+pub mod action_generics_sub;
+pub mod action_inline_local;
+pub mod action_parse;
+pub mod action_parse_decl;
+pub mod action_parse_items;
+pub mod action_parse_lex;
+pub mod action_raw_string;
+pub mod action_struct_conv;
+pub mod action_struct_conv_helpers;
 pub mod actions;
 pub mod apply_registry;
 pub mod atomic_write;

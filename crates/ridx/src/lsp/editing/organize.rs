@@ -22,6 +22,12 @@ struct UseEntry {
 /// Organizes and sorts import statements in the given document text.
 /// Correctly handles multi-line use trees, attributes, and comments.
 pub fn organize_imports_action(doc_text: &str, uri: &str, doc_version: Option<i32>) -> Option<Value> {
+    organize_imports_action_with_bounds(doc_text, uri, doc_version, false).map(|(action, _, _)| action)
+}
+
+/// Organizes import statements, returning `(action, start_line, end_line)`.
+/// When `require_changes` is true, returns `None` if imports are already sorted and deduplicated.
+pub fn organize_imports_action_with_bounds(doc_text: &str, uri: &str, doc_version: Option<i32>, require_changes: bool) -> Option<(Value, u32, u32)> {
     let lines: Vec<&str> = doc_text.lines().collect();
     if lines.is_empty() {
         return None;
@@ -120,6 +126,9 @@ pub fn organize_imports_action(doc_text: &str, uri: &str, doc_version: Option<i3
                 }
             }
             let new_text = new_text_lines.join("\n");
+            if require_changes && new_text == lines[start_idx..=end_idx].join("\n") {
+                return None;
+            }
             let end_char = lines[end_idx].encode_utf16().count() as u32;
 
             let edits_vec = vec![json!({
@@ -156,16 +165,20 @@ pub fn organize_imports_action(doc_text: &str, uri: &str, doc_version: Option<i3
                 })
             };
 
-            return Some(json!({
-                "title": "Organize Imports",
-                "kind": "source.organizeImports",
-                "data": {
-                    "uri": uri,
-                    "version": doc_version,
-                    "kind": "source.organizeImports"
-                },
-                "edit": edit
-            }));
+            return Some((
+                json!({
+                    "title": "Organize Imports",
+                    "kind": "source.organizeImports",
+                    "data": {
+                        "uri": uri,
+                        "version": doc_version,
+                        "kind": "source.organizeImports"
+                    },
+                    "edit": edit
+                }),
+                start_idx as u32,
+                end_idx as u32,
+            ));
         }
     }
 

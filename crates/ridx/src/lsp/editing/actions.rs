@@ -10,6 +10,7 @@
 
 //! Code actions, quickfixes, and deferred action resolution.
 
+use super::action_assists::{collect_decl_assists, is_decl_assist_data_kind, resolve_decl_assist};
 pub use super::atomic_write::{is_readonly_dependency, validate_workspace_edit};
 use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::uri_to_path;
@@ -19,6 +20,10 @@ use serde_json::{json, Value};
 use std::path::Path;
 
 pub fn handle_code_action(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager) -> LspResult<Value> {
+    handle_code_action_with_options(msg, workspace, overlay_mgr, false)
+}
+
+pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, defer_edit: bool) -> LspResult<Value> {
     let params = msg.get("params").ok_or_else(|| LspError::invalid_params("Missing params object"))?;
 
     let uri = params["textDocument"]["uri"].as_str().ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
@@ -52,9 +57,13 @@ pub fn handle_code_action(msg: &Value, workspace: Option<&WorkspaceIndex>, overl
     let mut actions = Vec::new();
 
     if matches_kind("source.organizeImports") {
-        if let Some(action) = super::organize::organize_imports_action(&doc_text, uri, doc_version) {
-            validate_workspace_edit(&action["edit"], workspace)?;
-            actions.push(action);
+        if let Some((action, start_line, end_line)) = super::organize::organize_imports_action_with_bounds(&doc_text, uri, doc_version, true) {
+            let cursor_line = range["start"]["line"].as_u64().map(|v| v as u32).unwrap_or(0);
+            let in_scope = workspace.is_none() || only_kinds.is_some() || (cursor_line >= start_line && cursor_line <= end_line);
+            if in_scope {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
         }
     }
 
@@ -63,6 +72,13 @@ pub fn handle_code_action(msg: &Value, workspace: Option<&WorkspaceIndex>, overl
         if let Some(action) = super::extract::try_extract_variable_action(&doc_text, uri, range, doc_version) {
             validate_workspace_edit(&action["edit"], workspace)?;
             actions.push(action);
+        }
+    }
+
+    if let Some(ws) = workspace {
+        for assist in collect_decl_assists(&doc_text, uri, range, doc_version, ws, overlay_mgr, &matches_kind) {
+            validate_workspace_edit(&assist["edit"], workspace)?;
+            actions.push(assist);
         }
     }
 
@@ -87,7 +103,7 @@ pub fn handle_code_action(msg: &Value, workspace: Option<&WorkspaceIndex>, overl
                     if let Some(ident) = message.split('`').nth(1) {
                         if let Some(ws) = workspace {
                             let mut seen_paths = std::collections::HashSet::new();
-                            for s in ws.search_symbols(ident) {
+                            for s in ws.exact_symbols_by_name(ident) {
                                 if s.name == ident && seen_paths.insert(s.path.to_string()) {
                                     let action = make_auto_import_action(uri, s.path, doc_version, diag);
                                     validate_workspace_edit(&action["edit"], workspace)?;
@@ -103,8 +119,15 @@ pub fn handle_code_action(msg: &Value, workspace: Option<&WorkspaceIndex>, overl
 
     let content_hash = ridx_format::normalized_source_hash(doc_text.as_bytes());
     for action in &mut actions {
+        let mut has_data = false;
         if let Some(data) = action.get_mut("data").and_then(|d| d.as_object_mut()) {
             data.insert("content_hash".to_string(), json!(content_hash));
+            has_data = true;
+        }
+        if defer_edit && has_data {
+            if let Some(obj) = action.as_object_mut() {
+                obj.remove("edit");
+            }
         }
     }
 
@@ -120,7 +143,6 @@ pub fn handle_code_action_resolve(msg: &Value, workspace: Option<&WorkspaceIndex
 
     let _title = params.get("title").and_then(|t| t.as_str()).ok_or_else(|| LspError::invalid_params("CodeAction must contain a title"))?;
 
-    // Check version conflict if data contains uri and version / content_hash
     if let Some(data) = params.get("data") {
         if let Some(uri) = data.get("uri").and_then(|u| u.as_str()) {
             let file = uri_to_path(uri);
@@ -143,13 +165,11 @@ pub fn handle_code_action_resolve(msg: &Value, workspace: Option<&WorkspaceIndex
         }
     }
 
-    // If edit is already attached, validate and return
     if let Some(edit) = params.get("edit") {
         validate_workspace_edit(edit, workspace)?;
         return Ok(params.clone());
     }
 
-    // Resolve deferred edit from data if present
     let Some(data) = params.get("data") else {
         return Ok(params.clone());
     };
@@ -184,9 +204,16 @@ pub fn handle_code_action_resolve(msg: &Value, workspace: Option<&WorkspaceIndex
             "range": range,
             "newText": new_text
         });
-        resolved["edit"] = json!({
-            "changes": { uri: [edit] }
-        });
+        let mut edit_obj = json!({ "changes": { uri: [edit.clone()] } });
+        if let Some(ver) = live_ver {
+            edit_obj["documentChanges"] = json!([{
+                "textDocument": { "uri": uri, "version": ver },
+                "edits": [edit]
+            }]);
+        }
+        resolved["edit"] = edit_obj;
+    } else if is_decl_assist_data_kind(kind) {
+        resolved["edit"] = resolve_decl_assist(kind, data, &doc_text, uri, live_ver, workspace, overlay_mgr)?;
     } else {
         return Err(LspError::invalid_params(format!("Cannot resolve CodeAction with unknown data kind: '{kind}'")));
     }
