@@ -264,12 +264,7 @@ def normalize_outgoing_calls(res, repo):
     return {"callees": sorted(callees), "callee_names": sorted(callee_names), "call_lines": sorted(call_lines)}
 
 
-def normalize_code_action(res):
-    if not isinstance(res, list):
-        return {"kinds": [], "titles": []}
-    kinds = sorted({str(it.get("kind") or "") for it in res if isinstance(it, dict) and it.get("kind")})
-    titles = sorted({str(it.get("title") or "") for it in res if isinstance(it, dict) and it.get("title")})
-    return {"kinds": kinds, "titles": titles}
+from position_ab_parity_code_action import normalize_code_action, normalize_code_action_resolve
 
 
 def normalize_formatting(res):
@@ -375,6 +370,8 @@ def normalize_answer_ext(method, res, repo, legend=None):
         return normalize_outgoing_calls(res, repo)
     if method == "code_action":
         return normalize_code_action(res)
+    if method == "code_action_resolve":
+        return normalize_code_action_resolve(res, clean_uri, repo)
     if method in ("formatting", "range_formatting", "on_type_formatting"):
         return normalize_formatting(res)
     if method in ("document_diagnostic", "workspace_diagnostic"):

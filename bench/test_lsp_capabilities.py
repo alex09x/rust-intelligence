@@ -79,6 +79,11 @@ def test_initialize_declares_the_same_capabilities_for_both_servers():
 def test_capabilities_enable_rust_analyzer_lenses_and_nothing_else():
     caps = CLIENT_CAPABILITIES
     assert caps["textDocument"]["codeLens"] == {"dynamicRegistration": True}
+    ca = caps["textDocument"]["codeAction"]
+    assert ca["dynamicRegistration"] is True
+    assert ca["dataSupport"] is True
+    assert ca["resolveSupport"] == {"properties": ["edit"]}
+    assert "refactor" in ca["codeActionLiteralSupport"]["codeActionKind"]["valueSet"]
     assert caps["experimental"]["commands"]["commands"] == RA_CLIENT_COMMANDS
     assert RA_CLIENT_COMMANDS == ["rust-analyzer.runSingle", "rust-analyzer.debugSingle", "rust-analyzer.showReferences"]
     # Not declared on purpose: they would change hover, completion and codeAction answers, or make

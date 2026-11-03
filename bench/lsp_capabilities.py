@@ -53,7 +53,25 @@ CLIENT_CAPABILITIES = {
             "formats": ["relative"],
         },
         "inlayHint": {"dynamicRegistration": True},
-        "codeAction": {"dynamicRegistration": True},
+        "codeAction": {
+            "dynamicRegistration": True,
+            "codeActionLiteralSupport": {
+                "codeActionKind": {
+                    "valueSet": [
+                        "",
+                        "quickfix",
+                        "refactor",
+                        "refactor.extract",
+                        "refactor.inline",
+                        "refactor.rewrite",
+                        "source",
+                        "source.organizeImports",
+                    ],
+                },
+            },
+            "dataSupport": True,
+            "resolveSupport": {"properties": ["edit"]},
+        },
         "codeLens": {"dynamicRegistration": True},
         "formatting": {"dynamicRegistration": True},
     },

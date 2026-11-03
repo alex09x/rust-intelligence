@@ -16,7 +16,7 @@ Handles:
 
 from pathlib import Path
 from matrix_categories import LSP_SPECS, build_params
-from position_ab_classify import classify_outcome, target_kind_of
+from position_ab_classify import classify_outcome, cursor_kind, scenario_from_record, target_kind_of
 
 RPC_OF = {key: rpc for _, key, rpc, _, _ in LSP_SPECS}
 
@@ -97,6 +97,8 @@ def prepare_parity_rows(rows, positions, repo_dir, entries, read_lines):
     """Enriches `rows` in-place for parity measurement before querying servers."""
     lens_recs = positions.get("code_lens") or []
     lens_idx = 0
+    ca_recs = positions.get("code_action") or []
+    ca_idx = 0
     sig_multi_idx = 0
     for row in rows:
         key = row["method"]
@@ -129,6 +131,36 @@ def prepare_parity_rows(rows, positions, repo_dir, entries, read_lines):
                 row["target_kind"] = target_kind_of(rel, entries)
                 row["scenario"]["file"] = abs_f
                 row["scenario"]["location"] = [abs_f, 1, 1]
+        elif key == "code_action_resolve":
+            rec = ca_recs[ca_idx] if ca_idx < len(ca_recs) else None
+            ca_idx += 1
+            if rec and not row.get("file"):
+                rel = rec.get("file") or ""
+                ln = int(rec.get("line") or 0)
+                col = int(rec.get("character") or 1)
+                sym = rec.get("symbol")
+                row["file"] = rel
+                row["line"] = ln
+                row["character"] = col
+                row["symbol"] = sym
+                row["target_kind"] = target_kind_of(rel, entries) if rel else "none"
+                if rel and ln:
+                    row.update(cursor_kind(read_lines(rel), ln, col, sym))
+                row["scenario"] = scenario_from_record("code_action", rec, repo_dir)
+
+
+def _has_resolved_payload(act):
+    if not isinstance(act, dict):
+        return False
+    edit = act.get("edit")
+    if isinstance(edit, dict):
+        if any(bool(v) for v in (edit.get("changes") or {}).values()):
+            return True
+        for dc in edit.get("documentChanges") or []:
+            if isinstance(dc, dict) and (dc.get("edits") or dc.get("kind") in ("create", "rename", "delete")):
+                return True
+    cmd = act.get("command")
+    return isinstance(cmd, dict) and bool(cmd.get("command"))
 
 
 def execute_parity_request(srv, key, row, repo_dir, is_ra, timeout, read_lines):
@@ -164,6 +196,34 @@ def execute_parity_request(srv, key, row, repo_dir, is_ra, timeout, read_lines):
         srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
         outcome, code = classify_outcome(key, res, err)
         return outcome, res, code, us, {}
+
+    if key == "code_action_resolve" and rel:
+        ca_params = build_params("code_action", sc, str(repo_dir), is_ra=is_ra)
+        actions, a_us, a_err = srv.request("textDocument/codeAction", ca_params, timeout=timeout)
+        if a_err is not None or not isinstance(actions, list) or not actions:
+            outcome, code = classify_outcome(key, None, a_err)
+            return outcome, None, code, a_us, {}
+        resolved, rpc_us_sum, rpc_n, first_err = [], 0.0, 0, None
+        for act in actions:
+            if not isinstance(act, dict):
+                continue
+            if not _has_resolved_payload(act) and act.get("data") is not None:
+                r_act, r_us, r_err = srv.request("codeAction/resolve", act, timeout=timeout)
+                rpc_us_sum += r_us
+                rpc_n += 1
+                if r_err is not None:
+                    first_err = first_err or r_err
+                    continue
+                if _has_resolved_payload(r_act):
+                    resolved.append(r_act)
+            elif _has_resolved_payload(act):
+                resolved.append(act)
+        eff_us = (rpc_us_sum / rpc_n) if rpc_n > 0 else a_us
+        if not resolved and first_err is not None:
+            outcome, code = classify_outcome(key, None, first_err)
+            return outcome, None, code, eff_us, {}
+        outcome, code = classify_outcome(key, resolved if resolved else None, None)
+        return outcome, (resolved if resolved else None), code, eff_us, {"resolve_rpcs": rpc_n}
 
     if key == "semantic_tokens_range" and rel:
         lines = read_lines(rel)

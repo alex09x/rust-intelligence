@@ -233,14 +233,7 @@ def compare_rename(r_norm, a_norm):
     return "mismatch", "p_rename_disjoint_edits", {"ridx_ws": len(rw), "ra_ws": len(aw), "ridx_edits": len(re_set), "ra_edits": len(ae_set)}
 
 
-def compare_code_action(r_norm, a_norm):
-    rk, ak = set(r_norm["kinds"]), set(a_norm["kinds"])
-    rt, at = set(r_norm["titles"]), set(a_norm["titles"])
-    if rt == at:
-        return "exact_match", None, {"titles": sorted(rt)}
-    if rk & ak:
-        return "partial", "p_code_action_shared_kind_diff_titles", {"ridx_kinds": sorted(rk), "ra_kinds": sorted(ak), "ridx_titles": sorted(rt)[:5], "ra_titles": sorted(at)[:5]}
-    return "mismatch", "p_code_action_disjoint_kinds", {"ridx_kinds": sorted(rk), "ra_kinds": sorted(ak), "ridx_titles": sorted(rt)[:5], "ra_titles": sorted(at)[:5]}
+from position_ab_parity_code_action import compare_code_action, compare_code_action_resolve
 
 
 def compare_formatting(r_norm, a_norm):
@@ -318,6 +311,8 @@ def compare_extended_method(row, r_norm, a_norm, repo=None, ws_table=None):
         return compare_rename(r_norm, a_norm)
     if method == "code_action":
         return compare_code_action(r_norm, a_norm)
+    if method == "code_action_resolve":
+        return compare_code_action_resolve(r_norm, a_norm)
     if method in ("formatting", "range_formatting", "on_type_formatting"):
         return compare_formatting(r_norm, a_norm)
     if method in ("document_diagnostic", "workspace_diagnostic"):
@@ -392,6 +387,8 @@ def classify_b_to_a_ext(row, a_norm, line_text):
         return f"p_b_to_a_{method}_unresolved_target", {"symbol": sym, "cursor_kind": ck, "cursor_line": line_text.strip()[:120]}
     if method == "code_action":
         return "p_b_to_a_code_action_ra_refactor_at_cursor", {"ra_kinds": a_norm.get("kinds", []), "ra_count": len(a_norm.get("titles", []))}
+    if method == "code_action_resolve":
+        return "p_b_to_a_code_action_resolve_ra_only", {"ra_count": len(a_norm.get("titles", [])), "ra_titles": a_norm.get("titles", [])[:5]}
     if method in ("formatting", "range_formatting", "on_type_formatting"):
         return f"p_b_to_a_{method}_ra_edits_only", {"ra_edits": len(a_norm)}
     if method == "code_lens":

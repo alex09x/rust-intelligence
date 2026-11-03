@@ -54,7 +54,7 @@ ALL_PARITY_METHODS = (
     "hover", "signature_help", "inlay_hint", "document_symbol", "workspace_symbol", "folding_range",
     "selection_range", "document_link", "semantic_tokens_full", "semantic_tokens_delta", "semantic_tokens_range",
     "prepare_call_hierarchy", "incoming_calls", "outgoing_calls", "prepare_type_hierarchy", "supertypes", "subtypes",
-    "completion", "completion_resolve", "prepare_rename", "rename", "code_action", "formatting",
+    "completion", "completion_resolve", "prepare_rename", "rename", "code_action", "code_action_resolve", "formatting",
     "range_formatting", "on_type_formatting", "document_diagnostic", "workspace_diagnostic",
     "code_lens", "code_lens_resolve", "linked_editing_range", "moniker",
 )
