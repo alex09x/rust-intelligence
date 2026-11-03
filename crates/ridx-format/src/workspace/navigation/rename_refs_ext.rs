@@ -75,6 +75,8 @@ impl WorkspaceIndex {
         let is_non_lib =
             def.reader_idx.and_then(|ri| self.target_kind_at(ri)).is_some_and(|tk| matches!(tk, TargetKind::Bin | TargetKind::Example | TargetKind::Test | TargetKind::Bench));
         if !is_fn_local_dup && !is_non_lib && matches!(def.kind, DefKind::Enum | DefKind::AssocFn) && !def.name.is_empty() {
+            let def_crate = def.reader_idx.and_then(|ri| self.readers.get(ri)).map(|r| r.crate_name()).unwrap_or_else(|| super::qualified_path::extract_root_crate(def.path));
+            let mut enum_mod_paths: Option<HashSet<String>> = None;
             for pmf in &cache.proc_macro_files {
                 let (Some(pm_ri), Some(pm_fid)) = (pmf.reader_idx, pmf.file_id) else { continue };
                 if Some(pm_ri) == def.reader_idx
@@ -97,7 +99,12 @@ impl WorkspaceIndex {
                         }
                         let (before, after) = (code[..b_pos].trim_end(), code[end_b..].trim_start());
                         let pm_ok = if def.kind == DefKind::Enum {
-                            before.ends_with("::") && after.starts_with("::") && pmf.content.contains("::error::")
+                            if after.starts_with("::") {
+                                let mods = enum_mod_paths.get_or_insert_with(|| super::rename_pm_enum::collect_enum_valid_mod_paths(self, &cache, def));
+                                super::rename_pm_enum::pm_enum_prefix_resolves(before, &pmf.crate_name, &pmf.content, def_crate, &cache, mods)
+                            } else {
+                                false
+                            }
                         } else {
                             (!has_self && !owner_short.is_empty() && before.ends_with(&format!("::{owner_short}::")) && after.starts_with('('))
                                 || (has_self && after.starts_with("::<") && (before.ends_with('.') || before.ends_with("=>")))

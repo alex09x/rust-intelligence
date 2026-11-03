@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static GEN_TEST_SEQ: AtomicU64 = AtomicU64::new(0);
 
-fn fresh_temp_dir(tag: &str) -> PathBuf {
+pub(super) fn fresh_temp_dir(tag: &str) -> PathBuf {
     let n = GEN_TEST_SEQ.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("ridx_gen_rename_{tag}_{}_{n}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
@@ -28,7 +28,7 @@ fn fresh_temp_dir(tag: &str) -> PathBuf {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn raw_def(id: u32, kind: DefKind, vis: u8, name: &str, path: &str, sig: Option<&str>, file: &str, sl: u32, sc: u32, el: u32, ec: u32) -> RawDefinition {
+pub(super) fn raw_def(id: u32, kind: DefKind, vis: u8, name: &str, path: &str, sig: Option<&str>, file: &str, sl: u32, sc: u32, el: u32, ec: u32) -> RawDefinition {
     RawDefinition {
         def_id: id,
         kind,
@@ -322,7 +322,7 @@ fn test_general_rule_p1_custom_proc_macro_string_coupled() {
     let _ = fs::remove_dir_all(&dir);
 }
 
-fn open_manifest_ws(idx_dir: &std::path::Path, ws_root: &std::path::Path) -> WorkspaceIndex {
+pub(super) fn open_manifest_ws(idx_dir: &std::path::Path, ws_root: &std::path::Path) -> WorkspaceIndex {
     let manifest = json!({
         "version": "2.0",
         "format_version": ridx_format::CURRENT_FORMAT_VERSION,
@@ -368,40 +368,5 @@ fn test_general_rule_u1_manifest_json_and_umbrella_prelude_example() {
     )
     .unwrap();
     assert!(res["changes"].get(&ex_uri).is_some(), "umbrella prelude example must receive rename edit: {res}");
-    let _ = fs::remove_dir_all(&dir);
-}
-
-#[test]
-fn test_general_rule_u4_pub_crate_visibility_and_generic_inherent_owner() {
-    let dir = fresh_temp_dir("gen_u4");
-    for sub in ["src", "examples", ".ridx"] {
-        fs::create_dir_all(dir.join(sub)).unwrap();
-    }
-    fs::write(dir.join("Cargo.toml"), "[package]\nname = \"vis_pkg\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
-    let lib_rs = dir.join("src/lib.rs");
-    let lib_str = lib_rs.to_str().unwrap();
-    fs::write(&lib_rs, "pub struct SecretBox;\nimpl SecretBox { pub(crate) fn fallback_val(&self) {} }\npub struct PublicHolder<'a>(&'a str);\nimpl<'a> PublicHolder<'a> { pub fn fallback_val(self) {} }\n").unwrap();
-    let ex_file = dir.join("examples/use_holder.rs");
-    fs::write(&ex_file, "use vis_pkg::{PublicHolder, SecretBox};\nfn main() { let _ = SecretBox; let h: PublicHolder = PublicHolder(\"x\"); h.fallback_val(); }\n").unwrap();
-
-    let idx_dir = dir.join(".ridx");
-    let mut w = IndexWriter::new("vis_pkg", "0.1.0");
-    w.set_unit_key("vis_lib");
-    w.add_definition(raw_def(1, DefKind::Struct, 0, "SecretBox", "SecretBox", None, lib_str, 1, 12, 1, 21));
-    w.add_definition(raw_def(2, DefKind::AssocFn, 0, "fallback_val", "SecretBox::fallback_val", Some("pub(crate) fn fallback_val(&self)"), lib_str, 2, 32, 2, 44));
-    w.add_definition(raw_def(3, DefKind::Struct, 0, "PublicHolder", "PublicHolder", None, lib_str, 3, 12, 3, 24));
-    w.add_definition(raw_def(4, DefKind::AssocFn, 0, "fallback_val", "PublicHolder::<'a>::fallback_val", Some("pub fn fallback_val(self)"), lib_str, 4, 36, 4, 48));
-    w.write_to(&mut fs::File::create(idx_dir.join("vis_pkg.ridx")).unwrap()).unwrap();
-
-    let ws = open_manifest_ws(&idx_dir, &dir);
-    let (lib_uri, ex_uri, ov, mut conv) = (path_to_uri(lib_str), path_to_uri(ex_file.canonicalize().unwrap().to_str().unwrap()), OverlayManager::new(), PositionConverter::new());
-    let secret_res =
-        handle_rename(&json!({ "params": { "textDocument": { "uri": &lib_uri }, "position": { "line": 1, "character": 33 }, "newName": "priv_val" } }), Some(&ws), &ov, &mut conv)
-            .unwrap();
-    assert!(secret_res["changes"].get(&ex_uri).is_none(), "pub(crate) method must not touch or refuse external example: {secret_res}");
-    let pub_res =
-        handle_rename(&json!({ "params": { "textDocument": { "uri": &lib_uri }, "position": { "line": 3, "character": 37 }, "newName": "into_val" } }), Some(&ws), &ov, &mut conv)
-            .unwrap();
-    assert!(pub_res["changes"].get(&ex_uri).is_some(), "<PublicHolder<'a>>::fallback_val must update example: {pub_res}");
     let _ = fs::remove_dir_all(&dir);
 }

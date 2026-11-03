@@ -12,6 +12,7 @@
 //! `macro_rules!` expansion body index, `proc-macro` source Coupling cache, and unindexed targets.
 
 use super::cargo_targets::CargoWorkspaceTargets;
+use super::rename_factory_idx::{build_factory_return_index, FactoryFnCandidate};
 use super::rename_parse::{
     extract_macro_rules_blocks, has_self_receiver, parse_unindexed_rust_file, scan_proc_macro_dir, ParsedMacroBlock, ParsedUnindexedTarget, ProcMacroSourceFile,
 };
@@ -46,6 +47,8 @@ pub struct RenameWorkspaceCache {
     pub mod_self_method_owners: HashMap<(String, String), usize>,
     /// Method name -> `(crate_name, owner_short, is_trait)` for workspace `AssocFn` items with a `self` receiver.
     pub self_methods_by_name: HashMap<String, Vec<(String, String, bool)>>,
+    /// Nominal return type short name -> workspace functions/methods whose return type mentions it.
+    pub factory_fns_by_return_short: HashMap<String, Vec<FactoryFnCandidate>>,
     /// Pre-parsed unindexed Cargo target files (`bin`/`example`/`test`/`bench`/`custom-build`).
     pub unindexed_targets: Vec<ParsedUnindexedTarget>,
     /// Identifier token -> indices into `unindexed_targets`.
@@ -291,6 +294,7 @@ impl RenameWorkspaceCache {
 
         let file_self_method_owners = file_owner_sets.into_iter().map(|(k, v)| (k, v.len())).collect();
         let mod_self_method_owners = mod_owner_sets.into_iter().map(|(k, v)| (k, v.len())).collect();
+        let factory_fns_by_return_short = build_factory_return_index(ws, &type_def_crates_by_name);
 
         let mut proc_macro_coupled_methods = HashMap::new();
         let mut proc_macro_files = Vec::new();
@@ -366,6 +370,7 @@ impl RenameWorkspaceCache {
             file_self_method_owners,
             mod_self_method_owners,
             self_methods_by_name,
+            factory_fns_by_return_short,
             unindexed_targets,
             unindexed_ident_map,
         }

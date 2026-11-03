@@ -28,6 +28,7 @@ pub mod provenance;
 pub mod qualifier;
 pub mod reload;
 pub mod rename_cache;
+pub mod rename_factory_idx;
 pub mod rename_parse;
 pub mod rename_refusal;
 pub mod std_map;

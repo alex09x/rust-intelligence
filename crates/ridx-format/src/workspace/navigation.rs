@@ -13,6 +13,7 @@
 pub mod blast_radius;
 mod cross_definition;
 pub(crate) mod decl_lookup;
+mod exact_symbols;
 mod impl_lookup;
 pub(crate) mod impl_parse;
 mod owner_types;
@@ -21,6 +22,7 @@ mod reference_record;
 mod references;
 pub(crate) mod rename_check;
 mod rename_macro_ext;
+mod rename_pm_enum;
 mod rename_refs_ext;
 mod search;
 #[cfg(test)]

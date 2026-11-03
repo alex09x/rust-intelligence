@@ -306,6 +306,29 @@ fn expand_use_tree(prefix: &str, tree: &str, pkg_crate: &str, explicit: &mut Has
     }
 }
 
+pub(crate) fn parse_file_imports(content: &str, pkg_crate: &str, pub_only: bool) -> (HashMap<String, Vec<String>>, Vec<String>) {
+    let (mut explicit, mut anon, mut globs) = (HashMap::new(), Vec::new(), Vec::new());
+    let lines: Vec<&str> = content.lines().map(strip_line_comment).collect();
+    let mut idx = 0usize;
+    while idx < lines.len() {
+        let t = lines[idx].trim();
+        let ok = if pub_only { t.starts_with("pub use ") } else { t.starts_with("use ") || t.starts_with("pub use ") || t.starts_with("pub(crate) use ") };
+        if ok {
+            let mut stmt = String::from(t);
+            while !stmt.contains(';') && idx + 1 < lines.len() {
+                idx += 1;
+                stmt.push(' ');
+                stmt.push_str(lines[idx].trim());
+            }
+            if let Some((_, after_use)) = stmt.split_once("use ") {
+                expand_use_tree("", after_use.split(';').next().unwrap_or(after_use).trim(), pkg_crate, &mut explicit, &mut anon, &mut globs);
+            }
+        }
+        idx += 1;
+    }
+    (explicit, globs)
+}
+
 pub fn parse_unindexed_rust_file(path: PathBuf, pkg_crate: String, dep_crates: HashSet<String>) -> Option<ParsedUnindexedTarget> {
     let content = std::fs::read_to_string(&path).ok()?;
     let mut idents = HashSet::new();

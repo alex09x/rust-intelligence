@@ -15,6 +15,8 @@ use super::ident::{extract_ident_at_col, is_ident_continue};
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::mapping::is_byte_in_string_or_comment;
 use crate::overlay::OverlayManager;
+use ridx_format::rename_cache::RenameWorkspaceCache;
+use ridx_format::rename_parse::ParsedUnindexedTarget;
 use ridx_format::{DefKind, LocationReferences, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -333,4 +335,18 @@ pub(super) fn extract_impl_header_owners(lines: &[&str]) -> Vec<Option<(String, 
         out[idx] = stack.last().map(|(_, own)| own.clone());
     }
     out
+}
+
+pub(super) fn has_call_syntax(text: &str, prefix: &str, fn_name: &str) -> bool {
+    text.contains(&format!("{prefix}{fn_name}(")) || text.contains(&format!("{prefix}{fn_name}::<"))
+}
+
+pub(super) fn has_qual_in_code(cache: &RenameWorkspaceCache, ut: &ParsedUnindexedTarget, target_crate: &str, needle: &str) -> bool {
+    if !ut.content.contains(needle) {
+        return false;
+    }
+    ut.dep_crates.iter().filter(|dc| cache.cargo_targets.crate_can_reexport(dc, target_crate)).any(|dc| {
+        let pfx = format!("{dc}::");
+        ut.content.lines().map(str::trim_start).any(|t| !t.starts_with("use ") && !t.starts_with("pub use ") && t.contains(&pfx) && t.contains(needle))
+    })
 }

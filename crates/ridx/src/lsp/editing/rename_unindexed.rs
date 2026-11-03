@@ -10,8 +10,8 @@
 
 //! Semantic rename resolution across unindexed Cargo targets discovered via `cargo metadata`.
 
-use super::rename_alias_mod::extract_impl_header_owners;
 pub use super::rename_alias_mod::{build_workspace_edit_json, detect_module_file_rename, expand_generic_param_edits, try_prepare_rename_use_as_alias, try_rename_use_as_alias};
+use super::rename_alias_mod::{extract_impl_header_owners, has_call_syntax, has_qual_in_code};
 
 use super::ident::is_ident_continue;
 use crate::lsp::protocol::{path_to_uri, PositionConverter};
@@ -22,19 +22,44 @@ use ridx_format::{is_prelude_trait, DefKind, LocationReferences, RenameRefusal, 
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-fn pascal_to_snake(s: &str) -> String {
-    let mut out = String::with_capacity(s.len() + 4);
-    for (i, ch) in s.chars().enumerate() {
-        if ch.is_ascii_uppercase() {
-            if i > 0 {
-                out.push('_');
+fn imported_factory_returns_owner(ws: &WorkspaceIndex, cache: &RenameWorkspaceCache, ut: &ParsedUnindexedTarget, owner_short: &str, owner_crate: &str) -> bool {
+    let Some(cands) = cache.factory_fns_by_return_short.get(owner_short) else {
+        return false;
+    };
+    for cand in cands {
+        let rc = cand.reader_crate.as_str();
+        let fn_name = cand.fn_name.as_str();
+        if !ut.idents.contains(fn_name)
+            || !cache.cargo_targets.crate_can_reexport(rc, owner_crate)
+            || !ut.dep_crates.iter().any(|dc| cache.cargo_targets.crate_can_reexport(dc, rc))
+        {
+            continue;
+        }
+        match cand.parent_short.as_deref() {
+            None => {
+                let qual = has_qual_in_code(cache, ut, rc, &format!("::{fn_name}(")) || has_qual_in_code(cache, ut, rc, &format!("::{fn_name}::<"));
+                if (has_call_syntax(&ut.content, "", fn_name) && is_symbol_imported(ws, cache, ut, fn_name, rc)) || qual {
+                    return true;
+                }
             }
-            out.push(ch.to_ascii_lowercase());
-        } else {
-            out.push(ch);
+            Some(fty_short) => {
+                let assoc_call = !fty_short.is_empty() && has_call_syntax(&ut.content, &format!("{fty_short}::"), fn_name);
+                let dot_call = cand.dot_eligible && has_call_syntax(&ut.content, ".", fn_name);
+                if !fty_short.is_empty()
+                    && fty_short != owner_short
+                    && ut.idents.contains(fty_short)
+                    && (assoc_call || dot_call)
+                    && (is_symbol_imported(ws, cache, ut, fty_short, rc) || has_qual_in_code(cache, ut, rc, &format!("::{fty_short}")))
+                {
+                    return true;
+                }
+                if dot_call && cand.all_shard_assoc_return_owner {
+                    return true;
+                }
+            }
         }
     }
-    out
+    false
 }
 
 fn local_type_shadowed(ut: &ParsedUnindexedTarget, name: &str) -> bool {
@@ -94,15 +119,10 @@ fn is_inherent_owner_active(ws: &WorkspaceIndex, cache: &RenameWorkspaceCache, u
     if owner_short.is_empty() || !ut.dep_crates.contains(owner_crate) || local_type_shadowed(ut, owner_short) {
         return false;
     }
-    if ut.idents.contains(owner_short) && (is_symbol_imported(ws, cache, ut, owner_short, owner_crate) || ut.content.contains(&format!("{owner_crate}::"))) {
+    if ut.idents.contains(owner_short) && (is_symbol_imported(ws, cache, ut, owner_short, owner_crate) || has_qual_in_code(cache, ut, owner_crate, &format!("::{owner_short}"))) {
         return true;
     }
-    let builder = format!("{owner_short}Builder");
-    if ut.idents.contains(&builder) && is_symbol_imported(ws, cache, ut, &builder, owner_crate) {
-        return true;
-    }
-    let snake = pascal_to_snake(owner_short);
-    snake != owner_short && ut.idents.contains(&snake) && is_symbol_imported(ws, cache, ut, &snake, owner_crate)
+    imported_factory_returns_owner(ws, cache, ut, owner_short, owner_crate)
 }
 
 fn is_owner_explicit_in_ut(ws: &WorkspaceIndex, cache: &RenameWorkspaceCache, ut: &ParsedUnindexedTarget, owner_short: &str, owner_crate: &str, is_trait: bool) -> bool {
