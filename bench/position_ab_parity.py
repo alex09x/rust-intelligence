@@ -254,6 +254,12 @@ def main(argv=None):
     ap.add_argument("--out", action="append", required=True, type=Path)
     ap.add_argument("--out-differing", action="append", default=[], type=Path)
     ap.add_argument("--save-raw-pkl", action="store_true", help="Also write <out>.raw.pkl with raw server responses")
+    ap.add_argument(
+        "--ra-cache",
+        type=Path,
+        default=None,
+        help="Reuse rust-analyzer answers from an earlier <out>.raw.pkl of the same corpus checkout instead of starting rust-analyzer",
+    )
     args = ap.parse_args(argv)
 
     servers = parse_servers(args.ridx, args.ra)
@@ -291,7 +297,20 @@ def main(argv=None):
     repo_head = subprocess.run(["git", "-C", str(repo_dir), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     started = datetime.now(timezone.utc).isoformat()
     runs_by_name = {}
-    for name, cmd, is_ra, binary in [*ridx_srvs, ra_srv]:
+    servers_to_run = [*ridx_srvs, ra_srv]
+    if args.ra_cache:
+        # rust-analyzer's answers do not change between RIDX iterations on one checkout; reuse them instead of re-indexing.
+        with args.ra_cache.open("rb") as fh:
+            cached = {(r["method"], r["name"]): r["_raw"] for r in pickle.load(fh)}
+        cached_ra_name = next((k for raw in cached.values() for k in raw if not k.startswith("ridx")), None)
+        missing = [(r["method"], r["name"]) for r in raw_rows if cached_ra_name not in cached.get((r["method"], r["name"]), {})]
+        if missing:
+            ap.error(f"--ra-cache lacks {len(missing)} requests, e.g. {missing[:3]}; rerun rust-analyzer once without it")
+        for r in raw_rows:
+            r.setdefault("_raw", {})[ra_srv[0]] = cached[(r["method"], r["name"])][cached_ra_name]
+        servers_to_run = list(ridx_srvs)
+        runs_by_name[ra_srv[0]] = {"name": ra_srv[0], "kind": "rust-analyzer", "binary": binary_label(ra_srv[3]), "cached_from": str(args.ra_cache)}
+    for name, cmd, is_ra, binary in servers_to_run:
         print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(raw_rows)} requests ...", flush=True)
         ready, seconds = ask_server(name, cmd, is_ra, raw_rows, repo_dir, args.timeout, canary, read_lines)
         runs_by_name[name] = {
