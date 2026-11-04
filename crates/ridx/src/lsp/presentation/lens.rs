@@ -220,12 +220,50 @@ fn detached_overlay_lenses(uri: &str, file: &str, text_str: &str, conv: &mut Pos
     out
 }
 
+/// rust-analyzer client commands the client announced in `experimental.commands.commands`.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RaClientCommands {
+    pub show_references: bool,
+    pub run_single: bool,
+    pub debug_single: bool,
+}
+
+impl RaClientCommands {
+    pub fn from_initialize(params: &Value) -> Self {
+        let has = |cmd: &str| params["capabilities"]["experimental"]["commands"]["commands"].as_array().is_some_and(|a| a.iter().any(|v| v.as_str() == Some(cmd)));
+        Self { show_references: has("rust-analyzer.showReferences"), run_single: has("rust-analyzer.runSingle"), debug_single: has("rust-analyzer.debugSingle") }
+    }
+}
+
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
 pub fn handle_code_lens(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
+    handle_code_lens_for_client(msg, workspace, overlay_mgr, conv, RaClientCommands::default())
+}
+
+/// Code lenses for a client. A client running rust-analyzer's own commands gets rust-analyzer's default lenses:
+/// implementations on types and traits plus runnables, and no references lenses (off by default there). Other
+/// clients keep RIDX's references lens on every item, served through the advertised `ridx.showReferences`.
+pub fn handle_code_lens_for_client(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter, cmds: RaClientCommands) -> Value {
+    let mut lenses = index_or_detached_lenses(msg, workspace, overlay_mgr, conv);
+    if cmds.show_references {
+        lenses.retain(|l| l["data"]["kind"] == "impls");
+    } else if !cmds.run_single && !cmds.debug_single {
+        return json!(lenses);
+    }
+    let file = uri_to_path(msg["params"]["textDocument"]["uri"].as_str().unwrap_or(""));
+    let text = overlay_mgr.get(&file).map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok()).unwrap_or_default();
+    let hints = workspace.map(|ws| super::lens_runnable_hints::runnable_hints(ws, &file, &text)).unwrap_or_default();
+    lenses.extend(super::lens_runnables::runnable_lenses(&file, &text, cmds.run_single, cmds.debug_single, &hints));
+    let start = |l: &Value| (l["range"]["start"]["line"].as_u64().unwrap_or(0), l["range"]["start"]["character"].as_u64().unwrap_or(0));
+    lenses.sort_by_key(start);
+    json!(lenses)
+}
+
+fn index_or_detached_lenses(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Vec<Value> {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let Some(ws) = workspace else {
-        return json!([]);
+        return Vec::new();
     };
     let mut lenses: Vec<Value> = match overlay_mgr.get(&file) {
         Some(overlay) => open_file_lenses(ws, &file, uri, overlay),
@@ -237,7 +275,7 @@ pub fn handle_code_lens(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay
             lenses = detached_overlay_lenses(uri, &file, &text_str, conv);
         }
     }
-    json!(lenses)
+    lenses
 }
 
 /// Handles `codeLens/resolve` requests, computing references on demand.
@@ -256,6 +294,10 @@ pub fn handle_code_lens_resolve_for_client(
 ) -> Value {
     let show_command = if ra_show_references { "rust-analyzer.showReferences" } else { "ridx.showReferences" };
     let mut lens = msg.get("params").cloned().or_else(|| msg.as_object().map(|_| msg.clone())).unwrap_or(Value::Null);
+    // Runnable lenses arrive resolved; a resolve request for one must not replace its command.
+    if lens.get("command").is_some_and(|c| c.is_object()) {
+        return lens;
+    }
 
     let data = lens.get("data").cloned().unwrap_or(Value::Null);
     let uri = data["uri"].as_str().unwrap_or("");

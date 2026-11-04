@@ -73,7 +73,8 @@ pub fn dispatch_lsp_message<W: Write>(
         super::hierarchy::clear_impl_table_cache();
     }
 
-    let ra_show_references = lifecycle.client_ra_show_references();
+    let ra_commands = lifecycle.ra_client_commands();
+    let ra_show_references = ra_commands.show_references;
     let conv = &mut lifecycle.conv;
 
     let result: super::error::LspResult<Value> = match method {
@@ -229,7 +230,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/semanticTokens/full/delta" => Ok(handle_semantic_tokens_delta(&msg, mr.doc_ws(&msg), ov, conv)),
         "textDocument/semanticTokens/range" => Ok(handle_semantic_tokens_range(&msg, mr.doc_ws(&msg), ov, conv)),
         "textDocument/foldingRange" => Ok(handle_folding_range(&msg, ov)),
-        "textDocument/codeLens" => Ok(handle_code_lens(&msg, mr.doc_ws(&msg), ov, conv)),
+        "textDocument/codeLens" => Ok(handle_code_lens_for_client(&msg, mr.doc_ws(&msg), ov, conv, ra_commands)),
         "codeLens/resolve" => {
             let uri = msg["params"]["data"]["uri"].as_str().or_else(|| msg["params"]["textDocument"]["uri"].as_str());
             let ws = uri.and_then(|u| mr.find_workspace_for_path(Path::new(&uri_to_path(u))));

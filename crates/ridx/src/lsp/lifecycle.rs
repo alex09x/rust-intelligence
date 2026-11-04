@@ -32,7 +32,7 @@ pub struct LifecycleManager {
     client_pull_diagnostics: bool,
     client_refresh_diagnostics: bool,
     client_resolve_code_action_edit: bool,
-    client_ra_show_references: bool,
+    ra_client_commands: crate::lsp::presentation::lens::RaClientCommands,
     refresh_counter: AtomicU64,
     pub apply_registry: ApplyEditRegistry,
 }
@@ -52,7 +52,7 @@ impl LifecycleManager {
             client_pull_diagnostics: false,
             client_refresh_diagnostics: false,
             client_resolve_code_action_edit: false,
-            client_ra_show_references: false,
+            ra_client_commands: Default::default(),
             refresh_counter: AtomicU64::new(0),
             apply_registry: ApplyEditRegistry::new(),
         }
@@ -73,7 +73,12 @@ impl LifecycleManager {
     /// The client runs `rust-analyzer.showReferences` itself, as the rust-analyzer VS Code extension and
     /// rustaceanvim announce in `experimental.commands.commands`; lenses then use that command name.
     pub fn client_ra_show_references(&self) -> bool {
-        self.client_ra_show_references
+        self.ra_client_commands.show_references
+    }
+
+    /// All rust-analyzer client commands the client announced; lenses follow them.
+    pub fn ra_client_commands(&self) -> crate::lsp::presentation::lens::RaClientCommands {
+        self.ra_client_commands
     }
 
     pub fn next_refresh_id(&self) -> String {
@@ -117,9 +122,7 @@ impl LifecycleManager {
         self.client_resolve_code_action_edit = msg["params"]["capabilities"]["textDocument"]["codeAction"]["resolveSupport"]["properties"]
             .as_array()
             .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
-        self.client_ra_show_references = msg["params"]["capabilities"]["experimental"]["commands"]["commands"]
-            .as_array()
-            .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("rust-analyzer.showReferences")));
+        self.ra_client_commands = crate::lsp::presentation::lens::RaClientCommands::from_initialize(&msg["params"]);
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {
