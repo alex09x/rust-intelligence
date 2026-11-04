@@ -111,6 +111,7 @@ fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
 pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Vec<RawToken> {
     let mut tokens = Vec::new();
     let overlay_opt = overlay_mgr.get(file);
+    let mut indexed = false;
 
     // 1. Overlay symbols (live buffers)
     if let Some(overlay) = overlay_opt {
@@ -137,6 +138,7 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
             let reader = &ws.readers()[idx];
 
             if let Some(file_id) = reader.find_file_id(target.as_ref()) {
+                indexed = true;
                 for def in reader.definitions() {
                     let dk = DefKind::from(def.kind);
                     if matches!(dk, DefKind::Impl | DefKind::ForeignMod | DefKind::GlobalAsm | DefKind::AnonConst | DefKind::InlineConst | DefKind::Closure | DefKind::Other) {
@@ -203,10 +205,29 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                 }
             }
         }
-        if ws.readers().len() > 2 {
-            let has_compiled = !tokens.is_empty();
-            super::tokens_scan::scan_source_tokens(file, overlay_mgr, has_compiled, &mut tokens);
+    }
+
+    let disk_text;
+    let text = match overlay_opt {
+        Some(ov) => Some(ov.text.as_str()),
+        None => {
+            disk_text = std::fs::read_to_string(file).ok();
+            disk_text.as_deref()
         }
+    };
+    if let Some(text) = text {
+        if workspace.is_some() && !indexed && overlay_opt.is_none() && super::tokens_detached::outside_every_crate(file) {
+            // A file no indexed crate includes: rust-analyzer types only its definition sites, by syntax.
+            super::tokens_detached::detached_definition_tokens(text, &mut tokens);
+            super::tokens_doc::scan_doc_comments(text, None, &mut tokens);
+            return filter_non_overlapping(tokens);
+        }
+        if workspace.is_some_and(|ws| ws.readers().len() > 2) {
+            let has_compiled = !tokens.is_empty();
+            super::tokens_scan::scan_source_tokens(text, overlay_opt.is_none(), has_compiled, &mut tokens);
+        }
+        super::tokens_attr::apply_attribute_rules(text, &mut tokens);
+        super::tokens_doc::scan_doc_comments(text, workspace, &mut tokens);
     }
 
     filter_non_overlapping(tokens)

@@ -22,6 +22,11 @@ mod lens_targets;
 pub mod reconcile;
 pub mod selection;
 pub mod tokens;
+mod tokens_attr;
+mod tokens_detached;
+mod tokens_doc;
+#[cfg(test)]
+mod tokens_rules_tests;
 pub mod tokens_scan;
 pub mod workspace_diag;
 

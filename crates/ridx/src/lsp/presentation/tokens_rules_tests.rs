@@ -1,0 +1,103 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+//! Lexical token rules that follow rust-analyzer: macro bangs, masked literals, attributes, doc comments and files
+//! outside every crate.
+
+use super::tokens::{
+    RawToken, TOKEN_TYPE_ENUM, TOKEN_TYPE_FUNCTION, TOKEN_TYPE_INTERFACE, TOKEN_TYPE_MACRO, TOKEN_TYPE_PROPERTY, TOKEN_TYPE_STRUCT, TOKEN_TYPE_TYPE, TOKEN_TYPE_TYPE_PARAMETER,
+    TOKEN_TYPE_VARIABLE,
+};
+use super::{tokens_attr, tokens_detached, tokens_doc, tokens_scan};
+
+fn spans(tokens: &[RawToken]) -> Vec<(u32, u32, u32, u32)> {
+    let mut v: Vec<_> = tokens.iter().map(|t| (t.line, t.col, t.length, t.token_type)).collect();
+    v.sort();
+    v
+}
+
+fn scan(text: &str) -> Vec<RawToken> {
+    let mut tokens = Vec::new();
+    tokens_scan::scan_source_tokens(text, false, true, &mut tokens);
+    tokens
+}
+
+#[test]
+fn test_macro_call_bang_is_its_own_macro_token() {
+    let got = spans(&scan("fn f() { println!(\"x\"); }\n"));
+    assert!(got.contains(&(0, 9, 7, TOKEN_TYPE_MACRO)), "{got:?}");
+    assert!(got.contains(&(0, 16, 1, TOKEN_TYPE_MACRO)), "{got:?}");
+}
+
+#[test]
+fn test_words_in_multi_line_raw_strings_are_not_code() {
+    let got = spans(&scan("fn f() {\n    check(r#\"\nfn foo() { Bar::new() }\n\"#);\n}\n"));
+    assert!(got.iter().all(|t| t.0 != 2), "no token inside the raw string: {got:?}");
+}
+
+#[test]
+fn test_std_traits_enums_type_params_and_assoc_types() {
+    let got = spans(&scan("fn f<T: Clone>(x: Option<T>) -> Self::Output {}\n"));
+    assert!(got.contains(&(0, 8, 5, TOKEN_TYPE_INTERFACE)), "Clone: {got:?}");
+    assert!(got.contains(&(0, 18, 6, TOKEN_TYPE_ENUM)), "Option: {got:?}");
+    assert!(got.contains(&(0, 25, 1, TOKEN_TYPE_TYPE_PARAMETER)), "T: {got:?}");
+    assert!(got.contains(&(0, 38, 6, TOKEN_TYPE_TYPE)), "Self::Output: {got:?}");
+}
+
+#[test]
+fn test_attribute_contents_dropped_and_derive_arguments_are_macros() {
+    let text = "#![cfg_attr(not(test), no_std)]\n#[derive(Debug, Serialize)]\nstruct S;\n";
+    let mut tokens = scan(text);
+    tokens_attr::apply_attribute_rules(text, &mut tokens);
+    let got = spans(&tokens);
+    assert!(got.iter().all(|t| t.0 != 0), "nothing inside #![cfg_attr(...)]: {got:?}");
+    assert!(got.contains(&(1, 9, 5, TOKEN_TYPE_MACRO)), "Debug: {got:?}");
+    assert!(got.contains(&(1, 16, 9, TOKEN_TYPE_MACRO)), "Serialize: {got:?}");
+    assert!(!got.iter().any(|t| t.0 == 1 && t.1 == 2), "`derive` itself: {got:?}");
+}
+
+#[test]
+fn test_doc_examples_in_rust_fences_are_scanned_and_other_fences_are_not() {
+    let text = "/// Example:\n/// ```\n/// let v = Vec::new();\n/// ```\n/// ```text\n/// Foo::bar()\n/// ```\nfn f() {}\n";
+    let mut tokens = Vec::new();
+    tokens_doc::scan_doc_comments(text, None, &mut tokens);
+    let got = spans(&tokens);
+    assert!(got.contains(&(2, 8, 1, TOKEN_TYPE_VARIABLE)), "v: {got:?}");
+    assert!(got.contains(&(2, 12, 3, TOKEN_TYPE_STRUCT)), "Vec: {got:?}");
+    assert!(got.iter().all(|t| t.0 != 5), "a `text` fence is not code: {got:?}");
+}
+
+#[test]
+fn test_detached_file_types_definitions_and_bindings_only() {
+    let text = "use other::Thing;\nstruct S {\n    a: u8,\n}\nfn main() {\n    let x = Thing::new();\n    let f = |y: u8| y;\n}\n";
+    let mut tokens = Vec::new();
+    tokens_detached::detached_definition_tokens(text, &mut tokens);
+    let got = spans(&tokens);
+    assert!(got.contains(&(1, 7, 1, TOKEN_TYPE_STRUCT)), "{got:?}");
+    assert!(got.contains(&(2, 4, 1, TOKEN_TYPE_PROPERTY)), "{got:?}");
+    assert!(got.contains(&(4, 3, 4, TOKEN_TYPE_FUNCTION)), "{got:?}");
+    assert!(got.contains(&(5, 8, 1, TOKEN_TYPE_VARIABLE)), "{got:?}");
+    assert!(got.contains(&(6, 13, 1, TOKEN_TYPE_VARIABLE)), "closure parameter: {got:?}");
+    assert!(got.iter().all(|t| t.0 != 0), "the unresolved import has no token: {got:?}");
+    assert!(!got.iter().any(|t| t.0 == 5 && t.1 >= 12), "uses have no token: {got:?}");
+}
+
+#[test]
+fn test_outside_every_crate_follows_cargo_layout() {
+    let dir = std::env::temp_dir().join(format!("ridx_tok_layout_{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("src/inner")).unwrap();
+    std::fs::create_dir_all(dir.join("tests/ui")).unwrap();
+    std::fs::write(dir.join("Cargo.toml"), "[package]\nname = \"p\"\n").unwrap();
+    let at = |rel: &str| dir.join(rel).to_string_lossy().into_owned();
+    assert!(!tokens_detached::outside_every_crate(&at("build.rs")));
+    assert!(!tokens_detached::outside_every_crate(&at("src/inner/gated.rs")));
+    assert!(tokens_detached::outside_every_crate(&at("tests/ui/case.rs")));
+    let _ = std::fs::remove_dir_all(&dir);
+}
