@@ -91,12 +91,11 @@ fn test_folding_range_overlay_multiline_scope_emitted() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 219);
     let ranges = resp["result"].as_array().unwrap();
-    // 2 scopes: root file scope and function scope
-    assert_eq!(ranges.len(), 2);
+    // The open buffer's text is folded, not the file on disk: the function, as in rust-analyzer (no whole-file fold).
+    assert_eq!(ranges.len(), 1);
     assert_eq!(ranges[0]["kind"], "region");
     assert_eq!(ranges[0]["startLine"], 0);
-    assert_eq!(ranges[1]["startLine"], 0);
-    assert_eq!(ranges[1]["endLine"], 3);
+    assert_eq!(ranges[0]["endLine"], 3);
 }
 
 #[test]
@@ -127,14 +126,12 @@ fn test_folding_range_overlay_nested_scopes() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 220);
     let ranges = resp["result"].as_array().unwrap();
-    // 3 scopes: root scope (0..5), outer fn (0..4), inner block (1..3)
-    assert_eq!(ranges.len(), 3);
-    assert_eq!(ranges[0]["startLine"], 0);
-    assert_eq!(ranges[0]["endLine"], 5);
+    // Inner block (1..3), then the outer fn (0..4); no whole-file fold.
+    assert_eq!(ranges.len(), 2);
+    assert_eq!(ranges[0]["startLine"], 1);
+    assert_eq!(ranges[0]["endLine"], 3);
     assert_eq!(ranges[1]["startLine"], 0);
     assert_eq!(ranges[1]["endLine"], 4);
-    assert_eq!(ranges[2]["startLine"], 1);
-    assert_eq!(ranges[2]["endLine"], 3);
 }
 
 #[test]
@@ -179,12 +176,10 @@ fn test_folding_range_overlay_did_change_expands_range() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 221);
     let ranges = resp["result"].as_array().unwrap();
-    // 2 scopes: root scope (0..5) and function scope (0..4)
-    assert_eq!(ranges.len(), 2);
+    // The edited buffer's function grows to 0..4.
+    assert_eq!(ranges.len(), 1);
     assert_eq!(ranges[0]["startLine"], 0);
-    assert_eq!(ranges[0]["endLine"], 5);
-    assert_eq!(ranges[1]["startLine"], 0);
-    assert_eq!(ranges[1]["endLine"], 4);
+    assert_eq!(ranges[0]["endLine"], 4);
 }
 
 #[test]
@@ -229,12 +224,10 @@ fn test_folding_range_overlay_did_change_contracts_range() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 222);
     let ranges = resp["result"].as_array().unwrap();
-    // 2 scopes: root scope (0..3) and function scope (0..2)
-    assert_eq!(ranges.len(), 2);
+    // The edited buffer's function shrinks to 0..2.
+    assert_eq!(ranges.len(), 1);
     assert_eq!(ranges[0]["startLine"], 0);
-    assert_eq!(ranges[0]["endLine"], 3);
-    assert_eq!(ranges[1]["startLine"], 0);
-    assert_eq!(ranges[1]["endLine"], 2);
+    assert_eq!(ranges[0]["endLine"], 2);
 }
 
 #[test]

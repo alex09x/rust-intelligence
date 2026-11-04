@@ -204,10 +204,10 @@ fn test_folding_range_overlay_scopes_take_precedence() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     let ranges = resp["result"].as_array().unwrap();
-    assert_eq!(ranges.len(), 2);
+    // The open buffer wins over the file on disk: its function spans 0..4.
+    assert_eq!(ranges.len(), 1);
     assert_eq!(ranges[0]["startLine"], 0);
-    assert_eq!(ranges[1]["startLine"], 0);
-    assert_eq!(ranges[1]["endLine"], 4);
+    assert_eq!(ranges[0]["endLine"], 4);
 }
 
 #[test]
@@ -246,10 +246,9 @@ fn test_folding_range_overlay_single_line_scope_filtered() {
     assert!(dsp.dispatch(&ctrl_req));
     let ctrl_resp = dsp.parse_response();
     let ctrl_ranges = ctrl_resp["result"].as_array().unwrap();
-    assert_eq!(ctrl_ranges.len(), 2);
+    assert_eq!(ctrl_ranges.len(), 1);
     assert_eq!(ctrl_ranges[0]["startLine"], 0);
-    assert_eq!(ctrl_ranges[1]["startLine"], 0);
-    assert_eq!(ctrl_ranges[1]["endLine"], 2);
+    assert_eq!(ctrl_ranges[0]["endLine"], 2);
 }
 
 #[test]
@@ -273,7 +272,7 @@ fn test_folding_range_overlay_dirty_edit_updates_folding() {
     assert!(dsp.dispatch(&req1));
     let resp1 = dsp.parse_response();
     let ranges1 = resp1["result"].as_array().unwrap();
-    assert_eq!(ranges1.len(), 2);
+    assert_eq!(ranges1.len(), 1);
 
     let change_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didChange",
@@ -288,13 +287,12 @@ fn test_folding_range_overlay_dirty_edit_updates_folding() {
     assert!(dsp.dispatch(&req2));
     let resp2 = dsp.parse_response();
     let ranges2 = resp2["result"].as_array().unwrap();
-    assert_eq!(ranges2.len(), 3);
+    // Both functions of the edited buffer fold; there is no whole-file fold.
+    assert_eq!(ranges2.len(), 2);
     assert_eq!(ranges2[0]["startLine"], 0);
-    assert_eq!(ranges2[0]["endLine"], 6);
-    assert_eq!(ranges2[1]["startLine"], 0);
-    assert_eq!(ranges2[1]["endLine"], 2);
-    assert_eq!(ranges2[2]["startLine"], 3);
-    assert_eq!(ranges2[2]["endLine"], 5);
+    assert_eq!(ranges2[0]["endLine"], 2);
+    assert_eq!(ranges2[1]["startLine"], 3);
+    assert_eq!(ranges2[1]["endLine"], 5);
 }
 
 #[test]
