@@ -241,7 +241,17 @@ def run_corpus_pkl(
     if limit > 0:
         rows = rows[:limit]
 
-    cache: Dict[str, Tuple[bool, List[str]]] = {}
+    # Results persist across runs: rust-analyzer's edits never change between RIDX iterations, and an unchanged RIDX edit
+    # needs no second build. The key pins the corpus commit and check mode, so a different checkout never reuses a verdict.
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=wt, capture_output=True, text=True).stdout.strip()
+    key_prefix = f"{head}|{' '.join(mode)}|"
+    cache_path = os.path.expanduser(f"{target_root}/cac_cache_{corpus}.json")
+    try:
+        with open(cache_path, encoding="utf-8") as fh:
+            disk_cache = {k[len(key_prefix):]: (bool(v[0]), list(v[1])) for k, v in json.load(fh).items() if k.startswith(key_prefix)}
+    except (OSError, ValueError):
+        disk_cache = {}
+    cache: Dict[str, Tuple[bool, List[str]]] = dict(disk_cache)
     summary = {
         who: {"positions_with_actions": 0, "actions_checked": 0, "actions_compiled": 0, "actions_broke_build": 0, "broke_by_title": Counter(), "sample_failures": []}
         for who in ("ridx", "ra")
@@ -290,6 +300,14 @@ def run_corpus_pkl(
         per_pos_ok.append((pos_ok["ridx"], pos_ok["ra"]))
 
     reset()
+    try:
+        with open(cache_path, encoding="utf-8") as fh:
+            stored = json.load(fh)
+    except (OSError, ValueError):
+        stored = {}
+    stored.update({key_prefix + sig: [ok_v, err_v] for sig, (ok_v, err_v) in cache.items()})
+    with open(cache_path, "w", encoding="utf-8") as fh:
+        json.dump(stored, fh)
     cov = compute_ra_compiling_coverage(per_pos_ok)
     out = {
         "corpus": corpus,
