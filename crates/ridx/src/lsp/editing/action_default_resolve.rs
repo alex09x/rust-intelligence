@@ -27,6 +27,10 @@ pub struct ResolvedTraitSource {
     pub generics: Vec<GenericDecl>,
     pub body_open: usize,
     pub body_close: usize,
+    /// The trait's path in the index, when the index resolved it: its compiled members are `<def_path>::<name>`.
+    pub def_path: Option<String>,
+    /// The file holding the trait, when the index resolved it.
+    pub file: Option<String>,
 }
 
 pub fn split_trait_path_and_args(trait_ty: &str) -> Option<(&str, Vec<String>)> {
@@ -57,6 +61,61 @@ pub fn split_trait_path_and_args(trait_ty: &str) -> Option<(&str, Vec<String>)> 
     }
 }
 
+/// The trait an impl header names, as the index resolved it: the last word-bounded `simple` before the impl body
+/// that the index maps to a trait definition.
+#[allow(clippy::too_many_arguments)]
+fn trait_from_index(
+    doc_text: &str,
+    masked_doc: &str,
+    current_file: &str,
+    impl_body_open: usize,
+    simple: &str,
+    ws: &WorkspaceIndex,
+    overlay_mgr: &OverlayManager,
+    impl_mod: (usize, usize),
+) -> Option<ResolvedTraitSource> {
+    let header_start = masked_doc[..impl_body_open].rfind("impl")?;
+    let b = masked_doc.as_bytes();
+    let at = masked_doc[header_start..impl_body_open]
+        .match_indices(simple)
+        .map(|(p, _)| header_start + p)
+        .find(|&p| !is_ident_byte(b[p - 1]) && b.get(p + simple.len()).is_none_or(|c| !is_ident_byte(*c)))?;
+    let line_start = doc_text[..at].rfind('\n').map_or(0, |p| p + 1);
+    let line = doc_text[..line_start].matches('\n').count() as u32 + 1;
+    let col = doc_text[line_start..at].chars().count() as u32 + 1;
+    let refs = ws.find_direct_references_at(current_file, line, col)?;
+    if refs.target_kind != DefKind::Trait {
+        return None;
+    }
+    let target = refs.target_resolved_path();
+    let path_str = target.to_str()?;
+    let trait_src = if let Some(ov) = overlay_mgr.get(path_str) { ov.text.clone() } else { std::fs::read_to_string(&target).ok()? };
+    let trait_masked = mask_comments_and_strings(&trait_src);
+    let (generics, bo, bc) = find_trait_in_range(&trait_src, &trait_masked, 0, trait_masked.len(), simple_or_target(simple, refs.target_symbol), Some(refs.target_line))?;
+    let same_module = path_str == current_file && enclosing_module_span(&trait_masked, bo) == impl_mod;
+    let same_crate = same_module || same_cargo_manifest_dir(Path::new(current_file), &target);
+    Some(ResolvedTraitSource {
+        src: trait_src,
+        masked: trait_masked,
+        same_module,
+        same_crate,
+        generics,
+        body_open: bo,
+        body_close: bc,
+        def_path: Some(refs.target_path.to_string()),
+        file: Some(path_str.to_string()),
+    })
+}
+
+/// The trait's own name: an impl may name it through a renaming import.
+fn simple_or_target<'a>(simple: &'a str, target: &'a str) -> &'a str {
+    if target.is_empty() {
+        simple
+    } else {
+        target
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn resolve_trait_definition(
     doc_text: &str,
@@ -79,14 +138,31 @@ pub fn resolve_trait_definition(
                 generics,
                 body_open: bo,
                 body_close: bc,
+                def_path: None,
+                file: None,
             });
         }
     }
     if impl_mod != (0, masked_doc.len()) && (!trait_path.contains("::") || trait_path.starts_with("super::") || trait_path.starts_with("crate::")) {
         if let Some((generics, bo, bc)) = find_trait_in_range(doc_text, masked_doc, 0, masked_doc.len(), simple_clean, None) {
             let same_module = enclosing_module_span(masked_doc, bo) == impl_mod;
-            return Some(ResolvedTraitSource { src: doc_text.to_string(), masked: masked_doc.to_string(), same_module, same_crate: true, generics, body_open: bo, body_close: bc });
+            return Some(ResolvedTraitSource {
+                src: doc_text.to_string(),
+                masked: masked_doc.to_string(),
+                same_module,
+                same_crate: true,
+                generics,
+                body_open: bo,
+                body_close: bc,
+                def_path: None,
+                file: None,
+            });
         }
+    }
+
+    // The index resolved the trait name in the impl header: follow it, re-exports included.
+    if let Some(found) = trait_from_index(doc_text, masked_doc, current_file, impl_body_open, simple_clean, ws, overlay_mgr, impl_mod) {
+        return Some(found);
     }
 
     let trimmed_tp = trait_path.trim_start_matches("::");
@@ -145,7 +221,7 @@ pub fn resolve_trait_definition(
     let (generics, bo, bc) = find_trait_in_range(&trait_src, &trait_masked, 0, trait_masked.len(), target_ident, Some(*line1))?;
     let same_module = path_str == current_file && enclosing_module_span(&trait_masked, bo) == impl_mod;
     let same_crate = same_module || same_cargo_manifest_dir(cur_path, target_path);
-    Some(ResolvedTraitSource { src: trait_src, masked: trait_masked, same_module, same_crate, generics, body_open: bo, body_close: bc })
+    Some(ResolvedTraitSource { src: trait_src, masked: trait_masked, same_module, same_crate, generics, body_open: bo, body_close: bc, def_path: None, file: None })
 }
 
 struct UseImportHit {

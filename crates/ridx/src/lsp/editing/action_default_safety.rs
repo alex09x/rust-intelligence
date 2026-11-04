@@ -210,7 +210,7 @@ const SAFE_STD_METHODS: &[&str] = &[
     "unwrap", "unwrap_or", "unwrap_or_default", "unwrap_or_else", "wrapping_add", "write_fmt", "write_str", "zip",
 ];
 
-fn is_rust_kw_or_prelude(tok: &str) -> bool {
+pub(crate) fn is_rust_kw_or_prelude(tok: &str) -> bool {
     RUST_KW_AND_PRELUDE.contains(&tok)
 }
 

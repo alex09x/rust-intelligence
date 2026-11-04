@@ -10,26 +10,19 @@
 
 //! Index-backed, compile-safe `Implement default members` code action builder.
 
+use super::action_default_extract::{extract_default_fn_members, DefaultFnMember};
+use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, MemberOrigin};
 use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args};
+use super::action_default_safety::is_rust_kw_or_prelude;
 use super::action_default_scope::{collect_module_scope_idents, enclosing_module_span, has_top_level_macro_call, is_default_fn_compile_safe};
 use super::action_default_ufcs::{alpha_rename_colliding_fn_generics, collect_trait_fn_receivers, parse_fn_receiver, qualify_trait_self_calls};
 use super::action_generics_sub::{collect_tokens_and_lifetimes, parse_generics_list, GenKind, GenericDecl};
 use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings, EnclosingContext, ItemKindInfo, ParsedCursorItem};
-use super::action_parse_decl::{extract_angle_generics, find_header_terminator, next_ident_token};
-use super::action_parse_items::{contains_word, skip_balanced};
+use super::action_parse_decl::{extract_angle_generics, next_ident_token};
+use super::action_parse_items::skip_balanced;
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use std::collections::HashSet;
-
-struct DefaultFnMember {
-    name: String,
-    cfg_attrs: Vec<String>,
-    fn_src: String,
-    fn_masked: String,
-    params_masked: String,
-    fn_gens: Vec<GenericDecl>,
-    fn_gen_names: HashSet<String>,
-}
 
 #[allow(clippy::too_many_arguments)]
 pub fn build_implement_default_members(
@@ -77,7 +70,8 @@ pub fn build_implement_default_members(
 
     let all_trait_fns = collect_top_level_fn_names(trait_body_masked);
     let trait_receivers = collect_trait_fn_receivers(trait_body_src, trait_body_masked);
-    let default_fns = extract_default_fn_members(trait_body_src, trait_body_masked, resolved_trait.same_crate)?;
+    let compiled = |name: &str| resolved_trait.def_path.as_ref().map(|p| ws.find_definition_by_path(&format!("{p}::{name}")).is_some());
+    let default_fns = extract_default_fn_members(trait_body_src, trait_body_masked, resolved_trait.same_crate, &compiled)?;
     let missing: Vec<&DefaultFnMember> = default_fns.iter().filter(|m| !implemented_fns.contains(&m.name)).collect();
     if missing.is_empty() {
         return None;
@@ -95,10 +89,38 @@ pub fn build_implement_default_members(
     let member_indent = format!("{indent}    ");
     let mut rendered_members = Vec::with_capacity(missing.len());
 
+    // The crate the impl lives in: names from it are written `crate::…`.
+    let dest_crate = ws.reader_indices_for_file(current_file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_")).unwrap_or_default();
+    let trait_gen_names: HashSet<&str> = resolved_trait.generics.iter().map(|g| g.name.as_str()).collect();
+    // Only names that start a path in the impl header are in scope there (`E: de::Error` does not bring `Error`).
+    let mut allowed_idents = path_heads(&format!("{generics_src} {self_ty} {trait_ty} {where_src}"));
+    allowed_idents.extend(impl_hdr_idents.iter().filter(|t| t.starts_with('\'')).cloned());
+    let hdr_heads = allowed_idents.clone();
+
     for m in missing {
-        let (sub_src, _, sub_params) = substitute_trait_generics(&m.fn_src, &m.fn_masked, &m.params_masked, &resolved_trait.generics, &trait_args, &m.fn_gen_names);
+        // Names the impl's module does not see are written as the paths the index resolved them to.
+        let (fn_src, fn_masked, params_masked) = match (&resolved_trait.file, resolved_trait.same_module) {
+            (Some(trait_file), false) => {
+                let origin = MemberOrigin { trait_src: &resolved_trait.src, trait_file, start: resolved_trait.body_open + 1 + m.start };
+                let visible = |t: &str| {
+                    t == "Self" || is_rust_kw_or_prelude(t) || doc_scope.contains(t) || hdr_heads.contains(t) || m.fn_gen_names.contains(t) || trait_gen_names.contains(t)
+                };
+                let (src, roots) = qualify_member_paths(&m.fn_src, &origin, ws, &dest_crate, &visible);
+                allowed_idents.extend(roots);
+                let masked = mask_comments_and_strings(&src);
+                let params = extract_first_paren_masked(&masked).unwrap_or_else(|| m.params_masked.clone());
+                (src, masked, params)
+            }
+            _ => (m.fn_src.clone(), m.fn_masked.clone(), m.params_masked.clone()),
+        };
+        let (sub_src, _, sub_params) = substitute_trait_generics(&fn_src, &fn_masked, &params_masked, &resolved_trait.generics, &trait_args, &m.fn_gen_names);
         let (alpha_src, eff_gen_names) = alpha_rename_colliding_fn_generics(&sub_src, &m.fn_gens, &m.fn_gen_names, &impl_non_lt_gens, doc_text, replace_ident_or_lt)?;
         let alpha_masked = mask_comments_and_strings(&alpha_src);
+        // A prelude name the body relies on (`Result`, `Option`, …) that the impl's module redefines or imports
+        // (`type Result<T> = …`) would change meaning once copied.
+        if !resolved_trait.same_module && shadows_prelude_name(&alpha_masked, &doc_scope) {
+            return None;
+        }
         let alpha_params = extract_first_paren_masked(&alpha_masked).unwrap_or(sub_params);
         if !is_default_fn_compile_safe(
             &alpha_masked,
@@ -108,7 +130,7 @@ pub fn build_implement_default_members(
             resolved_trait.same_crate,
             &all_trait_fns,
             &doc_scope,
-            &impl_hdr_idents,
+            &allowed_idents,
         ) {
             return None;
         }
@@ -208,94 +230,6 @@ fn collect_colliding_self_methods(masked_doc: &str, impl_open: usize, impl_close
         }
     }
     out
-}
-
-fn extract_default_fn_members(body_src: &str, body_masked: &str, same_crate: bool) -> Option<Vec<DefaultFnMember>> {
-    let mb = body_masked.as_bytes();
-    let mut out = Vec::new();
-    let mut i = 0usize;
-    while i < mb.len() {
-        while i < mb.len() && mb[i].is_ascii_whitespace() {
-            i += 1;
-        }
-        if i >= mb.len() {
-            break;
-        }
-        let mut cfg_attrs = Vec::new();
-        while mb.get(i).copied() == Some(b'#') {
-            let attr_start = i;
-            let mut k = i + 1;
-            if mb.get(k).copied() == Some(b'!') {
-                k += 1;
-            }
-            while k < mb.len() && mb[k].is_ascii_whitespace() {
-                k += 1;
-            }
-            if mb.get(k).copied() == Some(b'[') {
-                let after_a = skip_balanced(mb, k, b'[', b']')?;
-                let inner_m = &body_masked[k + 1..after_a - 1];
-                if contains_word(inner_m, "cfg_attr") {
-                    return None;
-                }
-                if contains_word(inner_m, "cfg") {
-                    if !same_crate {
-                        return None;
-                    }
-                    cfg_attrs.push(body_src[attr_start..after_a].trim().to_string());
-                }
-                i = after_a;
-                while i < mb.len() && mb[i].is_ascii_whitespace() {
-                    i += 1;
-                }
-            } else {
-                break;
-            }
-        }
-        let item_start = i;
-        let mut pos = i;
-        while let Some((tok, next_p)) = next_ident_token(body_masked, pos) {
-            if matches!(tok, "async" | "const" | "unsafe" | "extern") {
-                pos = next_p;
-            } else {
-                break;
-            }
-        }
-        let Some((kw, kw_end)) = next_ident_token(body_masked, pos) else {
-            i += 1;
-            continue;
-        };
-        if kw == "fn" {
-            let (raw_n, name_end) = next_ident_token(body_src, kw_end)?;
-            let (gen_s, after_g) = extract_angle_generics(body_src, body_masked, name_end);
-            let mut p = after_g;
-            while p < mb.len() && mb[p].is_ascii_whitespace() {
-                p += 1;
-            }
-            let paren_end = skip_balanced(mb, p, b'(', b')')?;
-            let term = find_header_terminator(mb, paren_end)?;
-            if mb[term] == b'{' {
-                let after_body = skip_balanced(mb, term, b'{', b'}')?;
-                let fn_gens = parse_generics_list(&gen_s);
-                let fn_gen_names: HashSet<String> = fn_gens.iter().map(|g| g.name.clone()).collect();
-                out.push(DefaultFnMember {
-                    name: raw_n.strip_prefix("r#").unwrap_or(raw_n).to_string(),
-                    cfg_attrs,
-                    fn_src: body_src[item_start..after_body].to_string(),
-                    fn_masked: body_masked[item_start..after_body].to_string(),
-                    params_masked: body_masked[p + 1..paren_end - 1].to_string(),
-                    fn_gens,
-                    fn_gen_names,
-                });
-                i = after_body;
-                continue;
-            }
-            i = term + 1;
-            continue;
-        }
-        let term = find_header_terminator(mb, kw_end)?;
-        i = if mb[term] == b'{' { skip_balanced(mb, term, b'{', b'}')? } else { term + 1 };
-    }
-    Some(out)
 }
 
 fn extract_first_paren_masked(fn_masked: &str) -> Option<String> {
