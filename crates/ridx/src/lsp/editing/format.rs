@@ -182,7 +182,8 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     } else {
         let line_count = doc_text.lines().count() as u32;
         let last_line = doc_text.lines().last().unwrap_or("");
-        let last_char = last_line.chars().count() as u32;
+        // LSP columns count UTF-16 code units, so a non-BMP char on an unterminated last line spans two.
+        let last_char = last_line.encode_utf16().count() as u32;
         let (end_line, end_char) = if doc_text.ends_with('\n') { (line_count, 0) } else { (line_count.saturating_sub(1), last_char) };
         json!([
             {
@@ -356,6 +357,20 @@ mod tests {
         let end = &edits[0]["range"]["end"];
         assert_eq!(end["line"], 2);
         assert_eq!(end["character"], 1);
+    }
+
+    #[test]
+    fn test_handle_formatting_range_end_counts_utf16_units() {
+        let mut overlay_mgr = OverlayManager::new();
+        let uri = "file:///tmp/fmt_utf16.rs";
+        let code = "fn main() {\nlet s = \"🦀\";}";
+        overlay_mgr.open_document(uri, "/tmp/fmt_utf16.rs", 1, code.to_string());
+
+        let res = handle_formatting(&json!({ "params": { "textDocument": { "uri": uri } } }), &overlay_mgr);
+        let edits = res.as_array().expect("edits array");
+        assert_eq!(edits.len(), 1);
+        // `let s = "🦀";}` is 13 chars but 14 UTF-16 units: the crab is a surrogate pair.
+        assert_eq!(edits[0]["range"]["end"], json!({ "line": 1, "character": 14 }));
     }
 
     #[test]
