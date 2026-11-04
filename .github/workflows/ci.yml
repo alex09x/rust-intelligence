@@ -36,17 +36,22 @@ jobs:
       - name: Configure sysroot shared library path for prefer-dynamic
         run: echo "LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
-      - name: Cache Cargo registry and target
-        uses: Swatinem/rust-cache@v2
+      # Mitts builds, checks and tests the workspace; its content-addressed store is the whole build cache.
+      - name: Install Mitts and restore its build cache
+        uses: alex09x/mitts@v0.3.23
 
       - name: Check formatting
-        run: cargo fmt --all -- --check
+        run: mitts fmt --check
 
       - name: Check Clippy lints
-        run: cargo clippy --workspace -- -D warnings
+        run: mitts clippy --workspace -- -D warnings
 
       - name: Run workspace unit and integration tests
-        run: cargo test --workspace
+        run: mitts test --workspace --locked
+
+      - name: Save the Mitts build cache
+        if: always()
+        uses: alex09x/mitts/save@v0.3.23
 
       - name: Set up Python for benchmark harness tests
         uses: actions/setup-python@v5
