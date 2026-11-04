@@ -10,62 +10,11 @@
 
 //! `textDocument/documentSymbol` handler with on-disk fallback and `(path, mtime, len)` cache.
 
-use crate::lsp::protocol::{lsp_symbol_kind, uri_to_path, PositionConverter};
+use super::document_symbol_tree::document_symbols;
+use crate::lsp::protocol::{uri_to_path, PositionConverter};
 use crate::lsp::symbols::disk_cache::DocumentSymbolDiskCache;
-use crate::overlay::{DocumentOverlay, OverlayManager};
-use ridx_format::DefKind;
+use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
-
-/// Formats parsed overlay symbols into the LSP `DocumentSymbol[]` JSON array.
-fn format_overlay_symbols(overlay: &DocumentOverlay) -> Value {
-    let mut results = Vec::new();
-    for s in &overlay.symbols {
-        if s.kind == DefKind::TyParam {
-            continue;
-        }
-        let start_char = overlay.char_col_to_utf16_col(s.start_line, s.start_col);
-        let end_char = overlay.char_col_to_utf16_col(s.end_line, s.end_col);
-        let range = json!({
-            "start": { "line": s.start_line.saturating_sub(1), "character": start_char },
-            "end": { "line": s.end_line.saturating_sub(1), "character": end_char }
-        });
-        results.push(json!({
-            "name": s.name,
-            "kind": lsp_symbol_kind(s.kind),
-            "range": range,
-            "selectionRange": range,
-            "detail": s.signature
-        }));
-    }
-    for (line_idx, line) in overlay.text.lines().enumerate() {
-        let code_part = line.split("//").next().unwrap_or(line);
-        if let Some(idx) = code_part.find("macro_rules!") {
-            let after = &code_part[idx + "macro_rules!".len()..];
-            let trimmed = after.trim_start();
-            let ws_skipped = after.len() - trimmed.len();
-            let name: String = trimmed.chars().take_while(|c| *c == '_' || c.is_alphanumeric()).collect();
-            if !name.is_empty() {
-                let start_col_char = (code_part[..idx + "macro_rules!".len() + ws_skipped].chars().count() + 1) as u32;
-                let end_col_char = start_col_char + name.chars().count() as u32;
-                let line_1based = (line_idx + 1) as u32;
-                let sc = overlay.char_col_to_utf16_col(line_1based, start_col_char);
-                let ec = overlay.char_col_to_utf16_col(line_1based, end_col_char);
-                let range = json!({
-                    "start": { "line": line_idx as u32, "character": sc },
-                    "end": { "line": line_idx as u32, "character": ec }
-                });
-                results.push(json!({
-                    "name": name,
-                    "kind": lsp_symbol_kind(DefKind::Macro),
-                    "range": range,
-                    "selectionRange": range,
-                    "detail": Value::Null
-                }));
-            }
-        }
-    }
-    json!(results)
-}
 
 /// Parses `DocumentSymbol[]` from disk for a closed file, using `cache` keyed by `(mtime, len)`
 /// to avoid re-reading and re-parsing unchanged files across repeated requests.
@@ -94,8 +43,7 @@ fn document_symbols_from_disk(file: &str, cache: &DocumentSymbolDiskCache) -> Va
         return json!([]);
     };
 
-    let overlay = DocumentOverlay::parse_detached(text);
-    let symbols = format_overlay_symbols(&overlay);
+    let symbols = document_symbols(&text);
 
     cache.insert(file.to_owned(), mtime, len, symbols.clone());
 
@@ -115,7 +63,7 @@ pub fn handle_document_symbol(msg: &Value, overlay_mgr: &OverlayManager, _conv: 
     }
 
     if let Some(overlay) = overlay_mgr.get(&file) {
-        return format_overlay_symbols(overlay);
+        return document_symbols(&overlay.text);
     }
 
     document_symbols_from_disk(&file, overlay_mgr.doc_symbol_cache())

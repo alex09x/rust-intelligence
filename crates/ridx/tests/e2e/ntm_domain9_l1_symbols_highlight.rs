@@ -211,12 +211,12 @@ fn test_l1_document_symbol_typaram_filtered() {
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("document symbols");
 
-    // Contains function and parameter, but filters out generic TyParam T
-    assert_eq!(items.len(), 2);
+    // As in rust-analyzer: the function alone, no type parameter or value parameter symbols; generics stay in the detail.
+    assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "process_data");
     assert_eq!(items[0]["kind"], 12);
-    assert_eq!(items[1]["name"], "val");
-    assert!(items.iter().all(|s| s["name"] != "T"), "TyParam T must be filtered out");
+    assert_eq!(items[0]["detail"], "fn<T>(val: T) -> T");
+    assert_eq!(items[0]["children"], json!([]));
 }
 
 #[test]
@@ -256,10 +256,11 @@ fn test_l1_document_symbol_unicode_ranges() {
     assert_eq!(items.len(), 1);
     let sym = &items[0];
     assert_eq!(sym["name"], "unicode_fn");
+    // The item range starts at `pub`: "/* 🦀🦀 */ " = 3 + 4 + 4 = 11 UTF-16 code units.
     assert_eq!(sym["range"]["start"]["line"], 0);
+    assert_eq!(sym["range"]["start"]["character"], 11);
+    assert_eq!(sym["range"]["end"]["character"], 33);
     // "/* 🦀🦀 */ pub fn " = 3 + 4 + 11 = 18 UTF-16 code units; unicode_fn is 10 chars = 28 end
-    assert_eq!(sym["range"]["start"]["character"], 18);
-    assert_eq!(sym["range"]["end"]["character"], 28);
     assert_eq!(sym["selectionRange"]["start"]["character"], 18);
     assert_eq!(sym["selectionRange"]["end"]["character"], 28);
 }

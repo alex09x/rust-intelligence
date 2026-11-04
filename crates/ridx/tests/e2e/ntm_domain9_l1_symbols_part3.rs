@@ -36,40 +36,26 @@ fn test_l1_document_symbol_function_signature_detail_exact() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol array");
-    // Discovers top-level items and function parameters as local symbols
-    assert_eq!(items.len(), 4);
+    // Top-level items only, as in rust-analyzer: parameters are no symbols.
+    assert_eq!(items.len(), 2);
 
     let add_sym = items.iter().find(|s| s["name"] == "add").unwrap();
     assert_eq!(add_sym["kind"], 12); // Function
-    assert_eq!(add_sym["detail"], "fn add(a: i32, b: i32) -> i32");
-    assert_eq!(add_sym["range"]["start"]["line"], 0);
-    assert_eq!(add_sym["range"]["start"]["character"], 7);
-    assert_eq!(add_sym["range"]["end"]["character"], 10);
-
-    let param_a = items.iter().find(|s| s["name"] == "a").unwrap();
-    assert_eq!(param_a["kind"], 13); // Variable / Local parameter
-    assert_eq!(param_a["detail"], "a: i32");
-    assert_eq!(param_a["range"]["start"]["line"], 0);
-    assert_eq!(param_a["range"]["start"]["character"], 11);
-    assert_eq!(param_a["range"]["end"]["character"], 12);
-
-    let param_b = items.iter().find(|s| s["name"] == "b").unwrap();
-    assert_eq!(param_b["kind"], 13); // Variable / Local parameter
-    assert_eq!(param_b["detail"], "b: i32");
-    assert_eq!(param_b["range"]["start"]["line"], 0);
-    assert_eq!(param_b["range"]["start"]["character"], 19);
-    assert_eq!(param_b["range"]["end"]["character"], 20);
+    assert_eq!(add_sym["detail"], "fn(a: i32, b: i32) -> i32");
+    assert_eq!(add_sym["selectionRange"]["start"]["line"], 0);
+    assert_eq!(add_sym["selectionRange"]["start"]["character"], 7);
+    assert_eq!(add_sym["selectionRange"]["end"]["character"], 10);
 
     let cfg_sym = items.iter().find(|s| s["name"] == "Config").unwrap();
     assert_eq!(cfg_sym["kind"], 23); // Struct
     assert_eq!(cfg_sym["detail"], Value::Null);
-    assert_eq!(cfg_sym["range"]["start"]["line"], 1);
-    assert_eq!(cfg_sym["range"]["start"]["character"], 11);
-    assert_eq!(cfg_sym["range"]["end"]["character"], 17);
+    assert_eq!(cfg_sym["selectionRange"]["start"]["line"], 1);
+    assert_eq!(cfg_sym["selectionRange"]["start"]["character"], 11);
+    assert_eq!(cfg_sym["selectionRange"]["end"]["character"], 17);
 }
 
 #[test]
-fn test_l1_document_symbol_flat_list_no_children() {
+fn test_l1_document_symbol_members_nested_as_children() {
     let mut overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
     let uri = "file:///workspace/src/flat.rs";
@@ -80,28 +66,25 @@ fn test_l1_document_symbol_flat_list_no_children() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol array");
-    assert_eq!(items.len(), 2);
-
-    // Current RIDX specification invariant: response is flat list, no children array
-    for item in items {
-        assert!(item.get("children").is_none(), "RIDX document symbols must remain flat");
-    }
-
+    // rust-analyzer's hierarchy: the struct with its field, the impl block with its method.
     let names: Vec<&str> = items.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert_eq!(names, vec!["Outer", "method"]);
+    assert_eq!(names, vec!["Outer", "impl Outer"]);
 
-    // Both struct and impl method appear at top level with exact source lines
-    assert_eq!(items[0]["name"], "Outer");
     assert_eq!(items[0]["kind"], 23); // Struct
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 11);
-    assert_eq!(items[0]["range"]["end"]["character"], 16);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 11);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 16);
+    let field = &items[0]["children"][0];
+    assert_eq!((field["name"].as_str(), field["kind"].as_u64(), field["detail"].as_str()), (Some("field"), Some(8), Some("i32")));
 
-    assert_eq!(items[1]["name"], "method");
-    assert_eq!(items[1]["kind"], 12); // Function in overlay parser
-    assert_eq!(items[1]["range"]["start"]["line"], 4);
-    assert_eq!(items[1]["range"]["start"]["character"], 11);
-    assert_eq!(items[1]["range"]["end"]["character"], 17);
+    assert_eq!(items[1]["kind"], 19); // Object: impl block
+    assert_eq!(items[1]["selectionRange"]["start"], json!({ "line": 3, "character": 5 }));
+    let method = &items[1]["children"][0];
+    assert_eq!(method["name"], "method");
+    assert_eq!(method["kind"], 6); // Method: takes `&self`
+    assert_eq!(method["selectionRange"]["start"]["line"], 4);
+    assert_eq!(method["selectionRange"]["start"]["character"], 11);
+    assert_eq!(method["selectionRange"]["end"]["character"], 17);
 }
 
 #[test]
@@ -121,9 +104,9 @@ fn test_l1_document_symbol_enum_structure() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "Color");
     assert_eq!(items[0]["kind"], 10);
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 9);
-    assert_eq!(items[0]["range"]["end"]["character"], 14);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 9);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 14);
 }
 
 #[test]
@@ -139,18 +122,20 @@ fn test_l1_document_symbol_mod_blocks() {
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol array");
 
-    assert_eq!(items.len(), 2);
+    assert_eq!(items.len(), 1);
     let mod_sym = items.iter().find(|s| s["name"] == "telemetry").unwrap();
     assert_eq!(mod_sym["kind"], 2); // Module
-    assert_eq!(mod_sym["range"]["start"]["line"], 0);
-    assert_eq!(mod_sym["range"]["start"]["character"], 8);
-    assert_eq!(mod_sym["range"]["end"]["character"], 17);
+    assert_eq!(mod_sym["selectionRange"]["start"]["line"], 0);
+    assert_eq!(mod_sym["selectionRange"]["start"]["character"], 8);
+    assert_eq!(mod_sym["selectionRange"]["end"]["character"], 17);
 
-    let fn_sym = items.iter().find(|s| s["name"] == "track").unwrap();
+    // Module items are the module's children.
+    let fn_sym = &mod_sym["children"][0];
+    assert_eq!(fn_sym["name"], "track");
     assert_eq!(fn_sym["kind"], 12); // Function
-    assert_eq!(fn_sym["range"]["start"]["line"], 1);
-    assert_eq!(fn_sym["range"]["start"]["character"], 11);
-    assert_eq!(fn_sym["range"]["end"]["character"], 16);
+    assert_eq!(fn_sym["selectionRange"]["start"]["line"], 1);
+    assert_eq!(fn_sym["selectionRange"]["start"]["character"], 11);
+    assert_eq!(fn_sym["selectionRange"]["end"]["character"], 16);
 }
 
 #[test]
@@ -169,21 +154,21 @@ fn test_l1_document_symbol_const_static_type_alias() {
 
     let const_sym = items.iter().find(|s| s["name"] == "CACHE_SIZE").unwrap();
     assert_eq!(const_sym["kind"], 14); // Constant
-    assert_eq!(const_sym["range"]["start"]["line"], 0);
-    assert_eq!(const_sym["range"]["start"]["character"], 10);
-    assert_eq!(const_sym["range"]["end"]["character"], 20);
+    assert_eq!(const_sym["selectionRange"]["start"]["line"], 0);
+    assert_eq!(const_sym["selectionRange"]["start"]["character"], 10);
+    assert_eq!(const_sym["selectionRange"]["end"]["character"], 20);
 
     let static_sym = items.iter().find(|s| s["name"] == "RUNTIME_FLAG").unwrap();
     assert_eq!(static_sym["kind"], 13); // Variable / Static
-    assert_eq!(static_sym["range"]["start"]["line"], 1);
-    assert_eq!(static_sym["range"]["start"]["character"], 11);
-    assert_eq!(static_sym["range"]["end"]["character"], 23);
+    assert_eq!(static_sym["selectionRange"]["start"]["line"], 1);
+    assert_eq!(static_sym["selectionRange"]["start"]["character"], 11);
+    assert_eq!(static_sym["selectionRange"]["end"]["character"], 23);
 
     let type_sym = items.iter().find(|s| s["name"] == "Handler").unwrap();
     assert_eq!(type_sym["kind"], 26); // TypeParameter / TyAlias
-    assert_eq!(type_sym["range"]["start"]["line"], 2);
-    assert_eq!(type_sym["range"]["start"]["character"], 9);
-    assert_eq!(type_sym["range"]["end"]["character"], 16);
+    assert_eq!(type_sym["selectionRange"]["start"]["line"], 2);
+    assert_eq!(type_sym["selectionRange"]["start"]["character"], 9);
+    assert_eq!(type_sym["selectionRange"]["end"]["character"], 16);
 }
 
 #[test]
@@ -198,27 +183,30 @@ fn test_l1_document_symbol_trait_with_methods() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol array");
-    assert_eq!(items.len(), 3);
+    assert_eq!(items.len(), 1);
 
     let trait_sym = items.iter().find(|s| s["name"] == "Storage").unwrap();
     assert_eq!(trait_sym["kind"], 11); // Interface / Trait
-    assert_eq!(trait_sym["range"]["start"]["line"], 0);
-    assert_eq!(trait_sym["range"]["start"]["character"], 10);
-    assert_eq!(trait_sym["range"]["end"]["character"], 17);
+    assert_eq!(trait_sym["selectionRange"]["start"]["line"], 0);
+    assert_eq!(trait_sym["selectionRange"]["start"]["character"], 10);
+    assert_eq!(trait_sym["selectionRange"]["end"]["character"], 17);
 
-    let save_fn = items.iter().find(|s| s["name"] == "save").unwrap();
-    assert_eq!(save_fn["kind"], 12); // Function
-    assert_eq!(save_fn["detail"], "fn save(&self) -> bool");
-    assert_eq!(save_fn["range"]["start"]["line"], 1);
-    assert_eq!(save_fn["range"]["start"]["character"], 7);
-    assert_eq!(save_fn["range"]["end"]["character"], 11);
+    // Trait items are the trait's children; a `self` parameter makes a method.
+    let save_fn = &trait_sym["children"][0];
+    assert_eq!(save_fn["name"], "save");
+    assert_eq!(save_fn["kind"], 6); // Method
+    assert_eq!(save_fn["detail"], "fn(&self) -> bool");
+    assert_eq!(save_fn["selectionRange"]["start"]["line"], 1);
+    assert_eq!(save_fn["selectionRange"]["start"]["character"], 7);
+    assert_eq!(save_fn["selectionRange"]["end"]["character"], 11);
 
-    let load_fn = items.iter().find(|s| s["name"] == "load").unwrap();
-    assert_eq!(load_fn["kind"], 12); // Function
-    assert_eq!(load_fn["detail"], "fn load(&self) -> i32");
-    assert_eq!(load_fn["range"]["start"]["line"], 2);
-    assert_eq!(load_fn["range"]["start"]["character"], 7);
-    assert_eq!(load_fn["range"]["end"]["character"], 11);
+    let load_fn = &trait_sym["children"][1];
+    assert_eq!(load_fn["name"], "load");
+    assert_eq!(load_fn["kind"], 6); // Method
+    assert_eq!(load_fn["detail"], "fn(&self) -> i32");
+    assert_eq!(load_fn["selectionRange"]["start"]["line"], 2);
+    assert_eq!(load_fn["selectionRange"]["start"]["character"], 7);
+    assert_eq!(load_fn["selectionRange"]["end"]["character"], 11);
 }
 
 #[test]

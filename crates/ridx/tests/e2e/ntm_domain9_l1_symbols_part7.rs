@@ -68,9 +68,9 @@ fn test_document_symbol_utf16_surrogate_emoji_in_comment_preserves_coords() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "CrabItem");
     assert_eq!(items[0]["kind"], 23);
-    assert_eq!(items[0]["range"]["start"]["line"], 1);
-    assert_eq!(items[0]["range"]["start"]["character"], 11);
-    assert_eq!(items[0]["range"]["end"]["character"], 19);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 1);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 11);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 19);
 }
 
 #[test]
@@ -133,12 +133,14 @@ fn test_document_symbol_nested_functions_in_item() {
     });
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 2);
-
-    let outer_sym = items.iter().find(|s| s["name"] == "outer").unwrap();
+    // Items declared in a body are children of the function, as in rust-analyzer.
+    assert_eq!(items.len(), 1);
+    let outer_sym = &items[0];
+    assert_eq!(outer_sym["name"], "outer");
     assert_eq!(outer_sym["kind"], 12);
 
-    let inner_sym = items.iter().find(|s| s["name"] == "inner").unwrap();
+    let inner_sym = &outer_sym["children"][0];
+    assert_eq!(inner_sym["name"], "inner");
     assert_eq!(inner_sym["kind"], 12);
 }
 
@@ -161,21 +163,22 @@ fn test_document_symbol_const_fn_declaration() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "eval_constant");
     assert_eq!(items[0]["kind"], 12); // Function
-    assert_eq!(items[0]["detail"], "fn eval_constant() -> i32");
+    assert_eq!(items[0]["detail"], "fn() -> i32");
 }
 
-fn sym_item(name: &str, kind: u32, line: u32, start_char: u32, end_char: u32, detail: Option<&str>) -> serde_json::Value {
-    let range = json!({
-        "start": { "line": line, "character": start_char },
-        "end": { "line": line, "character": end_char }
-    });
-    json!({
+/// A childless one-line item `line` spanning columns `0..end_char`, its name at `name_start..name_end`.
+fn sym_item(name: &str, kind: u32, line: u32, name_start: u32, name_end: u32, end_char: u32, detail: Option<&str>) -> serde_json::Value {
+    let mut item = json!({
         "name": name,
         "kind": kind,
-        "range": range,
-        "selectionRange": range,
-        "detail": detail
-    })
+        "range": { "start": { "line": line, "character": 0 }, "end": { "line": line, "character": end_char } },
+        "selectionRange": { "start": { "line": line, "character": name_start }, "end": { "line": line, "character": name_end } },
+        "children": []
+    });
+    if let Some(d) = detail {
+        item["detail"] = json!(d);
+    }
+    item
 }
 
 #[test]
@@ -267,7 +270,8 @@ fn test_document_symbol_unopened_file_matches_opened_file_exact_json() {
     let _ = std::fs::remove_dir_all(&temp_dir);
 
     let opened_arr = symbols_opened.as_array().expect("opened symbols array");
-    assert_eq!(opened_arr.len(), 7);
+    // Config, Mode, Runner, DEFAULT_LIMIT, identity; fields, variants and trait items are their children.
+    assert_eq!(opened_arr.len(), 5);
     assert_eq!(symbols_closed, symbols_opened, "documentSymbol without didOpen must equal documentSymbol after didOpen with identical text");
 }
 
@@ -287,11 +291,13 @@ fn test_document_symbol_closed_to_open_modified_to_closed_disk_fallback() {
     let req = json!({ "params": { "textDocument": { "uri": &uri } } });
 
     let res_before_open = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    assert_eq!(res_before_open, json!([sym_item("disk_only", 12, 0, 7, 16, Some("fn disk_only() -> u32"))]));
+    let mut disk_only = sym_item("disk_only", 12, 0, 7, 16, 0, Some("fn() -> u32"));
+    disk_only["range"]["end"] = json!({ "line": 2, "character": 1 });
+    assert_eq!(res_before_open, json!([disk_only]));
 
     overlay_mgr.open_document(&uri, &file_str, 1, "pub struct LiveBufferItem;\npub fn live_fn() {}\n".to_string());
     let res_while_open = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    assert_eq!(res_while_open, json!([sym_item("LiveBufferItem", 23, 0, 11, 25, None), sym_item("live_fn", 12, 1, 7, 14, Some("fn live_fn()"))]));
+    assert_eq!(res_while_open, json!([sym_item("LiveBufferItem", 23, 0, 11, 25, 26, None), sym_item("live_fn", 12, 1, 7, 14, 19, Some("fn()"))]));
 
     overlay_mgr.close_document(&file_str);
     let res_after_close = handle_document_symbol(&req, &overlay_mgr, &mut conv);
@@ -317,13 +323,13 @@ fn test_document_symbol_disk_cache_invalidates_after_disk_write_and_delete() {
 
     let res_v1_cold = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let res_v1_warm = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    let expected_v1 = json!([sym_item("first_disk_fn", 12, 0, 7, 20, Some("fn first_disk_fn()"))]);
+    let expected_v1 = json!([sym_item("first_disk_fn", 12, 0, 7, 20, 25, Some("fn()"))]);
     assert_eq!(res_v1_cold, expected_v1);
     assert_eq!(res_v1_warm, expected_v1);
 
     std::fs::write(&src_file, "pub fn first_disk_fn() {}\npub struct AddedOnDisk;\n").unwrap();
     let res_v2 = handle_document_symbol(&req, &overlay_mgr, &mut conv);
-    assert_eq!(res_v2, json!([sym_item("first_disk_fn", 12, 0, 7, 20, Some("fn first_disk_fn()")), sym_item("AddedOnDisk", 23, 1, 11, 22, None)]));
+    assert_eq!(res_v2, json!([sym_item("first_disk_fn", 12, 0, 7, 20, 25, Some("fn()")), sym_item("AddedOnDisk", 23, 1, 11, 22, 23, None)]));
 
     std::fs::remove_file(&src_file).unwrap();
     let res_deleted = handle_document_symbol(&req, &overlay_mgr, &mut conv);

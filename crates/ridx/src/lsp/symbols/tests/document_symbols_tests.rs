@@ -99,11 +99,11 @@ fn test_document_symbols_selection_range_and_range() {
     let items = res.as_array().unwrap();
     assert_eq!(items.len(), 1);
 
+    // As in rust-analyzer, `range` spans the whole item and `selectionRange` its name.
     let sym = &items[0];
     assert_eq!(sym["name"], "compute_score");
-    assert!(sym.get("range").is_some());
-    assert_eq!(sym["range"], sym["selectionRange"]);
-    assert_eq!(sym["range"]["start"]["line"], 0);
+    assert_eq!(sym["range"], json!({ "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 33 } }));
+    assert_eq!(sym["selectionRange"], json!({ "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 16 } }));
 }
 
 #[test]
@@ -120,13 +120,10 @@ fn test_document_symbols_detail_signature() {
 
     let res = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     let items = res.as_array().unwrap();
-    // Function plus its two parameters
-    assert_eq!(items.len(), 3);
-
-    let fn_sym = items.iter().find(|s| s["name"] == "add").expect("add function symbol");
-    let detail = fn_sym["detail"].as_str();
-    assert!(detail.is_some());
-    assert!(detail.unwrap().contains("add"));
+    // Parameters are no symbols; the signature is the function's detail, as rust-analyzer shows it.
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "add");
+    assert_eq!(items[0]["detail"], "fn(a: i32, b: i32) -> i32");
 }
 
 #[test]
@@ -222,7 +219,7 @@ fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
 
     // 1. First closed-file request parses from disk and populates the cache (hits == 0).
     let res_closed_1 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
-    assert_eq!(res_closed_1.as_array().unwrap().len(), 6);
+    assert_eq!(res_closed_1.as_array().unwrap().len(), 5, "fn, struct, enum, trait, const; members are children");
     assert_eq!(document_symbol_cache_hits_for(&h.overlay_mgr, file_str), Some(0));
 
     // 2. Second closed-file request on unchanged disk file hits the (path, mtime, len) cache.
@@ -240,7 +237,7 @@ fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
     std::fs::write(&h.src_file, "pub fn disk_updated_fn(x: usize) -> usize { x }\n").unwrap();
     let res_updated = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     let updated_items = res_updated.as_array().unwrap();
-    assert_eq!(updated_items.len(), 2);
+    assert_eq!(updated_items.len(), 1);
     assert_eq!(updated_items[0]["name"], "disk_updated_fn");
     assert_eq!(document_symbol_cache_hits_for(&h.overlay_mgr, file_str), Some(0));
 
@@ -276,7 +273,7 @@ fn test_document_symbol_cache_isolated_between_overlay_managers() {
 
     // 1. First closed-file request through mgr_a populates mgr_a's cache (len == 1, hits == 0).
     let res_a1 = handle_document_symbol(&req_a, &mgr_a, &mut conv);
-    assert_eq!(res_a1.as_array().unwrap().len(), 6);
+    assert_eq!(res_a1.as_array().unwrap().len(), 5);
     assert_eq!(document_symbol_cache_len(&mgr_a), 1);
     assert_eq!(document_symbol_cache_hits_for(&mgr_a, file_a_str), Some(0));
 

@@ -54,27 +54,31 @@ impl Widget {
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
 
-    assert_eq!(items.len(), 3, "Must discover struct and methods");
+    // As in rust-analyzer: the struct and its impl block, the methods nested in the impl.
     let names: Vec<&str> = items.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert_eq!(names, vec!["Widget", "new", "execute"]);
+    assert_eq!(names, vec!["Widget", "impl Widget"], "Must discover struct and impl");
 
     let widget = items.iter().find(|s| s["name"] == "Widget").unwrap();
     assert_eq!(widget["kind"], 23); // Struct
-    assert_eq!(widget["range"]["start"]["line"], 0);
-    assert_eq!(widget["range"]["start"]["character"], 11);
-    assert_eq!(widget["range"]["end"]["character"], 17);
+    assert_eq!(widget["selectionRange"]["start"]["line"], 0);
+    assert_eq!(widget["selectionRange"]["start"]["character"], 11);
+    assert_eq!(widget["selectionRange"]["end"]["character"], 17);
 
-    let new_fn = items.iter().find(|s| s["name"] == "new").unwrap();
-    assert_eq!(new_fn["kind"], 12); // Function
-    assert_eq!(new_fn["range"]["start"]["line"], 2);
-    assert_eq!(new_fn["range"]["start"]["character"], 11);
-    assert_eq!(new_fn["range"]["end"]["character"], 14);
+    let imp = items.iter().find(|s| s["name"] == "impl Widget").unwrap();
+    assert_eq!(imp["kind"], 19); // Object
+    let new_fn = &imp["children"][0];
+    assert_eq!(new_fn["name"], "new");
+    assert_eq!(new_fn["kind"], 12); // Function: no `self`
+    assert_eq!(new_fn["selectionRange"]["start"]["line"], 2);
+    assert_eq!(new_fn["selectionRange"]["start"]["character"], 11);
+    assert_eq!(new_fn["selectionRange"]["end"]["character"], 14);
 
-    let exec = items.iter().find(|s| s["name"] == "execute").unwrap();
-    assert_eq!(exec["kind"], 12); // Function
-    assert_eq!(exec["range"]["start"]["line"], 3);
-    assert_eq!(exec["range"]["start"]["character"], 11);
-    assert_eq!(exec["range"]["end"]["character"], 18);
+    let exec = &imp["children"][1];
+    assert_eq!(exec["name"], "execute");
+    assert_eq!(exec["kind"], 6); // Method: takes `&self`
+    assert_eq!(exec["selectionRange"]["start"]["line"], 3);
+    assert_eq!(exec["selectionRange"]["start"]["character"], 11);
+    assert_eq!(exec["selectionRange"]["end"]["character"], 18);
 }
 
 #[test]
@@ -93,19 +97,21 @@ fn test_l1_document_symbol_crlf_preservation() {
 
     assert_eq!(items.len(), 3);
     assert_eq!(items[0]["name"], "first");
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 7);
-    assert_eq!(items[0]["range"]["end"]["character"], 12);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 7);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 12);
+    // The item range ends at its `}`, before the `\r\n`.
+    assert_eq!(items[0]["range"]["end"], json!({ "line": 0, "character": 17 }));
 
     assert_eq!(items[1]["name"], "second");
-    assert_eq!(items[1]["range"]["start"]["line"], 1);
-    assert_eq!(items[1]["range"]["start"]["character"], 7);
-    assert_eq!(items[1]["range"]["end"]["character"], 13);
+    assert_eq!(items[1]["selectionRange"]["start"]["line"], 1);
+    assert_eq!(items[1]["selectionRange"]["start"]["character"], 7);
+    assert_eq!(items[1]["selectionRange"]["end"]["character"], 13);
 
     assert_eq!(items[2]["name"], "third");
-    assert_eq!(items[2]["range"]["start"]["line"], 2);
-    assert_eq!(items[2]["range"]["start"]["character"], 7);
-    assert_eq!(items[2]["range"]["end"]["character"], 12);
+    assert_eq!(items[2]["selectionRange"]["start"]["line"], 2);
+    assert_eq!(items[2]["selectionRange"]["start"]["character"], 7);
+    assert_eq!(items[2]["selectionRange"]["end"]["character"], 12);
 }
 
 #[test]
@@ -122,26 +128,14 @@ fn test_l1_document_symbol_selection_range_exact() {
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
 
-    assert_eq!(items.len(), 3);
-    let names: Vec<&str> = items.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert_eq!(names, vec!["calculate_sum", "a", "b"]);
-
-    let func = items.iter().find(|s| s["name"] == "calculate_sum").unwrap();
+    // Parameters are no symbols; the function's range spans the item, its selection range the name.
+    assert_eq!(items.len(), 1);
+    let func = &items[0];
+    assert_eq!(func["name"], "calculate_sum");
     assert_eq!(func["kind"], 12);
-    assert_eq!(func["range"]["start"]["line"], 0);
-    assert_eq!(func["range"]["start"]["character"], 7);
-    assert_eq!(func["range"]["end"]["character"], 20);
-    assert_eq!(func["range"], func["selectionRange"]);
-
-    let param_a = items.iter().find(|s| s["name"] == "a").unwrap();
-    assert_eq!(param_a["range"]["start"]["character"], 21);
-    assert_eq!(param_a["range"]["end"]["character"], 22);
-    assert_eq!(param_a["range"], param_a["selectionRange"]);
-
-    let param_b = items.iter().find(|s| s["name"] == "b").unwrap();
-    assert_eq!(param_b["range"]["start"]["character"], 29);
-    assert_eq!(param_b["range"]["end"]["character"], 30);
-    assert_eq!(param_b["range"], param_b["selectionRange"]);
+    assert_eq!(func["selectionRange"], json!({ "start": { "line": 0, "character": 7 }, "end": { "line": 0, "character": 20 } }));
+    assert_eq!(func["range"], json!({ "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 53 } }));
+    assert_eq!(func["detail"], "fn(a: i32, b: i32) -> i32");
 }
 
 #[test]

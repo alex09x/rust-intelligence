@@ -39,9 +39,9 @@ fn test_document_symbol_single_struct_name_kind_range() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "UserProfile");
     assert_eq!(items[0]["kind"], 23); // Struct
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 11);
-    assert_eq!(items[0]["range"]["end"]["character"], 22);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 11);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 22);
 }
 
 #[test]
@@ -59,13 +59,13 @@ fn test_document_symbol_multiple_structs_in_order() {
     assert_eq!(items.len(), 3);
     assert_eq!(items[0]["name"], "Alpha");
     assert_eq!(items[0]["kind"], 23);
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
     assert_eq!(items[1]["name"], "Beta");
     assert_eq!(items[1]["kind"], 23);
-    assert_eq!(items[1]["range"]["start"]["line"], 1);
+    assert_eq!(items[1]["selectionRange"]["start"]["line"], 1);
     assert_eq!(items[2]["name"], "Gamma");
     assert_eq!(items[2]["kind"], 23);
-    assert_eq!(items[2]["range"]["start"]["line"], 2);
+    assert_eq!(items[2]["selectionRange"]["start"]["line"], 2);
 }
 
 #[test]
@@ -83,9 +83,9 @@ fn test_document_symbol_single_enum_with_variants() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "Color");
     assert_eq!(items[0]["kind"], 10); // Enum
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 9);
-    assert_eq!(items[0]["range"]["end"]["character"], 14);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 9);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 14);
 }
 
 #[test]
@@ -103,10 +103,10 @@ fn test_document_symbol_multiple_enums_in_file() {
     assert_eq!(items.len(), 2);
     assert_eq!(items[0]["name"], "Direction");
     assert_eq!(items[0]["kind"], 10);
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
     assert_eq!(items[1]["name"], "Speed");
     assert_eq!(items[1]["kind"], 10);
-    assert_eq!(items[1]["range"]["start"]["line"], 1);
+    assert_eq!(items[1]["selectionRange"]["start"]["line"], 1);
 }
 
 #[test]
@@ -124,9 +124,9 @@ fn test_document_symbol_single_trait_name_kind() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "Renderable");
     assert_eq!(items[0]["kind"], 11); // Trait
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 10);
-    assert_eq!(items[0]["range"]["end"]["character"], 20);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 10);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 20);
 }
 
 #[test]
@@ -144,10 +144,10 @@ fn test_document_symbol_multiple_traits_in_file() {
     assert_eq!(items.len(), 2);
     assert_eq!(items[0]["name"], "Readable");
     assert_eq!(items[0]["kind"], 11);
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
     assert_eq!(items[1]["name"], "Writable");
     assert_eq!(items[1]["kind"], 11);
-    assert_eq!(items[1]["range"]["start"]["line"], 1);
+    assert_eq!(items[1]["selectionRange"]["start"]["line"], 1);
 }
 
 #[test]
@@ -165,9 +165,9 @@ fn test_document_symbol_type_alias_name_kind() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "Coordinate");
     assert_eq!(items[0]["kind"], 26); // TypeParameter / TyAlias
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 9);
-    assert_eq!(items[0]["range"]["end"]["character"], 19);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 9);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 19);
 }
 
 #[test]
@@ -185,10 +185,10 @@ fn test_document_symbol_multiple_type_aliases() {
     assert_eq!(items.len(), 2);
     assert_eq!(items[0]["name"], "Kilometers");
     assert_eq!(items[0]["kind"], 26);
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
     assert_eq!(items[1]["name"], "Miles");
     assert_eq!(items[1]["kind"], 26);
-    assert_eq!(items[1]["range"]["start"]["line"], 1);
+    assert_eq!(items[1]["selectionRange"]["start"]["line"], 1);
 }
 
 #[test]
@@ -206,7 +206,7 @@ fn test_document_symbol_const_item_name_kind() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "BUFFER_SIZE");
     assert_eq!(items[0]["kind"], 14); // Constant
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 10);
-    assert_eq!(items[0]["range"]["end"]["character"], 21);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 10);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 21);
 }

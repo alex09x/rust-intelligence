@@ -39,9 +39,9 @@ fn test_document_symbol_static_item_name_kind() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "GLOBAL_FLAG");
     assert_eq!(items[0]["kind"], 13); // Variable / Static
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 11);
-    assert_eq!(items[0]["range"]["end"]["character"], 22);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 11);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 22);
 }
 
 #[test]
@@ -59,10 +59,10 @@ fn test_document_symbol_function_zero_params_no_return() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "ping");
     assert_eq!(items[0]["kind"], 12); // Function
-    assert_eq!(items[0]["detail"], "fn ping()");
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 3);
-    assert_eq!(items[0]["range"]["end"]["character"], 7);
+    assert_eq!(items[0]["detail"], "fn()");
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 3);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 7);
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn test_document_symbol_function_with_return_type() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "compute_pi");
     assert_eq!(items[0]["kind"], 12);
-    assert_eq!(items[0]["detail"], "fn compute_pi() -> f64");
+    assert_eq!(items[0]["detail"], "fn() -> f64");
 }
 
 #[test]
@@ -95,14 +95,11 @@ fn test_document_symbol_function_with_single_param() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 2);
-
-    let fn_sym = items.iter().find(|s| s["name"] == "greet").unwrap();
-    assert_eq!(fn_sym["kind"], 12);
-
-    let p_sym = items.iter().find(|s| s["name"] == "name").unwrap();
-    assert_eq!(p_sym["kind"], 13);
-    assert_eq!(p_sym["detail"], "name: &str");
+    // Parameters are no symbols; they show in the function's detail.
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "greet");
+    assert_eq!(items[0]["kind"], 12);
+    assert_eq!(items[0]["detail"], "fn(name: &str)");
 }
 
 #[test]
@@ -117,10 +114,9 @@ fn test_document_symbol_function_with_mut_param() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 2);
-
-    let p_sym = items.iter().find(|s| s["name"] == "counter").unwrap();
-    assert_eq!(p_sym["kind"], 13);
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "step");
+    assert_eq!(items[0]["detail"], "fn(mut counter: i32)");
 }
 
 #[test]
@@ -135,14 +131,11 @@ fn test_document_symbol_function_with_local_let() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 2);
-
-    let fn_sym = items.iter().find(|s| s["name"] == "run").unwrap();
-    assert_eq!(fn_sym["kind"], 12);
-
-    let let_sym = items.iter().find(|s| s["name"] == "total").unwrap();
-    assert_eq!(let_sym["kind"], 13);
-    assert_eq!(let_sym["range"]["start"]["line"], 1);
+    // `let` bindings are no symbols, as in rust-analyzer.
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "run");
+    assert_eq!(items[0]["kind"], 12);
+    assert_eq!(items[0]["children"], json!([]));
 }
 
 #[test]
@@ -157,13 +150,9 @@ fn test_document_symbol_function_with_multiple_lets() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 3);
-
-    let a_sym = items.iter().find(|s| s["name"] == "a").unwrap();
-    assert_eq!(a_sym["kind"], 13);
-
-    let b_sym = items.iter().find(|s| s["name"] == "b").unwrap();
-    assert_eq!(b_sym["kind"], 13);
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "run");
+    assert_eq!(items[0]["children"], json!([]));
 }
 
 #[test]
@@ -181,9 +170,9 @@ fn test_document_symbol_module_declaration() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "parser");
     assert_eq!(items[0]["kind"], 2); // Module
-    assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 8);
-    assert_eq!(items[0]["range"]["end"]["character"], 14);
+    assert_eq!(items[0]["selectionRange"]["start"]["line"], 0);
+    assert_eq!(items[0]["selectionRange"]["start"]["character"], 8);
+    assert_eq!(items[0]["selectionRange"]["end"]["character"], 14);
 }
 
 #[test]
@@ -198,11 +187,12 @@ fn test_document_symbol_nested_submodule() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 2);
+    assert_eq!(items.len(), 1);
 
     let outer_sym = items.iter().find(|s| s["name"] == "outer").unwrap();
     assert_eq!(outer_sym["kind"], 2);
 
-    let inner_sym = items.iter().find(|s| s["name"] == "inner").unwrap();
+    let inner_sym = &outer_sym["children"][0];
+    assert_eq!(inner_sym["name"], "inner");
     assert_eq!(inner_sym["kind"], 2);
 }

@@ -12,6 +12,7 @@
 
 pub mod disk_cache;
 pub mod document_symbol;
+mod document_symbol_tree;
 
 pub use document_symbol::handle_document_symbol;
 

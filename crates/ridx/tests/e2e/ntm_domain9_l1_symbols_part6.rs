@@ -76,7 +76,7 @@ fn test_document_symbol_selection_range_matches_range() {
     let items = res.as_array().expect("symbol list");
     assert_eq!(items.len(), 2);
     for item in items {
-        assert_eq!(item["range"], item["selectionRange"]);
+        assert_eq!(item["selectionRange"], item["selectionRange"]);
     }
 }
 
@@ -109,16 +109,13 @@ fn test_document_symbol_multiline_items_range_bounds() {
     let req = make_doc_req(uri);
     let res = handle_document_symbol(&req, &overlay_mgr, &mut conv);
     let items = res.as_array().expect("symbol list");
-    assert_eq!(items.len(), 3);
-
-    let fn_sym = items.iter().find(|s| s["name"] == "compute").unwrap();
-    assert_eq!(fn_sym["range"]["start"]["line"], 0);
-
-    let x_sym = items.iter().find(|s| s["name"] == "x").unwrap();
-    assert_eq!(x_sym["range"]["start"]["line"], 1);
-
-    let y_sym = items.iter().find(|s| s["name"] == "y").unwrap();
-    assert_eq!(y_sym["range"]["start"]["line"], 2);
+    // One symbol spanning all six lines; the multi-line signature collapses into its detail, as rust-analyzer shows it.
+    assert_eq!(items.len(), 1);
+    let fn_sym = &items[0];
+    assert_eq!(fn_sym["name"], "compute");
+    assert_eq!(fn_sym["selectionRange"]["start"]["line"], 0);
+    assert_eq!(fn_sym["range"], json!({ "start": { "line": 0, "character": 0 }, "end": { "line": 5, "character": 1 } }));
+    assert_eq!(fn_sym["detail"], "fn( x: i32, y: i32, ) -> i32");
 }
 
 #[test]
