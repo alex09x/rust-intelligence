@@ -158,6 +158,42 @@ fn test_struct_conversions_single_from_default_and_enum_discriminants() {
 }
 
 #[test]
+fn test_pub_struct_conversion_requires_private_fields() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/pub_conv.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "pub struct Span { lo: u32, hi: u32 }\n",
+        "impl Span {\n",
+        "    pub fn new(lo: u32, hi: u32) -> Self { Span { lo, hi } }\n",
+        "    pub fn len(&self) -> u32 { self.hi - self.lo }\n",
+        "}\n",
+        "pub(crate) struct Handle(usize);\n",
+        "impl Handle { pub fn get(&self) -> usize { self.0 } }\n",
+        "pub struct Open { pub lo: u32 }\n",
+        "pub struct OpenTuple(pub u8);\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+
+    // `pub struct` with only private fields: every literal, pattern and field access lives in this module.
+    let span_acts = query_deferred_and_resolve(&uri, 0, 12, &ws, &ov);
+    let (_, span_ed) = span_acts.iter().find(|(t, _)| t == "Convert to tuple struct").expect("pub struct with private fields converts");
+    let u_span = apply_text_edits(code, span_ed.as_array().unwrap());
+    assert!(u_span.contains("pub struct Span(u32, u32);") && u_span.contains("self.1 - self.0"), "{u_span}");
+    assert_rustc_compiles(&u_span, "pub struct with private fields to tuple struct");
+
+    let handle_acts = query_deferred_and_resolve(&uri, 5, 18, &ws, &ov);
+    let (_, handle_ed) = handle_acts.iter().find(|(t, _)| t == "Convert to named struct").expect("pub(crate) tuple struct with private field converts");
+    assert_rustc_compiles(&apply_text_edits(code, handle_ed.as_array().unwrap()), "pub(crate) tuple struct to named struct");
+
+    // A `pub` field can be read or constructed from other modules that this file does not show.
+    for (line, col) in [(7u32, 12u32), (8, 12)] {
+        let acts = query_deferred_and_resolve(&uri, line, col, &ws, &ov);
+        assert!(!acts.iter().any(|(t, _)| t.starts_with("Convert to")), "public field must block conversion at {line}:{col}");
+    }
+}
+
+#[test]
 fn test_nested_fn_closure_inline_type_alias_and_inline_callers() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/inline_cases.rs");

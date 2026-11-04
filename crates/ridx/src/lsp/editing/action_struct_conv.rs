@@ -22,7 +22,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<Vec<Value>> {
-    if !item.vis_prefix.is_empty() || !matches!(item.enclosing, EnclosingContext::None) {
+    if !matches!(item.enclosing, EnclosingContext::None) {
         return None;
     }
     let ItemKindInfo::Adt { adt_kw: "struct", where_src, fields_kind: AdtFieldsKind::Named(raw_fields), open_delim_byte, end_byte, .. } = &item.kind else {
@@ -37,7 +37,7 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
     }
 
     let fields = parse_named_fields_clean(raw_fields)?;
-    if fields.is_empty() || fields.len() > 16 {
+    if fields.is_empty() || fields.len() > 16 || !uses_confined_to_module(&item.vis_prefix, fields.iter().map(|(vis, _, _)| vis.as_str())) {
         return None;
     }
 
@@ -46,7 +46,8 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
     let mut raw_edits: Vec<(usize, usize, String)> = Vec::new();
 
     let tuple_defs: Vec<String> = fields.iter().map(|(vis, _, ty)| if vis.is_empty() { ty.clone() } else { format!("{vis} {ty}") }).collect();
-    raw_edits.push((*open_delim_byte, *end_byte, format!("({});", tuple_defs.join(", "))));
+    let name_end = doc_text[..*open_delim_byte].trim_end().len();
+    raw_edits.push((name_end, *end_byte, format!("({});", tuple_defs.join(", "))));
 
     let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _))| (n.as_str(), idx)).collect();
 
@@ -120,7 +121,7 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
 }
 
 pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<Vec<Value>> {
-    if !item.vis_prefix.is_empty() || !matches!(item.enclosing, EnclosingContext::None) {
+    if !matches!(item.enclosing, EnclosingContext::None) {
         return None;
     }
     let ItemKindInfo::Adt { adt_kw: "struct", where_src, fields_kind: AdtFieldsKind::Tuple(raw_fields), open_delim_byte, end_byte, .. } = &item.kind else {
@@ -135,7 +136,7 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
     }
 
     let fields = parse_tuple_fields_clean(raw_fields)?;
-    if fields.is_empty() || fields.len() > 16 {
+    if fields.is_empty() || fields.len() > 16 || !uses_confined_to_module(&item.vis_prefix, fields.iter().map(|(vis, _)| vis.as_str())) {
         return None;
     }
 
@@ -228,4 +229,11 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
     }
 
     to_lsp_edits(doc_text, starts, raw_edits)
+}
+
+/// Literals, patterns and field accesses need every touched field to be visible. Private fields are visible only in the
+/// defining module and its descendants, so with all fields private every rewritten site lies in the scanned module text
+/// even when the struct itself is `pub`.
+fn uses_confined_to_module<'a>(struct_vis: &str, mut field_vis: impl Iterator<Item = &'a str>) -> bool {
+    struct_vis.is_empty() || field_vis.all(str::is_empty)
 }
