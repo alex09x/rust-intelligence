@@ -50,9 +50,10 @@ fn test_workspace_symbol_suffix_matching() {
     });
     let res = handle_workspace_symbol(&req, [&idx].into_iter(), &mut conv);
     let items = res.as_array().expect("symbol list");
+    // Ordered by name, as rust-analyzer orders its symbol index.
     assert_eq!(items.len(), 2);
-    assert_eq!(items[0]["name"], "TaskHandler");
-    assert_eq!(items[1]["name"], "RequestHandler");
+    assert_eq!(items[0]["name"], "RequestHandler");
+    assert_eq!(items[1]["name"], "TaskHandler");
 }
 
 #[test]
@@ -76,18 +77,18 @@ fn test_workspace_symbol_substring_matching_middle() {
 }
 
 #[test]
-fn test_workspace_symbol_case_insensitive_uppercase_query() {
+fn test_workspace_symbol_uppercase_query_is_case_sensitive() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("pkg_case_up", "0.1.0").unwrap();
     ws.add_source_file_with_defs("pkg_case_up", "src/lib.rs", "pub struct «UserAccount»;\n", DefKind::Struct).unwrap();
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
+    // rust-analyzer's smart case: an uppercase letter in the query makes it case-sensitive.
     let mut conv = PositionConverter::new();
-    let req = json!({
-        "params": { "query": "USERACCOUNT" }
-    });
-    let res = handle_workspace_symbol(&req, [&idx].into_iter(), &mut conv);
+    let res = handle_workspace_symbol(&json!({ "params": { "query": "USERACCOUNT" } }), [&idx].into_iter(), &mut conv);
+    assert_eq!(res, json!([]));
+    let res = handle_workspace_symbol(&json!({ "params": { "query": "UsAcc" } }), [&idx].into_iter(), &mut conv);
     let items = res.as_array().expect("symbol list");
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "UserAccount");
@@ -126,12 +127,19 @@ fn test_workspace_symbol_all_def_kinds_present() {
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
     let mut conv = PositionConverter::new();
+    // A lowercase query matches case-insensitively, so every kind shows.
     let req = json!({
-        "params": { "query": "My" }
+        "params": { "query": "my" }
     });
     let res = handle_workspace_symbol(&req, [&idx].into_iter(), &mut conv);
     let items = res.as_array().expect("symbol list");
     assert_eq!(items.len(), 6);
+
+    // rust-analyzer's smart case: the query's uppercase `M` must match exactly, its lowercase `y` either case,
+    // so `my_fn` drops out and `MY_CONST` stays.
+    let res_cs = handle_workspace_symbol(&json!({ "params": { "query": "My" } }), [&idx].into_iter(), &mut conv);
+    let names: Vec<&str> = res_cs.as_array().unwrap().iter().filter_map(|s| s["name"].as_str()).collect();
+    assert_eq!(names, ["MY_CONST", "MyAlias", "MyEnum", "MyStruct", "MyTrait"]);
 }
 
 #[test]

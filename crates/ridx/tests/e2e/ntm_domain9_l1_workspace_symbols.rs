@@ -110,17 +110,21 @@ fn test_l1_workspace_symbol_case_insensitive() {
     let index = WorkspaceIndex::open(&shard).unwrap();
     let mut conv = PositionConverter::new();
 
-    // Query in lowercase must find both uppercase struct and lowercase fn
+    // A lowercase query matches case-insensitively. As in rust-analyzer, types are searched first: the struct
+    // matches, so the function is not searched.
     let req = make_ws_query("process");
     let res = handle_workspace_symbol(&req, std::iter::once(&index), &mut conv);
     let items = res.as_array().expect("symbol list");
 
-    assert_eq!(items.len(), 2, "Must match both Processor and process_task");
+    assert_eq!(items.len(), 1, "Types come first: Processor only");
     let proc_struct = items.iter().find(|s| s["name"] == "Processor").unwrap();
     assert_eq!(proc_struct["kind"], 23); // Struct
     assert_eq!(proc_struct["location"]["range"]["start"]["character"], 11);
 
-    let proc_fn = items.iter().find(|s| s["name"] == "process_task").unwrap();
+    // No type matches `process_t`, so every kind is searched and the function is found.
+    let res_fn = handle_workspace_symbol(&make_ws_query("process_t"), std::iter::once(&index), &mut conv);
+    let items_fn = res_fn.as_array().expect("symbol list");
+    let proc_fn = items_fn.iter().find(|s| s["name"] == "process_task").unwrap();
     assert_eq!(proc_fn["kind"], 12); // Function
     assert_eq!(proc_fn["location"]["range"]["start"]["character"], 7);
 }

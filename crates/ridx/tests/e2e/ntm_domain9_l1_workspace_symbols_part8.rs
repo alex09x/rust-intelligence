@@ -148,11 +148,11 @@ fn test_workspace_symbol_query_matching_case_variations() {
     ws.build_all_indices().unwrap();
     let idx = WorkspaceIndex::open(ws.root_path()).unwrap();
 
+    // A mixed-case query is case-sensitive (rust-analyzer's smart case); an all-lowercase one is not.
     let mut conv = PositionConverter::new();
-    let req = json!({
-        "params": { "query": "tArGeTvArIaNt" }
-    });
-    let res = handle_workspace_symbol(&req, [&idx].into_iter(), &mut conv);
+    let mixed = handle_workspace_symbol(&json!({ "params": { "query": "tArGeTvArIaNt" } }), [&idx].into_iter(), &mut conv);
+    assert_eq!(mixed, json!([]));
+    let res = handle_workspace_symbol(&json!({ "params": { "query": "targetvariant" } }), [&idx].into_iter(), &mut conv);
     let items = res.as_array().expect("symbol list");
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["name"], "TargetVariant");

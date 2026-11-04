@@ -62,18 +62,18 @@ fn test_l1_workspace_symbol_cross_crate_same_name() {
 }
 
 #[test]
-fn test_l1_workspace_symbol_cap_100_across_shards() {
+fn test_l1_workspace_symbol_cap_128_across_shards() {
     let mut ws = SyntheticWorkspaceFixture::new().unwrap();
     ws.add_crate("crate_first", "0.1.0").unwrap();
     let mut code_first = String::new();
-    for i in 0..60 {
+    for i in 0..80 {
         code_first.push_str(&format!("pub fn «item_{i:02}»() {{}}\n"));
     }
     ws.add_source_file_with_defs("crate_first", "src/lib.rs", &code_first, DefKind::Fn).unwrap();
 
     ws.add_crate("crate_second", "0.1.0").unwrap();
     let mut code_second = String::new();
-    for i in 0..60 {
+    for i in 0..80 {
         code_second.push_str(&format!("pub fn «item_{i:02}»() {{}}\n"));
     }
     ws.add_source_file_with_defs("crate_second", "src/lib.rs", &code_second, DefKind::Fn).unwrap();
@@ -88,12 +88,12 @@ fn test_l1_workspace_symbol_cap_100_across_shards() {
     let res = handle_workspace_symbol(&req, [&index_1, &index_2].into_iter(), &mut conv);
     let items = res.as_array().expect("symbol list");
 
-    // Total must be capped at 100
-    assert_eq!(items.len(), 100, "Workspace symbols must cap at exactly 100");
+    // Total is capped at rust-analyzer's default limit of 128.
+    assert_eq!(items.len(), 128, "Workspace symbols must cap at exactly 128");
     let count_first = items.iter().filter(|s| s["containerName"] == "crate_first").count();
     let count_second = items.iter().filter(|s| s["containerName"] == "crate_second").count();
-    assert_eq!(count_first, 60, "First crate definitions must be exhausted");
-    assert_eq!(count_second, 40, "Second crate must provide remaining 40 to cap");
+    assert_eq!(count_first, 80, "First crate definitions must be exhausted");
+    assert_eq!(count_second, 48, "Second crate must provide remaining 48 to cap");
 }
 
 #[test]
@@ -106,13 +106,12 @@ fn test_l1_workspace_symbol_path_matching() {
     let index = WorkspaceIndex::open(&shard).unwrap();
     let mut conv = PositionConverter::new();
 
-    // Query equal to crate name returns all definitions in the crate
+    // A query naming the crate finds the crate itself, as in rust-analyzer, not every item in it.
     let req_crate = make_ws_query("pkg_path_match");
     let res_crate = handle_workspace_symbol(&req_crate, std::iter::once(&index), &mut conv);
     let items_crate = res_crate.as_array().expect("items list");
-    assert_eq!(items_crate.len(), 2);
     let names: Vec<&str> = items_crate.iter().filter_map(|s| s["name"].as_str()).collect();
-    assert_eq!(names, vec!["action_handler", "action_fallback"]);
+    assert_eq!(names, vec!["pkg_path_match"]);
 
     // Query with qualified path separator (matches only via path)
     let req_path = make_ws_query("::action_f");

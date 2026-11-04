@@ -173,13 +173,13 @@ fn test_l1_workspace_symbol_whitespace_padded_query_returns_empty() {
 }
 
 #[test]
-fn test_l1_workspace_symbol_cap_100_single_shard_boundary() {
+fn test_l1_workspace_symbol_cap_128_single_shard_boundary() {
     let mut ws_100 = SyntheticWorkspaceFixture::new().unwrap();
     ws_100.add_crate("pkg_cap_100", "0.1.0").unwrap();
 
-    // Register exactly 100 definitions in a single shard
+    // Register exactly 128 definitions (rust-analyzer's default limit) in a single shard
     let mut code_100 = String::new();
-    for i in 0..100 {
+    for i in 0..128 {
         code_100.push_str(&format!("pub struct «Sym{:03}»;\n", i));
     }
     ws_100.add_source_file_with_defs("pkg_cap_100", "src/lib.rs", &code_100, DefKind::Struct).unwrap();
@@ -194,24 +194,24 @@ fn test_l1_workspace_symbol_cap_100_single_shard_boundary() {
         }
     });
 
-    // Exactly 100 symbols in single shard -> returns 100
+    // Exactly 128 symbols in single shard -> returns 128
     let res_100 = handle_workspace_symbol(&req, std::iter::once(&index_100), &mut conv);
     let items_100 = res_100.as_array().expect("array of symbols");
-    assert_eq!(items_100.len(), 100);
+    assert_eq!(items_100.len(), 128);
 
-    // Register exactly 101 definitions in an isolated single shard
+    // Register 129 definitions in an isolated single shard
     let mut ws_101 = SyntheticWorkspaceFixture::new().unwrap();
     ws_101.add_crate("pkg_cap_101", "0.1.0").unwrap();
     let mut code_101 = String::new();
-    for i in 0..101 {
+    for i in 0..129 {
         code_101.push_str(&format!("pub struct «Sym{:03}»;\n", i));
     }
     ws_101.add_source_file_with_defs("pkg_cap_101", "src/lib.rs", &code_101, DefKind::Struct).unwrap();
     ws_101.build_all_indices().unwrap();
 
     let index_101 = WorkspaceIndex::open(ws_101.root_path()).unwrap();
-    // 101 symbols in single shard -> inner loop breaks at results.len() >= 100 -> returns 100
+    // 129 symbols in single shard -> capped at 128
     let res_101 = handle_workspace_symbol(&req, std::iter::once(&index_101), &mut conv);
     let items_101 = res_101.as_array().expect("array of symbols");
-    assert_eq!(items_101.len(), 100);
+    assert_eq!(items_101.len(), 128);
 }

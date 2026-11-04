@@ -44,46 +44,85 @@ fn is_fuzzy_subseq(name: &str, query: &str) -> bool {
     true
 }
 
+/// A symbol rust-analyzer's search covers: a workspace definition `(reader, definition)` or a crate root
+/// `(reader, CRATE_ROOT)`, with the kind it is listed under (an import takes the kind of what it imports).
+#[derive(Clone, Copy)]
+struct SymEntry {
+    reader: u32,
+    def: u32,
+    kind: DefKind,
+}
+
 struct CachedWsDefs {
-    crate_roots: Vec<u32>,
-    type_defs: Vec<(u32, u32)>,
-    other_defs: Vec<(u32, u32)>,
+    /// Every symbol, dependencies' crate roots included, ordered by lowercased name.
+    all_by_name: Vec<SymEntry>,
+    /// The type-like subset rust-analyzer searches first (its default `only_types` search kind).
+    types_by_name: Vec<SymEntry>,
+}
+
+/// Marks a crate root entry.
+const CRATE_ROOT: u32 = u32::MAX;
+
+/// `DefEntry::visibility` of a private item.
+const DEF_VISIBILITY_PRIVATE: u8 = 3;
+
+fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
+    let reader = &ws.readers[e.reader as usize];
+    if e.def == CRATE_ROOT {
+        reader.crate_name()
+    } else {
+        reader.get_str(reader.definitions()[e.def as usize].name_offset())
+    }
+}
+
+/// What rust-analyzer's `only_types` search returns: types, traits, type aliases and crates, not modules.
+fn is_ra_type_entry(e: &SymEntry) -> bool {
+    e.def == CRATE_ROOT
+        || matches!(e.kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TraitAlias | DefKind::TyAlias | DefKind::AssocTy | DefKind::ForeignTy)
+}
+
+/// Kind of the item a `use` imports, through the path its signature records; `Use` when the index cannot tell.
+fn import_target_kind(ws: &WorkspaceIndex, reader: &crate::reader::IndexReader<memmap2::Mmap>, target: &str) -> DefKind {
+    reader
+        .find_definition_by_path(target)
+        .map(|d| DefKind::from(d.kind))
+        .or_else(|| ws.find_definition_by_path(target).map(|d| d.kind))
+        .or_else(|| ws.find_definition_by_path(&format!("{}::{target}", reader.crate_name())).map(|d| d.kind))
+        .unwrap_or(DefKind::Use)
 }
 
 fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<CachedWsDefs> {
     use std::collections::{HashMap, HashSet};
     use std::sync::{Arc, Mutex, OnceLock};
-    type CacheKey = (usize, usize, usize, bool);
+    type CacheKey = (u64, bool);
     static CACHE: OnceLock<Mutex<HashMap<CacheKey, Arc<CachedWsDefs>>>> = OnceLock::new();
-    let first_ptr = ws.readers.first().map(|r| r.definitions().as_ptr() as usize).unwrap_or(0);
-    let last_ptr = ws.readers.last().map(|r| r.definitions().as_ptr() as usize).unwrap_or(0);
-    let key = (ws.readers.len(), first_ptr, last_ptr, has_local);
+    // Every reader's definition table (address and length) identifies the workspace: entries index into them.
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    for r in &ws.readers {
+        std::hash::Hash::hash(&(r.definitions().as_ptr() as usize, r.definitions().len(), r.crate_name()), &mut hasher);
+    }
+    let key = (std::hash::Hasher::finish(&hasher), has_local);
     let mutex = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Ok(guard) = mutex.lock() {
         if let Some(found) = guard.get(&key) {
             return Arc::clone(found);
         }
     }
-    let mut crate_roots = Vec::new();
-    let mut type_defs = Vec::new();
-    let mut other_defs = Vec::new();
+    let mut by_name: Vec<SymEntry> = Vec::new();
     let mut seen = HashSet::new();
     for (i, reader) in ws.readers.iter().enumerate() {
         if has_local && ws.reader_is_dependency.get(i).copied().unwrap_or(false) {
             continue;
         }
-        let crate_name = reader.crate_name();
-        let root_file = reader.get_file(0);
-        if !crate_name.is_empty() && !root_file.is_empty() && seen.insert((crate_name, root_file, 1u32, 1u32)) {
-            crate_roots.push(i as u32);
-        }
         for (d_idx, def) in reader.definitions().iter().enumerate() {
             let kind = DefKind::from(def.kind);
-            if is_excluded_ws_kind(kind) {
-                continue;
-            }
             let name = reader.get_str(def.name_offset());
-            if name.is_empty() {
+            // rust-analyzer lists re-exports (`pub use a::B;`) and renaming imports (`use a::B as C;`) as symbols,
+            // not plain private imports, globs or `self`.
+            let target = if def.sig_offset() != 0 { reader.get_str(def.sig_offset()) } else { "" };
+            let renamed = target.rsplit("::").next().is_some_and(|last| !last.is_empty() && last != name);
+            let is_named_import = kind == DefKind::Use && !matches!(name, "*" | "_" | "self") && (def.visibility != DEF_VISIBILITY_PRIVATE || renamed);
+            if (is_excluded_ws_kind(kind) && !is_named_import) || name.is_empty() {
                 continue;
             }
             let path = reader.get_str(def.path_offset());
@@ -92,14 +131,21 @@ fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<
             if !seen.insert((path, file, span.start_line(), span.start_col())) {
                 continue;
             }
-            if is_type_or_mod_ws_kind(kind) {
-                type_defs.push((i as u32, d_idx as u32));
-            } else {
-                other_defs.push((i as u32, d_idx as u32));
-            }
+            let kind = if is_named_import && !target.is_empty() { import_target_kind(ws, reader, target) } else { kind };
+            by_name.push(SymEntry { reader: i as u32, def: d_idx as u32, kind });
         }
     }
-    let built = Arc::new(CachedWsDefs { crate_roots, type_defs, other_defs });
+    let mut crates_seen = HashSet::new();
+    for (i, reader) in ws.readers.iter().enumerate() {
+        let (crate_name, root_file) = (reader.crate_name(), reader.get_file(0));
+        if !crate_name.is_empty() && !root_file.is_empty() && crates_seen.insert((crate_name, root_file)) {
+            by_name.push(SymEntry { reader: i as u32, def: CRATE_ROOT, kind: DefKind::Mod });
+        }
+    }
+    // Stable sort: equal lowercased names keep index order. Lowercasing on the fly keeps no name copies alive.
+    by_name.sort_by(|&a, &b| entry_name(ws, a).chars().flat_map(char::to_lowercase).cmp(entry_name(ws, b).chars().flat_map(char::to_lowercase)));
+    let types_by_name = by_name.iter().copied().filter(is_ra_type_entry).collect();
+    let built = Arc::new(CachedWsDefs { all_by_name: by_name, types_by_name });
     if let Ok(mut guard) = mutex.lock() {
         if guard.len() >= 16 {
             guard.clear();
@@ -149,87 +195,109 @@ fn is_type_or_mod_ws_kind(kind: DefKind) -> bool {
     )
 }
 
+/// rust-analyzer's symbol match: the query is a subsequence of the name, compared case-insensitively except for the
+/// query's own uppercase letters when it has any.
+fn ra_fuzzy_match(name: &str, query: &str, case_sensitive: bool) -> bool {
+    if name.len() < query.len() {
+        return false;
+    }
+    // Smart case: with an uppercase letter in the query its uppercase letters must match exactly; lowercase ones
+    // always match either case (`oolVisito` finds `TagContentOtherFieldVisitor`, `Option` misses `option`).
+    if name.is_ascii() && query.is_ascii() {
+        let mut nb = name.bytes();
+        return query.bytes().all(|q| nb.any(|n| if case_sensitive && q.is_ascii_uppercase() { n == q } else { n.eq_ignore_ascii_case(&q) }));
+    }
+    let mut name_chars = name.chars();
+    query.chars().all(|q| name_chars.any(|n| if case_sensitive && q.is_uppercase() { n == q } else { n.to_lowercase().eq(q.to_lowercase()) }))
+}
+
 impl WorkspaceIndex {
-    /// Fast workspace symbol search prioritizing local (non-dependency) crates with substring and fuzzy matching.
+    /// Workspace symbols as rust-analyzer lists them: items and imports whose name contains the query as a smart-case
+    /// subsequence, plus crates (dependencies included) whose name does, ordered by lowercased name and cut at
+    /// `limit`; types first, every kind only when no type matches.
+    fn search_workspace_symbols_like_ra<'a>(&'a self, query: &str, limit: usize) -> Vec<WorkspaceSymbol<'a>> {
+        let has_local = self.reader_is_dependency.iter().any(|&d| !d);
+        let cached = get_or_build_ws_defs(self, has_local);
+        // rust-analyzer searches types first and all symbols only when no type matches.
+        let types = self.collect_ra_matches(&cached.types_by_name, query, limit);
+        if !types.is_empty() {
+            return types;
+        }
+        self.collect_ra_matches(&cached.all_by_name, query, limit)
+    }
+
+    fn collect_ra_matches<'a>(&'a self, entries: &[SymEntry], query: &str, limit: usize) -> Vec<WorkspaceSymbol<'a>> {
+        let mut out = Vec::new();
+        // One item compiled into several units (lib, lib test, bin) is one symbol: dedupe on the file it resolves to.
+        let mut seen = std::collections::HashSet::new();
+        let case_sensitive = query.chars().any(char::is_uppercase);
+        // rust-analyzer leaves `__`-prefixed names (macro internals such as `__DeserializeWith`) out unless asked for.
+        let skip_dunder = !query.starts_with("__");
+        for &entry in entries {
+            let name = entry_name(self, entry);
+            if (skip_dunder && name.starts_with("__")) || !ra_fuzzy_match(name, query, case_sensitive) {
+                continue;
+            }
+            let symbol = self.ws_symbol_at(entry);
+            if !seen.insert((symbol.resolved_path(), symbol.span.start_line(), symbol.span.start_col())) {
+                continue;
+            }
+            out.push(symbol);
+            if out.len() >= limit {
+                break;
+            }
+        }
+        out
+    }
+
+    fn ws_symbol_at(&self, entry: SymEntry) -> WorkspaceSymbol<'_> {
+        let i = entry.reader as usize;
+        let reader = &self.readers[i];
+        let source_root = self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref());
+        let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+        let crate_name = reader.crate_name();
+        if entry.def == CRATE_ROOT {
+            let span = crate::format::Span::new(0, 1, 1, 1, crate_name.len() as u32 + 1);
+            return WorkspaceSymbol {
+                crate_name,
+                name: crate_name,
+                path: crate_name,
+                kind: DefKind::Mod,
+                file: reader.get_file(0),
+                span,
+                signature: None,
+                is_macro_expansion: false,
+                source_root,
+                unit_key,
+            };
+        }
+        let def = &reader.definitions()[entry.def as usize];
+        let span = def.span();
+        WorkspaceSymbol {
+            crate_name,
+            name: reader.get_str(def.name_offset()),
+            path: reader.get_str(def.path_offset()),
+            kind: entry.kind,
+            file: reader.get_file(span.file_id()),
+            span,
+            signature: if def.sig_offset() != 0 { Some(reader.get_str(def.sig_offset())) } else { None },
+            is_macro_expansion: def.is_macro_expansion(),
+            source_root,
+            unit_key,
+        }
+    }
+
+    /// Workspace symbol search. A plain query follows rust-analyzer (see `search_workspace_symbols_like_ra`); an empty
+    /// query or a path query (`a::b`) keeps the local-first substring search.
     pub fn search_workspace_symbols<'a>(&'a self, query: &str, limit: usize) -> Vec<WorkspaceSymbol<'a>> {
+        if !query.is_empty() && !query.contains("::") {
+            return self.search_workspace_symbols_like_ra(query, limit);
+        }
         let q_lower = query.to_ascii_lowercase();
         let q_bytes = q_lower.as_bytes();
         let has_local = self.reader_is_dependency.iter().any(|&d| !d);
         let multi_reader = self.readers.len() > 1;
         let mut results: Vec<WorkspaceSymbol<'a>> = Vec::new();
-        if self.readers.len() > 4 && !query.is_empty() && !query.contains("::") {
-            let cached = get_or_build_ws_defs(self, has_local);
-            let fuzzy_ok = (2..=12).contains(&query.len());
-            for pass in 0..4u8 {
-                if results.len() >= limit || ((pass == 1 || pass == 3) && !fuzzy_ok) || (pass == 3 && !results.is_empty()) {
-                    continue;
-                }
-                if pass <= 1 {
-                    for &r_idx in &cached.crate_roots {
-                        let i = r_idx as usize;
-                        let reader = &self.readers[i];
-                        let crate_name = reader.crate_name();
-                        let m = if pass == 0 {
-                            contains_ascii_ci(crate_name.as_bytes(), q_bytes)
-                        } else {
-                            !contains_ascii_ci(crate_name.as_bytes(), q_bytes) && is_fuzzy_subseq(crate_name, query)
-                        };
-                        if m {
-                            let root_file = reader.get_file(0);
-                            let source_root = self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref());
-                            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
-                            results.push(WorkspaceSymbol {
-                                crate_name,
-                                name: crate_name,
-                                path: crate_name,
-                                kind: DefKind::Mod,
-                                file: root_file,
-                                span: crate::format::Span::new(0, 1, 1, 1, crate_name.len() as u32 + 1),
-                                signature: None,
-                                is_macro_expansion: false,
-                                source_root,
-                                unit_key,
-                            });
-                            if results.len() >= limit {
-                                return results;
-                            }
-                        }
-                    }
-                }
-                let list = if pass <= 1 { &cached.type_defs } else { &cached.other_defs };
-                for &(r_idx, d_idx) in list {
-                    let i = r_idx as usize;
-                    let reader = &self.readers[i];
-                    let def = &reader.definitions()[d_idx as usize];
-                    let name = reader.get_str(def.name_offset());
-                    let m = if pass == 0 || pass == 2 {
-                        contains_ascii_ci(name.as_bytes(), q_bytes)
-                    } else {
-                        !contains_ascii_ci(name.as_bytes(), q_bytes) && is_fuzzy_subseq(name, query)
-                    };
-                    if !m {
-                        continue;
-                    }
-                    let span = def.span();
-                    results.push(WorkspaceSymbol {
-                        crate_name: reader.crate_name(),
-                        name,
-                        path: reader.get_str(def.path_offset()),
-                        kind: DefKind::from(def.kind),
-                        file: reader.get_file(span.file_id()),
-                        span,
-                        signature: if def.sig_offset() != 0 { Some(reader.get_str(def.sig_offset())) } else { None },
-                        is_macro_expansion: def.is_macro_expansion(),
-                        source_root: self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref()),
-                        unit_key: self.unit_keys.get(i).and_then(|u| u.as_deref()),
-                    });
-                    if results.len() >= limit {
-                        return results;
-                    }
-                }
-            }
-            return results;
-        }
         let mut seen = std::collections::HashSet::new();
 
         for pass in 0..4u8 {

@@ -26,7 +26,8 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
     let mut seen = std::collections::HashSet::new();
 
     for ws in workspaces {
-        let symbols = ws.search_workspace_symbols(query, 100);
+        // rust-analyzer's default `workspace.symbol.search.limit`.
+        let symbols = ws.search_workspace_symbols(query, WORKSPACE_SYMBOL_LIMIT);
         for s in symbols {
             let resolved_path = s.resolved_path();
             let path_str = resolved_path.to_str().unwrap_or(s.file);
@@ -52,17 +53,19 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
                 "containerName": s.path.rsplit("::").nth(1).unwrap_or("")
             }));
 
-            if results.len() >= 100 {
+            if results.len() >= WORKSPACE_SYMBOL_LIMIT {
                 break;
             }
         }
-        if results.len() >= 100 {
+        if results.len() >= WORKSPACE_SYMBOL_LIMIT {
             break;
         }
     }
 
     json!(results)
 }
+
+const WORKSPACE_SYMBOL_LIMIT: usize = 128;
 
 pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {
     let mut item = msg.get("params").cloned().unwrap_or(Value::Null);

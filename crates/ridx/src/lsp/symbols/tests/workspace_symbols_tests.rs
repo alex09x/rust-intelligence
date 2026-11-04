@@ -57,21 +57,23 @@ fn test_workspace_symbols_empty_query() {
     let res = handle_workspace_symbol(&req, std::iter::once(&h.ws), &mut h.conv);
     let items = res.as_array().expect("expected array");
     assert!(!items.is_empty());
-    assert!(items.len() <= 100);
+    assert!(items.len() <= 128);
 }
 
 #[test]
-fn test_workspace_symbols_capping_at_100() {
+fn test_workspace_symbols_capping_at_128() {
     let mut h = setup_test_symbols();
+    // `sym_` matches no type (the crate `test_syms` has no `_` after `sym`), so every kind is searched: the 130
+    // `sym_*` functions match and rust-analyzer's default limit cuts them at 128.
     let req = json!({
         "params": {
-            "query": "sym"
+            "query": "sym_"
         }
     });
 
     let res = handle_workspace_symbol(&req, std::iter::once(&h.ws), &mut h.conv);
     let items = res.as_array().expect("expected array");
-    assert_eq!(items.len(), 100);
+    assert_eq!(items.len(), 128);
 }
 
 #[test]
@@ -162,7 +164,7 @@ fn test_workspace_symbols_missing_params() {
     let empty_req = json!({});
     let res = handle_workspace_symbol(&empty_req, std::iter::once(&h.ws), &mut h.conv);
     let items = res.as_array().expect("expected array");
-    // Empty query defaults to returning symbols up to 100
+    // Empty query defaults to returning symbols up to 128
     assert!(!items.is_empty());
 }
 
