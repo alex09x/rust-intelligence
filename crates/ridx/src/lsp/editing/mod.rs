@@ -34,6 +34,7 @@ pub mod action_parse_lex;
 pub mod action_raw_string;
 pub mod action_struct_conv;
 pub mod action_struct_conv_helpers;
+mod action_struct_conv_index;
 pub mod actions;
 pub mod apply_registry;
 pub mod atomic_write;

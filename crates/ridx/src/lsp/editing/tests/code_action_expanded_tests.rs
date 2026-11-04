@@ -194,6 +194,61 @@ fn test_pub_struct_conversion_requires_private_fields() {
 }
 
 #[test]
+fn test_tuple_struct_conversion_keeps_comments_between_fields() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/commented_conv.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "#[derive(Default, Debug)]\n",
+        "struct Ctxt {\n",
+        "    // Set to `None` while checking.\n",
+        "    errors: Option<Vec<String>>,\n",
+        "    /// How many were seen.\n",
+        "    seen: usize,\n",
+        "}\n",
+        "impl Ctxt {\n",
+        "    fn new() -> Self { Ctxt { errors: Some(Vec::new()), seen: 0 } }\n",
+        "    fn count(&self) -> usize { self.seen + self.errors.as_ref().map_or(0, Vec::len) }\n",
+        "}\n",
+        "pub fn run() -> usize { Ctxt::new().count() }\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+
+    let acts = query_deferred_and_resolve(&uri, 1, 8, &ws, &ov);
+    let (_, edits) = acts.iter().find(|(t, _)| t == "Convert to tuple struct").expect("comments between fields must not block the conversion");
+    let updated = apply_text_edits(code, edits.as_array().unwrap());
+    assert!(updated.contains("    // Set to `None` while checking.\n    Option<Vec<String>>,\n    /// How many were seen.\n    usize,\n);"), "{updated}");
+    assert!(updated.contains("self.1 + self.0.as_ref()"), "{updated}");
+    assert_rustc_compiles(&updated, "tuple struct conversion with comments between fields");
+}
+
+#[test]
+fn test_tuple_struct_conversion_leaves_same_named_variant_alone() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/variant_conv.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "pub enum Diag { TypedHole { expr: u32 } }\n",
+        "struct TypedHole { expr: u32 }\n",
+        "fn lower(d: &Diag) -> TypedHole {\n",
+        "    match d {\n",
+        "        Diag::TypedHole { expr } => TypedHole { expr: *expr },\n",
+        "    }\n",
+        "}\n",
+        "pub fn run() -> u32 {\n",
+        "    let t: TypedHole = lower(&Diag::TypedHole { expr: 1 });\n",
+        "    t.expr\n",
+        "}\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+
+    // Without the index (this buffer is not indexed) the variant's declaration and patterns look like the struct's
+    // literals, so the conversion is refused rather than rewriting the enum.
+    let acts = query_deferred_and_resolve(&uri, 1, 9, &ws, &ov);
+    assert!(!acts.iter().any(|(t, _)| t == "Convert to tuple struct"), "{:?}", acts.iter().map(|(t, _)| t).collect::<Vec<_>>());
+}
+
+#[test]
 fn test_nested_fn_closure_inline_type_alias_and_inline_callers() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/inline_cases.rs");

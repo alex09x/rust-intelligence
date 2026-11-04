@@ -226,8 +226,10 @@ where
                         doc_version,
                     ));
                 }
-                if let Some(edits) = build_convert_to_tuple_struct(doc_text, &masked_doc, &starts, &item) {
-                    out.push(make_multi_edit_assist(uri, "Convert to tuple struct", "refactor.rewrite", KIND_CONV_TUPLE_STRUCT, line0, col_u16, edits, doc_version));
+                if let Some((edits, other_files)) = build_convert_to_tuple_struct(doc_text, &masked_doc, &starts, &item, Some(ws), &file_path) {
+                    let mut action = make_multi_edit_assist(uri, "Convert to tuple struct", "refactor.rewrite", KIND_CONV_TUPLE_STRUCT, line0, col_u16, edits, doc_version);
+                    add_other_file_edits(&mut action["edit"], other_files);
+                    out.push(action);
                 }
                 if let Some(edits) = build_convert_to_named_struct(doc_text, &masked_doc, &starts, &item) {
                     out.push(make_multi_edit_assist(uri, "Convert to named struct", "refactor.rewrite", KIND_CONV_NAMED_STRUCT, line0, col_u16, edits, doc_version));
@@ -312,8 +314,11 @@ pub fn resolve_decl_assist(
             Ok(build_multi_edits_workspace_edit(uri, edits, doc_version))
         }
         KIND_CONV_TUPLE_STRUCT => {
-            let edits = build_convert_to_tuple_struct(doc_text, &masked_doc, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot convert to tuple struct"))?;
-            Ok(build_multi_edits_workspace_edit(uri, edits, doc_version))
+            let (edits, other_files) = build_convert_to_tuple_struct(doc_text, &masked_doc, &starts, &item, Some(ws), &file_path)
+                .ok_or_else(|| LspError::request_failed("Cannot convert to tuple struct"))?;
+            let mut edit = build_multi_edits_workspace_edit(uri, edits, doc_version);
+            add_other_file_edits(&mut edit, other_files);
+            Ok(edit)
         }
         KIND_CONV_NAMED_STRUCT => {
             let edits = build_convert_to_named_struct(doc_text, &masked_doc, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot convert to named struct"))?;
@@ -360,6 +365,17 @@ fn make_assist_action(
         },
         "edit": edit_obj
     })
+}
+
+/// Adds edits for files other than the requested document to a `WorkspaceEdit`, in `changes` and, when the edit is
+/// versioned, as unversioned `documentChanges` entries.
+fn add_other_file_edits(edit: &mut Value, other_files: std::collections::BTreeMap<String, Vec<Value>>) {
+    for (uri, edits) in other_files {
+        if let Some(doc_changes) = edit.get_mut("documentChanges").and_then(Value::as_array_mut) {
+            doc_changes.push(json!({ "textDocument": { "uri": uri, "version": null }, "edits": edits }));
+        }
+        edit["changes"][uri.as_str()] = json!(edits);
+    }
 }
 
 #[allow(clippy::too_many_arguments)]

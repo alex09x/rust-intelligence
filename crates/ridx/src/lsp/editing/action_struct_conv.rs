@@ -18,10 +18,24 @@ use super::action_struct_conv_helpers::{
     collect_typed_locals, convert_brace_init_to_tuple, convert_tuple_init_to_brace, find_impl_body_spans_for, is_bare_value_ctor_fn_ref, is_brace_struct_literal_or_pat,
     is_isolated_leaf_module, outer_attrs_allow_shape_change, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
 };
+use super::action_struct_conv_index::{field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, struct_shape_used_outside};
+use ridx_format::WorkspaceIndex;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
-pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<Vec<Value>> {
+/// Edits for this document, plus `.name` → `.N` edits for other files keyed by URI.
+pub type ConversionEdits = (Vec<Value>, BTreeMap<String, Vec<Value>>);
+
+/// `ws` and `file` let the index decide which `.name` accesses belong to the struct, here and in other files; without
+/// them (or when the index cannot vouch for every field) only the module-local text proof is used.
+pub fn build_convert_to_tuple_struct(
+    doc_text: &str,
+    masked_doc: &str,
+    starts: &[usize],
+    item: &ParsedCursorItem,
+    ws: Option<&WorkspaceIndex>,
+    file: &str,
+) -> Option<ConversionEdits> {
     if !matches!(item.enclosing, EnclosingContext::None) {
         return None;
     }
@@ -31,13 +45,34 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
     if !where_src.trim().is_empty() || !outer_attrs_allow_shape_change(&doc_text[item.first_attr_byte..item.decl_start_byte]) {
         return None;
     }
-    let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
-    if !is_isolated_leaf_module(&masked_doc[mod_lo..mod_hi], &item.name) {
+    let fields = parse_named_fields_clean(raw_fields)?;
+    if fields.is_empty() || fields.len() > 16 {
         return None;
     }
-
-    let fields = parse_named_fields_clean(raw_fields)?;
-    if fields.is_empty() || fields.len() > 16 || !uses_confined_to_module(&item.vis_prefix, fields.iter().map(|(vis, _, _)| vis.as_str())) {
+    let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
+    let mut indexed = None;
+    let mut struct_sites = std::collections::HashSet::new();
+    if let Some(ws) = ws {
+        let names: Vec<&str> = fields.iter().map(|(_, n, _, _)| n.as_str()).collect();
+        let field_refs = field_name_bytes(&masked_doc[*open_delim_byte..*end_byte], *open_delim_byte, &names).and_then(|nb| indexed_field_refs(ws, file, doc_text, starts, &nb));
+        let name_byte = struct_name_byte(masked_doc, item.decl_start_byte, *open_delim_byte, &item.name);
+        match (field_refs, name_byte.and_then(|nb| struct_shape_used_outside(ws, file, doc_text, starts, nb, mod_lo, mod_hi))) {
+            // Built, destructured or implemented where the edits do not reach.
+            (_, Some(true)) => return None,
+            (Some(refs), Some(false)) => {
+                struct_sites = name_byte.and_then(|nb| struct_ref_sites(ws, file, doc_text, starts, nb)).unwrap_or_default();
+                indexed = Some(refs);
+            }
+            _ => {}
+        }
+    }
+    // With the index every field reference is known, so child modules, macros and wider visibility are checked by
+    // coverage below instead of being refused up front.
+    if indexed.is_none()
+        && (!is_isolated_leaf_module(&masked_doc[mod_lo..mod_hi], &item.name)
+            || !uses_confined_to_module(&item.vis_prefix, fields.iter().map(|(vis, _, _, _)| vis.as_str()))
+            || names_a_variant_too(&masked_doc[mod_lo..mod_hi], &item.name))
+    {
         return None;
     }
 
@@ -45,11 +80,27 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
     let known_locals = collect_typed_locals(&masked_doc[mod_lo..mod_hi], &item.name);
     let mut raw_edits: Vec<(usize, usize, String)> = Vec::new();
 
-    let tuple_defs: Vec<String> = fields.iter().map(|(vis, _, ty)| if vis.is_empty() { ty.clone() } else { format!("{vis} {ty}") }).collect();
+    let tuple_defs: Vec<String> = fields.iter().map(|(vis, _, ty, _)| if vis.is_empty() { ty.clone() } else { format!("{vis} {ty}") }).collect();
     let name_end = doc_text[..*open_delim_byte].trim_end().len();
-    raw_edits.push((name_end, *end_byte, format!("({});", tuple_defs.join(", "))));
+    let decl = if fields.iter().all(|f| f.3.is_empty()) {
+        format!("({});", tuple_defs.join(", "))
+    } else {
+        // Comments between fields stay with their field, one field per line.
+        let line_start = doc_text[..item.decl_start_byte].rfind('\n').map_or(0, |p| p + 1);
+        let indent: String = doc_text[line_start..].chars().take_while(|c| *c == ' ' || *c == '\t').collect();
+        let mut s = String::from("(\n");
+        for ((_, _, _, leading), def) in fields.iter().zip(&tuple_defs) {
+            for c in leading.lines().map(str::trim).filter(|l| !l.is_empty()) {
+                s.push_str(&format!("{indent}    {c}\n"));
+            }
+            s.push_str(&format!("{indent}    {def},\n"));
+        }
+        s.push_str(&format!("{indent});"));
+        s
+    };
+    raw_edits.push((name_end, *end_byte, decl));
 
-    let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _))| (n.as_str(), idx)).collect();
+    let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
 
     let mb = masked_doc.as_bytes();
     let mut i = mod_lo;
@@ -69,6 +120,19 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
                         k += 1;
                     }
                     if k < mod_hi && mb[k] == b'{' && is_brace_struct_literal_or_pat(masked_doc, mod_lo, i, k, &impl_spans) {
+                        if tok == item.name {
+                            // `Enum::Name { .. }`: a variant that shares the struct's name, not the struct.
+                            let qualifier =
+                                masked_doc[..i].trim_end().strip_suffix("::").map(|q| q.trim_end().rsplit(|c: char| !(c.is_alphanumeric() || c == '_')).next().unwrap_or(""));
+                            if qualifier.is_some_and(|q| q.starts_with(|c: char| c.is_ascii_uppercase())) {
+                                i = tok_end;
+                                continue;
+                            }
+                            // With the index, every literal of the struct is a reference to it.
+                            if indexed.is_some() && !struct_sites.contains(&i) {
+                                return None;
+                            }
+                        }
                         let brace_end = skip_balanced(mb, k, b'{', b'}')?;
                         let tup_text = convert_brace_init_to_tuple(&doc_text[k + 1..brace_end - 1], &masked_doc[k + 1..brace_end - 1], fields.len(), &field_index)?;
                         raw_edits.push((after_tf, brace_end, tup_text));
@@ -103,9 +167,19 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
                 if let Some(&idx) = field_index.get(fname) {
                     let after_trim = masked_doc[f_end..mod_hi].trim_start();
                     if !after_trim.starts_with('(') && !after_trim.starts_with("::<") {
-                        let in_impl = impl_spans.iter().any(|&(bo, bc)| d > bo && d < bc);
-                        if !receiver_is_proven_owner(masked_doc, mod_lo, d, in_impl, &known_locals) {
-                            return None;
+                        match &indexed {
+                            // Another type's field of the same name: not ours to rewrite.
+                            Some(refs) if !refs.sites.contains(&k) => {
+                                d = f_end;
+                                continue;
+                            }
+                            Some(_) => {}
+                            None => {
+                                let in_impl = impl_spans.iter().any(|&(bo, bc)| d > bo && d < bc);
+                                if !receiver_is_proven_owner(masked_doc, mod_lo, d, in_impl, &known_locals) {
+                                    return None;
+                                }
+                            }
                         }
                         raw_edits.push((k, f_end, idx.to_string()));
                         d = f_end;
@@ -117,7 +191,14 @@ pub fn build_convert_to_tuple_struct(doc_text: &str, masked_doc: &str, starts: &
         d += 1;
     }
 
-    to_lsp_edits(doc_text, starts, raw_edits)
+    // Every place the compiler resolved to a field must be rewritten by one of the edits.
+    if let Some(refs) = &indexed {
+        if !refs.sites.iter().all(|&s| raw_edits.iter().any(|&(lo, hi, _)| s >= lo && s < hi)) {
+            return None;
+        }
+    }
+    let other_files = indexed.map(|r| r.other_files).unwrap_or_default();
+    Some((to_lsp_edits(doc_text, starts, raw_edits)?, other_files))
 }
 
 pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<Vec<Value>> {
@@ -229,6 +310,18 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
     }
 
     to_lsp_edits(doc_text, starts, raw_edits)
+}
+
+/// Whether `Type::Name` appears in the module: a variant (or associated item) shares the struct's name, and without
+/// the index its declaration and uses cannot be told from the struct's literals.
+fn names_a_variant_too(mod_masked: &str, name: &str) -> bool {
+    let b = mod_masked.as_bytes();
+    mod_masked.match_indices(name).any(|(p, _)| {
+        b.get(p + name.len()).is_none_or(|c| !is_ident_byte(*c))
+            && mod_masked[..p]
+                .strip_suffix("::")
+                .is_some_and(|q| q.rsplit(|c: char| !(c.is_alphanumeric() || c == '_')).next().is_some_and(|s| s.starts_with(|c: char| c.is_ascii_uppercase())))
+    })
 }
 
 /// Literals, patterns and field accesses need every touched field to be visible. Private fields are visible only in the

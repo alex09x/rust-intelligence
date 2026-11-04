@@ -20,7 +20,9 @@ use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
 pub(crate) fn outer_attrs_allow_shape_change(attrs_src: &str) -> bool {
-    const SAFE_DERIVES: &[&str] = &["Debug", "Clone", "Copy", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Default"];
+    // Derives that accept named and tuple structs alike (clap's `Parser`/`Args` do not, so they are absent).
+    const SAFE_DERIVES: &[&str] =
+        &["Debug", "Clone", "Copy", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Default", "Serialize", "Deserialize", "Component", "Resource", "Reflect", "Arbitrary"];
     let masked = mask_comments_and_strings(attrs_src);
     let mb = masked.as_bytes();
     let mut i = 0usize;
@@ -32,18 +34,24 @@ pub(crate) fn outer_attrs_allow_shape_change(attrs_src: &str) -> bool {
             }
             let Some(after_b) = skip_balanced(mb, k, b'[', b']') else { return false };
             let inner = attrs_src[k + 1..after_b - 1].trim();
-            if let Some(rest) = inner.strip_prefix("derive") {
-                let r = rest.trim();
-                if !r.starts_with('(') || !r.ends_with(')') {
-                    return false;
+            // `derive(…)` of shape-agnostic macros (by last path segment), `allow`, `doc`, and those under
+            // `cfg_attr(predicate, …)`.
+            fn allowed(inner: &str) -> bool {
+                let inner = inner.trim();
+                if let Some(rest) = inner.strip_prefix("cfg_attr") {
+                    let r = rest.trim();
+                    let Some(args) = r.strip_prefix('(').and_then(|a| a.strip_suffix(')')) else { return false };
+                    let parts = split_top_level_commas(args);
+                    return parts.len() >= 2 && parts[1..].iter().all(|p| allowed(p));
                 }
-                for d in r[1..r.len() - 1].split(',') {
-                    let dt = d.trim();
-                    if !dt.is_empty() && !SAFE_DERIVES.contains(&dt) {
-                        return false;
-                    }
+                if let Some(rest) = inner.strip_prefix("derive") {
+                    let r = rest.trim();
+                    let Some(list) = r.strip_prefix('(').and_then(|a| a.strip_suffix(')')) else { return false };
+                    return list.split(',').map(str::trim).all(|d| d.is_empty() || SAFE_DERIVES.contains(&d.rsplit("::").next().unwrap_or(d).trim()));
                 }
-            } else if !inner.starts_with("allow(") && !inner.starts_with("doc") {
+                inner.starts_with("allow(") || inner.starts_with("doc")
+            }
+            if !allowed(inner) {
                 return false;
             }
             i = after_b;
@@ -92,17 +100,50 @@ pub(crate) fn is_isolated_leaf_module(mod_masked: &str, struct_name: &str) -> bo
     true
 }
 
-pub(crate) fn parse_named_fields_clean(raw: &str) -> Option<Vec<(String, String, String)>> {
+/// Named fields as `(visibility, name, type, leading comments)`. Commas and colons are found in the masked text, so
+/// comments between fields are kept (as the next field's leading comments) instead of being read as code.
+pub(crate) fn parse_named_fields_clean(raw: &str) -> Option<Vec<(String, String, String, String)>> {
     let mf = mask_comments_and_strings(raw);
-    if mf.contains('#') || mf.contains('$') {
+    if mf.contains('$') || mf.len() != raw.len() {
         return None;
     }
+    let mb = mf.as_bytes();
     let mut out = Vec::new();
-    for entry in split_top_level_commas(raw) {
-        let t = entry.trim();
-        if t.is_empty() {
+    // Leading whitespace and outer attributes (`#[serde(skip)]`) of an entry; they travel with the field.
+    let skip_attrs = |m: &str| -> Option<usize> {
+        let b = m.as_bytes();
+        let mut p = m.len() - m.trim_start().len();
+        while p < b.len() && b[p] == b'#' {
+            let open = p + 1 + (m[p + 1..].len() - m[p + 1..].trim_start().len());
+            p = skip_balanced(b, open, b'[', b']')?;
+            p += m[p..].len() - m[p..].trim_start().len();
+        }
+        Some(p)
+    };
+    let (mut depth, mut start) = (0i32, 0usize);
+    for i in 0..=mb.len() {
+        let c = mb.get(i).copied();
+        match c {
+            Some(b'<' | b'(' | b'[' | b'{') => depth += 1,
+            Some(b'>') if i > 0 && mb[i - 1] == b'-' => {}
+            Some(b'>' | b')' | b']' | b'}') => depth -= 1,
+            _ => {}
+        }
+        if c.is_some() && (c != Some(b',') || depth != 0) {
             continue;
         }
+        let (m, r) = (&mf[start..i], &raw[start..i]);
+        start = i + 1;
+        if m.trim().is_empty() {
+            // A comment after the last field has no field to travel with.
+            if !r.trim().is_empty() {
+                return None;
+            }
+            continue;
+        }
+        let lead = skip_attrs(m)?;
+        let leading = r[..lead].trim().to_string();
+        let t = r[lead..].trim_end();
         let rest = strip_field_vis(t);
         let vis = collapse_ws(t[..t.len() - rest.len()].trim());
         let (fn_raw, Some(ft_raw)) = split_top_level_colon(rest) else { return None };
@@ -111,7 +152,7 @@ pub(crate) fn parse_named_fields_clean(raw: &str) -> Option<Vec<(String, String,
         if fty.is_empty() {
             return None;
         }
-        out.push((vis, fname, fty));
+        out.push((vis, fname, fty, leading));
     }
     Some(out)
 }
