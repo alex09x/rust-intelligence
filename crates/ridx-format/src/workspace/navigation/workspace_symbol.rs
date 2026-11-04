@@ -63,8 +63,35 @@ struct CachedWsDefs {
 /// Marks a crate root entry.
 const CRATE_ROOT: u32 = u32::MAX;
 
-/// `DefEntry::visibility` of a private item.
-const DEF_VISIBILITY_PRIVATE: u8 = 3;
+/// Whether the `use` statement holding the name at `(line_1b, col_1b)` is `pub` or `pub(…)`. The index records
+/// no visibility for imports, so the source decides: walk back from the name to the statement's `use` keyword,
+/// across enclosing `{…}` groups, and look at the token before it.
+fn use_is_pub(src: &str, line_1b: u32, col_1b: u32) -> bool {
+    let Some(line_start) = src.split_inclusive('\n').take(line_1b.saturating_sub(1) as usize).map(str::len).try_fold(0usize, |a, l| a.checked_add(l)) else {
+        return false;
+    };
+    let line = src[line_start..].split('\n').next().unwrap_or("");
+    let at = line_start + line.char_indices().nth(col_1b.saturating_sub(1) as usize).map_or(line.len(), |(b, _)| b);
+    let b = src.as_bytes();
+    let is_id = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
+    let mut depth = 0i32;
+    let mut i = at.min(b.len());
+    while i > 0 {
+        i -= 1;
+        match b[i] {
+            b'}' => depth += 1,
+            b'{' => depth = (depth - 1).max(0),
+            b';' if depth == 0 => return false,
+            b'e' if depth == 0 && i >= 2 && &b[i - 2..=i] == b"use" && (i < 3 || !is_id(b[i - 3])) && b.get(i + 1).is_some_and(|c| !is_id(*c)) => {
+                let before = src[..i - 2].trim_end();
+                let before = if before.ends_with(')') { before[..before.rfind('(').unwrap_or(0)].trim_end() } else { before };
+                return before.ends_with("pub") && (before.len() == 3 || !is_id(before.as_bytes()[before.len() - 4]));
+            }
+            _ => {}
+        }
+    }
+    false
+}
 
 fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
     let reader = &ws.readers[e.reader as usize];
@@ -110,6 +137,7 @@ fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<
     }
     let mut by_name: Vec<SymEntry> = Vec::new();
     let mut seen = HashSet::new();
+    let mut sources: HashMap<&str, Option<String>> = HashMap::new();
     for (i, reader) in ws.readers.iter().enumerate() {
         if has_local && ws.reader_is_dependency.get(i).copied().unwrap_or(false) {
             continue;
@@ -121,12 +149,26 @@ fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<
             // not plain private imports, globs or `self`.
             let target = if def.sig_offset() != 0 { reader.get_str(def.sig_offset()) } else { "" };
             let renamed = target.rsplit("::").next().is_some_and(|last| !last.is_empty() && last != name);
-            let is_named_import = kind == DefKind::Use && !matches!(name, "*" | "_" | "self") && (def.visibility != DEF_VISIBILITY_PRIVATE || renamed);
+            let is_named_import = kind == DefKind::Use && !matches!(name, "*" | "_" | "self") && {
+                let span = def.span();
+                let file = reader.get_file(span.file_id());
+                let read = || ws.read_source_file(file).or_else(|| ws.resolve_path_for_crate(reader.crate_name(), file).to_str().and_then(|s| ws.read_source_file(s)));
+                renamed || sources.entry(file).or_insert_with(read).as_deref().is_some_and(|src| use_is_pub(src, span.start_line(), span.start_col()))
+            };
             if (is_excluded_ws_kind(kind) && !is_named_import) || name.is_empty() {
                 continue;
             }
             let path = reader.get_str(def.path_offset());
             let span = def.span();
+            // rustc's test descriptor: a `const` named like its `#[test]` function, spanning the attribute.
+            let width = span.end_col().saturating_sub(span.start_col()) as usize;
+            if kind == DefKind::Const && span.start_line() == span.end_line() && width != name.chars().count() && width != name.chars().count() + 2 {
+                continue;
+            }
+            // rust-analyzer collects items declared in the bodies of module-level functions, not in method bodies.
+            if path.rsplit_once("::").and_then(|(parent, _)| reader.find_definition_by_path(parent)).is_some_and(|p| DefKind::from(p.kind) == DefKind::AssocFn) {
+                continue;
+            }
             let file = reader.get_file(span.file_id());
             if !seen.insert((path, file, span.start_line(), span.start_col())) {
                 continue;
@@ -388,3 +430,7 @@ impl WorkspaceIndex {
         results
     }
 }
+
+#[cfg(test)]
+#[path = "workspace_symbol_tests.rs"]
+mod tests;
