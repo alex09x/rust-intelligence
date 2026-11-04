@@ -9,7 +9,7 @@
 
 Reads resolved `CodeAction` items (`code_action_resolve` rows, or eager `code_action` edits) from
 `.raw.pkl` produced by `position_ab_parity.py --save-raw-pkl`, applies each action's `WorkspaceEdit`
-into an isolated detached Git worktree, runs `cargo check --workspace [--all-targets]`, and reports
+into an isolated detached Git worktree, runs `mitts check --workspace [--all-targets]`, and reports
 side-by-side compile rates, build-breaking actions by title, and `coverage_of_ra_compiling` for
 `ridx` vs `rust-analyzer`.
 
@@ -27,6 +27,7 @@ import json
 import os
 import pickle
 import random
+import shutil
 import subprocess
 import sys
 import urllib.parse
@@ -35,6 +36,18 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 CORPORA = ("serde", "ripgrep", "tokio", "rust-analyzer", "bevy", "clap", "regex")
+
+
+def resolve_mitts_binary(override: Optional[str] = None) -> Tuple[str, str]:
+    cand = override or os.environ.get("MITTS") or shutil.which("mitts")
+    if not cand:
+        raise RuntimeError("mitts binary not found. Specify --mitts PATH or set MITTS=/path/to/mitts")
+    cand_path = os.path.expanduser(cand)
+    if not os.path.isfile(cand_path) or not os.access(cand_path, os.X_OK):
+        raise RuntimeError(f"Configured mitts binary is not executable: {cand_path}")
+    r = subprocess.run([cand_path, "--version"], capture_output=True, text=True, check=True)
+    version_line = r.stdout.strip() or r.stderr.strip()
+    return cand_path, version_line
 
 
 def _utf16_col_to_char_idx(line_str: str, u16_target: int) -> int:
@@ -181,7 +194,9 @@ def run_corpus_pkl(
     repos_root: str = "~/prod-code-storage/bench_repos",
     target_root: str = "~/ridx-bench/review",
     seed: int = 7,
+    mitts_bin: Optional[str] = None,
 ) -> dict:
+    mitts_path, checker_version = resolve_mitts_binary(mitts_bin)
     src = os.path.expanduser(f"{repos_root}/{corpus}")
     wt = f"/tmp/cacwt_{corpus}"
     tgt = os.path.expanduser(f"{target_root}/rc_target_{corpus}")
@@ -195,14 +210,16 @@ def run_corpus_pkl(
     mode: List[str] = ["--all-targets"]
 
     def check() -> Tuple[bool, List[str]]:
+        cmd = [mitts_path, "check", "--workspace"] + mode
         r = subprocess.run(
-            ["cargo", "check", "--workspace"] + mode + ["-q", "--message-format=short"],
+            cmd,
             cwd=wt,
             capture_output=True,
             text=True,
             env=dict(os.environ, CARGO_TARGET_DIR=tgt),
         )
-        errs = [ln for ln in r.stderr.split("\n") if ": error" in ln or ln.startswith("error")]
+        output = r.stderr + "\n" + r.stdout
+        errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
         return r.returncode == 0, errs[:3]
 
     with open(pkl_path, "rb") as fh:
@@ -217,7 +234,7 @@ def run_corpus_pkl(
         mode = []
         ok, e = check()
         if not ok:
-            raise RuntimeError(f"Baseline cargo check failed for {corpus}: {e}")
+            raise RuntimeError(f"Baseline check failed for {corpus}: {e}")
 
     rng = random.Random(seed)
     rng.shuffle(rows)
@@ -274,7 +291,12 @@ def run_corpus_pkl(
 
     reset()
     cov = compute_ra_compiling_coverage(per_pos_ok)
-    out = {"corpus": corpus, "positions_evaluated": len(rows), "coverage_of_ra_compiling": cov}
+    out = {
+        "corpus": corpus,
+        "checker": checker_version,
+        "positions_evaluated": len(rows),
+        "coverage_of_ra_compiling": cov,
+    }
     for who in ("ridx", "ra"):
         s = summary[who]
         denom = max(1, s["actions_checked"])
@@ -296,9 +318,9 @@ def run_corpus_pkl(
     return out
 
 
-def _run_job(job: Tuple[str, str, int]) -> Tuple[str, dict]:
-    corpus, pkl_path, limit = job
-    return corpus, run_corpus_pkl(corpus, pkl_path, limit=limit)
+def _run_job(job: Tuple[str, str, int, Optional[str]]) -> Tuple[str, dict]:
+    corpus, pkl_path, limit, mitts_bin = job
+    return corpus, run_corpus_pkl(corpus, pkl_path, limit=limit, mitts_bin=mitts_bin)
 
 
 def main() -> int:
@@ -309,8 +331,11 @@ def main() -> int:
     ap.add_argument("--pkl-dir", type=Path)
     ap.add_argument("--limit", type=int, default=0, help="Max positions per corpus (0 = all 300)")
     ap.add_argument("--jobs", type=int, default=1, help="Parallel corpus workers for --all-corpora")
+    ap.add_argument("--mitts", default=None, help="Path to mitts binary (defaults to MITTS env or PATH)")
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
+
+    _, checker_version = resolve_mitts_binary(args.mitts)
 
     if args.all_corpora:
         if not args.pkl_dir:
@@ -320,15 +345,15 @@ def main() -> int:
             cands = sorted(args.pkl_dir.glob(f"*{c}*.raw.pkl"))
             if not cands:
                 raise FileNotFoundError(f"No .raw.pkl found for {c} in {args.pkl_dir}")
-            jobs.append((c, str(cands[0]), args.limit))
+            jobs.append((c, str(cands[0]), args.limit, args.mitts))
         per_corpus: Dict[str, dict] = {}
         if args.jobs > 1:
             with concurrent.futures.ProcessPoolExecutor(max_workers=min(args.jobs, len(jobs))) as ex:
                 for c, res in ex.map(_run_job, jobs):
                     per_corpus[c] = res
         else:
-            for c, pkl_s, lim in jobs:
-                per_corpus[c] = run_corpus_pkl(c, pkl_s, limit=lim)
+            for c, pkl_s, lim, mbin in jobs:
+                per_corpus[c] = run_corpus_pkl(c, pkl_s, limit=lim, mitts_bin=mbin)
         tot = {w: [0, 0, 0] for w in ("ridx", "ra")}
         cov_tot = [0, 0, 0, 0, 0]
         uncov_tot: Counter = Counter()
@@ -349,6 +374,7 @@ def main() -> int:
             for t, cnt in cv["uncovered_ra_compiling_by_title"].items():
                 uncov_tot[t] += cnt
         agg = {
+            "checker": checker_version,
             "corpora": ordered,
             "totals": {
                 **{
@@ -380,7 +406,7 @@ def main() -> int:
 
     if not args.corpus or not args.pkl:
         ap.error("Specify CORPUS PKL or --all-corpora --pkl-dir DIR")
-    res = run_corpus_pkl(args.corpus, args.pkl, limit=args.limit)
+    res = run_corpus_pkl(args.corpus, args.pkl, limit=args.limit, mitts_bin=args.mitts)
     if args.out:
         args.out.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
     return 0

@@ -11,9 +11,9 @@ Evaluates:
 1. Answered compile rate (`ridx` vs `rust-analyzer` on the same positions, optionally sampled with `--limit N`).
 2. Full-corpus refusal audit across ALL refusals in the corpus (never capped by `--limit`):
    - `refused_where_ra_external`: RA's edit touches files outside `workspace_root` (std/registry).
-   - `refused_where_ra_broke_build`: RA's edit stays in-repo, but applying it breaks `cargo check`
+   - `refused_where_ra_broke_build`: RA's edit stays in-repo, but applying it breaks `mitts check`
      (reported as a standalone counter and never mixed into `position_ab_parity` rules).
-   - `refused_where_ra_compiled`: RA's edit stays in-repo AND compiles cleanly under `cargo check`.
+   - `refused_where_ra_compiled`: RA's edit stays in-repo AND compiles cleanly under `mitts check`.
 
 Usage:
   1. Single corpus from `.raw.pkl`:
@@ -28,6 +28,7 @@ import json
 import os
 import pickle
 import random
+import shutil
 import subprocess
 import sys
 import urllib.parse
@@ -38,6 +39,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from position_ab_parity_refusal import workspace_edit_external_paths  # noqa: E402
 
 CORPORA = ("serde", "ripgrep", "tokio", "rust-analyzer", "bevy", "clap", "regex")
+
+
+def resolve_mitts_binary(override: Optional[str] = None) -> Tuple[str, str]:
+    cand = override or os.environ.get("MITTS") or shutil.which("mitts")
+    if not cand:
+        raise RuntimeError("mitts binary not found. Specify --mitts PATH or set MITTS=/path/to/mitts")
+    cand_path = os.path.expanduser(cand)
+    if not os.path.isfile(cand_path) or not os.access(cand_path, os.X_OK):
+        raise RuntimeError(f"Configured mitts binary is not executable: {cand_path}")
+    r = subprocess.run([cand_path, "--version"], capture_output=True, text=True, check=True)
+    version_line = r.stdout.strip() or r.stderr.strip()
+    return cand_path, version_line
 
 
 def edits_of(res: Optional[dict]) -> Optional[Dict[str, list] | str]:
@@ -153,7 +166,9 @@ def run_corpus_pkl(
     repos_root: str = "~/prod-code-storage/bench_repos",
     target_root: str = "~/ridx-bench/review",
     seed: int = 7,
+    mitts_bin: Optional[str] = None,
 ) -> dict:
+    mitts_path, checker_version = resolve_mitts_binary(mitts_bin)
     src = os.path.expanduser(f"{repos_root}/{corpus}")
     wt = f"/tmp/rcwt_{corpus}"
     tgt = os.path.expanduser(f"{target_root}/rc_target_{corpus}")
@@ -167,14 +182,16 @@ def run_corpus_pkl(
     mode: List[str] = ["--all-targets"]
 
     def check() -> Tuple[bool, List[str]]:
+        cmd = [mitts_path, "check", "--workspace"] + mode
         r = subprocess.run(
-            ["cargo", "check", "--workspace"] + mode + ["-q", "--message-format=short"],
+            cmd,
             cwd=wt,
             capture_output=True,
             text=True,
             env=dict(os.environ, CARGO_TARGET_DIR=tgt),
         )
-        errs = [ln for ln in r.stderr.split("\n") if ": error" in ln or ln.startswith("error")]
+        output = r.stderr + "\n" + r.stdout
+        errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
         return r.returncode == 0, errs[:3]
 
     with open(pkl_path, "rb") as fh:
@@ -188,7 +205,7 @@ def run_corpus_pkl(
         ok, e = check()
         print("baseline", corpus, mode, ok, e, flush=True)
         if not ok:
-            raise RuntimeError(f"Baseline cargo check failed for {corpus}: {e}")
+            raise RuntimeError(f"Baseline check failed for {corpus}: {e}")
 
     rng = random.Random(seed)
     rng.shuffle(rows)
@@ -298,6 +315,7 @@ def run_corpus_pkl(
     ra_denom = max(1, ra_ans - ra_fop)
     return {
         "corpus": corpus,
+        "checker": checker_version,
         "total_positions": total_positions,
         "ridx": {
             "total_answered": total_ridx_answered,
@@ -343,8 +361,11 @@ def main() -> int:
     ap.add_argument("--repos-root", default="~/prod-code-storage/bench_repos", help="Directory containing benchmark repos")
     ap.add_argument("--target-root", default="~/ridx-bench/review", help="Directory containing rc_target_<corpus>")
     ap.add_argument("--limit", type=int, default=0, help="Max answered positions to compile-check per corpus (0 = all; refusals are ALWAYS checked in full)")
+    ap.add_argument("--mitts", default=None, help="Path to mitts binary (defaults to MITTS env or PATH)")
     ap.add_argument("--out", default=None, help="Optional JSON output path")
     args = ap.parse_args()
+
+    _, checker_version = resolve_mitts_binary(args.mitts)
 
     corpora = list(CORPORA) if args.all_corpora else ([args.corpus] if args.corpus else [])
     if not corpora:
@@ -355,7 +376,7 @@ def main() -> int:
     any_ridx_fail = False
     for c in corpora:
         pkl_p = Path(args.pkl) if args.pkl else (pkl_dir / f"{c}.json.raw.pkl")
-        res = run_corpus_pkl(c, str(pkl_p), limit=args.limit, repos_root=args.repos_root, target_root=args.target_root)
+        res = run_corpus_pkl(c, str(pkl_p), limit=args.limit, repos_root=args.repos_root, target_root=args.target_root, mitts_bin=args.mitts)
         results.append(res)
         if res["ridx"]["failed"] > 0:
             any_ridx_fail = True
@@ -388,7 +409,7 @@ def main() -> int:
     print(f"{'TOTAL':<15} {t_pos:>3} {t_ref:>3} {t_ext:>6} {t_brk:>6} {t_rok:>5} {f'{t_r_ok}/{t_r_chk} ({tr_pct}%)':<22} {f'{t_ra_ok}/{t_ra_chk} ({tra_pct}%)':<22}")
     print("Refusal reason distribution:", json.dumps(tot_reasons))
     if args.out:
-        Path(args.out).write_text(json.dumps({"results": results, "total_refusal_reasons": tot_reasons}, indent=2) + "\n", encoding="utf-8")
+        Path(args.out).write_text(json.dumps({"checker": checker_version, "results": results, "total_refusal_reasons": tot_reasons}, indent=2) + "\n", encoding="utf-8")
     return 1 if any_ridx_fail else 0
 
 
