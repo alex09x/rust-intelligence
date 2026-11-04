@@ -29,6 +29,10 @@ pub fn build_nested_fn_to_closure(doc_text: &str, masked_doc: &str, starts: &[us
     if !generics_src.trim().is_empty() || !where_src.trim().is_empty() {
         return None;
     }
+    // Functions returning `impl Trait` cannot be reliably inlined into expressions without losing type inference (e.g. E0283).
+    if ret_src.as_deref().is_some_and(|r| r.contains("impl ")) {
+        return None;
+    }
     let hdr_m = &masked_doc[item.decl_start_byte..*bo];
     if contains_word(hdr_m, "async") || contains_word(hdr_m, "const") {
         return None;
@@ -157,6 +161,10 @@ pub fn build_inline_into_all_callers(doc_text: &str, masked_doc: &str, starts: &
         return None;
     };
     if !generics_src.trim().is_empty() || !where_src.trim().is_empty() {
+        return None;
+    }
+    // Functions returning `impl Trait` cannot be reliably inlined into expressions without losing type inference (e.g. E0283).
+    if ret_src.as_deref().is_some_and(|r| r.contains("impl ")) {
         return None;
     }
     let hdr_m = &masked_doc[item.decl_start_byte..*bo];

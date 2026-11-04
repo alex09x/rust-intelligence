@@ -261,4 +261,15 @@ fn test_compile_safety_on_chained_tuple_proj_binary_inline_try_from_const_fn_and
     // 5. Nested `fn helper` referenced inside `const _F` refuses `Convert nested function to closure` (`E0435`).
     let fn_acts = query_deferred_and_resolve(&uri, 20, 8, &ws, &ov);
     assert!(!fn_acts.iter().any(|(t, _)| t == "Convert nested function to closure"));
+
+    // 6. Function returning `impl Trait` refuses `Inline into all callers` to prevent E0283 inference regressions.
+    let impl_trait_code = concat!(
+        "fn gen_iter() -> impl Iterator<Item = i32> { std::iter::empty() }\n",
+        "fn caller() { for _ in gen_iter() {} }\n",
+    );
+    let impl_path = temp.join("src/impl_trait_inline.rs");
+    let impl_uri = format!("file://{}", impl_path.to_str().unwrap());
+    ov.open_document(&impl_uri, impl_path.to_str().unwrap(), 1, impl_trait_code.to_string());
+    let impl_acts = query_deferred_and_resolve(&impl_uri, 0, 5, &ws, &ov);
+    assert!(!impl_acts.iter().any(|(t, _)| t == "Inline into all callers"));
 }

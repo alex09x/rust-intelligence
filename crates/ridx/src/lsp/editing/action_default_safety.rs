@@ -204,11 +204,10 @@ const SAFE_STD_METHODS: &[&str] = &[
     "by_ref", "bytes", "chain", "chars", "checked_add", "checked_sub", "clear", "clone", "clone_from", "cloned",
     "cmp", "collect", "contains", "copied", "ends_with", "enumerate", "eq", "err", "expect", "extend", "filter",
     "filter_map", "find", "flat_map", "fmt", "fuse", "into", "into_iter", "is_empty", "is_err", "is_none", "is_ok",
-    "is_some", "is_write_vectored", "iter", "iter_mut", "len", "map", "map_err", "map_or", "map_or_else", "max",
-    "min", "ne", "ok", "or_else", "partial_cmp", "peekable", "poll_close", "poll_flush", "poll_shutdown",
-    "poll_write_vectored", "push", "push_str", "rev", "saturating_add", "saturating_sub", "size_hint", "skip",
-    "split", "starts_with", "take", "to_owned", "to_string", "trim", "unwrap", "unwrap_or", "unwrap_or_default",
-    "unwrap_or_else", "wrapping_add", "write_fmt", "write_str", "zip",
+    "is_some", "iter", "iter_mut", "len", "map", "map_err", "map_or", "map_or_else", "max",
+    "min", "ne", "ok", "or_else", "partial_cmp", "peekable", "push", "push_str", "rev", "saturating_add",
+    "saturating_sub", "size_hint", "skip", "split", "starts_with", "take", "to_owned", "to_string", "trim",
+    "unwrap", "unwrap_or", "unwrap_or_default", "unwrap_or_else", "wrapping_add", "write_fmt", "write_str", "zip",
 ];
 
 fn is_rust_kw_or_prelude(tok: &str) -> bool {
