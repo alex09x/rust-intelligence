@@ -85,7 +85,7 @@ fn test_code_lens_resolve_arguments_structure() {
     assert_eq!(resp["id"], 501);
     let cmd = &resp["result"]["command"];
     assert_eq!(cmd["command"], "ridx.showReferences");
-    assert_eq!(cmd["title"], "References: sample_fn");
+    assert_eq!(cmd["title"], "0 references");
     assert_eq!(cmd["arguments"][0], to_uri(&file));
     assert_eq!(cmd["arguments"][1]["line"], 2);
     assert_eq!(cmd["arguments"][1]["character"], 4);
@@ -209,7 +209,7 @@ fn test_code_lens_resolve_empty_data_object() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 505);
-    assert_eq!(resp["result"]["command"]["title"], "References: ");
+    assert_eq!(resp["result"]["command"]["title"], "0 references");
     assert_eq!(resp["result"]["command"]["arguments"][2], json!([]));
 }
 
@@ -227,6 +227,6 @@ fn test_code_lens_resolve_null_data() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 506);
-    assert_eq!(resp["result"]["command"]["title"], "References: ");
+    assert_eq!(resp["result"]["command"]["title"], "0 references");
     assert_eq!(resp["result"]["command"]["arguments"][2], json!([]));
 }

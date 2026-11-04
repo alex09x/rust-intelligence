@@ -15,7 +15,7 @@
 use super::l2_harness::{fixture_dir, get_or_index_l2_fixture, pos_in_file};
 use ridx::lsp::presentation::color::{handle_color_presentation, handle_document_color};
 use ridx::lsp::presentation::folding::handle_folding_range;
-use ridx::lsp::presentation::lens::{handle_code_lens, handle_code_lens_resolve};
+use ridx::lsp::presentation::lens::{handle_code_lens, handle_code_lens_resolve, handle_code_lens_resolve_for_client};
 use ridx::lsp::presentation::tokens::{
     handle_semantic_tokens_delta, handle_semantic_tokens_full, handle_semantic_tokens_range, TOKEN_TYPE_FUNCTION, TOKEN_TYPE_INTERFACE, TOKEN_TYPE_METHOD, TOKEN_TYPE_STRUCT,
 };
@@ -168,7 +168,10 @@ fn test_l2_folding_range_and_code_lens() {
     let resolve_req = json!({ "params": &lenses[0] });
     let resolved = handle_code_lens_resolve(&resolve_req, Some(ws), &empty_overlay, &mut conv);
     assert!(!resolved.is_null(), "codeLens/resolve returns params");
-    assert!(resolved["command"]["title"].as_str().map(|t| t.contains("reference") || t.contains("References")).unwrap_or(false), "Resolved code lens must carry reference title");
+    assert!(
+        resolved["command"]["title"].as_str().is_some_and(|t| t.contains(" reference") || t.contains(" implementation")),
+        "Resolved code lens must carry a reference or implementation count"
+    );
     assert_eq!(resolved["command"]["command"], "ridx.showReferences", "Code lens command must match registered ridx.showReferences");
 
     // 4. Code lens with a dirty overlay: the buffer is the indexed text with two lines inserted
@@ -227,6 +230,33 @@ fn test_l2_presentation_colors_and_links() {
 
     let sel_range = handle_selection_range(&dummy_req, &overlay_mgr);
     assert_eq!(sel_range, json!([]), "Selection range without overlay returns empty");
+}
+
+#[test]
+fn test_l2_code_lens_types_count_implementations_like_rust_analyzer() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let mut conv = PositionConverter::new();
+    let overlay_mgr = OverlayManager::new();
+
+    let lenses = handle_code_lens(&json!({ "params": { "textDocument": { "uri": &uri } } }), Some(ws), &overlay_mgr, &mut conv);
+    let impl_lens = lenses.as_array().unwrap().iter().find(|l| l["data"]["kind"] == "impls").expect("a type or trait lens");
+
+    let plain = handle_code_lens_resolve_for_client(&json!({ "params": impl_lens }), Some(ws), &overlay_mgr, &mut conv, false);
+    let title = plain["command"]["title"].as_str().unwrap();
+    let count = plain["command"]["arguments"][2].as_array().unwrap().len();
+    assert_eq!(title, format!("{count} implementation{}", if count == 1 { "" } else { "s" }));
+    assert_eq!(plain["command"]["command"], "ridx.showReferences", "plain clients get the advertised command");
+
+    let ra_client = handle_code_lens_resolve_for_client(&json!({ "params": impl_lens }), Some(ws), &overlay_mgr, &mut conv, true);
+    assert_eq!(ra_client["command"]["command"], "rust-analyzer.showReferences", "the rust-analyzer extension runs its own command");
+    assert_eq!(ra_client["command"]["title"], plain["command"]["title"]);
+
+    let mut lc = ridx::lsp::lifecycle::LifecycleManager::new();
+    let init = json!({ "params": { "capabilities": { "experimental": { "commands": { "commands": ["rust-analyzer.showReferences"] } } } } });
+    lc.handle_initialize(&init).expect("initialize");
+    assert!(lc.client_ra_show_references());
 }
 
 #[test]

@@ -115,7 +115,7 @@ fn test_code_lens_resolve_with_zero_references() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 771);
-    assert_eq!(resp["result"]["command"]["title"], "References: target_fn");
+    assert_eq!(resp["result"]["command"]["title"], "0 references");
     assert_eq!(resp["result"]["command"]["command"], "ridx.showReferences");
 }
 
@@ -304,7 +304,7 @@ fn test_code_lens_resolve_overlay_dirty_mapped_coords() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 776);
-    assert_eq!(resp["result"]["command"]["title"], "References: target_fn");
+    assert_eq!(resp["result"]["command"]["title"], "0 references");
 }
 
 #[test]
@@ -333,7 +333,7 @@ fn test_code_lens_resolve_missing_data_returns_unchanged() {
     });
     assert!(dsp.dispatch(&ctrl_req));
     let ctrl_resp = dsp.parse_response();
-    assert_eq!(ctrl_resp["result"]["command"]["title"], "References: target_fn");
+    assert_eq!(ctrl_resp["result"]["command"]["title"], "0 references");
 }
 
 #[test]
@@ -352,7 +352,7 @@ fn test_code_lens_resolve_echoes_numeric_id() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 888111);
-    assert_eq!(resp["result"]["command"]["title"], "References: target_fn");
+    assert_eq!(resp["result"]["command"]["title"], "0 references");
     assert_eq!(resp["result"]["command"]["command"], "ridx.showReferences");
 }
 
@@ -372,7 +372,7 @@ fn test_code_lens_resolve_echoes_string_id() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], "lens-resolve-string-id");
-    assert_eq!(resp["result"]["command"]["title"], "References: target_fn");
+    assert_eq!(resp["result"]["command"]["title"], "0 references");
     assert_eq!(resp["result"]["command"]["command"], "ridx.showReferences");
 }
 
@@ -396,5 +396,5 @@ fn test_code_lens_resolve_roundtrip_from_code_lens_request() {
     assert!(dsp.dispatch(&resolve_req));
     let resolve_resp = dsp.parse_response();
     assert_eq!(resolve_resp["id"], 781);
-    assert_eq!(resolve_resp["result"]["command"]["title"], "References: target_fn");
+    assert_eq!(resolve_resp["result"]["command"]["title"], "0 references");
 }

@@ -139,7 +139,7 @@ fn lens(uri: &str, line: u32, start_col: u32, end_col: u32, name: &str) -> Value
             "start": { "line": line - 1, "character": start_col - 1 },
             "end": { "line": line - 1, "character": end_col - 1 }
         },
-        "data": { "uri": uri, "line": line, "character": start_col, "name": name }
+        "data": { "uri": uri, "line": line, "character": start_col, "name": name, "kind": "refs" }
     })
 }
 

@@ -100,6 +100,16 @@ struct IndexLens<'a> {
     utf16_start: u32,
     utf16_end: u32,
     name: &'a str,
+    kind: DefKind,
+}
+
+/// rust-analyzer's default lenses: types and traits count their implementations, everything else its references.
+fn lens_kind_label(kind: DefKind) -> &'static str {
+    if matches!(kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait) {
+        "impls"
+    } else {
+        "refs"
+    }
 }
 
 /// The lenses of `file` from the readers that own it. Every reader's `find_file_id` accepts suffix
@@ -130,7 +140,7 @@ fn index_lenses<'a>(ws: &'a WorkspaceIndex, file: &str, text: &mut LensText) -> 
             if !seen.insert((def.span.start_line.saturating_sub(1), utf16_start, utf16_end, name)) {
                 continue;
             }
-            out.push(IndexLens { line: def.span.start_line, start_col: def.span.start_col, utf16_start, utf16_end, name });
+            out.push(IndexLens { line: def.span.start_line, start_col: def.span.start_col, utf16_start, utf16_end, name, kind: DefKind::from(def.kind) });
         }
     }
     out
@@ -147,7 +157,8 @@ fn lens_json(uri: &str, lens: &IndexLens, line_1based: u32) -> Value {
             "uri": uri,
             "line": line_1based,
             "character": lens.start_col,
-            "name": lens.name
+            "name": lens.name,
+            "kind": lens_kind_label(lens.kind)
         }
     })
 }
@@ -201,7 +212,8 @@ fn detached_overlay_lenses(uri: &str, file: &str, text_str: &str, conv: &mut Pos
                 "uri": uri,
                 "line": sym.start_line,
                 "character": sym.start_col,
-                "name": sym.name
+                "name": sym.name,
+                "kind": lens_kind_label(sym.kind)
             }
         }));
     }
@@ -230,6 +242,19 @@ pub fn handle_code_lens(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay
 
 /// Handles `codeLens/resolve` requests, computing references on demand.
 pub fn handle_code_lens_resolve(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
+    handle_code_lens_resolve_for_client(msg, workspace, overlay_mgr, conv, false)
+}
+
+/// Resolves a lens with rust-analyzer's titles. The command is `rust-analyzer.showReferences` when the client runs
+/// it itself (`ra_show_references`), otherwise the advertised `ridx.showReferences`, which plain clients send back.
+pub fn handle_code_lens_resolve_for_client(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+    ra_show_references: bool,
+) -> Value {
+    let show_command = if ra_show_references { "rust-analyzer.showReferences" } else { "ridx.showReferences" };
     let mut lens = msg.get("params").cloned().or_else(|| msg.as_object().map(|_| msg.clone())).unwrap_or(Value::Null);
 
     let data = lens.get("data").cloned().unwrap_or(Value::Null);
@@ -237,7 +262,6 @@ pub fn handle_code_lens_resolve(msg: &Value, workspace: Option<&WorkspaceIndex>,
     let file = uri_to_path(uri);
     let line_1based = data["line"].as_u64().unwrap_or(0) as u32;
     let col_1based = data["character"].as_u64().unwrap_or(0) as u32;
-    let name = data["name"].as_str().unwrap_or("");
 
     let overlay_opt = overlay_mgr.get(&file);
     let (query_line, query_col) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
@@ -249,6 +273,21 @@ pub fn handle_code_lens_resolve(msg: &Value, workspace: Option<&WorkspaceIndex>,
     } else {
         (line_1based, col_1based)
     };
+
+    let sl = line_1based.saturating_sub(1);
+    let sc = conv.char_col_to_utf16_col(&file, line_1based, col_1based);
+    if data["kind"].as_str() == Some("impls") {
+        let req = json!({ "params": { "textDocument": { "uri": uri }, "position": { "line": sl, "character": sc } } });
+        let impls = crate::lsp::navigation::handle_implementation(&req, workspace, overlay_mgr, conv);
+        let impls = impls.as_array().cloned().unwrap_or_default();
+        let count = impls.len();
+        lens["command"] = json!({
+            "title": format!("{count} implementation{}", if count == 1 { "" } else { "s" }),
+            "command": show_command,
+            "arguments": [uri, { "line": sl, "character": sc }, impls]
+        });
+        return lens;
+    }
 
     let mut locations = Vec::new();
     if query_line > 0 {
@@ -283,13 +322,9 @@ pub fn handle_code_lens_resolve(msg: &Value, workspace: Option<&WorkspaceIndex>,
     }
 
     let count = locations.len();
-    let title = if count > 0 { format!("{count} reference{}", if count == 1 { "" } else { "s" }) } else { format!("References: {name}") };
-
-    let sl = line_1based.saturating_sub(1);
-    let sc = conv.char_col_to_utf16_col(&file, line_1based, col_1based);
     lens["command"] = json!({
-        "title": title,
-        "command": "ridx.showReferences",
+        "title": format!("{count} reference{}", if count == 1 { "" } else { "s" }),
+        "command": show_command,
         "arguments": [uri, { "line": sl, "character": sc }, locations]
     });
 

@@ -73,6 +73,7 @@ pub fn dispatch_lsp_message<W: Write>(
         super::hierarchy::clear_impl_table_cache();
     }
 
+    let ra_show_references = lifecycle.client_ra_show_references();
     let conv = &mut lifecycle.conv;
 
     let result: super::error::LspResult<Value> = match method {
@@ -232,7 +233,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "codeLens/resolve" => {
             let uri = msg["params"]["data"]["uri"].as_str().or_else(|| msg["params"]["textDocument"]["uri"].as_str());
             let ws = uri.and_then(|u| mr.find_workspace_for_path(Path::new(&uri_to_path(u))));
-            Ok(handle_code_lens_resolve(&msg, ws, ov, conv))
+            Ok(handle_code_lens_resolve_for_client(&msg, ws, ov, conv, ra_show_references))
         }
         "textDocument/diagnostic" => Ok(handle_diagnostic_with_flycheck(&msg, ov, Some(&lifecycle.flycheck))),
         "workspace/diagnostic" => Ok(handle_workspace_diagnostic_with_flycheck(&msg, ov, mr, Some(&lifecycle.flycheck))),

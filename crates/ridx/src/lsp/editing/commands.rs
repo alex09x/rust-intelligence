@@ -25,7 +25,9 @@ pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> 
             let root = msg["params"]["rootUri"].as_str().or_else(|| msg["params"]["rootPath"].as_str()).unwrap_or("");
             Ok(json!({ "resolved": true, "workspaceRoot": root, "status": "ready" }))
         }
-        "ridx.showReferences" => {
+        // Lenses carry rust-analyzer's command name so the rust-analyzer VS Code extension handles the click; other
+        // clients send it back here. Only `ridx.showReferences` is advertised: the extension registers its own.
+        "ridx.showReferences" | "rust-analyzer.showReferences" => {
             let args = msg["params"]["arguments"].as_array();
             let uri = args.and_then(|a| a.first()).and_then(|v| v.as_str()).or_else(|| msg["params"]["uri"].as_str()).unwrap_or("");
             let pos = args.and_then(|a| a.get(1)).unwrap_or(&msg["params"]["position"]);
