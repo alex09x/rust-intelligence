@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 """Extended method comparators and b->a classifiers for `position_ab_parity_rules.py`."""
 
+import os
 import re
 from position_ab_gap_rules import store_kind
 
@@ -236,7 +237,27 @@ def compare_rename(r_norm, a_norm):
 from position_ab_parity_code_action import compare_code_action, compare_code_action_resolve
 
 
-def compare_formatting(r_norm, a_norm):
+def _apply_format_edits(text, edits):
+    """Applies normalized `(start_line_1based, start_utf16, end_line_1based, end_utf16, new_text)` edits to `text`."""
+    lines = text.split("\n")
+    starts = [0]
+    for ln in lines:
+        starts.append(starts[-1] + len(ln) + 1)
+
+    def offset(line_1based, utf16_col):
+        idx = min(line_1based - 1, len(lines))
+        if idx >= len(lines):
+            return len(text)
+        prefix = lines[idx].encode("utf-16-le")[: utf16_col * 2].decode("utf-16-le", "ignore")
+        return starts[idx] + len(prefix)
+
+    spans = sorted(((offset(sl, sc), offset(el, ec), nt) for sl, sc, el, ec, nt in edits), reverse=True)
+    for a, b, nt in spans:
+        text = text[:a] + nt + text[b:]
+    return text
+
+
+def compare_formatting(r_norm, a_norm, source=None):
     re_set, ae_set = set(r_norm), set(a_norm)
     if not re_set and not ae_set:
         return "both_empty", None, {}
@@ -244,6 +265,10 @@ def compare_formatting(r_norm, a_norm):
         return "exact_match", None, {"edits": len(re_set)}
     if len(r_norm) == 1 and len(a_norm) == 1 and r_norm[0][4].strip() == a_norm[0][4].strip():
         return "core_match", "c_fmt_same_formatted_text", {"edits": 1}
+    # Different edit granularity (one whole-file replacement vs minimal diffs) can produce the same document; what an
+    # editor ends up with is the resulting text, so equal results after applying each side's edits are a core match.
+    if source is not None and re_set and ae_set and _apply_format_edits(source, r_norm) == _apply_format_edits(source, a_norm):
+        return "core_match", "c_fmt_same_result_text", {"ridx": len(re_set), "ra": len(ae_set)}
     if re_set & ae_set:
         return "partial", "p_fmt_partial_edit_overlap", {"ridx": len(re_set), "ra": len(ae_set), "common": len(re_set & ae_set)}
     return "mismatch", "p_fmt_different_edits", {"ridx": len(re_set), "ra": len(ae_set)}
@@ -314,7 +339,14 @@ def compare_extended_method(row, r_norm, a_norm, repo=None, ws_table=None):
     if method == "code_action_resolve":
         return compare_code_action_resolve(r_norm, a_norm)
     if method in ("formatting", "range_formatting", "on_type_formatting"):
-        return compare_formatting(r_norm, a_norm)
+        source = None
+        if repo and row.get("file"):
+            try:
+                with open(os.path.join(str(repo), row["file"]), encoding="utf-8") as fh:
+                    source = fh.read()
+            except OSError:
+                source = None
+        return compare_formatting(r_norm, a_norm, source)
     if method in ("document_diagnostic", "workspace_diagnostic"):
         return compare_diagnostics(r_norm, a_norm)
     if method == "code_lens":
