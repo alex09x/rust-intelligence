@@ -18,6 +18,10 @@ use super::*;
 use crate::format::{join_resolving_overlap, Span};
 use std::collections::HashSet;
 
+/// An implementation already reported: resolved file, start line and start column. The column keeps apart the impls
+/// one `#[derive(PartialEq, Debug)]` line produces; the same impl seen from several compilation units shares all three.
+type SeenLoc = (String, u32, u32);
+
 impl WorkspaceIndex {
     /// Returns true if any workspace shard contains compiler-emitted `DefKind::Impl` definitions.
     pub fn has_compiler_impl_defs(&self) -> bool {
@@ -27,7 +31,7 @@ impl WorkspaceIndex {
     /// Finds all implementations for a nominal type, trait, or trait associated item.
     pub fn find_implementations<'a>(&'a self, def: &ResolvedDefinition<'a>, _file: &Path) -> Vec<WorkspaceReference<'a>> {
         let mut out = Vec::new();
-        let mut seen_locs: HashSet<(String, u32)> = HashSet::new();
+        let mut seen_locs: HashSet<SeenLoc> = HashSet::new();
 
         if matches!(def.kind, DefKind::AssocFn | DefKind::AssocConst | DefKind::AssocTy) {
             self.find_trait_item_implementations(def, &mut seen_locs, &mut out);
@@ -39,7 +43,7 @@ impl WorkspaceIndex {
             for r in self.find_references(def.path) {
                 if r.kind == DefKind::Impl {
                     let resolved = r.resolved_path().to_string_lossy().into_owned();
-                    if seen_locs.insert((resolved, r.span.start_line())) {
+                    if seen_locs.insert((resolved, r.span.start_line(), r.span.start_col())) {
                         out.push(r);
                     }
                 }
@@ -49,7 +53,7 @@ impl WorkspaceIndex {
         out
     }
 
-    fn find_type_or_trait_implementations<'a>(&'a self, def: &ResolvedDefinition<'a>, seen_locs: &mut HashSet<(String, u32)>, out: &mut Vec<WorkspaceReference<'a>>) {
+    fn find_type_or_trait_implementations<'a>(&'a self, def: &ResolvedDefinition<'a>, seen_locs: &mut HashSet<SeenLoc>, out: &mut Vec<WorkspaceReference<'a>>) {
         let is_trait_query = def.kind == DefKind::Trait;
         let raw_base = strip_tail_generics(def.path);
         let def_crate = def.reader_idx.and_then(|idx| self.readers.get(idx).map(|r| r.crate_name())).unwrap_or_else(|| super::qualified_path::extract_root_crate(raw_base));
@@ -133,7 +137,7 @@ impl WorkspaceIndex {
                     }
                 };
                 let adj_span = self.resolve_impl_target_span(reader, impl_def, trait_opt, self_ty, def, &resolved_file_buf);
-                if seen_locs.insert((resolved_file_buf.to_string_lossy().into_owned(), adj_span.start_line())) {
+                if seen_locs.insert((resolved_file_buf.to_string_lossy().into_owned(), adj_span.start_line(), adj_span.start_col())) {
                     out.push(WorkspaceReference {
                         crate_name: r_crate,
                         file: impl_file,
@@ -291,7 +295,7 @@ impl WorkspaceIndex {
         span
     }
 
-    fn find_trait_item_implementations<'a>(&'a self, def: &ResolvedDefinition<'a>, seen_locs: &mut HashSet<(String, u32)>, out: &mut Vec<WorkspaceReference<'a>>) {
+    fn find_trait_item_implementations<'a>(&'a self, def: &ResolvedDefinition<'a>, seen_locs: &mut HashSet<SeenLoc>, out: &mut Vec<WorkspaceReference<'a>>) {
         let Some((raw_parent, item_name)) = def.path.rsplit_once("::") else { return };
         let Some((_, local_trait, global_trait)) = self.resolve_workspace_trait_container(raw_parent, def.reader_idx, false) else {
             return;
@@ -322,7 +326,7 @@ impl WorkspaceIndex {
                     let span = impl_def.span();
                     let file = reader.get_file(span.file_id());
                     let r = WorkspaceReference { crate_name: reader.crate_name(), file, span, kind: def.kind, is_write: false, is_macro_expansion: false, source_root, unit_key };
-                    if seen_locs.insert((r.resolved_path().to_string_lossy().into_owned(), span.start_line())) {
+                    if seen_locs.insert((r.resolved_path().to_string_lossy().into_owned(), span.start_line(), span.start_col())) {
                         out.push(r);
                     }
                 }
@@ -341,7 +345,7 @@ impl WorkspaceIndex {
                 let span = impl_def.span();
                 let file = reader.get_file(span.file_id());
                 let r = WorkspaceReference { crate_name: reader.crate_name(), file, span, kind: def.kind, is_write: false, is_macro_expansion: false, source_root, unit_key };
-                if seen_locs.insert((r.resolved_path().to_string_lossy().into_owned(), span.start_line())) {
+                if seen_locs.insert((r.resolved_path().to_string_lossy().into_owned(), span.start_line(), span.start_col())) {
                     out.push(r);
                 }
             }
