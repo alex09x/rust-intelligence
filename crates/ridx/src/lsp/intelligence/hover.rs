@@ -36,11 +36,16 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                 if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
                     let line_text =
                         overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
-                    if let Some(text) = line_text.and_then(|l| super::hover_render::let_binding_hover(&l, col_1based, ty)) {
+                    let layout_at = |c: u32| ws.note_at(&file, line_1based, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
+                    if let Some(text) = line_text.and_then(|l| super::hover_render::let_binding_hover_with_layout(&l, col_1based, ty, &layout_at)) {
                         return Ok(json!({ "contents": { "kind": "markdown", "value": text } }));
                     }
                 }
-                return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file)));
+                let start_col = word_start_col(conv, overlay_opt, &file, line_1based, col_1based);
+                let call_args = ws.note_at(&file, line_1based, start_col, ridx_format::NOTE_CALL_ARGS);
+                let at_definition =
+                    hover.definition.as_ref().is_some_and(|d| d.start_line == line_1based && d.start_col == start_col && file.ends_with(d.file.trim_start_matches("./")));
+                return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file), HoverCursor { call_args, at_definition }));
             }
         }
     }
@@ -62,7 +67,7 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
             if overlay.is_dirty() && !overlay.has_modified_imports() {
                 if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                     if let Some(hover) = ws.hover_at(&file, ml, mc) {
-                        return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file)));
+                        return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file), HoverCursor::default()));
                     }
                 }
             }
@@ -74,7 +79,31 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
 
 #[cfg(test)]
 pub(crate) fn format_hover(hover: &ridx_format::WorkspaceHover, ws: Option<&WorkspaceIndex>) -> Value {
-    format_hover_full(hover, ws, None, None, None)
+    format_hover_full(hover, ws, None, None, None, HoverCursor::default())
+}
+
+/// What hover knows about the cursor beyond the definition under it.
+#[derive(Default, Clone, Copy)]
+pub(crate) struct HoverCursor<'a> {
+    /// The call's generic arguments when the cursor is on a callee name.
+    pub call_args: Option<&'a str>,
+    /// Whether the cursor is on the definition's own name (layouts show there, as in rust-analyzer).
+    pub at_definition: bool,
+}
+
+/// The 1-based char column where the identifier under `col` starts (notes are recorded at a name's start).
+fn word_start_col(conv: &mut PositionConverter, overlay: Option<&crate::overlay::DocumentOverlay>, file: &str, line: u32, col: u32) -> u32 {
+    let text = match overlay {
+        Some(o) => o.text.lines().nth(line.saturating_sub(1) as usize).map(str::to_string),
+        None => conv.get_line(file, line).map(str::to_string),
+    };
+    let Some(text) = text else { return col };
+    let chars: Vec<char> = text.chars().collect();
+    let mut at = (col.saturating_sub(1) as usize).min(chars.len());
+    while at > 0 && chars.get(at - 1).is_some_and(|c| c.is_alphanumeric() || *c == '_') {
+        at -= 1;
+    }
+    at as u32 + 1
 }
 
 pub(crate) fn format_hover_full(
@@ -83,9 +112,10 @@ pub(crate) fn format_hover_full(
     overlay_mgr: Option<&OverlayManager>,
     mut conv: Option<&mut PositionConverter>,
     cursor_file: Option<&str>,
+    cursor: HoverCursor<'_>,
 ) -> Value {
     if let (Some(d), Some(w), Some(c)) = (hover.definition.as_ref(), ws, conv.as_deref_mut()) {
-        if let Some(mut text) = super::hover_render::render_hover(d, hover.inferred_type, w, overlay_mgr, c) {
+        if let Some(mut text) = super::hover_render::render_hover(d, hover.inferred_type, cursor.call_args, cursor.at_definition, w, overlay_mgr, c) {
             if let Some(prov) = super::hover_enrich::format_provenance_and_blast_radius(d, w) {
                 text.push_str(if text.contains("\n---\n") { "\n\n" } else { "\n\n---\n\n" });
                 text.push_str(&prov);

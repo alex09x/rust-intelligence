@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 3, 160 bytes).
+/// Fixed-size header at offset 0 of any .ridx file (format version 4, 176 bytes; version 3 is the first 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
@@ -98,7 +98,15 @@ pub struct Header {
     pub derefs_offset: u64,
     pub derefs_count: u32,
     pub _pad7: u32,
+
+    /// Offset of the notes table (array of NoteEntry sorted by span); version 4.
+    pub notes_offset: u64,
+    pub notes_count: u32,
+    pub _pad8: u32,
 }
+
+/// Size of a version 3 header: the version 4 header without the notes table fields.
+pub const HEADER_V3_SIZE: usize = 160;
 
 /// Fixed-size header for version 2 .ridx files (128 bytes).
 #[repr(C)]
@@ -226,6 +234,9 @@ impl Header {
             derefs_offset: self.derefs_offset.to_le(),
             derefs_count: self.derefs_count.to_le(),
             _pad7: 0,
+            notes_offset: self.notes_offset.to_le(),
+            notes_count: self.notes_count.to_le(),
+            _pad8: 0,
         }
     }
 
@@ -262,7 +273,18 @@ impl Header {
             derefs_offset: u64::from_le(self.derefs_offset),
             derefs_count: u32::from_le(self.derefs_count),
             _pad7: 0,
+            notes_offset: u64::from_le(self.notes_offset),
+            notes_count: u32::from_le(self.notes_count),
+            _pad8: 0,
         }
+    }
+
+    /// Decodes a version 3 header (160 bytes): the version 4 layout without the notes table.
+    pub fn from_le_v3(bytes: &[u8]) -> Self {
+        let mut b = [0u8; std::mem::size_of::<Header>()];
+        b[..HEADER_V3_SIZE].copy_from_slice(&bytes[..HEADER_V3_SIZE]);
+        let raw: Header = unsafe { std::mem::transmute(b) };
+        raw.from_le()
     }
 
     /// Decodes a version 2 header (128 bytes), setting v3-specific table offsets and counts to 0.
@@ -301,6 +323,9 @@ impl Header {
             derefs_offset: 0,
             derefs_count: 0,
             _pad7: 0,
+            notes_offset: 0,
+            notes_count: 0,
+            _pad8: 0,
         }
     }
 

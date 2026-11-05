@@ -14,19 +14,26 @@
 //! Structures are designed for zero-copy memory-mapped reading with natural alignment.
 
 pub const MAGIC: [u8; 4] = *b"RIDX";
-pub const CURRENT_VERSION: u32 = 3;
-pub const CURRENT_FORMAT_VERSION: u32 = 3;
+pub const CURRENT_VERSION: u32 = 4;
+pub const CURRENT_FORMAT_VERSION: u32 = 4;
 pub const EXTRACTOR_VERSION: &str = "0.1.0";
+
+/// Whether a manifest of `format_version` can be opened: version 3 shards read as version 4 shards without notes.
+pub fn is_readable_format_version(format_version: u32) -> bool {
+    (3..=CURRENT_FORMAT_VERSION).contains(&format_version)
+}
 
 pub use crate::driver_hash::*;
 
 mod defs;
 mod entries;
 mod header;
+mod notes;
 
 pub use self::defs::{DefEntry, DefKind, Span, FLAG_MACRO_EXPANSION, FLAG_REEXPORT};
 pub use self::entries::{DerefEntry, HashIndexEntry, OwnerIndexEntry, RefEntry, TypeEntry};
-pub use self::header::{FileEntry, Header, HeaderV2};
+pub use self::header::{FileEntry, Header, HeaderV2, HEADER_V3_SIZE};
+pub use self::notes::{NoteEntry, NOTE_CALL_ARGS, NOTE_LAYOUT};
 
 /// Resolves the global RIDX shared cache directory for external crate dependencies.
 /// Uses `$RIDX_CACHE_DIR` if set, or platform default:
@@ -127,7 +134,9 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 160);
+    assert!(std::mem::size_of::<Header>() == 176);
+    assert!(std::mem::size_of::<NoteEntry>() == 28);
+    assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);
     assert!(std::mem::size_of::<HeaderV2>() == 128);
     assert!(std::mem::align_of::<HeaderV2>() == 8);

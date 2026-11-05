@@ -198,12 +198,19 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                     if let Some(def_id) = typeck.type_dependent_def_id(expr.hir_id) {
                         let final_def_id = self.resolve_trait_instance(expr.hir_id, def_id).unwrap_or(def_id);
                         self.add_ref_from_res(segment.ident.span, Res::Def(self.tcx.def_kind(final_def_id), final_def_id));
+                        self.note_call_args(segment.ident.span, def_id, expr.hir_id);
+                    }
+                }
+                hir::ExprKind::Path(hir::QPath::Resolved(_, path)) => {
+                    if let (Res::Def(hir::def::DefKind::Fn | hir::def::DefKind::AssocFn, def_id), Some(last)) = (path.res, path.segments.last()) {
+                        self.note_call_args(last.ident.span, def_id, expr.hir_id);
                     }
                 }
                 hir::ExprKind::Path(hir::QPath::TypeRelative(_, segment)) => {
                     if let hir::ExprKind::Path(ref qpath) = expr.kind {
                         let mut res = typeck.qpath_res(qpath, expr.hir_id);
                         if let Res::Def(hir::def::DefKind::AssocFn, def_id) = res {
+                            self.note_call_args(segment.ident.span, def_id, expr.hir_id);
                             if let Some(resolved_did) = self.resolve_trait_instance(expr.hir_id, def_id) {
                                 res = Res::Def(self.tcx.def_kind(resolved_did), resolved_did);
                             }
@@ -262,6 +269,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                                 RawType { file, start_line: s_line, start_col: s_col, end_line: e_line, end_col: e_col, type_name: sanitize_type_name(&ty.to_string()) },
                                 owner_path,
                             );
+                            self.note_binding_layout(pat, ty);
                         }
                     }
                     hir::PatKind::Struct(ref qpath, fields, _) => {

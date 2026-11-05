@@ -135,7 +135,21 @@ fn local_binding(d: &ResolvedDefinition<'_>, src: &str, ty: &str) -> Option<Stri
 }
 
 /// The hover for the binding named at 1-based char column `col` of `line` when the index has its type but no
-/// definition record (the `let` itself): `None` unless the identifier there is a `let` binding.
+/// definition record (the `let` itself): `None` unless the identifier there is a `let` binding. `layout_at` gives
+/// the layout note recorded at a 1-based column (the binding's pattern starts at its name or at its `mut`).
+pub(crate) fn let_binding_hover_with_layout(line: &str, col: u32, ty: &str, layout_at: &dyn Fn(u32) -> Option<String>) -> Option<String> {
+    let block = let_binding_hover(line, col, ty)?;
+    let chars: Vec<char> = line.chars().collect();
+    let at = (col.saturating_sub(1) as usize).min(chars.len().saturating_sub(1));
+    let start = chars[..at].iter().rposition(|&c| !(c.is_alphanumeric() || c == '_')).map_or(0, |p| p + 1) as u32 + 1;
+    let layout = layout_at(start).or_else(|| (start > 4).then(|| layout_at(start - 4)).flatten());
+    Some(match layout {
+        Some(l) => format!("{block}\n\n---\n\n{l}"),
+        None => block,
+    })
+}
+
+/// The `let [mut] name: Type` block for the `let` binding at `col` of `line`.
 pub(crate) fn let_binding_hover(line: &str, col: u32, ty: &str) -> Option<String> {
     let chars: Vec<(usize, char)> = line.char_indices().collect();
     let at = (col.saturating_sub(1) as usize).min(chars.len().checked_sub(1)?);
@@ -332,6 +346,8 @@ fn docs_of(d: &ResolvedDefinition<'_>, ws: &WorkspaceIndex, overlay_mgr: Option<
 pub(crate) fn render_hover(
     d: &ResolvedDefinition<'_>,
     inferred: Option<&str>,
+    call_args: Option<&str>,
+    at_definition: bool,
     ws: &WorkspaceIndex,
     overlay_mgr: Option<&OverlayManager>,
     conv: &mut crate::lsp::protocol::PositionConverter,
@@ -347,9 +363,15 @@ pub(crate) fn render_hover(
     }
     blocks.push(format!("```rust\n{decl}\n```"));
     let mut text = blocks.join("\n\n");
-    if let Some(subst) = matches!(d.kind, DefKind::Fn | DefKind::AssocFn).then(|| associated_return(&decl, inferred)).flatten() {
+    let is_fn = matches!(d.kind, DefKind::Fn | DefKind::AssocFn);
+    let notes = [
+        call_args.filter(|_| is_fn).map(str::to_string),
+        is_fn.then(|| associated_return(&decl, inferred)).flatten(),
+        (at_definition || d.kind == DefKind::Local).then(|| ws.note_at_definition(d, ridx_format::NOTE_LAYOUT).map(str::to_string)).flatten(),
+    ];
+    for note in notes.into_iter().flatten() {
         text.push_str("\n\n---\n\n");
-        text.push_str(&subst);
+        text.push_str(&note);
     }
     if let Some(doc) = docs_of(d, ws, overlay_mgr, conv) {
         let rendered = hover_doc::render(&doc, &|t| resolve_link(d, ws, &src, t));
@@ -368,31 +390,5 @@ fn associated_return(decl: &str, inferred: Option<&str>) -> Option<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{associated_return, imported_path, join_url, let_binding_hover};
-
-    #[test]
-    fn test_associated_return_type_is_named_at_the_call() {
-        assert_eq!(associated_return("fn extract(&self) -> Self::Item", Some("i32")).as_deref(), Some("`Self::Item` = `i32`"));
-        assert_eq!(associated_return("fn len(&self) -> usize", Some("usize")), None);
-        assert_eq!(associated_return("fn extract(&self) -> Self::Item", Some("fn(&Container) -> i32 {Container::extract}")), None);
-    }
-
-    #[test]
-    fn test_imports_and_relative_links_resolve() {
-        let src = "use core::ops::Index;\nuse crate::raw::{RawVec, Cap};\nfn f() {}\n";
-        assert_eq!(imported_path(src, "Index").as_deref(), Some("core::ops::Index"));
-        assert_eq!(imported_path(src, "RawVec::new").as_deref(), Some("crate::raw::RawVec::new"));
-        assert_eq!(imported_path(src, "Missing"), None);
-        let base = "https://doc.rust-lang.org/stable/core/option/enum.Option.html#method.map";
-        assert_eq!(join_url(base, "../../std/string/struct.String.html").as_deref(), Some("https://doc.rust-lang.org/stable/std/string/struct.String.html"));
-    }
-
-    #[test]
-    fn test_let_binding_hover_names_the_binding_with_a_short_type() {
-        let line = "    let mut v: Vec<String> = Vec::new();";
-        assert_eq!(let_binding_hover(line, 13, "std::vec::Vec<std::string::String>").as_deref(), Some("```rust\nlet mut v: Vec<String>\n```"));
-        assert_eq!(let_binding_hover("    let c = Circle::new(2.0);", 9, "shapes::Circle").as_deref(), Some("```rust\nlet c: Circle\n```"));
-        assert_eq!(let_binding_hover("    outlet(c);", 12, "u8"), None, "no let binding");
-    }
-}
+#[path = "tests/hover_render_tests.rs"]
+mod tests;

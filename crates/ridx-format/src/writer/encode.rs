@@ -169,6 +169,18 @@ impl IndexWriter {
         // Sort types by source span
         type_entries.sort_by_key(|a| (a.span.file_id, a.span.start_line, a.span.start_col));
 
+        // Prepare notes, sorted by span
+        let notes = std::mem::take(&mut self.notes);
+        let mut note_entries = Vec::with_capacity(notes.len());
+        for n in &notes {
+            let file_id = self.get_or_insert_file(&n.file);
+            let text_offset = self.intern_string(&n.text);
+            note_entries.push(NoteEntry::new(Span::new(file_id, n.start_line, n.start_col, n.end_line, n.end_col), text_offset, n.kind));
+        }
+        note_entries.sort_by_key(|a| (a.span.file_id, a.span.start_line, a.span.start_col, a.kind));
+        note_entries.dedup_by_key(|a| (a.span.file_id, a.span.start_line, a.span.start_col, a.kind));
+        self.notes = notes;
+
         // Restore original collections on self
         self.definitions = definitions;
         self.def_owners = def_owners_raw;
@@ -213,7 +225,10 @@ impl IndexWriter {
         current_offset = align_up(defs_by_owner_offset + defs_by_owner_len, 8);
 
         let derefs_offset = current_offset;
-        let _derefs_len = (deref_entries.len() * std::mem::size_of::<DerefEntry>()) as u64;
+        let derefs_len = (deref_entries.len() * std::mem::size_of::<DerefEntry>()) as u64;
+        current_offset = align_up(derefs_offset + derefs_len, 8);
+
+        let notes_offset = current_offset;
 
         let header = Header {
             magic: MAGIC,
@@ -246,6 +261,9 @@ impl IndexWriter {
             derefs_offset,
             derefs_count: deref_entries.len() as u32,
             _pad7: 0,
+            notes_offset,
+            notes_count: note_entries.len() as u32,
+            _pad8: 0,
         };
 
         // Write Header in explicit little-endian format
@@ -314,6 +332,12 @@ impl IndexWriter {
         for entry in &deref_entries {
             let entry_le = entry.to_le();
             writer.write_all(as_byte_slice(&entry_le))?;
+        }
+
+        // Write Notes Table (in little-endian format)
+        writer.seek(io::SeekFrom::Start(notes_offset))?;
+        for entry in &note_entries {
+            writer.write_all(as_byte_slice(&entry.to_le()))?;
         }
 
         writer.flush()?;

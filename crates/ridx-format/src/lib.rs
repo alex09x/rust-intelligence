@@ -26,7 +26,7 @@ pub use format::*;
 pub use paths::normalize_path;
 pub use reader::{IndexReader, ResolvedDefinition};
 pub use workspace::*;
-pub use writer::{IndexWriter, RawDefinition, RawReference, RawType};
+pub use writer::{IndexWriter, RawDefinition, RawNote, RawReference, RawType};
 
 #[cfg(test)]
 mod tests {

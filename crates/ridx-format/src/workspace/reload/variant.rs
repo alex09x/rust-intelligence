@@ -56,7 +56,7 @@ impl WorkspaceIndex {
                     self.manifest_hash = Some(content_hash);
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
                         self.manifest_generation = Some(manifest.generation);
-                        if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                        if !crate::format::is_readable_format_version(manifest.format_version) {
                             return Err(io::Error::new(
                                 io::ErrorKind::InvalidData,
                                 format!(

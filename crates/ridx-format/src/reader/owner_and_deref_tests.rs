@@ -86,7 +86,7 @@ fn test_v3_defs_by_owner_and_derefs_roundtrip() {
     drop(f);
 
     let reader = IndexReader::open(&idx_path).unwrap();
-    assert_eq!(reader.header().version, 3);
+    assert_eq!(reader.header().version, crate::format::CURRENT_VERSION);
     assert!(reader.header().defs_by_owner_count >= 2);
     assert_eq!(reader.header().derefs_count, 1);
 

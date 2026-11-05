@@ -65,6 +65,18 @@ pub struct RawType {
     pub type_name: String,
 }
 
+/// Raw note to be added to the index builder: a text about a span (see `NOTE_CALL_ARGS`, `NOTE_LAYOUT`).
+#[derive(Debug, Clone)]
+pub struct RawNote {
+    pub file: String,
+    pub start_line: u32,
+    pub start_col: u32,
+    pub end_line: u32,
+    pub end_col: u32,
+    pub kind: u32,
+    pub text: String,
+}
+
 /// In-memory builder for constructing and serializing `.ridx` files.
 pub struct IndexWriter {
     crate_name: String,
@@ -83,6 +95,7 @@ pub struct IndexWriter {
     references: Vec<RawReference>,
     types: Vec<(RawType, Option<String>)>,
     derefs: Vec<(String, String)>,
+    notes: Vec<RawNote>,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -103,6 +116,7 @@ impl IndexWriter {
             references: Vec::new(),
             types: Vec::new(),
             derefs: Vec::new(),
+            notes: Vec::new(),
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),
@@ -241,6 +255,15 @@ impl IndexWriter {
 
     pub fn add_deref(&mut self, source_type: impl Into<String>, target_type: impl Into<String>) {
         self.derefs.push((source_type.into(), target_type.into()));
+    }
+
+    pub fn add_note(&mut self, note: RawNote) {
+        self.notes.push(note);
+    }
+
+    /// Total count of notes queued.
+    pub fn note_count(&self) -> usize {
+        self.notes.len()
     }
 
     /// Total count of definitions queued.

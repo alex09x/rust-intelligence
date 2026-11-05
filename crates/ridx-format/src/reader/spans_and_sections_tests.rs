@@ -272,6 +272,9 @@ fn test_validate_sections_comprehensive() {
         derefs_offset: 16,
         derefs_count: 0,
         _pad7: 0,
+        notes_offset: 16,
+        notes_count: 0,
+        _pad8: 0,
     };
     assert!(validate_sections(1000, &hdr).is_err());
 

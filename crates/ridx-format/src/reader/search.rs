@@ -216,6 +216,9 @@ pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<(
     // 9. Derefs table
     check_section(buf_len, header.derefs_offset, header.derefs_count, std::mem::size_of::<DerefEntry>(), 8, "Derefs table")?;
 
+    // 10. Notes table (format version 4)
+    check_section(buf_len, header.notes_offset, header.notes_count, std::mem::size_of::<NoteEntry>(), 4, "Notes table")?;
+
     Ok(())
 }
 

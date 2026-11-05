@@ -62,6 +62,9 @@ fn test_format_struct_accessors() {
         derefs_offset: 0,
         derefs_count: 0,
         _pad7: 0,
+        notes_offset: 0,
+        notes_count: 0,
+        _pad8: 0,
     };
     let hdr_le = hdr.to_le();
     let hdr_from = hdr_le.from_le();
@@ -231,7 +234,8 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
     assert_eq!(std::mem::size_of::<DefKind>(), 1);
     assert_eq!(std::mem::align_of::<DefKind>(), 1);
     check_layout!(FileEntry, 16, 8, [path_offset: 0, _pad: 4, source_hash: 8]);
-    check_layout!(Header, 160, 8, [
+    check_layout!(NoteEntry, 28, 4, [span: 0, text_offset: 20, kind: 24]);
+    check_layout!(Header, 176, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
         unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
@@ -241,6 +245,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
         types_offset: 112, types_count: 120, _pad5: 124,
         defs_by_owner_offset: 128, defs_by_owner_count: 136, _pad6: 140,
         derefs_offset: 144, derefs_count: 152, _pad7: 156,
+        notes_offset: 160, notes_count: 168, _pad8: 172,
     ]);
     check_layout!(HeaderV2, 128, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
@@ -328,6 +333,6 @@ fn test_index_writer_golden_bytes() {
     w.add_deref(p1, "golden_crate::util::Target");
     let mut bytes = Vec::new();
     w.write_to(&mut std::io::Cursor::new(&mut bytes)).unwrap();
-    assert_eq!(bytes.len(), 1096);
-    assert_eq!(fnv1a_64(&bytes), 0xd45a_2e34_8f1b_8421);
+    assert_eq!(bytes.len(), 1112, "version 4: the version 3 layout plus 16 header bytes for the empty notes table");
+    assert_eq!(fnv1a_64(&bytes), 0xcc30_b6ed_e078_842b, "golden hash {:#x}", fnv1a_64(&bytes));
 }

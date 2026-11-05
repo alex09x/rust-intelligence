@@ -96,6 +96,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let version = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
         let header = match version {
             2 => Header::from_le_v2(&bytes[..std::mem::size_of::<HeaderV2>()]),
+            3 => {
+                if bytes.len() < crate::format::HEADER_V3_SIZE {
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "File too small for RIDX header"));
+                }
+                Header::from_le_v3(bytes)
+            }
             CURRENT_VERSION => {
                 if bytes.len() < std::mem::size_of::<Header>() {
                     return Err(io::Error::new(io::ErrorKind::InvalidData, "File too small for RIDX header"));
@@ -327,6 +333,41 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         }
         unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DerefEntry, count) }
     }
+
+    /// Slice of all notes in the index (sorted by span); empty for indexes older than format version 4.
+    #[inline]
+    pub fn notes(&self) -> &[NoteEntry] {
+        let header = self.header();
+        let count = header.notes_count as usize;
+        if count == 0 {
+            return &[];
+        }
+        let start = header.notes_offset as usize;
+        let len = count * std::mem::size_of::<NoteEntry>();
+        let bytes = self.bytes();
+        if start + len > bytes.len() {
+            return &[];
+        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const NoteEntry, count) }
+    }
+
+    /// The text of the `kind` note whose span starts at `(file_id, line, col)`.
+    pub fn note_at(&self, file_id: u32, line: u32, col: u32, kind: u32) -> Option<&str> {
+        let notes = self.notes();
+        let key = (file_id, line, col);
+        let from = notes.partition_point(|n| {
+            let s = n.span();
+            (s.file_id(), s.start_line(), s.start_col()) < key
+        });
+        notes[from..]
+            .iter()
+            .take_while(|n| {
+                let s = n.span();
+                (s.file_id(), s.start_line(), s.start_col()) == key
+            })
+            .find(|n| n.kind() == kind)
+            .map(|n| self.get_str(n.text_offset()))
+    }
 }
 
 #[cfg(test)]
@@ -335,6 +376,8 @@ pub(crate) mod cursor_precedence_tests;
 mod file_id_exact_tests;
 #[cfg(test)]
 mod name_span_tests;
+#[cfg(test)]
+mod notes_tests;
 #[cfg(test)]
 mod owner_and_deref_tests;
 #[cfg(test)]

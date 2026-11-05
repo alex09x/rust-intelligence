@@ -21,6 +21,7 @@ mod discover;
 pub mod file_module;
 pub mod manifest;
 pub mod navigation;
+mod notes;
 mod open;
 pub mod path_index;
 pub mod prelude;

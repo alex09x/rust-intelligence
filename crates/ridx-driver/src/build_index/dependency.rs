@@ -99,6 +99,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
     visitor.writer.set_unit_key(&unit_key);
 
     extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
+    crate::notes::record_adt_layouts(tcx, &mut visitor);
 
     let file_hashes = collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
 

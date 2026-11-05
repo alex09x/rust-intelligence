@@ -79,7 +79,7 @@ impl WorkspaceIndex {
                     ));
                 }
 
-                if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                if !crate::format::is_readable_format_version(manifest.format_version) {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
                         format!(
@@ -129,7 +129,7 @@ impl WorkspaceIndex {
             let manifest = serde_json::from_slice::<VariantManifest>(&content)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse variant manifest {:?}: {e}", v_manifest_file)))?;
             let (mtime, len, ino, hash) = manifest_file_meta(&v_manifest_file, &content);
-            if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+            if !crate::format::is_readable_format_version(manifest.format_version) {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     format!(

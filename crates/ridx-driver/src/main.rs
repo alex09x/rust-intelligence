@@ -36,6 +36,7 @@ mod build_index;
 mod crate_items;
 mod hir_visitor;
 mod metadata;
+mod notes;
 mod span_and_kind;
 mod unit_key;
 
