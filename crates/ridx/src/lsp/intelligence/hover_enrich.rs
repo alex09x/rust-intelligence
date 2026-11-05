@@ -189,8 +189,12 @@ pub(crate) fn extract_source_decl_header(
     }
 }
 
+/// Doc comment lines read above an item at most (std's `Vec` carries about 400).
+const MAX_DOC_LINES: u32 = 1000;
+
 /// Extracts leading `///` and `#[cfg_attr(..., doc = "...")]` / `#[doc = "..."]` comments
-/// immediately above `d.start_line`, skipping intermediate single-line or multi-line attributes.
+/// immediately above `d.start_line`, skipping intermediate single-line or multi-line attributes,
+/// for workspace and dependency items alike.
 pub(crate) fn extract_source_doc_comment(
     d: &ResolvedDefinition<'_>,
     ws: Option<&WorkspaceIndex>,
@@ -198,27 +202,23 @@ pub(crate) fn extract_source_doc_comment(
     conv: &mut PositionConverter,
     cursor_file: Option<&str>,
 ) -> Option<String> {
+    let _ = (ws, cursor_file);
     if d.start_line <= 1
         || d.is_macro_expansion
         || d.file.is_empty()
         || d.file == "external"
-        || d.reader_idx.is_some_and(|idx| ws.is_some_and(|w| w.is_reader_external(idx)))
         || matches!(d.kind, DefKind::Local | DefKind::TyParam | DefKind::LifetimeParam | DefKind::ConstParam | DefKind::Use | DefKind::Mod)
     {
         return None;
     }
-    let resolved = d.resolved_path();
+    let resolved = super::hover_render::def_file(d);
     let file_str = resolved.to_str().unwrap_or(d.file);
-    let file_ready = overlay_mgr.is_some_and(|om| om.get(file_str).is_some()) || conv.cache.contains_key(file_str) || cursor_file == Some(file_str);
-    if !file_ready {
-        return None;
-    }
 
     let mut doc_lines_rev: Vec<String> = Vec::new();
     let mut multi_attr_rev: Vec<String> = Vec::new();
     let mut attr_bracket_depth: i32 = 0;
     let mut line_no = d.start_line - 1;
-    let min_line = d.start_line.saturating_sub(80).max(1);
+    let min_line = d.start_line.saturating_sub(MAX_DOC_LINES).max(1);
 
     while line_no >= min_line {
         let Some(raw) = get_source_line(file_str, line_no, overlay_mgr, conv) else {
@@ -253,7 +253,7 @@ pub(crate) fn extract_source_doc_comment(
         if trimmed.starts_with("///") && !trimmed.starts_with("////") {
             let body = trimmed.strip_prefix("/// ").unwrap_or(&trimmed[3..]);
             doc_lines_rev.push(body.to_string());
-            if doc_lines_rev.len() >= 64 {
+            if doc_lines_rev.len() >= MAX_DOC_LINES as usize {
                 break;
             }
         } else if trimmed.starts_with("#[") && trimmed.ends_with(']') {
@@ -284,7 +284,6 @@ pub(crate) fn extract_source_doc_comment(
         return None;
     }
     doc_lines_rev.reverse();
-    doc_lines_rev.truncate(48);
     let doc = doc_lines_rev.join("\n").trim().to_string();
     (!doc.is_empty()).then_some(doc)
 }

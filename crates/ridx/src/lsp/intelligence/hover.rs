@@ -33,6 +33,13 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
+                if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
+                    let line_text =
+                        overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
+                    if let Some(text) = line_text.and_then(|l| super::hover_render::let_binding_hover(&l, col_1based, ty)) {
+                        return Ok(json!({ "contents": { "kind": "markdown", "value": text } }));
+                    }
+                }
                 return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file)));
             }
         }
@@ -77,6 +84,15 @@ pub(crate) fn format_hover_full(
     mut conv: Option<&mut PositionConverter>,
     cursor_file: Option<&str>,
 ) -> Value {
+    if let (Some(d), Some(w), Some(c)) = (hover.definition.as_ref(), ws, conv.as_deref_mut()) {
+        if let Some(mut text) = super::hover_render::render_hover(d, hover.inferred_type, w, overlay_mgr, c) {
+            if let Some(prov) = super::hover_enrich::format_provenance_and_blast_radius(d, w) {
+                text.push_str(if text.contains("\n---\n") { "\n\n" } else { "\n\n---\n\n" });
+                text.push_str(&prov);
+            }
+            return json!({ "contents": { "kind": "markdown", "value": text } });
+        }
+    }
     let mut blocks = Vec::new();
     if let Some(ref d) = hover.definition {
         match d.kind {

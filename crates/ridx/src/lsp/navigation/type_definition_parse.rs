@@ -201,7 +201,7 @@ pub(super) fn following_angle_bracket_cols(line_str: &str, col_1based: u32) -> O
     Some(((end as u32) + 1, (close_char_idx as u32) + 2, &line_str[open_byte + 1..close_byte]))
 }
 
-pub(super) fn sysroot_rust_src() -> Option<&'static Path> {
+pub(crate) fn sysroot_rust_src() -> Option<&'static Path> {
     static RUST_SRC: OnceLock<Option<PathBuf>> = OnceLock::new();
     RUST_SRC
         .get_or_init(|| {
