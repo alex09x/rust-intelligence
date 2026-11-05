@@ -216,8 +216,10 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
         }
     };
     if let Some(text) = text {
-        if workspace.is_some() && !indexed && overlay_opt.is_none() && super::tokens_detached::outside_every_crate(file) {
-            // A file no indexed crate includes: rust-analyzer types only its definition sites, by syntax.
+        let unindexed = workspace.is_some() && !indexed && overlay_opt.is_none();
+        if unindexed && (super::tokens_detached::outside_every_crate(file) || super::tokens_detached::gated_off_by_inner_cfg(text)) {
+            // A file no indexed crate includes, or one its own `#![cfg(…)]` switched off: rust-analyzer types only its
+            // definition sites, by syntax.
             super::tokens_detached::detached_definition_tokens(text, &mut tokens);
             super::tokens_doc::scan_doc_comments(text, None, &mut tokens);
             return filter_non_overlapping(tokens);

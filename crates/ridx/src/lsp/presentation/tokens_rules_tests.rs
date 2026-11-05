@@ -12,8 +12,8 @@
 //! outside every crate.
 
 use super::tokens::{
-    RawToken, TOKEN_TYPE_ENUM, TOKEN_TYPE_FUNCTION, TOKEN_TYPE_INTERFACE, TOKEN_TYPE_MACRO, TOKEN_TYPE_PROPERTY, TOKEN_TYPE_STRUCT, TOKEN_TYPE_TYPE, TOKEN_TYPE_TYPE_PARAMETER,
-    TOKEN_TYPE_VARIABLE,
+    RawToken, TOKEN_TYPE_ENUM, TOKEN_TYPE_FUNCTION, TOKEN_TYPE_INTERFACE, TOKEN_TYPE_MACRO, TOKEN_TYPE_METHOD, TOKEN_TYPE_PROPERTY, TOKEN_TYPE_STRUCT, TOKEN_TYPE_TYPE,
+    TOKEN_TYPE_TYPE_PARAMETER, TOKEN_TYPE_VARIABLE,
 };
 use super::{tokens_attr, tokens_detached, tokens_doc, tokens_scan};
 
@@ -34,6 +34,17 @@ fn test_macro_call_bang_is_its_own_macro_token() {
     let got = spans(&scan("fn f() { println!(\"x\"); }\n"));
     assert!(got.contains(&(0, 9, 7, TOKEN_TYPE_MACRO)), "{got:?}");
     assert!(got.contains(&(0, 16, 1, TOKEN_TYPE_MACRO)), "{got:?}");
+}
+
+#[test]
+fn test_imported_macros_and_turbofish_methods() {
+    // A file the index does not cover: every identifier gets a lexical type.
+    let mut tokens = Vec::new();
+    tokens_scan::scan_source_tokens("use clap::{arg, command};\nfn f() { let m = command!().get_one::<String>(\"x\"); arg!(<M>); }\n", false, false, &mut tokens);
+    let got = spans(&tokens);
+    assert!(got.contains(&(0, 11, 3, TOKEN_TYPE_MACRO)), "arg imported as a macro: {got:?}");
+    assert!(got.contains(&(0, 16, 7, TOKEN_TYPE_MACRO)), "command imported as a macro: {got:?}");
+    assert!(got.contains(&(1, 28, 7, TOKEN_TYPE_METHOD)), "get_one::<String>: {got:?}");
 }
 
 #[test]
@@ -99,5 +110,17 @@ fn test_outside_every_crate_follows_cargo_layout() {
     assert!(!tokens_detached::outside_every_crate(&at("build.rs")));
     assert!(!tokens_detached::outside_every_crate(&at("src/inner/gated.rs")));
     assert!(tokens_detached::outside_every_crate(&at("tests/ui/case.rs")));
+    assert!(!tokens_detached::outside_every_crate(&at("examples/demo.rs")), "auto-discovered example");
+    assert!(!tokens_detached::outside_every_crate(&at("tests/suite/main.rs")), "auto-discovered test");
+    std::fs::write(dir.join("Cargo.toml"), "[package]\nname = \"p\"\n[[example]]\nname = \"t\"\npath = \"examples/tutorial/01.rs\"\n").unwrap();
+    assert!(!tokens_detached::outside_every_crate(&at("examples/tutorial/01.rs")), "manifest-declared example");
+    // A nested package with its own `[workspace]` (a fuzz crate) is not loaded with the outer workspace.
+    std::fs::write(dir.join("Cargo.toml"), "[package]\nname = \"p\"\n[workspace]\nmembers = []\n").unwrap();
+    std::fs::create_dir_all(dir.join("fuzz/fuzz_targets")).unwrap();
+    std::fs::write(dir.join("fuzz/Cargo.toml"), "[package]\nname = \"f\"\n[workspace]\n[[bin]]\nname = \"a\"\npath = \"fuzz_targets/a.rs\"\n").unwrap();
+    assert!(tokens_detached::outside_every_crate(&at("fuzz/fuzz_targets/a.rs")), "separate nested workspace");
+    assert!(!tokens_detached::outside_every_crate(&at("src/inner/gated.rs")), "the outer workspace root package stays in");
+    assert!(tokens_detached::gated_off_by_inner_cfg("//! Docs\n#![cfg(all(tokio_unstable, feature = \"x\"))]\nfn f() {}\n"));
+    assert!(!tokens_detached::gated_off_by_inner_cfg("#![allow(dead_code)]\nfn f() {}\n"));
     let _ = std::fs::remove_dir_all(&dir);
 }

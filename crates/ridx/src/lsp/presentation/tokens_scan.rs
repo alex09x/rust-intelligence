@@ -188,6 +188,9 @@ fn classify_ident(ident: &str, after: &str, prev_word: &str, prev_dot: bool, fal
     let upper = ident.bytes().next().is_some_and(|b| b.is_ascii_uppercase());
     if after.starts_with('!') && !after.starts_with("!=") {
         Some((TOKEN_TYPE_MACRO, 0))
+    } else if prev_dot && after.starts_with("::<") {
+        // `.collect::<Vec<_>>()`: a method call with a turbofish.
+        Some((TOKEN_TYPE_METHOD, 0))
     } else if after.starts_with("::") {
         Some(if !upper {
             (TOKEN_TYPE_NAMESPACE, 0)
@@ -330,10 +333,45 @@ pub fn scan_source_tokens(text: &str, use_detached_symbols: bool, has_compiled_t
     }
     // Comments and literals, multi-line raw strings included, are blanked so their words are not read as code.
     let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
+    let macro_names = invoked_macro_names(&masked);
     let mut in_block_comment = false;
+    let mut in_use = false;
     for (line_idx, (line, scan)) in text.lines().zip(masked.lines()).enumerate() {
-        if line.len() == scan.len() {
-            scan_code_line(line, scan, 0, line_idx as u32, &mut in_block_comment, !has_compiled_tokens, tokens);
+        if line.len() != scan.len() {
+            continue;
+        }
+        let first_new = tokens.len();
+        scan_code_line(line, scan, 0, line_idx as u32, &mut in_block_comment, !has_compiled_tokens, tokens);
+        let t = scan.trim_start();
+        in_use |= t.starts_with("use ") || t.starts_with("pub use ") || t.starts_with("pub(crate) use ");
+        // `use clap::{arg, command};` imports macros the file invokes as `arg!(…)`: type them as macros there too.
+        if in_use && line.is_ascii() {
+            for tok in &mut tokens[first_new..] {
+                if macro_names.contains(&line[tok.col as usize..(tok.col + tok.length) as usize]) {
+                    tok.token_type = TOKEN_TYPE_MACRO;
+                    tok.token_modifiers = 0;
+                }
+            }
+        }
+        if scan.contains(';') {
+            in_use = false;
         }
     }
+}
+
+/// Names the masked text invokes as macros (`name!(`, `name![`, `name!{`).
+fn invoked_macro_names(masked: &str) -> std::collections::HashSet<&str> {
+    let b = masked.as_bytes();
+    let mut out = std::collections::HashSet::new();
+    for (p, _) in masked.match_indices('!') {
+        let after = masked[p + 1..].trim_start();
+        if !(after.starts_with('(') || after.starts_with('[') || after.starts_with('{')) {
+            continue;
+        }
+        let start = masked[..p].trim_end_matches(|c: char| c.is_ascii_alphanumeric() || c == '_').len();
+        if start < p && (start == 0 || b[start - 1] != b'.') {
+            out.insert(&masked[start..p]);
+        }
+    }
+    out
 }

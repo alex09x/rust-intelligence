@@ -53,15 +53,46 @@ fn collect(symbols: &Value, lines: &[&str], out: &mut Vec<RawToken>) {
     }
 }
 
-/// Whether an unindexed file lies outside every crate by Cargo's layout: neither its package's build script nor
-/// under its package's `src/` (where cfg-disabled modules of the crate live).
+/// Whether an unindexed file lies outside every crate by Cargo's layout: not its package's build script, not under its
+/// package's `src/` (where cfg-disabled modules of the crate live), and not an auto-discovered target root
+/// (`examples/x.rs`, `examples/x/main.rs`, likewise `tests/` and `benches/`).
 pub(super) fn outside_every_crate(file: &str) -> bool {
     let path = std::path::Path::new(file);
     let Some(pkg) = path.ancestors().skip(1).find(|d| d.join("Cargo.toml").is_file()) else {
         return true;
     };
     let Ok(rel) = path.strip_prefix(pkg) else { return true };
-    !(rel == std::path::Path::new("build.rs") || rel.starts_with("src"))
+    // A package that declares its own `[workspace]` inside another workspace (a `fuzz/` crate) is a separate
+    // workspace the editor's workspace does not load.
+    let manifest = std::fs::read_to_string(pkg.join("Cargo.toml")).unwrap_or_default();
+    let declares_workspace = |m: &str| m.lines().any(|l| l.trim() == "[workspace]");
+    if declares_workspace(&manifest) && pkg.ancestors().skip(1).any(|d| std::fs::read_to_string(d.join("Cargo.toml")).is_ok_and(|m| declares_workspace(&m))) {
+        return true;
+    }
+    let parts: Vec<&str> = rel.iter().filter_map(|p| p.to_str()).collect();
+    let target_root = match parts.as_slice() {
+        [dir, _] => matches!(*dir, "examples" | "tests" | "benches"),
+        [dir, _, "main.rs"] => matches!(*dir, "examples" | "tests" | "benches"),
+        _ => false,
+    };
+    if rel == std::path::Path::new("build.rs") || rel.starts_with("src") || target_root {
+        return false;
+    }
+    // A target the manifest declares (`[[example]] path = "examples/tutorial/01.rs"`).
+    let rel_str = parts.join("/");
+    !manifest.lines().any(|l| l.split_once('=').is_some_and(|(k, v)| k.trim() == "path" && v.trim().trim_matches(|c| c == '"' || c == '\'') == rel_str))
+}
+
+/// Whether the file switches itself off with an inner `#![cfg(…)]`: when the index did not compile it, rust-analyzer
+/// treats its code as inactive and resolves none of its names.
+pub(super) fn gated_off_by_inner_cfg(text: &str) -> bool {
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
+    masked
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .take_while(|l| l.starts_with("#!"))
+        .any(|l| l.trim_start_matches("#!").trim_start().trim_start_matches('[').trim_start().starts_with("cfg("))
 }
 
 /// Local bindings a definition site introduces on one line: `let` patterns, closure parameters, and function
