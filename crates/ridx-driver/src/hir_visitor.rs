@@ -220,14 +220,12 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         }
                     }
                 }
-                hir::ExprKind::Struct(_, fields, _) => {
-                    if let Some(adt) = typeck.expr_ty_opt(expr).and_then(|t| t.ty_adt_def()) {
-                        if !adt.is_enum() {
-                            for f in fields {
-                                if !f.is_shorthand {
-                                    if let Some(def) = adt.non_enum_variant().fields.iter().find(|it| it.name == f.ident.name) {
-                                        self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
-                                    }
+                hir::ExprKind::Struct(qpath, fields, _) => {
+                    if let Some(variant) = typeck.expr_ty_opt(expr).and_then(|t| t.ty_adt_def()).and_then(|adt| literal_variant(adt, typeck.qpath_res(qpath, expr.hir_id))) {
+                        for f in fields {
+                            if !f.is_shorthand {
+                                if let Some(def) = variant.fields.iter().find(|it| it.name == f.ident.name) {
+                                    self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
                                 }
                             }
                         }
@@ -266,14 +264,12 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                             );
                         }
                     }
-                    hir::PatKind::Struct(_, fields, _) => {
-                        if let Some(adt) = typeck.pat_ty(pat).ty_adt_def() {
-                            if !adt.is_enum() {
-                                for f in fields {
-                                    if !f.is_shorthand {
-                                        if let Some(def) = adt.non_enum_variant().fields.iter().find(|it| it.name == f.ident.name) {
-                                            self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
-                                        }
+                    hir::PatKind::Struct(ref qpath, fields, _) => {
+                        if let Some(variant) = typeck.pat_ty(pat).ty_adt_def().and_then(|adt| literal_variant(adt, typeck.qpath_res(qpath, pat.hir_id))) {
+                            for f in fields {
+                                if !f.is_shorthand {
+                                    if let Some(def) = variant.fields.iter().find(|it| it.name == f.ident.name) {
+                                        self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
                                     }
                                 }
                             }
@@ -284,5 +280,17 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             }
         }
         intravisit::walk_pat(self, pat);
+    }
+}
+
+/// The variant a struct literal or struct pattern names: the struct's only variant, or the enum variant its path
+/// resolves to (`Kind::Cornered { corners }`, `Self::Cornered { .. }`). `None` when the path names no variant.
+fn literal_variant<'tcx>(adt: rustc_middle::ty::AdtDef<'tcx>, res: Res) -> Option<&'tcx rustc_middle::ty::VariantDef> {
+    if !adt.is_enum() {
+        return Some(adt.non_enum_variant());
+    }
+    match res {
+        Res::Def(hir::def::DefKind::Variant | hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, _), _) => Some(adt.variant_of_res(res)),
+        _ => None,
     }
 }

@@ -14,6 +14,7 @@ mod cache_and_workspace;
 mod cas_and_owner_bounds;
 mod supertrait_and_impl_links;
 mod sysroot_core;
+mod variant_fields;
 
 #[test]
 fn test_map_def_kind() {
