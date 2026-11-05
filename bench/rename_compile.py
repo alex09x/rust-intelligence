@@ -188,7 +188,9 @@ def run_corpus_pkl(
             cwd=wt,
             capture_output=True,
             text=True,
-            env=dict(os.environ, CARGO_TARGET_DIR=tgt),
+            # A rustc wrapper (sccache from a cargo config) makes Mitts treat the build as uncacheable: every check
+            # recompiled everything and left new objects in its store. Clear it so repeated checks hit the cache.
+            env=dict(os.environ, CARGO_TARGET_DIR=tgt, CARGO_BUILD_RUSTC_WRAPPER="", RUSTC_WRAPPER=""),
         )
         output = r.stderr + "\n" + r.stdout
         errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
