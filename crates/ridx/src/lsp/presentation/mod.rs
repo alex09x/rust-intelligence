@@ -25,6 +25,7 @@ pub mod tokens;
 mod tokens_attr;
 mod tokens_detached;
 mod tokens_doc;
+mod tokens_fixture;
 #[cfg(test)]
 mod tokens_rules_tests;
 pub mod tokens_scan;

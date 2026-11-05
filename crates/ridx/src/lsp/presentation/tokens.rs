@@ -229,6 +229,9 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
             super::tokens_scan::scan_source_tokens(text, overlay_opt.is_none(), has_compiled, &mut tokens);
         }
         super::tokens_attr::apply_attribute_rules(text, &mut tokens);
+        if let Some(ws) = workspace {
+            super::tokens_fixture::scan_fixtures(file, text, ws, &mut tokens);
+        }
         super::tokens_doc::scan_doc_comments(text, workspace, &mut tokens);
     }
 
