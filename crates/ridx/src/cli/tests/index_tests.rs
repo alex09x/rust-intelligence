@@ -52,6 +52,7 @@ fn test_cli_index_command() {
             no_default_features: false,
             all_features: false,
             target: None,
+            builder: None,
         });
 
         // Test auto-reindexing on missing shard in valid workspace
@@ -185,4 +186,32 @@ fn test_cli_parser_and_resolve_errors() {
     fs::write(temp.join("ridx_manifest.json"), "invalid json content").unwrap();
     assert!(find_manifest_for_path(&temp.join("sub/file.rs")).is_none());
     let _ = fs::remove_dir_all(&temp);
+}
+
+#[test]
+fn test_cli_index_builder_flag() {
+    use crate::cli::args::Cli;
+    use crate::indexer::IndexBuilder;
+    use clap::Parser;
+
+    let cli = Cli::try_parse_from(["ridx", "index", "--builder", "mitts"]).unwrap();
+    match cli.into_command() {
+        Commands::Index { builder, .. } => assert_eq!(builder, Some(IndexBuilder::Mitts)),
+        _ => panic!("expected Commands::Index"),
+    }
+
+    let cli = Cli::try_parse_from(["ridx", "index", "--builder", "cargo"]).unwrap();
+    match cli.into_command() {
+        Commands::Index { builder, .. } => assert_eq!(builder, Some(IndexBuilder::Cargo)),
+        _ => panic!("expected Commands::Index"),
+    }
+
+    let cli = Cli::try_parse_from(["ridx", "index"]).unwrap();
+    match cli.into_command() {
+        Commands::Index { builder, .. } => assert_eq!(builder, None),
+        _ => panic!("expected Commands::Index"),
+    }
+
+    let err = Cli::try_parse_from(["ridx", "index", "--builder", "unknown_builder"]);
+    assert!(err.is_err());
 }

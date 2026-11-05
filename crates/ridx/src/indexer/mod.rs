@@ -10,6 +10,7 @@
 
 //! Cargo indexing orchestration, variant hashing, driver invocation, and manifest publishing.
 
+pub mod builder;
 pub mod cargo;
 pub mod direct;
 pub mod driver;
@@ -22,6 +23,7 @@ pub mod variant;
 #[cfg(test)]
 pub mod tests;
 
+pub use builder::*;
 pub use cargo::*;
 pub use direct::*;
 pub use driver::*;

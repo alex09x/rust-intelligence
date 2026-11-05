@@ -56,6 +56,7 @@ fn test_indexer_additional_edge_cases() {
         cache_dir: None,
         driver_bin: Some(dummy_driver),
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_mkdir.unwrap_err().contains("failed to create variant directory"));
 
@@ -72,6 +73,7 @@ fn test_indexer_additional_edge_cases() {
         cache_dir: None,
         driver_bin: Some(PathBuf::from("/nonexistent/ridx-driver-bogus")),
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_no_driver.unwrap_err().contains("could not find ridx-driver binary"));
 }

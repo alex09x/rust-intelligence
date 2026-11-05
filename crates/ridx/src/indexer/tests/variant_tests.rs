@@ -78,6 +78,7 @@ fn test_published_variant_and_options() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     };
     assert_eq!(opts.package.as_deref(), Some("test_pkg"));
 

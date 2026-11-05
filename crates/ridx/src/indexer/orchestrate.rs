@@ -10,6 +10,7 @@
 
 //! Execution and orchestration of Cargo indexing with compiler driver wrapping.
 
+use super::builder::{build_check_command, IndexBuilder};
 use super::cargo::{extract_config_target, find_cargo_configs};
 use super::direct::try_direct_crate_indexing;
 use super::driver::find_driver_binary;
@@ -141,65 +142,33 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         }
     }
 
-    eprintln!("  Action         : cargo check with RUSTC_WRAPPER...");
+    let builder = IndexBuilder::resolve(opts.builder);
 
-    let mut cmd = Command::new("cargo");
-    cmd.current_dir(&work_dir);
-    cmd.arg("check");
-    cmd.arg("--manifest-path").arg(&manifest_path);
-    cmd.arg("--all-targets");
-    if let Some(ref p) = package {
-        cmd.arg("-p").arg(p);
-    } else {
-        cmd.arg("--workspace");
-    }
-    if release {
-        cmd.arg("--release");
-    }
-    if let Some(ref feats) = features {
-        cmd.arg("--features").arg(feats);
-    }
-    if no_default_features {
-        cmd.arg("--no-default-features");
-    }
-    if all_features {
-        cmd.arg("--all-features");
-    }
-    if let Some(ref tgt) = target {
-        cmd.arg("--target").arg(tgt);
-    }
-
-    cmd.env("RIDX_OUT_DIR", &variant_out_dir);
-    cmd.env("RIDX_CACHE_DIR", &cache_dir);
-    cmd.env("RIDX_WORKSPACE_ROOT", &work_dir);
-    cmd.env("CARGO_TARGET_DIR", &cargo_target_dir);
-    cmd.env("RUSTC_BOOTSTRAP", "1");
+    eprintln!("  Action         : {} check with RUSTC_WRAPPER...", builder.as_str());
 
     let target_kinds_map = super::shards::extract_target_kinds(&manifest_path);
     let target_kinds_file = variant_out_dir.join("target_kinds.json");
     if let Ok(json) = serde_json::to_string(&target_kinds_map) {
         let _ = fs::write(&target_kinds_file, json);
     }
-    cmd.env("RIDX_TARGET_KINDS_FILE", &target_kinds_file);
 
-    if std::env::var("RIDX_NO_DEPS").is_err() {
-        cmd.env("RUSTC_WRAPPER", &driver_bin);
-        cmd.env("RUSTC_WORKSPACE_WRAPPER", "");
-    } else {
-        cmd.env("RUSTC_WORKSPACE_WRAPPER", &driver_bin);
-        cmd.env("RUSTC_WRAPPER", "");
+    let (program, args, envs) =
+        build_check_command(&opts, builder, &manifest_path, &work_dir, &driver_bin, &variant_out_dir, &cache_dir, &cargo_target_dir, &target_kinds_file, ld_path.as_deref());
+
+    let mut cmd = Command::new(&program);
+    cmd.current_dir(&work_dir);
+    for arg in &args {
+        cmd.arg(arg);
     }
-
-    if let Some(ref ld) = ld_path {
-        cmd.env("LD_LIBRARY_PATH", ld);
-        cmd.env("DYLD_FALLBACK_LIBRARY_PATH", ld);
+    for (k, v) in &envs {
+        cmd.env(k, v);
     }
 
     if opts.capture_child_output {
         let output = match cmd.output() {
             Ok(o) => o,
             Err(e) => {
-                return Err(format!("failed to execute cargo check: {e}"));
+                return Err(format!("failed to execute {} check: {e}", builder.as_str()));
             }
         };
         if !output.status.success() {
@@ -207,19 +176,19 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             let tail: Vec<&str> = stderr_str.lines().rev().take(20).collect();
             let tail_joined = tail.into_iter().rev().collect::<Vec<_>>().join("\n");
             if tail_joined.is_empty() {
-                return Err(format!("cargo check exited with status {}", output.status));
+                return Err(format!("{} check exited with status {}", builder.as_str(), output.status));
             }
-            return Err(format!("cargo check exited with status {}\n{}", output.status, tail_joined));
+            return Err(format!("{} check exited with status {}\n{}", builder.as_str(), output.status, tail_joined));
         }
     } else {
         let status = match cmd.status() {
             Ok(s) => s,
             Err(e) => {
-                return Err(format!("failed to execute cargo check: {e}"));
+                return Err(format!("failed to execute {} check: {e}", builder.as_str()));
             }
         };
         if !status.success() {
-            return Err(format!("cargo check exited with status {status}"));
+            return Err(format!("{} check exited with status {status}", builder.as_str()));
         }
     }
 

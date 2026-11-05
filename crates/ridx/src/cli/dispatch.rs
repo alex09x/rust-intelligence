@@ -20,7 +20,7 @@ use colored::*;
 
 pub fn run_cli(command: Commands) {
     match command {
-        Commands::Index { path, out_dir, package, release, features, no_default_features, all_features, target } => {
+        Commands::Index { path, out_dir, package, release, features, no_default_features, all_features, target, builder } => {
             run_indexing(IndexOptions {
                 path,
                 out_dir_opt: out_dir,
@@ -33,6 +33,7 @@ pub fn run_cli(command: Commands) {
                 cache_dir: None,
                 driver_bin: None,
                 capture_child_output: false,
+                builder,
             });
         }
         Commands::Inspect { index_path, json } => {

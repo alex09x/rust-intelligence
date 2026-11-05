@@ -55,6 +55,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     };
 
     // Create mock dependency shard

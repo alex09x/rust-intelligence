@@ -34,6 +34,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     })
     .is_err());
 
@@ -52,6 +53,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     })
     .is_err());
 
@@ -69,6 +71,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     })
     .is_err());
 
@@ -138,6 +141,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: Some(dummy_driver.clone()),
         capture_child_output: false,
+        builder: None,
     });
     let _ = fs::remove_dir_all(&expected_rel_dir);
     let _ = fs::remove_dir_all(&rel_name);
@@ -157,6 +161,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_out.is_err());
     assert!(err_out.unwrap_err().contains("failed to create output directory"));
@@ -174,6 +179,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: Some(PathBuf::from("/nonexistent/mock/driver/path")),
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_driver.is_err());
 
@@ -205,6 +211,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: Some(failing_driver),
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_cargo.is_err());
 
@@ -222,6 +229,7 @@ fn test_indexer_helpers_and_error_paths() {
         cache_dir: None,
         driver_bin: Some(dummy_driver),
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_open.is_err());
     assert!(err_open.unwrap_err().contains("failed to open generated variant index"));

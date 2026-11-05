@@ -84,6 +84,7 @@ fn new_test_dir(prefix: &str) -> TestDir {
     TestDir(path)
 }
 
+pub mod builder_tests;
 pub mod cargo_tests;
 pub mod direct_tests;
 pub mod driver_tests;

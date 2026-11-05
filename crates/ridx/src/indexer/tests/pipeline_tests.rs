@@ -38,6 +38,7 @@ fn test_run_indexing_on_sample_crate() {
             cache_dir: None,
             driver_bin: None,
             capture_child_output: false,
+            builder: None,
         });
         assert!(out.variant_out_dir.exists());
 
@@ -54,6 +55,7 @@ fn test_run_indexing_on_sample_crate() {
             cache_dir: None,
             driver_bin: None,
             capture_child_output: false,
+            builder: None,
         });
         assert!(out_file.variant_out_dir.exists());
     }
@@ -75,6 +77,7 @@ fn test_try_run_indexing_error_cases() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(res_missing.is_err());
 
@@ -92,6 +95,7 @@ fn test_try_run_indexing_error_cases() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(res_not_cargo.is_err());
 
@@ -109,6 +113,7 @@ fn test_try_run_indexing_error_cases() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(res_empty.is_err());
 }
@@ -136,6 +141,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             cache_dir: None,
             driver_bin: None,
             capture_child_output: false,
+            builder: None,
         });
         assert!(res.is_ok());
 
@@ -222,6 +228,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             cache_dir: None,
             driver_bin: None,
             capture_child_output: false,
+            builder: None,
         });
         assert!(res2.is_ok());
     }
@@ -264,6 +271,7 @@ fn test_try_run_indexing_syntax_error() {
         cache_dir: None,
         driver_bin: Some(driver_bin),
         capture_child_output: true,
+        builder: None,
     });
     let err_msg = res.expect_err("indexing crate with syntax error must fail");
     assert!(

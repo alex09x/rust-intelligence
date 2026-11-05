@@ -142,6 +142,7 @@ pub fn get_or_index_l2_fixture(name: &str) -> &'static WorkspaceIndex {
         cache_dir: Some(test_cache_dir.clone()),
         driver_bin: Some(driver_bin),
         capture_child_output: false,
+        builder: None,
     };
 
     try_run_indexing(opts).unwrap_or_else(|e| {

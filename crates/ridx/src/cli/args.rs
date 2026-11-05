@@ -10,6 +10,7 @@
 
 //! Command-line argument definitions and subcommands using clap.
 
+use crate::indexer::IndexBuilder;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -99,6 +100,10 @@ pub enum Commands {
         /// Build for the target triple
         #[arg(long)]
         target: Option<String>,
+
+        /// Build tool to run compiler check (cargo or mitts)
+        #[arg(long, value_enum)]
+        builder: Option<IndexBuilder>,
     },
 
     /// Inspect binary header, record counts, and memory layout of a .ridx index file or workspace

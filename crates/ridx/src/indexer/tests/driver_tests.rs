@@ -137,6 +137,7 @@ fn test_indexer_cargo_config_and_driver() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_file.unwrap_err().contains("is a file but not a Cargo.toml manifest"));
 
@@ -153,6 +154,7 @@ fn test_indexer_cargo_config_and_driver() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_dir.unwrap_err().contains("no Cargo.toml found in directory"));
 
@@ -168,6 +170,7 @@ fn test_indexer_cargo_config_and_driver() {
         cache_dir: None,
         driver_bin: None,
         capture_child_output: false,
+        builder: None,
     });
     assert!(err_nonexist.unwrap_err().contains("does not exist"));
 }

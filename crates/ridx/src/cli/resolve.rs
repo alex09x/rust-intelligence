@@ -180,6 +180,7 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                         cache_dir: None,
                         driver_bin: None,
                         capture_child_output: false,
+                        builder: None,
                     }) {
                         Ok(p) => p,
                         Err(e) => return Err(format!("Automatic indexing failed: {e}")),
@@ -253,6 +254,7 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                     cache_dir: None,
                     driver_bin: None,
                     capture_child_output: false,
+                    builder: None,
                 }) {
                     return Err(format!("Automatic indexing failed: {err}"));
                 }

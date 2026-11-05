@@ -10,6 +10,7 @@
 
 //! Options and results for workspace indexing variants.
 
+use super::builder::IndexBuilder;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Default)]
@@ -25,6 +26,7 @@ pub struct IndexOptions {
     pub cache_dir: Option<PathBuf>,
     pub driver_bin: Option<PathBuf>,
     pub capture_child_output: bool,
+    pub builder: Option<IndexBuilder>,
 }
 
 #[derive(Debug, Clone)]
