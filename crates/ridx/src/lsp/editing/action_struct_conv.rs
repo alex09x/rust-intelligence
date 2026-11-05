@@ -18,7 +18,7 @@ use super::action_struct_conv_helpers::{
     collect_typed_locals, convert_brace_init_to_tuple, convert_tuple_init_to_brace, find_impl_body_spans_for, is_bare_value_ctor_fn_ref, is_brace_struct_literal_or_pat,
     is_isolated_leaf_module, outer_attrs_allow_shape_change, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
 };
-use super::action_struct_conv_index::{field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, struct_shape_used_outside};
+use super::action_struct_conv_index::{field_name_bytes, indexed_field_refs, receiver_ends_in_tuple_index, struct_name_byte, struct_ref_sites, struct_shape_used_outside};
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -173,6 +173,9 @@ pub fn build_convert_to_tuple_struct(
                                 d = f_end;
                                 continue;
                             }
+                            // `w.0.name` reaches the field through `Deref` on the tuple struct `w.0`: `w.0.0` would name
+                            // the wrapper's own field instead.
+                            Some(_) if receiver_ends_in_tuple_index(&masked_doc[mod_lo..d]) => return None,
                             Some(_) => {}
                             None => {
                                 let in_impl = impl_spans.iter().any(|&(bo, bc)| d > bo && d < bc);

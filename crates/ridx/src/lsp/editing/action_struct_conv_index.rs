@@ -26,6 +26,14 @@ pub(crate) struct FieldRefs {
 /// Another file's path as the index names it, its text, and its `.name` edits as `start -> (end, field index)`.
 type OtherFile = (String, String, BTreeMap<usize, (usize, usize)>);
 
+/// Whether the receiver text before a `.name` (`text` ends right before that `.`) ends in a tuple index (`w.0`):
+/// the field may be reached through `Deref` on a tuple struct, whose own `.N` a positional rewrite would hit.
+pub(crate) fn receiver_ends_in_tuple_index(text: &str) -> bool {
+    let t = text.trim_end();
+    let digits = t.len() - t.trim_end_matches(|c: char| c.is_ascii_digit()).len();
+    digits > 0 && t[..t.len() - digits].trim_end().ends_with('.')
+}
+
 /// LSP text edit replacing `src[lo..hi]` with `text`.
 fn lsp_edit(src: &str, lo: usize, hi: usize, text: &str) -> Value {
     let pos = |b: usize| {
@@ -81,8 +89,9 @@ pub(crate) fn indexed_field_refs(ws: &WorkspaceIndex, file: &str, doc: &str, sta
             let s: Vec<usize> = std::iter::once(0).chain(src.match_indices('\n').map(|(i, _)| i + 1)).collect();
             let at = line_col_to_byte(src, &s, r.span.start_line(), r.span.start_col())?;
             // Only `recv.name` is rewritten elsewhere; anything else there (a literal, a pattern) is refused.
-            let is_access = src[..at].trim_end().ends_with('.') && !src[..at].trim_end().ends_with("..") && src[at..].starts_with(name);
-            if !is_access || src[at + name.len()..].trim_start().starts_with('(') {
+            let before = src[..at].trim_end();
+            let is_access = before.ends_with('.') && !before.ends_with("..") && src[at..].starts_with(name);
+            if !is_access || src[at + name.len()..].trim_start().starts_with('(') || receiver_ends_in_tuple_index(&before[..before.len() - 1]) {
                 return None;
             }
             edits.insert(at, (at + name.len(), idx));
@@ -206,7 +215,16 @@ pub(crate) fn field_name_bytes(masked_body: &str, body_start: usize, names: &[&s
 
 #[cfg(test)]
 mod tests {
-    use super::{field_name_bytes, skip_generic_args, struct_name_byte};
+    use super::{field_name_bytes, receiver_ends_in_tuple_index, skip_generic_args, struct_name_byte};
+
+    #[test]
+    fn test_receiver_through_a_tuple_field_is_detected() {
+        assert!(receiver_ends_in_tuple_index("        self.0"), "w.0.name may reach the field through Deref");
+        assert!(receiver_ends_in_tuple_index("self.state\n            .0\n            "));
+        assert!(!receiver_ends_in_tuple_index("self"));
+        assert!(!receiver_ends_in_tuple_index("inner"));
+        assert!(!receiver_ends_in_tuple_index("items[0]"));
+    }
 
     #[test]
     fn test_locates_struct_and_field_names_and_skips_generic_arguments() {
