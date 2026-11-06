@@ -138,13 +138,8 @@ pub fn build_inline_into_all_callers_workspace(
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 
-    if is_fully_pub {
-        if self_kind == Some(SelfKind::Value) || self_kind == Some(SelfKind::MutRef) {
-            return None;
-        }
-        if item.name == "new" && !parsed_params.is_empty() {
-            return None;
-        }
+    if is_fully_pub && item.name == "new" && !has_safe_pub_new_params(&parsed_params) {
+        return None;
     }
 
     let body_with_self_ty = if let Some(ty_name) = &self_type_name {
@@ -165,7 +160,15 @@ pub fn build_inline_into_all_callers_workspace(
         }
         body_with_self_ty.trim().to_string()
     };
-    let body_transformed = if let Some(ret_ty) = &effective_ret_ty { format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret") } else { body_transformed };
+    let body_transformed = if let Some(ret_ty) = &effective_ret_ty {
+        if !ret_ty.contains('\'') && !ret_ty.contains("Self") {
+            format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
+        } else {
+            body_transformed
+        }
+    } else {
+        body_transformed
+    };
 
     let ws = ws?;
     let (decl_line, decl_col) = byte_to_line_col(doc_text, starts, item.name_byte);
@@ -180,7 +183,7 @@ pub fn build_inline_into_all_callers_workspace(
         !is_same_doc(&abs, file, canonical_file.as_deref())
     });
 
-    if !is_pub && has_cross_file {
+    if has_cross_file {
         return None;
     }
 
@@ -210,6 +213,9 @@ pub fn build_inline_into_all_callers_workspace(
                 body_has_question_mark,
                 effective_ret_ty.as_deref(),
                 Some((def_lo, *bc)),
+                Some(file),
+                Some(ws),
+                is_pub,
             );
             local_edits.extend(edits);
             if skipped {
@@ -230,6 +236,16 @@ pub fn build_inline_into_all_callers_workspace(
     Some((local_lsp_edits, other_file_edits))
 }
 
+fn has_safe_pub_new_params(params: &[FnParamInfo]) -> bool {
+    params.is_empty()
+        || params.iter().all(|p| {
+            p.ty.as_deref().is_some_and(|ty| {
+                let n = super::action_inline_callers_helpers::normalize_param_type_for_binding(ty);
+                !n.contains('\'') && !n.contains("impl ") && !n.contains("dyn ") && !n.contains('<')
+            })
+        })
+}
+
 #[allow(clippy::too_many_arguments)]
 fn process_call_sites_for_document(
     doc: &str,
@@ -243,6 +259,9 @@ fn process_call_sites_for_document(
     body_has_question_mark: bool,
     effective_ret_ty: Option<&str>,
     def_range: Option<(usize, usize)>,
+    file_opt: Option<&str>,
+    ws_opt: Option<&WorkspaceIndex>,
+    is_pub: bool,
 ) -> (Vec<(usize, usize, String)>, bool) {
     let mut edits = Vec::new();
     let mut any_skipped = false;
@@ -263,7 +282,7 @@ fn process_call_sites_for_document(
                 continue;
             }
         }
-        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, ref_byte, fn_name, self_kind, params, body_src) {
+        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_pub) {
             edits.push((site_start, site_end, inlined_text));
         } else {
             any_skipped = true;

@@ -15,14 +15,19 @@ use super::action_inline_callers_helpers::{find_path_start, find_receiver_start,
 use super::action_parse::is_ident_byte;
 use super::action_parse_items::skip_balanced;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn process_call_site(
     src: &str,
     masked: &str,
+    starts: &[usize],
     ref_byte: usize,
     name: &str,
     self_kind: Option<SelfKind>,
     params: &[FnParamInfo],
     body_src: &str,
+    file_opt: Option<&str>,
+    ws_opt: Option<&ridx_format::WorkspaceIndex>,
+    is_pub: bool,
 ) -> Option<(usize, usize, String)> {
     let mb = masked.as_bytes();
     let name_end = ref_byte + name.len();
@@ -40,7 +45,7 @@ pub(crate) fn process_call_site(
     let call_end = skip_balanced(mb, p, b'(', b')')?;
     let raw_args: Vec<String> = split_top_level_commas(&src[p + 1..call_end - 1]).into_iter().filter(|a| !a.trim().is_empty()).collect();
 
-    let (call_start, recv_expr) = if self_kind.is_some() {
+    let (call_start, recv_expr, recv_ty) = if self_kind.is_some() {
         let before_dot = src[..ref_byte].trim_end();
         if !before_dot.ends_with('.') || before_dot.ends_with("..") {
             return None;
@@ -54,11 +59,33 @@ pub(crate) fn process_call_site(
         if recv.is_empty() || recv.starts_with('.') || recv.ends_with('.') || recv.contains('(') || recv.contains('[') {
             return None;
         }
-        (recv_start, Some(recv))
+        let rty = match (file_opt, ws_opt) {
+            (Some(f), Some(w)) => {
+                let l0 = starts.partition_point(|&s| s <= recv_start).saturating_sub(1);
+                let l1 = (l0 + 1) as u32;
+                let c1 = (1 + src[starts[l0]..recv_start].chars().count()) as u32;
+                w.type_at(f, l1, c1)
+            }
+            _ => None,
+        };
+        (recv_start, Some(recv), rty)
     } else {
         let path_start = find_path_start(masked, ref_byte);
-        (path_start, None)
+        (path_start, None, None)
     };
+
+    if is_pub {
+        if self_kind == Some(SelfKind::MutRef) {
+            let recv_str = recv_expr.unwrap_or("");
+            let is_mut_ref = recv_ty.is_some_and(|t| t.starts_with("&mut "));
+            let is_explicit_mut = recv_str.starts_with("&mut ") || recv_str == "self" || recv_str == "this";
+            if !is_mut_ref && !is_explicit_mut {
+                return None;
+            }
+        } else if self_kind == Some(SelfKind::Value) && recv_ty.is_none() {
+            return None;
+        }
+    }
 
     let non_self_count = params.iter().filter(|p| !p.is_self).count();
     if raw_args.len() != non_self_count || raw_args.iter().any(|a| a.contains('(')) {
@@ -69,7 +96,7 @@ pub(crate) fn process_call_site(
     let next_ch = masked[call_end..].trim_start().as_bytes().first().copied().unwrap_or(b'}');
     let standalone = matches!(prev_ch, b'{' | b';') && matches!(next_ch, b';' | b'}');
 
-    let inlined = format_inlined_call(recv_expr, self_kind, params, &raw_args, body_src, standalone);
+    let inlined = format_inlined_call(recv_expr, self_kind, recv_ty, params, &raw_args, body_src, standalone);
     Some((call_start, call_end, inlined))
 }
 

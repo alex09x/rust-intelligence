@@ -208,12 +208,58 @@ pub(crate) fn find_path_start(masked: &str, ref_byte: usize) -> usize {
     p
 }
 
-pub(crate) fn format_inlined_call(recv_expr: Option<&str>, self_kind: Option<SelfKind>, params: &[FnParamInfo], args: &[String], body_src: &str, is_standalone: bool) -> String {
+pub(crate) fn normalize_param_type_for_binding(ty: &str) -> String {
+    let mut out = String::with_capacity(ty.len());
+    let bytes = ty.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'&' && i + 1 < bytes.len() && bytes[i + 1] == b'\'' {
+            let mut j = i + 2;
+            while j < bytes.len() && (bytes[j].is_ascii_alphanumeric() || bytes[j] == b'_') {
+                j += 1;
+            }
+            while j < bytes.len() && bytes[j].is_ascii_whitespace() {
+                j += 1;
+            }
+            if j + 3 < bytes.len() && &bytes[j..j + 4] == b"mut " {
+                out.push_str("&mut ");
+                i = j + 4;
+            } else {
+                out.push('&');
+                i = j;
+            }
+        } else {
+            out.push(bytes[i] as char);
+            i += 1;
+        }
+    }
+    out
+}
+
+pub(crate) fn format_inlined_call(
+    recv_expr: Option<&str>,
+    self_kind: Option<SelfKind>,
+    recv_ty: Option<&str>,
+    params: &[FnParamInfo],
+    args: &[String],
+    body_src: &str,
+    is_standalone: bool,
+) -> String {
     let mut bindings = Vec::new();
     if let (Some(recv), Some(sk)) = (recv_expr, self_kind) {
         let trimmed_recv = recv.trim();
         let recv_binding = match sk {
-            SelfKind::Value => format!("let mut this = {trimmed_recv};"),
+            SelfKind::Value => {
+                if let Some(ty) = recv_ty {
+                    if ty.starts_with('&') {
+                        format!("let mut this = *{trimmed_recv};")
+                    } else {
+                        format!("let mut this = {trimmed_recv};")
+                    }
+                } else {
+                    format!("let mut this = {trimmed_recv};")
+                }
+            }
             SelfKind::Ref => {
                 if trimmed_recv.starts_with('&') && !trimmed_recv.starts_with("&mut") {
                     format!("let this = {trimmed_recv};")
@@ -222,10 +268,10 @@ pub(crate) fn format_inlined_call(recv_expr: Option<&str>, self_kind: Option<Sel
                 }
             }
             SelfKind::MutRef => {
-                if trimmed_recv == "self" || trimmed_recv == "this" {
-                    format!("let mut this = &mut *{trimmed_recv};")
-                } else if trimmed_recv.starts_with("&mut ") {
-                    format!("let mut this = {trimmed_recv};")
+                let is_already_mut_ref = trimmed_recv == "self" || trimmed_recv == "this" || trimmed_recv.starts_with("&mut ") || recv_ty.is_some_and(|t| t.starts_with("&mut "));
+                if is_already_mut_ref {
+                    let inner = trimmed_recv.strip_prefix("&mut ").unwrap_or(trimmed_recv);
+                    format!("let mut this = &mut *{inner};")
                 } else {
                     format!("let mut this = &mut {trimmed_recv};")
                 }
@@ -241,8 +287,9 @@ pub(crate) fn format_inlined_call(recv_expr: Option<&str>, self_kind: Option<Sel
             if p.is_mut_ref && !arg_trimmed.starts_with("&mut ") {
                 bindings.push(format!("let {id} = &mut *{arg_trimmed};"));
             } else if let Some(ty) = &p.ty {
-                if !ty.contains('\'') && !ty.contains("Self") {
-                    bindings.push(format!("let {id}: {ty} = {arg_trimmed};"));
+                let norm_ty = normalize_param_type_for_binding(ty);
+                if !norm_ty.contains('\'') && !norm_ty.contains("Self") && !norm_ty.contains("impl ") && !norm_ty.contains("dyn ") {
+                    bindings.push(format!("let {id}: {norm_ty} = {arg_trimmed};"));
                 } else {
                     bindings.push(format!("let {id} = {arg_trimmed};"));
                 }
