@@ -11,7 +11,9 @@
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
 use super::action_generics_sub::split_top_level_commas;
-use super::action_inline_callers_helpers::{contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, parse_fn_params, FnParamInfo, SelfKind};
+use super::action_inline_callers_helpers::{
+    contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, is_caller_return_compatible, parse_fn_params, FnParamInfo, SelfKind,
+};
 use super::action_inline_callers_transform::{
     extract_type_generic_names, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
@@ -115,8 +117,15 @@ pub fn build_inline_into_all_callers_workspace(
         (raw_body_slice.to_string(), body_inner_m.to_string())
     };
 
-    if raw_masked_body.contains('?')
-        || contains_word(&raw_masked_body, "super")
+    let body_has_question_mark = raw_masked_body.contains('?');
+    if body_has_question_mark {
+        let Some(ret) = effective_ret_ty.as_deref() else { return None; };
+        if !ret.contains("Result") && !ret.contains("Option") {
+            return None;
+        }
+    }
+
+    if contains_word(&raw_masked_body, "super")
         || raw_masked_body.contains('$')
         || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
         || contains_recursive_call(&raw_masked_body, &item.name)
@@ -192,6 +201,13 @@ pub fn build_inline_into_all_callers_workspace(
                 if ref_byte >= def_lo && ref_byte < *bc {
                     continue;
                 }
+                if body_has_question_mark {
+                    let ret = effective_ret_ty.as_deref().unwrap_or("");
+                    if !is_caller_return_compatible(doc_text, masked_doc, starts, ref_byte, ret) {
+                        any_skipped = true;
+                        continue;
+                    }
+                }
                 if let Some((site_start, site_end, inlined_text)) = process_call_site(doc_text, masked_doc, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed) {
                     local_edits.push((site_start, site_end, inlined_text));
                 } else {
@@ -201,7 +217,7 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    if local_edits.is_empty() {
+    if local_edits.is_empty() || (body_has_question_mark && any_skipped) {
         return None;
     }
 

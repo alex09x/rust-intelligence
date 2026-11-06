@@ -305,3 +305,27 @@ pub(crate) fn contains_recursive_call(masked_body: &str, fn_name: &str) -> bool 
     }
     false
 }
+
+pub(crate) fn is_caller_return_compatible(src: &str, masked: &str, starts: &[usize], ref_byte: usize, callee_ret: &str) -> bool {
+    let callee_is_result = callee_ret.contains("Result");
+    let callee_is_option = callee_ret.contains("Option");
+    if !callee_is_result && !callee_is_option {
+        return false;
+    }
+    let Some(caller_fn) = super::action_parse_enclosing::find_enclosing_fn_at_cursor(src, masked, starts, ref_byte) else {
+        return false;
+    };
+    let super::action_parse::ItemKindInfo::Fn { ret_src, .. } = &caller_fn.kind else {
+        return false;
+    };
+    let Some(r) = ret_src.as_deref() else {
+        return false;
+    };
+    if callee_is_result {
+        r.contains("Result")
+    } else if callee_is_option {
+        r.contains("Option")
+    } else {
+        false
+    }
+}
