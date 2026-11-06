@@ -14,9 +14,7 @@ use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{
     contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, is_caller_return_compatible, parse_fn_params, FnParamInfo, SelfKind,
 };
-use super::action_inline_callers_transform::{
-    extract_type_generic_names, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
-};
+use super::action_inline_callers_transform::{extract_type_generic_names, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return};
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::{contains_word, skip_balanced};
@@ -89,9 +87,7 @@ pub fn build_inline_into_all_callers_workspace(
         if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if r.contains('\'') && !r.contains("'static") {
-            None
-        } else if type_generics.iter().any(|g| contains_word(r, g)) {
+        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             Some(self_type_name.as_ref()?.clone())
@@ -122,7 +118,7 @@ pub fn build_inline_into_all_callers_workspace(
 
     let body_has_question_mark = raw_masked_body.contains('?');
     if body_has_question_mark {
-        let Some(ret) = effective_ret_ty.as_deref() else { return None; };
+        let ret = effective_ret_ty.as_deref()?;
         if !ret.contains("Result") && !ret.contains("Option") {
             return None;
         }

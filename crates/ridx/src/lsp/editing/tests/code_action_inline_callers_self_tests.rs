@@ -351,14 +351,7 @@ fn test_inline_generic_fn_unused_in_body_compiles() {
 
     let mut builder = FixtureIndexBuilder::new("test_gen", "0.1.0");
 
-    let code = concat!(
-        "fn «wrap_val»<E>(x: i32) -> Result<i32, E> {\n",
-        "    Ok(x * 2)\n",
-        "}\n",
-        "pub fn caller() -> Result<i32, ()> {\n",
-        "    wrap_val(21)\n",
-        "}\n",
-    );
+    let code = concat!("fn «wrap_val»<E>(x: i32) -> Result<i32, E> {\n", "    Ok(x * 2)\n", "}\n", "pub fn caller() -> Result<i32, ()> {\n", "    wrap_val(21)\n", "}\n",);
 
     let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_gen", DefKind::Fn);
     let _ = fs::write(&lib_file, &cleaned);

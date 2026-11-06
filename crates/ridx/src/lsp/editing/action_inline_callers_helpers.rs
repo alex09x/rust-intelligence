@@ -31,12 +31,7 @@ pub(crate) enum SelfKind {
 }
 
 fn is_primitive_scalar(ty: &str) -> bool {
-    matches!(
-        ty.trim(),
-        "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-            | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-            | "f32" | "f64" | "bool" | "char"
-    )
+    matches!(ty.trim(), "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "f32" | "f64" | "bool" | "char")
 }
 
 pub(crate) fn parse_fn_params(params_src: &str, type_generics: &[String]) -> Option<Vec<FnParamInfo>> {
