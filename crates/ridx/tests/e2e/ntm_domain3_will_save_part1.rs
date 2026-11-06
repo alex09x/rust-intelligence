@@ -57,7 +57,7 @@ fn test_will_save_manual_reason_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -80,7 +80,7 @@ fn test_will_save_after_delay_reason_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -103,7 +103,7 @@ fn test_will_save_focus_out_reason_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -125,7 +125,7 @@ fn test_will_save_unspecified_reason_handled_safely() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -148,7 +148,7 @@ fn test_will_save_unknown_reason_code_handled_safely() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -173,7 +173,7 @@ fn test_will_save_does_not_modify_open_overlay_content() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, initial_text);
 }
@@ -198,7 +198,7 @@ fn test_will_save_does_not_modify_open_overlay_version() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 1);
 }
@@ -224,7 +224,7 @@ fn test_will_save_on_unopened_document_is_safe_noop() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
 }
@@ -246,7 +246,7 @@ fn test_will_save_empty_params_handled_safely() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -269,6 +269,6 @@ fn test_will_save_produces_zero_stdout_output() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }

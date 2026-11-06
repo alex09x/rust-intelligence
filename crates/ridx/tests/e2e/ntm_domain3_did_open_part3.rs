@@ -48,7 +48,7 @@ fn test_did_open_async_fn_symbol() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "load_data");
@@ -75,7 +75,7 @@ fn test_did_open_const_fn_symbol() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "multiplier");
@@ -102,7 +102,7 @@ fn test_did_open_unsafe_fn_symbol() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "dangerous_operation");
@@ -129,7 +129,7 @@ fn test_did_open_extern_fn_symbol() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "export_c_api");
@@ -155,7 +155,7 @@ fn test_did_open_version_zero_preserved() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 0);
 }
@@ -179,7 +179,7 @@ fn test_did_open_negative_version_preserved() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, -1);
 }
@@ -203,7 +203,7 @@ fn test_did_open_large_version_preserved() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, i32::MAX);
 }
@@ -227,7 +227,7 @@ fn test_did_open_missing_version_defaults_to_one() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 1);
 }
@@ -251,7 +251,7 @@ fn test_did_open_missing_text_defaults_to_empty() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "");
     assert_eq!(overlay.version, 4);
@@ -276,7 +276,7 @@ fn test_did_open_sequential_multiple_files_open_count() {
             &mut multi_root,
             &mut overlay_mgr,
         );
-        assert_eq!(ok, true);
+        assert!(ok);
     }
 
     assert_eq!(overlay_mgr.open_count(), 3);

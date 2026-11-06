@@ -72,7 +72,7 @@ fn test_will_save_wait_until_returns_empty_text_edits_array() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["jsonrpc"], "2.0");
     assert_eq!(resp["id"], 1);
     assert_eq!(resp["result"], json!([]));
@@ -95,7 +95,7 @@ fn test_will_save_wait_until_preserves_numeric_id() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["id"], 8888);
     assert_eq!(resp["result"], json!([]));
 }
@@ -117,7 +117,7 @@ fn test_will_save_wait_until_preserves_string_id() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["id"], "save-req-uuid-1234");
     assert_eq!(resp["result"], json!([]));
 }
@@ -139,7 +139,7 @@ fn test_will_save_wait_until_reason_manual() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
 }
 
@@ -160,7 +160,7 @@ fn test_will_save_wait_until_reason_after_delay() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
 }
 
@@ -181,7 +181,7 @@ fn test_will_save_wait_until_reason_focus_out() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
 }
 
@@ -202,7 +202,7 @@ fn test_will_save_wait_until_missing_reason_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
 }
 
@@ -227,7 +227,7 @@ fn test_will_save_wait_until_unopened_document() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
     assert_eq!(om.open_count(), 0);
 }
@@ -252,7 +252,7 @@ fn test_will_save_wait_until_empty_params_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
 }
 
@@ -275,7 +275,7 @@ fn test_will_save_wait_until_does_not_mutate_overlay() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(resp["result"], json!([]));
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, text);

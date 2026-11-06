@@ -54,7 +54,7 @@ fn test_did_save_updates_disk_text_to_current_overlay_text() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some("dirty saved text\n".to_string()));
@@ -79,7 +79,7 @@ fn test_did_save_preserves_version() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 7);
 }
@@ -103,7 +103,7 @@ fn test_did_save_preserves_content_hash() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.content_hash, hash_before);
 }
@@ -126,7 +126,7 @@ fn test_did_save_preserves_symbols() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "SavedPoint");
@@ -148,7 +148,7 @@ fn test_did_save_produces_no_stdout_output() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -168,7 +168,7 @@ fn test_did_save_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
 }
 
 #[test]
@@ -189,7 +189,7 @@ fn test_did_save_unopened_document_is_safe_noop() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
 }
@@ -211,7 +211,7 @@ fn test_did_save_empty_params_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -232,7 +232,7 @@ fn test_did_save_missing_uri_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -253,6 +253,6 @@ fn test_did_save_null_params_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }

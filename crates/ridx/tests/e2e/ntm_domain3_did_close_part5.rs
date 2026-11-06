@@ -66,7 +66,7 @@ fn test_did_close_stress_twenty_open_and_close_cycles() {
             None,
         )
         .unwrap_or(false);
-        assert_eq!(ok_open, true);
+        assert!(ok_open);
         assert_eq!(om.open_count(), 1);
 
         let (ok_close, _) = dispatch_did_close_with_converter(
@@ -76,7 +76,7 @@ fn test_did_close_stress_twenty_open_and_close_cycles() {
             &mut om,
             None,
         );
-        assert_eq!(ok_close, true);
+        assert!(ok_close);
         assert_eq!(om.open_count(), 0);
     }
 }
@@ -103,7 +103,7 @@ fn test_did_close_stress_ten_distinct_files_open_close() {
             &mut om,
             None,
         );
-        assert_eq!(ok, true);
+        assert!(ok);
     }
     assert_eq!(om.open_count(), 0);
 }
@@ -149,7 +149,7 @@ fn test_did_close_interleaved_open_close_pairs() {
         &mut om,
         None,
     );
-    assert_eq!(ok_a, true);
+    assert!(ok_a);
     assert_eq!(om.open_count(), 1);
 
     // Close B
@@ -160,7 +160,7 @@ fn test_did_close_interleaved_open_close_pairs() {
         &mut om,
         None,
     );
-    assert_eq!(ok_b, true);
+    assert!(ok_b);
     assert_eq!(om.open_count(), 0);
 }
 
@@ -197,7 +197,7 @@ fn test_did_close_does_not_clear_other_converter_entries() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     // File 1 cache was invalidated and now sees updated disk content
     assert_eq!(lc.conv.get_line(&file1, 1), Some("line1_f1_disk_updated"));
     // File 2 cache was NOT cleared and still sees old cached line
@@ -221,7 +221,7 @@ fn test_did_close_deep_nested_path() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
 }
@@ -239,7 +239,7 @@ fn test_did_close_trailing_slash_uri_safe() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
 }
@@ -257,7 +257,7 @@ fn test_did_close_query_string_uri_safe() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
 }
 
@@ -274,6 +274,6 @@ fn test_did_close_fragment_uri_safe() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
 }

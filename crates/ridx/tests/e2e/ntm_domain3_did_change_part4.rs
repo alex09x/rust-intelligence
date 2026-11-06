@@ -57,7 +57,7 @@ fn test_did_change_adds_new_fn_symbol() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "added");
@@ -84,7 +84,7 @@ fn test_did_change_removes_existing_fn_symbol() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 0);
 }
@@ -115,7 +115,7 @@ fn test_did_change_renames_fn_symbol_in_place() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "after");
@@ -141,7 +141,7 @@ fn test_did_change_adds_struct_definition_symbol() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "Config");
@@ -168,7 +168,7 @@ fn test_did_change_adds_enum_definition_symbol() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "Action");
@@ -201,7 +201,7 @@ fn test_did_change_converts_fn_to_comment_removes_symbol() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "// fn target() {}\n");
     assert_eq!(overlay.symbols.len(), 0);
@@ -226,7 +226,7 @@ fn test_did_change_notification_produces_no_stdout_when_pull_diagnostics() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     // In pull diagnostics mode, no publishDiagnostics is written to out
     assert_eq!(out.len(), 0);
 }
@@ -250,7 +250,7 @@ fn test_did_change_notification_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn test_did_change_empty_content_changes_array_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn keep() {}\n");
     assert_eq!(overlay.version, 3);
@@ -298,7 +298,7 @@ fn test_did_change_missing_content_changes_key_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn stay() {}\n");
 }

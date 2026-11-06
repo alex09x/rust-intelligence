@@ -73,7 +73,7 @@ fn test_did_close_invalidates_position_converter_cache() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_disk_updated"));
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -92,7 +92,7 @@ fn test_did_close_followed_by_reopen_starts_fresh_version() {
         &mut om,
         None,
     );
-    assert_eq!(ok_close, true);
+    assert!(ok_close);
     assert_eq!(om.open_count(), 0);
 
     // Reopen with new version 10
@@ -113,7 +113,7 @@ fn test_did_close_followed_by_reopen_starts_fresh_version() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok_open, true);
+    assert!(ok_open);
     assert_eq!(om.open_count(), 1);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 10);
@@ -172,7 +172,7 @@ fn test_did_close_does_not_affect_unrelated_open_files() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 1);
     let overlay2 = om.get(&file2).expect("doc2 must be untouched");
     assert_eq!(overlay2.text, "doc2 intact\n");
@@ -195,7 +195,7 @@ fn test_did_close_preserves_unrelated_file_version_and_symbols() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay2 = om.get(&file2).expect("doc2 must be untouched");
     assert_eq!(overlay2.symbols.len(), 1);
     assert_eq!(overlay2.symbols[0].name, "b");
@@ -219,7 +219,7 @@ fn test_did_close_empty_uri_safe() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -238,7 +238,7 @@ fn test_did_close_windows_file_uri_eviction() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
 }
@@ -258,7 +258,7 @@ fn test_did_close_url_encoded_space_uri_eviction() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
 }
@@ -278,7 +278,7 @@ fn test_did_close_does_not_modify_disk_file() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let disk_content = fs::read_to_string(&temp_file).unwrap();
     let _ = fs::remove_file(&temp_file);
     assert_eq!(disk_content, "disk original\n");
@@ -301,6 +301,6 @@ fn test_did_close_discards_unsaved_dirty_overlay() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
 }

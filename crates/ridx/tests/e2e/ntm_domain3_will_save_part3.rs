@@ -69,7 +69,7 @@ fn test_will_save_wait_until_cancelled_request_returns_request_cancelled_error()
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["id"], req_id);
     assert_eq!(resp["error"]["code"], -32800);
@@ -98,7 +98,7 @@ fn test_will_save_followed_by_did_save_sequence() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok1, true);
+    assert!(ok1);
 
     let mut out2 = Cursor::new(Vec::new());
     let ok2 = dispatch_lsp_message(
@@ -115,7 +115,7 @@ fn test_will_save_followed_by_did_save_sequence() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok2, true);
+    assert!(ok2);
 
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn f() {}\n");
@@ -143,7 +143,7 @@ fn test_will_save_wait_until_followed_by_did_save() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok1, true);
+    assert!(ok1);
     let resp1 = extract_response(&out1.into_inner());
     assert_eq!(resp1["result"], json!([]));
 
@@ -162,7 +162,7 @@ fn test_will_save_wait_until_followed_by_did_save() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok2, true);
+    assert!(ok2);
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn test_will_save_multiple_successive_notifications() {
             None,
         )
         .unwrap_or(false);
-        assert_eq!(ok, true);
+        assert!(ok);
         assert_eq!(out.into_inner().len(), 0);
     }
 }
@@ -215,7 +215,7 @@ fn test_will_save_wait_until_multiple_successive_requests() {
             None,
         )
         .unwrap_or(false);
-        assert_eq!(ok, true);
+        assert!(ok);
         let resp = extract_response(&out.into_inner());
         assert_eq!(resp["id"], req_id);
         assert_eq!(resp["result"], json!([]));
@@ -246,7 +246,7 @@ fn test_will_save_with_dirty_overlay_preserves_dirty_state() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "dirty content");
     assert_eq!(overlay.version, 2);
@@ -276,7 +276,7 @@ fn test_will_save_wait_until_preserves_symbols_count() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 2);
 }
@@ -316,7 +316,7 @@ fn test_will_save_does_not_invalidate_position_converter() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     // willSave is a no-op that does NOT invalidate converter cache, so old cached line remains
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_initial"));
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -358,7 +358,7 @@ fn test_will_save_wait_until_does_not_invalidate_position_converter() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_initial"));
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
@@ -385,6 +385,6 @@ fn test_will_save_does_not_trigger_flycheck() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.flycheck.current_generation(), 0);
 }

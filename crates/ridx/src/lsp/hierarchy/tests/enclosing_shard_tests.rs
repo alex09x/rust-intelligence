@@ -20,7 +20,7 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference, WorkspaceIndex};
 use serde_json::json;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
@@ -140,7 +140,7 @@ fn nested_workspace(lib_first: bool) -> (PathBuf, WorkspaceIndex) {
 }
 
 /// Sorted `(caller name, 0-based lines of its call sites)` of incomingCalls on `helper`.
-fn incoming_callers_of_helper(dir: &PathBuf, ws: &WorkspaceIndex) -> Vec<(String, Vec<u64>)> {
+fn incoming_callers_of_helper(dir: &Path, ws: &WorkspaceIndex) -> Vec<(String, Vec<u64>)> {
     let uri = path_to_uri(dir.join("src/lib.rs").to_str().unwrap());
     let req = json!({ "params": { "item": { "name": "helper", "uri": uri,
         "range": { "start": { "line": 0, "character": 7 }, "end": { "line": 0, "character": 13 } } } } });

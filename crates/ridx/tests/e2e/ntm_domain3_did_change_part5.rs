@@ -71,7 +71,7 @@ fn test_did_change_out_of_bounds_range_clamped_safely() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "short app");
 }
@@ -101,7 +101,7 @@ fn test_did_change_inverted_range_clamped_safely() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "abcdXef");
 }
@@ -135,7 +135,7 @@ fn test_did_change_invalidates_position_converter_cache() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_disk_updated"));
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -170,7 +170,7 @@ fn test_did_change_unopened_document_reads_from_disk_fallback() {
         None,
     );
     let _ = fs::remove_file(&path);
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "updated content\n");
 }
@@ -202,7 +202,7 @@ fn test_did_change_unopened_document_missing_on_disk_uses_empty() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fresh text\n");
 }
@@ -232,7 +232,7 @@ fn test_did_change_supports_new_text_key_variant() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "aZa");
 }
@@ -262,7 +262,7 @@ fn test_did_change_supports_text_key_variant() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "aWa");
 }
@@ -288,7 +288,7 @@ fn test_did_change_preserves_other_open_documents() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay2 = om.get(&file2).expect("doc2 must be untouched");
     assert_eq!(overlay2.text, "doc two text\n");
     assert_eq!(overlay2.version, 1);
@@ -319,7 +319,7 @@ fn test_did_change_crlf_incremental_replacement() {
         &mut om,
         None,
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "first\r\nmodified\r\n");
 }
@@ -373,7 +373,7 @@ fn test_did_change_short_overlay_definition_on_past_eof_returns_null() {
         &mut om,
         Some(&mut conv),
     );
-    assert_eq!(ok, true);
+    assert!(ok);
     // 3. Request definition at line 50 (which is now past EOF in live overlay)
     let res_dirty = handle_definition(&def_req, Some(&index), &om, &mut conv);
     assert_eq!(res_dirty, Value::Null);

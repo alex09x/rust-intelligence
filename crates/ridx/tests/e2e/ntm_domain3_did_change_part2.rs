@@ -56,7 +56,7 @@ fn test_did_change_full_sync_replaces_entire_buffer() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 2);
@@ -89,7 +89,7 @@ fn test_did_change_insert_at_start_of_document() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "hello world\n");
 }
@@ -120,7 +120,7 @@ fn test_did_change_insert_at_end_of_document() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "hello world");
 }
@@ -151,7 +151,7 @@ fn test_did_change_insert_in_middle_of_line() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn abc_123() {}\n");
 }
@@ -182,7 +182,7 @@ fn test_did_change_delete_entire_document() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "");
 }
@@ -213,7 +213,7 @@ fn test_did_change_delete_first_character() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "2345");
 }
@@ -244,7 +244,7 @@ fn test_did_change_delete_last_character() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "1234");
 }
@@ -275,7 +275,7 @@ fn test_did_change_replace_word_in_line() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "let bar_baz = 1;\n");
 }
@@ -306,7 +306,7 @@ fn test_did_change_replace_multiline_block() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn outer() {\n    let c = 3;\n}\n");
 }
@@ -337,7 +337,7 @@ fn test_did_change_empty_change_leaves_text_intact() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn stable() {}\n");
     assert_eq!(overlay.version, 2);

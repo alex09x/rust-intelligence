@@ -134,11 +134,11 @@ fn test_did_change_watched_files_multiple_shards_only_one_modified() {
     assert!(dsp.multi_root.add_root(ts2.shard.clone()));
     sleep(Duration::from_millis(15));
     write_index_shard_with_def(&ts1.shard, "pkg_a", "1.1.0", "extra_sym_a");
-    assert_eq!(dsp.multi_root.all_workspaces().nth(0).unwrap().readers()[0].crate_version(), "1.0.0");
+    assert_eq!(dsp.multi_root.all_workspaces().next().unwrap().readers()[0].crate_version(), "1.0.0");
     assert_eq!(dsp.multi_root.all_workspaces().nth(1).unwrap().readers()[0].crate_version(), "1.0.0");
     let notif = json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWatchedFiles", "params": { "changes": [{ "uri": to_uri(&ts1.shard), "type": 2 }] } });
     assert!(dsp.dispatch(&notif));
-    assert_eq!(dsp.multi_root.all_workspaces().nth(0).unwrap().readers()[0].crate_version(), "1.1.0");
+    assert_eq!(dsp.multi_root.all_workspaces().next().unwrap().readers()[0].crate_version(), "1.1.0");
     assert_eq!(dsp.multi_root.all_workspaces().nth(1).unwrap().readers()[0].crate_version(), "1.0.0");
 }
 
@@ -365,7 +365,7 @@ fn test_did_change_watched_files_multiple_workspaces_all_reloaded() {
     write_index_shard_with_def(&ts2.shard, "all_b", "3.0.0", "extra_all_b_fn");
     let notif = json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWatchedFiles", "params": { "changes": [] } });
     assert!(dsp.dispatch(&notif));
-    assert_eq!(dsp.multi_root.all_workspaces().nth(0).unwrap().readers()[0].crate_version(), "2.0.0");
+    assert_eq!(dsp.multi_root.all_workspaces().next().unwrap().readers()[0].crate_version(), "2.0.0");
     assert_eq!(dsp.multi_root.all_workspaces().nth(1).unwrap().readers()[0].crate_version(), "3.0.0");
 }
 

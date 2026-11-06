@@ -14,7 +14,7 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference, WorkspaceIndex};
 use serde_json::json;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 #[test]
 fn test_type_hierarchy_full() {
@@ -112,7 +112,7 @@ fn test_prepare_type_hierarchy_missing_params_rejected_code_32602() {
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
-fn make_test_workspace_with_ref(temp_dir: &PathBuf, crate_name: &str, src_code: &str, defs: Vec<RawDefinition>, refs: Vec<RawReference>) -> WorkspaceIndex {
+fn make_test_workspace_with_ref(temp_dir: &Path, crate_name: &str, src_code: &str, defs: Vec<RawDefinition>, refs: Vec<RawReference>) -> WorkspaceIndex {
     let src_file = temp_dir.join("src/lib.rs");
     if let Some(parent) = src_file.parent() {
         let _ = fs::create_dir_all(parent);

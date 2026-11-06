@@ -71,7 +71,7 @@ fn test_did_change_multiple_changes_in_single_notification() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "AAA\nbbb\nCCC\n");
 }
@@ -111,7 +111,7 @@ fn test_did_change_sequential_inserts_in_single_line() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "aXYb");
 }
@@ -136,7 +136,7 @@ fn test_did_change_version_increment_from_client() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 42);
 }
@@ -161,7 +161,7 @@ fn test_did_change_version_zero_increments_internal_version() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 2);
 }
@@ -186,7 +186,7 @@ fn test_did_change_negative_version_increments_internal_version() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 2);
 }
@@ -212,10 +212,10 @@ fn test_did_change_content_hash_updates_after_edit() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let updated_hash = om.get(&file).unwrap().content_hash;
     assert_eq!(updated_hash, ridx_format::normalized_source_hash(b"fn hash_modified() {}\n"));
-    assert_eq!(initial_hash == updated_hash, false);
+    assert!(!(initial_hash == updated_hash));
 }
 
 #[test]
@@ -244,7 +244,7 @@ fn test_did_change_line_starts_recalculated_after_newline_insert() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "single\nline");
     assert_eq!(overlay.line_starts, vec![0, 7]);
@@ -276,7 +276,7 @@ fn test_did_change_line_starts_recalculated_after_newline_delete() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "line1 line2\n");
     assert_eq!(overlay.line_starts, vec![0, 12]);
@@ -309,7 +309,7 @@ fn test_did_change_utf16_surrogate_pair_column_offset() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "let emoji = '🚀';\n");
 }
@@ -341,7 +341,7 @@ fn test_did_change_multibyte_utf8_char_offset() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "let β = 1;\n");
 }

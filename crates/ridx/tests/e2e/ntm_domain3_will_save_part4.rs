@@ -66,7 +66,7 @@ fn test_will_save_with_windows_uri() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.into_inner().len(), 0);
 }
 
@@ -93,7 +93,7 @@ fn test_will_save_wait_until_with_windows_uri() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
 }
@@ -120,7 +120,7 @@ fn test_will_save_with_url_encoded_space_uri() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.into_inner().len(), 0);
 }
 
@@ -147,7 +147,7 @@ fn test_will_save_wait_until_with_url_encoded_space_uri() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
 }
@@ -177,7 +177,7 @@ fn test_will_save_on_closed_document_remains_closed() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
 }
 
@@ -206,7 +206,7 @@ fn test_will_save_wait_until_on_closed_document() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
     assert_eq!(om.open_count(), 0);
@@ -233,7 +233,7 @@ fn test_will_save_notification_returns_true_in_dispatch() {
         None,
     );
 
-    assert_eq!(res.unwrap_or(false), true);
+    assert!(res.unwrap_or(false));
 }
 
 #[test]
@@ -259,7 +259,7 @@ fn test_will_save_wait_until_jsonrpc_version_2_0() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["jsonrpc"], "2.0");
 }
@@ -290,7 +290,7 @@ fn test_will_save_with_arbitrary_client_extensions() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.into_inner().len(), 0);
 }
 
@@ -321,7 +321,7 @@ fn test_will_save_wait_until_with_arbitrary_client_extensions() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
 }

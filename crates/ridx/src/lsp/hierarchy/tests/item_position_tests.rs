@@ -18,7 +18,7 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference, WorkspaceIndex};
 use serde_json::json;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
@@ -93,12 +93,12 @@ fn colliding_workspace() -> (PathBuf, WorkspaceIndex) {
     (dir, ws)
 }
 
-pub(super) fn incoming_callers(ws: &WorkspaceIndex, file: &PathBuf, line0: u64, char0: u64) -> Vec<(String, Vec<u64>)> {
+pub(super) fn incoming_callers(ws: &WorkspaceIndex, file: &Path, line0: u64, char0: u64) -> Vec<(String, Vec<u64>)> {
     incoming_callers_of(ws, "test", file, line0, char0)
 }
 
 /// The callers of the item `name` whose name sits at `(line0, char0)` of `file`.
-pub(super) fn incoming_callers_of(ws: &WorkspaceIndex, name: &str, file: &PathBuf, line0: u64, char0: u64) -> Vec<(String, Vec<u64>)> {
+pub(super) fn incoming_callers_of(ws: &WorkspaceIndex, name: &str, file: &Path, line0: u64, char0: u64) -> Vec<(String, Vec<u64>)> {
     let uri = path_to_uri(file.to_str().unwrap());
     let pos = json!({ "line": line0, "character": char0 });
     let req = json!({ "params": { "item": { "name": name, "kind": 12, "uri": uri,

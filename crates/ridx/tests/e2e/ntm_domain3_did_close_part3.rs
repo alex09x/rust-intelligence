@@ -73,7 +73,7 @@ fn test_did_close_full_lifecycle_open_change_save_close() {
     // didClose
     let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
 }
@@ -101,7 +101,7 @@ fn test_did_close_open_change_close_without_save() {
 
     let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
 }
@@ -122,7 +122,7 @@ fn test_did_close_sequential_closing_all_files() {
     for i in 1..=5 {
         let uri = format!("file:///tmp/close_all_{}.rs", i);
         let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-        assert_eq!(ok, true);
+        assert!(ok);
     }
 
     assert_eq!(om.open_count(), 0);
@@ -143,7 +143,7 @@ fn test_did_close_reverse_order_closing() {
     for i in (1..=3).rev() {
         let uri = format!("file:///tmp/rev_close_{}.rs", i);
         let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-        assert_eq!(ok, true);
+        assert!(ok);
     }
 
     assert_eq!(om.open_count(), 0);
@@ -157,7 +157,7 @@ fn test_did_close_does_not_affect_multi_root_workspaces() {
     let (ok, _) =
         dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": "file:///tmp/f.rs" } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(mr.all_workspaces().count(), ws_count_before);
 }
 
@@ -180,7 +180,7 @@ fn test_did_close_does_not_alter_cancelled_requests() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(cancelled.lock().unwrap().len(), 1);
 }
 
@@ -203,7 +203,7 @@ fn test_did_close_notification_with_extra_client_data() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
 }
@@ -222,8 +222,8 @@ fn test_did_close_reused_notification_safe() {
     let (ok1, _) = dispatch_did_close(msg.clone(), &mut lc, &mut mr, &mut om);
     let (ok2, _) = dispatch_did_close(msg, &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok1, true);
-    assert_eq!(ok2, true);
+    assert!(ok1);
+    assert!(ok2);
     assert_eq!(om.open_count(), 0);
 }
 
@@ -244,7 +244,7 @@ fn test_did_close_non_file_uri_scheme_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -255,6 +255,6 @@ fn test_did_close_relative_uri_fallback_safe() {
 
     let (ok, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 0);
 }

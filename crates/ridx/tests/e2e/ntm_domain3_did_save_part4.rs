@@ -45,13 +45,13 @@ fn test_did_save_interleaved_between_changes() {
     // change v2
     om.apply_content_changes(&file, 2, &[json!({ "text": "change v2\n" })]);
     let (ok1, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-    assert_eq!(ok1, true);
+    assert!(ok1);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("change v2\n".to_string()));
 
     // change v3
     om.apply_content_changes(&file, 3, &[json!({ "text": "change v3\n" })]);
     let (ok2, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-    assert_eq!(ok2, true);
+    assert!(ok2);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("change v3\n".to_string()));
 }
 
@@ -80,10 +80,10 @@ fn test_did_save_full_sync_then_save() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok1, true);
+    assert!(ok1);
 
     let (ok2, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-    assert_eq!(ok2, true);
+    assert!(ok2);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("full sync replacement\n".to_string()));
 }
 
@@ -96,7 +96,7 @@ fn test_did_save_large_file_preserves_full_content() {
 
     let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some(text.clone()));
     assert_eq!(overlay.text.len(), text.len());
@@ -110,7 +110,7 @@ fn test_did_save_empty_file_preserves_empty_content() {
 
     let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some("".to_string()));
 }
@@ -123,7 +123,7 @@ fn test_did_save_does_not_modify_open_count() {
     assert_eq!(om.open_count(), 1);
     let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 1);
 }
 
@@ -135,7 +135,7 @@ fn test_did_save_reconcile_with_disk_after_save() {
     let file = uri_to_path(uri);
 
     let (ok, _) = dispatch_did_save(json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-    assert_eq!(ok, true);
+    assert!(ok);
 
     let hash = ridx_format::normalized_source_hash(code.as_bytes());
     om.reconcile_with_disk(&file, hash);
@@ -156,8 +156,8 @@ fn test_did_save_client_reused_notification() {
     let (ok1, _) = dispatch_did_save(msg.clone(), &mut lc, &mut mr, &mut om);
     let (ok2, _) = dispatch_did_save(msg, &mut lc, &mut mr, &mut om);
 
-    assert_eq!(ok1, true);
-    assert_eq!(ok2, true);
+    assert!(ok1);
+    assert!(ok2);
 }
 
 #[test]
@@ -179,7 +179,7 @@ fn test_did_save_with_extra_client_metadata() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -202,6 +202,6 @@ fn test_did_save_does_not_affect_cancelled_requests() {
     )
     .unwrap_or(false);
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(cancelled.lock().unwrap().len(), 1);
 }

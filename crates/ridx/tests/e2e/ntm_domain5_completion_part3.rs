@@ -236,7 +236,7 @@ fn test_completion_items_have_valid_kind_integers() {
     let items = res["result"]["items"].as_array().expect("items array");
     for item in items {
         if let Some(kind) = item["kind"].as_u64() {
-            assert!(kind >= 1 && kind <= 25, "LSP CompletionItemKind must be 1..25, got {kind}");
+            assert!((1..=25).contains(&kind), "LSP CompletionItemKind must be 1..25, got {kind}");
         }
     }
 }

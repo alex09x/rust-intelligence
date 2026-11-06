@@ -62,7 +62,7 @@ fn test_did_open_with_language_id_rust_handled_safely() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 1);
     assert_eq!(overlay.text, "fn lang() {}\n");
@@ -95,7 +95,7 @@ fn test_did_open_with_unknown_language_id_safely() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 5);
     assert_eq!(overlay.text, "key = 123\n");
@@ -122,7 +122,7 @@ fn test_did_open_symbol_exact_line_and_col() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "alpha");
@@ -153,7 +153,7 @@ fn test_did_open_symbol_multiline_offsets() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "Second");
@@ -182,7 +182,7 @@ fn test_did_open_nested_items_symbols_count() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 3);
     assert_eq!(overlay.symbols[0].name, "Container");
@@ -211,7 +211,7 @@ fn test_did_open_invalid_syntax_rust_preserves_text() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, code);
 }
@@ -236,7 +236,7 @@ fn test_did_open_escaped_uri_space_handling() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(file, "/tmp/my dir/file.rs");
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "fn spaced() {}\n");
@@ -268,7 +268,7 @@ fn test_did_open_replaces_previously_closed_file() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(overlay_mgr.open_count(), 1);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 2);
@@ -307,7 +307,7 @@ fn test_did_open_invalidates_converter_cache() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lifecycle.conv.get_line(&file, 1), Some("fn disk_updated() {}"));
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -330,7 +330,7 @@ fn test_did_open_null_text_document_handled_safely() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(overlay_mgr.open_count(), 1);
 }
 
@@ -355,7 +355,7 @@ fn test_did_open_content_hash_computed() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.content_hash, ridx_format::normalized_source_hash(code.as_bytes()));
 }

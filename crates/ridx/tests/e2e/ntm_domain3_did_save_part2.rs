@@ -64,7 +64,7 @@ fn test_did_save_with_included_text_param_safe() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some("fn f() {}\n".to_string()));
 }
@@ -92,7 +92,7 @@ fn test_did_save_triggers_flycheck_when_cargo_toml_present() {
     );
 
     let _ = fs::remove_dir_all(&temp_dir);
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.flycheck.current_generation(), 1);
 }
 
@@ -113,7 +113,7 @@ fn test_did_save_does_not_trigger_flycheck_when_no_cargo_toml() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.flycheck.current_generation(), 0);
 }
 
@@ -135,7 +135,7 @@ fn test_did_save_multiple_successive_saves_on_same_file() {
             &mut om,
             None,
         );
-        assert_eq!(ok, true);
+        assert!(ok);
         let overlay = om.get(&file).expect("overlay must exist");
         assert_eq!(overlay.disk_text, Some("version 1\n".to_string()));
     }
@@ -163,7 +163,7 @@ fn test_did_save_after_did_change_updates_disk_baseline() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.get(&file).unwrap().disk_text, Some("v2 saved text\n".to_string()));
 }
 
@@ -185,7 +185,7 @@ fn test_did_save_preserves_line_starts() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.line_starts, vec![0, 2, 4, 6]);
 }
@@ -211,7 +211,7 @@ fn test_did_save_preserves_other_open_documents() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay2 = om.get(&file2).expect("overlay2 must exist");
     // doc2 was not saved, so its disk_text is still None
     assert_eq!(overlay2.disk_text, None);
@@ -248,7 +248,7 @@ fn test_did_save_invalidates_position_converter_cache() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.conv.get_line(&file, 1), Some("line1_disk_updated"));
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -271,7 +271,7 @@ fn test_did_save_does_not_evict_overlay() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 1);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), Some("stay open\n"));
 }
@@ -301,7 +301,7 @@ fn test_did_save_on_already_saved_document_is_idempotent() {
         None,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let text2 = om.get(&file).unwrap().disk_text.clone();
     assert_eq!(text1, text2);
 }

@@ -66,7 +66,7 @@ fn test_will_save_batch_interleaved_with_did_change() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok1, true);
+    assert!(ok1);
     // 2. didChange
     let mut out2 = Cursor::new(Vec::new());
     let ok2 = dispatch_lsp_message(
@@ -86,7 +86,7 @@ fn test_will_save_batch_interleaved_with_did_change() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok2, true);
+    assert!(ok2);
     // 3. willSave again
     let mut out3 = Cursor::new(Vec::new());
     let ok3 = dispatch_lsp_message(
@@ -103,7 +103,7 @@ fn test_will_save_batch_interleaved_with_did_change() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok3, true);
+    assert!(ok3);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "modified\n");
     assert_eq!(overlay.version, 2);
@@ -131,7 +131,7 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok1, true);
+    assert!(ok1);
     let resp1 = extract_response(&out1.into_inner());
     assert_eq!(resp1["result"], json!([]));
     // 2. didChange
@@ -153,7 +153,7 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok2, true);
+    assert!(ok2);
     // 3. willSaveWaitUntil
     let mut out3 = Cursor::new(Vec::new());
     let ok3 = dispatch_lsp_message(
@@ -171,7 +171,7 @@ fn test_will_save_wait_until_interleaved_with_did_change() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok3, true);
+    assert!(ok3);
     let resp3 = extract_response(&out3.into_inner());
     assert_eq!(resp3["result"], json!([]));
 }
@@ -197,7 +197,7 @@ fn test_will_save_empty_uri_safe() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.into_inner().len(), 0);
 }
 
@@ -225,7 +225,7 @@ fn test_will_save_wait_until_empty_uri_safe() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
 }
@@ -251,7 +251,7 @@ fn test_will_save_null_params_safe() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.into_inner().len(), 0);
 }
 
@@ -279,7 +279,7 @@ fn test_will_save_wait_until_null_params_safe() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
 }
@@ -306,7 +306,7 @@ fn test_will_save_large_document_overlay_preserved() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text.len(), text.len());
     assert_eq!(overlay.line_starts.len(), 501);
@@ -335,7 +335,7 @@ fn test_will_save_wait_until_large_document_overlay_preserved() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
     let overlay = om.get(&file).expect("overlay must exist");
@@ -362,7 +362,7 @@ fn test_will_save_multi_root_routing_intact() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(mr.all_workspaces().count(), ws_count_before);
 }
 
@@ -387,7 +387,7 @@ fn test_will_save_wait_until_preserves_multi_root_routing() {
         None,
     )
     .unwrap_or(false);
-    assert_eq!(ok, true);
+    assert!(ok);
     let resp = extract_response(&out.into_inner());
     assert_eq!(resp["result"], json!([]));
     assert_eq!(mr.all_workspaces().count(), ws_count_before);

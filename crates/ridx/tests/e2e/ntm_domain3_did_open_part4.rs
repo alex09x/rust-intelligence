@@ -119,7 +119,7 @@ fn test_did_open_notification_produces_no_stdout_output() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -137,7 +137,7 @@ fn test_did_open_dispatch_returns_ok_true() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn test_did_open_single_character_text() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.text, "x");
     assert_eq!(overlay.line_starts, vec![0]);
@@ -176,7 +176,7 @@ fn test_did_open_line_starts_multiple_lines() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.line_starts, vec![0, 2, 4, 6]);
 }
@@ -196,7 +196,7 @@ fn test_did_open_line_starts_crlf() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.line_starts, vec![0, 3, 6]);
 }
@@ -217,7 +217,7 @@ fn test_did_open_comment_only_document_symbols_empty() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 0);
 }
@@ -235,6 +235,6 @@ fn test_did_open_empty_uri_handled_safely() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(overlay_mgr.open_count(), 1);
 }

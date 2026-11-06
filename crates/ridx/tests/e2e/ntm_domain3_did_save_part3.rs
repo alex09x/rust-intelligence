@@ -52,7 +52,7 @@ fn test_did_save_routes_to_correct_workspace_root() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -73,7 +73,7 @@ fn test_did_save_with_windows_uri() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some("fn win_save() {}\n".to_string()));
 }
@@ -95,7 +95,7 @@ fn test_did_save_with_url_encoded_space_uri() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some("fn space_save() {}\n".to_string()));
 }
@@ -117,7 +117,7 @@ fn test_did_save_with_nested_subdirectory_path() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some("fn deep() {}\n".to_string()));
 }
@@ -139,7 +139,7 @@ fn test_did_save_empty_uri_handled_safely() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -162,7 +162,7 @@ fn test_did_save_preserves_compiled_text_when_present() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.compiled_text, Some(code.to_string()));
     assert_eq!(overlay.disk_text, Some("fn modified_fn() {}\n".to_string()));
@@ -188,7 +188,7 @@ fn test_did_save_preserves_provenance_flag() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.compiled_text, None);
     assert_eq!(overlay.disk_text, Some("fn prov() {}\n".to_string()));
@@ -213,7 +213,7 @@ fn test_did_save_after_close_document_is_safe_noop() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
 }
@@ -236,7 +236,7 @@ fn test_did_save_crlf_document_preserves_crlf_in_disk_text() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some(crlf_code.to_string()));
 }
@@ -259,7 +259,7 @@ fn test_did_save_unicode_document_preserves_unicode_in_disk_text() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.disk_text, Some(unicode_code.to_string()));
 }

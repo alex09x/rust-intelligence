@@ -48,7 +48,7 @@ fn test_did_open_struct_definition_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.version, 1);
@@ -78,7 +78,7 @@ fn test_did_open_enum_definition_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "Color");
@@ -105,7 +105,7 @@ fn test_did_open_trait_definition_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 2);
     assert_eq!(overlay.symbols[0].name, "Display");
@@ -134,7 +134,7 @@ fn test_did_open_type_alias_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "Kilometers");
@@ -161,7 +161,7 @@ fn test_did_open_const_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "BUFFER_SIZE");
@@ -188,7 +188,7 @@ fn test_did_open_static_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "COUNTER");
@@ -215,7 +215,7 @@ fn test_did_open_mod_declaration_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "config");
@@ -242,7 +242,7 @@ fn test_did_open_fn_parameters_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 3);
     assert_eq!(overlay.symbols[0].name, "process");
@@ -273,7 +273,7 @@ fn test_did_open_let_bindings_symbols() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 2);
     assert_eq!(overlay.symbols[0].name, "compute");
@@ -302,7 +302,7 @@ fn test_did_open_raw_identifier_fn_symbol() {
         &mut overlay_mgr,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = overlay_mgr.get(&file).expect("overlay must exist");
     assert_eq!(overlay.symbols.len(), 1);
     assert_eq!(overlay.symbols[0].name, "standard_type");

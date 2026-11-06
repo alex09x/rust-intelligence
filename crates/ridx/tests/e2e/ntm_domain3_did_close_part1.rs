@@ -54,7 +54,7 @@ fn test_did_close_removes_overlay_from_manager() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
     assert_eq!(om.get(&file).map(|d| d.text.as_str()), None);
@@ -84,7 +84,7 @@ fn test_did_close_reduces_open_count_by_one() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_count(), 2);
 }
 
@@ -113,7 +113,7 @@ fn test_did_close_open_file_paths_excludes_closed_file() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_file_paths(), vec![file1]);
 }
 
@@ -133,7 +133,7 @@ fn test_did_close_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn test_did_close_produces_no_stdout_output() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -173,7 +173,7 @@ fn test_did_close_unopened_document_returns_ok_true() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
     assert_eq!(om.open_count(), 0);
 }
@@ -184,10 +184,10 @@ fn test_did_close_already_closed_document_is_idempotent() {
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, "fn f() {}\n");
 
     let (ok1, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-    assert_eq!(ok1, true);
+    assert!(ok1);
 
     let (ok2, _) = dispatch_did_close(json!({ "jsonrpc": "2.0", "method": "textDocument/didClose", "params": { "textDocument": { "uri": uri } } }), &mut lc, &mut mr, &mut om);
-    assert_eq!(ok2, true);
+    assert!(ok2);
     assert_eq!(om.open_count(), 0);
 }
 
@@ -208,7 +208,7 @@ fn test_did_close_empty_params_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -229,7 +229,7 @@ fn test_did_close_missing_uri_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -250,6 +250,6 @@ fn test_did_close_null_params_safe() {
         &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }

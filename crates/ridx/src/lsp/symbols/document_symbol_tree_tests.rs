@@ -11,8 +11,10 @@
 use super::document_symbols;
 use serde_json::Value;
 
+type SymbolShape = (String, u64, u64, Vec<(String, u64)>);
+
 /// `(name, kind, selection line, children)` of a symbol tree.
-fn shape(v: &Value) -> Vec<(String, u64, u64, Vec<(String, u64)>)> {
+fn shape(v: &Value) -> Vec<SymbolShape> {
     v.as_array()
         .unwrap()
         .iter()
