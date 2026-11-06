@@ -215,6 +215,97 @@ pub(crate) fn use_item_lines(text: &str) -> Vec<(u32, u32)> {
     out
 }
 
+/// Adds the traits a glob import of module `prefix` brings into scope: those defined in it, those it re-exports by
+/// name (`pub use bevy_ecs::change_detection::DetectChanges`) and, through its own glob re-exports
+/// (`pub use crate::ecs::prelude::*`), those of other modules, a few levels deep.
+fn expand_glob_traits(ws: &WorkspaceIndex, prefix: &str, importer_crate: &str, set: &mut HashSet<String>, depth: u32) {
+    if depth > 4 {
+        return;
+    }
+    // Each module is expanded once per workspace generation.
+    type GlobCache = HashMap<(usize, String, String), std::sync::Arc<HashSet<String>>>;
+    static GLOB_CACHE: OnceLock<RwLock<GlobCache>> = OnceLock::new();
+    let key = (ws as *const WorkspaceIndex as usize, prefix.to_string(), importer_crate.to_string());
+    let cache = GLOB_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+    if let Some(hit) = cache.read().ok().and_then(|c| c.get(&key).cloned()) {
+        set.extend(hit.iter().cloned());
+        return;
+    }
+    let mut own = HashSet::new();
+    expand_glob_traits_uncached(ws, prefix, importer_crate, &mut own, depth);
+    let own = std::sync::Arc::new(own);
+    if let Ok(mut c) = cache.write() {
+        if c.len() > 4096 {
+            c.clear();
+        }
+        c.insert(key, own.clone());
+    }
+    set.extend(own.iter().cloned());
+}
+
+/// Whether the `use` item at 1-based `line` of `file` is `pub` (a glob import brings only public items).
+fn use_item_is_pub(ws: &WorkspaceIndex, file: &str, line: u32) -> bool {
+    let path = std::path::Path::new(file);
+    let path = if path.is_absolute() { path.to_path_buf() } else { ws.workspace_root().map(|r| r.join(path)).unwrap_or_else(|| path.to_path_buf()) };
+    let Ok(text) = std::fs::read_to_string(&path) else { return true };
+    let mut i = line.saturating_sub(1) as usize;
+    let lines: Vec<&str> = text.lines().collect();
+    // The item may start on an earlier line of a group (`pub use crate::{\n    a::Trait,\n};`).
+    while i > 0 && !lines.get(i).is_some_and(|l| l.contains("use ")) {
+        i -= 1;
+    }
+    lines.get(i).is_some_and(|l| l.trim_start().starts_with("pub"))
+}
+
+fn expand_glob_traits_uncached(ws: &WorkspaceIndex, prefix: &str, importer_crate: &str, set: &mut HashSet<String>, depth: u32) {
+    let prefix_colon = format!("{prefix}::");
+    let target_crate = prefix.split("::").next().unwrap_or(prefix);
+    let mut nested: Vec<String> = Vec::new();
+    for candidate_reader in ws.readers() {
+        let crate_name = candidate_reader.crate_name();
+        if crate_name != target_crate && crate_name != importer_crate {
+            continue;
+        }
+        for def in candidate_reader.definitions() {
+            let kind = DefKind::from(def.kind);
+            if !matches!(kind, DefKind::Trait | DefKind::Use) {
+                continue;
+            }
+            let raw = candidate_reader.get_str(def.path_offset());
+            let full = if raw.starts_with(&format!("{crate_name}::")) { raw.to_string() } else { format!("{crate_name}::{raw}") };
+            let in_module = |p: &str| p.strip_prefix(&prefix_colon).is_some_and(|rest| !rest.contains("::") || rest.ends_with("::*") && !rest[..rest.len() - 3].contains("::"));
+            if !(in_module(raw) || in_module(&full)) {
+                continue;
+            }
+            let name = candidate_reader.get_str(def.name_offset());
+            if kind == DefKind::Trait {
+                set.insert(name.to_string());
+                set.insert(raw.to_string());
+                continue;
+            }
+            let target = candidate_reader.get_str(def.sig_offset());
+            if target.is_empty() || !use_item_is_pub(ws, candidate_reader.get_file(def.span().file_id()), def.span().start_line()) {
+                continue;
+            }
+            if name == "*" {
+                // A crate-relative module (`schedule::condition`) is in the crate that re-exports it.
+                let module = target.trim_end_matches("::*");
+                let first = module.split("::").next().unwrap_or(module);
+                nested.push(if ws.has_crate(first) { module.to_string() } else { format!("{crate_name}::{module}") });
+            } else if let Some(t) = ws.find_definition_by_path(target).filter(|d| d.kind == DefKind::Trait) {
+                set.insert(name.to_string());
+                set.insert(t.path.to_string());
+                set.insert(target.to_string());
+            }
+        }
+    }
+    for n in nested {
+        if n != prefix {
+            expand_glob_traits(ws, &n, importer_crate, set, depth + 1);
+        }
+    }
+}
+
 /// Collects the traits the given file brings into scope with `use` items, expanding glob imports.
 pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
     let mut set = HashSet::new();
@@ -225,6 +316,15 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
             continue;
         };
         if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
+            // Glob imports, also inside a group (`use bevy::{prelude::*, ..}`), are the file's `*` use items.
+            for def in reader.definitions().iter().filter(|d| d.span().file_id() == fid && DefKind::from(d.kind) == DefKind::Use) {
+                if reader.get_str(def.name_offset()) == "*" {
+                    let target = reader.get_str(def.sig_offset()).trim_end_matches("::*").to_string();
+                    if !target.is_empty() {
+                        expand_glob_traits(ws, &target, reader.crate_name(), &mut set, 0);
+                    }
+                }
+            }
             let refs = reader.references();
             let start = refs.partition_point(|r| r.span().file_id() < fid);
             let count = refs[start..].partition_point(|r| r.span().file_id() == fid);
@@ -243,25 +343,7 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
                 if r_kind == DefKind::Use && path.ends_with("::*") {
                     let raw_prefix = path.trim_end_matches("::*");
                     let prefix = resolve_module_prefix(ws, file_path, reader.crate_name(), raw_prefix);
-                    let prefix_colon = format!("{prefix}::");
-                    let target_crate = prefix.split("::").next().unwrap_or(&prefix);
-
-                    for candidate_reader in ws.readers() {
-                        if candidate_reader.crate_name() != target_crate && candidate_reader.crate_name() != reader.crate_name() {
-                            continue;
-                        }
-
-                        for def in candidate_reader.definitions() {
-                            if DefKind::from(def.kind) == DefKind::Trait {
-                                let d_path = candidate_reader.get_str(def.path_offset());
-                                if d_path.starts_with(&prefix_colon) {
-                                    let d_name = candidate_reader.get_str(def.name_offset());
-                                    set.insert(d_name.to_string());
-                                    set.insert(d_path.to_string());
-                                }
-                            }
-                        }
-                    }
+                    expand_glob_traits(ws, &prefix, reader.crate_name(), &mut set, 0);
                 } else if r_kind == DefKind::Use && !path.ends_with("::*") {
                     let resolved = resolve_module_prefix(ws, file_path, reader.crate_name(), path);
                     let target = ws.find_definition_by_path(&resolved).or_else(|| ws.find_definition_by_path(path));
