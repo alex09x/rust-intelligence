@@ -267,3 +267,12 @@ fn test_prepare_rename_rejects_whitespace_and_punctuation() {
     // Semicolon ';' (col 27)
     assert_eq!(prepare_rename_at(&uri, 0, 27, None, &overlay_mgr, &mut conv).unwrap_err().code, -32803);
 }
+
+#[test]
+fn test_declared_item_name_at_finds_impl_item_names() {
+    use crate::lsp::editing::prepare_rename::declared_item_name_at;
+    assert_eq!(declared_item_name_at("    fn default() -> Self {", 9), Some((8, "default".to_string())));
+    assert_eq!(declared_item_name_at("    type Output = Self;", 11), Some((10, "Output".to_string())));
+    assert_eq!(declared_item_name_at("    pub(crate) const MAX: u32 = 1;", 23), Some((22, "MAX".to_string())));
+    assert_eq!(declared_item_name_at("        Self::default()", 16), None);
+}

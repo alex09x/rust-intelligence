@@ -65,6 +65,15 @@ pub(super) fn utf16_cols_on_line(line_str: &str, start_col_1based: u32, end_col_
     (s_u16, s_u16 + len_u16)
 }
 
+/// The 1-based start column and name of the identifier under `col` when the line declares it as an associated item
+/// (`fn name`, `type name`, `const name`).
+pub(super) fn declared_item_name_at(line: &str, col: u32) -> Option<(u32, String)> {
+    let (start, name) = super::rename_special::extract_full_ident_around_col(line, col)?;
+    let before: String = line.chars().take(start.saturating_sub(1) as usize).collect();
+    let keyword = before.trim_end().rsplit(|c: char| !c.is_alphanumeric() && c != '_').next()?;
+    matches!(keyword, "fn" | "type" | "const").then(|| (start, name.to_string()))
+}
+
 fn char_to_utf16_col_in_line(line: &str, char_col_1based: u32) -> u32 {
     line.chars().take(char_col_1based.saturating_sub(1) as usize).map(|c| c.len_utf16() as u32).sum()
 }
@@ -158,7 +167,24 @@ pub fn handle_prepare_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
             }
 
             if let Some(res) = prep_opt {
-                let def = res.map_err(|r| LspError::request_failed(r.prepare_message()))?;
+                let def = match res {
+                    Ok(def) => def,
+                    // rust-analyzer offers the name of an item declared here even when it implements a foreign trait;
+                    // the rename itself still refuses.
+                    Err(ridx_format::RenameRefusal::ExternalTraitItem { .. } | ridx_format::RenameRefusal::ExternalSymbol { .. })
+                        if cur_line.and_then(|l| declared_item_name_at(l, col_1based)).is_some() =>
+                    {
+                        let line_s = cur_line.unwrap_or("");
+                        let (col, name) = declared_item_name_at(line_s, col_1based).unwrap_or_default();
+                        let sc = char_to_utf16_col_in_line(line_s, col);
+                        let ec = sc + name.chars().map(|c| c.len_utf16() as u32).sum::<u32>();
+                        return Ok(json!({
+                            "range": { "start": { "line": line_0based, "character": sc }, "end": { "line": line_0based, "character": ec } },
+                            "placeholder": name
+                        }));
+                    }
+                    Err(r) => return Err(LspError::request_failed(r.prepare_message())),
+                };
                 super::rename_unindexed::check_unindexed_target_ambiguity(ws, &def).map_err(|r| LspError::request_failed(r.prepare_message()))?;
                 let target_name = def.name.rsplit("::").next().unwrap_or(def.name);
                 let ident_col = cur_line
