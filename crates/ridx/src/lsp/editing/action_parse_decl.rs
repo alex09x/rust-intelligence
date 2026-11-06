@@ -115,6 +115,7 @@ pub fn parse_declaration_at(
     if cursor_byte < kw_byte_start || cursor_byte > name_end {
         return None;
     }
+    let name_byte = name_end - raw_name_s.len();
     let raw_name = raw_name_s.to_string();
     let name = raw_name.strip_prefix("r#").unwrap_or(&raw_name).to_string();
     let vis_prefix = extract_vis_prefix(src[kw_start..kw_byte_start].trim());
@@ -154,6 +155,7 @@ pub fn parse_declaration_at(
             Some(ParsedCursorItem {
                 name,
                 raw_name,
+                name_byte,
                 vis_prefix,
                 decl_start_byte: kw_start,
                 first_attr_byte,
@@ -189,6 +191,7 @@ pub fn parse_declaration_at(
                 return Some(ParsedCursorItem {
                     name,
                     raw_name,
+                    name_byte,
                     vis_prefix,
                     decl_start_byte: kw_start,
                     first_attr_byte,
@@ -214,6 +217,7 @@ pub fn parse_declaration_at(
                 return Some(ParsedCursorItem {
                     name,
                     raw_name,
+                    name_byte,
                     vis_prefix,
                     decl_start_byte: kw_start,
                     first_attr_byte,
@@ -232,6 +236,7 @@ pub fn parse_declaration_at(
             Some(ParsedCursorItem {
                 name,
                 raw_name,
+                name_byte,
                 vis_prefix,
                 decl_start_byte: kw_start,
                 first_attr_byte,
@@ -253,6 +258,7 @@ pub fn parse_declaration_at(
             Some(ParsedCursorItem {
                 name,
                 raw_name,
+                name_byte,
                 vis_prefix,
                 decl_start_byte: kw_start,
                 first_attr_byte,

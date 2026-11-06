@@ -29,6 +29,8 @@ pub mod action_generics;
 pub mod action_generics_closure;
 pub mod action_generics_helpers;
 pub mod action_generics_sub;
+pub mod action_inline_callers;
+pub mod action_inline_callers_helpers;
 pub mod action_inline_local;
 pub mod action_parse;
 pub mod action_parse_decl;

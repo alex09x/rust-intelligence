@@ -17,6 +17,7 @@ use super::action_default_members::build_implement_default_members;
 use super::action_doc_template::build_doc_template;
 use super::action_extract_lit::{collect_extract_literal_assists, is_extract_lit_data_kind, resolve_extract_literal_assist};
 use super::action_generics::build_fn_type_aliases;
+use super::action_inline_callers::build_inline_into_all_callers_workspace;
 use super::action_inline_local::{build_inline_into_all_callers, build_inline_type_alias, build_nested_fn_to_closure};
 use super::action_parse::{line_starts_of, mask_comments_and_strings, utf16_pos_to_byte, ItemKindInfo};
 use super::action_parse_items::parse_item_with_masked;
@@ -179,7 +180,13 @@ where
                 }
             }
             if matches_kind("refactor.inline") {
-                if let Some(edits) = build_inline_into_all_callers(doc_text, &masked_doc, &starts, &item) {
+                if let Some((edits, other_files)) = build_inline_into_all_callers_workspace(doc_text, &masked_doc, &starts, &file_path, &item, Some(ws)) {
+                    let mut action = make_multi_edit_assist(uri, "Inline into all callers", "refactor.inline", KIND_INLINE_ALL_CALLERS, line0, col_u16, edits, doc_version);
+                    if let Some(edit_obj) = action.get_mut("edit") {
+                        add_other_file_edits(edit_obj, other_files);
+                    }
+                    out.push(action);
+                } else if let Some(edits) = build_inline_into_all_callers(doc_text, &masked_doc, &starts, &item) {
                     out.push(make_multi_edit_assist(uri, "Inline into all callers", "refactor.inline", KIND_INLINE_ALL_CALLERS, line0, col_u16, edits, doc_version));
                 }
             }
@@ -354,8 +361,14 @@ pub fn resolve_decl_assist(
             Ok(build_multi_edits_workspace_edit(uri, edits, doc_version))
         }
         KIND_INLINE_ALL_CALLERS => {
-            let edits = build_inline_into_all_callers(doc_text, &masked_doc, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot inline function into callers"))?;
-            Ok(build_multi_edits_workspace_edit(uri, edits, doc_version))
+            if let Some((edits, other_files)) = build_inline_into_all_callers_workspace(doc_text, &masked_doc, &starts, &file_path, &item, Some(ws)) {
+                let mut edit = build_multi_edits_workspace_edit(uri, edits, doc_version);
+                add_other_file_edits(&mut edit, other_files);
+                Ok(edit)
+            } else {
+                let edits = build_inline_into_all_callers(doc_text, &masked_doc, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot inline function into callers"))?;
+                Ok(build_multi_edits_workspace_edit(uri, edits, doc_version))
+            }
         }
         _ => Err(LspError::invalid_params(format!("Unknown declaration assist kind: {data_kind}"))),
     }

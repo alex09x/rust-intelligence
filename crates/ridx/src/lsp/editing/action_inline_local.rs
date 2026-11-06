@@ -273,7 +273,7 @@ pub fn build_inline_into_all_callers(doc_text: &str, masked_doc: &str, starts: &
     super::action_struct_conv_helpers::to_lsp_edits(doc_text, starts, raw_edits)
 }
 
-fn line_deletion_span(src: &str, first_byte: usize, end_byte: usize) -> (usize, usize) {
+pub(crate) fn line_deletion_span(src: &str, first_byte: usize, end_byte: usize) -> (usize, usize) {
     let line_start = src[..first_byte].rfind('\n').map(|p| p + 1).unwrap_or(0);
     let lo = if src[line_start..first_byte].bytes().all(|b| b == b' ' || b == b'\t') { line_start } else { first_byte };
     let hi = if src.as_bytes().get(end_byte).copied() == Some(b'\n') { end_byte + 1 } else { end_byte };

@@ -82,6 +82,7 @@ pub enum AdtFieldsKind {
 pub struct ParsedCursorItem {
     pub name: String,
     pub raw_name: String,
+    pub name_byte: usize,
     pub vis_prefix: String,
     pub decl_start_byte: usize,
     pub first_attr_byte: usize,

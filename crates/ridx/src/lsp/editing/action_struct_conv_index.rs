@@ -43,7 +43,7 @@ fn lsp_edit(src: &str, lo: usize, hi: usize, text: &str) -> Value {
     json!({ "range": { "start": pos(lo), "end": pos(hi) }, "newText": text })
 }
 
-fn byte_to_line_col(doc: &str, starts: &[usize], byte: usize) -> (u32, u32) {
+pub(crate) fn byte_to_line_col(doc: &str, starts: &[usize], byte: usize) -> (u32, u32) {
     let line = starts.partition_point(|&s| s <= byte) - 1;
     (line as u32 + 1, doc[starts[line]..byte].chars().count() as u32 + 1)
 }
