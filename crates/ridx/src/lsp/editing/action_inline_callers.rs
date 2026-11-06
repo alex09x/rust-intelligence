@@ -88,7 +88,7 @@ pub fn build_inline_into_all_callers_workspace(
         _ => None,
     };
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") || r.starts_with('&') {
+        if r.contains("impl ") || (r.starts_with('&') && !r.contains("'static")) {
             return None;
         }
         if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
@@ -248,7 +248,7 @@ pub fn build_inline_into_all_callers_workspace(
             if skipped {
                 any_skipped = true;
             }
-        } else {
+        } else if !is_pub {
             any_skipped = true;
         }
     }
