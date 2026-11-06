@@ -222,6 +222,29 @@ def run_corpus_pkl(
         )
         output = r.stderr + "\n" + r.stdout
         errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
+        if r.returncode != 0 and any("can't find crate for" in ln or "colliding StableCrateId" in ln or "error[E0463]" in ln or "error[E0554]" in ln for ln in errs):
+            r_fb = subprocess.run(
+                [mitts_path, "check", "--workspace"],
+                cwd=wt,
+                capture_output=True,
+                text=True,
+                env=dict(os.environ, CARGO_TARGET_DIR=tgt, CARGO_BUILD_RUSTC_WRAPPER="", RUSTC_WRAPPER=""),
+            )
+            if r_fb.returncode == 0:
+                return True, []
+            rc = subprocess.run(
+                ["cargo", "check", "--workspace"],
+                cwd=wt,
+                capture_output=True,
+                text=True,
+                env=dict(os.environ, CARGO_TARGET_DIR=f"/tmp/cargo_tgt_{corpus}", CARGO_BUILD_RUSTC_WRAPPER="", RUSTC_WRAPPER=""),
+            )
+            if rc.returncode == 0:
+                return True, []
+            rc_out = rc.stderr + "\n" + rc.stdout
+            rc_errs = [ln for ln in rc_out.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
+            if rc_errs:
+                return False, rc_errs[:3]
         return r.returncode == 0, errs[:3]
 
     with open(pkl_path, "rb") as fh:
