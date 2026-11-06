@@ -207,7 +207,8 @@ fn test_inline_fn_with_underscored_type_identifier() {
         "    arg.0 * 2\n",
         "}\n",
         "pub fn caller() -> i32 {\n",
-        "    process_val(my_mod::Type_A(21))\n",
+        "    let val = my_mod::Type_A(21);\n",
+        "    process_val(val)\n",
         "}\n",
     );
 
@@ -215,7 +216,7 @@ fn test_inline_fn_with_underscored_type_identifier() {
     let _ = fs::write(&lib_file, &cleaned);
 
     builder.add_ref("test_under::process_val", &lib_str, 4, 4, 4, 15, Some(def_ids[0]), Some(&lib_str), 4, 4, DefKind::Fn);
-    builder.add_ref("test_under::process_val", &lib_str, 8, 5, 8, 16, Some(def_ids[0]), Some(&lib_str), 4, 4, DefKind::Fn);
+    builder.add_ref("test_under::process_val", &lib_str, 9, 5, 9, 16, Some(def_ids[0]), Some(&lib_str), 4, 4, DefKind::Fn);
 
     let ridx_file = temp_dir.join("index.ridx");
     builder.write_to_file(&ridx_file);
@@ -234,6 +235,6 @@ fn test_inline_fn_with_underscored_type_identifier() {
     let updated = apply_text_edits(&cleaned, edits);
 
     assert!(!updated.contains("fn process_val"), "Declaration should be deleted");
-    assert!(!updated.contains("process_val(my_mod::Type_A(21))"), "Call site should be inlined");
+    assert!(!updated.contains("process_val(val)"), "Call site should be inlined");
     assert_rustc_compiles(&updated, "Inline into all callers: underscored type identifier compiles");
 }
