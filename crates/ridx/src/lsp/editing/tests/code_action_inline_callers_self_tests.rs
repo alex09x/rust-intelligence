@@ -152,3 +152,94 @@ fn test_inline_inherent_method_with_tail_return() {
     assert!(!updated.contains("return "), "return keyword must be stripped");
     assert_rustc_compiles(&updated, "Inline into all callers: tail return unwrapped");
 }
+
+#[test]
+fn test_inline_method_cross_file() {
+    let id = INLINE_SELF_TEST_ID.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_inline_cross_{}_{}", std::process::id(), id));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let worker_file = temp_dir.join("src/worker.rs");
+    let main_file = temp_dir.join("src/main.rs");
+    let worker_str = worker_file.to_str().unwrap().to_string();
+    let main_str = main_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_cross", "0.1.0");
+    let worker_code = concat!("pub struct Worker;\n", "impl Worker {\n", "    pub(crate) fn «work»(&self) -> i32 {\n", "        42\n", "    }\n", "}\n",);
+    let main_code = concat!("mod worker;\n", "use worker::Worker;\n", "fn main() {\n", "    let w = Worker;\n", "    let _ = w.work();\n", "}\n",);
+
+    let (worker_cleaned, def_ids) = builder.add_defs_with_ids(worker_code, &worker_str, "test_cross", DefKind::Fn);
+    let _ = fs::write(&worker_file, &worker_cleaned);
+    let _ = fs::write(&main_file, main_code);
+
+    builder.add_ref("test_cross::work", &worker_str, 3, 19, 3, 23, Some(def_ids[0]), Some(&worker_str), 3, 19, DefKind::Fn);
+    builder.add_ref("test_cross::work", &main_str, 5, 15, 5, 19, Some(def_ids[0]), Some(&worker_str), 3, 19, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let worker_uri = format!("file://{}", worker_str);
+    let _main_uri = format!("file://{}", main_str);
+    ov.open_document(&worker_uri, &worker_str, 1, worker_cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&worker_uri, 2, 18, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_none(), "Expected cross-file method to be safely rejected to prevent broken builds");
+}
+
+#[test]
+fn test_inline_method_relative_path_references() {
+    let id = INLINE_SELF_TEST_ID.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_inline_rel_{}_{}", std::process::id(), id));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let worker_file = temp_dir.join("src/worker.rs");
+    let main_file = temp_dir.join("src/main.rs");
+    let worker_str = worker_file.to_str().unwrap().to_string();
+    let _main_str = main_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_rel", "0.1.0");
+    let worker_code = concat!(
+        "pub struct Worker {\n",
+        "    pub val: i32,\n",
+        "}\n",
+        "impl Worker {\n",
+        "    fn «get»(&self) -> i32 {\n",
+        "        self.val\n",
+        "    }\n",
+        "    pub fn run(&self) -> i32 {\n",
+        "        self.get()\n",
+        "    }\n",
+        "}\n",
+    );
+    let main_code = concat!("mod worker;\n", "use worker::Worker;\n", "fn main() {\n", "    let w = Worker { val: 10 };\n", "    let _ = w.run();\n", "}\n",);
+
+    let (worker_cleaned, def_ids) = builder.add_defs_with_ids(worker_code, &worker_str, "test_rel", DefKind::Fn);
+    let _ = fs::write(&worker_file, &worker_cleaned);
+    let _ = fs::write(&main_file, main_code);
+
+    // References indexed with relative paths matching real workspace metadata
+    builder.add_ref("test_rel::get", "src/worker.rs", 5, 8, 5, 11, Some(def_ids[0]), Some("src/worker.rs"), 5, 8, DefKind::Fn);
+    builder.add_ref("test_rel::get", "src/worker.rs", 9, 14, 9, 17, Some(def_ids[0]), Some("src/worker.rs"), 5, 8, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let worker_uri = format!("file://{}", worker_str);
+    ov.open_document(&worker_uri, &worker_str, 1, worker_cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&worker_uri, 4, 8, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' when references use relative paths");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&worker_uri).expect("Worker file edits missing");
+    let updated = apply_text_edits(&worker_cleaned, edits);
+
+    assert!(!updated.contains("fn get"), "Declaration must be deleted");
+    assert!(!updated.contains("self.get()"), "Internal call site must be inlined");
+    assert!(updated.contains("this.val") || updated.contains("self.val"), "Field access preserved in single-file caller");
+    assert_rustc_compiles(&updated, "Inline into all callers: relative path reference resolution");
+}

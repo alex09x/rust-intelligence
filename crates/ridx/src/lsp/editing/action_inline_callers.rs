@@ -11,18 +11,18 @@
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
 use super::action_generics_sub::split_top_level_commas;
-use super::action_inline_callers_helpers::{
-    contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, has_only_lifetime_bounds, has_only_lifetime_generics, parse_fn_params,
-    rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return, FnParamInfo, SelfKind,
-};
+use super::action_inline_callers_helpers::{contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, parse_fn_params, FnParamInfo, SelfKind};
+use super::action_inline_callers_transform::{has_only_lifetime_bounds, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return};
 use super::action_inline_local::line_deletion_span;
-use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
+use super::action_parse::{line_starts_of, mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_struct_conv_helpers::to_lsp_edits;
 use super::action_struct_conv_index::byte_to_line_col;
+use crate::lsp::protocol::path_to_uri;
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
 pub type InlineEdits = (Vec<Value>, BTreeMap<String, Vec<Value>>);
 
@@ -44,7 +44,8 @@ pub fn build_inline_into_all_callers_workspace(
     item: &ParsedCursorItem,
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
-    if !item.cfg_attrs.is_empty() || !item.vis_prefix.is_empty() {
+    let vis = item.vis_prefix.trim();
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && vis != "pub(crate)") {
         return None;
     }
     match &item.enclosing {
@@ -137,33 +138,78 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
 
+    let canonical_file = std::fs::canonicalize(file).ok();
+    let has_cross_file = refs_obj.references.iter().any(|r| {
+        let abs = resolve_ref_to_absolute(ws, file, r);
+        !is_same_doc(&abs, file, canonical_file.as_deref())
+    });
+
+    if has_cross_file {
+        return None;
+    }
+
     let (del_lo, del_hi) = line_deletion_span(doc_text, item.first_attr_byte, *bc);
     let mut local_edits = Vec::new();
-    let canonical_file = std::fs::canonicalize(file).ok();
+    let mut other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     let def_lo = item.first_attr_byte.min(item.decl_start_byte);
     let mut any_skipped = false;
 
+    let mut refs_by_file: BTreeMap<PathBuf, Vec<(u32, u32)>> = BTreeMap::new();
     for r in &refs_obj.references {
-        let canon = std::fs::canonicalize(r.resolved_path()).ok();
-        let is_same_file = r.file == file || (canonical_file.is_some() && canon == canonical_file);
-        if !is_same_file {
-            return None;
-        }
-        let span_line = r.span.start_line();
-        let span_col = r.span.start_col();
+        let abs = resolve_ref_to_absolute(ws, file, r);
+        refs_by_file.entry(abs).or_default().push((r.span.start_line(), r.span.start_col()));
+    }
 
-        let ref_byte = line_col_to_byte(doc_text, starts, span_line, span_col)?;
-        if ref_byte >= def_lo && ref_byte < *bc {
-            continue;
-        }
-        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc_text, masked_doc, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed) {
-            local_edits.push((site_start, site_end, inlined_text));
+    for (abs_path, spans) in refs_by_file {
+        if is_same_doc(&abs_path, file, canonical_file.as_deref()) {
+            for (span_line, span_col) in spans {
+                let Some(ref_byte) = line_col_to_byte(doc_text, starts, span_line, span_col) else {
+                    any_skipped = true;
+                    continue;
+                };
+                if ref_byte >= def_lo && ref_byte < *bc {
+                    continue;
+                }
+                if let Some((site_start, site_end, inlined_text)) = process_call_site(doc_text, masked_doc, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed) {
+                    local_edits.push((site_start, site_end, inlined_text));
+                } else {
+                    any_skipped = true;
+                }
+            }
         } else {
-            any_skipped = true;
+            let Ok(other_doc) = std::fs::read_to_string(&abs_path) else {
+                any_skipped = true;
+                continue;
+            };
+            let other_masked = mask_comments_and_strings(&other_doc);
+            let other_starts = line_starts_of(&other_doc);
+            let mut other_edits = Vec::new();
+
+            for (span_line, span_col) in spans {
+                let Some(ref_byte) = line_col_to_byte(&other_doc, &other_starts, span_line, span_col) else {
+                    any_skipped = true;
+                    continue;
+                };
+                if let Some((site_start, site_end, inlined_text)) = process_call_site(&other_doc, &other_masked, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed)
+                {
+                    other_edits.push((site_start, site_end, inlined_text));
+                } else {
+                    any_skipped = true;
+                }
+            }
+
+            if !other_edits.is_empty() {
+                if let Some(lsp_edits) = to_lsp_edits(&other_doc, &other_starts, other_edits) {
+                    let other_uri = path_to_uri(&abs_path.to_string_lossy());
+                    other_file_edits.insert(other_uri, lsp_edits);
+                } else {
+                    any_skipped = true;
+                }
+            }
         }
     }
 
-    if local_edits.is_empty() {
+    if local_edits.is_empty() && other_file_edits.is_empty() {
         return None;
     }
 
@@ -172,7 +218,70 @@ pub fn build_inline_into_all_callers_workspace(
     }
     let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;
 
-    Some((local_lsp_edits, BTreeMap::new()))
+    Some((local_lsp_edits, other_file_edits))
+}
+
+fn resolve_ref_to_absolute(ws: &WorkspaceIndex, doc_file: &str, r: &ridx_format::WorkspaceReference) -> PathBuf {
+    let p = r.resolved_path();
+    let doc_path = Path::new(doc_file);
+    if p == doc_path || r.file == doc_file {
+        return doc_path.to_path_buf();
+    }
+    let r_norm = r.file.strip_prefix('/').unwrap_or(r.file);
+    if doc_file.ends_with(r_norm) {
+        let prefix_len = doc_file.len() - r_norm.len();
+        if prefix_len == 0 || doc_file.as_bytes()[prefix_len - 1] == b'/' {
+            return doc_path.to_path_buf();
+        }
+    }
+    if let Some(p_str) = p.to_str() {
+        let p_norm = p_str.strip_prefix('/').unwrap_or(p_str);
+        if doc_file.ends_with(p_norm) {
+            let prefix_len = doc_file.len() - p_norm.len();
+            if prefix_len == 0 || doc_file.as_bytes()[prefix_len - 1] == b'/' {
+                return doc_path.to_path_buf();
+            }
+        }
+    }
+    if p.is_absolute() && p.exists() {
+        return p;
+    }
+    if let Some(root) = ws.workspace_root() {
+        let joined = root.join(&p);
+        if joined.exists() {
+            return joined;
+        }
+        let joined_rf = root.join(Path::new(r.file));
+        if joined_rf.exists() {
+            return joined_rf;
+        }
+    }
+    if let Some(prefix) = doc_file.strip_suffix(r_norm) {
+        let prefix_path = Path::new(prefix);
+        let joined = prefix_path.join(&p);
+        if joined.exists() {
+            return joined;
+        }
+        let joined_rf = prefix_path.join(Path::new(r.file));
+        if joined_rf.exists() {
+            return joined_rf;
+        }
+    }
+    p
+}
+
+fn is_same_doc(abs: &Path, doc_file: &str, canonical_file: Option<&Path>) -> bool {
+    if abs == Path::new(doc_file) {
+        return true;
+    }
+    if let Some(canon) = canonical_file {
+        if let Ok(abs_canon) = std::fs::canonicalize(abs) {
+            if abs_canon == canon {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn process_call_site(src: &str, masked: &str, ref_byte: usize, name: &str, self_kind: Option<SelfKind>, params: &[FnParamInfo], body_src: &str) -> Option<(usize, usize, String)> {
