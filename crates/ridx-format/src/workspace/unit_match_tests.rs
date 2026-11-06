@@ -37,6 +37,17 @@ fn matches_unit_oracle<B: AsRef<[u8]>>(
     let is_reader_extern_target = reader_extern_units.get(reader_idx).and_then(|m| m.get(target_crate)).map(|u| u.as_str()) == Some(ref_target_unit);
     let target_versions_count =
         readers.iter().filter(|r| r.crate_name() == target_crate).map(|r| r.crate_version()).filter(|v| !v.is_empty()).collect::<std::collections::HashSet<_>>().len();
+    // A reference to a build no reader holds matches the build the reader links for that crate.
+    let linked = reader_extern_units.get(reader_idx).and_then(|m| m.get(target_crate)).map(|u| u.as_str());
+    let links_target_instead = !unit_keys.iter().any(|u| u.as_deref() == Some(ref_target_unit))
+        && linked.is_some_and(|l| readers.iter().enumerate().any(|(j, r)| r.crate_name() == target_crate && unit_keys.get(j).and_then(|u| u.as_deref()) == Some(l)));
+    let version_of = |uk: &str| {
+        readers.iter().enumerate().find(|(j, r)| r.crate_name() == target_crate && unit_keys.get(*j).and_then(|u| u.as_deref()) == Some(uk)).map(|(_, r)| r.crate_version())
+    };
+    if links_target_instead {
+        // Stands for the linked build: same version as the target when the crate has several.
+        return target_versions_count <= 1 || (version_of(target_unit).is_some() && version_of(target_unit) == linked.and_then(version_of));
+    }
     let belongs_to_target_crate =
         is_reader_extern_target || readers.iter().enumerate().any(|(j, r)| r.crate_name() == target_crate && unit_keys.get(j).and_then(|u| u.as_deref()) == Some(ref_target_unit));
     belongs_to_target_crate && target_versions_count <= 1

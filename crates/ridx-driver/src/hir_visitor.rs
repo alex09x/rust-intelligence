@@ -145,6 +145,20 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     fn visit_path(&mut self, path: &hir::Path<'tcx>, _: HirId) {
         let span = if let Some(last_seg) = path.segments.last() { last_seg.ident.span } else { path.span };
         self.add_ref_from_res(span, path.res);
+        // Module segments of a path (`std::ops` in `std::ops::Bound`) are references to the modules.
+        for seg in path.segments.iter().take(path.segments.len().saturating_sub(1)) {
+            if let Res::Def(hir::def::DefKind::Mod, _) = seg.res {
+                self.add_ref_from_res(seg.ident.span, seg.res);
+            }
+        }
+        // `Self` in an impl names the implementing type; rust-analyzer lists it among the type's references.
+        if let Res::SelfTyAlias { alias_to, .. } | Res::SelfCtor(alias_to) = path.res {
+            if let Some(adt) = self.tcx.type_of(alias_to).skip_binder().ty_adt_def() {
+                if let Some(first) = path.segments.first().filter(|s| s.ident.name == rustc_span::symbol::kw::SelfUpper) {
+                    self.add_ref_from_res(first.ident.span, Res::Def(self.tcx.def_kind(adt.did()), adt.did()));
+                }
+            }
+        }
 
         if path.segments.len() >= 2 {
             let pen_seg = &path.segments[path.segments.len() - 2];
@@ -228,6 +242,9 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                     }
                 }
                 hir::ExprKind::Struct(qpath, fields, _) => {
+                    if let hir::QPath::TypeRelative(_, segment) = qpath {
+                        self.add_ref_from_res(segment.ident.span, typeck.qpath_res(qpath, expr.hir_id));
+                    }
                     if let Some(variant) = typeck.expr_ty_opt(expr).and_then(|t| t.ty_adt_def()).and_then(|adt| literal_variant(adt, typeck.qpath_res(qpath, expr.hir_id))) {
                         for f in fields {
                             if !f.is_shorthand {
@@ -272,7 +289,18 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                             self.note_binding_layout(pat, ty);
                         }
                     }
+                    // `Self::SetTrue =>`, `Self::Command(_) =>`: a type-relative path resolved by typeck (a
+                    // resolved path is a ref through `visit_path`).
+                    hir::PatKind::Expr(hir::PatExpr { kind: hir::PatExprKind::Path(qpath @ hir::QPath::TypeRelative(_, segment)), hir_id, .. }) => {
+                        self.add_ref_from_res(segment.ident.span, typeck.qpath_res(qpath, *hir_id));
+                    }
+                    hir::PatKind::TupleStruct(ref qpath @ hir::QPath::TypeRelative(_, segment), ..) => {
+                        self.add_ref_from_res(segment.ident.span, typeck.qpath_res(qpath, pat.hir_id));
+                    }
                     hir::PatKind::Struct(ref qpath, fields, _) => {
+                        if let hir::QPath::TypeRelative(_, segment) = qpath {
+                            self.add_ref_from_res(segment.ident.span, typeck.qpath_res(qpath, pat.hir_id));
+                        }
                         if let Some(variant) = typeck.pat_ty(pat).ty_adt_def().and_then(|adt| literal_variant(adt, typeck.qpath_res(qpath, pat.hir_id))) {
                             for f in fields {
                                 if !f.is_shorthand {

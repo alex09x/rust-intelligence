@@ -220,15 +220,25 @@ impl UnitMatchIndex {
         if !self.crate_all_units.get(target_crate).is_some_and(|units| units.contains(target_unit)) {
             return false;
         }
+        let linked = reader_extern_units.get(reader_idx).and_then(|m| m.get(target_crate)).map(String::as_str);
+        // A target built with extra required features names a build of the library the workspace does not hold;
+        // its sidecar links the workspace's build instead, whose version stands for the reference's.
+        let ref_unit = if self.unit_to_readers.contains_key(ref_target_unit) {
+            ref_target_unit
+        } else {
+            match linked.filter(|l| self.crate_defined_units.get(target_crate).is_some_and(|u| u.contains(*l))) {
+                Some(l) => l,
+                None => ref_target_unit,
+            }
+        };
         if *self.crate_version_counts.get(target_crate).unwrap_or(&0) > 1 {
             let v1 = self.unit_to_version.get(&(target_crate.to_string(), target_unit.to_string()));
-            let v2 = self.unit_to_version.get(&(target_crate.to_string(), ref_target_unit.to_string()));
+            let v2 = self.unit_to_version.get(&(target_crate.to_string(), ref_unit.to_string()));
             if v1.is_none() || v1 != v2 {
                 return false;
             }
         }
-        self.crate_defined_units.get(target_crate).is_some_and(|units| units.contains(ref_target_unit))
-            || reader_extern_units.get(reader_idx).and_then(|m| m.get(target_crate)).map(String::as_str) == Some(ref_target_unit)
+        self.crate_defined_units.get(target_crate).is_some_and(|units| units.contains(ref_unit)) || linked == Some(ref_target_unit)
     }
 
     #[inline]

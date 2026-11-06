@@ -13,6 +13,7 @@ use super::*;
 mod cache_and_workspace;
 mod cas_and_owner_bounds;
 mod notes;
+mod self_variant_paths;
 mod supertrait_and_impl_links;
 mod sysroot_core;
 mod variant_fields;

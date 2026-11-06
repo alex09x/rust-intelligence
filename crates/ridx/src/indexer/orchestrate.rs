@@ -93,6 +93,12 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
 
     // Isolate Cargo target cache per variant so Cargo unconditionally executes wrapper on variant switch
     let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
+    // A fresh Cargo cache would not run the wrapper again, leaving a variant without shards (after `target/ridx`
+    // was removed, say); start the cache over when the variant has none.
+    let has_shards = fs::read_dir(&variant_out_dir).into_iter().flatten().flatten().any(|e| e.path().extension().is_some_and(|x| x == "ridx"));
+    if !has_shards {
+        let _ = fs::remove_dir_all(&cargo_target_dir);
+    }
     let _ = fs::create_dir_all(&cargo_target_dir);
 
     eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
@@ -190,6 +196,11 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         if !status.success() {
             return Err(format!("{} check exited with status {status}", builder.as_str()));
         }
+    }
+
+    if !all_features {
+        let feats: Vec<String> = features.as_deref().unwrap_or_default().split([',', ' ']).filter(|f| !f.is_empty()).map(str::to_string).collect();
+        super::required_features::index_skipped_targets(&program, &envs, &work_dir, &manifest_path, &variant_out_dir, &feats, no_default_features);
     }
 
     let elapsed = start.elapsed();

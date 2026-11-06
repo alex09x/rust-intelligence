@@ -16,6 +16,7 @@ pub mod direct;
 pub mod driver;
 pub mod manifest;
 pub mod orchestrate;
+pub mod required_features;
 pub mod shards;
 pub mod types;
 pub mod variant;
