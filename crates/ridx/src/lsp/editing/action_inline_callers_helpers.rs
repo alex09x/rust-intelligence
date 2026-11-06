@@ -96,6 +96,27 @@ pub(crate) fn rewrite_self_to_this(body_src: &str, masked_body: &str) -> String 
     out
 }
 
+pub(crate) fn rewrite_self_type_to_name(body_src: &str, masked_body: &str, type_name: &str) -> String {
+    let mb = masked_body.as_bytes();
+    let mut out = String::with_capacity(body_src.len() + 16);
+    let mut i = 0usize;
+    while i < mb.len() {
+        if mb[i] == b'S' && i + 4 <= mb.len() && &mb[i..i + 4] == b"Self" {
+            let prev_ok = i == 0 || (!is_ident_byte(mb[i - 1]) && mb[i - 1] != b'.' && !(i >= 2 && &mb[i - 2..i] == b"::"));
+            let next_ok = i + 4 == mb.len() || !is_ident_byte(mb[i + 4]);
+            if prev_ok && next_ok {
+                out.push_str(type_name);
+                i += 4;
+                continue;
+            }
+        }
+        let ch = body_src[i..].chars().next().unwrap();
+        out.push(ch);
+        i += ch.len_utf8();
+    }
+    out
+}
+
 pub(crate) fn find_receiver_start(_src: &str, masked: &str, dot_byte: usize) -> Option<usize> {
     let mb = masked.as_bytes();
     let mut p = dot_byte;

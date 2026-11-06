@@ -10,6 +10,7 @@
 
 pub mod code_action_assists_tests;
 pub mod code_action_expanded_tests;
+pub mod code_action_inline_callers_self_tests;
 pub mod code_action_inline_callers_tests;
 pub mod code_action_resolve_tests;
 pub mod code_action_tests;

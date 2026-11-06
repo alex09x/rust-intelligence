@@ -13,10 +13,10 @@
 use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{
     contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, has_only_lifetime_bounds, has_only_lifetime_generics, parse_fn_params,
-    rewrite_self_to_this, FnParamInfo, SelfKind,
+    rewrite_self_to_this, rewrite_self_type_to_name, FnParamInfo, SelfKind,
 };
 use super::action_inline_local::line_deletion_span;
-use super::action_parse::{ItemKindInfo, ParsedCursorItem};
+use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_struct_conv_helpers::to_lsp_edits;
 use super::action_struct_conv_index::byte_to_line_col;
@@ -65,6 +65,23 @@ pub fn build_inline_into_all_callers_workspace(
     if ret_src.as_deref().is_some_and(|r| r.contains("Result") || r.contains("impl ")) {
         return None;
     }
+    let self_type_name = match &item.enclosing {
+        super::action_parse::EnclosingContext::InherentImpl { self_ty, generics_src, .. } => {
+            if has_only_lifetime_generics(generics_src) {
+                let base_raw = self_ty.split('<').next().unwrap_or(self_ty).trim().rsplit("::").next().unwrap_or("").trim();
+                let base_name = base_raw.strip_prefix("r#").unwrap_or(base_raw);
+                if !base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                    Some(base_name.to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+
     let hdr_m = &masked_doc[item.decl_start_byte..*bo];
     if contains_word(hdr_m, "async") || contains_word(hdr_m, "const") {
         return None;
@@ -73,8 +90,8 @@ pub fn build_inline_into_all_callers_workspace(
     if contains_word(body_inner_m, "return")
         || body_inner_m.contains('?')
         || contains_word(body_inner_m, "super")
-        || contains_word(body_inner_m, "Self")
         || body_inner_m.contains('$')
+        || (contains_word(body_inner_m, "Self") && self_type_name.is_none())
         || contains_recursive_call(body_inner_m, &item.name)
     {
         return None;
@@ -86,13 +103,27 @@ pub fn build_inline_into_all_callers_workspace(
 
     let raw_body = &doc_text[*bo + 1..*bc - 1];
     let raw_masked_body = &masked_doc[*bo + 1..*bc - 1];
-    let body_transformed = if self_param.is_some() {
-        rewrite_self_to_this(raw_body, raw_masked_body).trim().to_string()
+    let body_with_self_ty = if let Some(ty_name) = &self_type_name {
+        if contains_word(body_inner_m, "Self") {
+            rewrite_self_type_to_name(raw_body, raw_masked_body, ty_name)
+        } else {
+            raw_body.to_string()
+        }
     } else {
-        if contains_word(body_inner_m, "self") {
+        raw_body.to_string()
+    };
+    let masked_with_self_ty = if contains_word(body_inner_m, "Self") {
+        mask_comments_and_strings(&body_with_self_ty)
+    } else {
+        raw_masked_body.to_string()
+    };
+    let body_transformed = if self_param.is_some() {
+        rewrite_self_to_this(&body_with_self_ty, &masked_with_self_ty).trim().to_string()
+    } else {
+        if contains_word(&masked_with_self_ty, "self") {
             return None;
         }
-        raw_body.trim().to_string()
+        body_with_self_ty.trim().to_string()
     };
 
     let ws = ws?;
