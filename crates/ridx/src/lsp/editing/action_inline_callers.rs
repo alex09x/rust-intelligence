@@ -13,7 +13,7 @@
 use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{
     contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, has_only_lifetime_bounds, has_only_lifetime_generics, parse_fn_params,
-    rewrite_self_to_this, rewrite_self_type_to_name, FnParamInfo, SelfKind,
+    rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return, FnParamInfo, SelfKind,
 };
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
@@ -87,12 +87,22 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
     let body_inner_m = &masked_doc[*bo + 1..*bc - 1];
-    if contains_word(body_inner_m, "return")
-        || body_inner_m.contains('?')
-        || contains_word(body_inner_m, "super")
-        || body_inner_m.contains('$')
-        || (contains_word(body_inner_m, "Self") && self_type_name.is_none())
-        || contains_recursive_call(body_inner_m, &item.name)
+    let raw_body_slice = &doc_text[*bo + 1..*bc - 1];
+    let (raw_body, raw_masked_body) = if contains_word(body_inner_m, "return") {
+        if let Some((ub, um)) = unwrap_tail_return(raw_body_slice, body_inner_m) {
+            (ub, um)
+        } else {
+            return None;
+        }
+    } else {
+        (raw_body_slice.to_string(), body_inner_m.to_string())
+    };
+
+    if raw_masked_body.contains('?')
+        || contains_word(&raw_masked_body, "super")
+        || raw_masked_body.contains('$')
+        || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
+        || contains_recursive_call(&raw_masked_body, &item.name)
     {
         return None;
     }
@@ -101,18 +111,16 @@ pub fn build_inline_into_all_callers_workspace(
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 
-    let raw_body = &doc_text[*bo + 1..*bc - 1];
-    let raw_masked_body = &masked_doc[*bo + 1..*bc - 1];
     let body_with_self_ty = if let Some(ty_name) = &self_type_name {
-        if contains_word(body_inner_m, "Self") {
-            rewrite_self_type_to_name(raw_body, raw_masked_body, ty_name)
+        if contains_word(&raw_masked_body, "Self") {
+            rewrite_self_type_to_name(&raw_body, &raw_masked_body, ty_name)
         } else {
-            raw_body.to_string()
+            raw_body
         }
     } else {
-        raw_body.to_string()
+        raw_body
     };
-    let masked_with_self_ty = if contains_word(body_inner_m, "Self") { mask_comments_and_strings(&body_with_self_ty) } else { raw_masked_body.to_string() };
+    let masked_with_self_ty = if contains_word(&raw_masked_body, "Self") { mask_comments_and_strings(&body_with_self_ty) } else { raw_masked_body };
     let body_transformed = if self_param.is_some() {
         rewrite_self_to_this(&body_with_self_ty, &masked_with_self_ty).trim().to_string()
     } else {
