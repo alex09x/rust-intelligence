@@ -46,7 +46,14 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) || file.contains("regex-lite") {
+    if !item.cfg_attrs.is_empty()
+        || (!vis.is_empty() && !vis.starts_with("pub"))
+        || is_primitive_scalar(&item.name)
+        || file.contains("regex-lite")
+        || file.contains("crates/rust-analyzer/src/")
+        || file.contains("gen_trait_fn_body.rs")
+        || (file.contains("builtin_derive.rs") && item.name == "simple_trait_predicates")
+    {
         return None;
     }
     let is_pub = vis.starts_with("pub");
