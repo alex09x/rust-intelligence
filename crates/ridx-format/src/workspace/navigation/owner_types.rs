@@ -10,6 +10,9 @@
 
 use super::*;
 
+/// A recorded type's span and text: `((start_line, start_col), (end_line, end_col), type)`, 1-based.
+pub type TypeSpanEntry<'a> = ((u32, u32), (u32, u32), &'a str);
+
 impl WorkspaceIndex {
     /// Finds all references to a symbol across every crate in the workspace.
     pub fn find_references<'a>(&'a self, target_path: &str) -> Vec<WorkspaceReference<'a>> {
@@ -26,6 +29,23 @@ impl WorkspaceIndex {
     pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
         let pairs = self.resolved_reader_file_ids(file);
         self.type_entry_at_in_pairs(&pairs, line, col)
+    }
+
+    /// Every recorded type whose span starts on lines `start_line..=end_line` (1-based) of `file`, as
+    /// `((start_line, start_col), (end_line, end_col), type)` with 1-based columns, from the first shard holding it.
+    pub fn types_in_lines(&self, file: &str, start_line: u32, end_line: u32) -> Vec<TypeSpanEntry<'_>> {
+        let Some(&(i, fid)) = self.resolved_reader_file_ids(file).first() else { return Vec::new() };
+        let r = &self.readers[i];
+        let types = r.types();
+        let lo = types.partition_point(|e| (e.span().file_id(), e.span().start_line()) < (fid, start_line));
+        types[lo..]
+            .iter()
+            .take_while(|e| e.span().file_id() == fid && e.span().start_line() <= end_line)
+            .map(|e| {
+                let s = e.span();
+                ((s.start_line(), s.start_col()), (s.end_line(), s.end_col()), r.get_str(e.type_offset()))
+            })
+            .collect()
     }
 
     pub(crate) fn type_entry_at_in_pairs(&self, pairs: &[(usize, u32)], line: u32, col: u32) -> Option<(&str, Option<&str>)> {

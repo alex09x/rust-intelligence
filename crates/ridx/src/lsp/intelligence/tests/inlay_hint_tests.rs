@@ -109,7 +109,8 @@ fn test_inlay_hint_let_without_type_produces_hint() {
     assert_eq!(hints.len(), 1);
     assert_eq!(hints[0]["label"], ": i32");
     assert_eq!(hints[0]["kind"], 1);
-    assert_eq!(hints[0]["paddingLeft"], true);
+    // rust-analyzer pads type hints only on the right of the label's own colon: no left padding.
+    assert_eq!(hints[0]["paddingLeft"], false);
     assert_eq!(hints[0]["position"]["line"], 1);
     assert_eq!(hints[0]["position"]["character"], 14);
 
