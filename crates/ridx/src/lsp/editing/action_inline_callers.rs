@@ -11,7 +11,10 @@
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
 use super::action_generics_sub::split_top_level_commas;
-use super::action_inline_callers_helpers::{find_path_start, find_receiver_start, format_inlined_call, parse_fn_params, rewrite_self_to_this, FnParamInfo, SelfKind};
+use super::action_inline_callers_helpers::{
+    contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, has_only_lifetime_bounds, has_only_lifetime_generics, parse_fn_params,
+    rewrite_self_to_this, FnParamInfo, SelfKind,
+};
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::{contains_word, skip_balanced};
@@ -23,7 +26,7 @@ use std::collections::BTreeMap;
 
 pub type InlineEdits = (Vec<Value>, BTreeMap<String, Vec<Value>>);
 
-fn line_col_to_byte(doc: &str, starts: &[usize], line_1b: u32, col_1b: u32) -> Option<usize> {
+pub(crate) fn line_col_to_byte(doc: &str, starts: &[usize], line_1b: u32, col_1b: u32) -> Option<usize> {
     let start = *starts.get(line_1b.checked_sub(1)? as usize)?;
     let line = doc[start..].split('\n').next().unwrap_or("");
     let n = col_1b.checked_sub(1)? as usize;
@@ -44,16 +47,19 @@ pub fn build_inline_into_all_callers_workspace(
     if !item.cfg_attrs.is_empty() || !item.vis_prefix.is_empty() {
         return None;
     }
-    let super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } = &item.enclosing else {
-        return None;
-    };
-    if !cfg_attrs.is_empty() {
-        return None;
+    match &item.enclosing {
+        super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } => {
+            if !cfg_attrs.is_empty() {
+                return None;
+            }
+        }
+        super::action_parse::EnclosingContext::None => {}
+        _ => return None,
     }
     let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
         return None;
     };
-    if !generics_src.trim().is_empty() || !where_src.trim().is_empty() {
+    if !has_only_lifetime_generics(generics_src) || !has_only_lifetime_bounds(where_src) {
         return None;
     }
     if ret_src.as_deref().is_some_and(|r| r.contains("Result") || r.contains("impl ")) {
@@ -69,7 +75,7 @@ pub fn build_inline_into_all_callers_workspace(
         || contains_word(body_inner_m, "super")
         || contains_word(body_inner_m, "Self")
         || body_inner_m.contains('$')
-        || contains_word(body_inner_m, &item.name)
+        || contains_recursive_call(body_inner_m, &item.name)
     {
         return None;
     }
@@ -100,21 +106,25 @@ pub fn build_inline_into_all_callers_workspace(
     let mut local_edits = Vec::new();
     let canonical_file = std::fs::canonicalize(file).ok();
     let def_lo = item.first_attr_byte.min(item.decl_start_byte);
+    let mut any_skipped = false;
 
     for r in &refs_obj.references {
-        let is_same_file = r.file == file || (canonical_file.is_some() && std::fs::canonicalize(r.resolved_path()).ok() == canonical_file);
+        let canon = std::fs::canonicalize(r.resolved_path()).ok();
+        let is_same_file = r.file == file || (canonical_file.is_some() && canon == canonical_file);
+        if !is_same_file {
+            return None;
+        }
         let span_line = r.span.start_line();
         let span_col = r.span.start_col();
 
-        if is_same_file {
-            let ref_byte = line_col_to_byte(doc_text, starts, span_line, span_col)?;
-            if ref_byte >= def_lo && ref_byte < *bc {
-                continue;
-            }
-            let (site_start, site_end, inlined_text) = process_call_site(doc_text, masked_doc, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed)?;
+        let ref_byte = line_col_to_byte(doc_text, starts, span_line, span_col)?;
+        if ref_byte >= def_lo && ref_byte < *bc {
+            continue;
+        }
+        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc_text, masked_doc, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed) {
             local_edits.push((site_start, site_end, inlined_text));
         } else {
-            return None;
+            any_skipped = true;
         }
     }
 
@@ -122,8 +132,11 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
 
-    local_edits.push((del_lo, del_hi, String::new()));
+    if !any_skipped {
+        local_edits.push((del_lo, del_hi, String::new()));
+    }
     let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;
+
     Some((local_lsp_edits, BTreeMap::new()))
 }
 
@@ -152,7 +165,7 @@ fn process_call_site(src: &str, masked: &str, ref_byte: usize, name: &str, self_
         let dot_byte = before_dot.len() - 1;
         let recv_start = find_receiver_start(src, masked, dot_byte)?;
         let recv = src[recv_start..dot_byte].trim();
-        if recv.contains('(') || recv.contains('[') {
+        if recv.is_empty() || recv.starts_with('.') || recv.ends_with('.') || recv.contains('(') || recv.contains('[') {
             return None;
         }
         (recv_start, Some(recv))

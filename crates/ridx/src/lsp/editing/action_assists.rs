@@ -20,6 +20,7 @@ use super::action_generics::build_fn_type_aliases;
 use super::action_inline_callers::build_inline_into_all_callers_workspace;
 use super::action_inline_local::{build_inline_into_all_callers, build_inline_type_alias, build_nested_fn_to_closure};
 use super::action_parse::{line_starts_of, mask_comments_and_strings, utf16_pos_to_byte, ItemKindInfo};
+use super::action_parse_enclosing::find_enclosing_fn_at_cursor;
 use super::action_parse_items::parse_item_with_masked;
 use super::action_raw_string::{build_multi_edits_workspace_edit, collect_string_literal_assists, is_string_assist_data_kind, resolve_string_assist};
 use super::action_struct_conv::{build_convert_to_named_struct, build_convert_to_tuple_struct};
@@ -108,75 +109,92 @@ where
         }
     }
 
-    let Some(item) = parse_item_with_masked(doc_text, &masked_doc, &starts, cursor_byte) else {
+    let (item, is_enclosing_fn) = if let Some(it) = parse_item_with_masked(doc_text, &masked_doc, &starts, cursor_byte) {
+        (it, false)
+    } else if let Some(it) = find_enclosing_fn_at_cursor(doc_text, &masked_doc, &starts, cursor_byte) {
+        (it, true)
+    } else {
         return out;
     };
     let file_path = uri_to_path(uri);
 
     match &item.kind {
         ItemKindInfo::Fn { .. } => {
-            if matches_kind("quickfix") {
-                if let Some((ins_line, ins_col, text)) = build_implement_default_members(doc_text, &masked_doc, &starts, &file_path, &item, ws, overlay_mgr) {
-                    out.push(make_assist_action(uri, "Implement default members", "quickfix", KIND_IMPL_DEFAULT_MEMBERS, line0, col_u16, ins_line, ins_col, &text, doc_version));
+            if !is_enclosing_fn {
+                if matches_kind("quickfix") {
+                    if let Some((ins_line, ins_col, text)) = build_implement_default_members(doc_text, &masked_doc, &starts, &file_path, &item, ws, overlay_mgr) {
+                        out.push(make_assist_action(
+                            uri,
+                            "Implement default members",
+                            "quickfix",
+                            KIND_IMPL_DEFAULT_MEMBERS,
+                            line0,
+                            col_u16,
+                            ins_line,
+                            ins_col,
+                            &text,
+                            doc_version,
+                        ));
+                    }
                 }
-            }
-            if matches_kind("refactor.rewrite") {
-                if let Some((ins_line, ins_col, doc_ins)) = build_doc_template(&masked_doc, &item) {
-                    out.push(make_assist_action(
-                        uri,
-                        "Generate a documentation template",
-                        "refactor.rewrite",
-                        KIND_DOC_TEMPLATE,
-                        line0,
-                        col_u16,
-                        ins_line,
-                        ins_col,
-                        &doc_ins,
-                        doc_version,
-                    ));
-                }
-                if let Some(plan) = build_fn_type_aliases(doc_text, &masked_doc, &file_path, &item, ws) {
-                    out.push(make_assist_action(
-                        uri,
-                        "Generate a type alias for function with named params",
-                        "refactor.rewrite",
-                        KIND_FN_ALIAS_NAMED,
-                        line0,
-                        col_u16,
-                        plan.insert_line0,
-                        0,
-                        &plan.named_text,
-                        doc_version,
-                    ));
-                    out.push(make_assist_action(
-                        uri,
-                        "Generate a type alias for function with unnamed params",
-                        "refactor.rewrite",
-                        KIND_FN_ALIAS_UNNAMED,
-                        line0,
-                        col_u16,
-                        plan.insert_line0,
-                        0,
-                        &plan.unnamed_text,
-                        doc_version,
-                    ));
-                }
-                if let Some((ins_line, ins_col, text)) = build_default_from_new(doc_text, &masked_doc, &starts, &item, ws) {
-                    out.push(make_assist_action(
-                        uri,
-                        "Generate a Default impl from a new fn",
-                        "refactor.rewrite",
-                        KIND_DEFAULT_FROM_NEW,
-                        line0,
-                        col_u16,
-                        ins_line,
-                        ins_col,
-                        &text,
-                        doc_version,
-                    ));
-                }
-                if let Some(edits) = build_nested_fn_to_closure(doc_text, &masked_doc, &starts, &item) {
-                    out.push(make_multi_edit_assist(uri, "Convert nested function to closure", "refactor.rewrite", KIND_NESTED_FN_CLOSURE, line0, col_u16, edits, doc_version));
+                if matches_kind("refactor.rewrite") {
+                    if let Some((ins_line, ins_col, doc_ins)) = build_doc_template(&masked_doc, &item) {
+                        out.push(make_assist_action(
+                            uri,
+                            "Generate a documentation template",
+                            "refactor.rewrite",
+                            KIND_DOC_TEMPLATE,
+                            line0,
+                            col_u16,
+                            ins_line,
+                            ins_col,
+                            &doc_ins,
+                            doc_version,
+                        ));
+                    }
+                    if let Some(plan) = build_fn_type_aliases(doc_text, &masked_doc, &file_path, &item, ws) {
+                        out.push(make_assist_action(
+                            uri,
+                            "Generate a type alias for function with named params",
+                            "refactor.rewrite",
+                            KIND_FN_ALIAS_NAMED,
+                            line0,
+                            col_u16,
+                            plan.insert_line0,
+                            0,
+                            &plan.named_text,
+                            doc_version,
+                        ));
+                        out.push(make_assist_action(
+                            uri,
+                            "Generate a type alias for function with unnamed params",
+                            "refactor.rewrite",
+                            KIND_FN_ALIAS_UNNAMED,
+                            line0,
+                            col_u16,
+                            plan.insert_line0,
+                            0,
+                            &plan.unnamed_text,
+                            doc_version,
+                        ));
+                    }
+                    if let Some((ins_line, ins_col, text)) = build_default_from_new(doc_text, &masked_doc, &starts, &item, ws) {
+                        out.push(make_assist_action(
+                            uri,
+                            "Generate a Default impl from a new fn",
+                            "refactor.rewrite",
+                            KIND_DEFAULT_FROM_NEW,
+                            line0,
+                            col_u16,
+                            ins_line,
+                            ins_col,
+                            &text,
+                            doc_version,
+                        ));
+                    }
+                    if let Some(edits) = build_nested_fn_to_closure(doc_text, &masked_doc, &starts, &item) {
+                        out.push(make_multi_edit_assist(uri, "Convert nested function to closure", "refactor.rewrite", KIND_NESTED_FN_CLOSURE, line0, col_u16, edits, doc_version));
+                    }
                 }
             }
             if matches_kind("refactor.inline") {
@@ -294,7 +312,9 @@ pub fn resolve_decl_assist(
             .ok_or_else(|| LspError::request_failed("Cannot resolve extract literal assist"));
     }
 
-    let item = parse_item_with_masked(doc_text, &masked_doc, &starts, cursor_byte).ok_or_else(|| LspError::request_failed("Declaration at cursor could not be parsed"))?;
+    let item = parse_item_with_masked(doc_text, &masked_doc, &starts, cursor_byte)
+        .or_else(|| find_enclosing_fn_at_cursor(doc_text, &masked_doc, &starts, cursor_byte))
+        .ok_or_else(|| LspError::request_failed("Declaration at cursor could not be parsed"))?;
     let file_path = uri_to_path(uri);
 
     match data_kind {

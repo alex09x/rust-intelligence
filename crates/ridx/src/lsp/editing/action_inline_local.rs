@@ -14,6 +14,7 @@ use super::action_crate_checks::{is_leaf_scope_without_macros, nested_fn_has_non
 use super::action_default_scope::enclosing_module_span;
 use super::action_generics_helpers::clean_param_ident;
 use super::action_generics_sub::{parse_generics_list, split_top_level_colon, split_top_level_commas, GenKind};
+use super::action_inline_callers_helpers::contains_recursive_call;
 use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings, EnclosingContext, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_decl::{collapse_ws, extract_angle_generics, next_ident_token};
 use super::action_parse_items::{contains_word, skip_balanced};
@@ -178,7 +179,7 @@ pub fn build_inline_into_all_callers(doc_text: &str, masked_doc: &str, starts: &
         || contains_word(body_inner_m, "self")
         || contains_word(body_inner_m, "Self")
         || body_inner_m.contains('$')
-        || contains_word(body_inner_m, &item.name)
+        || contains_recursive_call(body_inner_m, &item.name)
     {
         return None;
     }

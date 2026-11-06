@@ -297,7 +297,7 @@ fn skip_item_modifiers(src: &str, masked: &str, start: usize) -> (bool, usize, b
     (false, pos, is_unsafe, abi.is_some())
 }
 
-fn parse_decl_modifiers(src: &str, masked: &str, start: usize) -> (bool, usize, bool, Option<String>) {
+pub(crate) fn parse_decl_modifiers(src: &str, masked: &str, start: usize) -> (bool, usize, bool, Option<String>) {
     let mb = masked.as_bytes();
     let mut pos = start;
     let mut is_unsafe = false;

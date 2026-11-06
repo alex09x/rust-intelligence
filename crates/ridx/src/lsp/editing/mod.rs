@@ -34,6 +34,7 @@ pub mod action_inline_callers_helpers;
 pub mod action_inline_local;
 pub mod action_parse;
 pub mod action_parse_decl;
+pub mod action_parse_enclosing;
 pub mod action_parse_items;
 pub mod action_parse_lex;
 pub mod action_raw_string;

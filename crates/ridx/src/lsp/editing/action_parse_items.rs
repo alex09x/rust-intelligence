@@ -20,10 +20,10 @@ struct OpenDelim {
 }
 
 #[derive(Clone, Copy)]
-struct EnclosingSpan {
-    ch: u8,
-    open_byte: usize,
-    close_byte: usize,
+pub(crate) struct EnclosingSpan {
+    pub(crate) ch: u8,
+    pub(crate) open_byte: usize,
+    pub(crate) close_byte: usize,
 }
 
 pub fn parse_item_at_cursor(src: &str, line0: u32, col_u16: u32) -> Option<ParsedCursorItem> {
@@ -92,7 +92,7 @@ pub fn parse_item_with_masked(src: &str, masked: &str, starts: &[usize], cursor_
     parse_declaration_at(src, masked, kw_start, first_attr_byte, cursor_byte, has_doc, cfg_attrs, attr_start_line0, indent, in_fn_body, enclosing_block, enclosing)
 }
 
-fn collect_enclosing_delims(mb: &[u8], cursor_byte: usize) -> Option<Vec<EnclosingSpan>> {
+pub(crate) fn collect_enclosing_delims(mb: &[u8], cursor_byte: usize) -> Option<Vec<EnclosingSpan>> {
     let mut stack: Vec<OpenDelim> = Vec::new();
     let mut active_before_cursor: Vec<OpenDelim> = Vec::new();
     let mut snapshot_taken = false;
@@ -132,7 +132,7 @@ fn collect_enclosing_delims(mb: &[u8], cursor_byte: usize) -> Option<Vec<Enclosi
     Some(closed_spans)
 }
 
-fn is_macro_delimiter(mb: &[u8], open_byte: usize) -> bool {
+pub(crate) fn is_macro_delimiter(mb: &[u8], open_byte: usize) -> bool {
     let mut i = open_byte;
     while i > 0 && mb[i - 1].is_ascii_whitespace() {
         i -= 1;
@@ -144,7 +144,7 @@ fn is_macro_delimiter(mb: &[u8], open_byte: usize) -> bool {
     !(mb[open_byte] == b'[' && i >= 2 && mb[i - 2] == b'#')
 }
 
-fn find_prev_item_boundary(mb: &[u8], before_byte: usize) -> usize {
+pub(crate) fn find_prev_item_boundary(mb: &[u8], before_byte: usize) -> usize {
     let mut depth_brace = 0i32;
     let mut depth_paren = 0i32;
     let mut depth_bracket = 0i32;
