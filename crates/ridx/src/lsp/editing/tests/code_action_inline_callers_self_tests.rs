@@ -340,3 +340,49 @@ fn test_inline_result_fn_compiles() {
     assert!(!updated.contains("compute(val)"), "Call site should be inlined");
     assert_rustc_compiles(&updated, "Inline into all callers: Result-returning fn compiles");
 }
+
+#[test]
+fn test_inline_generic_fn_unused_in_body_compiles() {
+    let id = INLINE_SELF_TEST_ID.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("ridx_inline_gen_{}_{}", std::process::id(), id));
+    let _ = fs::create_dir_all(&temp_dir);
+    let lib_file = temp_dir.join("lib.rs");
+    let lib_str = lib_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_gen", "0.1.0");
+
+    let code = concat!(
+        "fn «wrap_val»<E>(x: i32) -> Result<i32, E> {\n",
+        "    Ok(x * 2)\n",
+        "}\n",
+        "pub fn caller() -> Result<i32, ()> {\n",
+        "    wrap_val(21)\n",
+        "}\n",
+    );
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_gen", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_gen::wrap_val", &lib_str, 1, 4, 1, 12, Some(def_ids[0]), Some(&lib_str), 1, 4, DefKind::Fn);
+    builder.add_ref("test_gen::wrap_val", &lib_str, 5, 5, 5, 13, Some(def_ids[0]), Some(&lib_str), 1, 4, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 0, 4, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for generic fn unused in body");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(!updated.contains("fn wrap_val"), "Declaration should be deleted");
+    assert!(!updated.contains("wrap_val(21)"), "Call site should be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: generic fn unused in body compiles");
+}

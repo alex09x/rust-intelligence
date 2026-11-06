@@ -12,7 +12,9 @@
 
 use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, parse_fn_params, FnParamInfo, SelfKind};
-use super::action_inline_callers_transform::{has_only_lifetime_bounds, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return};
+use super::action_inline_callers_transform::{
+    extract_type_generic_names, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
+};
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::{contains_word, skip_balanced};
@@ -57,11 +59,12 @@ pub fn build_inline_into_all_callers_workspace(
         super::action_parse::EnclosingContext::None => {}
         _ => return None,
     }
-    let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
+    let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src: _, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
         return None;
     };
-    if !has_only_lifetime_generics(generics_src) || !has_only_lifetime_bounds(where_src) {
-        return None;
+    let mut type_generics = extract_type_generic_names(generics_src);
+    if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. } = &item.enclosing {
+        type_generics.extend(extract_type_generic_names(impl_gens));
     }
     let self_type_name = match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { self_ty, generics_src, .. } => {
@@ -83,7 +86,9 @@ pub fn build_inline_into_all_callers_workspace(
         if r.contains("impl ") || r.starts_with('&') || r.contains('\'') {
             return None;
         }
-        if r == "Self" {
+        if type_generics.iter().any(|g| contains_word(r, g)) {
+            None
+        } else if r == "Self" {
             Some(self_type_name.as_ref()?.clone())
         } else if r.contains("Self") {
             return None;
@@ -115,11 +120,12 @@ pub fn build_inline_into_all_callers_workspace(
         || raw_masked_body.contains('$')
         || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
         || contains_recursive_call(&raw_masked_body, &item.name)
+        || type_generics.iter().any(|g| contains_word(&raw_masked_body, g))
     {
         return None;
     }
 
-    let parsed_params = parse_fn_params(params_src)?;
+    let parsed_params = parse_fn_params(params_src, &type_generics)?;
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 

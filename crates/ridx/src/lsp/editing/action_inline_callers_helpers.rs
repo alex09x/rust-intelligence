@@ -13,6 +13,7 @@
 use super::action_generics_helpers::clean_param_ident;
 use super::action_generics_sub::{split_top_level_colon, split_top_level_commas};
 use super::action_parse_decl::collapse_ws;
+use super::action_parse_items::contains_word;
 
 pub(crate) struct FnParamInfo {
     pub is_self: bool,
@@ -29,7 +30,16 @@ pub(crate) enum SelfKind {
     MutRef,
 }
 
-pub(crate) fn parse_fn_params(params_src: &str) -> Option<Vec<FnParamInfo>> {
+fn is_primitive_scalar(ty: &str) -> bool {
+    matches!(
+        ty.trim(),
+        "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
+            | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
+            | "f32" | "f64" | "bool" | "char"
+    )
+}
+
+pub(crate) fn parse_fn_params(params_src: &str, type_generics: &[String]) -> Option<Vec<FnParamInfo>> {
     let mut out = Vec::new();
     for raw_p in split_top_level_commas(params_src) {
         let t = raw_p.trim();
@@ -68,9 +78,13 @@ pub(crate) fn parse_fn_params(params_src: &str) -> Option<Vec<FnParamInfo>> {
         if pty.is_empty() || pty.contains("impl ") || pty.contains('_') {
             return None;
         }
-        let bind_lhs = if is_mut { format!("mut {pid}") } else { pid };
+        if pty.contains('[') && type_generics.iter().any(|g| contains_word(&pty, g)) {
+            return None;
+        }
         let is_mut_ref = pty.trim().starts_with("&mut ");
-        out.push(FnParamInfo { is_self: false, self_kind: None, ident: Some(bind_lhs), is_mut_ref, ty: Some(pty) });
+        let ty = if is_primitive_scalar(&pty) { Some(pty) } else { None };
+        let bind_lhs = if is_mut { format!("mut {pid}") } else { pid };
+        out.push(FnParamInfo { is_self: false, self_kind: None, ident: Some(bind_lhs), is_mut_ref, ty });
     }
     Some(out)
 }

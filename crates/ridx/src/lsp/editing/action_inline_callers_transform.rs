@@ -67,14 +67,26 @@ pub(crate) fn has_only_lifetime_generics(generics_src: &str) -> bool {
     parts.iter().all(|p| p.starts_with('\''))
 }
 
-pub(crate) fn has_only_lifetime_bounds(where_src: &str) -> bool {
-    let w = where_src.trim();
-    if w.is_empty() {
-        return true;
+pub(crate) fn extract_type_generic_names(generics_src: &str) -> Vec<String> {
+    let g = generics_src.trim();
+    if g.is_empty() {
+        return Vec::new();
     }
-    let inner = w.strip_prefix("where").unwrap_or(w).trim();
+    let inner = g.strip_prefix('<').and_then(|s| s.strip_suffix('>')).unwrap_or(g);
     let parts: Vec<&str> = inner.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
-    parts.iter().all(|p| p.starts_with('\''))
+    let mut names = Vec::new();
+    for p in parts {
+        let trimmed = p.trim();
+        if trimmed.starts_with('\'') {
+            continue;
+        }
+        let raw_name = trimmed.split(':').next().unwrap_or(trimmed).trim();
+        let name = raw_name.split('=').next().unwrap_or(raw_name).trim();
+        if !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            names.push(name.to_string());
+        }
+    }
+    names
 }
 
 pub(crate) fn unwrap_tail_return(body_src: &str, masked_body: &str) -> Option<(String, String)> {
