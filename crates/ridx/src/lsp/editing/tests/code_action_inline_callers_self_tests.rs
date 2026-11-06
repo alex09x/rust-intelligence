@@ -192,13 +192,7 @@ fn test_inline_method_cross_file() {
     let updated_main = apply_text_edits(main_code, main_edits);
     assert!(updated_main.contains("42"), "Expected call site in main.rs to be inlined with 42");
     let _ = fs::write(&main_file, &updated_main);
-    let status = std::process::Command::new("rustc")
-        .arg("--crate-type")
-        .arg("bin")
-        .arg(&main_file)
-        .arg("--out-dir")
-        .arg(&temp_dir)
-        .status();
+    let status = std::process::Command::new("rustc").arg("--crate-type").arg("bin").arg(&main_file).arg("--out-dir").arg(&temp_dir).status();
     assert!(status.is_ok_and(|s| s.success()), "Updated cross-file program must compile with rustc");
 }
 

@@ -19,10 +19,8 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 const SAFE_PRELUDE_TYPES: &[&str] = &[
-    "Option", "Result", "Some", "None", "Ok", "Err",
-    "bool", "u8", "u16", "u32", "u64", "u128", "usize",
-    "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64",
-    "str", "String", "Vec",
+    "Option", "Result", "Some", "None", "Ok", "Err", "bool", "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64", "str", "String",
+    "Vec",
 ];
 
 /// Checks whether a transformed function body is completely safe to inline into other files

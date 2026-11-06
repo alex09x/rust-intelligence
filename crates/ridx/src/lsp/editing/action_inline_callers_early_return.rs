@@ -112,10 +112,8 @@ fn is_all_returns_at_fn_level(mb: &[u8], return_indices: &[usize]) -> bool {
                     }
                 }
             }
-            b'r' if mb[i..].starts_with(b"return") => {
-                if (closure_body_depth.is_some() || in_closure_params) && return_indices.contains(&i) {
-                    return false;
-                }
+            b'r' if mb[i..].starts_with(b"return") && (closure_body_depth.is_some() || in_closure_params) && return_indices.contains(&i) => {
+                return false;
             }
             _ => {}
         }

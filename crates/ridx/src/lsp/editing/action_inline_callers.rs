@@ -10,7 +10,7 @@
 
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
-use super::action_inline_callers_cross::{is_same_doc, is_safe_for_cross_file_inline, process_other_document_call_sites, resolve_ref_to_absolute};
+use super::action_inline_callers_cross::{is_safe_for_cross_file_inline, is_same_doc, process_other_document_call_sites, resolve_ref_to_absolute};
 use super::action_inline_callers_early_return::transform_early_returns;
 use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{
@@ -68,8 +68,8 @@ pub fn build_inline_into_all_callers_workspace(
     };
     let mut type_generics = extract_type_generic_names(generics_src);
     if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. }
-        | super::action_parse::EnclosingContext::TraitImpl { generics_src: impl_gens, .. }
-        | super::action_parse::EnclosingContext::TraitDecl { generics_src: impl_gens, .. } = &item.enclosing
+    | super::action_parse::EnclosingContext::TraitImpl { generics_src: impl_gens, .. }
+    | super::action_parse::EnclosingContext::TraitDecl { generics_src: impl_gens, .. } = &item.enclosing
     {
         type_generics.extend(extract_type_generic_names(impl_gens));
     }
@@ -80,8 +80,7 @@ pub fn build_inline_into_all_callers_workspace(
         _ => false,
     };
     let self_type_name = match &item.enclosing {
-        super::action_parse::EnclosingContext::InherentImpl { self_ty, .. }
-        | super::action_parse::EnclosingContext::TraitImpl { self_ty, .. } => {
+        super::action_parse::EnclosingContext::InherentImpl { self_ty, .. } | super::action_parse::EnclosingContext::TraitImpl { self_ty, .. } => {
             let base_raw = self_ty.split('<').next().unwrap_or(self_ty).trim().rsplit("::").next().unwrap_or("").trim();
             let base_name = base_raw.strip_prefix("r#").unwrap_or(base_raw);
             (!base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')).then(|| base_name.to_string())
@@ -144,7 +143,8 @@ pub fn build_inline_into_all_callers_workspace(
         || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
         || contains_recursive_call(&raw_masked_body, &item.name)
         || type_generics.iter().any(|g| contains_word(&raw_masked_body, g))
-        || (effective_ret_ty.is_none() && (raw_body_slice.trim().trim_end_matches(';').trim() == "None" || (raw_masked_body.contains(".collect()") && !raw_masked_body.contains("collect::<"))))
+        || (effective_ret_ty.is_none()
+            && (raw_body_slice.trim().trim_end_matches(';').trim() == "None" || (raw_masked_body.contains(".collect()") && !raw_masked_body.contains("collect::<"))))
     {
         return None;
     }
@@ -198,7 +198,13 @@ pub fn build_inline_into_all_callers_workspace(
         !is_same_doc(&abs, file, canonical_file.as_deref())
     });
 
-    let is_trait_member = matches!(&item.enclosing, super::action_parse::EnclosingContext::TraitImpl { .. } | super::action_parse::EnclosingContext::TraitDecl { .. });
+    let is_trait_member = matches!(&item.enclosing, super::action_parse::EnclosingContext::TraitImpl { .. } | super::action_parse::EnclosingContext::TraitDecl { .. })
+        || item.enclosing_block.is_some_and(|(bo, _)| {
+            let hdr = masked_doc[..bo].trim_end();
+            let start = hdr.rfind('}').map_or(0, |p| p + 1);
+            let block_hdr = &hdr[start..];
+            (block_hdr.contains("impl ") && block_hdr.contains(" for ")) || block_hdr.contains("trait ")
+        });
     if !is_pub && !is_trait_member && has_cross_file {
         return None;
     }
@@ -280,11 +286,7 @@ pub fn build_inline_into_all_callers_workspace(
     if !any_skipped && !is_pub && !is_trait_member {
         local_edits.push((del_lo, del_hi, String::new()));
     }
-    let local_lsp_edits = if local_edits.is_empty() {
-        Vec::new()
-    } else {
-        to_lsp_edits(doc_text, starts, local_edits)?
-    };
+    let local_lsp_edits = if local_edits.is_empty() { Vec::new() } else { to_lsp_edits(doc_text, starts, local_edits)? };
 
     Some((local_lsp_edits, other_file_edits))
 }
