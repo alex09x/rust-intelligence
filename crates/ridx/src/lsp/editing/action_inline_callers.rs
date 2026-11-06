@@ -10,6 +10,7 @@
 
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
+use super::action_inline_callers_early_return::transform_early_returns;
 use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{
     extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
@@ -115,6 +116,8 @@ pub fn build_inline_into_all_callers_workspace(
     let raw_body_slice = &doc_text[*bo + 1..*bc - 1];
     let (raw_body, raw_masked_body) = if contains_word(body_inner_m, "return") {
         if let Some((ub, um)) = unwrap_tail_return(raw_body_slice, body_inner_m) {
+            (ub, um)
+        } else if let Some((ub, um)) = transform_early_returns(raw_body_slice, body_inner_m) {
             (ub, um)
         } else {
             return None;

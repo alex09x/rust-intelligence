@@ -196,3 +196,51 @@ fn test_inline_method_on_generic_struct_with_concrete_ret_ty_compiles() {
 
     assert_rustc_compiles(&updated, "Inline into all callers: concrete Result return type on generic struct compiles");
 }
+
+#[test]
+fn test_inline_fn_with_early_return_compiles() {
+    let temp_dir = tempfile::tempdir().unwrap().into_path();
+    let src_file = temp_dir.join("lib.rs");
+    let src_file_str = src_file.to_str().unwrap().to_string();
+
+    let mut builder = RidxTestWorkspaceBuilder::new(&temp_dir);
+    let code = concat!(
+        "pub struct Item {\n",
+        "    val: i32,\n",
+        "}\n",
+        "impl Item {\n",
+        "    fn check(&self, limit: i32) -> Option<i32> {\n",
+        "        if self.val > limit {\n",
+        "            return None;\n",
+        "        }\n",
+        "        Some(self.val)\n",
+        "    }\n",
+        "}\n",
+        "pub fn caller(item: &Item) -> Option<i32> {\n",
+        "    item.check(10)\n",
+        "}\n",
+    );
+    let (code_cleaned, def_ids) = builder.add_defs_with_ids(code, &src_file_str, "test_early_return", DefKind::Fn);
+    let _ = fs::write(&src_file, &code_cleaned);
+
+    builder.add_ref("test_early_return::check", &src_file_str, 5, 8, 5, 13, Some(def_ids[0]), Some(&src_file_str), 5, 8, DefKind::Fn);
+    builder.add_ref("test_early_return::check", &src_file_str, 13, 10, 13, 15, Some(def_ids[0]), Some(&src_file_str), 5, 8, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", src_file_str);
+    ov.open_document(&uri, &src_file_str, 1, code_cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 4, 8, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for early return fn");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("lib.rs edits missing");
+    let updated = apply_text_edits(&code_cleaned, edits);
+
+    assert_rustc_compiles(&updated, "Inline into all callers: early return compiles");
+}

@@ -30,6 +30,7 @@ pub mod action_generics_closure;
 pub mod action_generics_helpers;
 pub mod action_generics_sub;
 pub mod action_inline_callers;
+pub mod action_inline_callers_early_return;
 pub mod action_inline_callers_helpers;
 pub mod action_inline_callers_transform;
 pub mod action_inline_local;
