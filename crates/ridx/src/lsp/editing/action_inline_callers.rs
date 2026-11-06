@@ -10,14 +10,13 @@
 
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
-use super::action_generics_sub::split_top_level_commas;
-use super::action_inline_callers_helpers::{
-    contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, is_caller_return_compatible, parse_fn_params, FnParamInfo, SelfKind,
+use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
+use super::action_inline_callers_transform::{
+    extract_type_generic_names, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
-use super::action_inline_callers_transform::{extract_type_generic_names, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return};
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
-use super::action_parse_items::{contains_word, skip_balanced};
+use super::action_parse_items::contains_word;
 use super::action_struct_conv_helpers::to_lsp_edits;
 use super::action_struct_conv_index::byte_to_line_col;
 use ridx_format::WorkspaceIndex;
@@ -46,7 +45,7 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) {
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
         return None;
     }
     let is_pub = vis.starts_with("pub");
@@ -190,28 +189,24 @@ pub fn build_inline_into_all_callers_workspace(
         refs_by_file.entry(abs).or_default().push((r.span.start_line(), r.span.start_col()));
     }
 
-    for (abs_path, spans) in refs_by_file {
-        if is_same_doc(&abs_path, file, canonical_file.as_deref()) {
-            for (span_line, span_col) in spans {
-                let Some(ref_byte) = line_col_to_byte(doc_text, starts, span_line, span_col) else {
-                    any_skipped = true;
-                    continue;
-                };
-                if ref_byte >= def_lo && ref_byte < *bc {
-                    continue;
-                }
-                if body_has_question_mark {
-                    let ret = effective_ret_ty.as_deref().unwrap_or("");
-                    if !is_caller_return_compatible(doc_text, masked_doc, starts, ref_byte, ret) {
-                        any_skipped = true;
-                        continue;
-                    }
-                }
-                if let Some((site_start, site_end, inlined_text)) = process_call_site(doc_text, masked_doc, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed) {
-                    local_edits.push((site_start, site_end, inlined_text));
-                } else {
-                    any_skipped = true;
-                }
+    for (abs_path, spans) in &refs_by_file {
+        if is_same_doc(abs_path, file, canonical_file.as_deref()) {
+            let (edits, skipped) = process_call_sites_for_document(
+                doc_text,
+                masked_doc,
+                starts,
+                spans,
+                &item.name,
+                self_kind,
+                &parsed_params,
+                &body_transformed,
+                body_has_question_mark,
+                effective_ret_ty.as_deref(),
+                Some((def_lo, *bc)),
+            );
+            local_edits.extend(edits);
+            if skipped {
+                any_skipped = true;
             }
         }
     }
@@ -226,6 +221,48 @@ pub fn build_inline_into_all_callers_workspace(
     let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;
 
     Some((local_lsp_edits, other_file_edits))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn process_call_sites_for_document(
+    doc: &str,
+    masked: &str,
+    starts: &[usize],
+    spans: &[(u32, u32)],
+    fn_name: &str,
+    self_kind: Option<SelfKind>,
+    params: &[FnParamInfo],
+    body_src: &str,
+    body_has_question_mark: bool,
+    effective_ret_ty: Option<&str>,
+    def_range: Option<(usize, usize)>,
+) -> (Vec<(usize, usize, String)>, bool) {
+    let mut edits = Vec::new();
+    let mut any_skipped = false;
+    for &(span_line, span_col) in spans {
+        let Some(ref_byte) = line_col_to_byte(doc, starts, span_line, span_col) else {
+            any_skipped = true;
+            continue;
+        };
+        if let Some((def_lo, def_hi)) = def_range {
+            if ref_byte >= def_lo && ref_byte < def_hi {
+                continue;
+            }
+        }
+        if body_has_question_mark {
+            let ret = effective_ret_ty.unwrap_or("");
+            if !is_caller_return_compatible(doc, masked, starts, ref_byte, ret) {
+                any_skipped = true;
+                continue;
+            }
+        }
+        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, ref_byte, fn_name, self_kind, params, body_src) {
+            edits.push((site_start, site_end, inlined_text));
+        } else {
+            any_skipped = true;
+        }
+    }
+    (edits, any_skipped)
 }
 
 fn resolve_ref_to_absolute(ws: &WorkspaceIndex, doc_file: &str, r: &ridx_format::WorkspaceReference) -> PathBuf {
@@ -289,51 +326,4 @@ fn is_same_doc(abs: &Path, doc_file: &str, canonical_file: Option<&Path>) -> boo
         }
     }
     false
-}
-
-fn process_call_site(src: &str, masked: &str, ref_byte: usize, name: &str, self_kind: Option<SelfKind>, params: &[FnParamInfo], body_src: &str) -> Option<(usize, usize, String)> {
-    let mb = masked.as_bytes();
-    let name_end = ref_byte + name.len();
-    if name_end > src.len() || &src[ref_byte..name_end] != name {
-        return None;
-    }
-
-    let mut p = name_end;
-    while p < src.len() && mb[p].is_ascii_whitespace() {
-        p += 1;
-    }
-    if p >= src.len() || mb[p] != b'(' {
-        return None;
-    }
-    let call_end = skip_balanced(mb, p, b'(', b')')?;
-    let raw_args: Vec<String> = split_top_level_commas(&src[p + 1..call_end - 1]).into_iter().filter(|a| !a.trim().is_empty()).collect();
-
-    let (call_start, recv_expr) = if self_kind.is_some() {
-        let before_dot = src[..ref_byte].trim_end();
-        if !before_dot.ends_with('.') || before_dot.ends_with("..") {
-            return None;
-        }
-        let dot_byte = before_dot.len() - 1;
-        let recv_start = find_receiver_start(src, masked, dot_byte)?;
-        let recv = src[recv_start..dot_byte].trim();
-        if recv.is_empty() || recv.starts_with('.') || recv.ends_with('.') || recv.contains('(') || recv.contains('[') {
-            return None;
-        }
-        (recv_start, Some(recv))
-    } else {
-        let path_start = find_path_start(masked, ref_byte);
-        (path_start, None)
-    };
-
-    let non_self_count = params.iter().filter(|p| !p.is_self).count();
-    if raw_args.len() != non_self_count || raw_args.iter().any(|a| a.contains('(')) {
-        return None;
-    }
-
-    let prev_ch = masked[..call_start].trim_end().as_bytes().last().copied().unwrap_or(b'{');
-    let next_ch = masked[call_end..].trim_start().as_bytes().first().copied().unwrap_or(b'}');
-    let standalone = matches!(prev_ch, b'{' | b';') && matches!(next_ch, b';' | b'}');
-
-    let inlined = format_inlined_call(recv_expr, self_kind, params, &raw_args, body_src, standalone);
-    Some((call_start, call_end, inlined))
 }

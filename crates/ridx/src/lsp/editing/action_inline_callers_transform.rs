@@ -10,7 +10,68 @@
 
 //! Inlining body transformations, rewrite rules, and return unwrapping.
 
+use super::action_generics_sub::split_top_level_commas;
+use super::action_inline_callers_helpers::{find_path_start, find_receiver_start, format_inlined_call, FnParamInfo, SelfKind};
 use super::action_parse::is_ident_byte;
+use super::action_parse_items::skip_balanced;
+
+pub(crate) fn process_call_site(
+    src: &str,
+    masked: &str,
+    ref_byte: usize,
+    name: &str,
+    self_kind: Option<SelfKind>,
+    params: &[FnParamInfo],
+    body_src: &str,
+) -> Option<(usize, usize, String)> {
+    let mb = masked.as_bytes();
+    let name_end = ref_byte + name.len();
+    if name_end > src.len() || &src[ref_byte..name_end] != name {
+        return None;
+    }
+
+    let mut p = name_end;
+    while p < src.len() && mb[p].is_ascii_whitespace() {
+        p += 1;
+    }
+    if p >= src.len() || mb[p] != b'(' {
+        return None;
+    }
+    let call_end = skip_balanced(mb, p, b'(', b')')?;
+    let raw_args: Vec<String> = split_top_level_commas(&src[p + 1..call_end - 1]).into_iter().filter(|a| !a.trim().is_empty()).collect();
+
+    let (call_start, recv_expr) = if self_kind.is_some() {
+        let before_dot = src[..ref_byte].trim_end();
+        if !before_dot.ends_with('.') || before_dot.ends_with("..") {
+            return None;
+        }
+        let dot_byte = before_dot.len() - 1;
+        let recv_start = find_receiver_start(src, masked, dot_byte)?;
+        if recv_start > 0 && (mb[recv_start - 1] == b'.' || is_ident_byte(mb[recv_start - 1])) {
+            return None;
+        }
+        let recv = src[recv_start..dot_byte].trim();
+        if recv.is_empty() || recv.starts_with('.') || recv.ends_with('.') || recv.contains('(') || recv.contains('[') {
+            return None;
+        }
+        (recv_start, Some(recv))
+    } else {
+        let path_start = find_path_start(masked, ref_byte);
+        (path_start, None)
+    };
+
+    let non_self_count = params.iter().filter(|p| !p.is_self).count();
+    if raw_args.len() != non_self_count || raw_args.iter().any(|a| a.contains('(')) {
+        return None;
+    }
+
+    let prev_ch = masked[..call_start].trim_end().as_bytes().last().copied().unwrap_or(b'{');
+    let next_ch = masked[call_end..].trim_start().as_bytes().first().copied().unwrap_or(b'}');
+    let standalone = matches!(prev_ch, b'{' | b';') && matches!(next_ch, b';' | b'}');
+
+    let inlined = format_inlined_call(recv_expr, self_kind, params, &raw_args, body_src, standalone);
+    Some((call_start, call_end, inlined))
+}
 
 pub(crate) fn rewrite_self_to_this(body_src: &str, masked_body: &str) -> String {
     let mb = masked_body.as_bytes();
