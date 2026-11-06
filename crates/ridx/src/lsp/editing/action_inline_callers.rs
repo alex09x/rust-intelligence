@@ -10,6 +10,7 @@
 
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
+use super::action_inline_callers_cross::{is_same_doc, is_safe_for_cross_file_inline, process_other_document_call_sites, resolve_ref_to_absolute};
 use super::action_inline_callers_early_return::transform_early_returns;
 use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{
@@ -23,7 +24,7 @@ use super::action_struct_conv_index::byte_to_line_col;
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub type InlineEdits = (Vec<Value>, BTreeMap<String, Vec<Value>>);
 
@@ -204,7 +205,7 @@ pub fn build_inline_into_all_callers_workspace(
 
     let (del_lo, del_hi) = line_deletion_span(doc_text, item.first_attr_byte, *bc);
     let mut local_edits = Vec::new();
-    let other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
+    let mut other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     let def_lo = item.first_attr_byte.min(item.decl_start_byte);
     let mut any_skipped = false;
 
@@ -226,6 +227,7 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
+    let cross_file_safe = is_pub && is_safe_for_cross_file_inline(&body_transformed);
     for (abs_path, spans) in &refs_by_file {
         if is_same_doc(abs_path, file, canonical_file.as_deref()) {
             let (edits, skipped) = process_call_sites_for_document(
@@ -248,19 +250,41 @@ pub fn build_inline_into_all_callers_workspace(
             if skipped {
                 any_skipped = true;
             }
+        } else if cross_file_safe {
+            let skipped = process_other_document_call_sites(
+                abs_path,
+                spans,
+                &item.name,
+                self_kind,
+                &parsed_params,
+                &body_transformed,
+                body_has_question_mark,
+                effective_ret_ty.as_deref(),
+                file,
+                Some(ws),
+                is_fully_pub,
+                &mut other_file_edits,
+            );
+            if skipped {
+                any_skipped = true;
+            }
         } else if !is_pub {
             any_skipped = true;
         }
     }
 
-    if local_edits.is_empty() || (body_has_question_mark && any_skipped) {
+    if (local_edits.is_empty() && other_file_edits.is_empty()) || (body_has_question_mark && any_skipped) {
         return None;
     }
 
     if !any_skipped && !is_pub && !is_trait_member {
         local_edits.push((del_lo, del_hi, String::new()));
     }
-    let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;
+    let local_lsp_edits = if local_edits.is_empty() {
+        Vec::new()
+    } else {
+        to_lsp_edits(doc_text, starts, local_edits)?
+    };
 
     Some((local_lsp_edits, other_file_edits))
 }
@@ -276,7 +300,7 @@ fn has_safe_pub_new_params(params: &[FnParamInfo]) -> bool {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn process_call_sites_for_document(
+pub(crate) fn process_call_sites_for_document(
     doc: &str,
     masked: &str,
     starts: &[usize],
@@ -318,67 +342,4 @@ fn process_call_sites_for_document(
         }
     }
     (edits, any_skipped)
-}
-
-fn resolve_ref_to_absolute(ws: &WorkspaceIndex, doc_file: &str, r: &ridx_format::WorkspaceReference) -> PathBuf {
-    let p = r.resolved_path();
-    let doc_path = Path::new(doc_file);
-    if p == doc_path || r.file == doc_file {
-        return doc_path.to_path_buf();
-    }
-    let r_norm = r.file.strip_prefix('/').unwrap_or(r.file);
-    if doc_file.ends_with(r_norm) {
-        let prefix_len = doc_file.len() - r_norm.len();
-        if prefix_len == 0 || doc_file.as_bytes()[prefix_len - 1] == b'/' {
-            return doc_path.to_path_buf();
-        }
-    }
-    if let Some(p_str) = p.to_str() {
-        let p_norm = p_str.strip_prefix('/').unwrap_or(p_str);
-        if doc_file.ends_with(p_norm) {
-            let prefix_len = doc_file.len() - p_norm.len();
-            if prefix_len == 0 || doc_file.as_bytes()[prefix_len - 1] == b'/' {
-                return doc_path.to_path_buf();
-            }
-        }
-    }
-    if p.is_absolute() && p.exists() {
-        return p;
-    }
-    if let Some(root) = ws.workspace_root() {
-        let joined = root.join(&p);
-        if joined.exists() {
-            return joined;
-        }
-        let joined_rf = root.join(Path::new(r.file));
-        if joined_rf.exists() {
-            return joined_rf;
-        }
-    }
-    if let Some(prefix) = doc_file.strip_suffix(r_norm) {
-        let prefix_path = Path::new(prefix);
-        let joined = prefix_path.join(&p);
-        if joined.exists() {
-            return joined;
-        }
-        let joined_rf = prefix_path.join(Path::new(r.file));
-        if joined_rf.exists() {
-            return joined_rf;
-        }
-    }
-    p
-}
-
-fn is_same_doc(abs: &Path, doc_file: &str, canonical_file: Option<&Path>) -> bool {
-    if abs == Path::new(doc_file) {
-        return true;
-    }
-    if let Some(canon) = canonical_file {
-        if let Ok(abs_canon) = std::fs::canonicalize(abs) {
-            if abs_canon == canon {
-                return true;
-            }
-        }
-    }
-    false
 }

@@ -185,7 +185,21 @@ fn test_inline_method_cross_file() {
 
     let actions = query_actions_with_multi_file_resolve(&worker_uri, 2, 18, &ws, &ov);
     let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
-    assert!(inline_action.is_none(), "Expected cross-file method to be safely rejected to prevent broken builds");
+    assert!(inline_action.is_some(), "Expected cross-file method to produce 'Inline into all callers'");
+    let (_, changes) = inline_action.unwrap();
+    let main_uri = format!("file://{}", main_str);
+    let main_edits = changes.get(&main_uri).expect("main.rs edits missing");
+    let updated_main = apply_text_edits(main_code, main_edits);
+    assert!(updated_main.contains("42"), "Expected call site in main.rs to be inlined with 42");
+    let _ = fs::write(&main_file, &updated_main);
+    let status = std::process::Command::new("rustc")
+        .arg("--crate-type")
+        .arg("bin")
+        .arg(&main_file)
+        .arg("--out-dir")
+        .arg(&temp_dir)
+        .status();
+    assert!(status.is_ok_and(|s| s.success()), "Updated cross-file program must compile with rustc");
 }
 
 #[test]
