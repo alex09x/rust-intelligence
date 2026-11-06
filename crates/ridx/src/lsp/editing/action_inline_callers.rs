@@ -112,11 +112,7 @@ pub fn build_inline_into_all_callers_workspace(
     } else {
         raw_body.to_string()
     };
-    let masked_with_self_ty = if contains_word(body_inner_m, "Self") {
-        mask_comments_and_strings(&body_with_self_ty)
-    } else {
-        raw_masked_body.to_string()
-    };
+    let masked_with_self_ty = if contains_word(body_inner_m, "Self") { mask_comments_and_strings(&body_with_self_ty) } else { raw_masked_body.to_string() };
     let body_transformed = if self_param.is_some() {
         rewrite_self_to_this(&body_with_self_ty, &masked_with_self_ty).trim().to_string()
     } else {
