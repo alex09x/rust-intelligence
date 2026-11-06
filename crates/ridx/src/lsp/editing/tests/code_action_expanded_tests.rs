@@ -223,6 +223,28 @@ fn test_tuple_struct_conversion_keeps_comments_between_fields() {
 }
 
 #[test]
+fn test_tuple_struct_conversion_refuses_field_named_like_a_method() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/method_named_field.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "pub struct Rename {\n",
+        "    syntax: u32,\n",
+        "}\n",
+        "pub trait AstNode { fn syntax(&self) -> &u32; }\n",
+        "impl AstNode for Rename {\n",
+        "    fn syntax(&self) -> &u32 { &self.syntax }\n",
+        "}\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+
+    // rust-analyzer's `ast::Rename`: the index mistakes `self.syntax` for the method, so a converted struct would keep
+    // a `.syntax` field access and stop compiling (E0615).
+    let acts = query_deferred_and_resolve(&uri, 0, 12, &ws, &ov);
+    assert!(!acts.iter().any(|(t, _)| t == "Convert to tuple struct"), "{:?}", acts.iter().map(|(t, _)| t).collect::<Vec<_>>());
+}
+
+#[test]
 fn test_tuple_struct_conversion_leaves_same_named_variant_alone() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/variant_conv.rs");

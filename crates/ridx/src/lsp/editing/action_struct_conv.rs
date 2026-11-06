@@ -49,6 +49,11 @@ pub fn build_convert_to_tuple_struct(
     if fields.is_empty() || fields.len() > 16 {
         return None;
     }
+    // A method named like a field (`syntax` and `fn syntax(&self)`) makes the index mistake field accesses for the
+    // method, so some `.syntax` would stay unconverted: refuse rather than break the build.
+    if fields.iter().any(|(_, name, _, _)| declares_method_named(masked_doc, name)) {
+        return None;
+    }
     let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
     let mut indexed = None;
     let mut struct_sites = std::collections::HashSet::new();
@@ -317,6 +322,16 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
 
 /// Whether `Type::Name` appears in the module: a variant (or associated item) shares the struct's name, and without
 /// the index its declaration and uses cannot be told from the struct's literals.
+/// Whether the (comment- and string-masked) file declares a method `fn name(` taking `self`.
+fn declares_method_named(masked: &str, name: &str) -> bool {
+    let needle = format!("fn {name}(");
+    masked.match_indices(&needle).any(|(at, _)| {
+        let before_ok = at == 0 || !masked.as_bytes()[at - 1].is_ascii_alphanumeric();
+        let params = masked[at + needle.len()..].trim_start();
+        before_ok && (params.starts_with("&self") || params.starts_with("self") || params.starts_with("&mut self") || params.starts_with("mut self"))
+    })
+}
+
 fn names_a_variant_too(mod_masked: &str, name: &str) -> bool {
     let b = mod_masked.as_bytes();
     mod_masked.match_indices(name).any(|(p, _)| {
