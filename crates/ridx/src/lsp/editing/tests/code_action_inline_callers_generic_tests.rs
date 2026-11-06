@@ -291,3 +291,48 @@ fn test_inline_trait_impl_method_preserves_decl_and_compiles() {
     assert!(updated.contains("fn greet(&self)"), "Trait method declaration must NOT be deleted");
     assert_rustc_compiles(&updated, "Inline into all callers: trait impl method compiles");
 }
+
+#[test]
+fn test_inline_getter_returning_ref_compiles() {
+    let temp_dir = tempfile::tempdir().unwrap().path().to_path_buf();
+    let src_file = temp_dir.join("lib.rs");
+    let src_file_str = src_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_getter_ref", "0.1.0");
+    let code = concat!(
+        "pub struct Person {\n",
+        "    name: String,\n",
+        "}\n",
+        "impl Person {\n",
+        "    pub fn «get_name»(&self) -> &str {\n",
+        "        &self.name\n",
+        "    }\n",
+        "}\n",
+        "pub fn caller(p: &Person) -> &str {\n",
+        "    p.get_name()\n",
+        "}\n",
+    );
+    let (code_cleaned, def_ids) = builder.add_defs_with_ids(code, &src_file_str, "test_getter_ref", DefKind::Fn);
+    let _ = fs::write(&src_file, &code_cleaned);
+
+    builder.add_ref("test_getter_ref::get_name", &src_file_str, 5, 12, 5, 20, Some(def_ids[0]), Some(&src_file_str), 5, 12, DefKind::Fn);
+    builder.add_ref("test_getter_ref::get_name", &src_file_str, 10, 7, 10, 15, Some(def_ids[0]), Some(&src_file_str), 5, 12, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", src_file_str);
+    ov.open_document(&uri, &src_file_str, 1, code_cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 4, 12, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for getter returning &str");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("lib.rs edits missing");
+    let updated = apply_text_edits(&code_cleaned, edits);
+
+    assert_rustc_compiles(&updated, "Inline into all callers: getter returning &str compiles");
+}

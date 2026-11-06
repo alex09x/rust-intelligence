@@ -46,12 +46,8 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty()
-        || (!vis.is_empty() && !vis.starts_with("pub"))
-        || is_primitive_scalar(&item.name)
-        || file.contains("regex-lite")
-        || file.contains("crates/rust-analyzer/src/")
-        || file.contains("gen_trait_fn_body.rs")
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name)
+        || file.contains("regex-lite") || file.contains("crates/rust-analyzer/src/") || file.contains("gen_trait_fn_body.rs")
         || (file.contains("builtin_derive.rs") && item.name == "simple_trait_predicates")
     {
         return None;
@@ -87,19 +83,18 @@ pub fn build_inline_into_all_callers_workspace(
         | super::action_parse::EnclosingContext::TraitImpl { self_ty, .. } => {
             let base_raw = self_ty.split('<').next().unwrap_or(self_ty).trim().rsplit("::").next().unwrap_or("").trim();
             let base_name = base_raw.strip_prefix("r#").unwrap_or(base_raw);
-            if !base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-                Some(base_name.to_string())
-            } else {
-                None
-            }
+            (!base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')).then(|| base_name.to_string())
         }
         _ => None,
     };
+    let ret_starts_with_ref = ret_src.as_deref().is_some_and(|r| r.starts_with('&'));
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") || r.starts_with('&') {
+        if r.contains("impl ") {
             return None;
         }
-        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if r.starts_with('&') {
+            None
+        } else if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             if impl_has_type_generics {
@@ -159,6 +154,14 @@ pub fn build_inline_into_all_callers_workspace(
     let parsed_params = parse_fn_params(params_src, &type_generics)?;
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
+
+    if ret_starts_with_ref
+        && (!matches!(self_kind, Some(SelfKind::Ref | SelfKind::MutRef))
+            || contains_word(body_inner_m, "let")
+            || contains_word(body_inner_m, "return"))
+    {
+        return None;
+    }
 
     if is_fully_pub && item.name == "new" && !has_safe_pub_new_params(&parsed_params) {
         return None;
