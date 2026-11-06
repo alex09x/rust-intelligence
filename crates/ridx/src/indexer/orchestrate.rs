@@ -100,6 +100,13 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         let _ = fs::remove_dir_all(&cargo_target_dir);
     }
     let _ = fs::create_dir_all(&cargo_target_dir);
+    let check_started = std::time::SystemTime::now();
+    // The variant active before this run: a crate that fails to build now keeps its shards from there.
+    let previous_variant = fs::read(base_out_dir.join("ridx_manifest.json"))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+        .and_then(|m| m["variant_dir"].as_str().map(|d| base_out_dir.join(d)))
+        .filter(|d| d != &variant_out_dir && d.is_dir());
 
     eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
     eprintln!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
@@ -177,7 +184,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
                 return Err(format!("failed to execute {} check: {e}", builder.as_str()));
             }
         };
-        if !output.status.success() {
+        if !output.status.success() && variant_has_shards(&variant_out_dir) {
+            eprintln!("  warning: {} check exited with status {}; publishing the crates that built", builder.as_str(), output.status);
+            keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
+        } else if !output.status.success() {
             let stderr_str = String::from_utf8_lossy(&output.stderr);
             let tail: Vec<&str> = stderr_str.lines().rev().take(20).collect();
             let tail_joined = tail.into_iter().rev().collect::<Vec<_>>().join("\n");
@@ -193,7 +203,11 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
                 return Err(format!("failed to execute {} check: {e}", builder.as_str()));
             }
         };
-        if !status.success() {
+        // With `--keep-going` the crates that build are indexed even when another fails: publish them.
+        if !status.success() && variant_has_shards(&variant_out_dir) {
+            eprintln!("  warning: {} check exited with status {status}; publishing the crates that built", builder.as_str());
+            keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
+        } else if !status.success() {
             return Err(format!("{} check exited with status {status}", builder.as_str()));
         }
     }
@@ -273,6 +287,60 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     Ok(PublishedVariant { base_out_dir, variant_out_dir, variant_id })
 }
 
+/// After a check that failed for some crates: the shards it wrote replace the earlier shards of the same crates,
+/// and a crate that did not build keeps its last good shards.
+fn keep_last_good_shards(dir: &Path, started: std::time::SystemTime, previous: Option<&Path>) {
+    let shards: Vec<(PathBuf, String, bool)> = fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "ridx"))
+        .filter_map(|p| {
+            let stem = p.file_stem()?.to_str()?.to_string();
+            let krate = stem.rsplit_once('-').map_or(stem.clone(), |(c, _)| c.to_string());
+            let fresh = fs::metadata(&p).and_then(|m| m.modified()).is_ok_and(|t| t >= started);
+            Some((p, krate, fresh))
+        })
+        .collect();
+    let rebuilt: std::collections::HashSet<&str> = shards.iter().filter(|s| s.2).map(|s| s.1.as_str()).collect();
+    for (path, krate, fresh) in &shards {
+        if !fresh && rebuilt.contains(krate.as_str()) {
+            let _ = fs::remove_file(path);
+        }
+    }
+    // Crates with no shard here take theirs, with their sidecars, from the variant active before.
+    let Some(prev) = previous else { return };
+    let present: std::collections::HashSet<String> = shards.iter().map(|s| s.1.clone()).collect();
+    let mut adopted = std::collections::HashSet::new();
+    for entry in fs::read_dir(prev).into_iter().flatten().flatten() {
+        let p = entry.path();
+        let Some(name) = p.file_name().and_then(|n| n.to_str()).map(str::to_string) else { continue };
+        let Some(stem) = name.strip_suffix(".ridx") else { continue };
+        let krate = stem.rsplit_once('-').map_or(stem, |(c, _)| c);
+        if !present.contains(krate) && fs::copy(&p, dir.join(&name)).is_ok() {
+            adopted.insert(name);
+        }
+    }
+    let (from, to) = (prev.join(".deps"), dir.join(".deps"));
+    for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
+        let Some(mut j) = fs::read(entry.path()).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { continue };
+        let shard = j["object_path"].as_str().and_then(|o| Path::new(o).file_name()).and_then(|f| f.to_str()).map(str::to_string);
+        if !shard.as_ref().is_some_and(|s| adopted.contains(s)) || to.join(entry.file_name()).exists() {
+            continue;
+        }
+        j["object_path"] = serde_json::json!(dir.join(shard.unwrap_or_default()).display().to_string());
+        if let Ok(b) = serde_json::to_vec(&j) {
+            let _ = fs::write(to.join(entry.file_name()), b);
+        }
+    }
+}
+
+/// Whether the variant directory holds any shard.
+fn variant_has_shards(dir: &Path) -> bool {
+    fs::read_dir(dir).into_iter().flatten().flatten().any(|e| e.path().extension().is_some_and(|x| x == "ridx"))
+}
+
 pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     match try_run_indexing(opts) {
         Ok(pv) => pv,
@@ -283,5 +351,33 @@ pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
             #[cfg(test)]
             panic!("{e}");
         }
+    }
+}
+
+#[cfg(test)]
+mod last_good_tests {
+    use super::*;
+
+    #[test]
+    fn test_failed_crates_keep_last_good_shards() {
+        let root = std::env::temp_dir().join(format!("ridx_last_good_{}", std::process::id()));
+        let (prev, cur) = (root.join("prev"), root.join("cur"));
+        for d in [&prev.join(".deps"), &cur.join(".deps")] {
+            fs::create_dir_all(d).unwrap();
+        }
+        fs::write(prev.join("test_suite-aa.ridx"), b"old").unwrap();
+        fs::write(prev.join("serde-aa.ridx"), b"old").unwrap();
+        fs::write(prev.join(".deps/test_suite-aa.json"), serde_json::json!({ "object_path": prev.join("test_suite-aa.ridx").display().to_string() }).to_string()).unwrap();
+        fs::write(cur.join("serde-old.ridx"), b"stale").unwrap();
+        let started = std::time::SystemTime::now();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(cur.join("serde-new.ridx"), b"fresh").unwrap();
+        keep_last_good_shards(&cur, started, Some(&prev));
+        let mut names: Vec<String> = fs::read_dir(&cur).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).filter(|n| n.ends_with(".ridx")).collect();
+        names.sort();
+        assert_eq!(names, ["serde-new.ridx", "test_suite-aa.ridx"]);
+        let side: serde_json::Value = serde_json::from_slice(&fs::read(cur.join(".deps/test_suite-aa.json")).unwrap()).unwrap();
+        assert_eq!(side["object_path"], cur.join("test_suite-aa.ridx").display().to_string());
+        let _ = fs::remove_dir_all(&root);
     }
 }

@@ -87,9 +87,9 @@ fn test_build_check_command_cargo_and_mitts_parity() {
     assert_eq!(cargo_prog, "cargo");
     assert_eq!(mitts_prog, "mitts");
 
-    // Args are identical
-    assert_eq!(cargo_args, mitts_args);
-    assert_eq!(cargo_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--workspace",]);
+    // Args are identical but for Cargo's `--keep-going` (indexing the crates that build when one fails).
+    assert_eq!(mitts_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--workspace",]);
+    assert_eq!(cargo_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--keep-going", "--workspace",]);
 
     // Envs are identical
     assert_eq!(cargo_envs, mitts_envs);

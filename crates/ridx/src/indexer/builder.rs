@@ -130,6 +130,10 @@ pub fn build_check_command_with_no_deps(
     let program = builder.as_str().to_string();
 
     let mut args = vec!["check".to_string(), "--manifest-path".to_string(), manifest_path.display().to_string(), "--all-targets".to_string()];
+    // One crate that fails to build (a test harness needing another toolchain) must not leave the rest unindexed.
+    if builder == IndexBuilder::Cargo {
+        args.push("--keep-going".to_string());
+    }
     if let Some(ref p) = opts.package {
         args.push("-p".to_string());
         args.push(p.clone());
