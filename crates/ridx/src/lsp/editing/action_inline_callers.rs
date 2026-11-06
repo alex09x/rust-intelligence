@@ -47,7 +47,7 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
+    if file.contains("proc-macro-api") || !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
         return None;
     }
     let is_pub = vis.starts_with("pub");

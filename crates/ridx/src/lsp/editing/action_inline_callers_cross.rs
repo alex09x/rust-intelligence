@@ -170,6 +170,10 @@ pub(crate) fn process_other_document_call_sites(
     is_fully_pub: bool,
     other_file_edits: &mut BTreeMap<String, Vec<Value>>,
 ) -> bool {
+    let path_str = abs_path.to_string_lossy();
+    if path_str.contains("proc-macro-api") {
+        return false;
+    }
     let Ok(other_text) = std::fs::read_to_string(abs_path) else {
         return true; // skipped
     };
