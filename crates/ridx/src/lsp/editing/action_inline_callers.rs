@@ -46,10 +46,7 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name)
-        || file.contains("regex-lite") || file.contains("crates/rust-analyzer/src/") || file.contains("gen_trait_fn_body.rs")
-        || (file.contains("builtin_derive.rs") && item.name == "simple_trait_predicates")
-    {
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
         return None;
     }
     let is_pub = vis.starts_with("pub");
@@ -267,7 +264,7 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    if local_edits.is_empty() || (body_has_question_mark && any_skipped) || (any_skipped && !is_fully_pub && !is_trait_member) {
+    if local_edits.is_empty() || (body_has_question_mark && any_skipped) {
         return None;
     }
 
