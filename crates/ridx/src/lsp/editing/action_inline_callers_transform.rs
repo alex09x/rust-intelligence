@@ -27,7 +27,7 @@ pub(crate) fn process_call_site(
     body_src: &str,
     file_opt: Option<&str>,
     ws_opt: Option<&ridx_format::WorkspaceIndex>,
-    is_pub: bool,
+    is_fully_pub: bool,
 ) -> Option<(usize, usize, String)> {
     let mb = masked.as_bytes();
     let name_end = ref_byte + name.len();
@@ -61,9 +61,10 @@ pub(crate) fn process_call_site(
         }
         let rty = match (file_opt, ws_opt) {
             (Some(f), Some(w)) => {
-                let l0 = starts.partition_point(|&s| s <= recv_start).saturating_sub(1);
+                let end_byte = src[..dot_byte].trim_end().len().saturating_sub(1);
+                let l0 = starts.partition_point(|&s| s <= end_byte).saturating_sub(1);
                 let l1 = (l0 + 1) as u32;
-                let c1 = (1 + src[starts[l0]..recv_start].chars().count()) as u32;
+                let c1 = (1 + src[starts[l0]..end_byte].chars().count()) as u32;
                 w.type_at(f, l1, c1)
             }
             _ => None,
@@ -74,7 +75,7 @@ pub(crate) fn process_call_site(
         (path_start, None, None)
     };
 
-    if is_pub {
+    if is_fully_pub {
         if self_kind == Some(SelfKind::MutRef) {
             let recv_str = recv_expr.unwrap_or("");
             let is_mut_ref = recv_ty.is_some_and(|t| t.starts_with("&mut "));

@@ -86,9 +86,7 @@ pub fn build_inline_into_all_callers_workspace(
         if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if r.contains("'_") {
-            return None;
-        } else if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             Some(self_type_name.as_ref()?.clone())
@@ -130,6 +128,7 @@ pub fn build_inline_into_all_callers_workspace(
         || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
         || contains_recursive_call(&raw_masked_body, &item.name)
         || type_generics.iter().any(|g| contains_word(&raw_masked_body, g))
+        || (effective_ret_ty.is_none() && raw_masked_body.contains(".collect()") && !raw_masked_body.contains("collect::<"))
     {
         return None;
     }
@@ -183,7 +182,7 @@ pub fn build_inline_into_all_callers_workspace(
         !is_same_doc(&abs, file, canonical_file.as_deref())
     });
 
-    if has_cross_file {
+    if !is_pub && has_cross_file {
         return None;
     }
 
@@ -215,7 +214,7 @@ pub fn build_inline_into_all_callers_workspace(
                 Some((def_lo, *bc)),
                 Some(file),
                 Some(ws),
-                is_pub,
+                is_fully_pub,
             );
             local_edits.extend(edits);
             if skipped {
@@ -261,7 +260,7 @@ fn process_call_sites_for_document(
     def_range: Option<(usize, usize)>,
     file_opt: Option<&str>,
     ws_opt: Option<&WorkspaceIndex>,
-    is_pub: bool,
+    is_fully_pub: bool,
 ) -> (Vec<(usize, usize, String)>, bool) {
     let mut edits = Vec::new();
     let mut any_skipped = false;
@@ -282,7 +281,7 @@ fn process_call_sites_for_document(
                 continue;
             }
         }
-        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_pub) {
+        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub) {
             edits.push((site_start, site_end, inlined_text));
         } else {
             any_skipped = true;
