@@ -67,7 +67,9 @@ fn is_concrete_non_trait_target(ws: &WorkspaceIndex, crate_name: &str, reader: &
         .map(|d| DefKind::from(d.kind))
         .or_else(|| ws.find_definition_by_path(target).map(|d| d.kind))
         .or_else(|| ws.find_definition_by_path(&format!("{crate_name}::{target}")).map(|d| d.kind));
-    kind_opt.is_some_and(|k| k != DefKind::Trait)
+    // Only a nominal type is a concrete target: not a type parameter (`Res<T>` derefs to its `T`), nor a derive
+    // macro sharing a trait's name (`SystemParam`).
+    kind_opt.is_some_and(|k| matches!(k, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias))
 }
 
 fn collect_indexed_generic_deref_wrappers(ws: &WorkspaceIndex) -> Arc<HashSet<String>> {

@@ -235,7 +235,7 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
 
         if let Some(t_all) = t_start_all {
             eprintln!(
-                "[RIDX_PROFILE] owners={owners:?} deref_us={} find_defs_us={} (defs={}) cat_us={} collect_us={} total_us={}",
+                "[RIDX_PROFILE] ty={ty_name} owners={owners:?} deref_us={} find_defs_us={} (defs={}) cat_us={} collect_us={} total_us={}",
                 t_deref.as_micros(),
                 t_find.as_micros(),
                 defs_count,
