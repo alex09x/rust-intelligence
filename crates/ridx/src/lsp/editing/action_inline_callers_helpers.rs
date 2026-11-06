@@ -284,8 +284,13 @@ pub(crate) fn format_inlined_call(
     for (p, arg) in non_self_params.iter().zip(args.iter()) {
         let arg_trimmed = arg.trim();
         if let Some(id) = &p.ident {
+            if arg_trimmed == id.as_str() {
+                continue;
+            }
             if p.is_mut_ref && !arg_trimmed.starts_with("&mut ") {
                 bindings.push(format!("let {id} = &mut *{arg_trimmed};"));
+            } else if p.is_ref && !arg_trimmed.starts_with('&') {
+                bindings.push(format!("let {id} = &*{arg_trimmed};"));
             } else if let Some(ty) = &p.ty {
                 let norm_ty = normalize_param_type_for_binding(ty);
                 if !norm_ty.contains('\'') && !norm_ty.contains("Self") && !norm_ty.contains("impl ") && !norm_ty.contains("dyn ") {

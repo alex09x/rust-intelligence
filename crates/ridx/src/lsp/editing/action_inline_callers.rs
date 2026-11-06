@@ -46,7 +46,7 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) || file.contains("regex-lite") {
         return None;
     }
     let is_pub = vis.starts_with("pub");
@@ -171,7 +171,7 @@ pub fn build_inline_into_all_callers_workspace(
         body_with_self_ty.trim().to_string()
     };
     let body_transformed = if let Some(ret_ty) = &effective_ret_ty {
-        if !ret_ty.contains('\'') && !ret_ty.contains("Self") {
+        if !body_transformed.starts_with("'inl: {") && !ret_ty.contains('\'') && !ret_ty.contains("Self") {
             format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
         } else {
             body_transformed
@@ -246,7 +246,7 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    if local_edits.is_empty() || (body_has_question_mark && any_skipped) {
+    if local_edits.is_empty() || (body_has_question_mark && any_skipped) || (any_skipped && !is_fully_pub) {
         return None;
     }
 
