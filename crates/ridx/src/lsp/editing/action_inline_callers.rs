@@ -84,7 +84,7 @@ pub fn build_inline_into_all_callers_workspace(
         _ => None,
     };
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") || r.starts_with('&') {
+        if r.contains("impl ") || r.contains('&') {
             return None;
         }
         if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
@@ -171,7 +171,7 @@ pub fn build_inline_into_all_callers_workspace(
         body_with_self_ty.trim().to_string()
     };
     let body_transformed = if let Some(ret_ty) = &effective_ret_ty {
-        if !body_transformed.starts_with("'inl: {") && !ret_ty.contains('\'') && !ret_ty.contains("Self") {
+        if !ret_ty.contains('\'') && !ret_ty.contains("Self") {
             format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
         } else {
             body_transformed
