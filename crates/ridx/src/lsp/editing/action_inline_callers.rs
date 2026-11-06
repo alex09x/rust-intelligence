@@ -56,7 +56,8 @@ pub fn build_inline_into_all_callers_workspace(
     let is_fully_pub = vis == "pub";
     match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. }
-        | super::action_parse::EnclosingContext::TraitImpl { cfg_attrs, .. } => {
+        | super::action_parse::EnclosingContext::TraitImpl { cfg_attrs, .. }
+        | super::action_parse::EnclosingContext::TraitDecl { cfg_attrs, .. } => {
             if cfg_attrs.iter().any(|a| !a.contains("doc(") && !a.contains("diagnostic::")) {
                 return None;
             }
@@ -69,13 +70,15 @@ pub fn build_inline_into_all_callers_workspace(
     };
     let mut type_generics = extract_type_generic_names(generics_src);
     if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. }
-        | super::action_parse::EnclosingContext::TraitImpl { generics_src: impl_gens, .. } = &item.enclosing
+        | super::action_parse::EnclosingContext::TraitImpl { generics_src: impl_gens, .. }
+        | super::action_parse::EnclosingContext::TraitDecl { generics_src: impl_gens, .. } = &item.enclosing
     {
         type_generics.extend(extract_type_generic_names(impl_gens));
     }
     let impl_has_type_generics = match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { generics_src, .. }
-        | super::action_parse::EnclosingContext::TraitImpl { generics_src, .. } => !has_only_lifetime_generics(generics_src),
+        | super::action_parse::EnclosingContext::TraitImpl { generics_src, .. }
+        | super::action_parse::EnclosingContext::TraitDecl { generics_src, .. } => !has_only_lifetime_generics(generics_src),
         _ => false,
     };
     let self_type_name = match &item.enclosing {
@@ -208,8 +211,8 @@ pub fn build_inline_into_all_callers_workspace(
         !is_same_doc(&abs, file, canonical_file.as_deref())
     });
 
-    let is_trait_impl = matches!(&item.enclosing, super::action_parse::EnclosingContext::TraitImpl { .. });
-    if !is_pub && !is_trait_impl && has_cross_file {
+    let is_trait_member = matches!(&item.enclosing, super::action_parse::EnclosingContext::TraitImpl { .. } | super::action_parse::EnclosingContext::TraitDecl { .. });
+    if !is_pub && !is_trait_member && has_cross_file {
         return None;
     }
 
@@ -264,11 +267,11 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    if local_edits.is_empty() || (body_has_question_mark && any_skipped) || (any_skipped && !is_fully_pub && !is_trait_impl) {
+    if local_edits.is_empty() || (body_has_question_mark && any_skipped) || (any_skipped && !is_fully_pub && !is_trait_member) {
         return None;
     }
 
-    if !any_skipped && !is_pub && !is_trait_impl {
+    if !any_skipped && !is_pub && !is_trait_member {
         local_edits.push((del_lo, del_hi, String::new()));
     }
     let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;
