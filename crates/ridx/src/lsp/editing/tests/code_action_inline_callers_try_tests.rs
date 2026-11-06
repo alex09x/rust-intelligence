@@ -188,3 +188,52 @@ fn test_inline_fn_with_question_mark_rejected_when_caller_does_not_return_result
     let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
     assert!(inline_action.is_none(), "Should NOT offer 'Inline into all callers' when caller does not return Result");
 }
+
+#[test]
+fn test_inline_fn_with_underscored_type_identifier() {
+    let id = INLINE_TRY_TEST_ID.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("ridx_inline_under_{}_{}", std::process::id(), id));
+    let _ = fs::create_dir_all(&temp_dir);
+    let lib_file = temp_dir.join("lib.rs");
+    let lib_str = lib_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_under", "0.1.0");
+
+    let code = concat!(
+        "pub mod my_mod {\n",
+        "    pub struct Type_A(pub i32);\n",
+        "}\n",
+        "fn «process_val»(arg: my_mod::Type_A) -> i32 {\n",
+        "    arg.0 * 2\n",
+        "}\n",
+        "pub fn caller() -> i32 {\n",
+        "    process_val(my_mod::Type_A(21))\n",
+        "}\n",
+    );
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_under", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_under::process_val", &lib_str, 4, 4, 4, 15, Some(def_ids[0]), Some(&lib_str), 4, 4, DefKind::Fn);
+    builder.add_ref("test_under::process_val", &lib_str, 8, 5, 8, 16, Some(def_ids[0]), Some(&lib_str), 4, 4, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 3, 4, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' when parameter type has underscores in identifier name");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(!updated.contains("fn process_val"), "Declaration should be deleted");
+    assert!(!updated.contains("process_val(my_mod::Type_A(21))"), "Call site should be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: underscored type identifier compiles");
+}
