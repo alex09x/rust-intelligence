@@ -289,7 +289,7 @@ pub(crate) fn format_inlined_call(
             }
             if p.is_mut_ref && !arg_trimmed.starts_with("&mut ") {
                 bindings.push(format!("let {id} = &mut *{arg_trimmed};"));
-            } else if p.is_ref && !arg_trimmed.starts_with('&') {
+            } else if p.ty.as_deref().is_some_and(|t| t.starts_with('&') && !t.starts_with("&mut")) && !arg_trimmed.starts_with('&') {
                 bindings.push(format!("let {id} = &*{arg_trimmed};"));
             } else if let Some(ty) = &p.ty {
                 let norm_ty = normalize_param_type_for_binding(ty);
