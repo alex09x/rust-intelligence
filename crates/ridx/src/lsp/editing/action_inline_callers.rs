@@ -14,11 +14,10 @@ use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{contains_recursive_call, find_path_start, find_receiver_start, format_inlined_call, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{has_only_lifetime_bounds, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return};
 use super::action_inline_local::line_deletion_span;
-use super::action_parse::{line_starts_of, mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
+use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_struct_conv_helpers::to_lsp_edits;
 use super::action_struct_conv_index::byte_to_line_col;
-use crate::lsp::protocol::path_to_uri;
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -45,10 +44,10 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && vis != "pub(crate)" && vis != "pub") {
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) {
         return None;
     }
-    let is_pub = vis == "pub";
+    let is_pub = vis.starts_with("pub");
     match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } => {
             if !cfg_attrs.is_empty() {
@@ -63,11 +62,6 @@ pub fn build_inline_into_all_callers_workspace(
     };
     if !has_only_lifetime_generics(generics_src) || !has_only_lifetime_bounds(where_src) {
         return None;
-    }
-    if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") || (r.contains("Result") && (r.contains('\'') || r.contains("Self"))) {
-            return None;
-        }
     }
     let self_type_name = match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { self_ty, generics_src, .. } => {
@@ -84,6 +78,20 @@ pub fn build_inline_into_all_callers_workspace(
             }
         }
         _ => None,
+    };
+    let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
+        if r.contains("impl ") || r.starts_with('&') || r.contains('\'') {
+            return None;
+        }
+        if r == "Self" {
+            Some(self_type_name.as_ref()?.clone())
+        } else if r.contains("Self") {
+            return None;
+        } else {
+            Some(r.to_string())
+        }
+    } else {
+        None
     };
 
     let hdr_m = &masked_doc[item.decl_start_byte..*bo];
@@ -137,15 +145,7 @@ pub fn build_inline_into_all_callers_workspace(
         }
         body_with_self_ty.trim().to_string()
     };
-    let body_transformed = if let Some(ret_ty) = ret_src.as_deref() {
-        if ret_ty.contains("Result") {
-            format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
-        } else {
-            body_transformed
-        }
-    } else {
-        body_transformed
-    };
+    let body_transformed = if let Some(ret_ty) = &effective_ret_ty { format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret") } else { body_transformed };
 
     let ws = ws?;
     let (decl_line, decl_col) = byte_to_line_col(doc_text, starts, item.name_byte);
@@ -160,13 +160,13 @@ pub fn build_inline_into_all_callers_workspace(
         !is_same_doc(&abs, file, canonical_file.as_deref())
     });
 
-    if has_cross_file {
+    if !is_pub && has_cross_file {
         return None;
     }
 
     let (del_lo, del_hi) = line_deletion_span(doc_text, item.first_attr_byte, *bc);
     let mut local_edits = Vec::new();
-    let mut other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
+    let other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     let def_lo = item.first_attr_byte.min(item.decl_start_byte);
     let mut any_skipped = false;
 
@@ -192,40 +192,10 @@ pub fn build_inline_into_all_callers_workspace(
                     any_skipped = true;
                 }
             }
-        } else {
-            let Ok(other_doc) = std::fs::read_to_string(&abs_path) else {
-                any_skipped = true;
-                continue;
-            };
-            let other_masked = mask_comments_and_strings(&other_doc);
-            let other_starts = line_starts_of(&other_doc);
-            let mut other_edits = Vec::new();
-
-            for (span_line, span_col) in spans {
-                let Some(ref_byte) = line_col_to_byte(&other_doc, &other_starts, span_line, span_col) else {
-                    any_skipped = true;
-                    continue;
-                };
-                if let Some((site_start, site_end, inlined_text)) = process_call_site(&other_doc, &other_masked, ref_byte, &item.name, self_kind, &parsed_params, &body_transformed)
-                {
-                    other_edits.push((site_start, site_end, inlined_text));
-                } else {
-                    any_skipped = true;
-                }
-            }
-
-            if !other_edits.is_empty() {
-                if let Some(lsp_edits) = to_lsp_edits(&other_doc, &other_starts, other_edits) {
-                    let other_uri = path_to_uri(&abs_path.to_string_lossy());
-                    other_file_edits.insert(other_uri, lsp_edits);
-                } else {
-                    any_skipped = true;
-                }
-            }
         }
     }
 
-    if local_edits.is_empty() && other_file_edits.is_empty() {
+    if local_edits.is_empty() {
         return None;
     }
 

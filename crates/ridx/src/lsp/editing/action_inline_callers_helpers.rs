@@ -19,6 +19,7 @@ pub(crate) struct FnParamInfo {
     pub self_kind: Option<SelfKind>,
     pub ident: Option<String>,
     pub is_mut_ref: bool,
+    pub ty: Option<String>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -36,7 +37,7 @@ pub(crate) fn parse_fn_params(params_src: &str) -> Option<Vec<FnParamInfo>> {
             continue;
         }
         if t == "self" || t == "mut self" {
-            out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Value), ident: Some("this".to_string()), is_mut_ref: false });
+            out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Value), ident: Some("this".to_string()), is_mut_ref: false, ty: None });
             continue;
         }
         if let Some(rest) = t.strip_prefix('&') {
@@ -51,11 +52,11 @@ pub(crate) fn parse_fn_params(params_src: &str) -> Option<Vec<FnParamInfo>> {
                 rest_trimmed
             };
             if without_lifetime == "self" {
-                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Ref), ident: Some("this".to_string()), is_mut_ref: false });
+                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Ref), ident: Some("this".to_string()), is_mut_ref: false, ty: None });
                 continue;
             }
             if without_lifetime == "mut self" {
-                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::MutRef), ident: Some("this".to_string()), is_mut_ref: true });
+                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::MutRef), ident: Some("this".to_string()), is_mut_ref: true, ty: None });
                 continue;
             }
         }
@@ -69,7 +70,7 @@ pub(crate) fn parse_fn_params(params_src: &str) -> Option<Vec<FnParamInfo>> {
         }
         let bind_lhs = if is_mut { format!("mut {pid}") } else { pid };
         let is_mut_ref = pty.trim().starts_with("&mut ");
-        out.push(FnParamInfo { is_self: false, self_kind: None, ident: Some(bind_lhs), is_mut_ref });
+        out.push(FnParamInfo { is_self: false, self_kind: None, ident: Some(bind_lhs), is_mut_ref, ty: Some(pty) });
     }
     Some(out)
 }
@@ -205,9 +206,7 @@ pub(crate) fn format_inlined_call(recv_expr: Option<&str>, self_kind: Option<Sel
         let recv_binding = match sk {
             SelfKind::Value => format!("let mut this = {trimmed_recv};"),
             SelfKind::Ref => {
-                if trimmed_recv == "self" {
-                    "let this = &*self;".to_string()
-                } else if trimmed_recv.starts_with('&') && !trimmed_recv.starts_with("&mut") {
+                if trimmed_recv.starts_with('&') && !trimmed_recv.starts_with("&mut") {
                     format!("let this = {trimmed_recv};")
                 } else {
                     format!("let this = &{trimmed_recv};")
@@ -232,6 +231,12 @@ pub(crate) fn format_inlined_call(recv_expr: Option<&str>, self_kind: Option<Sel
         if let Some(id) = &p.ident {
             if p.is_mut_ref && !arg_trimmed.starts_with("&mut ") {
                 bindings.push(format!("let {id} = &mut *{arg_trimmed};"));
+            } else if let Some(ty) = &p.ty {
+                if !ty.contains('\'') && !ty.contains("Self") {
+                    bindings.push(format!("let {id}: {ty} = {arg_trimmed};"));
+                } else {
+                    bindings.push(format!("let {id} = {arg_trimmed};"));
+                }
             } else {
                 bindings.push(format!("let {id} = {arg_trimmed};"));
             }
