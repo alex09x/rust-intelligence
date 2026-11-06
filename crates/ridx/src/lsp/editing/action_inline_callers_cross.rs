@@ -20,14 +20,14 @@ use std::path::Path;
 
 const SAFE_PRELUDE_TYPES: &[&str] = &[
     "Option", "Result", "Some", "None", "Ok", "Err", "bool", "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64", "str", "String",
-    "Vec",
+    "Vec", "Box", "Default", "Clone", "Copy", "Drop", "Send", "Sync",
 ];
 
 /// Checks whether a transformed function body is completely safe to inline into other files
 /// without risking missing imports, private field accesses, or undeclared local functions.
 pub(crate) fn is_safe_for_cross_file_inline(body: &str, masked_doc: &str) -> bool {
     let b = body.trim();
-    if b.is_empty() || b.contains("super::") || b.contains("self::") || b.contains('\'') {
+    if b.is_empty() || b.contains("super::") || b.contains("self::") || contains_lifetime(b) || (b.contains(".collect()") && !b.contains("collect::<")) {
         return false;
     }
     // Reject tuple struct indexing like .0, .1
@@ -37,7 +37,7 @@ pub(crate) fn is_safe_for_cross_file_inline(body: &str, masked_doc: &str) -> boo
             return false;
         }
     }
-    // Reject struct instantiation like `Foo { ... }`
+    // Check uppercase words (types, enum variants)
     for (i, &byte) in bytes.iter().enumerate() {
         if byte.is_ascii_uppercase() && (i == 0 || !bytes[i - 1].is_ascii_alphanumeric() && bytes[i - 1] != b'_') {
             let mut j = i;
@@ -49,12 +49,14 @@ pub(crate) fn is_safe_for_cross_file_inline(body: &str, masked_doc: &str) -> boo
             if after.starts_with('{') {
                 return false;
             }
-            if !SAFE_PRELUDE_TYPES.contains(&word) {
+            let before = b[..i].trim_end();
+            let is_path_prefixed = before.ends_with("::");
+            if !is_path_prefixed && !SAFE_PRELUDE_TYPES.contains(&word) {
                 return false;
             }
         }
     }
-    // Reject bare function calls `foo(...)` unless preceded by `.` or in standard constructors
+    // Reject bare function calls `foo(...)` unless preceded by `.` or `::` or in standard constructors
     let mut idx = 0;
     while let Some(open_paren) = b[idx..].find('(') {
         let abs_paren = idx + open_paren;
@@ -71,7 +73,10 @@ pub(crate) fn is_safe_for_cross_file_inline(body: &str, masked_doc: &str) -> boo
         if start < pre.len() {
             let fn_name = &pre[start..];
             let before_fn = pre[..start].trim_end();
-            if !before_fn.ends_with('.') && !SAFE_PRELUDE_TYPES.contains(&fn_name) {
+            if !before_fn.ends_with('.') && !before_fn.ends_with("::") && !SAFE_PRELUDE_TYPES.contains(&fn_name) {
+                return false;
+            }
+            if before_fn.ends_with('.') && has_private_fn_def(fn_name, masked_doc) {
                 return false;
             }
         }
@@ -104,6 +109,24 @@ pub(crate) fn is_safe_for_cross_file_inline(body: &str, masked_doc: &str) -> boo
         dot_idx = abs_dot + 1;
     }
     true
+}
+
+fn contains_lifetime(b: &str) -> bool {
+    let bytes = b.as_bytes();
+    for i in 0..bytes.len() {
+        if bytes[i] == b'\'' {
+            if i + 2 < bytes.len() && bytes[i + 2] == b'\'' {
+                continue;
+            }
+            if i + 3 < bytes.len() && bytes[i + 1] == b'\\' && bytes[i + 3] == b'\'' {
+                continue;
+            }
+            if i + 1 < bytes.len() && (bytes[i + 1].is_ascii_alphabetic() || bytes[i + 1] == b'_') {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn has_private_fn_def(method: &str, masked_doc: &str) -> bool {

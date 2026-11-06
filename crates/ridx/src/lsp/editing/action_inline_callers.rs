@@ -175,14 +175,14 @@ pub fn build_inline_into_all_callers_workspace(
         }
         body_with_self_ty.trim().to_string()
     };
-    let body_transformed = if let Some(ret_ty) = &effective_ret_ty {
+    let body_local = if let Some(ret_ty) = &effective_ret_ty {
         if !ret_ty.contains('\'') && !ret_ty.contains("Self") {
             format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
         } else {
-            body_transformed
+            body_transformed.clone()
         }
     } else {
-        body_transformed
+        body_transformed.clone()
     };
 
     let ws = ws?;
@@ -244,7 +244,7 @@ pub fn build_inline_into_all_callers_workspace(
                 &item.name,
                 self_kind,
                 &parsed_params,
-                &body_transformed,
+                &body_local,
                 body_has_question_mark,
                 effective_ret_ty.as_deref(),
                 Some((def_lo, *bc)),
