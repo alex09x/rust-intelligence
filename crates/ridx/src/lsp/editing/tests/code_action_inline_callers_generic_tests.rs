@@ -168,7 +168,7 @@ fn test_inline_method_on_generic_struct_with_concrete_ret_ty_compiles() {
         "        Ok(())\n",
         "    }\n",
         "}\n",
-        "pub fn caller<W: io::Write>(s: &mut Sink<W>) -> io::Result<()> {\n",
+        "pub fn caller<W: io::Write>(mut s: Sink<W>) -> io::Result<()> {\n",
         "    s.write_bytes(b\"hello\")\n",
         "}\n",
     );
