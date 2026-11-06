@@ -300,7 +300,7 @@ pub fn expand_dot_owners(
     file_traits: &mut Option<Arc<HashSet<String>>>,
 ) -> (Vec<String>, Vec<String>) {
     let mut owners = Vec::new();
-    let mut impl_traits = Vec::new();
+    let impl_traits = Vec::new();
     push_unique(&mut owners, owner.to_string());
     if let Some(sub) = strip_facade_crate(ws, owner) {
         push_unique(&mut owners, sub.to_string());
@@ -377,10 +377,9 @@ pub fn expand_dot_owners(
                 }
             } else {
                 let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
+                // A trait the type implements offers its methods only when it is in scope, as in rust-analyzer.
                 if is_in_prelude(target_str) || f_traits.contains(target_str) || f_traits.contains(trait_short_name(target_str)) || f_traits.contains(base_trait_path(target_str)) {
                     push_unique(&mut owners, item.target.clone());
-                } else if ws.has_sysroot() {
-                    push_unique(&mut impl_traits, item.target.clone());
                 }
             }
         }

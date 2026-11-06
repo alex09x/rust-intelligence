@@ -58,10 +58,10 @@ fn test_trait_filter_parsing() {
     assert_eq!(trait_short_name("core::fmt::Debug"), "Debug");
 
     assert!(is_in_prelude("core::clone::Clone"));
-    assert!(is_in_prelude("core::fmt::Debug"));
-    assert!(is_in_prelude("core::fmt::Display"));
-    assert!(is_in_prelude("core::ops::deref::Deref"));
-    assert!(is_in_prelude("core::ops::deref::DerefMut"));
+    assert!(is_in_prelude("core::iter::traits::iterator::Iterator"));
+    assert!(!is_in_prelude("core::fmt::Debug"));
+    assert!(!is_in_prelude("core::fmt::Display"));
+    assert!(!is_in_prelude("core::ops::deref::Deref"));
     assert!(!is_in_prelude("bevy_reflect::Reflect"));
 }
 
@@ -122,13 +122,11 @@ fn test_categorize_definition_rules() {
     let cat = categorize_definition(DefKind::AssocFn, "<core::option::Option<T> as core::clone::Clone>::clone", "core::option::Option", "core::option::Option", &empty_traits);
     assert_eq!(cat, DefScopeCategory::PreludeTrait);
 
-    // 6. Direct prelude trait method: core::fmt::Debug::fmt on Option
+    // 6-7. `Debug` and `Deref` are not prelude traits: their methods are not categorized as such.
     let cat = categorize_definition(DefKind::AssocFn, "core::fmt::Debug::fmt", "core::fmt::Debug", "core::option::Option", &empty_traits);
-    assert_eq!(cat, DefScopeCategory::PreludeTrait);
-
-    // 7. Direct prelude deref trait method: core::ops::deref::Deref::deref on RwLockReadGuard
+    assert_ne!(cat, DefScopeCategory::PreludeTrait);
     let cat = categorize_definition(DefKind::AssocFn, "core::ops::deref::Deref::deref", "core::ops::deref::Deref", "RwLockReadGuard", &empty_traits);
-    assert_eq!(cat, DefScopeCategory::PreludeTrait);
+    assert_ne!(cat, DefScopeCategory::PreludeTrait);
 
     // 8. Trait method when in scope vs out of scope
     let cat_out = categorize_definition(DefKind::AssocFn, "zerocopy::IntoBytes::as_bytes", "core::option::Option", "core::option::Option", &empty_traits);

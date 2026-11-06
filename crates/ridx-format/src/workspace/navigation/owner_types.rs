@@ -123,6 +123,54 @@ impl WorkspaceIndex {
         chain
     }
 
+    /// [`Self::resolve_deref_chain`] with every target as a full path. A shard records a target inside its own crate
+    /// relative to that crate (`parser::Parser` in winnow); read bare, it can name another crate's item (the
+    /// `parser` crate's `Parser` struct). Such targets get the recording crate's name in front.
+    pub fn resolve_deref_chain_canonical(&self, source: &str, max_depth: usize) -> Vec<String> {
+        let mut chain: Vec<String> = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+        visited.insert(source.to_string());
+        queue.push_back((source.to_string(), 0));
+
+        while let Some((current, depth)) = queue.pop_front() {
+            if depth >= max_depth {
+                continue;
+            }
+            for cand in super::std_map::std_path_candidates(&current) {
+                let cand_str = cand.as_str();
+                for (ri, reader) in self.readers.iter().enumerate() {
+                    let crate_name = reader.crate_name();
+                    let prefix = format!("{crate_name}::");
+                    let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
+                    let is_sysroot = matches!(crate_name, "core" | "alloc" | "std");
+                    let with_prefix = (!is_sysroot && !cand_str.starts_with(&prefix)).then(|| format!("{prefix}{cand_str}"));
+                    for q in [Some(cand_str), (sub != cand_str).then_some(sub), with_prefix.as_deref()].into_iter().flatten() {
+                        for target in reader.find_deref_targets(q) {
+                            // core records its slice iterators' `Iterator` impls under `slice`; slices, arrays and
+                            // `str` are not iterators themselves.
+                            if target.is_empty() || (matches!(current.as_str(), "slice" | "array" | "str") && target.ends_with("::Iterator")) {
+                                continue;
+                            }
+                            // Defined by the recording crate, but the bare path resolves to another crate's item.
+                            let collides = !is_sysroot
+                                && !target.starts_with(&prefix)
+                                && reader.find_definition_by_path(target).is_some()
+                                && self.find_definition_by_path(target).is_some_and(|d| d.reader_idx != Some(ri));
+                            let target = if collides { format!("{prefix}{target}") } else { target.to_string() };
+                            if visited.insert(target.clone()) {
+                                chain.push(target.clone());
+                                queue.push_back((target, depth + 1));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        chain
+    }
+
     pub(crate) fn find_variant_ref_definition<'a>(&'a self, path: &str, depth: u8) -> Option<ResolvedDefinition<'a>> {
         let last = path.rsplit("::").next().unwrap_or(path);
         if !last.as_bytes().first().is_some_and(|b| b.is_ascii_uppercase()) {

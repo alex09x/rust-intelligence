@@ -209,11 +209,11 @@ pub fn get_or_resolve_deref_chain(ws: &WorkspaceIndex, owner: &str, max_depth: u
         }
     }
 
-    let raw_targets = ws.resolve_deref_chain(owner, max_depth);
+    let raw_targets = ws.resolve_deref_chain_canonical(owner, max_depth);
     let mut resolved = Vec::with_capacity(raw_targets.len());
     for target in raw_targets {
-        let is_trait = ws.find_definition_by_path(target).is_some_and(|d| d.kind == ridx_format::DefKind::Trait);
-        resolved.push(DerefChainItem { target: target.to_string(), is_trait });
+        let is_trait = ws.find_definition_by_path(&target).is_some_and(|d| d.kind == ridx_format::DefKind::Trait);
+        resolved.push(DerefChainItem { target, is_trait });
     }
     let arc_resolved: Arc<[DerefChainItem]> = Arc::from(resolved);
 

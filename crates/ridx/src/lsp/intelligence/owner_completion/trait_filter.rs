@@ -259,33 +259,11 @@ pub fn is_non_deref_type(ty: &str) -> bool {
         || is_pointer_type(ty)
 }
 
-/// Checks if a trait belongs to the standard library prelude or common formatting/deref traits.
+/// Checks if a trait belongs to the standard library prelude. `Debug`, `Display` and `Deref` are not in it: their
+/// methods complete only where the file imports them.
 pub fn is_in_prelude(trait_path: &str) -> bool {
     let base = base_trait_path(trait_path);
-    is_prelude_trait(base)
-        || is_prelude_trait(trait_path)
-        || (base.contains("::") && (is_prelude_trait(&format!("core::{base}")) || is_prelude_trait(&format!("alloc::{base}"))))
-        || matches!(
-            base,
-            "core::fmt::Debug"
-                | "std::fmt::Debug"
-                | "fmt::Debug"
-                | "core::fmt::Display"
-                | "std::fmt::Display"
-                | "fmt::Display"
-                | "core::ops::deref::Deref"
-                | "core::ops::deref::DerefMut"
-                | "std::ops::Deref"
-                | "std::ops::DerefMut"
-                | "ops::deref::Deref"
-                | "ops::deref::DerefMut"
-                | "ops::Deref"
-                | "ops::DerefMut"
-                | "Debug"
-                | "Display"
-                | "Deref"
-                | "DerefMut"
-        )
+    is_prelude_trait(base) || is_prelude_trait(trait_path) || (base.contains("::") && (is_prelude_trait(&format!("core::{base}")) || is_prelude_trait(&format!("alloc::{base}"))))
 }
 
 /// Checks if a function signature takes a receiver argument (`self`, `&self`, `&'a Self`, etc.).

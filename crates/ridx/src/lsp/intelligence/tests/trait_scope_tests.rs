@@ -199,7 +199,8 @@ fn test_completion_trait_scope_filtering() {
                 target_unit: Some("test_traits".to_string()),
                 target_line: 30,
                 target_col: 1,
-                kind: DefKind::Trait,
+                // `use test_traits::SpecialTrait;` — an import, the only reference that brings a trait into scope.
+                kind: DefKind::Use,
                 is_write: false,
                 is_macro_expansion: false,
             });

@@ -192,9 +192,33 @@ fn resolve_module_prefix(ws: &WorkspaceIndex, file_path: &str, reader_crate: &st
     }
 }
 
-/// Collects all trait names/paths referenced in the given file, expanding glob imports.
+/// The 1-based line ranges of the `use` items in `text` (a group may span lines up to its `;`).
+pub(crate) fn use_item_lines(text: &str) -> Vec<(u32, u32)> {
+    let mut out = Vec::new();
+    let mut open: Option<u32> = None;
+    for (i, line) in text.lines().enumerate() {
+        let n = i as u32 + 1;
+        let code = line.split("//").next().unwrap_or(line).trim();
+        if open.is_none() {
+            let rest = code.strip_prefix("pub ").or_else(|| code.strip_prefix("pub(crate) ")).unwrap_or(code);
+            if rest.starts_with("use ") {
+                open = Some(n);
+            }
+        }
+        if let Some(start) = open {
+            if code.ends_with(';') {
+                out.push((start, n));
+                open = None;
+            }
+        }
+    }
+    out
+}
+
+/// Collects the traits the given file brings into scope with `use` items, expanding glob imports.
 pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
     let mut set = HashSet::new();
+    let use_lines = std::fs::read_to_string(file_path).map(|t| use_item_lines(&t)).unwrap_or_default();
     for idx in ws.candidate_reader_indices_for_file(file_path) {
         let reader = &ws.readers()[idx];
         let Some(target_file) = ws.target_file_for_reader(idx, file_path) else {
@@ -254,7 +278,9 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
                             set.insert(t_path.to_string());
                         }
                     }
-                } else if r_kind == DefKind::Trait {
+                } else if r_kind == DefKind::Trait && use_lines.iter().any(|&(s, e)| (s..=e).contains(&r.span().start_line())) {
+                    // The trait named in a `use` item. A trait named in an impl header, a bound or a path call
+                    // (`impl fmt::Debug for X`, `T: Hash`) does not bring its methods into scope.
                     if let Some(short) = path.rsplit("::").next() {
                         set.insert(short.to_string());
                     }
@@ -265,4 +291,15 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
         }
     }
     set
+}
+
+#[cfg(test)]
+mod use_item_tests {
+    use super::use_item_lines;
+
+    #[test]
+    fn test_use_item_lines_cover_groups() {
+        let text = "use std::fmt;\nuse hir::{\n    Adt,\n    HasSource,\n};\nfn f() {}\npub use x::Y;\n";
+        assert_eq!(use_item_lines(text), vec![(1, 1), (2, 5), (7, 7)]);
+    }
 }

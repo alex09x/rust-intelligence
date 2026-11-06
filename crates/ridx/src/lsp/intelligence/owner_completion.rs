@@ -13,15 +13,21 @@
 use super::super::protocol::lsp_completion_kind;
 use super::scope_cache::{get_or_collect_file_referenced_traits, is_profile_completion_enabled};
 use ridx_format::{DefKind, WorkspaceIndex};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::Arc;
 
+mod alias;
+mod extras;
+pub mod item;
+mod postfix;
 pub mod qualifier;
 pub mod receiver;
+mod shape;
 pub mod smart_pointer;
 pub mod trait_filter;
 pub mod ufcs;
+use extras::{collect_extension_and_blanket_items, collect_through_iter_items};
 pub use qualifier::*;
 pub use receiver::*;
 pub use smart_pointer::*;
@@ -29,38 +35,6 @@ pub use trait_filter::*;
 pub use ufcs::*;
 
 const MAX_COMPLETION_ITEMS: usize = 500;
-
-const UNIVERSAL_BLANKET_TRAITS: &[&str] = &[
-    "core::convert::Into",
-    "core::convert::TryInto",
-    "alloc::borrow::ToOwned",
-    "alloc::string::ToString",
-    "core::clone::Clone",
-    "core::borrow::Borrow",
-    "core::borrow::BorrowMut",
-];
-
-const POSTFIX_SNIPPETS: &[(&str, &str)] = &[
-    ("arc", "Arc::new(expr)"),
-    ("box", "Box::new(expr)"),
-    ("call", "function(expr)"),
-    ("const", "const { expr }"),
-    ("dbg", "dbg!(expr)"),
-    ("dbgr", "dbg!(&expr)"),
-    ("deref", "*expr"),
-    ("err", "Err(expr)"),
-    ("let", "let"),
-    ("letm", "let mut"),
-    ("match", "match expr {}"),
-    ("ok", "Ok(expr)"),
-    ("pinbox", "Box::pin(expr)"),
-    ("rc", "Rc::new(expr)"),
-    ("ref", "&expr"),
-    ("refm", "&mut expr"),
-    ("return", "return expr"),
-    ("some", "Some(expr)"),
-    ("unsafe", "unsafe { expr }"),
-];
 
 /// Returns true if the path belongs to standard/sysroot crates not yet indexed in `.ridx`.
 pub(crate) fn is_sysroot_path(path: &str) -> bool {
@@ -92,8 +66,7 @@ fn collect_prioritized_items<const N: usize>(buckets: [Vec<Value>; N]) -> Option
     let mut seen = HashSet::new();
     for bucket in buckets {
         for item in bucket {
-            let name = item["label"].as_str().unwrap_or_default();
-            if seen.insert(name.to_string()) {
+            if seen.insert(item::item_key(&item)) {
                 items.push(item);
                 if items.len() >= MAX_COMPLETION_ITEMS {
                     break;
@@ -107,6 +80,7 @@ fn collect_prioritized_items<const N: usize>(buckets: [Vec<Value>; N]) -> Option
     if items.is_empty() {
         None
     } else {
+        item::number_sort_text(&mut items);
         Some(items)
     }
 }
@@ -138,7 +112,10 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
         let t_deref = t_d0.map(|t| t.elapsed()).unwrap_or_default();
 
         let mut seen_labels = HashSet::new();
+        let file_crate = ws.crate_name_for_file(ctx.file);
+        let (mut has_iter_method, mut is_iterator) = (false, impl_traits.iter().any(|t| item::is_iterator_trait(t)));
         for o in &owners {
+            let owner_is_trait = ws.find_definition_by_path(o).is_some_and(|d| d.kind == DefKind::Trait);
             let t_f0 = profile_active.then(std::time::Instant::now);
             let defs = ws.find_definitions_by_owner_for_file(ctx.file, o);
             if let Some(t) = t_f0 {
@@ -181,12 +158,34 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
                     continue;
                 }
 
+                // Not offered by rust-analyzer: `Drop::drop` (calling it is an error), methods of impls for another
+                // shape of the receiver's type (`Option<&T>::copied` on `Option<String>`), hidden library items.
+                let is_drop = item::trait_of_def(def.path).is_some_and(|t| trait_short_name(t) == "Drop");
+                // An impl item of a hidden trait method (`assert_fields_are_eq` of a derived `Eq`) is hidden too.
+                let hidden_in_trait = extract_trait_from_def_path(def.path)
+                    .and_then(|t| ws.find_definition_by_path(&format!("{}::{}", base_trait_path(t), def.name)))
+                    .is_some_and(|td| alias::is_hidden_library_item(&td));
+                // A method or field another crate declares without `pub` is not visible here.
+                let foreign = def.reader_idx.and_then(|i| ws.readers().get(i)).is_some_and(|r| Some(r.crate_name()) != file_crate);
+                let invisible = foreign && matches!(category, DefScopeCategory::Field | DefScopeCategory::Inherent) && !owner_is_trait && alias::is_crate_private(&def);
+                if is_drop || hidden_in_trait || invisible || (o == owner && !shape::impl_shape_matches(def.path, ty_name)) || alias::is_hidden_library_item(&def) {
+                    continue;
+                }
                 let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-                let item = json!({
-                    "label": def.name,
-                    "kind": lsp_completion_kind(def.kind),
-                    "detail": detail
-                });
+                let provider = match category {
+                    DefScopeCategory::PreludeTrait | DefScopeCategory::InScopeTrait => item::trait_of_def(def.path),
+                    // A method of the receiver's own trait (`self` in a trait's default method, `T: Trait`).
+                    _ if owner_is_trait => Some(o.as_str()),
+                    _ => None,
+                };
+                let note = item::def_note(&def, provider);
+                if category == DefScopeCategory::Inherent && def.name == "iter" && def.signature.is_some_and(item::takes_only_receiver) {
+                    has_iter_method = true;
+                }
+                if item::trait_of_def(def.path).is_some_and(item::is_iterator_trait) {
+                    is_iterator = true;
+                }
+                let item = item::item(def.name, note.as_deref(), lsp_completion_kind(def.kind), &detail);
 
                 match category {
                     DefScopeCategory::Field => {
@@ -214,19 +213,29 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
             }
         }
 
+        // Postfix snippets that depend on the receiver's type: `for` over anything iterable, the `if let` / `while
+        // let` family over `Option` and `Result`.
+        let mut typed_snippets: Vec<(&str, &str)> = Vec::new();
+        if is_iterator || owners.iter().any(|o| o.ends_with("::IntoIterator")) {
+            typed_snippets.push(("for", "for ele in expr {}"));
+        }
+        if matches!(base_type_path(owner), "core::option::Option" | "core::result::Result") {
+            typed_snippets.extend([("ifl", "if let Some {}"), ("lete", "let Some else {}"), ("while", "while let Some {}")]);
+        }
         let blanket_and_postfix = if defs_count > 0 || (ws.has_sysroot() && (owner == "tuple" || ws.find_definition_by_path(owner).is_some())) {
-            collect_extension_and_blanket_items(ws, ctx, &owners, &impl_traits, &mut file_traits, &mut in_scope_traits)
+            collect_extension_and_blanket_items(ws, ctx, &owners, &impl_traits, &typed_snippets, &mut file_traits, &mut in_scope_traits)
         } else {
             Vec::new()
         };
+        let through_iter = if has_iter_method && !is_iterator { collect_through_iter_items(ws, ctx) } else { Vec::new() };
 
         let t_col0 = profile_active.then(std::time::Instant::now);
-        let res = collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits, blanket_and_postfix]);
+        let res = collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits, blanket_and_postfix, through_iter]);
         let t_collect = t_col0.map(|t| t.elapsed()).unwrap_or_default();
 
         if let Some(t_all) = t_start_all {
             eprintln!(
-                "[RIDX_PROFILE] deref_us={} find_defs_us={} (defs={}) cat_us={} collect_us={} total_us={}",
+                "[RIDX_PROFILE] owners={owners:?} deref_us={} find_defs_us={} (defs={}) cat_us={} collect_us={} total_us={}",
                 t_deref.as_micros(),
                 t_find.as_micros(),
                 defs_count,
@@ -304,11 +313,9 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
                 }
 
                 let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-                let item = json!({
-                    "label": def.name,
-                    "kind": lsp_completion_kind(def.kind),
-                    "detail": detail
-                });
+                let note =
+                    item::def_note(&def, matches!(category, DefScopeCategory::PreludeTrait | DefScopeCategory::InScopeTrait).then(|| item::trait_of_def(def.path)).flatten());
+                let item = item::item(def.name, note.as_deref(), lsp_completion_kind(def.kind), &detail);
 
                 match category {
                     DefScopeCategory::Field => fields.push(item),
@@ -324,71 +331,4 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
     } else {
         None
     }
-}
-
-fn collect_extension_and_blanket_items(
-    ws: &WorkspaceIndex,
-    ctx: &OwnerCompletionContext<'_>,
-    visited_owners: &[String],
-    impl_traits: &[String],
-    file_traits: &mut Option<Arc<HashSet<String>>>,
-    in_scope_traits: &mut Vec<Value>,
-) -> Vec<Value> {
-    let mut blanket_and_postfix = Vec::new();
-    if !ws.has_sysroot() {
-        return blanket_and_postfix;
-    }
-
-    for (tr, is_universal) in UNIVERSAL_BLANKET_TRAITS.iter().copied().map(|t| (t, true)).chain(impl_traits.iter().map(|t| (t.as_str(), false))) {
-        if is_universal && visited_owners.iter().any(|o| o == tr) {
-            continue;
-        }
-        for def in ws.find_definitions_by_owner_for_file(ctx.file, tr) {
-            if !matches!(def.kind, DefKind::AssocFn | DefKind::Fn) || !def.signature.is_some_and(signature_takes_receiver) {
-                continue;
-            }
-            if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
-                continue;
-            }
-            let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-            in_scope_traits.push(json!({
-                "label": def.name,
-                "kind": lsp_completion_kind(def.kind),
-                "detail": detail
-            }));
-        }
-    }
-
-    for &(label, detail) in POSTFIX_SNIPPETS {
-        if !ctx.prefix.is_empty() && !label.starts_with(ctx.prefix) {
-            continue;
-        }
-        blanket_and_postfix.push(json!({
-            "label": label,
-            "kind": 15,
-            "detail": detail
-        }));
-    }
-
-    let f_traits = file_traits.get_or_insert_with(|| get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text));
-    let mut sorted_traits: Vec<&String> = f_traits.iter().filter(|tr| tr.contains("::") && !visited_owners.iter().any(|o| o == *tr)).collect();
-    sorted_traits.sort();
-    for tr in sorted_traits {
-        for def in ws.find_definitions_by_owner_for_file(ctx.file, tr) {
-            if !matches!(def.kind, DefKind::AssocFn | DefKind::Fn) || !def.signature.is_some_and(signature_takes_receiver) {
-                continue;
-            }
-            if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
-                continue;
-            }
-            let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-            blanket_and_postfix.push(json!({
-                "label": def.name,
-                "kind": lsp_completion_kind(def.kind),
-                "detail": detail
-            }));
-        }
-    }
-
-    blanket_and_postfix
 }
