@@ -197,7 +197,7 @@ pub fn build_inline_into_all_callers_workspace(
 
     let (del_lo, del_hi) = line_deletion_span(doc_text, item.first_attr_byte, *bc);
     let mut local_edits = Vec::new();
-    let other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
+    let mut other_file_edits: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     let def_lo = item.first_attr_byte.min(item.decl_start_byte);
     let mut any_skipped = false;
 
