@@ -10,9 +10,9 @@
 
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
-use super::action_inline_callers_helpers::{contains_recursive_call, is_primitive_scalar, parse_fn_params, FnParamInfo};
+use super::action_inline_callers_helpers::{contains_recursive_call, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{
-    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_sites_for_document,
+    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, process_call_sites_for_document,
     process_other_document_call_sites, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
 use super::action_inline_local::line_deletion_span;
