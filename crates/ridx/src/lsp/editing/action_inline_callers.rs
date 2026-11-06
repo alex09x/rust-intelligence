@@ -45,9 +45,10 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && vis != "pub(crate)") {
+    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && vis != "pub(crate)" && vis != "pub") {
         return None;
     }
+    let is_pub = vis == "pub";
     match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } => {
             if !cfg_attrs.is_empty() {
@@ -213,7 +214,7 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
 
-    if !any_skipped {
+    if !any_skipped && !is_pub {
         local_edits.push((del_lo, del_hi, String::new()));
     }
     let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;

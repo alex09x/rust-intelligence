@@ -243,3 +243,53 @@ fn test_inline_method_relative_path_references() {
     assert!(updated.contains("this.val") || updated.contains("self.val"), "Field access preserved in single-file caller");
     assert_rustc_compiles(&updated, "Inline into all callers: relative path reference resolution");
 }
+
+#[test]
+fn test_inline_pub_fn_preserves_declaration() {
+    let id = INLINE_SELF_TEST_ID.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_inline_pub_{}_{}", std::process::id(), id));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let lib_file = temp_dir.join("src/lib.rs");
+    let lib_str = lib_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_pub", "0.1.0");
+    let code = concat!(
+        "pub struct Counter {\n",
+        "    pub count: i32,\n",
+        "}\n",
+        "impl Counter {\n",
+        "    pub fn «is_positive»(&self) -> bool {\n",
+        "        self.count > 0\n",
+        "    }\n",
+        "    pub fn check(&self) -> bool {\n",
+        "        self.is_positive()\n",
+        "    }\n",
+        "}\n",
+    );
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_pub", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_pub::is_positive", &lib_str, 5, 12, 5, 23, Some(def_ids[0]), Some(&lib_str), 5, 12, DefKind::Fn);
+    builder.add_ref("test_pub::is_positive", &lib_str, 9, 14, 9, 25, Some(def_ids[0]), Some(&lib_str), 5, 12, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 4, 12, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for pub fn with internal callers");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(updated.contains("pub fn is_positive"), "pub fn declaration must be preserved for external consumers");
+    assert!(!updated.contains("self.is_positive()"), "Internal call site must be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: pub fn preserves declaration");
+}
