@@ -52,6 +52,7 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
     let is_pub = vis.starts_with("pub");
+    let is_fully_pub = vis == "pub";
     match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } => {
             if !cfg_attrs.is_empty() {
@@ -85,14 +86,16 @@ pub fn build_inline_into_all_callers_workspace(
         _ => None,
     };
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") || r.starts_with('&') || r.contains('\'') {
+        if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if type_generics.iter().any(|g| contains_word(r, g)) {
+        if r.contains('\'') && !r.contains("'static") {
+            None
+        } else if type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             Some(self_type_name.as_ref()?.clone())
-        } else if r.contains("Self") {
+        } else if contains_word(r, "Self") {
             return None;
         } else {
             Some(r.to_string())
@@ -138,7 +141,7 @@ pub fn build_inline_into_all_callers_workspace(
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 
-    if is_pub && (self_kind == Some(SelfKind::MutRef) || self_kind == Some(SelfKind::Value) || item.name == "new") {
+    if is_fully_pub && (self_kind == Some(SelfKind::MutRef) || self_kind == Some(SelfKind::Value) || item.name == "new") {
         return None;
     }
 
