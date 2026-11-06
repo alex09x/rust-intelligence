@@ -238,3 +238,54 @@ fn test_inline_fn_with_underscored_type_identifier() {
     assert!(!updated.contains("process_val(val)"), "Call site should be inlined");
     assert_rustc_compiles(&updated, "Inline into all callers: underscored type identifier compiles");
 }
+
+#[test]
+fn test_inline_pub_fn_new_with_no_params() {
+    let temp = tempfile::TempDir::new().unwrap();
+    let temp_dir = temp.path().to_path_buf();
+    let lib_file = temp_dir.join("lib.rs");
+    let lib_str = lib_file.to_string_lossy().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_pub_new", "0.1.0");
+
+    let code = concat!(
+        "pub struct Config {\n",
+        "    pub count: usize,\n",
+        "}\n",
+        "impl Config {\n",
+        "    pub fn «new»() -> Self {\n",
+        "        Self { count: 42 }\n",
+        "    }\n",
+        "}\n",
+        "pub fn run() -> usize {\n",
+        "    let cfg = Config::new();\n",
+        "    cfg.count\n",
+        "}\n",
+    );
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_pub_new", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_pub_new::new", &lib_str, 5, 12, 5, 15, Some(def_ids[0]), Some(&lib_str), 5, 12, DefKind::Fn);
+    builder.add_ref("test_pub_new::new", &lib_str, 10, 23, 10, 26, Some(def_ids[0]), Some(&lib_str), 5, 12, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 4, 11, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for pub fn new with no parameters");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(updated.contains("pub fn new"), "Pub declaration must be preserved");
+    assert!(!updated.contains("Config::new()"), "Call site should be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: pub fn new with 0 params compiles");
+}

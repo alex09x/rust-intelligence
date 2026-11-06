@@ -86,7 +86,9 @@ pub fn build_inline_into_all_callers_workspace(
         if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if r.contains("'_") {
+            return None;
+        } else if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             Some(self_type_name.as_ref()?.clone())
@@ -136,8 +138,13 @@ pub fn build_inline_into_all_callers_workspace(
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 
-    if is_fully_pub && (self_kind == Some(SelfKind::MutRef) || self_kind == Some(SelfKind::Value) || item.name == "new") {
-        return None;
+    if is_fully_pub {
+        if self_kind == Some(SelfKind::Value) || self_kind == Some(SelfKind::MutRef) {
+            return None;
+        }
+        if item.name == "new" && !parsed_params.is_empty() {
+            return None;
+        }
     }
 
     let body_with_self_ty = if let Some(ty_name) = &self_type_name {
