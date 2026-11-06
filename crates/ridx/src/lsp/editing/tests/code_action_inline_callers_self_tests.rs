@@ -293,3 +293,50 @@ fn test_inline_pub_fn_preserves_declaration() {
     assert!(!updated.contains("self.is_positive()"), "Internal call site must be inlined");
     assert_rustc_compiles(&updated, "Inline into all callers: pub fn preserves declaration");
 }
+
+#[test]
+fn test_inline_result_fn_compiles() {
+    let id = INLINE_SELF_TEST_ID.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("ridx_inline_result_{}_{}", std::process::id(), id));
+    let _ = fs::create_dir_all(&temp_dir);
+    let lib_file = temp_dir.join("lib.rs");
+    let lib_str = lib_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_result", "0.1.0");
+
+    let code = concat!(
+        "fn «compute»(x: i32) -> Result<i32, String> {\n",
+        "    if x > 0 { Ok(x * 2) } else { Err(String::from(\"negative\")) }\n",
+        "}\n",
+        "pub fn caller(val: i32) -> Result<i32, String> {\n",
+        "    let res = compute(val)?;\n",
+        "    Ok(res + 1)\n",
+        "}\n",
+    );
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_result", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_result::compute", &lib_str, 0, 3, 0, 10, Some(def_ids[0]), Some(&lib_str), 0, 3, DefKind::Fn);
+    builder.add_ref("test_result::compute", &lib_str, 4, 14, 4, 21, Some(def_ids[0]), Some(&lib_str), 0, 3, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 0, 4, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for Result-returning fn");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(!updated.contains("fn compute("), "Non-pub fn declaration should be deleted");
+    assert!(!updated.contains("compute(val)"), "Call site should be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: Result-returning fn compiles");
+}

@@ -64,8 +64,10 @@ pub fn build_inline_into_all_callers_workspace(
     if !has_only_lifetime_generics(generics_src) || !has_only_lifetime_bounds(where_src) {
         return None;
     }
-    if ret_src.as_deref().is_some_and(|r| r.contains("Result") || r.contains("impl ")) {
-        return None;
+    if let Some(r) = ret_src.as_deref() {
+        if r.contains("impl ") || (r.contains("Result") && (r.contains('\'') || r.contains("Self"))) {
+            return None;
+        }
     }
     let self_type_name = match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { self_ty, generics_src, .. } => {
@@ -134,6 +136,15 @@ pub fn build_inline_into_all_callers_workspace(
             return None;
         }
         body_with_self_ty.trim().to_string()
+    };
+    let body_transformed = if let Some(ret_ty) = ret_src.as_deref() {
+        if ret_ty.contains("Result") {
+            format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
+        } else {
+            body_transformed
+        }
+    } else {
+        body_transformed
     };
 
     let ws = ws?;
