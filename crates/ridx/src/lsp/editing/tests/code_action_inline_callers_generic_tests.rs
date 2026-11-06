@@ -293,7 +293,7 @@ fn test_inline_trait_impl_method_preserves_decl_and_compiles() {
 }
 
 #[test]
-fn test_inline_getter_returning_ref_compiles() {
+fn test_inline_getter_returning_ref_rejected() {
     let temp_dir = tempfile::tempdir().unwrap().path().to_path_buf();
     let src_file = temp_dir.join("lib.rs");
     let src_file_str = src_file.to_str().unwrap().to_string();
@@ -328,13 +328,7 @@ fn test_inline_getter_returning_ref_compiles() {
 
     let actions = query_actions_with_multi_file_resolve(&uri, 4, 12, &ws, &ov);
     let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
-    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for getter returning &str");
-
-    let (_, changes) = inline_action.unwrap();
-    let edits = changes.get(&uri).expect("lib.rs edits missing");
-    let updated = apply_text_edits(&code_cleaned, edits);
-
-    assert_rustc_compiles(&updated, "Inline into all callers: getter returning &str compiles");
+    assert!(inline_action.is_none(), "Expected no 'Inline into all callers' for getter returning &str");
 }
 
 #[test]

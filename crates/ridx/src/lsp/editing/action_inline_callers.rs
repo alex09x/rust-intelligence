@@ -87,14 +87,11 @@ pub fn build_inline_into_all_callers_workspace(
         }
         _ => None,
     };
-    let ret_starts_with_ref = ret_src.as_deref().is_some_and(|r| r.starts_with('&'));
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") {
+        if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if r.starts_with('&') {
-            None
-        } else if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             if impl_has_type_generics {
@@ -154,14 +151,6 @@ pub fn build_inline_into_all_callers_workspace(
     let parsed_params = parse_fn_params(params_src, &type_generics)?;
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
-
-    if ret_starts_with_ref
-        && (!matches!(self_kind, Some(SelfKind::Ref | SelfKind::MutRef))
-            || contains_word(body_inner_m, "let")
-            || contains_word(body_inner_m, "return"))
-    {
-        return None;
-    }
 
     if is_fully_pub && item.name == "new" && !has_safe_pub_new_params(&parsed_params) {
         return None;
