@@ -113,6 +113,10 @@ pub fn build_inline_into_all_callers_workspace(
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 
+    if is_pub && (self_kind == Some(SelfKind::MutRef) || self_kind == Some(SelfKind::Value) || item.name == "new") {
+        return None;
+    }
+
     let body_with_self_ty = if let Some(ty_name) = &self_type_name {
         if contains_word(&raw_masked_body, "Self") {
             rewrite_self_type_to_name(&raw_body, &raw_masked_body, ty_name)
