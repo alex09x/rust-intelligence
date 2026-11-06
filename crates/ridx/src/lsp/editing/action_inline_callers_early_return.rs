@@ -13,8 +13,8 @@
 //! Transforms function bodies containing early returns into labeled blocks:
 //! `'inl: { ... break 'inl val; ... }` with `return;` -> `break 'inl;`.
 
-use super::action_inline_callers_helpers::is_ident_byte;
-use super::action_parse_lex::contains_word;
+use super::action_parse::is_ident_byte;
+use super::action_parse_items::contains_word;
 
 pub(crate) fn transform_early_returns(body_src: &str, masked_body: &str) -> Option<(String, String)> {
     if masked_body.contains("'inl") {
