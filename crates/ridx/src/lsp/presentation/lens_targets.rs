@@ -52,6 +52,44 @@ fn package_name(manifest: &str) -> Option<String> {
     None
 }
 
+/// The target a `[[bin]]`, `[[example]]`, `[[test]]` or `[[bench]]` section of `manifest` declares with `path` equal
+/// to `rel` (relative to the package, `/`-separated).
+fn declared_target(manifest: &str, rel: &str) -> Option<TargetKind> {
+    let mut section = "";
+    let (mut name, mut path): (Option<String>, Option<String>) = (None, None);
+    let finish = |section: &str, name: &Option<String>, path: &Option<String>| -> Option<TargetKind> {
+        let (n, p) = (name.clone()?, path.as_deref()?);
+        if p.trim_start_matches("./") != rel {
+            return None;
+        }
+        match section {
+            "[[bin]]" => Some(TargetKind::Bin(n)),
+            "[[example]]" => Some(TargetKind::Example(n)),
+            "[[test]]" => Some(TargetKind::Test(n)),
+            "[[bench]]" => Some(TargetKind::Bench(n)),
+            _ => None,
+        }
+    };
+    for line in manifest.lines().chain(std::iter::once("[end]")) {
+        let t = line.trim();
+        if t.starts_with('[') {
+            if let Some(k) = finish(section, &name, &path) {
+                return Some(k);
+            }
+            section = if matches!(t, "[[bin]]" | "[[example]]" | "[[test]]" | "[[bench]]") { t } else { "" };
+            (name, path) = (None, None);
+            continue;
+        }
+        let value = |key: &str| t.strip_prefix(key).map(str::trim_start).and_then(|r| r.strip_prefix('=')).map(|v| v.trim().trim_matches('"').to_string());
+        if let Some(v) = value("name") {
+            name = Some(v);
+        } else if let Some(v) = value("path") {
+            path = Some(v);
+        }
+    }
+    None
+}
+
 pub(super) fn file_target(file: &Path) -> Option<FileTarget> {
     let (pkg_dir, package) = file.ancestors().skip(1).find_map(|dir| {
         let manifest = std::fs::read_to_string(dir.join("Cargo.toml")).ok()?;
@@ -63,6 +101,10 @@ pub(super) fn file_target(file: &Path) -> Option<FileTarget> {
         .unwrap_or(&pkg_dir)
         .to_path_buf();
     let rel: Vec<String> = file.strip_prefix(&pkg_dir).ok()?.iter().map(|c| c.to_string_lossy().into_owned()).collect();
+    // A target the manifest declares with this file as its `path` (`examples/tutorial_derive/04_02_parse.rs`).
+    if let Some(kind) = std::fs::read_to_string(pkg_dir.join("Cargo.toml")).ok().and_then(|m| declared_target(&m, &rel.join("/"))) {
+        return Some(FileTarget { package, pkg_dir, workspace_root, kind, is_root: true, module_prefix: Vec::new(), layout_known: true });
+    }
     let stem = |s: &str| s.strip_suffix(".rs").unwrap_or(s).to_string();
     let (kind, root_len) = match rel.as_slice() {
         [src, main] if src == "src" && main == "main.rs" => (TargetKind::Bin(package.clone()), 2),
@@ -96,4 +138,17 @@ pub(super) fn file_target(file: &Path) -> Option<FileTarget> {
         module_prefix.clear();
     }
     Some(FileTarget { package, pkg_dir, workspace_root, kind, is_root, module_prefix, layout_known })
+}
+
+#[cfg(test)]
+mod declared_target_tests {
+    use super::*;
+
+    #[test]
+    fn test_declared_target_by_path() {
+        let m = "[package]\nname = \"clap\"\n\n[[example]]\nname = \"04_02_parse_derive\"\npath = \"examples/tutorial_derive/04_02_parse.rs\"\nrequired-features = [\"derive\"]\n\n[[bin]]\nname = \"tool\"\npath = \"./src/tool.rs\"\n";
+        assert!(matches!(declared_target(m, "examples/tutorial_derive/04_02_parse.rs"), Some(TargetKind::Example(n)) if n == "04_02_parse_derive"));
+        assert!(matches!(declared_target(m, "src/tool.rs"), Some(TargetKind::Bin(n)) if n == "tool"));
+        assert!(declared_target(m, "src/lib.rs").is_none());
+    }
 }

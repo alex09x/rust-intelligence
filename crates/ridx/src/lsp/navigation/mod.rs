@@ -332,6 +332,7 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
             let end_char = conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
             keyed.push((
                 (uri.clone(), start_line, start_char, end_line, end_char),
+                r.unit_key.unwrap_or(r.crate_name).to_string(),
                 json!({
                     "uri": uri,
                     "range": {
@@ -342,9 +343,25 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
             ));
         }
     }
-    keyed.sort_by(|a, b| a.0.cmp(&b.0));
-    keyed.dedup_by(|a, b| a.0 == b.0);
-    let results: Vec<Value> = keyed.into_iter().map(|(_, v)| v).collect();
+    // The same impl found through several builds (units) of its crate is one implementation; several impls at one
+    // place (a `#[derive(A, B)]`) are several, as rust-analyzer lists them: per place, as many as one unit holds.
+    keyed.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+    let mut results: Vec<Value> = Vec::new();
+    let mut i = 0;
+    while i < keyed.len() {
+        let mut j = i;
+        while j < keyed.len() && keyed[j].0 == keyed[i].0 {
+            j += 1;
+        }
+        let group = &keyed[i..j];
+        let mut per_unit: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+        for (_, unit, _) in group {
+            *per_unit.entry(unit.as_str()).or_default() += 1;
+        }
+        let copies = per_unit.values().copied().max().unwrap_or(1);
+        results.extend(std::iter::repeat_n(group[0].2.clone(), copies));
+        i = j;
+    }
 
     json!(results)
 }

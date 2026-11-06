@@ -103,6 +103,11 @@ impl WorkspaceIndex {
                 }
                 let raw_impl = reader.get_str(impl_def.path_offset());
                 let (trait_opt, self_ty) = parse_impl_def_path(raw_impl);
+                // Marker impls the compiler adds for derives (`derive(PartialEq)` → `StructuralPartialEq`) are not
+                // implementations anyone wrote; rust-analyzer does not list them.
+                if trait_opt.is_some_and(|t| matches!(strip_tail_generics(t).rsplit("::").next(), Some("StructuralPartialEq" | "TrivialClone"))) {
+                    continue;
+                }
                 let matched = if is_trait_query {
                     let Some(tp) = trait_opt else { continue };
                     let cand_base = strip_tail_generics(tp);
@@ -137,7 +142,10 @@ impl WorkspaceIndex {
                     }
                 };
                 let adj_span = self.resolve_impl_target_span(reader, impl_def, trait_opt, self_ty, def, &resolved_file_buf);
-                if seen_locs.insert((resolved_file_buf.to_string_lossy().into_owned(), adj_span.start_line(), adj_span.start_col())) {
+                // One impl seen through several units counts once; several impls at one place (`#[derive(A, B)]`)
+                // count each.
+                let seen_key = format!("{}#{raw_impl}", resolved_file_buf.to_string_lossy());
+                if seen_locs.insert((seen_key, adj_span.start_line(), adj_span.start_col())) {
                     out.push(WorkspaceReference {
                         crate_name: r_crate,
                         file: impl_file,

@@ -294,6 +294,41 @@ fn runnable_arg(r: &Runnable, target: &FileTarget, uri: &str) -> Value {
     })
 }
 
+/// Whether a module declared in `text` with `mod name;` (the file `name.rs` or `name/mod.rs` beside `file`) holds a
+/// `#[test]` function, itself or in its own submodules, up to `depth` levels down.
+fn child_modules_hold_tests(file: &Path, text: &str, depth: u32) -> bool {
+    if depth == 0 {
+        return false;
+    }
+    let stem = file.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+    let Some(parent) = file.parent() else { return false };
+    let dir = if matches!(stem, "mod" | "lib" | "main") { parent.to_path_buf() } else { parent.join(stem) };
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
+    for line in masked.lines() {
+        let t = line.trim();
+        let t = t.strip_prefix("pub(crate) ").or_else(|| t.strip_prefix("pub ")).unwrap_or(t);
+        let Some(name) = t.strip_prefix("mod ").and_then(|r| r.strip_suffix(';')).map(str::trim) else { continue };
+        for cand in [dir.join(format!("{name}.rs")), dir.join(name).join("mod.rs")] {
+            if let Ok(child) = std::fs::read_to_string(&cand) {
+                if holds_test_attribute(&child) || child_modules_hold_tests(&cand, &child, depth - 1) {
+                    return true;
+                }
+                break;
+            }
+        }
+    }
+    false
+}
+
+/// Whether `text` has a test attribute (`#[test]`, `#[tokio::test]`, ...) outside comments.
+fn holds_test_attribute(text: &str) -> bool {
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
+    masked.lines().any(|l| {
+        let t = l.trim_start();
+        t.starts_with("#[test]") || (t.starts_with("#[") && t.contains("::test") && t.trim_end().ends_with(']'))
+    })
+}
+
 /// Runnable lenses of `file` in rust-analyzer's shape, sorted by position, a `Run` lens before its `Debug` lens.
 pub fn runnable_lenses(file: &str, text: &str, run: bool, debug: bool, hints: &RunnableHints) -> Vec<Value> {
     if !run && !debug {
@@ -305,8 +340,10 @@ pub fn runnable_lenses(file: &str, text: &str, run: bool, debug: bool, hints: &R
     let uri = path_to_uri(file);
     let mut out = Vec::new();
     let mut runnables = collect_runnables(text, &target, hints);
-    // A file holding tests is itself a test module: rust-analyzer runs it from a lens spanning the whole file.
-    let file_module = runnables.iter().any(|r| r.kind == RunKind::Test).then(|| {
+    // A file holding tests, itself or in the modules it declares, is a test module: rust-analyzer runs it from a lens
+    // spanning the whole file.
+    let holds_tests = runnables.iter().any(|r| r.kind == RunKind::Test) || child_modules_hold_tests(Path::new(file), text, 4);
+    let file_module = holds_tests.then(|| {
         let line_count = text.lines().count() as u32;
         let (end_line, end_col) = match text.lines().last() {
             Some(last) if !text.ends_with('\n') => (line_count - 1, last.encode_utf16().count() as u32),

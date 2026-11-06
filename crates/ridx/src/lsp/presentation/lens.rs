@@ -322,6 +322,10 @@ pub fn handle_code_lens_resolve_for_client(
         let req = json!({ "params": { "textDocument": { "uri": uri }, "position": { "line": sl, "character": sc } } });
         let impls = crate::lsp::navigation::handle_implementation(&req, workspace, overlay_mgr, conv);
         let impls = impls.as_array().cloned().unwrap_or_default();
+        // No item at the lens's position: rust-analyzer leaves such a lens unresolved.
+        if impls.is_empty() && workspace.is_none_or(|ws| ws.find_definition_at(&file, line_1based, col_1based).is_none()) {
+            return lens;
+        }
         let count = impls.len();
         lens["command"] = json!({
             "title": format!("{count} implementation{}", if count == 1 { "" } else { "s" }),
