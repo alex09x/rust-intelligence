@@ -70,7 +70,7 @@ pub(crate) fn parse_fn_params(params_src: &str, type_generics: &[String]) -> Opt
         let (is_mut, raw_id) = if let Some(r) = l_trim.strip_prefix("mut ") { (true, r.trim()) } else { (false, l_trim) };
         let pid = clean_param_ident(raw_id)?;
         let pty = collapse_ws(rhs);
-        if pty.is_empty() || pty.contains("impl ") || contains_word(&pty, "_") {
+        if pty.is_empty() || contains_word(&pty, "_") {
             return None;
         }
         if pty.contains('[') && type_generics.iter().any(|g| contains_word(&pty, g)) {

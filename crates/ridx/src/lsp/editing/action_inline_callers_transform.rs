@@ -39,7 +39,26 @@ pub(crate) fn process_call_site(
     while p < src.len() && mb[p].is_ascii_whitespace() {
         p += 1;
     }
+    let mut has_turbofish = false;
+    if p + 2 < src.len() && &src[p..p + 2] == "::" {
+        let mut q = p + 2;
+        while q < src.len() && mb[q].is_ascii_whitespace() {
+            q += 1;
+        }
+        if q < src.len() && mb[q] == b'<' {
+            if let Some(close) = skip_balanced(mb, q, b'<', b'>') {
+                has_turbofish = true;
+                p = close;
+                while p < src.len() && mb[p].is_ascii_whitespace() {
+                    p += 1;
+                }
+            }
+        }
+    }
     if p >= src.len() || mb[p] != b'(' {
+        return None;
+    }
+    if has_turbofish && !body_src.trim().is_empty() {
         return None;
     }
     let call_end = skip_balanced(mb, p, b'(', b')')?;

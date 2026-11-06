@@ -289,3 +289,87 @@ fn test_inline_pub_fn_new_with_no_params() {
     assert!(!updated.contains("Config::new()"), "Call site should be inlined");
     assert_rustc_compiles(&updated, "Inline into all callers: pub fn new with 0 params compiles");
 }
+
+#[test]
+fn test_inline_generic_fn_with_turbofish_empty_body_compiles() {
+    let temp = tempfile::TempDir::new().unwrap();
+    let temp_dir = temp.path().to_path_buf();
+    let lib_file = temp_dir.join("lib.rs");
+    let lib_str = lib_file.to_string_lossy().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_turbofish", "0.1.0");
+
+    let code = concat!("fn «assert_send»<T: Send>() {}\n", "pub fn run() {\n", "    assert_send::<u64>();\n", "}\n",);
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_turbofish", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_turbofish::assert_send", &lib_str, 1, 4, 1, 15, Some(def_ids[0]), Some(&lib_str), 1, 4, DefKind::Fn);
+    builder.add_ref("test_turbofish::assert_send", &lib_str, 3, 5, 3, 16, Some(def_ids[0]), Some(&lib_str), 1, 4, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 0, 4, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for turbofish call");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(!updated.contains("fn assert_send"), "Declaration must be deleted");
+    assert!(!updated.contains("assert_send::<u64>()"), "Call site with turbofish must be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: turbofish call site compiles");
+}
+
+#[test]
+fn test_inline_fn_with_impl_trait_param_compiles() {
+    let temp = tempfile::TempDir::new().unwrap();
+    let temp_dir = temp.path().to_path_buf();
+    let lib_file = temp_dir.join("lib.rs");
+    let lib_str = lib_file.to_string_lossy().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_impl_trait", "0.1.0");
+
+    let code = concat!(
+        "fn «consume»(item: &impl std::fmt::Display) -> String {\n",
+        "    format!(\"{}\", item)\n",
+        "}\n",
+        "pub fn run() -> String {\n",
+        "    let x = 42;\n",
+        "    consume(&x)\n",
+        "}\n",
+    );
+
+    let (cleaned, def_ids) = builder.add_defs_with_ids(code, &lib_str, "test_impl_trait", DefKind::Fn);
+    let _ = fs::write(&lib_file, &cleaned);
+
+    builder.add_ref("test_impl_trait::consume", &lib_str, 1, 4, 1, 11, Some(def_ids[0]), Some(&lib_str), 1, 4, DefKind::Fn);
+    builder.add_ref("test_impl_trait::consume", &lib_str, 6, 5, 6, 12, Some(def_ids[0]), Some(&lib_str), 1, 4, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", lib_str);
+    ov.open_document(&uri, &lib_str, 1, cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 0, 4, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for impl Trait param");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("File edits missing");
+    let updated = apply_text_edits(&cleaned, edits);
+
+    assert!(!updated.contains("fn consume"), "Declaration must be deleted");
+    assert!(!updated.contains("consume(&x)"), "Call site must be inlined");
+    assert_rustc_compiles(&updated, "Inline into all callers: impl Trait param compiles");
+}
