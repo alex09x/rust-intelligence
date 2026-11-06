@@ -11,14 +11,9 @@
 //! Inlining body transformations, rewrite rules, and return unwrapping.
 
 use super::action_generics_sub::split_top_level_commas;
-use super::action_inline_callers::line_col_to_byte;
-use super::action_inline_callers_helpers::{find_path_start, find_receiver_start, format_inlined_call, is_caller_return_compatible, FnParamInfo, SelfKind};
-use super::action_parse::{is_ident_byte, line_starts_of, mask_comments_and_strings};
+use super::action_inline_callers_helpers::{find_path_start, find_receiver_start, format_inlined_call, FnParamInfo, SelfKind};
+use super::action_parse::is_ident_byte;
 use super::action_parse_items::skip_balanced;
-use super::action_struct_conv_helpers::to_lsp_edits;
-use ridx_format::WorkspaceIndex;
-use serde_json::Value;
-use std::path::Path;
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn process_call_site(
@@ -286,87 +281,4 @@ pub(crate) fn find_enclosing_mod_range(masked: &str, byte_offset: usize) -> Opti
         p += 1;
     }
     best
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn process_call_sites_for_document(
-    doc: &str,
-    masked: &str,
-    starts: &[usize],
-    spans: &[(u32, u32)],
-    fn_name: &str,
-    self_kind: Option<SelfKind>,
-    params: &[FnParamInfo],
-    body_src: &str,
-    body_has_question_mark: bool,
-    effective_ret_ty: Option<&str>,
-    def_range: Option<(usize, usize)>,
-    file_opt: Option<&str>,
-    ws_opt: Option<&WorkspaceIndex>,
-    is_fully_pub: bool,
-) -> (Vec<(usize, usize, String)>, bool) {
-    let mut edits = Vec::new();
-    let mut any_skipped = false;
-    for &(span_line, span_col) in spans {
-        let Some(ref_byte) = line_col_to_byte(doc, starts, span_line, span_col) else {
-            any_skipped = true;
-            continue;
-        };
-        if let Some((def_lo, def_hi)) = def_range {
-            if ref_byte >= def_lo && ref_byte < def_hi {
-                continue;
-            }
-        }
-        if body_has_question_mark {
-            let ret = effective_ret_ty.unwrap_or("");
-            if !is_caller_return_compatible(doc, masked, starts, ref_byte, ret) {
-                any_skipped = true;
-                continue;
-            }
-        }
-        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub) {
-            edits.push((site_start, site_end, inlined_text));
-        } else {
-            any_skipped = true;
-        }
-    }
-    (edits, any_skipped)
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn process_other_document_call_sites(
-    abs_path: &Path,
-    spans: &[(u32, u32)],
-    fn_name: &str,
-    self_kind: Option<SelfKind>,
-    params: &[FnParamInfo],
-    body_src: &str,
-    body_has_question_mark: bool,
-    effective_ret_ty: Option<&str>,
-    ws_opt: Option<&WorkspaceIndex>,
-    is_fully_pub: bool,
-) -> Option<Vec<Value>> {
-    let other_doc = std::fs::read_to_string(abs_path).ok()?;
-    let other_masked = mask_comments_and_strings(&other_doc);
-    let other_starts = line_starts_of(&other_doc);
-    let (edits, skipped) = process_call_sites_for_document(
-        &other_doc,
-        &other_masked,
-        &other_starts,
-        spans,
-        fn_name,
-        self_kind,
-        params,
-        body_src,
-        body_has_question_mark,
-        effective_ret_ty,
-        None,
-        abs_path.to_str(),
-        ws_opt,
-        is_fully_pub,
-    );
-    if skipped || edits.is_empty() {
-        return None;
-    }
-    to_lsp_edits(&other_doc, &other_starts, edits)
 }
