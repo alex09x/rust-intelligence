@@ -59,7 +59,8 @@ pub fn build_inline_into_all_callers_workspace(
     let is_pub = vis.starts_with("pub");
     let is_fully_pub = vis == "pub";
     match &item.enclosing {
-        super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } => {
+        super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. }
+        | super::action_parse::EnclosingContext::TraitImpl { cfg_attrs, .. } => {
             if cfg_attrs.iter().any(|a| !a.contains("doc(") && !a.contains("diagnostic::")) {
                 return None;
             }
@@ -71,15 +72,19 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     };
     let mut type_generics = extract_type_generic_names(generics_src);
-    if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. } = &item.enclosing {
+    if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. }
+        | super::action_parse::EnclosingContext::TraitImpl { generics_src: impl_gens, .. } = &item.enclosing
+    {
         type_generics.extend(extract_type_generic_names(impl_gens));
     }
     let impl_has_type_generics = match &item.enclosing {
-        super::action_parse::EnclosingContext::InherentImpl { generics_src, .. } => !has_only_lifetime_generics(generics_src),
+        super::action_parse::EnclosingContext::InherentImpl { generics_src, .. }
+        | super::action_parse::EnclosingContext::TraitImpl { generics_src, .. } => !has_only_lifetime_generics(generics_src),
         _ => false,
     };
     let self_type_name = match &item.enclosing {
-        super::action_parse::EnclosingContext::InherentImpl { self_ty, .. } => {
+        super::action_parse::EnclosingContext::InherentImpl { self_ty, .. }
+        | super::action_parse::EnclosingContext::TraitImpl { self_ty, .. } => {
             let base_raw = self_ty.split('<').next().unwrap_or(self_ty).trim().rsplit("::").next().unwrap_or("").trim();
             let base_name = base_raw.strip_prefix("r#").unwrap_or(base_raw);
             if !base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
@@ -200,7 +205,8 @@ pub fn build_inline_into_all_callers_workspace(
         !is_same_doc(&abs, file, canonical_file.as_deref())
     });
 
-    if !is_pub && has_cross_file {
+    let is_trait_impl = matches!(&item.enclosing, super::action_parse::EnclosingContext::TraitImpl { .. });
+    if !is_pub && !is_trait_impl && has_cross_file {
         return None;
     }
 
@@ -255,11 +261,11 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    if local_edits.is_empty() || (body_has_question_mark && any_skipped) || (any_skipped && !is_fully_pub) {
+    if local_edits.is_empty() || (body_has_question_mark && any_skipped) || (any_skipped && !is_fully_pub && !is_trait_impl) {
         return None;
     }
 
-    if !any_skipped && !is_pub {
+    if !any_skipped && !is_pub && !is_trait_impl {
         local_edits.push((del_lo, del_hi, String::new()));
     }
     let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;

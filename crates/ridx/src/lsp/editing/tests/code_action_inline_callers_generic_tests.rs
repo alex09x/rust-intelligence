@@ -244,3 +244,50 @@ fn test_inline_fn_with_early_return_compiles() {
 
     assert_rustc_compiles(&updated, "Inline into all callers: early return compiles");
 }
+
+#[test]
+fn test_inline_trait_impl_method_preserves_decl_and_compiles() {
+    let temp_dir = tempfile::tempdir().unwrap().path().to_path_buf();
+    let src_file = temp_dir.join("lib.rs");
+    let src_file_str = src_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_trait_impl", "0.1.0");
+    let code = concat!(
+        "pub trait Greeter {\n",
+        "    fn greet(&self) -> String;\n",
+        "}\n",
+        "pub struct Bot;\n",
+        "impl Greeter for Bot {\n",
+        "    fn «greet»(&self) -> String {\n",
+        "        String::from(\"hello\")\n",
+        "    }\n",
+        "}\n",
+        "pub fn caller(b: &Bot) -> String {\n",
+        "    b.greet()\n",
+        "}\n",
+    );
+    let (code_cleaned, def_ids) = builder.add_defs_with_ids(code, &src_file_str, "test_trait_impl", DefKind::Fn);
+    let _ = fs::write(&src_file, &code_cleaned);
+
+    builder.add_ref("test_trait_impl::greet", &src_file_str, 6, 8, 6, 13, Some(def_ids[0]), Some(&src_file_str), 6, 8, DefKind::Fn);
+    builder.add_ref("test_trait_impl::greet", &src_file_str, 11, 7, 11, 12, Some(def_ids[0]), Some(&src_file_str), 6, 8, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", src_file_str);
+    ov.open_document(&uri, &src_file_str, 1, code_cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 5, 8, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for trait impl method");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("lib.rs edits missing");
+    let updated = apply_text_edits(&code_cleaned, edits);
+
+    assert!(updated.contains("fn greet(&self)"), "Trait method declaration must NOT be deleted");
+    assert_rustc_compiles(&updated, "Inline into all callers: trait impl method compiles");
+}
