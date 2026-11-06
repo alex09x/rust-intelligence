@@ -10,9 +10,10 @@
 
 //! Index-backed workspace `Inline into all callers` (`refactor.inline`).
 
-use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
+use super::action_inline_callers_helpers::{contains_recursive_call, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{
-    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
+    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, process_call_sites_for_document,
+    process_other_document_call_sites, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
@@ -209,8 +210,11 @@ pub fn build_inline_into_all_callers_workspace(
     if is_fully_pub || vis == "pub(super)" {
         if let Some((mod_lo, mod_hi)) = find_enclosing_mod_range(masked_doc, item.decl_start_byte) {
             let has_cross_mod = refs_by_file.iter().any(|(abs_path, spans)| {
-                is_same_doc(abs_path, file, canonical_file.as_deref())
-                    && spans.iter().any(|&(sl, sc)| line_col_to_byte(doc_text, starts, sl, sc).is_some_and(|b| b < mod_lo || b >= mod_hi))
+                if !is_same_doc(abs_path, file, canonical_file.as_deref()) {
+                    true
+                } else {
+                    spans.iter().any(|&(sl, sc)| line_col_to_byte(doc_text, starts, sl, sc).is_some_and(|b| b < mod_lo || b >= mod_hi))
+                }
             });
             if has_cross_mod {
                 return None;
@@ -240,17 +244,37 @@ pub fn build_inline_into_all_callers_workspace(
             if skipped {
                 any_skipped = true;
             }
+        } else if is_pub {
+            if let Some(lsp_eds) = process_other_document_call_sites(
+                abs_path,
+                spans,
+                &item.name,
+                self_kind,
+                &parsed_params,
+                &body_transformed,
+                body_has_question_mark,
+                effective_ret_ty.as_deref(),
+                Some(ws),
+                is_fully_pub,
+            ) {
+                if !lsp_eds.is_empty() {
+                    let uri = format!("file://{}", abs_path.display());
+                    other_file_edits.insert(uri, lsp_eds);
+                }
+            } else {
+                any_skipped = true;
+            }
         }
     }
 
-    if local_edits.is_empty() || (body_has_question_mark && any_skipped) {
+    if (local_edits.is_empty() && other_file_edits.is_empty()) || (body_has_question_mark && any_skipped) {
         return None;
     }
 
     if !any_skipped && !is_pub {
         local_edits.push((del_lo, del_hi, String::new()));
     }
-    let local_lsp_edits = to_lsp_edits(doc_text, starts, local_edits)?;
+    let local_lsp_edits = if local_edits.is_empty() { Vec::new() } else { to_lsp_edits(doc_text, starts, local_edits)? };
 
     Some((local_lsp_edits, other_file_edits))
 }
@@ -263,51 +287,6 @@ fn has_safe_pub_new_params(params: &[FnParamInfo]) -> bool {
                 !n.contains('\'') && !n.contains("impl ") && !n.contains("dyn ") && !n.contains('<')
             })
         })
-}
-
-#[allow(clippy::too_many_arguments)]
-fn process_call_sites_for_document(
-    doc: &str,
-    masked: &str,
-    starts: &[usize],
-    spans: &[(u32, u32)],
-    fn_name: &str,
-    self_kind: Option<SelfKind>,
-    params: &[FnParamInfo],
-    body_src: &str,
-    body_has_question_mark: bool,
-    effective_ret_ty: Option<&str>,
-    def_range: Option<(usize, usize)>,
-    file_opt: Option<&str>,
-    ws_opt: Option<&WorkspaceIndex>,
-    is_fully_pub: bool,
-) -> (Vec<(usize, usize, String)>, bool) {
-    let mut edits = Vec::new();
-    let mut any_skipped = false;
-    for &(span_line, span_col) in spans {
-        let Some(ref_byte) = line_col_to_byte(doc, starts, span_line, span_col) else {
-            any_skipped = true;
-            continue;
-        };
-        if let Some((def_lo, def_hi)) = def_range {
-            if ref_byte >= def_lo && ref_byte < def_hi {
-                continue;
-            }
-        }
-        if body_has_question_mark {
-            let ret = effective_ret_ty.unwrap_or("");
-            if !is_caller_return_compatible(doc, masked, starts, ref_byte, ret) {
-                any_skipped = true;
-                continue;
-            }
-        }
-        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub) {
-            edits.push((site_start, site_end, inlined_text));
-        } else {
-            any_skipped = true;
-        }
-    }
-    (edits, any_skipped)
 }
 
 fn resolve_ref_to_absolute(ws: &WorkspaceIndex, doc_file: &str, r: &ridx_format::WorkspaceReference) -> PathBuf {
