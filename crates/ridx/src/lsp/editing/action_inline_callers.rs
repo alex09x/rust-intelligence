@@ -149,7 +149,7 @@ pub fn build_inline_into_all_callers_workspace(
         || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
         || contains_recursive_call(&raw_masked_body, &item.name)
         || type_generics.iter().any(|g| contains_word(&raw_masked_body, g))
-        || (effective_ret_ty.is_none() && raw_masked_body.contains(".collect()") && !raw_masked_body.contains("collect::<"))
+        || (effective_ret_ty.is_none() && (raw_body_slice.trim().trim_end_matches(';').trim() == "None" || (raw_masked_body.contains(".collect()") && !raw_masked_body.contains("collect::<"))))
     {
         return None;
     }
