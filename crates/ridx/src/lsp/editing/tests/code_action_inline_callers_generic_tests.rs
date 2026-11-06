@@ -150,3 +150,49 @@ fn test_inline_method_with_compound_self_return_type_compiles() {
     assert!(updated.contains("Dir(val)") || updated.contains("Dir("), "Self must be rewritten to Dir");
     assert_rustc_compiles(&updated, "Inline into all callers: compound Self return type rewritten to Dir");
 }
+
+#[test]
+fn test_inline_method_on_generic_struct_with_concrete_ret_ty_compiles() {
+    let temp_dir = std::env::temp_dir().join(format!("test_inline_generic_concrete_ret_{}", std::process::id()));
+    let _ = fs::create_dir_all(&temp_dir);
+    let src_file = temp_dir.join("lib.rs");
+    let src_file_str = src_file.to_str().unwrap().to_string();
+
+    let mut builder = FixtureIndexBuilder::new("test_generic_concrete_ret", "0.1.0");
+    let code = concat!(
+        "use std::io;\n",
+        "pub struct Sink<W>(pub W);\n",
+        "impl<W: io::Write> Sink<W> {\n",
+        "    pub(crate) fn «write_bytes»(&mut self, buf: &[u8]) -> io::Result<()> {\n",
+        "        self.0.write_all(buf)?;\n",
+        "        Ok(())\n",
+        "    }\n",
+        "}\n",
+        "pub fn caller<W: io::Write>(s: &mut Sink<W>) -> io::Result<()> {\n",
+        "    s.write_bytes(b\"hello\")\n",
+        "}\n",
+    );
+    let (code_cleaned, def_ids) = builder.add_defs_with_ids(code, &src_file_str, "test_generic_concrete_ret", DefKind::Fn);
+    let _ = fs::write(&src_file, &code_cleaned);
+
+    builder.add_ref("test_generic_concrete_ret::write_bytes", &src_file_str, 4, 19, 4, 30, Some(def_ids[0]), Some(&src_file_str), 4, 19, DefKind::Fn);
+    builder.add_ref("test_generic_concrete_ret::write_bytes", &src_file_str, 10, 7, 10, 18, Some(def_ids[0]), Some(&src_file_str), 4, 19, DefKind::Fn);
+
+    let ridx_file = temp_dir.join("index.ridx");
+    builder.write_to_file(&ridx_file);
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let mut ov = OverlayManager::new();
+    let uri = format!("file://{}", src_file_str);
+    ov.open_document(&uri, &src_file_str, 1, code_cleaned.clone());
+
+    let actions = query_actions_with_multi_file_resolve(&uri, 3, 19, &ws, &ov);
+    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' for concrete Result return type on generic struct");
+
+    let (_, changes) = inline_action.unwrap();
+    let edits = changes.get(&uri).expect("lib.rs edits missing");
+    let updated = apply_text_edits(&code_cleaned, edits);
+
+    assert_rustc_compiles(&updated, "Inline into all callers: concrete Result return type on generic struct compiles");
+}
