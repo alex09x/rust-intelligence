@@ -11,9 +11,11 @@
 //! Inlining body transformations, rewrite rules, and return unwrapping.
 
 use super::action_generics_sub::split_top_level_commas;
-use super::action_inline_callers_helpers::{find_path_start, find_receiver_start, format_inlined_call, FnParamInfo, SelfKind};
+use super::action_inline_callers_helpers::{
+    find_path_start, find_receiver_start, format_inlined_call, is_writable_binding_type, normalize_param_type_for_binding, FnParamInfo, SelfKind,
+};
 use super::action_parse::is_ident_byte;
-use super::action_parse_items::skip_balanced;
+use super::action_parse_items::{contains_word, skip_balanced};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn process_call_site(
@@ -108,8 +110,32 @@ pub(crate) fn process_call_site(
     }
 
     let non_self_count = params.iter().filter(|p| !p.is_self).count();
-    if raw_args.len() != non_self_count || raw_args.iter().any(|a| a.contains('(')) {
+    if raw_args.len() != non_self_count {
         return None;
+    }
+    // Every argument is bound by a `let` before the body, in order, so a call argument evaluates once and in place.
+    // Refused: a closure (its `|a, b|` would split on the comma) and an argument naming a parameter bound before it,
+    // which would read that binding instead of the caller's variable.
+    let masked_args = split_top_level_commas(&masked[p + 1..call_end - 1]);
+    let plain: Vec<&FnParamInfo> = params.iter().filter(|p| !p.is_self).collect();
+    for (i, arg) in masked_args.iter().filter(|a| !a.trim().is_empty()).enumerate() {
+        let earlier_bound = plain.iter().take(i).filter_map(|p| p.ident.as_deref()).map(|id| id.trim_start_matches("mut ")).any(|id| contains_word(arg, id))
+            || (self_kind.is_some() && contains_word(arg, "this"));
+        if arg.contains('|') || earlier_bound {
+            return None;
+        }
+        // A call argument is bound with the parameter's type written out, else its generic return stays uninferred
+        // (E0282); next to a receiver binding a `self` in it would borrow twice (E0502). For a reference parameter
+        // `let x: &T = &f();` extends only the outermost temporary, so a chain through another call (`a.to_string()
+        // .as_bytes()`) would drop the inner one at the `;` (E0716).
+        if arg.contains('(') {
+            let ty = plain.get(i).and_then(|p| p.decl_ty.as_deref()).map(normalize_param_type_for_binding);
+            let typed = ty.as_deref().is_some_and(is_writable_binding_type);
+            let chained_temp = ty.as_deref().is_some_and(|t| t.starts_with('&')) && arg.matches('(').count() > 1;
+            if !typed || chained_temp || (self_kind.is_some() && contains_word(arg, "self")) {
+                return None;
+            }
+        }
     }
 
     let prev_ch = masked[..call_start].trim_end().as_bytes().last().copied().unwrap_or(b'{');

@@ -242,6 +242,11 @@ pub fn build_inline_into_all_callers(doc_text: &str, masked_doc: &str, starts: &
                     if returns_borrow && !typed_params.is_empty() && args.iter().any(|a| a.contains('(')) {
                         return None;
                     }
+                    // A reference bound from a chain through another call (`make().as_str()`) borrows a temporary
+                    // that drops at the `let`'s `;` (E0716).
+                    if typed_params.iter().zip(&args).any(|((_, ty), a)| ty.starts_with('&') && a.matches('(').count() > 1) {
+                        return None;
+                    }
                     let stmts = match typed_params.len() {
                         0 => String::new(),
                         1 => format!("let {}: {} = {}; ", typed_params[0].0, typed_params[0].1, args[0].trim()),

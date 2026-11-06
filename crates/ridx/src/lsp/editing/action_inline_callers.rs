@@ -318,6 +318,14 @@ pub(crate) fn process_call_sites_for_document(
     ws_opt: Option<&WorkspaceIndex>,
     is_fully_pub: bool,
 ) -> (Vec<(usize, usize, String)>, bool) {
+    // A declared type is written only where the definition is: another file may not see the names it uses.
+    let unwritten: Vec<FnParamInfo>;
+    let params = if def_range.is_some() {
+        params
+    } else {
+        unwritten = params.iter().map(|p| FnParamInfo { decl_ty: None, ..p.clone() }).collect();
+        &unwritten
+    };
     let mut edits = Vec::new();
     let mut any_skipped = false;
     for &(span_line, span_col) in spans {

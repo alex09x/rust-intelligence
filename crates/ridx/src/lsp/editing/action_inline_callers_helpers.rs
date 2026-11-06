@@ -15,12 +15,15 @@ use super::action_generics_sub::{split_top_level_colon, split_top_level_commas};
 use super::action_parse_decl::collapse_ws;
 use super::action_parse_items::contains_word;
 
+#[derive(Clone)]
 pub(crate) struct FnParamInfo {
     pub is_self: bool,
     pub self_kind: Option<SelfKind>,
     pub ident: Option<String>,
     pub is_mut_ref: bool,
     pub ty: Option<String>,
+    /// The declared type when it names none of the item's generics, so a caller can write it on a `let`.
+    pub decl_ty: Option<String>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -42,7 +45,7 @@ pub(crate) fn parse_fn_params(params_src: &str, type_generics: &[String]) -> Opt
             continue;
         }
         if t == "self" || t == "mut self" {
-            out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Value), ident: Some("this".to_string()), is_mut_ref: false, ty: None });
+            out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Value), ident: Some("this".to_string()), is_mut_ref: false, ty: None, decl_ty: None });
             continue;
         }
         if let Some(rest) = t.strip_prefix('&') {
@@ -57,11 +60,11 @@ pub(crate) fn parse_fn_params(params_src: &str, type_generics: &[String]) -> Opt
                 rest_trimmed
             };
             if without_lifetime == "self" {
-                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Ref), ident: Some("this".to_string()), is_mut_ref: false, ty: None });
+                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::Ref), ident: Some("this".to_string()), is_mut_ref: false, ty: None, decl_ty: None });
                 continue;
             }
             if without_lifetime == "mut self" {
-                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::MutRef), ident: Some("this".to_string()), is_mut_ref: true, ty: None });
+                out.push(FnParamInfo { is_self: true, self_kind: Some(SelfKind::MutRef), ident: Some("this".to_string()), is_mut_ref: true, ty: None, decl_ty: None });
                 continue;
             }
         }
@@ -77,9 +80,10 @@ pub(crate) fn parse_fn_params(params_src: &str, type_generics: &[String]) -> Opt
             return None;
         }
         let is_mut_ref = pty.trim().starts_with("&mut ");
+        let decl_ty = (!type_generics.iter().any(|g| contains_word(&pty, g))).then(|| pty.clone());
         let ty = if is_primitive_scalar(&pty) { Some(pty) } else { None };
         let bind_lhs = if is_mut { format!("mut {pid}") } else { pid };
-        out.push(FnParamInfo { is_self: false, self_kind: None, ident: Some(bind_lhs), is_mut_ref, ty });
+        out.push(FnParamInfo { is_self: false, self_kind: None, ident: Some(bind_lhs), is_mut_ref, ty, decl_ty });
     }
     Some(out)
 }
@@ -208,6 +212,11 @@ pub(crate) fn find_path_start(masked: &str, ref_byte: usize) -> usize {
     p
 }
 
+/// Whether a parameter type can be written on a `let`: no lifetimes, `Self`, `impl`/`dyn` or inferred `_` left.
+pub(crate) fn is_writable_binding_type(norm_ty: &str) -> bool {
+    !norm_ty.contains('\'') && !norm_ty.contains("Self") && !norm_ty.contains("impl ") && !norm_ty.contains("dyn ") && !norm_ty.contains('_')
+}
+
 pub(crate) fn normalize_param_type_for_binding(ty: &str) -> String {
     let mut out = String::with_capacity(ty.len());
     let bytes = ty.as_bytes();
@@ -287,7 +296,19 @@ pub(crate) fn format_inlined_call(
             if arg_trimmed == id.as_str() {
                 continue;
             }
-            if p.is_mut_ref && !arg_trimmed.starts_with("&mut ") {
+            let written = p.decl_ty.as_deref().map(normalize_param_type_for_binding).filter(|n| is_writable_binding_type(n));
+            if let (true, Some(norm_ty)) = (arg_trimmed.contains('('), written) {
+                // A call argument: `let x: &T = &f();` keeps the temporary alive to the end of the block (`&*f()`
+                // would drop it at the `;`), and the written type coerces `&&T` to `&T`.
+                let borrow = if norm_ty.starts_with("&mut ") {
+                    "&mut "
+                } else if norm_ty.starts_with('&') {
+                    "&"
+                } else {
+                    ""
+                };
+                bindings.push(format!("let {id}: {norm_ty} = {borrow}{arg_trimmed};"));
+            } else if p.is_mut_ref && !arg_trimmed.starts_with("&mut ") {
                 bindings.push(format!("let {id} = &mut *{arg_trimmed};"));
             } else if p.ty.as_deref().is_some_and(|t| t.starts_with('&') && !t.starts_with("&mut")) && !arg_trimmed.starts_with('&') {
                 bindings.push(format!("let {id} = &*{arg_trimmed};"));
