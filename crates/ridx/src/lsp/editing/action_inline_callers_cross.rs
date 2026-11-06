@@ -11,7 +11,7 @@
 //! Cross-file caller processing for `Inline into all callers` (`refactor.inline`).
 
 use super::action_inline_callers_helpers::{FnParamInfo, SelfKind};
-use super::action_parse::{line_starts_of, mask_comments_and_strings};
+use super::action_parse::{is_ident_byte, line_starts_of, mask_comments_and_strings};
 use super::action_struct_conv_helpers::to_lsp_edits;
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
@@ -27,7 +27,7 @@ const SAFE_PRELUDE_TYPES: &[&str] = &[
 
 /// Checks whether a transformed function body is completely safe to inline into other files
 /// without risking missing imports, private field accesses, or undeclared local functions.
-pub(crate) fn is_safe_for_cross_file_inline(body: &str) -> bool {
+pub(crate) fn is_safe_for_cross_file_inline(body: &str, masked_doc: &str) -> bool {
     let b = body.trim();
     if b.is_empty() || b.contains("super::") || b.contains("self::") || b.contains('\'') {
         return false;
@@ -94,14 +94,44 @@ pub(crate) fn is_safe_for_cross_file_inline(body: &str) -> bool {
             }
         }
         if end > 0 {
+            let method_name = &after_dot[..end];
             let next_tail = after_dot[end..].trim_start();
             if !next_tail.starts_with('(') {
+                return false;
+            }
+            if has_private_fn_def(method_name, masked_doc) {
                 return false;
             }
         }
         dot_idx = abs_dot + 1;
     }
     true
+}
+
+fn has_private_fn_def(method: &str, masked_doc: &str) -> bool {
+    let mb = masked_doc.as_bytes();
+    let pat = format!("fn {method}");
+    let pat_b = pat.as_bytes();
+    let mut idx = 0;
+    while let Some(pos) = masked_doc[idx..].find(&pat) {
+        let abs = idx + pos;
+        let prev_ok = abs == 0 || !is_ident_byte(mb[abs - 1]);
+        let after_byte = abs + pat_b.len();
+        let next_ok = after_byte < mb.len() && (mb[after_byte].is_ascii_whitespace() || mb[after_byte] == b'(' || mb[after_byte] == b'<');
+        if prev_ok && next_ok {
+            let pre = masked_doc[..abs].trim_end();
+            let mut start = pre.len();
+            while start > 0 && mb[start - 1] != b';' && mb[start - 1] != b'{' && mb[start - 1] != b'}' {
+                start -= 1;
+            }
+            let vis_span = &pre[start..];
+            if !vis_span.contains("pub") {
+                return true;
+            }
+        }
+        idx = abs + pat_b.len();
+    }
+    false
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -136,7 +166,7 @@ pub(crate) fn process_other_document_call_sites(
         body_has_question_mark,
         effective_ret_ty,
         None,
-        Some(file),
+        Some(abs_path.to_str().unwrap_or(file)),
         ws,
         is_fully_pub,
     );

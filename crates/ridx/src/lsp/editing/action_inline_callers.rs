@@ -227,7 +227,7 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    let cross_file_safe = is_pub && is_safe_for_cross_file_inline(&body_transformed);
+    let cross_file_safe = is_pub && is_safe_for_cross_file_inline(&body_transformed, masked_doc);
     for (abs_path, spans) in &refs_by_file {
         if is_same_doc(abs_path, file, canonical_file.as_deref()) {
             let (edits, skipped) = process_call_sites_for_document(
