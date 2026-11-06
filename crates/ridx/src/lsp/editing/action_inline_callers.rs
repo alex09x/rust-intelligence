@@ -12,7 +12,7 @@
 
 use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
 use super::action_inline_callers_transform::{
-    extract_type_generic_names, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
+    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
@@ -52,7 +52,7 @@ pub fn build_inline_into_all_callers_workspace(
     let is_fully_pub = vis == "pub";
     match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. } => {
-            if !cfg_attrs.is_empty() {
+            if cfg_attrs.iter().any(|a| !a.contains("doc(") && !a.contains("diagnostic::")) {
                 return None;
             }
         }
@@ -66,16 +66,16 @@ pub fn build_inline_into_all_callers_workspace(
     if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. } = &item.enclosing {
         type_generics.extend(extract_type_generic_names(impl_gens));
     }
+    let impl_has_type_generics = match &item.enclosing {
+        super::action_parse::EnclosingContext::InherentImpl { generics_src, .. } => !has_only_lifetime_generics(generics_src),
+        _ => false,
+    };
     let self_type_name = match &item.enclosing {
-        super::action_parse::EnclosingContext::InherentImpl { self_ty, generics_src, .. } => {
-            if has_only_lifetime_generics(generics_src) {
-                let base_raw = self_ty.split('<').next().unwrap_or(self_ty).trim().rsplit("::").next().unwrap_or("").trim();
-                let base_name = base_raw.strip_prefix("r#").unwrap_or(base_raw);
-                if !base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-                    Some(base_name.to_string())
-                } else {
-                    None
-                }
+        super::action_parse::EnclosingContext::InherentImpl { self_ty, .. } => {
+            let base_raw = self_ty.split('<').next().unwrap_or(self_ty).trim().rsplit("::").next().unwrap_or("").trim();
+            let base_name = base_raw.strip_prefix("r#").unwrap_or(base_raw);
+            if !base_name.is_empty() && base_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                Some(base_name.to_string())
             } else {
                 None
             }
@@ -86,12 +86,12 @@ pub fn build_inline_into_all_callers_workspace(
         if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if impl_has_type_generics || (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             Some(self_type_name.as_ref()?.clone())
         } else if contains_word(r, "Self") {
-            return None;
+            self_type_name.as_ref().map(|ty_name| rewrite_self_type_to_name(r, &mask_comments_and_strings(r), ty_name))
         } else {
             Some(r.to_string())
         }
@@ -196,6 +196,18 @@ pub fn build_inline_into_all_callers_workspace(
     for r in &refs_obj.references {
         let abs = resolve_ref_to_absolute(ws, file, r);
         refs_by_file.entry(abs).or_default().push((r.span.start_line(), r.span.start_col()));
+    }
+
+    if is_fully_pub || vis == "pub(super)" {
+        if let Some((mod_lo, mod_hi)) = find_enclosing_mod_range(masked_doc, item.decl_start_byte) {
+            let has_cross_mod = refs_by_file.iter().any(|(abs_path, spans)| {
+                is_same_doc(abs_path, file, canonical_file.as_deref())
+                    && spans.iter().any(|&(sl, sc)| line_col_to_byte(doc_text, starts, sl, sc).is_some_and(|b| b < mod_lo || b >= mod_hi))
+            });
+            if has_cross_mod {
+                return None;
+            }
+        }
     }
 
     for (abs_path, spans) in &refs_by_file {

@@ -259,3 +259,26 @@ pub(crate) fn unwrap_tail_return(body_src: &str, masked_body: &str) -> Option<(S
     let new_masked = format!("{before_masked}{final_masked}");
     Some((new_body, new_masked))
 }
+
+pub(crate) fn find_enclosing_mod_range(masked: &str, byte_offset: usize) -> Option<(usize, usize)> {
+    let mb = masked.as_bytes();
+    let mut best: Option<(usize, usize)> = None;
+    let mut p = 0;
+    while p + 4 < mb.len() {
+        if mb[p] == b'm' && &mb[p..p + 4] == b"mod " && (p == 0 || !is_ident_byte(mb[p - 1])) {
+            let mut q = p + 4;
+            while q < mb.len() && mb[q] != b'{' && mb[q] != b';' {
+                q += 1;
+            }
+            if q < mb.len() && mb[q] == b'{' {
+                if let Some(close) = skip_balanced(mb, q, b'{', b'}') {
+                    if q < byte_offset && byte_offset < close && (best.is_none() || (close - q) < (best.unwrap().1 - best.unwrap().0)) {
+                        best = Some((q, close));
+                    }
+                }
+            }
+        }
+        p += 1;
+    }
+    best
+}
