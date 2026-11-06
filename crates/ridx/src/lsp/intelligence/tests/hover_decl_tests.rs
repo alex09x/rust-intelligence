@@ -107,6 +107,15 @@ fn test_collapse_drops_attributes_and_const_bounds() {
 }
 
 #[test]
+fn test_impl_header_in_macro_body_does_not_slice_backwards() {
+    // std's integer methods sit in macro bodies where skipping the trivia before the enclosing `{` runs past it
+    // (here an unterminated block comment): the header lookup must give up, not slice backwards.
+    let src = "x; /* {\n    pub fn saturating_sub(self, rhs: Self) -> Self { self }\n";
+    let at = src.find("pub fn").unwrap();
+    assert_eq!(generic_impl_header(src, at), None);
+}
+
+#[test]
 fn test_impl_header_found_past_braces_in_doc_comments() {
     let src = "impl<T, A: Allocator> Vec<T, A> {\n    /// ```\n    /// for x in &v {\n    /// ```\n    pub fn len(&self) -> usize { 0 }\n    /// }\n    pub fn push(&mut self, value: T) {}\n}\n";
     assert_eq!(generic_impl_header(src, item_at(src, 7)).map(|h| h.0).as_deref(), Some("impl<T, A> Vec<T, A>"));

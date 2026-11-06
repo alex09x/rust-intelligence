@@ -138,6 +138,9 @@ pub(crate) fn generic_impl_header(src: &str, start: usize) -> Option<(String, Ve
     let open = open?;
     let from = src[..open].rfind(['}', ';', '{']).map_or(0, |p| p + 1);
     let from = skip_trivia(src, from);
+    if from >= open {
+        return None;
+    }
     let header = collapse(&src[from..open]);
     let header = header.trim_start_matches("unsafe ").trim_start_matches("const ").trim_start_matches("unsafe ");
     let rest = header.strip_prefix("impl<")?;

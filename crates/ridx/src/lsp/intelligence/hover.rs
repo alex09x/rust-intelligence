@@ -115,7 +115,11 @@ pub(crate) fn format_hover_full(
     cursor: HoverCursor<'_>,
 ) -> Value {
     if let (Some(d), Some(w), Some(c)) = (hover.definition.as_ref(), ws, conv.as_deref_mut()) {
-        if let Some(mut text) = super::hover_render::render_hover(d, hover.inferred_type, cursor.call_args, cursor.at_definition, w, overlay_mgr, c) {
+        // The source-based renderer reads arbitrary (macro-generated, std) source; a slip must cost the layout, not the server.
+        let rendered = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            super::hover_render::render_hover(d, hover.inferred_type, cursor.call_args, cursor.at_definition, w, overlay_mgr, c)
+        }));
+        if let Ok(Some(mut text)) = rendered {
             if let Some(prov) = super::hover_enrich::format_provenance_and_blast_radius(d, w) {
                 text.push_str(if text.contains("\n---\n") { "\n\n" } else { "\n\n---\n\n" });
                 text.push_str(&prov);
