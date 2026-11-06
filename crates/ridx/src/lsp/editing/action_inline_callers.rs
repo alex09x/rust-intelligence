@@ -108,7 +108,7 @@ pub fn build_inline_into_all_callers_workspace(
                 Some(self_type_name.as_ref()?.clone())
             }
         } else if contains_word(r, "Self") {
-            if impl_has_type_generics {
+            if impl_has_type_generics || r.contains("::") {
                 None
             } else {
                 self_type_name.as_ref().map(|ty_name| rewrite_self_type_to_name(r, &mask_comments_and_strings(r), ty_name))
