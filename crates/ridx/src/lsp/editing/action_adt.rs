@@ -20,6 +20,32 @@ use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
 use std::path::Path;
 
+/// rust-analyzer's `Generate trait impl`: an `impl _ for Type {}` template after the type, the trait left for the
+/// user to name (an editor with snippets places the cursor on the `_`).
+pub fn build_generate_trait_impl(doc_text: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<(u32, u32, String)> {
+    let (line0, col_u16, text) = build_generate_impl(doc_text, starts, item)?;
+    let at = text.find("impl")? + "impl".len();
+    let mut generics_end = at;
+    if text[at..].starts_with('<') {
+        let mut depth = 0i32;
+        for (i, c) in text[at..].char_indices() {
+            match c {
+                '<' => depth += 1,
+                '>' if text[..at + i].ends_with('-') => {}
+                '>' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        generics_end = at + i + 1;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Some((line0, col_u16, format!("{} _ for{}", &text[..generics_end], &text[generics_end..])))
+}
+
 pub fn build_generate_impl(doc_text: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<(u32, u32, String)> {
     if !matches!(item.enclosing, EnclosingContext::None) {
         return None;

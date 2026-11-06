@@ -12,7 +12,7 @@
 
 use super::action_default_extract::{extract_default_fn_members, DefaultFnMember};
 use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, MemberOrigin};
-use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args};
+use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args, trait_generic_defaults};
 use super::action_default_safety::is_rust_kw_or_prelude;
 use super::action_default_scope::{collect_module_scope_idents, enclosing_module_span, has_top_level_macro_call, is_default_fn_compile_safe};
 use super::action_default_ufcs::{alpha_rename_colliding_fn_generics, collect_trait_fn_receivers, parse_fn_receiver, qualify_trait_self_calls};
@@ -21,7 +21,7 @@ use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_st
 use super::action_parse_decl::{extract_angle_generics, next_ident_token};
 use super::action_parse_items::skip_balanced;
 use crate::overlay::OverlayManager;
-use ridx_format::WorkspaceIndex;
+use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
 
 #[allow(clippy::too_many_arguments)]
@@ -47,7 +47,7 @@ pub fn build_implement_default_members(
     }
     let implemented_fns = collect_top_level_fn_names(impl_body_masked);
 
-    let (trait_path, trait_args) = split_trait_path_and_args(trait_ty)?;
+    let (trait_path, mut trait_args) = split_trait_path_and_args(trait_ty)?;
     let simple_trait = trait_path.rsplit("::").next()?.trim();
     let simple_clean = simple_trait.strip_prefix("r#").unwrap_or(simple_trait);
     if simple_clean.is_empty() {
@@ -55,6 +55,13 @@ pub fn build_implement_default_members(
     }
 
     let resolved_trait = resolve_trait_definition(doc_text, masked_doc, current_file, *body_open_byte, trait_path, simple_clean, ws, overlay_mgr)?;
+    // Parameters the impl leaves out take the trait's defaults (`PartialOrd` is `PartialOrd<Rhs = Self>`).
+    if trait_args.len() < resolved_trait.generics.len() {
+        let defaults = trait_generic_defaults(&resolved_trait.src[..resolved_trait.body_open], simple_clean);
+        for d in defaults.iter().skip(trait_args.len()).take(resolved_trait.generics.len() - trait_args.len()) {
+            trait_args.push(d.clone()?);
+        }
+    }
     if resolved_trait.generics.len() != trait_args.len() {
         return None;
     }
@@ -86,6 +93,22 @@ pub fn build_implement_default_members(
     impl_hdr_idents.extend(collect_tokens_and_lifetimes(trait_ty));
     impl_hdr_idents.extend(collect_tokens_and_lifetimes(where_src));
 
+    // A standard library trait's default bodies call public standard library methods (`is_some_and`): one the index
+    // holds under `core`/`alloc`/`std` is callable from the impl too.
+    let std_trait = resolved_trait.file.as_deref().is_some_and(|f| f.contains("/library/"));
+    let std_method = |name: &str| {
+        std_trait
+            && ws.exact_symbols_by_name(name).iter().any(|s| {
+                matches!(s.kind, DefKind::AssocFn | DefKind::Fn)
+                    && (s.path.starts_with("core::")
+                        || s.path.starts_with("alloc::")
+                        || s.path.starts_with("std::")
+                        || s.path.starts_with("<core::")
+                        || s.path.starts_with("<alloc::")
+                        || s.path.starts_with("<std::"))
+            })
+    };
+    let no_scope: HashSet<String> = HashSet::new();
     let member_indent = format!("{indent}    ");
     let mut rendered_members = Vec::with_capacity(missing.len());
 
@@ -102,10 +125,21 @@ pub fn build_implement_default_members(
         let (fn_src, fn_masked, params_masked) = match (&resolved_trait.file, resolved_trait.same_module) {
             (Some(trait_file), false) => {
                 let origin = MemberOrigin { trait_src: &resolved_trait.src, trait_file, start: resolved_trait.body_open + 1 + m.start };
+                // A standard library name the impl's module also defines (clap's own `FlatMap`) means another item
+                // there: a standard library trait's names are written as full paths unless the prelude has them.
                 let visible = |t: &str| {
-                    t == "Self" || is_rust_kw_or_prelude(t) || doc_scope.contains(t) || hdr_heads.contains(t) || m.fn_gen_names.contains(t) || trait_gen_names.contains(t)
+                    t == "Self"
+                        || is_rust_kw_or_prelude(t)
+                        || (!std_trait && (doc_scope.contains(t) || hdr_heads.contains(t)))
+                        || m.fn_gen_names.contains(t)
+                        || trait_gen_names.contains(t)
                 };
                 let (src, roots) = qualify_member_paths(&m.fn_src, &origin, ws, &dest_crate, &visible);
+                // A standard library body names only the standard library; a name the index placed elsewhere (another
+                // crate's `Map`) is a different item.
+                if std_trait && roots.iter().any(|r| !matches!(r.as_str(), "core" | "alloc" | "std")) {
+                    continue;
+                }
                 allowed_idents.extend(roots);
                 let masked = mask_comments_and_strings(&src);
                 let params = extract_first_paren_masked(&masked).unwrap_or_else(|| m.params_masked.clone());
@@ -114,11 +148,21 @@ pub fn build_implement_default_members(
             _ => (m.fn_src.clone(), m.fn_masked.clone(), m.params_masked.clone()),
         };
         let (sub_src, _, sub_params) = substitute_trait_generics(&fn_src, &fn_masked, &params_masked, &resolved_trait.generics, &trait_args, &m.fn_gen_names);
-        let (alpha_src, eff_gen_names) = alpha_rename_colliding_fn_generics(&sub_src, &m.fn_gens, &m.fn_gen_names, &impl_non_lt_gens, doc_text, replace_ident_or_lt)?;
+        // A standard library trait has members whose bodies use the library's internals: those are left out and the
+        // others implemented; any other trait's members are implemented all or not at all.
+        let Some((alpha_src, eff_gen_names)) = alpha_rename_colliding_fn_generics(&sub_src, &m.fn_gens, &m.fn_gen_names, &impl_non_lt_gens, doc_text, replace_ident_or_lt) else {
+            if std_trait {
+                continue;
+            }
+            return None;
+        };
         let alpha_masked = mask_comments_and_strings(&alpha_src);
         // A prelude name the body relies on (`Result`, `Option`, …) that the impl's module redefines or imports
         // (`type Result<T> = …`) would change meaning once copied.
         if !resolved_trait.same_module && shadows_prelude_name(&alpha_masked, &doc_scope) {
+            if std_trait {
+                continue;
+            }
             return None;
         }
         let alpha_params = extract_first_paren_masked(&alpha_masked).unwrap_or(sub_params);
@@ -129,13 +173,23 @@ pub fn build_implement_default_members(
             resolved_trait.same_module,
             resolved_trait.same_crate,
             &all_trait_fns,
-            &doc_scope,
+            // The impl's module names nothing a standard library body means (it may define a different `FlatMap`).
+            if std_trait { &no_scope } else { &doc_scope },
             &allowed_idents,
+            &std_method,
         ) {
+            if std_trait {
+                continue;
+            }
             return None;
         }
         let caller_recv = parse_fn_receiver(&alpha_params);
-        let qualified_src = qualify_trait_self_calls(&alpha_src, trait_ty, caller_recv, &trait_receivers, &colliding_methods)?;
+        let Some(qualified_src) = qualify_trait_self_calls(&alpha_src, trait_ty, caller_recv, &trait_receivers, &colliding_methods) else {
+            if std_trait {
+                continue;
+            }
+            return None;
+        };
         let reindented = reindent_member_block(&qualified_src, &member_indent);
         if m.cfg_attrs.is_empty() {
             rendered_members.push(reindented);
@@ -151,6 +205,9 @@ pub fn build_implement_default_members(
         }
     }
 
+    if rendered_members.is_empty() {
+        return None;
+    }
     let before_close = &doc_text[..*body_close_byte];
     let close_line_start = before_close.rfind('\n').map(|p| p + 1).unwrap_or(0);
     let only_ws_before_close = doc_text[close_line_start..*body_close_byte].chars().all(|c| c == ' ' || c == '\t');

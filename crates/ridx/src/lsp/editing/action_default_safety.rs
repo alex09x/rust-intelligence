@@ -26,6 +26,7 @@ pub fn is_default_fn_compile_safe(
     trait_fn_names: &HashSet<String>,
     doc_scope: &HashSet<String>,
     impl_hdr_idents: &HashSet<String>,
+    std_method: &dyn Fn(&str) -> bool,
 ) -> bool {
     if contains_word(fn_masked, "unsafe") || fn_masked.contains('$') {
         return false;
@@ -68,7 +69,7 @@ pub fn is_default_fn_compile_safe(
                 return false;
             }
             if prev_non_ws == b'.' {
-                if !same_module && after_trim.starts_with('(') && !trait_fn_names.contains(tok) && !is_safe_std_method(tok) {
+                if !same_module && after_trim.starts_with('(') && !trait_fn_names.contains(tok) && !is_safe_std_method(tok) && !std_method(tok) {
                     return false;
                 }
                 i = end_tok;

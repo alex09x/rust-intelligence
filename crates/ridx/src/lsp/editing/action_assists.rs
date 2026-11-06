@@ -10,8 +10,9 @@
 
 //! Declaration-site and literal-site code actions and deferred `codeAction/resolve` builders.
 
-use super::action_adt::{build_generate_impl, build_generate_new};
+use super::action_adt::{build_generate_impl, build_generate_new, build_generate_trait_impl};
 use super::action_adt_traits::{build_default_from_new, build_enum_discriminants, build_single_field_from};
+use super::action_assists_edit::{add_other_file_edits, build_insertion_workspace_edit, make_assist_action, make_multi_edit_assist};
 use super::action_default_members::build_implement_default_members;
 use super::action_doc_template::build_doc_template;
 use super::action_extract_lit::{collect_extract_literal_assists, is_extract_lit_data_kind, resolve_extract_literal_assist};
@@ -25,13 +26,14 @@ use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 pub const KIND_DOC_TEMPLATE: &str = "refactor.doc_template";
 pub const KIND_FN_ALIAS_NAMED: &str = "refactor.fn_type_alias_named";
 pub const KIND_FN_ALIAS_UNNAMED: &str = "refactor.fn_type_alias_unnamed";
 pub const KIND_IMPL_DEFAULT_MEMBERS: &str = "quickfix.implement_default_members";
 pub const KIND_GENERATE_IMPL: &str = "refactor.generate_impl";
+pub const KIND_GENERATE_TRAIT_IMPL: &str = "refactor.generate_trait_impl";
 pub const KIND_GENERATE_NEW: &str = "refactor.generate_new";
 pub const KIND_SINGLE_FIELD_FROM: &str = "refactor.single_field_from";
 pub const KIND_DEFAULT_FROM_NEW: &str = "refactor.default_from_new";
@@ -52,6 +54,7 @@ pub fn is_decl_assist_data_kind(kind: &str) -> bool {
                 | KIND_FN_ALIAS_UNNAMED
                 | KIND_IMPL_DEFAULT_MEMBERS
                 | KIND_GENERATE_IMPL
+                | KIND_GENERATE_TRAIT_IMPL
                 | KIND_GENERATE_NEW
                 | KIND_SINGLE_FIELD_FROM
                 | KIND_DEFAULT_FROM_NEW
@@ -209,6 +212,20 @@ where
                         doc_version,
                     ));
                 }
+                if let Some((ins_line, ins_col, text)) = build_generate_trait_impl(doc_text, &starts, &item) {
+                    out.push(make_assist_action(
+                        uri,
+                        &format!("Generate trait impl for `{}`", item.name),
+                        "refactor.rewrite",
+                        KIND_GENERATE_TRAIT_IMPL,
+                        line0,
+                        col_u16,
+                        ins_line,
+                        ins_col,
+                        &text,
+                        doc_version,
+                    ));
+                }
                 if let Some((ins_line, ins_col, text)) = build_generate_new(doc_text, &masked_doc, &starts, &file_path, &item, ws) {
                     out.push(make_assist_action(uri, "Generate `new`", "refactor.rewrite", KIND_GENERATE_NEW, line0, col_u16, ins_line, ins_col, &text, doc_version));
                 }
@@ -295,6 +312,10 @@ pub fn resolve_decl_assist(
             let (l, c, t) = build_generate_impl(doc_text, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot generate impl block"))?;
             Ok(build_insertion_workspace_edit(uri, l, c, &t, doc_version))
         }
+        KIND_GENERATE_TRAIT_IMPL => {
+            let (l, c, t) = build_generate_trait_impl(doc_text, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot generate trait impl block"))?;
+            Ok(build_insertion_workspace_edit(uri, l, c, &t, doc_version))
+        }
         KIND_GENERATE_NEW => {
             let (l, c, t) =
                 build_generate_new(doc_text, &masked_doc, &starts, &file_path, &item, ws).ok_or_else(|| LspError::request_failed("Cannot generate `new` constructor"))?;
@@ -338,69 +359,4 @@ pub fn resolve_decl_assist(
         }
         _ => Err(LspError::invalid_params(format!("Unknown declaration assist kind: {data_kind}"))),
     }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn make_assist_action(
-    uri: &str,
-    title: &str,
-    lsp_kind: &str,
-    data_kind: &str,
-    cursor_line0: u32,
-    cursor_col_u16: u32,
-    ins_line0: u32,
-    ins_col_u16: u32,
-    new_text: &str,
-    doc_version: Option<i32>,
-) -> Value {
-    let edit_obj = build_insertion_workspace_edit(uri, ins_line0, ins_col_u16, new_text, doc_version);
-    json!({
-        "title": title,
-        "kind": lsp_kind,
-        "data": {
-            "uri": uri,
-            "version": doc_version,
-            "kind": data_kind,
-            "cursor": { "line": cursor_line0, "character": cursor_col_u16 }
-        },
-        "edit": edit_obj
-    })
-}
-
-/// Adds edits for files other than the requested document to a `WorkspaceEdit`, in `changes` and, when the edit is
-/// versioned, as unversioned `documentChanges` entries.
-fn add_other_file_edits(edit: &mut Value, other_files: std::collections::BTreeMap<String, Vec<Value>>) {
-    for (uri, edits) in other_files {
-        if let Some(doc_changes) = edit.get_mut("documentChanges").and_then(Value::as_array_mut) {
-            doc_changes.push(json!({ "textDocument": { "uri": uri, "version": null }, "edits": edits }));
-        }
-        edit["changes"][uri.as_str()] = json!(edits);
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn make_multi_edit_assist(uri: &str, title: &str, lsp_kind: &str, data_kind: &str, cursor_line0: u32, cursor_col_u16: u32, edits: Vec<Value>, doc_version: Option<i32>) -> Value {
-    let edit_obj = build_multi_edits_workspace_edit(uri, edits, doc_version);
-    json!({
-        "title": title,
-        "kind": lsp_kind,
-        "data": {
-            "uri": uri,
-            "version": doc_version,
-            "kind": data_kind,
-            "cursor": { "line": cursor_line0, "character": cursor_col_u16 }
-        },
-        "edit": edit_obj
-    })
-}
-
-fn build_insertion_workspace_edit(uri: &str, line0: u32, col_u16: u32, new_text: &str, doc_version: Option<i32>) -> Value {
-    let text_edit = json!({
-        "range": {
-            "start": { "line": line0, "character": col_u16 },
-            "end": { "line": line0, "character": col_u16 }
-        },
-        "newText": new_text
-    });
-    build_multi_edits_workspace_edit(uri, vec![text_edit], doc_version)
 }

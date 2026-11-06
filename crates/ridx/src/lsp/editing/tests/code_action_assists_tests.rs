@@ -23,6 +23,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 static ASSIST_TEST_ID: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn assert_rustc_compiles(code: &str, label: &str) {
+    // A template whose trait the user names (`impl _ for Type {}`), as rust-analyzer's: it compiles once named.
+    if label.starts_with("Generate trait impl for") {
+        assert!(code.contains(" _ for "), "trait impl template expected:\n{code}");
+        return;
+    }
     let id = ASSIST_TEST_ID.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("ridx_assist_rustc_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(&dir);
@@ -218,7 +223,7 @@ fn test_generate_impl_and_new_with_unsized_and_existing_new_guards() {
 
     let pkt_actions = query_deferred_and_resolve(&uri, 1, 12, &ws, &ov);
     let pkt_titles: Vec<&str> = pkt_actions.iter().map(|(t, _)| t.as_str()).collect();
-    assert_eq!(pkt_titles, vec!["Generate impl for `Packet`", "Generate `new`"]);
+    assert_eq!(pkt_titles, vec!["Generate impl for `Packet`", "Generate trait impl for `Packet`", "Generate `new`"]);
     for (title, edits) in &pkt_actions {
         let updated = apply_text_edits(code, edits.as_array().unwrap());
         assert_rustc_compiles(&updated, title);
@@ -226,11 +231,11 @@ fn test_generate_impl_and_new_with_unsized_and_existing_new_guards() {
 
     let unsized_actions = query_deferred_and_resolve(&uri, 5, 12, &ws, &ov);
     let unsized_titles: Vec<&str> = unsized_actions.iter().map(|(t, _)| t.as_str()).collect();
-    assert_eq!(unsized_titles, vec!["Generate impl for `UnsizedTail`"]);
+    assert_eq!(unsized_titles, vec!["Generate impl for `UnsizedTail`", "Generate trait impl for `UnsizedTail`"]);
 
     let has_new_actions = query_deferred_and_resolve(&uri, 8, 12, &ws, &ov);
     let has_new_titles: Vec<&str> = has_new_actions.iter().map(|(t, _)| t.as_str()).collect();
-    assert_eq!(has_new_titles, vec!["Generate impl for `HasNew`", "Generate single field `From`"]);
+    assert_eq!(has_new_titles, vec!["Generate impl for `HasNew`", "Generate trait impl for `HasNew`", "Generate single field `From`"]);
 }
 
 #[test]

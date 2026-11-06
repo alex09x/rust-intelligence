@@ -33,6 +33,7 @@ pub(crate) struct DefaultFnMember {
 pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same_crate: bool, compiled: &dyn Fn(&str) -> Option<bool>) -> Option<Vec<DefaultFnMember>> {
     let mb = body_masked.as_bytes();
     let mut out = Vec::new();
+    let mut skipped: Vec<String> = Vec::new();
     let mut i = 0usize;
     while i < mb.len() {
         while i < mb.len() && mb[i].is_ascii_whitespace() {
@@ -42,6 +43,7 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
             break;
         }
         let mut cfg_attrs = Vec::new();
+        let mut hidden = false;
         while mb.get(i).copied() == Some(b'#') {
             let attr_start = i;
             let mut k = i + 1;
@@ -61,6 +63,9 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
                     }
                 } else if contains_word(inner_m, "cfg") {
                     cfg_attrs.push(body_src[attr_start..after_a].trim().to_string());
+                } else if inner_m.replace(' ', "").contains("doc(hidden)") || inner_m.trim_start().starts_with("unstable") {
+                    // Hidden members, and unstable library members a stable crate cannot use.
+                    hidden = true;
                 }
                 i = after_a;
                 while i < mb.len() && mb[i].is_ascii_whitespace() {
@@ -94,6 +99,12 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
             let term = find_header_terminator(mb, paren_end)?;
             if mb[term] == b'{' {
                 let after_body = skip_balanced(mb, term, b'{', b'}')?;
+                // A hidden member (`#[doc(hidden)] fn __chaining_lt`) is not offered, as in rust-analyzer.
+                if hidden {
+                    skipped.push(raw_n.strip_prefix("r#").unwrap_or(raw_n).to_string());
+                    i = after_body;
+                    continue;
+                }
                 // Another crate's `cfg`s were evaluated when it was compiled: a member the index holds is active
                 // there (copied without its `cfg`), one it lacks is not (skipped); unknown refuses.
                 if !same_crate && !cfg_attrs.is_empty() {
@@ -126,6 +137,16 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
         }
         let term = find_header_terminator(mb, kw_end)?;
         i = if mb[term] == b'{' { skip_balanced(mb, term, b'{', b'}')? } else { term + 1 };
+    }
+    // A member calling a left-out member (`nth` calls the unstable `advance_by`) is left out too.
+    loop {
+        let (drop, keep): (Vec<DefaultFnMember>, Vec<DefaultFnMember>) =
+            out.into_iter().partition(|m| skipped.iter().any(|s| contains_word(&m.fn_masked[m.fn_masked.find('{').unwrap_or(0)..], s)));
+        out = keep;
+        if drop.is_empty() {
+            break;
+        }
+        skipped.extend(drop.into_iter().map(|m| m.name));
     }
     Some(out)
 }

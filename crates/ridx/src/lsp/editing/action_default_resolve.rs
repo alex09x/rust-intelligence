@@ -33,6 +33,49 @@ pub struct ResolvedTraitSource {
     pub file: Option<String>,
 }
 
+/// The default of each generic parameter of `trait name<..>` declared last in `header` (`None` for a parameter
+/// without one): `trait PartialOrd<Rhs: ?Sized = Self>` gives `[Some("Self")]`.
+pub fn trait_generic_defaults(header: &str, name: &str) -> Vec<Option<String>> {
+    let Some(at) = header.rfind(&format!("trait {name}")) else { return Vec::new() };
+    let rest = header[at + 6 + name.len()..].trim_start();
+    if !rest.starts_with('<') {
+        return Vec::new();
+    }
+    let mut depth = 0i32;
+    let mut close = None;
+    for (i, c) in rest.char_indices() {
+        match c {
+            '<' => depth += 1,
+            '>' if rest[..i].ends_with('-') || rest[..i].ends_with('=') => {}
+            '>' => {
+                depth -= 1;
+                if depth == 0 {
+                    close = Some(i);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    let Some(close) = close else { return Vec::new() };
+    split_top_level_commas(&rest[1..close])
+        .iter()
+        .map(|p| {
+            let b = p.as_bytes();
+            let mut d = 0i32;
+            for (i, &c) in b.iter().enumerate() {
+                match c {
+                    b'<' | b'(' | b'[' => d += 1,
+                    b'>' | b')' | b']' => d -= 1,
+                    b'=' if d == 0 && b.get(i + 1) != Some(&b'>') => return Some(p[i + 1..].trim().to_string()),
+                    _ => {}
+                }
+            }
+            None
+        })
+        .collect()
+}
+
 pub fn split_trait_path_and_args(trait_ty: &str) -> Option<(&str, Vec<String>)> {
     let masked = mask_comments_and_strings(trait_ty);
     let mb = masked.as_bytes();
@@ -84,14 +127,24 @@ fn trait_from_index(
     let line = doc_text[..line_start].matches('\n').count() as u32 + 1;
     let col = doc_text[line_start..at].chars().count() as u32 + 1;
     let refs = ws.find_direct_references_at(current_file, line, col)?;
-    if refs.target_kind != DefKind::Trait {
+    // A derive macro shares its trait's name and file (`PartialOrd`); in an impl header the name is the trait.
+    let via_macro = refs.target_kind == DefKind::Macro;
+    if refs.target_kind != DefKind::Trait && !via_macro {
         return None;
     }
-    let target = refs.target_resolved_path();
+    let mut target = refs.target_resolved_path();
+    // A standard library trait is recorded as `library/…`: its source is the toolchain's `rust-src`.
+    if !target.exists() {
+        let s = target.to_string_lossy().into_owned();
+        if let Some(at) = s.find("library/").filter(|&at| at == 0 || s[..at].ends_with('/')) {
+            target = crate::lsp::navigation::type_definition_parse::sysroot_rust_src()?.join(&s[at..]);
+        }
+    }
     let path_str = target.to_str()?;
     let trait_src = if let Some(ov) = overlay_mgr.get(path_str) { ov.text.clone() } else { std::fs::read_to_string(&target).ok()? };
     let trait_masked = mask_comments_and_strings(&trait_src);
-    let (generics, bo, bc) = find_trait_in_range(&trait_src, &trait_masked, 0, trait_masked.len(), simple_or_target(simple, refs.target_symbol), Some(refs.target_line))?;
+    let (generics, bo, bc) =
+        find_trait_in_range(&trait_src, &trait_masked, 0, trait_masked.len(), simple_or_target(simple, refs.target_symbol), (!via_macro).then_some(refs.target_line))?;
     let same_module = path_str == current_file && enclosing_module_span(&trait_masked, bo) == impl_mod;
     let same_crate = same_module || same_cargo_manifest_dir(Path::new(current_file), &target);
     Some(ResolvedTraitSource {
