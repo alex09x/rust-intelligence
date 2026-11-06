@@ -86,12 +86,20 @@ pub fn build_inline_into_all_callers_workspace(
         if r.contains("impl ") || r.starts_with('&') {
             return None;
         }
-        if impl_has_type_generics || (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
-            Some(self_type_name.as_ref()?.clone())
+            if impl_has_type_generics {
+                None
+            } else {
+                Some(self_type_name.as_ref()?.clone())
+            }
         } else if contains_word(r, "Self") {
-            self_type_name.as_ref().map(|ty_name| rewrite_self_type_to_name(r, &mask_comments_and_strings(r), ty_name))
+            if impl_has_type_generics {
+                None
+            } else {
+                self_type_name.as_ref().map(|ty_name| rewrite_self_type_to_name(r, &mask_comments_and_strings(r), ty_name))
+            }
         } else {
             Some(r.to_string())
         }
