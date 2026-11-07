@@ -23,10 +23,17 @@
 mod char_class;
 mod keyword;
 mod lexer;
+pub mod parser;
 mod scan_char;
 mod scan_lit;
 mod scan_trivia;
+pub mod syntax_kind;
 pub mod token;
+pub mod tree;
+mod tree_dump;
 
 pub use lexer::lex;
+pub use parser::parse;
+pub use syntax_kind::SyntaxKind;
 pub use token::{token_at, Token, TokenKind, HAS_ERROR, JOINT_NEXT};
+pub use tree::{NodeId, SyntaxTree};
