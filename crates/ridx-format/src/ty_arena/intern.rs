@@ -170,6 +170,24 @@ impl TyInterner {
         (start, u16::try_from(len).unwrap_or(u16::MAX))
     }
 
+    /// Interns and deduplicates a list of raw `u32` indices in `ty_args` (used by `ImplEntry` assoc defs).
+    pub fn intern_u32_list(&mut self, items: &[u32]) -> (u32, u16) {
+        if items.is_empty() {
+            return (0, 0);
+        }
+        let (start, len) = self.intern_words(items);
+        (start, u16::try_from(len).unwrap_or(u16::MAX))
+    }
+
+    /// Interns and deduplicates a list of `RawGenericArg`s in `ty_args` (used by `ImplEntry` trait args).
+    pub fn intern_generic_args_list<F>(&mut self, args: &[RawGenericArg<'_>], mut intern_str: F) -> (u32, u16)
+    where
+        F: FnMut(&str) -> u32,
+    {
+        let (start, len) = self.intern_generic_args(args, &mut intern_str);
+        (start, u16::try_from(len).unwrap_or(u16::MAX))
+    }
+
     fn intern_words(&mut self, words: &[u32]) -> (u32, u32) {
         match words {
             [] => (0, 0),

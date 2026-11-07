@@ -49,6 +49,8 @@ pub struct SysrootCollector {
     pub total_definitions: usize,
     pub local_def_indices: HashMap<rustc_span::def_id::DefId, u32>,
     pub callables: Vec<(rustc_span::def_id::DefId, u32)>,
+    pub impl_dids: Vec<rustc_span::def_id::DefId>,
+    pub seen_impls: HashSet<rustc_span::def_id::DefId>,
 }
 
 impl SysrootCollector {
@@ -66,6 +68,13 @@ impl SysrootCollector {
         self.total_definitions += 1;
         if matches!(kind, DefKind::Fn | DefKind::AssocFn) {
             self.callables.push((did, def_idx));
+        }
+    }
+
+    #[inline]
+    pub fn register_impl(&mut self, impl_did: rustc_span::def_id::DefId) {
+        if self.seen_impls.insert(impl_did) {
+            self.impl_dids.push(impl_did);
         }
     }
 }
@@ -226,7 +235,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
             }
 
             match kind {
-                DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias => {
+                DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait => {
                     items::extract_inherent_impl_items(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut assoc_visited, &mut collector);
                 }
                 _ => {}
@@ -234,14 +243,19 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         }
     }
 
-    // Extract primitive inherent impls (impl str, impl [T], impl u32, etc.)
+    // Extract primitive and trait-object inherent impls (impl str, impl [T], impl dyn Any, etc.)
     extract_primitive_inherent_impls(tcx, cnum, &mut writer, &mut visited, &mut collector, sysroot_src);
+
+    // Collect 100% of trait impls in `cnum` directly from `.rmeta` (zero filtering, no `peel_refs`)
+    for &impl_did in tcx.trait_impls_in_crate(cnum) {
+        collector.register_impl(impl_did);
+    }
 
     // Extract Deref relationships and trait implementation links for types
     let sysroot_traits = traits::collect_sysroot_traits(tcx);
     traits::extract_trait_and_deref_links(tcx, cnum, &sysroot_traits, &mut writer, &mut total_derefs);
 
-    if !collector.callables.is_empty() {
+    if !collector.callables.is_empty() || !collector.impl_dids.is_empty() {
         let sysroot_units: HashMap<rustc_span::def_id::CrateNum, String> = tcx
             .crates(())
             .iter()
@@ -253,6 +267,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
             .collect();
         let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, cnum, &sysroot_units, &collector.local_def_indices);
         lowerer.record_fn_sigs(&collector.callables, &mut writer);
+        lowerer.record_impls(&collector.impl_dids, &mut writer);
     }
 
     let elapsed = start.elapsed();

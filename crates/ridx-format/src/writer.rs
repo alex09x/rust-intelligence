@@ -15,6 +15,7 @@ use std::collections::{HashMap, HashSet};
 use crate::format::*;
 
 mod encode;
+mod typed;
 
 #[cfg(test)]
 use self::encode::align_up;
@@ -98,6 +99,7 @@ pub struct IndexWriter {
     notes: Vec<RawNote>,
     ty_interner: crate::ty_arena::TyInterner,
     fn_sigs: Vec<FnSigEntry>,
+    impls: Vec<typed::PendingImpl>,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -121,6 +123,7 @@ impl IndexWriter {
             notes: Vec::new(),
             ty_interner: crate::ty_arena::TyInterner::new(),
             fn_sigs: Vec::new(),
+            impls: Vec::new(),
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),
@@ -189,41 +192,6 @@ impl IndexWriter {
         string_pool.push(0); // Null terminator
         string_map.insert(s.to_string(), offset);
         offset
-    }
-
-    /// Interns a local or external definition handle inside this shard's `TyArena`.
-    pub fn intern_ty_def(&mut self, def: crate::ty_arena::RawTyDef<'_>) -> TyDefId {
-        let pool = &mut self.string_pool;
-        let map = &mut self.string_map;
-        self.ty_interner.intern_def(def, |s| Self::intern_in_pool(pool, map, s))
-    }
-
-    /// Interns a structured, `Infer`-free type inside this shard's `TyArena`.
-    pub fn intern_ty(&mut self, ty: crate::ty_arena::RawTy<'_>) -> TyId {
-        let pool = &mut self.string_pool;
-        let map = &mut self.string_map;
-        self.ty_interner.intern_ty(ty, |s| Self::intern_in_pool(pool, map, s))
-    }
-
-    /// Total count of deduplicated `TyEntry` nodes in `TyArena`.
-    pub fn ty_entry_count(&self) -> usize {
-        self.ty_interner.entries().len()
-    }
-
-    /// Read-only access to the `TyInterner` accumulated on this writer.
-    pub fn ty_interner(&self) -> &crate::ty_arena::TyInterner {
-        &self.ty_interner
-    }
-
-    /// Records a structured function/method signature for `def_index`.
-    pub fn add_fn_sig(&mut self, sig: crate::ty_arena::RawFnSig<'_>) {
-        let (inputs_start, inputs_len) = self.ty_interner.intern_ty_list(sig.inputs);
-        self.fn_sigs.push(FnSigEntry { def_index: sig.def_index, inputs_start, inputs_len, flags: sig.flags, abi: sig.abi as u8, output: sig.output.0 });
-    }
-
-    /// Total count of structured function signatures queued.
-    pub fn fn_sig_count(&self) -> usize {
-        self.fn_sigs.len()
     }
 
     /// Get or assign a numeric ID for a file path.

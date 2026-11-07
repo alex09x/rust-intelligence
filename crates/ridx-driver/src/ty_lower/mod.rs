@@ -13,6 +13,7 @@
 
 mod bounds;
 mod fn_sig;
+mod impls;
 
 use std::collections::HashMap;
 

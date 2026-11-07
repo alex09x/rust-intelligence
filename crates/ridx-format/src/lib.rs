@@ -28,8 +28,8 @@ pub use format::*;
 pub use paths::normalize_path;
 pub use reader::{IndexReader, ResolvedDefinition};
 pub use ty_arena::{
-    AssocBindingIter, AssocBindingView, FnSigView, GenericArgIter, GenericArgView, RawFnSig, RawGenericArg, RawTy, RawTyBound, RawTyDef, TyArenaView, TyBoundIter, TyBoundView,
-    TyDefView, TyInterner, TyKindView, TyListIter,
+    AssocBindingIter, AssocBindingView, AssocTyIter, AssocTyView, FnSigView, GenericArgIter, GenericArgView, ImplIter, ImplView, RawAssocTy, RawFnSig, RawGenericArg, RawImpl,
+    RawTy, RawTyBound, RawTyDef, TyArenaView, TyBoundIter, TyBoundView, TyDefView, TyInterner, TyKindView, TyListIter, U32ListIter,
 };
 pub use workspace::*;
 pub use writer::{IndexWriter, RawDefinition, RawNote, RawReference, RawType};
@@ -156,7 +156,7 @@ mod tests {
         assert!(IndexReader::from_buffer(&small_buf).is_err());
 
         // 2. Invalid magic
-        let mut bad_magic = vec![0u8; 256];
+        let mut bad_magic = vec![0u8; std::mem::size_of::<Header>()];
         bad_magic[0..4].copy_from_slice(b"NOPE");
         assert!(IndexReader::from_buffer(&bad_magic).is_err());
 

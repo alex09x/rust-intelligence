@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 5, 256 bytes; v4 is 176, v3 is 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 288 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
@@ -128,6 +128,16 @@ pub struct Header {
     pub fn_sigs_offset: u64,
     pub fn_sigs_count: u32,
     pub _pad13: u32,
+
+    /// Offset of the structured `ImplEntry` table (sorted by `simplified_self`); version 5.
+    pub impls_offset: u64,
+    pub impls_count: u32,
+    pub _pad14: u32,
+
+    /// Offset of the `AssocTyEntry` table (contiguous per `ImplEntry`); version 5.
+    pub assoc_tys_offset: u64,
+    pub assoc_tys_count: u32,
+    pub _pad15: u32,
 }
 
 impl Header {
@@ -182,6 +192,12 @@ impl Header {
             fn_sigs_offset: self.fn_sigs_offset.to_le(),
             fn_sigs_count: self.fn_sigs_count.to_le(),
             _pad13: 0,
+            impls_offset: self.impls_offset.to_le(),
+            impls_count: self.impls_count.to_le(),
+            _pad14: 0,
+            assoc_tys_offset: self.assoc_tys_offset.to_le(),
+            assoc_tys_count: self.assoc_tys_count.to_le(),
+            _pad15: 0,
         }
     }
 
@@ -236,6 +252,12 @@ impl Header {
             fn_sigs_offset: u64::from_le(self.fn_sigs_offset),
             fn_sigs_count: u32::from_le(self.fn_sigs_count),
             _pad13: 0,
+            impls_offset: u64::from_le(self.impls_offset),
+            impls_count: u32::from_le(self.impls_count),
+            _pad14: 0,
+            assoc_tys_offset: u64::from_le(self.assoc_tys_offset),
+            assoc_tys_count: u32::from_le(self.assoc_tys_count),
+            _pad15: 0,
         }
     }
 

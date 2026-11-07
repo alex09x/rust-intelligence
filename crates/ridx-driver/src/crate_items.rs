@@ -67,8 +67,13 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
     // Extract all crate item definitions
     let mut local_def_indices: std::collections::HashMap<DefId, u32> = std::collections::HashMap::with_capacity(items.len());
     let mut callables: Vec<(DefId, u32)> = Vec::new();
+    let mut impl_dids: Vec<DefId> = Vec::new();
     for def_id in items {
         let kind = tcx.def_kind(def_id);
+        let did = def_id.to_def_id();
+        if matches!(kind, hir::def::DefKind::Impl { .. }) {
+            impl_dids.push(did);
+        }
         let item_span = tcx.def_ident_span(def_id).unwrap_or_else(|| tcx.def_span(def_id));
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(tcx, item_span, package_root) else {
             continue;
@@ -128,7 +133,6 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
         }
 
         let mut owners = Vec::new();
-        let did = def_id.to_def_id();
 
         #[allow(clippy::collapsible_match)]
         match kind {
@@ -312,9 +316,10 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
         }
     }
 
-    if !callables.is_empty() {
+    if !callables.is_empty() || !impl_dids.is_empty() {
         let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, rustc_span::def_id::LOCAL_CRATE, &visitor.krate_to_unit, &local_def_indices);
         lowerer.record_fn_sigs(&callables, &mut visitor.writer);
+        lowerer.record_impls(&impl_dids, &mut visitor.writer);
     }
 
     // Traverse all item bodies for references and types

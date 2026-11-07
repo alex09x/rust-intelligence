@@ -219,6 +219,9 @@ pub fn extract_inherent_impl_items<'tcx>(
     };
 
     for impl_did in impl_dids {
+        if impl_did.krate == did.krate {
+            collector.register_impl(impl_did);
+        }
         for assoc_did in tcx.associated_item_def_ids(impl_did) {
             let assoc_did = *assoc_did;
             if let Some(&existing_idx) = assoc_visited.get(&assoc_did) {

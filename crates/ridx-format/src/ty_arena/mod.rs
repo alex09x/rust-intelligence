@@ -12,10 +12,14 @@
 
 mod display;
 mod fn_sig;
+mod impl_view;
 mod intern;
+mod iter;
 
 pub use self::fn_sig::{FnSigView, RawFnSig};
+pub use self::impl_view::{AssocTyIter, AssocTyView, ImplIter, ImplView, RawAssocTy, RawImpl};
 pub use self::intern::{RawGenericArg, RawTy, RawTyBound, RawTyDef, TyInterner};
+pub use self::iter::{AssocBindingIter, AssocBindingView, GenericArgIter, GenericArgView, TyBoundIter, TyBoundView, TyListIter, U32ListIter};
 
 use crate::format::{
     ConstArg, FloatTyWidth, FnAbiKind, GenericArgWord, IntTyWidth, TyBoundEntry, TyDefEntry, TyDefId, TyEntry, TyId, TyMutability, TyTag, UintTyWidth, BOUND_FLAG_MAYBE,
@@ -30,202 +34,6 @@ pub struct TyDefView<'a> {
     pub local_def_idx: Option<u32>,
     pub extern_unit: Option<&'a str>,
 }
-
-/// Decoded generic argument from `ty_args`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GenericArgView {
-    Type(TyId),
-    Const(ConstArg),
-    Lifetime(u32),
-}
-
-impl GenericArgView {
-    #[inline]
-    pub const fn decode(raw: u32) -> Self {
-        let w = GenericArgWord(raw);
-        match w.tag_bits() {
-            GenericArgWord::TAG_TYPE => Self::Type(TyId(w.payload())),
-            GenericArgWord::TAG_LIFETIME => Self::Lifetime(w.payload()),
-            _ => Self::Const(GenericArgWord::decode_const(raw)),
-        }
-    }
-}
-
-/// Zero-allocation iterator over `GenericArgWord`s stored in `ty_args`.
-#[derive(Debug, Clone, Copy)]
-pub struct GenericArgIter<'a> {
-    words: &'a [u32],
-}
-
-impl<'a> GenericArgIter<'a> {
-    pub const EMPTY: Self = Self { words: &[] };
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.words.len()
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.words.is_empty()
-    }
-
-    #[inline]
-    pub fn get(&self, idx: usize) -> Option<GenericArgView> {
-        self.words.get(idx).map(|&w| GenericArgView::decode(u32::from_le(w)))
-    }
-}
-
-impl<'a> Iterator for GenericArgIter<'a> {
-    type Item = GenericArgView;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        let (&first, rest) = self.words.split_first()?;
-        self.words = rest;
-        Some(GenericArgView::decode(u32::from_le(first)))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.words.len(), Some(self.words.len()))
-    }
-}
-
-impl ExactSizeIterator for GenericArgIter<'_> {}
-
-/// Zero-allocation iterator over `TyId`s stored in `ty_args` (tuples and `fn` inputs).
-#[derive(Debug, Clone, Copy)]
-pub struct TyListIter<'a> {
-    words: &'a [u32],
-}
-
-impl<'a> TyListIter<'a> {
-    pub const EMPTY: Self = Self { words: &[] };
-
-    #[inline]
-    pub const fn from_words(words: &'a [u32]) -> Self {
-        Self { words }
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.words.len()
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.words.is_empty()
-    }
-
-    #[inline]
-    pub fn get(&self, idx: usize) -> Option<TyId> {
-        self.words.get(idx).map(|&w| TyId(u32::from_le(w)))
-    }
-}
-
-impl<'a> Iterator for TyListIter<'a> {
-    type Item = TyId;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        let (&first, rest) = self.words.split_first()?;
-        self.words = rest;
-        Some(TyId(u32::from_le(first)))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.words.len(), Some(self.words.len()))
-    }
-}
-
-impl ExactSizeIterator for TyListIter<'_> {}
-
-/// Zero-copy associated type equality binding (`Item = u8`) inside a `TyBoundView`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AssocBindingView<'a> {
-    pub name: &'a str,
-    pub ty: TyId,
-}
-
-/// Zero-allocation iterator over `(assoc_name_off, assoc_ty_id)` pairs in `ty_args`.
-#[derive(Debug, Clone, Copy)]
-pub struct AssocBindingIter<'a> {
-    arena: TyArenaView<'a>,
-    words: &'a [u32],
-}
-
-impl<'a> Iterator for AssocBindingIter<'a> {
-    type Item = AssocBindingView<'a>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.words.len() < 2 {
-            self.words = &[];
-            return None;
-        }
-        let name_off = u32::from_le(self.words[0]);
-        let ty = TyId(u32::from_le(self.words[1]));
-        self.words = &self.words[2..];
-        Some(AssocBindingView { name: self.arena.str_at(name_off), ty })
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let n = self.words.len() / 2;
-        (n, Some(n))
-    }
-}
-
-impl ExactSizeIterator for AssocBindingIter<'_> {}
-
-/// Zero-copy view of a single `TyBoundEntry`.
-#[derive(Debug, Clone, Copy)]
-pub struct TyBoundView<'a> {
-    pub trait_def: TyDefId,
-    pub is_maybe: bool,
-    pub flags: u32,
-    pub args: GenericArgIter<'a>,
-    pub assocs: AssocBindingIter<'a>,
-}
-
-/// Zero-allocation iterator over a contiguous slice of `TyBoundEntry` records.
-#[derive(Debug, Clone, Copy)]
-pub struct TyBoundIter<'a> {
-    arena: TyArenaView<'a>,
-    bounds: &'a [TyBoundEntry],
-}
-
-impl<'a> TyBoundIter<'a> {
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.bounds.len()
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.bounds.is_empty()
-    }
-}
-
-impl<'a> Iterator for TyBoundIter<'a> {
-    type Item = TyBoundView<'a>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        let (&raw, rest) = self.bounds.split_first()?;
-        self.bounds = rest;
-        Some(self.arena.decode_bound(raw.from_le()))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.bounds.len(), Some(self.bounds.len()))
-    }
-}
-
-impl ExactSizeIterator for TyBoundIter<'_> {}
 
 /// Structured, `Infer`-free zero-copy decoded view of a `TyEntry`.
 #[derive(Debug, Clone, Copy)]
@@ -324,7 +132,7 @@ impl<'a> TyArenaView<'a> {
     }
 
     #[inline]
-    fn words_slice(&self, start: u32, len: u32) -> &'a [u32] {
+    pub(crate) fn words_slice(&self, start: u32, len: u32) -> &'a [u32] {
         let s = start as usize;
         let end = s.saturating_add(len as usize);
         self.args.get(s..end).unwrap_or(&[])
@@ -338,7 +146,7 @@ impl<'a> TyArenaView<'a> {
     }
 
     #[inline]
-    fn decode_bound(&self, b: TyBoundEntry) -> TyBoundView<'a> {
+    pub(crate) fn decode_bound(&self, b: TyBoundEntry) -> TyBoundView<'a> {
         let args_len = u32::from(b.args_len);
         let assoc_words = u32::from(b.assoc_len).saturating_mul(2);
         let args = GenericArgIter { words: self.words_slice(b.args_start, args_len) };

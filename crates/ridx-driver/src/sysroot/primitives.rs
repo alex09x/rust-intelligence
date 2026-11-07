@@ -15,18 +15,18 @@ use ridx_format::{IndexWriter, RawDefinition};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::{FloatTy, IntTy, Mutability, TyCtxt, UintTy};
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{CrateNum, DefId};
 
 use super::util::{format_assoc_fn_sig, is_publicly_visible, is_stable_api, remap_sysroot_path};
 use super::SysrootCollector;
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
-/// Extracts inherent methods for primitive types (e.g. `impl str`, `impl [T]`)
-/// with domain owner strings matching `resolve_owner_from_ty` (`"str"`, `"slice"`, etc.).
+/// Extracts inherent methods and `ImplEntry` headers for primitive, trait-object (`dyn Any`, `dyn Error`),
+/// and incoherent non-ADT types in `cnum`.
 pub fn extract_primitive_inherent_impls<'tcx>(
     tcx: TyCtxt<'tcx>,
-    cnum: rustc_span::def_id::CrateNum,
+    cnum: CrateNum,
     writer: &mut IndexWriter,
     visited: &mut HashSet<DefId>,
     collector: &mut SysrootCollector,
@@ -61,59 +61,107 @@ pub fn extract_primitive_inherent_impls<'tcx>(
             if impl_did.krate != cnum {
                 continue;
             }
-            for assoc_did in tcx.associated_item_def_ids(impl_did) {
-                let assoc_did = *assoc_did;
-                if !visited.insert(assoc_did) {
-                    continue;
-                }
-                if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
-                    continue;
-                }
-                let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
-                    continue;
-                };
-                let a_name = name_sym.to_string();
-                if a_name.starts_with("__rust_") || a_name.starts_with("__") {
-                    continue;
-                }
-                let a_kind = tcx.def_kind(assoc_did);
-                let a_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did)));
-                let a_sig = match a_kind {
-                    DefKind::Fn => Some(sanitize_type_name(&tcx.fn_sig(assoc_did).skip_binder().to_string())),
-                    DefKind::AssocFn => Some(format_assoc_fn_sig(tcx, assoc_did)),
-                    _ => None,
-                };
-                let a_span = tcx.def_ident_span(assoc_did).unwrap_or_else(|| tcx.def_span(assoc_did));
-                let (a_file, a_sl, a_sc, a_el, a_ec) = if !a_span.is_dummy() {
-                    let sm = tcx.sess.source_map();
-                    let lo = sm.lookup_char_pos(a_span.lo());
-                    let hi = sm.lookup_char_pos(a_span.hi());
-                    let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
-                    let remapped = remap_sysroot_path(&raw_file, sysroot_src);
-                    (remapped, lo.line as u32, (lo.col.0 + 1) as u32, hi.line as u32, (hi.col.0 + 1) as u32)
-                } else {
-                    (String::new(), 0, 0, 0, 0)
-                };
+            collector.register_impl(impl_did);
+            extract_incoherent_assoc_defs(tcx, impl_did, owner_str, writer, visited, collector, sysroot_src);
+        }
+    }
 
-                let def_idx = writer.add_definition_with_owners(
-                    RawDefinition {
-                        def_id: collector.total_definitions as u32,
-                        kind: map_def_kind(a_kind),
-                        visibility: 0,
-                        is_macro_expansion: false,
-                        name: a_name,
-                        path: a_path,
-                        signature: a_sig,
-                        file: a_file,
-                        start_line: a_sl,
-                        start_col: a_sc,
-                        end_line: a_el,
-                        end_col: a_ec,
-                    },
-                    vec![owner_str.to_string()],
-                );
-                collector.register_primary(assoc_did, a_kind, def_idx);
+    // Trait-object inherent impls (e.g. `impl dyn core::any::Any`, `impl dyn core::error::Error`)
+    for &src_cnum in tcx.crates(()) {
+        let src_name = tcx.crate_name(src_cnum);
+        if !matches!(src_name.as_str(), "core" | "alloc" | "std") {
+            continue;
+        }
+        for &trait_did in tcx.traits(src_cnum) {
+            let impls = tcx.incoherent_impls(SimplifiedType::Trait(trait_did));
+            if impls.is_empty() {
+                continue;
+            }
+            let trait_owner = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(trait_did)));
+            for &impl_did in impls {
+                if impl_did.krate != cnum {
+                    continue;
+                }
+                collector.register_impl(impl_did);
+                extract_incoherent_assoc_defs(tcx, impl_did, &trait_owner, writer, visited, collector, sysroot_src);
             }
         }
+    }
+
+    // Remaining non-ADT incoherent buckets (`!`, `dyn Send + Sync`, `&T`, `&mut T`, tuples, `fn` pointers)
+    let mut extra_buckets = vec![SimplifiedType::Never, SimplifiedType::MarkerTraitObject, SimplifiedType::Ref(Mutability::Not), SimplifiedType::Ref(Mutability::Mut)];
+    for arity in 0..=12 {
+        extra_buckets.push(SimplifiedType::Tuple(arity));
+        extra_buckets.push(SimplifiedType::Function(arity));
+    }
+    for simp_ty in extra_buckets {
+        for &impl_did in tcx.incoherent_impls(simp_ty) {
+            if impl_did.krate == cnum {
+                collector.register_impl(impl_did);
+            }
+        }
+    }
+}
+
+fn extract_incoherent_assoc_defs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    impl_did: DefId,
+    owner_str: &str,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    collector: &mut SysrootCollector,
+    sysroot_src: Option<&Path>,
+) {
+    for &assoc_did in tcx.associated_item_def_ids(impl_did) {
+        if !visited.insert(assoc_did) {
+            continue;
+        }
+        if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
+            continue;
+        }
+        let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
+            continue;
+        };
+        let a_name = name_sym.to_string();
+        if a_name.starts_with("__rust_") || a_name.starts_with("__") {
+            continue;
+        }
+        let a_kind = tcx.def_kind(assoc_did);
+        let a_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did)));
+        let a_sig = match a_kind {
+            DefKind::Fn => Some(sanitize_type_name(&tcx.fn_sig(assoc_did).skip_binder().to_string())),
+            DefKind::AssocFn => Some(format_assoc_fn_sig(tcx, assoc_did)),
+            _ => None,
+        };
+        let a_span = tcx.def_ident_span(assoc_did).unwrap_or_else(|| tcx.def_span(assoc_did));
+        let (a_file, a_sl, a_sc, a_el, a_ec) = if !a_span.is_dummy() {
+            let sm = tcx.sess.source_map();
+            let lo = sm.lookup_char_pos(a_span.lo());
+            let hi = sm.lookup_char_pos(a_span.hi());
+            let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
+            let remapped = remap_sysroot_path(&raw_file, sysroot_src);
+            (remapped, lo.line as u32, (lo.col.0 + 1) as u32, hi.line as u32, (hi.col.0 + 1) as u32)
+        } else {
+            (String::new(), 0, 0, 0, 0)
+        };
+
+        let def_idx = writer.add_definition_with_owners(
+            RawDefinition {
+                def_id: collector.total_definitions as u32,
+                kind: map_def_kind(a_kind),
+                visibility: 0,
+                is_macro_expansion: false,
+                name: a_name,
+                path: a_path,
+                signature: a_sig,
+                file: a_file,
+                start_line: a_sl,
+                start_col: a_sc,
+                end_line: a_el,
+                end_col: a_ec,
+            },
+            vec![owner_str.to_string()],
+        );
+        collector.register_primary(assoc_did, a_kind, def_idx);
     }
 }

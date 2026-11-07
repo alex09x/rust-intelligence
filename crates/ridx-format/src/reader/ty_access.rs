@@ -10,8 +10,8 @@
 
 //! Zero-copy `IndexReader` accessors for `notes` (v4+) and `TyArena` (v5+) sections.
 
-use crate::format::{FnSigEntry, NoteEntry, TyBoundEntry, TyDefEntry, TyEntry};
-use crate::ty_arena::{FnSigView, TyArenaView};
+use crate::format::{AssocTyEntry, FnSigEntry, ImplEntry, NoteEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyEntry};
+use crate::ty_arena::{FnSigView, ImplIter, ImplView, TyArenaView};
 
 use super::IndexReader;
 
@@ -107,5 +107,63 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let sigs = self.fn_sigs();
         let pos = sigs.binary_search_by_key(&def_index, FnSigEntry::def_index).ok()?;
         Some(FnSigView::new(sigs[pos], self.ty_args_raw()))
+    }
+
+    /// Raw slice of sorted `ImplEntry` records in this shard (empty for format < v5).
+    #[inline]
+    pub fn impls(&self) -> &[ImplEntry] {
+        let h = self.header();
+        self.typed_slice(h.impls_offset, h.impls_count)
+    }
+
+    /// Raw slice of contiguous `AssocTyEntry` bindings in this shard (empty for format < v5).
+    #[inline]
+    pub fn assoc_tys(&self) -> &[AssocTyEntry] {
+        let h = self.header();
+        self.typed_slice(h.assoc_tys_offset, h.assoc_tys_count)
+    }
+
+    /// Decodes the `ImplView` at `impl_index` (`0..impls().len()`).
+    #[inline]
+    pub fn impl_view(&self, impl_index: u32) -> Option<ImplView<'_>> {
+        let raw = *self.impls().get(impl_index as usize)?;
+        Some(ImplView::new(impl_index, raw, self.ty_arena(), self.assoc_tys()))
+    }
+
+    /// Iterates over all `ImplView` headers in this shard.
+    #[inline]
+    pub fn impls_iter(&self) -> ImplIter<'_> {
+        ImplIter::new(0, self.impls(), self.ty_arena(), self.assoc_tys())
+    }
+
+    /// Binary-searches all `ImplEntry` records (both inherent and trait) whose `self_ty` matches `kind`.
+    #[inline]
+    pub fn impls_for_simplified(&self, kind: SimplifiedSelfKind) -> ImplIter<'_> {
+        let all = self.impls();
+        let k = kind as u8;
+        let start = all.partition_point(|e| e.simplified_self < k);
+        let end = start + all[start..].partition_point(|e| e.simplified_self == k);
+        ImplIter::new(start as u32, &all[start..end], self.ty_arena(), self.assoc_tys())
+    }
+
+    /// Binary-searches inherent `impl Self` blocks whose `self_ty` matches `kind`.
+    #[inline]
+    pub fn inherent_impls_for_simplified(&self, kind: SimplifiedSelfKind) -> ImplIter<'_> {
+        self.impls_for_bucket(kind, false)
+    }
+
+    /// Binary-searches `impl Trait for Self` blocks whose `self_ty` matches `kind`.
+    #[inline]
+    pub fn trait_impls_for_simplified(&self, kind: SimplifiedSelfKind) -> ImplIter<'_> {
+        self.impls_for_bucket(kind, true)
+    }
+
+    #[inline]
+    fn impls_for_bucket(&self, kind: SimplifiedSelfKind, want_trait: bool) -> ImplIter<'_> {
+        let all = self.impls();
+        let key = (kind as u8, u8::from(want_trait));
+        let start = all.partition_point(|e| (e.simplified_self, u8::from(e.is_trait())) < key);
+        let end = start + all[start..].partition_point(|e| (e.simplified_self, u8::from(e.is_trait())) == key);
+        ImplIter::new(start as u32, &all[start..end], self.ty_arena(), self.assoc_tys())
     }
 }

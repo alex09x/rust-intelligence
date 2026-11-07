@@ -201,7 +201,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
     assert_eq!(std::mem::align_of::<DefKind>(), 1);
     check_layout!(FileEntry, 16, 8, [path_offset: 0, _pad: 4, source_hash: 8]);
     check_layout!(NoteEntry, 28, 4, [span: 0, text_offset: 20, kind: 24]);
-    check_layout!(Header, 256, 8, [
+    check_layout!(Header, 288, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
         unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
@@ -217,11 +217,19 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
         ty_bounds_offset: 208, ty_bounds_count: 216, _pad11: 220,
         ty_args_offset: 224, ty_args_count: 232, _pad12: 236,
         fn_sigs_offset: 240, fn_sigs_count: 248, _pad13: 252,
+        impls_offset: 256, impls_count: 264, _pad14: 268,
+        assoc_tys_offset: 272, assoc_tys_count: 280, _pad15: 284,
     ]);
     check_layout!(TyDefEntry, 16, 8, [path_hash: 0, path_offset: 8, loc_or_unit: 12]);
     check_layout!(TyEntry, 16, 4, [tag: 0, flags: 1, extra: 2, a: 4, b: 8, c: 12]);
     check_layout!(TyBoundEntry, 16, 4, [trait_def: 0, args_start: 4, args_len: 8, assoc_len: 10, flags: 12]);
     check_layout!(FnSigEntry, 16, 4, [def_index: 0, inputs_start: 4, inputs_len: 8, flags: 10, abi: 11, output: 12]);
+    check_layout!(ImplEntry, 32, 4, [
+        def_index: 0, self_ty: 4, trait_def: 8, trait_args_start: 12,
+        assoc_tys_start: 16, assoc_defs_start: 20, trait_args_len: 24,
+        assoc_tys_len: 26, assoc_defs_len: 28, flags: 30, simplified_self: 31,
+    ]);
+    check_layout!(AssocTyEntry, 16, 4, [impl_index: 0, def_index: 4, name_offset: 8, ty: 12]);
     check_layout!(HeaderV2, 128, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
@@ -308,6 +316,6 @@ fn test_index_writer_golden_bytes() {
     w.add_deref(p1, "golden_crate::util::Target");
     let mut bytes = Vec::new();
     w.write_to(&mut std::io::Cursor::new(&mut bytes)).unwrap();
-    assert_eq!(bytes.len(), 1192, "version 5: the version 4 layout plus 80 header bytes for the five empty TyArena/FnSigs tables");
-    assert_eq!(fnv1a_64(&bytes), 0x1e11_ec7a_6fdb_5a31, "golden hash {:#x}", fnv1a_64(&bytes));
+    assert_eq!(bytes.len(), 1224, "version 5: the version 4 layout plus 112 header bytes for TyArena/FnSigs/Impls/AssocTys tables");
+    assert_eq!(fnv1a_64(&bytes), 0x1891_416a_44d7_5c11, "golden hash {:#x}", fnv1a_64(&bytes));
 }

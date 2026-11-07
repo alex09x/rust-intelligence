@@ -232,9 +232,7 @@ impl IndexWriter {
         let notes_len = (note_entries.len() * std::mem::size_of::<NoteEntry>()) as u64;
         current_offset = align_up(notes_offset + notes_len, 8);
 
-        let mut fn_sigs = self.fn_sigs.clone();
-        fn_sigs.sort_by_key(|s| s.def_index);
-        fn_sigs.dedup_by_key(|s| s.def_index);
+        let (fn_sigs, impl_entries, assoc_entries) = self.build_sorted_typed_tables();
 
         let ty_defs = self.ty_interner.defs();
         let ty_entries = self.ty_interner.entries();
@@ -258,6 +256,14 @@ impl IndexWriter {
         current_offset = align_up(ty_args_offset + ty_args_len, 8);
 
         let fn_sigs_offset = current_offset;
+        let fn_sigs_len = std::mem::size_of_val(fn_sigs.as_slice()) as u64;
+        current_offset = align_up(fn_sigs_offset + fn_sigs_len, 8);
+
+        let impls_offset = current_offset;
+        let impls_len = std::mem::size_of_val(impl_entries.as_slice()) as u64;
+        current_offset = align_up(impls_offset + impls_len, 8);
+
+        let assoc_tys_offset = current_offset;
 
         let header = Header {
             magic: MAGIC,
@@ -308,6 +314,12 @@ impl IndexWriter {
             fn_sigs_offset,
             fn_sigs_count: fn_sigs.len() as u32,
             _pad13: 0,
+            impls_offset,
+            impls_count: impl_entries.len() as u32,
+            _pad14: 0,
+            assoc_tys_offset,
+            assoc_tys_count: assoc_entries.len() as u32,
+            _pad15: 0,
         };
 
         // Write Header in explicit little-endian format
@@ -342,6 +354,8 @@ impl IndexWriter {
         write_le_items(writer, ty_bounds_offset, ty_bounds, TyBoundEntry::to_le)?;
         write_le_items(writer, ty_args_offset, ty_args, u32::to_le)?;
         write_le_items(writer, fn_sigs_offset, &fn_sigs, FnSigEntry::to_le)?;
+        write_le_items(writer, impls_offset, &impl_entries, ImplEntry::to_le)?;
+        write_le_items(writer, assoc_tys_offset, &assoc_entries, AssocTyEntry::to_le)?;
 
         writer.flush()?;
         Ok(())
