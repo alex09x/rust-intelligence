@@ -18,6 +18,7 @@ mod fn_sigs;
 mod generics;
 mod impls;
 mod lang_items;
+mod macro_defs;
 mod notes;
 mod self_variant_paths;
 mod supertrait_and_impl_links;

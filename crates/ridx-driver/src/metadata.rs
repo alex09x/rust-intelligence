@@ -81,17 +81,34 @@ pub(crate) fn collect_file_hashes<'tcx>(tcx: TyCtxt<'tcx>, package_root: Option<
     hashes
 }
 
+fn write_json_atomic(deps_dir: &Path, filename: &str, content: &str, overwrite: bool) {
+    let dest = deps_dir.join(filename);
+    if !overwrite && dest.is_file() {
+        return;
+    }
+    let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+    let tmp = deps_dir.join(format!(".tmp_{}_{nonce}_{filename}", std::process::id()));
+    if fs::write(&tmp, content).is_err() {
+        return;
+    }
+    if overwrite {
+        let _ = fs::rename(&tmp, &dest);
+    } else {
+        if fs::hard_link(&tmp, &dest).is_err() && !dest.is_file() {
+            let _ = fs::rename(&tmp, &dest);
+        }
+        let _ = fs::remove_file(&tmp);
+    }
+}
+
 pub(crate) fn write_sidecar_metadata(deps_dir: &Path, crate_name: &str, suffix: &str, stable_crate_id: u64, dep_info: &serde_json::Value) {
     let content = serde_json::to_string_pretty(dep_info).unwrap_or_default();
     // 1. By crate name + suffix (e.g. syn-3d995041387dd824.json or serde.json)
-    let _ = fs::write(deps_dir.join(format!("{crate_name}{suffix}.json")), &content);
+    write_json_atomic(deps_dir, &format!("{crate_name}{suffix}.json"), &content, true);
     // 2. By crate name + stable crate id (e.g. syn_a1b2c3d4e5f60718.json)
-    let _ = fs::write(deps_dir.join(format!("{crate_name}_{stable_crate_id:016x}.json")), &content);
-    // 3. By bare crate name (only if it does not exist yet)
-    let bare = deps_dir.join(format!("{crate_name}.json"));
-    if !bare.is_file() {
-        let _ = fs::write(bare, &content);
-    }
+    write_json_atomic(deps_dir, &format!("{crate_name}_{stable_crate_id:016x}.json"), &content, true);
+    // 3. By bare crate name (only if it does not exist yet — atomic link avoids torn concurrent writes)
+    write_json_atomic(deps_dir, &format!("{crate_name}.json"), &content, false);
 }
 
 fn load_target_kind_from_env(entry_path: &Path) -> Option<String> {

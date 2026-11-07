@@ -18,6 +18,9 @@ mod encode;
 mod typed;
 mod typed_cfg;
 pub(crate) mod typed_generics;
+mod typed_macro;
+
+pub use self::typed_macro::RawMacroDef;
 
 #[cfg(test)]
 use self::encode::align_up;
@@ -109,6 +112,7 @@ pub struct IndexWriter {
     lang_items: Vec<LangItemEntry>,
     uses: Vec<UseEntry>,
     cfgs: Vec<CfgEntry>,
+    macro_defs: Vec<MacroDefEntry>,
     target_triple: Option<String>,
     unit_key: Option<String>,
     generation: Option<String>,
@@ -141,6 +145,7 @@ impl IndexWriter {
             lang_items: Vec::new(),
             uses: Vec::new(),
             cfgs: Vec::new(),
+            macro_defs: Vec::new(),
             target_triple: None,
             unit_key: None,
             generation: None,

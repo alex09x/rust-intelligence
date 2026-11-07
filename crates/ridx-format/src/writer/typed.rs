@@ -15,8 +15,8 @@
 use std::io::{self, Seek, Write};
 
 use crate::format::{
-    AssocTyEntry, CfgEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, Header, ImplEntry, LangItemEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry,
-    TyDefId, TyEntry, TyId, UseEntry, WherePredEntry, IMPL_FLAG_TRAIT,
+    AssocTyEntry, CfgEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, Header, ImplEntry, LangItemEntry, MacroDefEntry, SimplifiedSelfKind, TyBoundEntry,
+    TyDefEntry, TyDefId, TyEntry, TyId, UseEntry, WherePredEntry, IMPL_FLAG_TRAIT,
 };
 use crate::ty_arena::{RawDefTy, RawField, RawFnSig, RawImpl, RawTy, RawTyDef, TyInterner};
 
@@ -57,6 +57,7 @@ pub(super) struct EncodedTypedSections {
     pub lang_items: Vec<LangItemEntry>,
     pub uses: Vec<UseEntry>,
     pub cfgs: Vec<CfgEntry>,
+    pub macro_defs: Vec<MacroDefEntry>,
     pub ty_defs_offset: u64,
     pub ty_entries_offset: u64,
     pub ty_bounds_offset: u64,
@@ -71,6 +72,7 @@ pub(super) struct EncodedTypedSections {
     pub lang_items_offset: u64,
     pub uses_offset: u64,
     pub cfgs_offset: u64,
+    pub macro_defs_offset: u64,
 }
 
 impl IndexWriter {
@@ -269,6 +271,7 @@ impl IndexWriter {
 
         let uses = self.prepare_sorted_uses();
         let cfgs = self.prepare_sorted_cfgs();
+        let macro_defs = self.prepare_sorted_macro_defs();
 
         let mut cur = start_offset;
         let step = |cur: &mut u64, byte_len: usize| -> u64 {
@@ -290,7 +293,8 @@ impl IndexWriter {
         let where_preds_offset = step(&mut cur, std::mem::size_of_val(where_preds.as_slice()));
         let lang_items_offset = step(&mut cur, std::mem::size_of_val(lang_items.as_slice()));
         let uses_offset = step(&mut cur, std::mem::size_of_val(uses.as_slice()));
-        let cfgs_offset = cur;
+        let cfgs_offset = step(&mut cur, std::mem::size_of_val(cfgs.as_slice()));
+        let macro_defs_offset = cur;
 
         EncodedTypedSections {
             fn_sigs,
@@ -303,6 +307,7 @@ impl IndexWriter {
             lang_items,
             uses,
             cfgs,
+            macro_defs,
             ty_defs_offset,
             ty_entries_offset,
             ty_bounds_offset,
@@ -317,6 +322,7 @@ impl IndexWriter {
             lang_items_offset,
             uses_offset,
             cfgs_offset,
+            macro_defs_offset,
         }
     }
 
@@ -349,6 +355,8 @@ impl IndexWriter {
         header.uses_count = ts.uses.len() as u32;
         header.cfgs_offset = ts.cfgs_offset;
         header.cfgs_count = ts.cfgs.len() as u32;
+        header.macro_defs_offset = ts.macro_defs_offset;
+        header.macro_defs_count = ts.macro_defs.len() as u32;
     }
 
     pub(super) fn write_typed_sections<W: Write + Seek>(&self, writer: &mut W, ts: &EncodedTypedSections) -> io::Result<()> {
@@ -366,6 +374,7 @@ impl IndexWriter {
         write_le_items(writer, ts.lang_items_offset, &ts.lang_items, LangItemEntry::to_le)?;
         write_le_items(writer, ts.uses_offset, &ts.uses, UseEntry::to_le)?;
         write_le_items(writer, ts.cfgs_offset, &ts.cfgs, CfgEntry::to_le)?;
+        write_le_items(writer, ts.macro_defs_offset, &ts.macro_defs, MacroDefEntry::to_le)?;
         Ok(())
     }
 }

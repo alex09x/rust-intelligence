@@ -31,7 +31,7 @@ fn aligned_bytes(raw: Vec<u8>) -> Vec<u8> {
 #[test]
 fn cfg_table_sorts_deduplicates_and_queries_flags_and_features() {
     assert_eq!(std::mem::size_of::<CfgEntry>(), 8);
-    assert_eq!(std::mem::size_of::<Header>(), 400);
+    assert_eq!(std::mem::size_of::<Header>(), 416);
 
     let mut w = IndexWriter::new("cfg_demo", "0.1.0");
     w.set_target_triple("x86_64-unknown-linux-gnu");

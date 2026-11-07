@@ -13,9 +13,12 @@
 #![feature(rustc_private)]
 
 extern crate rustc_abi;
+extern crate rustc_ast;
+extern crate rustc_ast_pretty;
 extern crate rustc_driver;
 extern crate rustc_hir;
 extern crate rustc_interface;
+extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_session;
 extern crate rustc_span;
@@ -37,6 +40,7 @@ mod build_index;
 pub(crate) mod cfg_extract;
 mod crate_items;
 mod hir_visitor;
+pub(crate) mod macro_extract;
 mod metadata;
 mod notes;
 mod span_and_kind;

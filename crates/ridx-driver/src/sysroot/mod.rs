@@ -56,6 +56,7 @@ pub struct SysrootCollector {
     pub def_tys: Vec<(rustc_span::def_id::DefId, u32)>,
     pub generic_items: Vec<(rustc_span::def_id::DefId, u32)>,
     pub mod_items: Vec<(rustc_span::def_id::DefId, u32)>,
+    pub macro_items: Vec<(rustc_span::def_id::DefId, u32)>,
 }
 
 impl SysrootCollector {
@@ -70,6 +71,7 @@ impl SysrootCollector {
             DefKind::TyAlias | DefKind::Const { .. } | DefKind::Static { .. } | DefKind::AssocConst { .. } | DefKind::Variant => {
                 self.def_tys.push((did, def_idx));
             }
+            DefKind::Macro(_) => self.macro_items.push((did, def_idx)),
             _ => {}
         }
         if matches!(
@@ -95,6 +97,7 @@ impl SysrootCollector {
             | DefKind::Variant => {
                 self.def_tys.push((did, def_idx));
             }
+            DefKind::Macro(_) => self.macro_items.push((did, def_idx)),
             _ => {}
         }
         if matches!(
@@ -322,6 +325,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         lowerer.record_lang_items(&crate_lang_items, &mut writer);
         lowerer.record_sysroot_uses(cnum, target_crate, &collector.mod_items, &mut writer);
     }
+    crate::macro_extract::record_external_macro_defs(tcx, &collector.macro_items, &mut writer);
 
     let elapsed = start.elapsed();
     let stats = SysrootExtractStats {

@@ -71,6 +71,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
     let mut adts: Vec<(DefId, u32)> = Vec::new();
     let mut def_tys: Vec<(DefId, u32)> = Vec::new();
     let mut generic_items: Vec<(DefId, u32)> = Vec::new();
+    let mut macro_items: Vec<(hir::def_id::LocalDefId, u32)> = Vec::new();
     for def_id in items {
         let kind = tcx.def_kind(def_id);
         let did = def_id.to_def_id();
@@ -320,6 +321,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
             hir::def::DefKind::TyAlias | hir::def::DefKind::Const { .. } | hir::def::DefKind::Static { .. } | hir::def::DefKind::AssocConst { .. } | hir::def::DefKind::Variant => {
                 def_tys.push((did, def_idx))
             }
+            hir::def::DefKind::Macro(_) => macro_items.push((def_id, def_idx)),
             _ => {}
         }
         if matches!(
@@ -349,6 +351,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
         lowerer.record_lang_items(&lang_items, &mut visitor.writer);
         lowerer.record_local_crate_uses(&mut visitor.writer);
     }
+    crate::macro_extract::record_local_macro_defs(tcx, &macro_items, &mut visitor.writer);
 
     // Traverse all item bodies for references and types
     tcx.hir_visit_all_item_likes_in_crate(visitor);

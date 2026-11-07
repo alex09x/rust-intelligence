@@ -154,7 +154,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         }
     }
 
-    let feature_graph = super::feature_graph::ResolvedFeatureGraph::resolve(
+    let builder = IndexBuilder::resolve(opts.builder);
+
+    let feature_graph = super::feature_graph::ResolvedFeatureGraph::resolve_with_builder(
+        builder,
         &manifest_path,
         effective_target.as_deref(),
         package.as_deref(),
@@ -177,8 +180,6 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         let _ = fs::remove_dir_all(&cargo_target_dir);
         let _ = fs::create_dir_all(&cargo_target_dir);
     }
-
-    let builder = IndexBuilder::resolve(opts.builder);
 
     eprintln!("  Action         : {} check with RUSTC_WRAPPER...", builder.as_str());
 

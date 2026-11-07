@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use crate::format::{
     fnv1a_64, join_resolving_overlap, AssocTyEntry, CfgEntry, DefEntry, DefKind, DefTyEntry, DerefEntry, FieldEntry, FileEntry, FnSigEntry, GenericParamEntry, HashIndexEntry,
-    Header, ImplEntry, LangItemEntry, NoteEntry, OwnerIndexEntry, RefEntry, TyBoundEntry, TyDefEntry, TyEntry, TypeEntry, UseEntry, WherePredEntry,
+    Header, ImplEntry, LangItemEntry, MacroDefEntry, NoteEntry, OwnerIndexEntry, RefEntry, TyBoundEntry, TyDefEntry, TyEntry, TypeEntry, UseEntry, WherePredEntry,
 };
 use crate::reader::IndexReader;
 use crate::workspace::WorkspaceIndex;
@@ -135,7 +135,8 @@ fn audit_shard_sizing<B: AsRef<[u8]>>(
         + u64::from(h.where_preds_count) * std::mem::size_of::<WherePredEntry>() as u64
         + u64::from(h.lang_items_count) * std::mem::size_of::<LangItemEntry>() as u64
         + u64::from(h.uses_count) * std::mem::size_of::<UseEntry>() as u64
-        + u64::from(h.cfgs_count) * std::mem::size_of::<CfgEntry>() as u64;
+        + u64::from(h.cfgs_count) * std::mem::size_of::<CfgEntry>() as u64
+        + u64::from(h.macro_defs_count) * std::mem::size_of::<MacroDefEntry>() as u64;
     let body_refs_bytes = u64::from(h.refs_count) * std::mem::size_of::<RefEntry>() as u64 + u64::from(h.refs_by_target_count) * std::mem::size_of::<HashIndexEntry>() as u64;
     let body_types_notes_bytes = u64::from(h.types_count) * std::mem::size_of::<TypeEntry>() as u64 + u64::from(h.notes_count) * std::mem::size_of::<NoteEntry>() as u64;
 

@@ -26,14 +26,14 @@ pub mod writer;
 
 pub use format::*;
 pub use paths::normalize_path;
-pub use reader::{IndexReader, ResolvedDefinition};
+pub use reader::{IndexReader, MacroDefView, ResolvedDefinition};
 pub use ty_arena::{
     AssocBindingIter, AssocBindingView, AssocTyIter, AssocTyView, DefTyView, FieldIter, FieldView, FnSigView, GenericArgIter, GenericArgView, GenericParamIter, GenericParamView,
     ImplIter, ImplView, LangItemIter, LangItemView, RawAssocTy, RawDefTy, RawField, RawFnSig, RawGenericArg, RawGenericParam, RawImpl, RawLangItem, RawTy, RawTyBound, RawTyDef,
     RawUse, RawWherePred, TyArenaView, TyBoundIter, TyBoundView, TyDefView, TyInterner, TyKindView, TyListIter, U32ListIter, UseIter, UseView, WherePredIter, WherePredView,
 };
 pub use workspace::*;
-pub use writer::{IndexWriter, RawDefinition, RawNote, RawReference, RawType};
+pub use writer::{IndexWriter, RawDefinition, RawMacroDef, RawNote, RawReference, RawType};
 
 #[cfg(test)]
 mod tests {

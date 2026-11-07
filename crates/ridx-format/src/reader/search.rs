@@ -234,6 +234,7 @@ pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<(
     check_section(buf_len, header.lang_items_offset, header.lang_items_count, std::mem::size_of::<LangItemEntry>(), 4, "LangItems table")?;
     check_section(buf_len, header.uses_offset, header.uses_count, std::mem::size_of::<UseEntry>(), 4, "Uses table")?;
     check_section(buf_len, header.cfgs_offset, header.cfgs_count, std::mem::size_of::<CfgEntry>(), 4, "Cfgs table")?;
+    check_section(buf_len, header.macro_defs_offset, header.macro_defs_count, std::mem::size_of::<MacroDefEntry>(), 4, "MacroDefs table")?;
 
     Ok(())
 }

@@ -21,11 +21,13 @@ use crate::format::*;
 mod cfg_access;
 mod definition_at;
 mod file_lookup;
+mod macro_access;
 mod name_reference;
 mod queries;
 mod ty_access;
 mod use_access;
 pub(crate) use self::definition_at::is_synthetic_def_name;
+pub use self::macro_access::MacroDefView;
 pub(crate) use self::name_reference::span_strictly_inside;
 mod search;
 

@@ -174,6 +174,11 @@ pub struct Header {
     pub cfgs_count: u32,
     /// Offset in string pool for effective target triple (or 0); version 5.
     pub target_offset: u32,
+
+    /// Offset of the `MacroDefEntry` table (sorted by `def_index`); version 5.
+    pub macro_defs_offset: u64,
+    pub macro_defs_count: u32,
+    pub _pad22: u32,
 }
 
 impl Header {
@@ -255,6 +260,9 @@ impl Header {
             cfgs_offset: self.cfgs_offset.to_le(),
             cfgs_count: self.cfgs_count.to_le(),
             target_offset: self.target_offset.to_le(),
+            macro_defs_offset: self.macro_defs_offset.to_le(),
+            macro_defs_count: self.macro_defs_count.to_le(),
+            _pad22: 0,
         }
     }
 
@@ -336,6 +344,9 @@ impl Header {
             cfgs_offset: u64::from_le(self.cfgs_offset),
             cfgs_count: u32::from_le(self.cfgs_count),
             target_offset: u32::from_le(self.target_offset),
+            macro_defs_offset: u64::from_le(self.macro_defs_offset),
+            macro_defs_count: u32::from_le(self.macro_defs_count),
+            _pad22: 0,
         }
     }
 

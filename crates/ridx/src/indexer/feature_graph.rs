@@ -67,33 +67,46 @@ pub struct ResolvedFeatureGraph {
 }
 
 impl ResolvedFeatureGraph {
-    /// Resolves Cargo's unified dependency and per-crate feature graph for the given flags and target.
+    /// Resolves unified dependency and per-crate feature graph using the default resolved `IndexBuilder`.
     pub fn resolve(manifest_path: &Path, target: Option<&str>, package: Option<&str>, features: Option<&str>, no_default_features: bool, all_features: bool) -> Option<Self> {
+        Self::resolve_with_builder(super::builder::IndexBuilder::resolve(None), manifest_path, target, package, features, no_default_features, all_features)
+    }
+
+    /// Resolves unified dependency and per-crate feature graph via `mitts metadata` (or `cargo metadata`).
+    pub fn resolve_with_builder(
+        builder: super::builder::IndexBuilder,
+        manifest_path: &Path,
+        target: Option<&str>,
+        package: Option<&str>,
+        features: Option<&str>,
+        no_default_features: bool,
+        all_features: bool,
+    ) -> Option<Self> {
         let host_triple = detect_host_triple();
         let effective_target = match target {
             Some(t) if !t.is_empty() && t != "host" => t.to_string(),
             _ => host_triple.clone()?,
         };
 
-        let mut cmd = Command::new("cargo");
-        cmd.args(["metadata", "--format-version", "1", "--manifest-path"]);
-        cmd.arg(manifest_path);
-        cmd.args(["--filter-platform", &effective_target]);
-        let norm_feats = normalize_feature_list(features);
-        if !norm_feats.is_empty() {
-            cmd.arg("--features").arg(norm_feats.join(","));
-        }
-        if no_default_features {
-            cmd.arg("--no-default-features");
-        }
-        if all_features {
-            cmd.arg("--all-features");
-        }
+        let run_meta = |prog: &str| -> Option<std::process::Output> {
+            let mut cmd = Command::new(prog);
+            cmd.args(["metadata", "--format-version", "1", "--manifest-path"]);
+            cmd.arg(manifest_path);
+            cmd.args(["--filter-platform", &effective_target]);
+            let norm_feats = normalize_feature_list(features);
+            if !norm_feats.is_empty() {
+                cmd.arg("--features").arg(norm_feats.join(","));
+            }
+            if no_default_features {
+                cmd.arg("--no-default-features");
+            }
+            if all_features {
+                cmd.arg("--all-features");
+            }
+            cmd.output().ok().filter(|o| o.status.success())
+        };
 
-        let out = cmd.output().ok()?;
-        if !out.status.success() {
-            return None;
-        }
+        let out = run_meta(builder.as_str()).or_else(|| (builder == super::builder::IndexBuilder::Mitts).then(|| run_meta("cargo")).flatten())?;
         let meta: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
         let ws_members: HashSet<String> = meta.get("workspace_members")?.as_array()?.iter().filter_map(|v| v.as_str().map(str::to_string)).collect();
 
