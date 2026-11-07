@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 5, 400 bytes; v4 is 176, v3 is 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 416 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
