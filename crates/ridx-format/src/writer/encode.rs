@@ -232,40 +232,9 @@ impl IndexWriter {
         let notes_len = (note_entries.len() * std::mem::size_of::<NoteEntry>()) as u64;
         current_offset = align_up(notes_offset + notes_len, 8);
 
-        let (fn_sigs, impl_entries, assoc_entries) = self.build_sorted_typed_tables();
+        let typed_sections = self.prepare_typed_sections(current_offset);
 
-        let ty_defs = self.ty_interner.defs();
-        let ty_entries = self.ty_interner.entries();
-        let ty_bounds = self.ty_interner.bounds();
-        let ty_args = self.ty_interner.args();
-
-        let ty_defs_offset = current_offset;
-        let ty_defs_len = std::mem::size_of_val(ty_defs) as u64;
-        current_offset = align_up(ty_defs_offset + ty_defs_len, 8);
-
-        let ty_entries_offset = current_offset;
-        let ty_entries_len = std::mem::size_of_val(ty_entries) as u64;
-        current_offset = align_up(ty_entries_offset + ty_entries_len, 8);
-
-        let ty_bounds_offset = current_offset;
-        let ty_bounds_len = std::mem::size_of_val(ty_bounds) as u64;
-        current_offset = align_up(ty_bounds_offset + ty_bounds_len, 8);
-
-        let ty_args_offset = current_offset;
-        let ty_args_len = std::mem::size_of_val(ty_args) as u64;
-        current_offset = align_up(ty_args_offset + ty_args_len, 8);
-
-        let fn_sigs_offset = current_offset;
-        let fn_sigs_len = std::mem::size_of_val(fn_sigs.as_slice()) as u64;
-        current_offset = align_up(fn_sigs_offset + fn_sigs_len, 8);
-
-        let impls_offset = current_offset;
-        let impls_len = std::mem::size_of_val(impl_entries.as_slice()) as u64;
-        current_offset = align_up(impls_offset + impls_len, 8);
-
-        let assoc_tys_offset = current_offset;
-
-        let header = Header {
+        let mut header = Header {
             magic: MAGIC,
             version: CURRENT_VERSION,
             crate_name_offset,
@@ -299,28 +268,9 @@ impl IndexWriter {
             notes_offset,
             notes_count: note_entries.len() as u32,
             _pad8: 0,
-            ty_defs_offset,
-            ty_defs_count: ty_defs.len() as u32,
-            _pad9: 0,
-            ty_entries_offset,
-            ty_entries_count: ty_entries.len() as u32,
-            _pad10: 0,
-            ty_bounds_offset,
-            ty_bounds_count: ty_bounds.len() as u32,
-            _pad11: 0,
-            ty_args_offset,
-            ty_args_count: ty_args.len() as u32,
-            _pad12: 0,
-            fn_sigs_offset,
-            fn_sigs_count: fn_sigs.len() as u32,
-            _pad13: 0,
-            impls_offset,
-            impls_count: impl_entries.len() as u32,
-            _pad14: 0,
-            assoc_tys_offset,
-            assoc_tys_count: assoc_entries.len() as u32,
-            _pad15: 0,
+            ..Header::default()
         };
+        self.fill_typed_header(&mut header, &typed_sections);
 
         // Write Header in explicit little-endian format
         writer.seek(io::SeekFrom::Start(0))?;
@@ -349,13 +299,7 @@ impl IndexWriter {
         write_le_items(writer, defs_by_owner_offset, &owner_entries, OwnerIndexEntry::to_le)?;
         write_le_items(writer, derefs_offset, &deref_entries, DerefEntry::to_le)?;
         write_le_items(writer, notes_offset, &note_entries, NoteEntry::to_le)?;
-        write_le_items(writer, ty_defs_offset, ty_defs, TyDefEntry::to_le)?;
-        write_le_items(writer, ty_entries_offset, ty_entries, TyEntry::to_le)?;
-        write_le_items(writer, ty_bounds_offset, ty_bounds, TyBoundEntry::to_le)?;
-        write_le_items(writer, ty_args_offset, ty_args, u32::to_le)?;
-        write_le_items(writer, fn_sigs_offset, &fn_sigs, FnSigEntry::to_le)?;
-        write_le_items(writer, impls_offset, &impl_entries, ImplEntry::to_le)?;
-        write_le_items(writer, assoc_tys_offset, &assoc_entries, AssocTyEntry::to_le)?;
+        self.write_typed_sections(writer, &typed_sections)?;
 
         writer.flush()?;
         Ok(())
@@ -371,7 +315,7 @@ impl IndexWriter {
     }
 }
 
-fn write_le_items<W: Write + Seek, T: Copy, F: Fn(T) -> T>(writer: &mut W, offset: u64, items: &[T], to_le: F) -> io::Result<()> {
+pub(super) fn write_le_items<W: Write + Seek, T: Copy, F: Fn(T) -> T>(writer: &mut W, offset: u64, items: &[T], to_le: F) -> io::Result<()> {
     writer.seek(io::SeekFrom::Start(offset))?;
     for &item in items {
         let le = to_le(item);

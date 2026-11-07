@@ -262,6 +262,8 @@ fn test_validate_sections_comprehensive() {
         fn_sigs_offset: 16,
         impls_offset: 16,
         assoc_tys_offset: 16,
+        fields_offset: 16,
+        def_tys_offset: 16,
         ..Header::default()
     };
     assert!(validate_sections(1000, &hdr).is_err());

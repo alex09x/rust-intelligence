@@ -11,11 +11,13 @@
 //! Zero-copy reader views, structural interner, and formatter for `TyArena`.
 
 mod display;
+mod field_view;
 mod fn_sig;
 mod impl_view;
 mod intern;
 mod iter;
 
+pub use self::field_view::{DefTyView, FieldIter, FieldView, RawDefTy, RawField};
 pub use self::fn_sig::{FnSigView, RawFnSig};
 pub use self::impl_view::{AssocTyIter, AssocTyView, ImplIter, ImplView, RawAssocTy, RawImpl};
 pub use self::intern::{RawGenericArg, RawTy, RawTyBound, RawTyDef, TyInterner};

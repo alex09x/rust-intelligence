@@ -27,6 +27,7 @@ pub use crate::driver_hash::*;
 
 mod defs;
 mod entries;
+mod field_item;
 mod header;
 mod header_legacy;
 mod impl_item;
@@ -36,6 +37,10 @@ mod ty_prim;
 
 pub use self::defs::{DefEntry, DefKind, Span, FLAG_MACRO_EXPANSION, FLAG_REEXPORT};
 pub use self::entries::{DerefEntry, HashIndexEntry, OwnerIndexEntry, RefEntry, TypeEntry};
+pub use self::field_item::{
+    CtorShape, DefTyEntry, FieldEntry, ItemVis, DEF_TY_FLAG_FUNDAMENTAL, DEF_TY_FLAG_MUT_STATIC, DEF_TY_FLAG_NON_EXHAUSTIVE, DEF_TY_FLAG_UNSAFE_STATIC, FIELD_FLAG_TUPLE,
+    FIELD_FLAG_UNSAFE,
+};
 pub use self::header::{FileEntry, Header};
 pub use self::header_legacy::{HeaderV2, HEADER_V3_SIZE, HEADER_V4_SIZE};
 pub use self::impl_item::{AssocTyEntry, ImplEntry, SimplifiedSelfKind, IMPL_FLAG_CONST, IMPL_FLAG_NEGATIVE, IMPL_FLAG_RESERVATION, IMPL_FLAG_TRAIT, IMPL_FLAG_UNSAFE};
@@ -145,7 +150,7 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 288);
+    assert!(std::mem::size_of::<Header>() == 320);
     assert!(std::mem::size_of::<NoteEntry>() == 28);
     assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);
@@ -179,6 +184,10 @@ const _: () = {
     assert!(std::mem::align_of::<ImplEntry>() == 4);
     assert!(std::mem::size_of::<AssocTyEntry>() == 16);
     assert!(std::mem::align_of::<AssocTyEntry>() == 4);
+    assert!(std::mem::size_of::<FieldEntry>() == 20);
+    assert!(std::mem::align_of::<FieldEntry>() == 4);
+    assert!(std::mem::size_of::<DefTyEntry>() == 16);
+    assert!(std::mem::align_of::<DefTyEntry>() == 4);
     assert!(std::mem::size_of::<FnSigEntry>() == 16);
     assert!(std::mem::align_of::<FnSigEntry>() == 4);
 };

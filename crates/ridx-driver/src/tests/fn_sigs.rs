@@ -227,7 +227,15 @@ pub fn next_item<I: Iterator>(mut it: I) -> Option<I::Item> {
             fs::write(&tmp, &bytes).unwrap();
             let reader = IndexReader::open(&tmp).unwrap();
             let _ = fs::remove_file(&tmp);
-            let callable_defs = reader.definitions().iter().filter(|d| matches!(RDefKind::from(d.from_le().kind), RDefKind::Fn | RDefKind::AssocFn)).count();
+            let callable_defs = reader
+                .definitions()
+                .iter()
+                .enumerate()
+                .filter(|&(idx, d)| {
+                    matches!(RDefKind::from(d.from_le().kind), RDefKind::Fn | RDefKind::AssocFn)
+                        || reader.def_ty_for_def(idx as u32).is_some_and(|dt| dt.ctor_shape() == ridx_format::CtorShape::Tuple)
+                })
+                .count();
             let sig_rows = reader.fn_sigs().len();
             let str_len_idx = find_def_idx(&reader, "core::str::<impl str>::len");
             let str_len_sig = reader.fn_sig_for_def(str_len_idx).expect("str::len FnSig");

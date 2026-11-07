@@ -51,6 +51,8 @@ pub struct SysrootCollector {
     pub callables: Vec<(rustc_span::def_id::DefId, u32)>,
     pub impl_dids: Vec<rustc_span::def_id::DefId>,
     pub seen_impls: HashSet<rustc_span::def_id::DefId>,
+    pub adts: Vec<(rustc_span::def_id::DefId, u32)>,
+    pub def_tys: Vec<(rustc_span::def_id::DefId, u32)>,
 }
 
 impl SysrootCollector {
@@ -58,16 +60,32 @@ impl SysrootCollector {
     pub fn register_primary(&mut self, did: rustc_span::def_id::DefId, kind: DefKind, def_idx: u32) {
         self.total_definitions += 1;
         self.local_def_indices.insert(did, def_idx);
-        if matches!(kind, DefKind::Fn | DefKind::AssocFn) {
-            self.callables.push((did, def_idx));
+        match kind {
+            DefKind::Fn | DefKind::AssocFn => self.callables.push((did, def_idx)),
+            DefKind::Struct | DefKind::Union | DefKind::Enum => self.adts.push((did, def_idx)),
+            DefKind::TyAlias | DefKind::Const { .. } | DefKind::Static { .. } | DefKind::AssocConst { .. } | DefKind::Variant => {
+                self.def_tys.push((did, def_idx));
+            }
+            _ => {}
         }
     }
 
     #[inline]
     pub fn register_reexport(&mut self, did: rustc_span::def_id::DefId, kind: DefKind, def_idx: u32) {
         self.total_definitions += 1;
-        if matches!(kind, DefKind::Fn | DefKind::AssocFn) {
-            self.callables.push((did, def_idx));
+        match kind {
+            DefKind::Fn | DefKind::AssocFn => self.callables.push((did, def_idx)),
+            DefKind::TyAlias
+            | DefKind::Const { .. }
+            | DefKind::Static { .. }
+            | DefKind::AssocConst { .. }
+            | DefKind::Struct
+            | DefKind::Union
+            | DefKind::Enum
+            | DefKind::Variant => {
+                self.def_tys.push((did, def_idx));
+            }
+            _ => {}
         }
     }
 
@@ -255,7 +273,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     let sysroot_traits = traits::collect_sysroot_traits(tcx);
     traits::extract_trait_and_deref_links(tcx, cnum, &sysroot_traits, &mut writer, &mut total_derefs);
 
-    if !collector.callables.is_empty() || !collector.impl_dids.is_empty() {
+    if !collector.callables.is_empty() || !collector.impl_dids.is_empty() || !collector.adts.is_empty() || !collector.def_tys.is_empty() {
         let sysroot_units: HashMap<rustc_span::def_id::CrateNum, String> = tcx
             .crates(())
             .iter()
@@ -268,6 +286,8 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, cnum, &sysroot_units, &collector.local_def_indices);
         lowerer.record_fn_sigs(&collector.callables, &mut writer);
         lowerer.record_impls(&collector.impl_dids, &mut writer);
+        lowerer.record_adts(&collector.adts, &mut writer);
+        lowerer.record_def_tys(&collector.def_tys, &mut writer);
     }
 
     let elapsed = start.elapsed();

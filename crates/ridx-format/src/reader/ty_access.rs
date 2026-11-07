@@ -10,8 +10,8 @@
 
 //! Zero-copy `IndexReader` accessors for `notes` (v4+) and `TyArena` (v5+) sections.
 
-use crate::format::{AssocTyEntry, FnSigEntry, ImplEntry, NoteEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyEntry};
-use crate::ty_arena::{FnSigView, ImplIter, ImplView, TyArenaView};
+use crate::format::{AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, ImplEntry, NoteEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyEntry};
+use crate::ty_arena::{DefTyView, FieldIter, FieldView, FnSigView, ImplIter, ImplView, TyArenaView};
 
 use super::IndexReader;
 
@@ -165,5 +165,43 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let start = all.partition_point(|e| (e.simplified_self, u8::from(e.is_trait())) < key);
         let end = start + all[start..].partition_point(|e| (e.simplified_self, u8::from(e.is_trait())) == key);
         ImplIter::new(start as u32, &all[start..end], self.ty_arena(), self.assoc_tys())
+    }
+
+    /// Raw slice of sorted `FieldEntry` records in this shard (empty for format < v5).
+    #[inline]
+    pub fn fields(&self) -> &[FieldEntry] {
+        let h = self.header();
+        self.typed_slice(h.fields_offset, h.fields_count)
+    }
+
+    /// Binary-searches all `FieldEntry` rows belonging to `owner_def_index` (`Struct`, `Union`, or `Variant`).
+    #[inline]
+    pub fn fields_for_owner(&self, owner_def_index: u32) -> FieldIter<'_> {
+        let all = self.fields();
+        let start = all.partition_point(|e| e.owner_def_index() < owner_def_index);
+        let end = start + all[start..].partition_point(|e| e.owner_def_index() == owner_def_index);
+        FieldIter::new(self.ty_arena(), &all[start..end])
+    }
+
+    /// Looks up a specific field `name` (or positional `"0"`, `"1"`) on `owner_def_index`.
+    #[inline]
+    pub fn find_field(&self, owner_def_index: u32, name: &str) -> Option<FieldView<'_>> {
+        self.fields_for_owner(owner_def_index).find(|f| f.name == name)
+    }
+
+    /// Raw slice of sorted `DefTyEntry` records in this shard (empty for format < v5).
+    #[inline]
+    pub fn def_tys(&self) -> &[DefTyEntry] {
+        let h = self.header();
+        self.typed_slice(h.def_tys_offset, h.def_tys_count)
+    }
+
+    /// Looks up the `DefTyView` (`TyAlias` RHS, `Const`/`Static`/`AssocConst` type, or ADT/variant ctor shape)
+    /// for `def_index` in `O(log N)` via binary search.
+    #[inline]
+    pub fn def_ty_for_def(&self, def_index: u32) -> Option<DefTyView> {
+        let all = self.def_tys();
+        let pos = all.binary_search_by_key(&def_index, DefTyEntry::def_index).ok()?;
+        Some(DefTyView::new(all[pos]))
     }
 }

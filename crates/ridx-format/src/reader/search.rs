@@ -227,6 +227,8 @@ pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<(
     check_section(buf_len, header.fn_sigs_offset, header.fn_sigs_count, std::mem::size_of::<FnSigEntry>(), 4, "FnSigs table")?;
     check_section(buf_len, header.impls_offset, header.impls_count, std::mem::size_of::<ImplEntry>(), 4, "Impls table")?;
     check_section(buf_len, header.assoc_tys_offset, header.assoc_tys_count, std::mem::size_of::<AssocTyEntry>(), 4, "AssocTys table")?;
+    check_section(buf_len, header.fields_offset, header.fields_count, std::mem::size_of::<FieldEntry>(), 4, "Fields table")?;
+    check_section(buf_len, header.def_tys_offset, header.def_tys_count, std::mem::size_of::<DefTyEntry>(), 4, "DefTys table")?;
 
     Ok(())
 }

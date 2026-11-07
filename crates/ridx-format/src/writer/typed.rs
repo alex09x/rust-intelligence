@@ -8,12 +8,15 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! `IndexWriter` builder and sorting helpers for `.ridx` v5 typed tables
-//! (`TyArena`, `FnSigEntry`, `ImplEntry`, `AssocTyEntry`).
+//! `IndexWriter` builder, sorting, layout, and serialization helpers for `.ridx` v5 typed tables
+//! (`TyArena`, `FnSigEntry`, `ImplEntry`, `AssocTyEntry`, `FieldEntry`, `DefTyEntry`).
 
-use crate::format::{AssocTyEntry, FnSigEntry, ImplEntry, SimplifiedSelfKind, TyDefId, TyId, IMPL_FLAG_TRAIT};
-use crate::ty_arena::{RawFnSig, RawImpl, RawTy, RawTyDef, TyInterner};
+use std::io::{self, Seek, Write};
 
+use crate::format::{AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, Header, ImplEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyDefId, TyEntry, TyId, IMPL_FLAG_TRAIT};
+use crate::ty_arena::{RawDefTy, RawField, RawFnSig, RawImpl, RawTy, RawTyDef, TyInterner};
+
+use super::encode::{align_up, write_le_items};
 use super::IndexWriter;
 
 #[derive(Debug, Clone)]
@@ -35,6 +38,23 @@ pub(super) struct PendingImpl {
     pub flags: u8,
     pub simplified_self: u8,
     pub assoc_tys: Vec<PendingAssocTy>,
+}
+
+pub(super) struct EncodedTypedSections {
+    pub fn_sigs: Vec<FnSigEntry>,
+    pub impls: Vec<ImplEntry>,
+    pub assoc_tys: Vec<AssocTyEntry>,
+    pub fields: Vec<FieldEntry>,
+    pub def_tys: Vec<DefTyEntry>,
+    pub ty_defs_offset: u64,
+    pub ty_entries_offset: u64,
+    pub ty_bounds_offset: u64,
+    pub ty_args_offset: u64,
+    pub fn_sigs_offset: u64,
+    pub impls_offset: u64,
+    pub assoc_tys_offset: u64,
+    pub fields_offset: u64,
+    pub def_tys_offset: u64,
 }
 
 impl IndexWriter {
@@ -62,7 +82,7 @@ impl IndexWriter {
         &self.ty_interner
     }
 
-    /// Records a structured function/method signature for `def_index`.
+    /// Records a structured function/method/tuple-ctor signature for `def_index`.
     pub fn add_fn_sig(&mut self, sig: RawFnSig<'_>) {
         let (inputs_start, inputs_len) = self.ty_interner.intern_ty_list(sig.inputs);
         self.fn_sigs.push(FnSigEntry { def_index: sig.def_index, inputs_start, inputs_len, flags: sig.flags, abi: sig.abi as u8, output: sig.output.0 });
@@ -118,7 +138,43 @@ impl IndexWriter {
         self.impls.iter().map(|i| i.assoc_tys.len()).sum()
     }
 
-    pub(super) fn build_sorted_typed_tables(&self) -> (Vec<FnSigEntry>, Vec<ImplEntry>, Vec<AssocTyEntry>) {
+    /// Records a structured ADT or enum variant field (`FieldEntry`).
+    pub fn add_field(&mut self, field: RawField<'_>) {
+        let name_offset = self.intern_string(field.name);
+        self.fields.push(FieldEntry {
+            owner_def_index: field.owner_def_index,
+            def_index: field.def_index.unwrap_or(u32::MAX),
+            name_offset,
+            ty: field.ty.0,
+            field_idx: field.field_idx,
+            vis: field.vis as u8,
+            flags: field.flags,
+        });
+    }
+
+    /// Total count of structured fields queued.
+    pub fn field_count(&self) -> usize {
+        self.fields.len()
+    }
+
+    /// Records a structured definition type/constructor entry (`DefTyEntry`).
+    pub fn add_def_ty(&mut self, entry: RawDefTy) {
+        self.def_tys.push(DefTyEntry {
+            def_index: entry.def_index,
+            ty: entry.ty.0,
+            parent_def_index: entry.parent_def_index.unwrap_or(u32::MAX),
+            variant_idx: entry.variant_idx.unwrap_or(u16::MAX),
+            ctor_shape: entry.ctor_shape as u8,
+            flags: entry.flags,
+        });
+    }
+
+    /// Total count of structured definition type entries queued.
+    pub fn def_ty_count(&self) -> usize {
+        self.def_tys.len()
+    }
+
+    pub(super) fn prepare_typed_sections(&self, start_offset: u64) -> EncodedTypedSections {
         let mut fn_sigs = self.fn_sigs.clone();
         fn_sigs.sort_by_key(|s| s.def_index);
         fn_sigs.dedup_by_key(|s| s.def_index);
@@ -130,16 +186,15 @@ impl IndexWriter {
         });
 
         let total_assocs: usize = sorted_impls.iter().map(|i| i.assoc_tys.len()).sum();
-        let mut impl_entries = Vec::with_capacity(sorted_impls.len());
-        let mut assoc_entries = Vec::with_capacity(total_assocs);
-
+        let mut impls = Vec::with_capacity(sorted_impls.len());
+        let mut assoc_tys = Vec::with_capacity(total_assocs);
         for (impl_idx, p) in sorted_impls.into_iter().enumerate() {
-            let assoc_tys_start = assoc_entries.len() as u32;
+            let assoc_tys_start = assoc_tys.len() as u32;
             let assoc_tys_len = u16::try_from(p.assoc_tys.len()).unwrap_or(u16::MAX);
             for a in p.assoc_tys.into_iter().take(usize::from(assoc_tys_len)) {
-                assoc_entries.push(AssocTyEntry { impl_index: impl_idx as u32, def_index: a.def_index, name_offset: a.name_offset, ty: a.ty });
+                assoc_tys.push(AssocTyEntry { impl_index: impl_idx as u32, def_index: a.def_index, name_offset: a.name_offset, ty: a.ty });
             }
-            impl_entries.push(ImplEntry {
+            impls.push(ImplEntry {
                 def_index: p.def_index,
                 self_ty: p.self_ty,
                 trait_def: p.trait_def,
@@ -154,6 +209,80 @@ impl IndexWriter {
             });
         }
 
-        (fn_sigs, impl_entries, assoc_entries)
+        let mut fields = self.fields.clone();
+        fields.sort_by_key(|f| (f.owner_def_index, f.field_idx));
+        fields.dedup_by_key(|f| (f.owner_def_index, f.field_idx));
+
+        let mut def_tys = self.def_tys.clone();
+        def_tys.sort_by_key(|d| d.def_index);
+        def_tys.dedup_by_key(|d| d.def_index);
+
+        let mut cur = start_offset;
+        let step = |cur: &mut u64, byte_len: usize| -> u64 {
+            let off = *cur;
+            *cur = align_up(off + byte_len as u64, 8);
+            off
+        };
+
+        let ty_defs_offset = step(&mut cur, std::mem::size_of_val(self.ty_interner.defs()));
+        let ty_entries_offset = step(&mut cur, std::mem::size_of_val(self.ty_interner.entries()));
+        let ty_bounds_offset = step(&mut cur, std::mem::size_of_val(self.ty_interner.bounds()));
+        let ty_args_offset = step(&mut cur, std::mem::size_of_val(self.ty_interner.args()));
+        let fn_sigs_offset = step(&mut cur, std::mem::size_of_val(fn_sigs.as_slice()));
+        let impls_offset = step(&mut cur, std::mem::size_of_val(impls.as_slice()));
+        let assoc_tys_offset = step(&mut cur, std::mem::size_of_val(assoc_tys.as_slice()));
+        let fields_offset = step(&mut cur, std::mem::size_of_val(fields.as_slice()));
+        let def_tys_offset = cur;
+
+        EncodedTypedSections {
+            fn_sigs,
+            impls,
+            assoc_tys,
+            fields,
+            def_tys,
+            ty_defs_offset,
+            ty_entries_offset,
+            ty_bounds_offset,
+            ty_args_offset,
+            fn_sigs_offset,
+            impls_offset,
+            assoc_tys_offset,
+            fields_offset,
+            def_tys_offset,
+        }
+    }
+
+    pub(super) fn fill_typed_header(&self, header: &mut Header, ts: &EncodedTypedSections) {
+        header.ty_defs_offset = ts.ty_defs_offset;
+        header.ty_defs_count = self.ty_interner.defs().len() as u32;
+        header.ty_entries_offset = ts.ty_entries_offset;
+        header.ty_entries_count = self.ty_interner.entries().len() as u32;
+        header.ty_bounds_offset = ts.ty_bounds_offset;
+        header.ty_bounds_count = self.ty_interner.bounds().len() as u32;
+        header.ty_args_offset = ts.ty_args_offset;
+        header.ty_args_count = self.ty_interner.args().len() as u32;
+        header.fn_sigs_offset = ts.fn_sigs_offset;
+        header.fn_sigs_count = ts.fn_sigs.len() as u32;
+        header.impls_offset = ts.impls_offset;
+        header.impls_count = ts.impls.len() as u32;
+        header.assoc_tys_offset = ts.assoc_tys_offset;
+        header.assoc_tys_count = ts.assoc_tys.len() as u32;
+        header.fields_offset = ts.fields_offset;
+        header.fields_count = ts.fields.len() as u32;
+        header.def_tys_offset = ts.def_tys_offset;
+        header.def_tys_count = ts.def_tys.len() as u32;
+    }
+
+    pub(super) fn write_typed_sections<W: Write + Seek>(&self, writer: &mut W, ts: &EncodedTypedSections) -> io::Result<()> {
+        write_le_items(writer, ts.ty_defs_offset, self.ty_interner.defs(), TyDefEntry::to_le)?;
+        write_le_items(writer, ts.ty_entries_offset, self.ty_interner.entries(), TyEntry::to_le)?;
+        write_le_items(writer, ts.ty_bounds_offset, self.ty_interner.bounds(), TyBoundEntry::to_le)?;
+        write_le_items(writer, ts.ty_args_offset, self.ty_interner.args(), u32::to_le)?;
+        write_le_items(writer, ts.fn_sigs_offset, &ts.fn_sigs, FnSigEntry::to_le)?;
+        write_le_items(writer, ts.impls_offset, &ts.impls, ImplEntry::to_le)?;
+        write_le_items(writer, ts.assoc_tys_offset, &ts.assoc_tys, AssocTyEntry::to_le)?;
+        write_le_items(writer, ts.fields_offset, &ts.fields, FieldEntry::to_le)?;
+        write_le_items(writer, ts.def_tys_offset, &ts.def_tys, DefTyEntry::to_le)?;
+        Ok(())
     }
 }

@@ -12,6 +12,7 @@
 //! workspace crates, immutable dependencies, and sysroot (`core`, `alloc`, `std`).
 
 mod bounds;
+pub(crate) mod fields;
 mod fn_sig;
 mod impls;
 

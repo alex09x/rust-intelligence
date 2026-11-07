@@ -138,6 +138,16 @@ pub struct Header {
     pub assoc_tys_offset: u64,
     pub assoc_tys_count: u32,
     pub _pad15: u32,
+
+    /// Offset of the `FieldEntry` table (sorted by `(owner_def_index, field_idx)`); version 5.
+    pub fields_offset: u64,
+    pub fields_count: u32,
+    pub _pad16: u32,
+
+    /// Offset of the `DefTyEntry` table (sorted by `def_index`); version 5.
+    pub def_tys_offset: u64,
+    pub def_tys_count: u32,
+    pub _pad17: u32,
 }
 
 impl Header {
@@ -198,6 +208,12 @@ impl Header {
             assoc_tys_offset: self.assoc_tys_offset.to_le(),
             assoc_tys_count: self.assoc_tys_count.to_le(),
             _pad15: 0,
+            fields_offset: self.fields_offset.to_le(),
+            fields_count: self.fields_count.to_le(),
+            _pad16: 0,
+            def_tys_offset: self.def_tys_offset.to_le(),
+            def_tys_count: self.def_tys_count.to_le(),
+            _pad17: 0,
         }
     }
 
@@ -258,6 +274,12 @@ impl Header {
             assoc_tys_offset: u64::from_le(self.assoc_tys_offset),
             assoc_tys_count: u32::from_le(self.assoc_tys_count),
             _pad15: 0,
+            fields_offset: u64::from_le(self.fields_offset),
+            fields_count: u32::from_le(self.fields_count),
+            _pad16: 0,
+            def_tys_offset: u64::from_le(self.def_tys_offset),
+            def_tys_count: u32::from_le(self.def_tys_count),
+            _pad17: 0,
         }
     }
 
