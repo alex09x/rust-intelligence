@@ -10,8 +10,10 @@
 
 //! Schema and empirical content audit for `.ridx` shards and workspaces.
 
+pub mod sysroot;
 pub mod types;
 
+pub use self::sysroot::*;
 pub use self::types::*;
 
 use std::collections::HashSet;

@@ -10,8 +10,8 @@
 
 use std::io::Cursor;
 
-use ridx_format::audit::{audit_reader_items, def_kind_slot};
-use ridx_format::{DefKind, IndexReader, IndexWriter, RawDefinition};
+use ridx_format::audit::{audit_reader_items, audit_sysroot, def_kind_slot};
+use ridx_format::{DefKind, IndexReader, IndexWriter, RawDefinition, WorkspaceIndex};
 
 #[repr(C, align(8))]
 struct AlignedBytes {
@@ -163,4 +163,60 @@ fn audit_items_classifies_sigs_fields_impls_generics_derefs_and_reexports() {
     assert_eq!(rep.reexports.use_glob, 1);
     assert_eq!(rep.reexports.flag_reexport_defs, 1);
     assert_eq!(rep.by_kind[def_kind_slot(DefKind::Struct)].reexport_flag, 1);
+}
+
+#[test]
+fn audit_sysroot_probes_vec_option_adapters_and_slices() {
+    let dir = tempfile::tempdir().expect("tempdir");
+
+    let mut core_w = IndexWriter::new("core", "0.0.0");
+    core_w.add_definition(raw_def(1, DefKind::Enum, "Option", "core::option::Option", None));
+    core_w.add_definition_with_owners(raw_def(2, DefKind::Variant, "None", "core::option::Option::None", None), vec!["core::option::Option".to_string()]);
+    core_w.add_definition_with_owners(raw_def(3, DefKind::Variant, "Some", "core::option::Option::Some", None), vec!["core::option::Option".to_string()]);
+    core_w.add_definition_with_owners(raw_def(4, DefKind::AssocFn, "unwrap", "core::option::Option::unwrap", Some("fn(self) -> T")), vec!["core::option::Option".to_string()]);
+    core_w.add_definition(raw_def(5, DefKind::Trait, "Iterator", "core::iter::traits::iterator::Iterator", None));
+    core_w.add_definition_with_owners(
+        raw_def(6, DefKind::AssocTy, "Item", "core::iter::traits::iterator::Iterator::Item", None),
+        vec!["core::iter::traits::iterator::Iterator".to_string()],
+    );
+    core_w.add_definition_with_owners(
+        raw_def(7, DefKind::AssocFn, "map", "core::iter::traits::iterator::Iterator::map", Some("fn(self, F) -> Map<Self, F>")),
+        vec!["core::iter::traits::iterator::Iterator".to_string()],
+    );
+    core_w.add_definition(raw_def(8, DefKind::Struct, "Map", "core::iter::adapters::map::Map", None));
+    core_w.add_deref("core::iter::adapters::map::Map", "core::iter::traits::iterator::Iterator");
+    core_w.add_definition_with_owners(raw_def(9, DefKind::AssocFn, "iter", "core::slice::<impl [T]>::iter", Some("fn(&self) -> Iter<'_, T>")), vec!["slice".to_string()]);
+    let mut f_core = std::fs::File::create(dir.path().join("core.ridx")).expect("create core.ridx");
+    core_w.write_to(&mut f_core).expect("write core.ridx");
+
+    let mut alloc_w = IndexWriter::new("alloc", "0.0.0");
+    alloc_w.add_definition(raw_def(1, DefKind::Struct, "Vec", "alloc::vec::Vec", None));
+    alloc_w.add_definition_with_owners(raw_def(2, DefKind::AssocFn, "len", "alloc::vec::Vec::len", Some("fn(&self) -> usize")), vec!["alloc::vec::Vec".to_string()]);
+    alloc_w.add_deref("alloc::vec::Vec", "slice");
+    alloc_w.add_deref("alloc::vec::Vec", "core::iter::traits::iterator::Iterator");
+    let mut f_alloc = std::fs::File::create(dir.path().join("alloc.ridx")).expect("create alloc.ridx");
+    alloc_w.write_to(&mut f_alloc).expect("write alloc.ridx");
+
+    let mut std_w = IndexWriter::new("std", "0.0.0");
+    std_w.add_reexport_with_owners(raw_def(1, DefKind::Struct, "Vec", "std::vec::Vec", Some("alloc::vec::Vec")), vec!["std::vec".to_string()]);
+    let mut f_std = std::fs::File::create(dir.path().join("std.ridx")).expect("create std.ridx");
+    std_w.write_to(&mut f_std).expect("write std.ridx");
+
+    let ws = WorkspaceIndex::open(dir.path()).expect("open sysroot dir");
+    let rep = audit_sysroot(&ws, &["alloc::vec::Vec", "core::option::Option", "core::iter::traits::iterator::Iterator", "slice"]);
+
+    assert_eq!(rep.shards.len(), 3);
+    assert_eq!(rep.probes[0].def_kind, Some(DefKind::Struct));
+    assert_eq!(rep.probes[0].reexport_aliases, 1);
+    assert_eq!(rep.probes[0].actual_deref_targets, vec!["slice".to_string()]);
+    assert_eq!(rep.probes[0].trait_impl_targets, 1);
+    assert_eq!(rep.probes[1].owned_variants, 2);
+    assert_eq!(rep.probes[1].variants_with_sig, 0);
+    assert_eq!(rep.probes[2].assoc_fns_unqualified_ret, 1);
+    assert!(!rep.probes[3].def_present);
+    assert_eq!(rep.probes[3].owned_assoc_fns, 1);
+    assert_eq!(rep.probes[3].assoc_fns_unqualified_ret, 1);
+    assert_eq!(rep.iter_adapters.adapter_structs, 1);
+    assert_eq!(rep.iter_adapters.adapters_with_iterator_edge, 1);
+    assert_eq!(rep.iter_adapters.adapters_with_item_assoc_ty, 0);
 }

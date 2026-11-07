@@ -14,7 +14,7 @@ use std::env;
 use std::path::Path;
 use std::process;
 
-use ridx_format::audit::{audit_workspace_items, def_kind_from_slot, AuditScope, ItemAuditReport};
+use ridx_format::audit::{audit_sysroot, audit_workspace_items, def_kind_from_slot, AuditScope, ItemAuditReport, SysrootAuditReport, DEFAULT_SYSROOT_TARGETS};
 use ridx_format::WorkspaceIndex;
 
 fn parse_scope(s: &str) -> AuditScope {
@@ -179,6 +179,65 @@ fn print_items_report(label: &str, r: &ItemAuditReport) {
     }
 }
 
+fn print_sysroot_report(label: &str, r: &SysrootAuditReport) {
+    println!("=== SYSROOT {label} ===");
+    for s in &r.shards {
+        println!(
+            "shard {:5}: size={:.2} MiB ({} B) pool={} B | defs={} refs={} types={} notes={} derefs={} owners={} | fields={} variants={} ty_params={} impls={} reexports={}",
+            s.crate_name,
+            s.file_size as f64 / (1024.0 * 1024.0),
+            s.file_size,
+            s.string_pool_bytes,
+            s.defs_count,
+            s.refs_count,
+            s.types_count,
+            s.notes_count,
+            s.derefs_count,
+            s.owners_count,
+            s.fields_count,
+            s.variants_count,
+            s.ty_params_count,
+            s.impls_count,
+            s.reexports_count
+        );
+    }
+    print_items_report("sysroot-items", &r.items);
+    println!("probes:");
+    for p in &r.probes {
+        println!(
+            "  {} | def={:?}(sig={}) reexports={} | assoc_fn={}(self={},unqual_ret={}) fields={} variants={}(sig={}) assoc_ty={}(sig={}) ty_params={} | deref={:?} trait_impls={} supertraits={}",
+            p.target,
+            p.def_kind,
+            p.def_has_sig,
+            p.reexport_aliases,
+            p.owned_assoc_fns,
+            p.assoc_fns_with_self,
+            p.assoc_fns_unqualified_ret,
+            p.owned_fields,
+            p.owned_variants,
+            p.variants_with_sig,
+            p.owned_assoc_tys,
+            p.assoc_tys_with_sig,
+            p.owned_ty_params,
+            p.actual_deref_targets,
+            p.trait_impl_targets,
+            p.supertrait_targets
+        );
+        for (mname, msig) in &p.sample_sigs {
+            println!("    sample {mname}: {msig}");
+        }
+    }
+    println!(
+        "iterator_adapters: structs={} impl_iterator_edge={} item_assoc_ty={} ty_params={} inherent_assoc_fns={} | names={}",
+        r.iter_adapters.adapter_structs,
+        r.iter_adapters.adapters_with_iterator_edge,
+        r.iter_adapters.adapters_with_item_assoc_ty,
+        r.iter_adapters.adapters_with_ty_params,
+        r.iter_adapters.total_inherent_assoc_fns,
+        r.iter_adapters.adapter_names.join(",")
+    );
+}
+
 fn main() {
     let mut args = env::args().skip(1);
     let mut mode = String::from("items");
@@ -194,28 +253,43 @@ fn main() {
     }
 
     if paths.is_empty() {
-        eprintln!("Usage: index_audit [--mode items] [--scope non-sysroot|workspace|sysroot|all] <workspace_or_ridx>...");
+        eprintln!("Usage: index_audit [--mode items|sysroot] [--scope non-sysroot|workspace|sysroot|all] <workspace_or_ridx>...");
         process::exit(2);
     }
 
-    if mode != "items" {
-        eprintln!("Unsupported --mode '{mode}'");
-        process::exit(2);
-    }
-
-    let mut combined = ItemAuditReport::default();
-    for p in &paths {
-        let path = Path::new(p);
-        let label = path.file_name().and_then(|s| s.to_str()).unwrap_or(p);
-        let ws = WorkspaceIndex::open(path).unwrap_or_else(|e| {
-            eprintln!("Failed to open {p}: {e}");
-            process::exit(1);
-        });
-        let report = audit_workspace_items(&ws, scope);
-        print_items_report(label, &report);
-        merge_reports(&mut combined, &report);
-    }
-    if paths.len() > 1 {
-        print_items_report("COMBINED", &combined);
+    match mode.as_str() {
+        "items" => {
+            let mut combined = ItemAuditReport::default();
+            for p in &paths {
+                let path = Path::new(p);
+                let label = path.file_name().and_then(|s| s.to_str()).unwrap_or(p);
+                let ws = WorkspaceIndex::open(path).unwrap_or_else(|e| {
+                    eprintln!("Failed to open {p}: {e}");
+                    process::exit(1);
+                });
+                let report = audit_workspace_items(&ws, scope);
+                print_items_report(label, &report);
+                merge_reports(&mut combined, &report);
+            }
+            if paths.len() > 1 {
+                print_items_report("COMBINED", &combined);
+            }
+        }
+        "sysroot" => {
+            for p in &paths {
+                let path = Path::new(p);
+                let label = path.file_name().and_then(|s| s.to_str()).unwrap_or(p);
+                let ws = WorkspaceIndex::open(path).unwrap_or_else(|e| {
+                    eprintln!("Failed to open {p}: {e}");
+                    process::exit(1);
+                });
+                let report = audit_sysroot(&ws, DEFAULT_SYSROOT_TARGETS);
+                print_sysroot_report(label, &report);
+            }
+        }
+        other => {
+            eprintln!("Unsupported --mode '{other}'");
+            process::exit(2);
+        }
     }
 }
