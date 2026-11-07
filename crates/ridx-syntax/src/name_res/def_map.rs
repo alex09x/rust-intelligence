@@ -14,9 +14,13 @@
 use std::collections::HashMap;
 
 use super::db::{CrateId, Edition, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, SourceDb, VisKind};
-use super::def_collect::{collect_crate_items, LocalItemData};
+use super::db_impls::ImplTargetKey;
+use super::def_collect::{collect_crate_items, CollectedCrate, LocalItemData};
 use super::def_solver::ImportSolver;
 use super::ext_scope::ExtScopeCache;
+use super::ident_key::IdentKey;
+use super::impl_collect::LocalImplArena;
+use super::impl_resolve::resolve_local_impls_and_assocs;
 use super::mod_tree::ModuleTree;
 use super::per_ns::{BindingOrigin, LocalItemId, PerNs, PrimTy, ResolvedBinding};
 use super::use_tree::{PathAnchor, UseArena};
@@ -27,7 +31,7 @@ use crate::tree::SyntaxTree;
 #[derive(Debug, Default)]
 pub struct ModuleScope {
     pub index_def: GlobalDefId,
-    pub entries: HashMap<String, PerNs>,
+    pub entries: HashMap<IdentKey, PerNs>,
     /// Anonymous trait imports (`use Trait as _;`) visible for method lookup in this module.
     pub unnamed_traits: Vec<ResolvedBinding>,
 }
@@ -52,15 +56,18 @@ pub struct CrateDefMap {
     pub krate: CrateId,
     pub edition: Edition,
     pub prelude_mod: Option<GlobalDefId>,
-    pub prelude: HashMap<String, PerNs>,
+    pub prelude: HashMap<IdentKey, PerNs>,
     /// Crate-wide extern crate prelude (`name -> (CrateId, root GlobalDefId)`).
-    pub extern_prelude: HashMap<String, (CrateId, GlobalDefId)>,
+    pub extern_prelude: HashMap<IdentKey, (CrateId, GlobalDefId)>,
     pub items: Vec<LocalItemData>,
     pub(super) item_strings: String,
     pub uses: UseArena,
     pub scopes: Vec<ModuleScope>,
     /// Per-`FlatUse` resolved `PerNs` (`resolved_uses[i]` corresponds to `uses.uses[i]`).
     pub resolved_uses: Vec<PerNs>,
+    pub dirty_files: Vec<FileId>,
+    pub local_impls: LocalImplArena,
+    pub(super) local_alias_targets: HashMap<GlobalDefId, ImplTargetKey>,
     pub diagnostics: Vec<UseDiag>,
 }
 
@@ -80,7 +87,17 @@ impl CrateDefMap {
     ) -> Self {
         let collected = collect_crate_items(db, sources, mod_tree, dirty_files, get_tree);
         let mut ext_cache = ExtScopeCache::new();
-        ImportSolver::solve(db, mod_tree, collected, &mut ext_cache)
+        Self::from_collected(db, mod_tree, collected, dirty_files, &mut ext_cache)
+    }
+
+    pub(super) fn from_collected(db: &dyn ItemDb, mod_tree: &ModuleTree, collected: CollectedCrate, dirty_files: &[FileId], ext_cache: &mut ExtScopeCache) -> Self {
+        let next_seq = collected.next_overlay_seq;
+        let has_local_impls = !collected.local_impls.impls.is_empty() || !collected.local_impls.trait_assocs.is_empty() || !collected.local_impls.type_aliases.is_empty();
+        let mut map = ImportSolver::solve(db, mod_tree, collected, dirty_files, ext_cache);
+        if has_local_impls {
+            resolve_local_impls_and_assocs(&mut map, db, mod_tree, ext_cache, next_seq);
+        }
+        map
     }
 
     #[inline]

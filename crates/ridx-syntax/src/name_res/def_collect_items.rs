@@ -12,7 +12,9 @@
 
 use super::attr::{eval_attr_bracket_tokens, eval_outer_attrs, extract_visibility, EffectiveAttrs};
 use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, VisKind};
+use super::db_impls::LocalImplId;
 use super::def_collect::{Collector, LocalItemData, MacroScopeVec};
+use super::impl_collect::LocalTypeAlias;
 use super::mbe_parse::MacroRulesDef;
 use super::mod_macro_scope::has_scope_item_kw;
 use super::per_ns::{compute_vis_mod, LocalItemId};
@@ -23,22 +25,47 @@ use crate::token::{Token, TokenKind as T};
 use crate::tree::{NodeId, SyntaxTree};
 
 impl<'a> Collector<'a> {
-    pub(super) fn collect_named_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId, kind: ItemKind) {
+    pub(super) fn collect_named_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId, kind: ItemKind) -> LocalItemId {
         let attrs = eval_outer_attrs(st, node, self.db, self.krate);
         if !attrs.enabled {
-            return;
+            return LocalItemId::NONE;
         }
-        let Some(name_node) = st.child(node, K::Name) else { return };
+        let Some(name_node) = st.child(node, K::Name) else { return LocalItemId::NONE };
         let name = norm_ident(st.text(name_node));
         if name.is_empty() || name == "_" {
-            return;
+            return LocalItemId::NONE;
         }
         let (raw_vis, in_path) = extract_visibility(st, node);
         let (vis, vis_mod) = compute_vis_mod(self.mod_tree, mod_id, raw_vis, in_path);
         let has_value_ctor = kind == ItemKind::Struct && struct_has_value_ctor(st, node);
         let index_def = self.find_idx_def(name, kind);
         let nr = st.range(name_node);
-        self.push_item(mod_id, file, LocalItemId::NONE, index_def, name, kind, vis, vis_mod, has_value_ctor, false, nr.start as u32, nr.end as u32);
+        self.push_item(mod_id, file, LocalItemId::NONE, index_def, name, kind, vis, vis_mod, has_value_ctor, false, nr.start as u32, nr.end as u32)
+    }
+
+    pub(super) fn collect_trait_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId, macro_env: &MacroScopeVec) {
+        let lid = self.collect_named_item(mod_id, file, st, node, ItemKind::Trait);
+        if !lid.is_some() || !self.should_scan_impls(file) {
+            return;
+        }
+        let a_start = self.out.local_impls.assoc_items.len() as u32;
+        if let Some(il) = st.child(node, K::ItemList) {
+            self.out.local_impls.collect_assoc_list(st, il, self.mod_tree, mod_id, file, LocalImplId::NONE, lid, false, self.db, self.krate, &mut self.macro_defs, macro_env, 0);
+        }
+        let a_len = (self.out.local_impls.assoc_items.len() as u32 - a_start).min(u16::MAX as u32) as u16;
+        self.out.local_impls.trait_assocs.push((lid, a_start, a_len));
+    }
+
+    pub(super) fn collect_type_alias_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId) {
+        let lid = self.collect_named_item(mod_id, file, st, node, ItemKind::TypeAlias);
+        if !lid.is_some() || !self.should_scan_impls(file) {
+            return;
+        }
+        if let Some(ty_node) = st.children(node).find(|&c| st.kind(c).is_type()) {
+            let (gp_start, gp_len) = self.out.local_impls.push_generic_type_params(st, node);
+            let raw_head = self.out.local_impls.extract_type_head(st, ty_node);
+            self.out.local_impls.type_aliases.push(LocalTypeAlias { item_id: lid, module: mod_id, gp_start, gp_len, raw_head });
+        }
     }
 
     pub(super) fn collect_enum_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId) {
@@ -137,6 +164,10 @@ impl<'a> Collector<'a> {
             .scratch_idx_defs
             .iter()
             .filter(|d| !matches!(d.kind, ItemKind::Mod | ItemKind::Use | ItemKind::Impl | ItemKind::Field))
+            .filter(|d| {
+                let df = self.db.def_file(d.id);
+                !(df.is_some() && self.dirty_files.contains(&df))
+            })
             .filter(|d| {
                 !self.out.items[item_mark..].iter().any(|it| {
                     it.module == mod_id

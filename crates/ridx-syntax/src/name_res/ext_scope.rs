@@ -14,16 +14,17 @@
 use std::collections::HashMap;
 
 use super::db::{CrateId, Edition, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
+use super::ident_key::IdentKey;
 use super::mod_tree::ModuleTree;
 use super::per_ns::{BindingOrigin, LocalItemId, PerNs, PrimTy, ResolvedBinding};
 
 /// Sentinel `GlobalDefId` representing the synthetic `core::primitive` / `std::primitive` module.
-pub const SYNTHETIC_PRIMITIVE_MOD: GlobalDefId = GlobalDefId::new(CrateId(u32::MAX - 1), u32::MAX - 1);
+pub const SYNTHETIC_PRIMITIVE_MOD: GlobalDefId = GlobalDefId::new(CrateId(u32::MAX - 2), u32::MAX - 1);
 
 /// Cached exported symbol table of one indexed `GlobalDefId` module or enum.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ExtModuleScope {
-    pub entries: HashMap<String, PerNs>,
+    pub entries: HashMap<IdentKey, PerNs>,
 }
 
 impl ExtModuleScope {
@@ -34,7 +35,7 @@ impl ExtModuleScope {
 }
 
 /// Memoizes `ItemDb::module_defs` + `ItemDb::module_uses` + `ItemDb::enum_variants` queries across a crate.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ExtScopeCache {
     mod_scopes: HashMap<GlobalDefId, ExtModuleScope>,
     enum_scopes: HashMap<GlobalDefId, ExtModuleScope>,
@@ -78,7 +79,7 @@ impl ExtScopeCache {
                     ambiguous: false,
                 };
                 let mask = d.kind.ns_mask(d.has_value_ctor);
-                entries.entry(d.name.to_string()).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, mask));
+                entries.entry(IdentKey::new(d.name)).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, mask));
             }
             ExtModuleScope { entries }
         })
@@ -95,7 +96,7 @@ impl ExtScopeCache {
         let mut uses = Vec::new();
         db.module_uses(mod_def, &mut uses);
 
-        let mut entries: HashMap<String, PerNs> = HashMap::with_capacity(defs.len() + uses.len());
+        let mut entries: HashMap<IdentKey, PerNs> = HashMap::with_capacity(defs.len() + uses.len());
 
         // Synthesize `primitive` child module at the root of `core` / `std` if not already present.
         let kname = db.crate_name(mod_def.krate);
@@ -111,7 +112,7 @@ impl ExtScopeCache {
                 prim_ty: 0,
                 ambiguous: false,
             };
-            entries.insert("primitive".to_string(), PerNs::from_binding(prim_mod_b, NsMask::TYPE));
+            entries.insert(IdentKey::new("primitive"), PerNs::from_binding(prim_mod_b, NsMask::TYPE));
         }
 
         for d in defs {
@@ -130,7 +131,7 @@ impl ExtScopeCache {
                 ambiguous: false,
             };
             let mask = d.kind.ns_mask(d.has_value_ctor);
-            entries.entry(d.name.to_string()).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, mask));
+            entries.entry(IdentKey::new(d.name)).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, mask));
         }
 
         let mut glob_targets: Vec<GlobalDefId> = Vec::new();
@@ -149,13 +150,13 @@ impl ExtScopeCache {
             }
             let pns = indexed_use_to_per_ns(db, &u);
             if !pns.is_empty() {
-                entries.entry(u.name.to_string()).or_insert(PerNs::EMPTY).merge_explicit(pns);
+                entries.entry(IdentKey::new(u.name)).or_insert(PerNs::EMPTY).merge_explicit(pns);
             }
         }
 
         for g_def in glob_targets {
             let sub = self.module_scope(db, g_def);
-            let cloned: Vec<(String, PerNs)> = sub.entries.iter().map(|(k, &v)| (k.clone(), v)).collect();
+            let cloned: Vec<(IdentKey, PerNs)> = sub.entries.iter().map(|(k, &v)| (k.clone(), v)).collect();
             for (name, pns) in cloned {
                 entries.entry(name).or_insert(PerNs::EMPTY).merge_glob(pns);
             }
@@ -191,7 +192,7 @@ fn build_primitive_scope() -> ExtModuleScope {
     let mut entries = HashMap::with_capacity(PrimTy::ALL.len());
     for p in PrimTy::ALL {
         let b = ResolvedBinding::primitive(p, VisKind::Public, ModuleId::NONE, BindingOrigin::Explicit);
-        entries.insert(p.name().to_string(), PerNs::from_binding(b, NsMask::TYPE));
+        entries.insert(IdentKey::new(p.name()), PerNs::from_binding(b, NsMask::TYPE));
     }
     ExtModuleScope { entries }
 }

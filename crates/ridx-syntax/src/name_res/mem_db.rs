@@ -14,6 +14,7 @@
 use std::collections::HashMap;
 
 use super::db::{CrateId, Edition, FileId, GlobalDefId, IndexedDef, IndexedUse, ItemDb, SourceDb};
+use super::db_impls::{ImplTargetKey, IndexedImpl};
 use super::mod_tree::join_norm_path;
 
 /// In-memory source file table keyed by normalized `/` path.
@@ -95,9 +96,13 @@ struct CrateMemEntry {
 pub struct MemItemDb {
     crates: HashMap<CrateId, CrateMemEntry>,
     def_kinds: HashMap<GlobalDefId, super::db::ItemKind>,
+    def_files: HashMap<GlobalDefId, FileId>,
+    alias_targets: HashMap<GlobalDefId, ImplTargetKey>,
     module_defs: HashMap<GlobalDefId, Vec<OwnedDef>>,
     module_uses: HashMap<GlobalDefId, Vec<OwnedUse>>,
     assoc_items: HashMap<GlobalDefId, Vec<OwnedDef>>,
+    impls_by_target: HashMap<ImplTargetKey, Vec<IndexedImpl>>,
+    impls_by_crate: HashMap<CrateId, Vec<IndexedImpl>>,
     lang_items: HashMap<u16, GlobalDefId>,
 }
 
@@ -179,6 +184,30 @@ impl MemItemDb {
         self.def_kinds.insert(def, kind);
     }
 
+    pub fn set_def_file(&mut self, def: GlobalDefId, file: FileId) {
+        self.def_files.insert(def, file);
+    }
+
+    pub fn set_type_alias_target(&mut self, alias_def: GlobalDefId, target: ImplTargetKey) {
+        self.alias_targets.insert(alias_def, target);
+    }
+
+    pub fn add_impl(&mut self, imp: IndexedImpl) {
+        self.def_kinds.insert(imp.id, super::db::ItemKind::Impl);
+        if imp.file.is_some() {
+            self.def_files.insert(imp.id, imp.file);
+        }
+        self.impls_by_target.entry(imp.target).or_default().push(imp);
+        self.impls_by_crate.entry(imp.id.krate).or_default().push(imp);
+    }
+
+    pub fn add_module_def_in_file(&mut self, module_def: GlobalDefId, file: FileId, def: OwnedDef) {
+        if file.is_some() {
+            self.def_files.insert(def.id, file);
+        }
+        self.add_module_def(module_def, def);
+    }
+
     pub fn add_module_def(&mut self, module_def: GlobalDefId, def: OwnedDef) {
         self.def_kinds.entry(module_def).or_insert(super::db::ItemKind::Mod);
         self.def_kinds.insert(def.id, def.kind);
@@ -252,9 +281,44 @@ impl ItemDb for MemItemDb {
         self.def_kinds.get(&def).copied()
     }
 
+    #[inline]
+    fn def_file(&self, def: GlobalDefId) -> FileId {
+        self.def_files.get(&def).copied().unwrap_or(FileId::NONE)
+    }
+
+    #[inline]
+    fn type_alias_target(&self, alias_def: GlobalDefId) -> Option<ImplTargetKey> {
+        self.alias_targets.get(&alias_def).copied()
+    }
+
+    fn impls_for_target(&self, target: ImplTargetKey, out: &mut Vec<IndexedImpl>) {
+        if let Some(list) = self.impls_by_target.get(&target) {
+            out.extend_from_slice(list);
+        }
+    }
+
+    fn crate_impls(&self, krate: CrateId, out: &mut Vec<IndexedImpl>) {
+        if let Some(list) = self.impls_by_crate.get(&krate) {
+            out.extend_from_slice(list);
+        }
+    }
+
     fn module_defs<'a>(&'a self, module_def: GlobalDefId, out: &mut Vec<IndexedDef<'a>>) {
         if let Some(list) = self.module_defs.get(&module_def) {
             out.extend(list.iter().map(|d| IndexedDef { id: d.id, name: &d.name, kind: d.kind, vis: d.vis, has_value_ctor: d.has_value_ctor }));
+        }
+    }
+
+    fn enum_variants<'a>(&'a self, enum_def: GlobalDefId, out: &mut Vec<IndexedDef<'a>>) {
+        self.module_defs(enum_def, out);
+        if let Some(list) = self.assoc_items.get(&enum_def) {
+            out.extend(list.iter().filter(|d| d.kind == super::db::ItemKind::Variant).map(|d| IndexedDef {
+                id: d.id,
+                name: &d.name,
+                kind: d.kind,
+                vis: d.vis,
+                has_value_ctor: d.has_value_ctor,
+            }));
         }
     }
 

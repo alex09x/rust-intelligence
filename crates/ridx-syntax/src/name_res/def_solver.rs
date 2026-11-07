@@ -13,11 +13,12 @@
 
 use std::collections::HashMap;
 
-use super::db::{CrateId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
+use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
 use super::def_collect::CollectedCrate;
 use super::def_map::{extern_crate_binding, local_mod_binding, CrateDefMap, ModuleScope, UseDiag};
 use super::def_path::{apply_glob_use, resolve_segments, resolve_use_leaf};
 use super::ext_scope::ExtScopeCache;
+use super::ident_key::IdentKey;
 use super::mod_tree::ModuleTree;
 use super::per_ns::{compute_vis_mod, BindingOrigin, PerNs, ResolvedBinding};
 use super::use_tree::{FlatUseKind, PathAnchor};
@@ -27,16 +28,16 @@ const MAX_FIXED_POINT_ROUNDS: usize = 64;
 pub(super) struct ImportSolver;
 
 impl ImportSolver {
-    pub(super) fn solve(db: &dyn ItemDb, mod_tree: &ModuleTree, collected: CollectedCrate, ext_cache: &mut ExtScopeCache) -> CrateDefMap {
+    pub(super) fn solve(db: &dyn ItemDb, mod_tree: &ModuleTree, collected: CollectedCrate, dirty_files: &[FileId], ext_cache: &mut ExtScopeCache) -> CrateDefMap {
         let mod_count = mod_tree.modules.len();
         let mut scopes: Vec<ModuleScope> = collected.mod_index_defs.iter().map(|&index_def| ModuleScope { index_def, ..ModuleScope::default() }).collect();
 
-        let mut extern_prelude: HashMap<String, (CrateId, GlobalDefId)> = HashMap::new();
+        let mut extern_prelude: HashMap<IdentKey, (CrateId, GlobalDefId)> = HashMap::new();
         let mut raw_ext = Vec::new();
         db.extern_crates(mod_tree.krate, &mut raw_ext);
         for (ename, cid) in raw_ext {
             let rdef = db.crate_root_def(cid).unwrap_or(GlobalDefId::new(cid, 0));
-            extern_prelude.insert(ename.to_string(), (cid, rdef));
+            extern_prelude.insert(IdentKey::new(ename), (cid, rdef));
         }
         for builtin_ext in ["core", "std", "alloc"] {
             if (builtin_ext == "std" && mod_tree.no_std) || mod_tree.no_core {
@@ -44,12 +45,12 @@ impl ImportSolver {
             }
             if let Some(cid) = db.extern_crate(mod_tree.krate, builtin_ext) {
                 let rdef = db.crate_root_def(cid).unwrap_or(GlobalDefId::new(cid, 0));
-                extern_prelude.entry(builtin_ext.to_string()).or_insert((cid, rdef));
+                extern_prelude.entry(IdentKey::new(builtin_ext)).or_insert((cid, rdef));
             }
         }
 
         let prelude_mod = ext_cache.resolve_prelude_mod(db, mod_tree);
-        let mut prelude: HashMap<String, PerNs> = HashMap::new();
+        let mut prelude: HashMap<IdentKey, PerNs> = HashMap::new();
         if let Some(pmod) = prelude_mod {
             let pscope = ext_cache.module_scope(db, pmod);
             for (k, &pns) in &pscope.entries {
@@ -62,7 +63,7 @@ impl ImportSolver {
         for idx in 0..mod_count {
             let pid = ModuleId(idx as u32);
             for edge in mod_tree.children(pid) {
-                let cname = mod_tree.child_name(edge).to_string();
+                let cname = IdentKey::new(mod_tree.child_name(edge));
                 let (_, vmod) = compute_vis_mod(mod_tree, pid, edge.vis, None);
                 let cdef = scopes[edge.child.0 as usize].index_def;
                 scopes[idx].entries.entry(cname).or_insert(PerNs::EMPTY).merge_explicit(local_mod_binding(edge.child, cdef, edge.vis, vmod));
@@ -86,10 +87,10 @@ impl ImportSolver {
                 ambiguous: false,
             };
             let mask = it.kind.ns_mask(it.has_value_ctor);
-            scopes[it.module.0 as usize].entries.entry(name.to_string()).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, mask));
+            scopes[it.module.0 as usize].entries.entry(IdentKey::new(name)).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, mask));
             if it.macro_export && !scopes.is_empty() {
                 let exp_b = b.rebind(VisKind::Public, ModuleId::NONE, BindingOrigin::Explicit);
-                scopes[ModuleId::ROOT.0 as usize].entries.entry(name.to_string()).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(exp_b, NsMask::MACRO));
+                scopes[ModuleId::ROOT.0 as usize].entries.entry(IdentKey::new(name)).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(exp_b, NsMask::MACRO));
             }
         }
 
@@ -109,7 +110,7 @@ impl ImportSolver {
                     prim_ty: 0,
                     ambiguous: false,
                 };
-                let slot = &mut scopes[midx].entries.entry(mname.to_string()).or_insert(PerNs::EMPTY).macros;
+                let slot = &mut scopes[midx].entries.entry(IdentKey::new(mname)).or_insert(PerNs::EMPTY).macros;
                 if slot.is_none() {
                     *slot = Some(mb);
                 }
@@ -123,9 +124,9 @@ impl ImportSolver {
                 if !ec.is_underscore {
                     let root_def = scopes.first().map_or(GlobalDefId::NONE, |s| s.index_def);
                     let pns = local_mod_binding(ModuleId::ROOT, root_def, ec.vis, ec.vis_mod);
-                    scopes[ec.module.0 as usize].entries.entry(bind.to_string()).or_insert(PerNs::EMPTY).merge_explicit(pns);
+                    scopes[ec.module.0 as usize].entries.entry(IdentKey::new(bind)).or_insert(PerNs::EMPTY).merge_explicit(pns);
                     if ec.module == ModuleId::ROOT {
-                        extern_prelude.insert(bind.to_string(), (mod_tree.krate, root_def));
+                        extern_prelude.insert(IdentKey::new(bind), (mod_tree.krate, root_def));
                     }
                 }
                 continue;
@@ -140,14 +141,14 @@ impl ImportSolver {
                 continue;
             };
             if ec.module == ModuleId::ROOT && !ec.is_underscore {
-                extern_prelude.insert(bind.to_string(), (cid, rdef));
+                extern_prelude.insert(IdentKey::new(bind), (cid, rdef));
             }
             if !ec.is_underscore {
                 let mut b = extern_crate_binding(cid, mod_tree.krate, rdef);
                 b.vis = ec.vis;
                 b.vis_mod = ec.vis_mod;
                 b.origin = BindingOrigin::Explicit;
-                scopes[ec.module.0 as usize].entries.entry(bind.to_string()).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, NsMask::TYPE));
+                scopes[ec.module.0 as usize].entries.entry(IdentKey::new(bind)).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, NsMask::TYPE));
             }
         }
 
@@ -163,6 +164,9 @@ impl ImportSolver {
             uses: collected.uses,
             scopes,
             resolved_uses: vec![PerNs::EMPTY; use_count],
+            dirty_files: dirty_files.to_vec(),
+            local_impls: collected.local_impls,
+            local_alias_targets: HashMap::new(),
             diagnostics,
         };
 
@@ -194,7 +198,7 @@ impl ImportSolver {
                             } else {
                                 let mut slot = PerNs::EMPTY;
                                 slot.merge_explicit(rebound);
-                                entries.insert(bind.to_string(), slot);
+                                entries.insert(IdentKey::new(bind), slot);
                             }
                         }
                     }

@@ -296,7 +296,7 @@ fn bench_dir(root: &Path) {
             db.add_module_use(
                 root_g,
                 OwnedUse {
-                    name: name.clone(),
+                    name: name.to_string(),
                     type_def: tdef,
                     value_def: vdef,
                     macro_def: GlobalDefId::NONE,

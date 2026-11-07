@@ -15,6 +15,7 @@ use std::collections::HashMap;
 
 use super::attr::eval_outer_attrs;
 use super::db::{CrateId, FileId, GlobalDefId, IndexedDef, ItemDb, ItemKind, ModuleId, SourceDb, VisKind};
+use super::impl_collect::LocalImplArena;
 use super::mbe_expand::MAX_MBE_DEPTH;
 use super::mbe_parse::MacroRulesDef;
 use super::mod_tree::{ModuleTree, MOD_FLAG_MACRO_USE};
@@ -49,6 +50,7 @@ pub struct LocalItemData {
     pub span_end: u32,
 }
 
+#[derive(Clone, Debug)]
 pub(super) struct CollectedCrate {
     pub mod_index_defs: Vec<GlobalDefId>,
     pub items: Vec<LocalItemData>,
@@ -56,6 +58,9 @@ pub(super) struct CollectedCrate {
     pub uses: UseArena,
     /// Per-module `#[macro_use]` / local textual macros visible inside that module.
     pub textual_macros: Vec<Vec<(LocalItemId, GlobalDefId)>>,
+    pub local_impls: LocalImplArena,
+    pub scan_all_impls: bool,
+    pub next_overlay_seq: u32,
 }
 
 pub(super) type MacroScopeVec = Vec<(String, usize, LocalItemId, GlobalDefId)>;
@@ -69,6 +74,11 @@ pub(super) fn collect_crate_items<'t>(
 ) -> CollectedCrate {
     let mod_count = mod_tree.modules.len();
     let mod_index_defs = match_module_index_defs(db, mod_tree);
+    let scan_all_impls = {
+        let mut ci = Vec::new();
+        db.crate_impls(mod_tree.krate, &mut ci);
+        ci.is_empty() && db.crate_root_def(mod_tree.krate).is_none()
+    };
 
     let mut owned_trees: HashMap<FileId, SyntaxTree<'_>> = HashMap::new();
     for m in &mod_tree.modules {
@@ -82,12 +92,16 @@ pub(super) fn collect_crate_items<'t>(
         krate: mod_tree.krate,
         mod_tree,
         dirty_files,
+        scan_all_impls,
         out: CollectedCrate {
             mod_index_defs,
             items: Vec::with_capacity(mod_count * 8),
             strings: String::with_capacity(mod_count * 64),
             uses: UseArena::with_capacity(mod_count * 4),
             textual_macros: vec![Vec::new(); mod_count],
+            local_impls: LocalImplArena::default(),
+            scan_all_impls,
+            next_overlay_seq: 0,
         },
         macro_defs: Vec::new(),
         scratch_idx_defs: Vec::new(),
@@ -98,7 +112,19 @@ pub(super) fn collect_crate_items<'t>(
 
     let mut macro_env = MacroScopeVec::new();
     coll.walk_module(ModuleId::ROOT, &mut get_tree, &owned_trees, &mut macro_env);
+    assign_overlay_item_ids(&mut coll.out);
     coll.out
+}
+
+pub(super) fn assign_overlay_item_ids(out: &mut CollectedCrate) {
+    let mut seq = out.next_overlay_seq;
+    for it in &mut out.items {
+        if !it.index_def.is_some() {
+            it.index_def = GlobalDefId::new(CrateId::LOCAL_OVERLAY, seq);
+            seq += 1;
+        }
+    }
+    out.next_overlay_seq = seq;
 }
 
 fn match_module_index_defs(db: &dyn ItemDb, tree: &ModuleTree) -> Vec<GlobalDefId> {
@@ -133,6 +159,7 @@ pub(super) struct Collector<'a> {
     pub(super) krate: CrateId,
     pub(super) mod_tree: &'a ModuleTree,
     pub(super) dirty_files: &'a [FileId],
+    pub(super) scan_all_impls: bool,
     pub(super) out: CollectedCrate,
     pub(super) macro_defs: Vec<(String, String, Option<MacroRulesDef>)>,
     pub(super) scratch_idx_defs: Vec<IndexedDef<'a>>,
@@ -147,6 +174,11 @@ impl<'a> Collector<'a> {
         let start = self.out.strings.len() as u32;
         self.out.strings.push_str(s);
         (start, self.out.strings.len() as u32)
+    }
+
+    #[inline]
+    pub(super) fn should_scan_impls(&self, file: FileId) -> bool {
+        self.scan_all_impls || self.dirty_files.contains(&file)
     }
 
     fn walk_module<'t>(
@@ -209,14 +241,27 @@ impl<'a> Collector<'a> {
             match st.kind(node) {
                 K::Use => self.out.uses.lower_use_into(st, node, self.mod_tree, mod_id, self.db, self.krate, &mut self.scratch_toks, &mut self.scratch_prefix),
                 K::ExternCrate => self.out.uses.lower_extern_crate(st, node, self.mod_tree, mod_id, self.db, self.krate),
-                K::Struct => self.collect_named_item(mod_id, file, st, node, ItemKind::Struct),
+                K::Struct => {
+                    self.collect_named_item(mod_id, file, st, node, ItemKind::Struct);
+                }
                 K::Enum => self.collect_enum_item(mod_id, file, st, node),
-                K::Union => self.collect_named_item(mod_id, file, st, node, ItemKind::Union),
-                K::Trait => self.collect_named_item(mod_id, file, st, node, ItemKind::Trait),
-                K::Fn => self.collect_named_item(mod_id, file, st, node, ItemKind::Fn),
-                K::TypeAlias => self.collect_named_item(mod_id, file, st, node, ItemKind::TypeAlias),
-                K::Const => self.collect_named_item(mod_id, file, st, node, ItemKind::Const),
-                K::Static => self.collect_named_item(mod_id, file, st, node, ItemKind::Static),
+                K::Union => {
+                    self.collect_named_item(mod_id, file, st, node, ItemKind::Union);
+                }
+                K::Trait => self.collect_trait_item(mod_id, file, st, node, macro_env),
+                K::Fn => {
+                    self.collect_named_item(mod_id, file, st, node, ItemKind::Fn);
+                }
+                K::TypeAlias => self.collect_type_alias_item(mod_id, file, st, node),
+                K::Impl if self.should_scan_impls(file) => {
+                    self.out.local_impls.collect_impl_node(st, node, self.mod_tree, mod_id, file, self.db, self.krate, &mut self.macro_defs, macro_env);
+                }
+                K::Const => {
+                    self.collect_named_item(mod_id, file, st, node, ItemKind::Const);
+                }
+                K::Static => {
+                    self.collect_named_item(mod_id, file, st, node, ItemKind::Static);
+                }
                 K::Module if mbe_depth > 0 => {
                     self.collect_mbe_inline_module(mod_id, file, st, node, macro_env, mbe_depth);
                 }

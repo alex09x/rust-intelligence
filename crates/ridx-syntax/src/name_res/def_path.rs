@@ -187,14 +187,14 @@ pub(super) fn apply_glob_use(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &
     let dst_idx = u.module.0 as usize;
     let mut changed = false;
 
-    let merge_entry = |dst: &mut std::collections::HashMap<String, PerNs>, name: &str, pns: PerNs| -> bool {
+    let merge_entry = |dst: &mut std::collections::HashMap<super::ident_key::IdentKey, PerNs>, name: &str, pns: PerNs| -> bool {
         let rebound = pns.rebind(u.vis, u.vis_mod, BindingOrigin::Glob);
         if let Some(slot) = dst.get_mut(name) {
             slot.merge_glob(rebound)
         } else {
             let mut slot = PerNs::EMPTY;
             let ch = slot.merge_glob(rebound);
-            dst.insert(name.to_string(), slot);
+            dst.insert(super::ident_key::IdentKey::new(name), slot);
             ch
         }
     };

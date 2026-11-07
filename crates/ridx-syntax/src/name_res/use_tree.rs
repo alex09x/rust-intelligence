@@ -75,7 +75,7 @@ pub struct FlatExternCrate {
 }
 
 /// Contiguous arena storing all flattened `use` leaves and `extern crate` declarations of a crate.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct UseArena {
     pub(super) strings: String,
     pub(super) segs: Vec<(u32, u32)>,

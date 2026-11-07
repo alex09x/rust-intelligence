@@ -21,17 +21,26 @@
 //! - [`use_tree`]: arena-backed `use`-tree and `extern crate` flattener (`{self, *, as _, #[cfg]}`).
 //! - [`ext_scope`]: cached external crate / module / enum / edition-prelude scope lookup.
 //! - [`def_map`]: fixed-point crate item, `use`, glob, re-export, and prelude solver (`CrateDefMap`).
+//! - [`dirty_overlay`] / [`crate_snapshot`]: dirty-file item/`impl`/associated-item overrides and incremental [`CrateSnapshot`] splicing.
 //! - [`mem_db`]: fast in-memory [`MemSourceDb`] and [`MemItemDb`] implementations.
 
 pub mod attr;
 pub mod cfg;
+pub mod crate_snapshot;
 pub mod db;
+pub mod db_impls;
 mod def_collect;
 mod def_collect_items;
 pub mod def_map;
 mod def_path;
 mod def_solver;
+pub mod dirty_overlay;
+mod dirty_splice;
 pub mod ext_scope;
+pub mod ident_key;
+pub mod impl_collect;
+mod impl_collect_cst;
+mod impl_resolve;
 pub mod mbe_expand;
 pub mod mbe_parse;
 pub mod mem_db;
@@ -45,10 +54,15 @@ pub mod use_tree;
 
 pub use attr::{eval_attr_bracket_tokens, eval_inner_attrs, eval_outer_attrs, extract_visibility, EffectiveAttrs};
 pub use cfg::{decode_str_literal, eval_cfg_tokens};
+pub use crate_snapshot::CrateSnapshot;
 pub use db::{CrateId, Edition, FileId, GlobalDefId, IndexedDef, IndexedUse, ItemDb, ItemKind, ModuleId, NsMask, SourceDb, VisKind};
+pub use db_impls::{ImplTargetKey, IndexedImpl, LocalImplId, OverlaySourceDb};
 pub use def_collect::LocalItemData;
 pub use def_map::{CrateDefMap, ModuleScope, UseDiag};
+pub use dirty_overlay::{MergedImplRef, ResolvedAssoc};
 pub use ext_scope::{ExtModuleScope, ExtScopeCache};
+pub use ident_key::IdentKey;
+pub use impl_collect::{LocalAssocItem, LocalImplArena, LocalImplData};
 pub use mbe_parse::MacroRulesDef;
 pub use mem_db::{MemItemDb, MemSourceDb, OwnedDef, OwnedUse};
 pub use mod_tree::{join_norm_into, join_norm_path, ModChild, ModDiag, ModuleData, ModuleTree};

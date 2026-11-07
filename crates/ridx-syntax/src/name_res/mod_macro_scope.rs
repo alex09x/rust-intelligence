@@ -159,7 +159,7 @@ fn is_ascii_ident(b: u8) -> bool {
 
 /// Zero-alloc word scan returning `true` iff `s` contains the ASCII identifier `mod` or `macro_rules`.
 #[inline]
-fn has_mod_or_macro_kw(s: &str) -> bool {
+pub(super) fn has_mod_or_macro_kw(s: &str) -> bool {
     let b = s.as_bytes();
     let len = b.len();
     let mut i = 0;

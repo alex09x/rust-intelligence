@@ -11,6 +11,8 @@
 //! Core `u32`-keyed identifiers and trait boundaries (`SourceDb`, `ItemDb`) decoupling
 //! `ridx-syntax::name_res` from binary index storage (`ridx-format`).
 
+use super::db_impls::{ImplTargetKey, IndexedImpl};
+
 /// Dense crate or compilation-unit identifier (`u32::MAX` = absent sentinel).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CrateId(pub u32);
@@ -93,6 +95,11 @@ impl GlobalDefId {
     #[inline]
     pub const fn is_some(self) -> bool {
         self.krate.is_some() && self.index != u32::MAX
+    }
+
+    #[inline]
+    pub const fn is_overlay(self) -> bool {
+        self.krate.0 == CrateId::LOCAL_OVERLAY.0 && self.index != u32::MAX
     }
 }
 
@@ -283,6 +290,22 @@ pub trait ItemDb {
     fn def_kind(&self, _def: GlobalDefId) -> Option<ItemKind> {
         None
     }
+
+    /// Returns the defining workspace [`FileId`] of `def` (`FileId::NONE` for external crates).
+    fn def_file(&self, _def: GlobalDefId) -> FileId {
+        FileId::NONE
+    }
+
+    /// Underlying [`ImplTargetKey`] of an indexed `type Alias = Target;` (`None` if not an alias or unknown).
+    fn type_alias_target(&self, _alias_def: GlobalDefId) -> Option<ImplTargetKey> {
+        None
+    }
+
+    /// Appends indexed `impl` blocks matching `target` across `krate` + visible dependency crates.
+    fn impls_for_target(&self, _target: ImplTargetKey, _out: &mut Vec<IndexedImpl>) {}
+
+    /// Appends indexed `impl` blocks defined inside `krate`.
+    fn crate_impls(&self, _krate: CrateId, _out: &mut Vec<IndexedImpl>) {}
 
     /// Appends direct child definitions of `module_def` into `out`.
     fn module_defs<'a>(&'a self, _module_def: GlobalDefId, _out: &mut Vec<IndexedDef<'a>>) {}
