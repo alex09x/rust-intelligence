@@ -36,6 +36,7 @@ mod lang_item;
 mod notes;
 mod ty;
 mod ty_prim;
+mod use_item;
 
 pub use self::defs::{DefEntry, DefKind, Span, FLAG_MACRO_EXPANSION, FLAG_REEXPORT};
 pub use self::entries::{DerefEntry, HashIndexEntry, OwnerIndexEntry, RefEntry, TypeEntry};
@@ -57,6 +58,7 @@ pub use self::ty_prim::{
     ConstArg, FloatTyWidth, FnAbiKind, GenericArgWord, IntTyWidth, TyDefId, TyId, TyMutability, UintTyWidth, BOUND_FLAG_MAYBE, FN_FLAG_ASYNC, FN_FLAG_CONST, FN_FLAG_HAS_SELF,
     FN_FLAG_UNSAFE, FN_FLAG_VARIADIC, LIFETIME_ELIDED, LIFETIME_STATIC,
 };
+pub use self::use_item::{UseEntry, UseOwner, UsePrimTy, USE_FLAG_EXTERN_CRATE, USE_FLAG_GLOB, USE_FLAG_PRELUDE, USE_FLAG_PRIM_TY, USE_FLAG_REEXPORT, USE_FLAG_UNDERSCORE};
 
 /// Resolves the global RIDX shared cache directory for external crate dependencies.
 /// Uses `$RIDX_CACHE_DIR` if set, or platform default:
@@ -157,7 +159,7 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 368);
+    assert!(std::mem::size_of::<Header>() == 384);
     assert!(std::mem::size_of::<NoteEntry>() == 28);
     assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);
@@ -203,6 +205,8 @@ const _: () = {
     assert!(std::mem::align_of::<WherePredEntry>() == 4);
     assert!(std::mem::size_of::<LangItemEntry>() == 12);
     assert!(std::mem::align_of::<LangItemEntry>() == 4);
+    assert!(std::mem::size_of::<UseEntry>() == 28);
+    assert!(std::mem::align_of::<UseEntry>() == 4);
 };
 
 /// Computes an aggregate 64-bit digest over a map of file paths to their 64-bit source hashes.

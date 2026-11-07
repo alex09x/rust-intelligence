@@ -306,4 +306,8 @@ impl DefEntry {
     pub fn is_reexport(&self) -> bool {
         (self.flags & FLAG_REEXPORT) != 0
     }
+    #[inline]
+    pub const fn item_vis(&self) -> super::ItemVis {
+        super::ItemVis::from_u8(self.visibility)
+    }
 }

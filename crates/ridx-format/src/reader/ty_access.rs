@@ -20,7 +20,7 @@ use super::IndexReader;
 
 impl<B: AsRef<[u8]>> IndexReader<B> {
     #[inline]
-    fn typed_slice<T>(&self, offset: u64, count: u32) -> &[T] {
+    pub(super) fn typed_slice<T>(&self, offset: u64, count: u32) -> &[T] {
         let count = count as usize;
         if count == 0 {
             return &[];

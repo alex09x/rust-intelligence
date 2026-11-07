@@ -145,7 +145,7 @@ pub fn extract_trait_items<'tcx>(
             RawDefinition {
                 def_id: collector.total_definitions as u32,
                 kind: map_def_kind(a_kind),
-                visibility: 0,
+                visibility: crate::ty_lower::fields::def_visibility(tcx, assoc_did, a_kind) as u8,
                 is_macro_expansion: false,
                 name: a_name,
                 path: a_path,
@@ -259,7 +259,7 @@ pub fn extract_inherent_impl_items<'tcx>(
                 RawDefinition {
                     def_id,
                     kind: map_def_kind(a_kind),
-                    visibility: 0,
+                    visibility: crate::ty_lower::fields::def_visibility(tcx, assoc_did, a_kind) as u8,
                     is_macro_expansion: false,
                     name: a_name,
                     path: a_path,
@@ -301,7 +301,7 @@ pub fn extract_enum_variants<'tcx>(
             RawDefinition {
                 def_id: collector.total_definitions as u32,
                 kind: map_def_kind(DefKind::Variant),
-                visibility: 0,
+                visibility: crate::ty_lower::fields::def_visibility(tcx, var_did, DefKind::Variant) as u8,
                 is_macro_expansion: false,
                 name: v_name,
                 path: v_path,

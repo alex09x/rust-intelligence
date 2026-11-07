@@ -55,6 +55,7 @@ pub struct SysrootCollector {
     pub adts: Vec<(rustc_span::def_id::DefId, u32)>,
     pub def_tys: Vec<(rustc_span::def_id::DefId, u32)>,
     pub generic_items: Vec<(rustc_span::def_id::DefId, u32)>,
+    pub mod_items: Vec<(rustc_span::def_id::DefId, u32)>,
 }
 
 impl SysrootCollector {
@@ -63,6 +64,7 @@ impl SysrootCollector {
         self.total_definitions += 1;
         self.local_def_indices.insert(did, def_idx);
         match kind {
+            DefKind::Mod => self.mod_items.push((did, def_idx)),
             DefKind::Fn | DefKind::AssocFn => self.callables.push((did, def_idx)),
             DefKind::Struct | DefKind::Union | DefKind::Enum => self.adts.push((did, def_idx)),
             DefKind::TyAlias | DefKind::Const { .. } | DefKind::Static { .. } | DefKind::AssocConst { .. } | DefKind::Variant => {
@@ -203,11 +205,14 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
             let alias_path = format!("{mod_path}::{name_str}");
 
             let kind = tcx.def_kind(did);
-            if kind == DefKind::Mod && is_publicly_visible(tcx, did) && queue_visited.insert(did) {
+            let is_prelude_mod =
+                kind == DefKind::Mod && mod_path.ends_with("::prelude") && matches!(name_str, "v1" | "rust_2015" | "rust_2018" | "rust_2018_preview" | "rust_2021" | "rust_2024");
+            let vis_ok = is_publicly_visible(tcx, did) || (is_prelude_mod && tcx.visibility(did).is_public());
+            if kind == DefKind::Mod && vis_ok && queue_visited.insert(did) {
                 queue.push_back(did);
             }
 
-            if !is_publicly_visible(tcx, did) || !is_stable_api(tcx, did) {
+            if !vis_ok || !is_stable_api(tcx, did) {
                 continue;
             }
 
@@ -231,7 +236,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
             let raw_def = RawDefinition {
                 def_id: collector.total_definitions as u32,
                 kind: map_def_kind(kind),
-                visibility: 0,
+                visibility: crate::ty_lower::fields::def_visibility(tcx, did, kind) as u8,
                 is_macro_expansion: false,
                 name: name_str.to_string(),
                 path: canonical_path.clone(),
@@ -314,6 +319,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         lowerer.record_def_tys(&collector.def_tys, &mut writer);
         lowerer.record_item_generics_and_preds(&collector.generic_items, &mut writer);
         lowerer.record_lang_items(&crate_lang_items, &mut writer);
+        lowerer.record_sysroot_uses(cnum, target_crate, &collector.mod_items, &mut writer);
     }
 
     let elapsed = start.elapsed();

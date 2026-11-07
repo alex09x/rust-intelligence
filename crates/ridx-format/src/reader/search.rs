@@ -232,6 +232,7 @@ pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<(
     check_section(buf_len, header.generic_params_offset, header.generic_params_count, std::mem::size_of::<GenericParamEntry>(), 4, "GenericParams table")?;
     check_section(buf_len, header.where_preds_offset, header.where_preds_count, std::mem::size_of::<WherePredEntry>(), 4, "WherePreds table")?;
     check_section(buf_len, header.lang_items_offset, header.lang_items_count, std::mem::size_of::<LangItemEntry>(), 4, "LangItems table")?;
+    check_section(buf_len, header.uses_offset, header.uses_count, std::mem::size_of::<UseEntry>(), 4, "Uses table")?;
 
     Ok(())
 }

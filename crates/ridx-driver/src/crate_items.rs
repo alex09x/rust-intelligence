@@ -300,7 +300,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
             RawDefinition {
                 def_id: def_id.local_def_index.as_u32(),
                 kind: map_def_kind(kind),
-                visibility: 0,
+                visibility: crate::ty_lower::fields::def_visibility(tcx, did, kind) as u8,
                 is_macro_expansion: is_macro,
                 name,
                 path,
@@ -339,7 +339,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
     }
 
     let lang_items = crate::ty_lower::lang_items::collect_crate_lang_items(tcx, rustc_span::def_id::LOCAL_CRATE);
-    if !callables.is_empty() || !impl_dids.is_empty() || !adts.is_empty() || !def_tys.is_empty() || !generic_items.is_empty() || !lang_items.is_empty() {
+    {
         let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, rustc_span::def_id::LOCAL_CRATE, &visitor.krate_to_unit, &local_def_indices);
         lowerer.record_fn_sigs(&callables, &mut visitor.writer);
         lowerer.record_impls(&impl_dids, &mut visitor.writer);
@@ -347,6 +347,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
         lowerer.record_def_tys(&def_tys, &mut visitor.writer);
         lowerer.record_item_generics_and_preds(&generic_items, &mut visitor.writer);
         lowerer.record_lang_items(&lang_items, &mut visitor.writer);
+        lowerer.record_local_crate_uses(&mut visitor.writer);
     }
 
     // Traverse all item bodies for references and types

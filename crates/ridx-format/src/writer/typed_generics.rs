@@ -8,12 +8,23 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! `IndexWriter` encoding helpers for `GenericParamEntry`, `WherePredEntry`, and `LangItemEntry`.
+//! `IndexWriter` encoding helpers for `GenericParamEntry`, `WherePredEntry`, `LangItemEntry`, and `UseEntry`.
 
-use crate::format::{GenericOwner, GenericParamEntry, LangItemEntry, WherePredEntry, WherePredKind};
-use crate::ty_arena::{RawGenericParam, RawLangItem, RawWherePred};
+use crate::format::{GenericOwner, GenericParamEntry, LangItemEntry, UseEntry, UsePrimTy, WherePredEntry, WherePredKind, USE_FLAG_GLOB, USE_FLAG_PRIM_TY, USE_FLAG_UNDERSCORE};
+use crate::ty_arena::{RawGenericParam, RawLangItem, RawUse, RawWherePred};
 
 use super::IndexWriter;
+
+#[inline]
+pub(crate) const fn use_kind_bucket(flags: u8) -> u8 {
+    if (flags & USE_FLAG_GLOB) != 0 {
+        1
+    } else if (flags & USE_FLAG_UNDERSCORE) != 0 {
+        2
+    } else {
+        0
+    }
+}
 
 impl IndexWriter {
     pub(super) fn encode_generic_param(&mut self, owner_key: u32, param: RawGenericParam<'_>) -> GenericParamEntry {
@@ -135,5 +146,88 @@ impl IndexWriter {
     /// Total count of `LangItemEntry` rows queued in this shard.
     pub fn lang_item_count(&self) -> usize {
         self.lang_items.len()
+    }
+
+    /// Records a module `use`, glob, re-export, or `extern crate` binding in this shard.
+    pub fn add_use(&mut self, item: RawUse<'_>) {
+        let name_offset = self.intern_string(item.name);
+        let mut flags = item.flags;
+        if item.prim_ty != UsePrimTy::None {
+            flags |= USE_FLAG_PRIM_TY;
+        }
+        self.uses.push(UseEntry {
+            owner_raw: item.owner.to_raw(),
+            def_index: item.def_index.unwrap_or(u32::MAX),
+            name_offset,
+            type_def: item.type_def.map_or(u32::MAX, |d| d.0),
+            value_def: item.value_def.map_or(u32::MAX, |d| d.0),
+            macro_def: item.macro_def.map_or(u32::MAX, |d| d.0),
+            vis: item.vis as u8,
+            flags,
+            prim_tag: item.prim_ty as u8,
+            _pad: 0,
+        });
+    }
+
+    /// Total count of raw `UseEntry` rows queued before multi-namespace merge.
+    pub fn use_count(&self) -> usize {
+        self.uses.len()
+    }
+
+    pub(super) fn prepare_sorted_uses(&self) -> Vec<UseEntry> {
+        let mut list = self.uses.clone();
+        list.sort_by(|a, b| {
+            (a.owner_raw, use_kind_bucket(a.flags), self.get_interned_str(a.name_offset), a.vis, a.def_index, a.type_def, a.value_def, a.macro_def, a.prim_tag).cmp(&(
+                b.owner_raw,
+                use_kind_bucket(b.flags),
+                self.get_interned_str(b.name_offset),
+                b.vis,
+                b.def_index,
+                b.type_def,
+                b.value_def,
+                b.macro_def,
+                b.prim_tag,
+            ))
+        });
+        let mut merged: Vec<UseEntry> = Vec::with_capacity(list.len());
+        for entry in list {
+            if let Some(prev) = merged.last_mut() {
+                let bucket = use_kind_bucket(entry.flags);
+                let prev_bucket = use_kind_bucket(prev.flags);
+                let same_named = bucket == 0 && prev_bucket == 0 && prev.owner_raw == entry.owner_raw && prev.name_offset == entry.name_offset;
+                let same_special = bucket != 0
+                    && bucket == prev_bucket
+                    && prev.owner_raw == entry.owner_raw
+                    && prev.name_offset == entry.name_offset
+                    && prev.type_def == entry.type_def
+                    && prev.value_def == entry.value_def
+                    && prev.macro_def == entry.macro_def
+                    && prev.prim_tag == entry.prim_tag;
+                if same_named || same_special {
+                    if prev.def_index == u32::MAX {
+                        prev.def_index = entry.def_index;
+                    } else if entry.def_index != u32::MAX {
+                        prev.def_index = prev.def_index.min(entry.def_index);
+                    }
+                    if prev.type_def == u32::MAX {
+                        prev.type_def = entry.type_def;
+                    }
+                    if prev.value_def == u32::MAX {
+                        prev.value_def = entry.value_def;
+                    }
+                    if prev.macro_def == u32::MAX {
+                        prev.macro_def = entry.macro_def;
+                    }
+                    prev.vis = prev.vis.min(entry.vis);
+                    prev.flags |= entry.flags;
+                    if prev.prim_tag == 0 {
+                        prev.prim_tag = entry.prim_tag;
+                    }
+                    continue;
+                }
+            }
+            merged.push(entry);
+        }
+        merged
     }
 }

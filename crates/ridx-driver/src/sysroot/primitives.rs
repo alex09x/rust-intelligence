@@ -149,7 +149,7 @@ fn extract_incoherent_assoc_defs<'tcx>(
             RawDefinition {
                 def_id: collector.total_definitions as u32,
                 kind: map_def_kind(a_kind),
-                visibility: 0,
+                visibility: crate::ty_lower::fields::def_visibility(tcx, assoc_did, a_kind) as u8,
                 is_macro_expansion: false,
                 name: a_name,
                 path: a_path,

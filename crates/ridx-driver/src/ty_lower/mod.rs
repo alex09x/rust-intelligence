@@ -17,6 +17,7 @@ mod fn_sig;
 mod generics;
 mod impls;
 pub(crate) mod lang_items;
+pub(crate) mod uses;
 
 use std::collections::HashMap;
 
@@ -58,7 +59,7 @@ impl<'tcx, 'a> TcxTypeLowerer<'tcx, 'a> {
         let raw_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(self.tcx.def_path_str(did)));
         let path = if did.is_local() && !raw_path.is_empty() && !raw_path.starts_with('<') {
             format!("{}::{raw_path}", self.tcx.crate_name(did.krate))
-        } else if did.is_local() && raw_path.is_empty() {
+        } else if raw_path.is_empty() {
             self.tcx.crate_name(did.krate).to_string()
         } else {
             raw_path

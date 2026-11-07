@@ -21,6 +21,7 @@ mod notes;
 mod self_variant_paths;
 mod supertrait_and_impl_links;
 mod sysroot_core;
+mod uses_and_vis;
 mod variant_fields;
 
 #[test]

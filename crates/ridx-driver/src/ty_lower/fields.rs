@@ -29,6 +29,9 @@ pub(crate) fn lower_item_vis(tcx: TyCtxt<'_>, item_did: DefId, vis: ty::Visibili
     let ty::Visibility::Restricted(vis_mod) = vis else {
         return ItemVis::Public;
     };
+    if !vis_mod.is_crate_root() && tcx.def_kind(vis_mod) != DefKind::Mod {
+        return ItemVis::Private;
+    }
     let mut enc_mod = item_did;
     while !enc_mod.is_crate_root() {
         enc_mod = tcx.parent(enc_mod);
@@ -58,6 +61,63 @@ pub(crate) fn lower_item_vis(tcx: TyCtxt<'_>, item_did: DefId, vis: ty::Visibili
     } else {
         ItemVis::Private
     }
+}
+
+/// Safely computes `ItemVis` for any `DefEntry` candidate `did` without triggering
+/// `tcx.visibility` panics on `Impl`, generic parameters, closures, or nested statics.
+pub(crate) fn def_visibility(tcx: TyCtxt<'_>, did: DefId, kind: DefKind) -> ItemVis {
+    if did.is_crate_root() {
+        return ItemVis::Public;
+    }
+    match kind {
+        DefKind::Mod
+        | DefKind::Struct
+        | DefKind::Union
+        | DefKind::Enum
+        | DefKind::Variant
+        | DefKind::Trait
+        | DefKind::TyAlias
+        | DefKind::ForeignTy
+        | DefKind::TraitAlias
+        | DefKind::Use
+        | DefKind::Fn
+        | DefKind::Const { .. }
+        | DefKind::Static { nested: false, .. }
+        | DefKind::Ctor(..)
+        | DefKind::AssocFn
+        | DefKind::AssocConst { .. }
+        | DefKind::Macro(..)
+        | DefKind::Field
+        | DefKind::ExternCrate => {}
+        DefKind::AssocTy => {
+            if tcx.is_impl_trait_in_trait(did) {
+                let parent = tcx.parent(did);
+                return def_visibility(tcx, parent, tcx.def_kind(parent));
+            }
+        }
+        _ => return ItemVis::Private,
+    }
+    let owner_did = match kind {
+        DefKind::Variant => tcx.parent(did),
+        DefKind::Field => {
+            let parent = tcx.parent(did);
+            if tcx.def_kind(parent) == DefKind::Variant {
+                tcx.parent(parent)
+            } else {
+                did
+            }
+        }
+        DefKind::AssocFn | DefKind::AssocConst { .. } | DefKind::AssocTy => {
+            let parent = tcx.parent(did);
+            match tcx.def_kind(parent) {
+                DefKind::Trait => parent,
+                DefKind::Impl { of_trait: true } => tcx.impl_trait_ref(parent).skip_binder().def_id,
+                _ => did,
+            }
+        }
+        _ => did,
+    };
+    lower_item_vis(tcx, owner_did, tcx.visibility(did))
 }
 
 fn hir_vis_span(tcx: TyCtxt<'_>, local_did: LocalDefId) -> Option<rustc_span::Span> {

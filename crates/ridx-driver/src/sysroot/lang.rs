@@ -51,7 +51,7 @@ fn emit_missing_sysroot_def<'tcx>(
         RawDefinition {
             def_id: collector.total_definitions as u32,
             kind: map_def_kind(kind),
-            visibility: 0,
+            visibility: crate::ty_lower::fields::def_visibility(tcx, did, kind) as u8,
             is_macro_expansion: false,
             name,
             path,
