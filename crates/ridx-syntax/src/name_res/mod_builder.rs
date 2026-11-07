@@ -47,6 +47,7 @@ impl<'a, 't> Builder<'a, 't> {
                 krate,
                 edition: db.crate_edition(krate),
                 no_std: false,
+                no_core: false,
                 modules: Vec::with_capacity(4),
                 children: Vec::new(),
                 file_to_modules: Vec::with_capacity(4),
@@ -94,6 +95,7 @@ impl<'a, 't> Builder<'a, 't> {
         let mut inner = EffectiveAttrs::default();
         eval_inner_attrs(st, st.root(), self.db, self.krate, &mut inner);
         self.tree.no_std = inner.no_std;
+        self.tree.no_core = inner.no_core;
         let (cp_s, cp_e) = self.push_str("crate");
         let (dir_s, dir_e) = self.push_str(root_dir);
         let flags = if inner.no_implicit_prelude { MOD_FLAG_NO_IMPLICIT_PRELUDE } else { 0 };
@@ -129,7 +131,7 @@ impl<'a, 't> Builder<'a, 't> {
         for item in st.children(container) {
             match st.kind(item) {
                 K::MacroRules => self.record_macro_rules(file, st, item, macro_env, mbe_depth),
-                K::Module => self.handle_mod_item(mod_id, file, st, item, macro_env),
+                K::Module => self.handle_mod_item(mod_id, file, st, item, macro_env, mbe_depth),
                 K::MacroCall if mbe_depth < MAX_MBE_DEPTH => {
                     self.try_expand_macro_call(mod_id, file, st, item, macro_env, mbe_depth);
                 }

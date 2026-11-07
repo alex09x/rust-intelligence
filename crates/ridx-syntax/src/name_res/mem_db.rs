@@ -94,6 +94,7 @@ struct CrateMemEntry {
 #[derive(Clone, Debug, Default)]
 pub struct MemItemDb {
     crates: HashMap<CrateId, CrateMemEntry>,
+    def_kinds: HashMap<GlobalDefId, super::db::ItemKind>,
     module_defs: HashMap<GlobalDefId, Vec<OwnedDef>>,
     module_uses: HashMap<GlobalDefId, Vec<OwnedUse>>,
     assoc_items: HashMap<GlobalDefId, Vec<OwnedDef>>,
@@ -166,13 +167,21 @@ impl MemItemDb {
 
     pub fn set_crate_root_def(&mut self, krate: CrateId, def: GlobalDefId) {
         self.crates.entry(krate).or_default().root_def = Some(def);
+        self.def_kinds.entry(def).or_insert(super::db::ItemKind::Mod);
     }
 
     pub fn set_prelude_module(&mut self, krate: CrateId, prelude: GlobalDefId) {
         self.crates.entry(krate).or_default().prelude_mod = Some(prelude);
+        self.def_kinds.entry(prelude).or_insert(super::db::ItemKind::Mod);
+    }
+
+    pub fn set_def_kind(&mut self, def: GlobalDefId, kind: super::db::ItemKind) {
+        self.def_kinds.insert(def, kind);
     }
 
     pub fn add_module_def(&mut self, module_def: GlobalDefId, def: OwnedDef) {
+        self.def_kinds.entry(module_def).or_insert(super::db::ItemKind::Mod);
+        self.def_kinds.insert(def.id, def.kind);
         self.module_defs.entry(module_def).or_default().push(def);
     }
 
@@ -181,6 +190,7 @@ impl MemItemDb {
     }
 
     pub fn add_assoc_item(&mut self, owner_def: GlobalDefId, item: OwnedDef) {
+        self.def_kinds.insert(item.id, item.kind);
         self.assoc_items.entry(owner_def).or_default().push(item);
     }
 
@@ -215,6 +225,12 @@ impl ItemDb for MemItemDb {
         self.crates.get(&from_krate)?.externs.get(extern_name).copied()
     }
 
+    fn extern_crates<'a>(&'a self, from_krate: CrateId, out: &mut Vec<(&'a str, CrateId)>) {
+        if let Some(c) = self.crates.get(&from_krate) {
+            out.extend(c.externs.iter().map(|(k, &v)| (k.as_str(), v)));
+        }
+    }
+
     #[inline]
     fn crate_root_def(&self, krate: CrateId) -> Option<GlobalDefId> {
         self.crates.get(&krate)?.root_def
@@ -229,6 +245,11 @@ impl ItemDb for MemItemDb {
     fn macro_rules_body(&self, krate: CrateId, _module_path: &str, call_path: &str) -> Option<&str> {
         let m = &self.crates.get(&krate)?.macros;
         m.get(call_path).or_else(|| call_path.rsplit("::").next().and_then(|s| m.get(s))).map(String::as_str)
+    }
+
+    #[inline]
+    fn def_kind(&self, def: GlobalDefId) -> Option<super::db::ItemKind> {
+        self.def_kinds.get(&def).copied()
     }
 
     fn module_defs<'a>(&'a self, module_def: GlobalDefId, out: &mut Vec<IndexedDef<'a>>) {

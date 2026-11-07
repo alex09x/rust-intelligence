@@ -95,6 +95,7 @@ pub struct ModuleTree {
     pub krate: CrateId,
     pub edition: Edition,
     pub no_std: bool,
+    pub no_core: bool,
     pub modules: Vec<ModuleData>,
     pub(super) children: Vec<ModChild>,
     /// Sorted by `(file.0, is_inline, decl_start)` for `O(log N)` file -> module lookup.

@@ -26,6 +26,13 @@ impl CrateId {
     }
 }
 
+impl Default for CrateId {
+    #[inline]
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 /// Dense source-file identifier inside a [`SourceDb`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct FileId(pub u32);
@@ -36,6 +43,13 @@ impl FileId {
     #[inline]
     pub const fn is_some(self) -> bool {
         self.0 != Self::NONE.0
+    }
+}
+
+impl Default for FileId {
+    #[inline]
+    fn default() -> Self {
+        Self::NONE
     }
 }
 
@@ -50,6 +64,13 @@ impl ModuleId {
     #[inline]
     pub const fn is_some(self) -> bool {
         self.0 != Self::NONE.0
+    }
+}
+
+impl Default for ModuleId {
+    #[inline]
+    fn default() -> Self {
+        Self::NONE
     }
 }
 
@@ -72,6 +93,13 @@ impl GlobalDefId {
     #[inline]
     pub const fn is_some(self) -> bool {
         self.krate.is_some() && self.index != u32::MAX
+    }
+}
+
+impl Default for GlobalDefId {
+    #[inline]
+    fn default() -> Self {
+        Self::NONE
     }
 }
 
@@ -232,6 +260,9 @@ pub trait ItemDb {
         None
     }
 
+    /// Appends all external dependency crates visible to `from_krate` as `(extern_name, CrateId)`.
+    fn extern_crates<'a>(&'a self, _from_krate: CrateId, _out: &mut Vec<(&'a str, CrateId)>) {}
+
     /// Returns the crate root [`GlobalDefId`] of `krate`, if indexed.
     fn crate_root_def(&self, _krate: CrateId) -> Option<GlobalDefId> {
         None
@@ -248,8 +279,18 @@ pub trait ItemDb {
         None
     }
 
+    /// Returns the [`ItemKind`] of an indexed [`GlobalDefId`], if known (`O(1)` in `.ridx`).
+    fn def_kind(&self, _def: GlobalDefId) -> Option<ItemKind> {
+        None
+    }
+
     /// Appends direct child definitions of `module_def` into `out`.
     fn module_defs<'a>(&'a self, _module_def: GlobalDefId, _out: &mut Vec<IndexedDef<'a>>) {}
+
+    /// Appends variants of an indexed `enum_def` into `out` (defaults to `module_defs`).
+    fn enum_variants<'a>(&'a self, enum_def: GlobalDefId, out: &mut Vec<IndexedDef<'a>>) {
+        self.module_defs(enum_def, out);
+    }
 
     /// Appends `UseEntry` rows belonging to `module_def` (or crate root) into `out`.
     fn module_uses<'a>(&'a self, _module_def: GlobalDefId, _out: &mut Vec<IndexedUse<'a>>) {}

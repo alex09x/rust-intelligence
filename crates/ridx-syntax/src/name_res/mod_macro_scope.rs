@@ -185,3 +185,28 @@ fn strip_tt_delims(s: &str) -> &str {
         s
     }
 }
+
+/// Zero-alloc word scan returning `true` iff `s` contains any top-level item keyword.
+pub(super) fn has_scope_item_kw(s: &str) -> bool {
+    let b = s.as_bytes();
+    for kw in [&b"use"[..], b"mod", b"struct", b"enum", b"trait", b"type", b"fn", b"const", b"static", b"extern", b"macro_rules"] {
+        if contains_word(b, kw) {
+            return true;
+        }
+    }
+    false
+}
+
+fn contains_word(hay: &[u8], kw: &[u8]) -> bool {
+    if hay.len() < kw.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i + kw.len() <= hay.len() {
+        if &hay[i..i + kw.len()] == kw && (i == 0 || !is_ascii_ident(hay[i - 1])) && (i + kw.len() == hay.len() || !is_ascii_ident(hay[i + kw.len()])) {
+            return true;
+        }
+        i += 1;
+    }
+    false
+}

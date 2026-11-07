@@ -38,13 +38,21 @@ pub struct EffectiveAttrs<'s> {
     pub no_implicit_prelude: bool,
     /// `#![no_std]` was active.
     pub no_std: bool,
+    /// `#![no_core]` was active.
+    pub no_core: bool,
 }
 
 impl Default for EffectiveAttrs<'_> {
     #[inline]
     fn default() -> Self {
-        Self { enabled: true, explicit_path: None, macro_use: false, macro_use_filter: None, macro_export: false, no_implicit_prelude: false, no_std: false }
+        Self { enabled: true, explicit_path: None, macro_use: false, macro_use_filter: None, macro_export: false, no_implicit_prelude: false, no_std: false, no_core: false }
     }
+}
+
+/// Evaluates a single `#[...]` bracket-inner token slice (used for `#[cfg]` inside `{ ... }` `use` trees).
+#[inline]
+pub fn eval_attr_bracket_tokens<'s>(src: &'s str, bracket_inner: &[Token], db: &dyn ItemDb, krate: CrateId, out: &mut EffectiveAttrs<'s>) {
+    eval_meta_item(src, bracket_inner, db, krate, out, 0);
 }
 
 /// Evaluates all outer `#[...]` attributes attached as direct `Attr` children of `item_node`.
@@ -155,6 +163,9 @@ fn eval_meta_item<'s>(src: &'s str, tokens: &[Token], db: &dyn ItemDb, krate: Cr
         }
         "no_std" => {
             out.no_std = true;
+        }
+        "no_core" => {
+            out.no_core = true;
         }
         _ => {}
     }

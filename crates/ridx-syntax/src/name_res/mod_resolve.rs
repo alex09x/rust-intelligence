@@ -21,7 +21,7 @@ use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::{NodeId, SyntaxTree};
 
 impl<'a, 't> Builder<'a, 't> {
-    pub(super) fn handle_mod_item(&mut self, parent_id: ModuleId, decl_file: FileId, st: &SyntaxTree<'_>, mod_node: NodeId, macro_env: &mut MacroEnv) {
+    pub(super) fn handle_mod_item(&mut self, parent_id: ModuleId, decl_file: FileId, st: &SyntaxTree<'_>, mod_node: NodeId, macro_env: &mut MacroEnv, mbe_depth: u32) {
         let outer = eval_outer_attrs(st, mod_node, self.db, self.krate);
         if !outer.enabled {
             return;
@@ -53,16 +53,17 @@ impl<'a, 't> Builder<'a, 't> {
             let base = if outer.explicit_path.is_some() && p_mod.is_non_mod_rs() { parent_dir_str(p_sub_dir) } else { p_sub_dir };
             let rel = outer.explicit_path.as_deref().unwrap_or(mod_name);
             join_norm_into(&mut self.scratch_dir, base, rel, "");
-            let mut flags = MOD_FLAG_INLINE;
+            let mut flags = MOD_FLAG_INLINE | (p_mod.flags & MOD_FLAG_NO_IMPLICIT_PRELUDE);
             if outer.no_implicit_prelude || inner.no_implicit_prelude {
                 flags |= MOD_FLAG_NO_IMPLICIT_PRELUDE;
             }
             if outer.macro_use {
                 flags |= MOD_FLAG_MACRO_USE;
             }
-            let child_id = self.alloc_module(parent_id, decl_file, decl_file, mod_node.0, decl_range.start as u32, decl_range.end as u32, mod_name, vis, flags);
+            let (inline_node, d_start, d_end) = if mbe_depth == 0 { (mod_node.0, decl_range.start as u32, decl_range.end as u32) } else { (u32::MAX, u32::MAX, u32::MAX) };
+            let child_id = self.alloc_module(parent_id, decl_file, decl_file, inline_node, d_start, d_end, mod_name, vis, flags);
             let env_mark = macro_env.len();
-            self.scan_container(child_id, decl_file, st, item_list, macro_env, 0);
+            self.scan_container(child_id, decl_file, st, item_list, macro_env, mbe_depth);
             finish_macro_scope(&outer, env_mark, macro_env, &self.macro_defs);
             return;
         }
@@ -94,7 +95,7 @@ impl<'a, 't> Builder<'a, 't> {
         if !inner.enabled {
             return;
         }
-        let mut flags = extra_flags;
+        let mut flags = extra_flags | (p_mod.flags & MOD_FLAG_NO_IMPLICIT_PRELUDE);
         if outer.no_implicit_prelude || inner.no_implicit_prelude {
             flags |= MOD_FLAG_NO_IMPLICIT_PRELUDE;
         }
