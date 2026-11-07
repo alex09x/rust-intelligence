@@ -32,6 +32,7 @@ mod generic_item;
 mod header;
 mod header_legacy;
 mod impl_item;
+mod lang_item;
 mod notes;
 mod ty;
 mod ty_prim;
@@ -49,6 +50,7 @@ pub use self::generic_item::{
 pub use self::header::{FileEntry, Header};
 pub use self::header_legacy::{HeaderV2, HEADER_V3_SIZE, HEADER_V4_SIZE};
 pub use self::impl_item::{AssocTyEntry, ImplEntry, SimplifiedSelfKind, IMPL_FLAG_CONST, IMPL_FLAG_NEGATIVE, IMPL_FLAG_RESERVATION, IMPL_FLAG_TRAIT, IMPL_FLAG_UNSAFE};
+pub use self::lang_item::{LangItemEntry, LangItemKind};
 pub use self::notes::{NoteEntry, NOTE_CALL_ARGS, NOTE_LAYOUT};
 pub use self::ty::{FnSigEntry, TyBoundEntry, TyDefEntry, TyEntry, TyTag};
 pub use self::ty_prim::{
@@ -155,7 +157,7 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 352);
+    assert!(std::mem::size_of::<Header>() == 368);
     assert!(std::mem::size_of::<NoteEntry>() == 28);
     assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);
@@ -199,6 +201,8 @@ const _: () = {
     assert!(std::mem::align_of::<GenericParamEntry>() == 4);
     assert!(std::mem::size_of::<WherePredEntry>() == 28);
     assert!(std::mem::align_of::<WherePredEntry>() == 4);
+    assert!(std::mem::size_of::<LangItemEntry>() == 12);
+    assert!(std::mem::align_of::<LangItemEntry>() == 4);
 };
 
 /// Computes an aggregate 64-bit digest over a map of file paths to their 64-bit source hashes.

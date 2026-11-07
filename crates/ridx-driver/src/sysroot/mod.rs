@@ -24,6 +24,7 @@ mod audit_impls;
 pub mod audit_types;
 mod cas;
 mod items;
+mod lang;
 mod primitives;
 mod traits;
 pub mod util;
@@ -286,7 +287,17 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     let sysroot_traits = traits::collect_sysroot_traits(tcx);
     traits::extract_trait_and_deref_links(tcx, cnum, &sysroot_traits, &mut writer, &mut total_derefs);
 
-    if !collector.callables.is_empty() || !collector.impl_dids.is_empty() || !collector.adts.is_empty() || !collector.def_tys.is_empty() || !collector.generic_items.is_empty() {
+    // Collect `#[lang]` items in `cnum` and materialize unstable/private lang items & assoc items
+    let crate_lang_items = crate::ty_lower::lang_items::collect_crate_lang_items(tcx, cnum);
+    lang::materialize_lang_items(tcx, &crate_lang_items, sysroot_src, &mut writer, &mut visited, &mut collector, &mut total_derefs);
+
+    if !collector.callables.is_empty()
+        || !collector.impl_dids.is_empty()
+        || !collector.adts.is_empty()
+        || !collector.def_tys.is_empty()
+        || !collector.generic_items.is_empty()
+        || !crate_lang_items.is_empty()
+    {
         let sysroot_units: HashMap<rustc_span::def_id::CrateNum, String> = tcx
             .crates(())
             .iter()
@@ -302,6 +313,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         lowerer.record_adts(&collector.adts, &mut writer);
         lowerer.record_def_tys(&collector.def_tys, &mut writer);
         lowerer.record_item_generics_and_preds(&collector.generic_items, &mut writer);
+        lowerer.record_lang_items(&crate_lang_items, &mut writer);
     }
 
     let elapsed = start.elapsed();

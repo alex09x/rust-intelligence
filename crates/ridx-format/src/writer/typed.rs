@@ -15,8 +15,8 @@
 use std::io::{self, Seek, Write};
 
 use crate::format::{
-    AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, Header, ImplEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyDefId, TyEntry, TyId,
-    WherePredEntry, IMPL_FLAG_TRAIT,
+    AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, Header, ImplEntry, LangItemEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyDefId,
+    TyEntry, TyId, WherePredEntry, IMPL_FLAG_TRAIT,
 };
 use crate::ty_arena::{RawDefTy, RawField, RawFnSig, RawImpl, RawTy, RawTyDef, TyInterner};
 
@@ -54,6 +54,7 @@ pub(super) struct EncodedTypedSections {
     pub def_tys: Vec<DefTyEntry>,
     pub generic_params: Vec<GenericParamEntry>,
     pub where_preds: Vec<WherePredEntry>,
+    pub lang_items: Vec<LangItemEntry>,
     pub ty_defs_offset: u64,
     pub ty_entries_offset: u64,
     pub ty_bounds_offset: u64,
@@ -65,6 +66,7 @@ pub(super) struct EncodedTypedSections {
     pub def_tys_offset: u64,
     pub generic_params_offset: u64,
     pub where_preds_offset: u64,
+    pub lang_items_offset: u64,
 }
 
 impl IndexWriter {
@@ -257,6 +259,10 @@ impl IndexWriter {
         def_tys.sort_by_key(|d| d.def_index);
         def_tys.dedup_by_key(|d| d.def_index);
 
+        let mut lang_items = self.lang_items.clone();
+        lang_items.sort_by_key(|l| l.kind);
+        lang_items.dedup_by_key(|l| l.kind);
+
         let mut cur = start_offset;
         let step = |cur: &mut u64, byte_len: usize| -> u64 {
             let off = *cur;
@@ -274,7 +280,8 @@ impl IndexWriter {
         let fields_offset = step(&mut cur, std::mem::size_of_val(fields.as_slice()));
         let def_tys_offset = step(&mut cur, std::mem::size_of_val(def_tys.as_slice()));
         let generic_params_offset = step(&mut cur, std::mem::size_of_val(generic_params.as_slice()));
-        let where_preds_offset = cur;
+        let where_preds_offset = step(&mut cur, std::mem::size_of_val(where_preds.as_slice()));
+        let lang_items_offset = cur;
 
         EncodedTypedSections {
             fn_sigs,
@@ -284,6 +291,7 @@ impl IndexWriter {
             def_tys,
             generic_params,
             where_preds,
+            lang_items,
             ty_defs_offset,
             ty_entries_offset,
             ty_bounds_offset,
@@ -295,6 +303,7 @@ impl IndexWriter {
             def_tys_offset,
             generic_params_offset,
             where_preds_offset,
+            lang_items_offset,
         }
     }
 
@@ -321,6 +330,8 @@ impl IndexWriter {
         header.generic_params_count = ts.generic_params.len() as u32;
         header.where_preds_offset = ts.where_preds_offset;
         header.where_preds_count = ts.where_preds.len() as u32;
+        header.lang_items_offset = ts.lang_items_offset;
+        header.lang_items_count = ts.lang_items.len() as u32;
     }
 
     pub(super) fn write_typed_sections<W: Write + Seek>(&self, writer: &mut W, ts: &EncodedTypedSections) -> io::Result<()> {
@@ -335,6 +346,7 @@ impl IndexWriter {
         write_le_items(writer, ts.def_tys_offset, &ts.def_tys, DefTyEntry::to_le)?;
         write_le_items(writer, ts.generic_params_offset, &ts.generic_params, GenericParamEntry::to_le)?;
         write_le_items(writer, ts.where_preds_offset, &ts.where_preds, WherePredEntry::to_le)?;
+        write_le_items(writer, ts.lang_items_offset, &ts.lang_items, LangItemEntry::to_le)?;
         Ok(())
     }
 }

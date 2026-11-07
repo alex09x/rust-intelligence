@@ -8,10 +8,10 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! `IndexWriter` encoding helpers for `GenericParamEntry` and `WherePredEntry` (1.2-G4).
+//! `IndexWriter` encoding helpers for `GenericParamEntry`, `WherePredEntry`, and `LangItemEntry`.
 
-use crate::format::{GenericOwner, GenericParamEntry, WherePredEntry, WherePredKind};
-use crate::ty_arena::{RawGenericParam, RawWherePred};
+use crate::format::{GenericOwner, GenericParamEntry, LangItemEntry, WherePredEntry, WherePredKind};
+use crate::ty_arena::{RawGenericParam, RawLangItem, RawWherePred};
 
 use super::IndexWriter;
 
@@ -125,5 +125,15 @@ impl IndexWriter {
     /// Total count of `where` / bound predicates queued across definitions and impls.
     pub fn where_pred_count(&self) -> usize {
         self.def_where_preds.len() + self.impls.iter().map(|i| i.where_preds.len()).sum::<usize>()
+    }
+
+    /// Records a compiler `#[lang = "..."]` (or associated trait item) entry in this shard.
+    pub fn add_lang_item(&mut self, item: RawLangItem) {
+        self.lang_items.push(LangItemEntry { kind: item.kind as u16, _pad: 0, ty_def: item.ty_def.0, def_index: item.def_index.unwrap_or(u32::MAX) });
+    }
+
+    /// Total count of `LangItemEntry` rows queued in this shard.
+    pub fn lang_item_count(&self) -> usize {
+        self.lang_items.len()
     }
 }

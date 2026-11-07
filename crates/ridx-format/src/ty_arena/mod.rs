@@ -17,6 +17,7 @@ mod generic_view;
 mod impl_view;
 mod intern;
 mod iter;
+mod lang_view;
 
 pub use self::field_view::{DefTyView, FieldIter, FieldView, RawDefTy, RawField};
 pub use self::fn_sig::{FnSigView, RawFnSig};
@@ -24,6 +25,7 @@ pub use self::generic_view::{GenericParamIter, GenericParamView, RawGenericParam
 pub use self::impl_view::{AssocTyIter, AssocTyView, ImplIter, ImplView, RawAssocTy, RawImpl};
 pub use self::intern::{RawGenericArg, RawTy, RawTyBound, RawTyDef, TyInterner};
 pub use self::iter::{AssocBindingIter, AssocBindingView, GenericArgIter, GenericArgView, TyBoundIter, TyBoundView, TyListIter, U32ListIter};
+pub use self::lang_view::{LangItemIter, LangItemView, RawLangItem};
 
 use crate::format::{
     ConstArg, FloatTyWidth, FnAbiKind, GenericArgWord, IntTyWidth, TyBoundEntry, TyDefEntry, TyDefId, TyEntry, TyId, TyMutability, TyTag, UintTyWidth, BOUND_FLAG_MAYBE,

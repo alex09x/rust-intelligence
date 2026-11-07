@@ -46,6 +46,18 @@ impl super::WorkspaceIndex {
         self.readers.iter().any(|r| r.crate_name() == "core")
     }
 
+    /// Resolves `kind` across attached shards (`core`, `alloc`, workspace), returning `(reader_idx, view)`.
+    pub fn lang_item(&self, kind: crate::format::LangItemKind) -> Option<(usize, crate::ty_arena::LangItemView)> {
+        for (idx, reader) in self.readers.iter().enumerate() {
+            if reader.header().lang_items_count > 0 {
+                if let Some(view) = reader.lang_item(kind) {
+                    return Some((idx, view));
+                }
+            }
+        }
+        None
+    }
+
     /// Attaches cached sysroot shards for the given `cas_key` to the workspace if not already present.
     pub fn attach_sysroot_shards_for_key(&mut self, cas_key: &str) {
         if self.has_sysroot() {

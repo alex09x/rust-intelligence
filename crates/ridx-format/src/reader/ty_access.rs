@@ -11,9 +11,10 @@
 //! Zero-copy `IndexReader` accessors for `notes` (v4+) and `TyArena` (v5+) sections.
 
 use crate::format::{
-    AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, ImplEntry, NoteEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyEntry, WherePredEntry,
+    AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, ImplEntry, LangItemEntry, LangItemKind, NoteEntry, SimplifiedSelfKind, TyBoundEntry,
+    TyDefEntry, TyEntry, WherePredEntry,
 };
-use crate::ty_arena::{DefTyView, FieldIter, FieldView, FnSigView, GenericParamIter, ImplIter, ImplView, TyArenaView, WherePredIter};
+use crate::ty_arena::{DefTyView, FieldIter, FieldView, FnSigView, GenericParamIter, ImplIter, ImplView, LangItemIter, LangItemView, TyArenaView, WherePredIter};
 
 use super::IndexReader;
 
@@ -263,5 +264,27 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     #[inline]
     pub fn where_preds_for_impl(&self, impl_index: u32) -> WherePredIter<'_> {
         self.where_preds_for_owner(GenericOwner::Impl(impl_index))
+    }
+
+    /// Raw slice of `LangItemEntry` records sorted by `kind` (empty for v3/v4 shards).
+    #[inline]
+    pub fn lang_items(&self) -> &[LangItemEntry] {
+        let h = self.header();
+        self.typed_slice(h.lang_items_offset, h.lang_items_count)
+    }
+
+    /// Zero-allocation iterator over all `LangItemEntry` records in this shard.
+    #[inline]
+    pub fn lang_items_iter(&self) -> LangItemIter<'_> {
+        LangItemIter::new(self.lang_items())
+    }
+
+    /// Binary-searches the `LangItemEntry` for `kind` in this shard.
+    #[inline]
+    pub fn lang_item(&self, kind: LangItemKind) -> Option<LangItemView> {
+        let all = self.lang_items();
+        let target = kind as u16;
+        let idx = all.binary_search_by(|e| e.kind_raw().cmp(&target)).ok()?;
+        Some(LangItemView::from_raw(all[idx]))
     }
 }

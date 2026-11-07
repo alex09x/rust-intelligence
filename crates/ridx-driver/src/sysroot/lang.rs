@@ -1,0 +1,124 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+//! Materializes sysroot `DefEntry` rows for `#[lang]` items and associated items of lang traits
+//! that were skipped by the stable public module walk (e.g. `Try`, `FromResidual`, `Residual`,
+//! `Fn::call`, `FnMut::call_mut`, `FnOnce::call_once`, `AsyncFn::async_call`, `Receiver`).
+
+use std::collections::HashSet;
+use std::path::Path;
+
+use ridx_format::{IndexWriter, LangItemKind, RawDefinition};
+use rustc_hir::def::DefKind;
+use rustc_middle::ty::{ClauseKind, TyCtxt};
+use rustc_span::def_id::DefId;
+
+use super::{items, SysrootCollector};
+use crate::map_def_kind;
+use crate::sanitize::sanitize_type_name;
+
+fn emit_missing_sysroot_def<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    collector: &mut SysrootCollector,
+) -> bool {
+    if collector.local_def_indices.contains_key(&did) {
+        return false;
+    }
+    visited.insert(did);
+    let kind = tcx.def_kind(did);
+    let path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
+    let name = tcx.opt_item_name(did).map(|s| s.to_string()).unwrap_or_else(|| path.rsplit("::").next().unwrap_or(&path).to_string());
+    let signature = match kind {
+        DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(&tcx.fn_sig(did).skip_binder().to_string())),
+        DefKind::Field => Some(sanitize_type_name(&tcx.type_of(did).skip_binder().to_string())),
+        _ => None,
+    };
+    let parent_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(tcx.parent(did))));
+    let (file, start_line, start_col, end_line, end_col) = items::extract_def_span(tcx, did, sysroot_src);
+
+    let def_idx = writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: collector.total_definitions as u32,
+            kind: map_def_kind(kind),
+            visibility: 0,
+            is_macro_expansion: false,
+            name,
+            path,
+            signature,
+            file,
+            start_line,
+            start_col,
+            end_line,
+            end_col,
+        },
+        vec![parent_path],
+    );
+    collector.register_primary(did, kind, def_idx);
+    true
+}
+
+/// Ensures every lang item in `lang_items` — and every associated item of every lang-item `Trait`
+/// — has a local `DefEntry` and is registered in `collector` for `FnSig`, `Field`, `DefTy`,
+/// `GenericParam`, and `WherePred` lowering regardless of `is_stable_api` / `is_publicly_visible`.
+pub fn materialize_lang_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    lang_items: &[(LangItemKind, DefId)],
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    collector: &mut SysrootCollector,
+    total_derefs: &mut usize,
+) {
+    let mut newly_added_traits = HashSet::new();
+    for &(_kind, did) in lang_items {
+        let added = emit_missing_sysroot_def(tcx, did, sysroot_src, writer, visited, collector);
+        if added && tcx.def_kind(did) == DefKind::Trait {
+            newly_added_traits.insert(did);
+        }
+    }
+
+    let mut seen_traits = HashSet::new();
+    for &(_kind, did) in lang_items {
+        if tcx.def_kind(did) != DefKind::Trait || !seen_traits.insert(did) {
+            continue;
+        }
+        let trait_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
+
+        if newly_added_traits.contains(&did) {
+            for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
+                if let ClauseKind::Trait(tp) = clause.kind().skip_binder() {
+                    let super_did = tp.trait_ref.def_id;
+                    if super_did != did && tcx.lang_items().sized_trait() != Some(super_did) && !tcx.trait_is_auto(super_did) {
+                        let super_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did)));
+                        if !super_path.starts_with("core::marker::") {
+                            writer.add_deref(trait_path.clone(), super_path);
+                            *total_derefs += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        for &assoc_did in tcx.associated_item_def_ids(did) {
+            let Some(sym) = tcx.opt_item_name(assoc_did) else {
+                continue;
+            };
+            let s = sym.as_str();
+            if s.starts_with("__rust_") || s.starts_with("__") {
+                continue;
+            }
+            emit_missing_sysroot_def(tcx, assoc_did, sysroot_src, writer, visited, collector);
+        }
+    }
+}

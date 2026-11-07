@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 5, 352 bytes; v4 is 176, v3 is 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 368 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
@@ -158,6 +158,11 @@ pub struct Header {
     pub where_preds_offset: u64,
     pub where_preds_count: u32,
     pub _pad19: u32,
+
+    /// Offset of the `LangItemEntry` table (sorted by `kind`); version 5.
+    pub lang_items_offset: u64,
+    pub lang_items_count: u32,
+    pub _pad20: u32,
 }
 
 impl Header {
@@ -230,6 +235,9 @@ impl Header {
             where_preds_offset: self.where_preds_offset.to_le(),
             where_preds_count: self.where_preds_count.to_le(),
             _pad19: 0,
+            lang_items_offset: self.lang_items_offset.to_le(),
+            lang_items_count: self.lang_items_count.to_le(),
+            _pad20: 0,
         }
     }
 
@@ -302,6 +310,9 @@ impl Header {
             where_preds_offset: u64::from_le(self.where_preds_offset),
             where_preds_count: u32::from_le(self.where_preds_count),
             _pad19: 0,
+            lang_items_offset: u64::from_le(self.lang_items_offset),
+            lang_items_count: u32::from_le(self.lang_items_count),
+            _pad20: 0,
         }
     }
 

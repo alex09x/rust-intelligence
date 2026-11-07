@@ -16,6 +16,7 @@ pub(crate) mod fields;
 mod fn_sig;
 mod generics;
 mod impls;
+pub(crate) mod lang_items;
 
 use std::collections::HashMap;
 

@@ -266,6 +266,7 @@ fn test_validate_sections_comprehensive() {
         def_tys_offset: 16,
         generic_params_offset: 16,
         where_preds_offset: 16,
+        lang_items_offset: 16,
         ..Header::default()
     };
     assert!(validate_sections(1000, &hdr).is_err());
