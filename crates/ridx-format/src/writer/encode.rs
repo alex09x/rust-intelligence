@@ -229,6 +229,27 @@ impl IndexWriter {
         current_offset = align_up(derefs_offset + derefs_len, 8);
 
         let notes_offset = current_offset;
+        let notes_len = (note_entries.len() * std::mem::size_of::<NoteEntry>()) as u64;
+        current_offset = align_up(notes_offset + notes_len, 8);
+
+        let ty_defs = self.ty_interner.defs();
+        let ty_entries = self.ty_interner.entries();
+        let ty_bounds = self.ty_interner.bounds();
+        let ty_args = self.ty_interner.args();
+
+        let ty_defs_offset = current_offset;
+        let ty_defs_len = std::mem::size_of_val(ty_defs) as u64;
+        current_offset = align_up(ty_defs_offset + ty_defs_len, 8);
+
+        let ty_entries_offset = current_offset;
+        let ty_entries_len = std::mem::size_of_val(ty_entries) as u64;
+        current_offset = align_up(ty_entries_offset + ty_entries_len, 8);
+
+        let ty_bounds_offset = current_offset;
+        let ty_bounds_len = std::mem::size_of_val(ty_bounds) as u64;
+        current_offset = align_up(ty_bounds_offset + ty_bounds_len, 8);
+
+        let ty_args_offset = current_offset;
 
         let header = Header {
             magic: MAGIC,
@@ -264,6 +285,18 @@ impl IndexWriter {
             notes_offset,
             notes_count: note_entries.len() as u32,
             _pad8: 0,
+            ty_defs_offset,
+            ty_defs_count: ty_defs.len() as u32,
+            _pad9: 0,
+            ty_entries_offset,
+            ty_entries_count: ty_entries.len() as u32,
+            _pad10: 0,
+            ty_bounds_offset,
+            ty_bounds_count: ty_bounds.len() as u32,
+            _pad11: 0,
+            ty_args_offset,
+            ty_args_count: ty_args.len() as u32,
+            _pad12: 0,
         };
 
         // Write Header in explicit little-endian format
@@ -285,60 +318,18 @@ impl IndexWriter {
             writer.write_all(as_byte_slice(&entry.to_le()))?;
         }
 
-        // Write Definitions Table (in little-endian format)
-        writer.seek(io::SeekFrom::Start(defs_offset))?;
-        for entry in &def_entries {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write Definitions Hash Index (in little-endian format)
-        writer.seek(io::SeekFrom::Start(defs_by_hash_offset))?;
-        for entry in &def_hashes {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write References Table (in little-endian format)
-        writer.seek(io::SeekFrom::Start(refs_offset))?;
-        for entry in &ref_entries {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write References Target Hash Index (in little-endian format)
-        writer.seek(io::SeekFrom::Start(refs_by_target_offset))?;
-        for entry in &ref_hashes {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write Types Table (in little-endian format)
-        writer.seek(io::SeekFrom::Start(types_offset))?;
-        for entry in &type_entries {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write Definitions By Owner Table (in little-endian format)
-        writer.seek(io::SeekFrom::Start(defs_by_owner_offset))?;
-        for entry in &owner_entries {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write Derefs Table (in little-endian format)
-        writer.seek(io::SeekFrom::Start(derefs_offset))?;
-        for entry in &deref_entries {
-            let entry_le = entry.to_le();
-            writer.write_all(as_byte_slice(&entry_le))?;
-        }
-
-        // Write Notes Table (in little-endian format)
-        writer.seek(io::SeekFrom::Start(notes_offset))?;
-        for entry in &note_entries {
-            writer.write_all(as_byte_slice(&entry.to_le()))?;
-        }
+        write_le_items(writer, defs_offset, &def_entries, DefEntry::to_le)?;
+        write_le_items(writer, defs_by_hash_offset, &def_hashes, HashIndexEntry::to_le)?;
+        write_le_items(writer, refs_offset, &ref_entries, RefEntry::to_le)?;
+        write_le_items(writer, refs_by_target_offset, &ref_hashes, HashIndexEntry::to_le)?;
+        write_le_items(writer, types_offset, &type_entries, TypeEntry::to_le)?;
+        write_le_items(writer, defs_by_owner_offset, &owner_entries, OwnerIndexEntry::to_le)?;
+        write_le_items(writer, derefs_offset, &deref_entries, DerefEntry::to_le)?;
+        write_le_items(writer, notes_offset, &note_entries, NoteEntry::to_le)?;
+        write_le_items(writer, ty_defs_offset, ty_defs, TyDefEntry::to_le)?;
+        write_le_items(writer, ty_entries_offset, ty_entries, TyEntry::to_le)?;
+        write_le_items(writer, ty_bounds_offset, ty_bounds, TyBoundEntry::to_le)?;
+        write_le_items(writer, ty_args_offset, ty_args, u32::to_le)?;
 
         writer.flush()?;
         Ok(())
@@ -352,6 +343,15 @@ impl IndexWriter {
         let end = self.string_pool[start..].iter().position(|&b| b == 0).map(|p| start + p).unwrap_or(self.string_pool.len());
         &self.string_pool[start..end]
     }
+}
+
+fn write_le_items<W: Write + Seek, T: Copy, F: Fn(T) -> T>(writer: &mut W, offset: u64, items: &[T], to_le: F) -> io::Result<()> {
+    writer.seek(io::SeekFrom::Start(offset))?;
+    for &item in items {
+        let le = to_le(item);
+        writer.write_all(as_byte_slice(&le))?;
+    }
+    Ok(())
 }
 
 #[inline]

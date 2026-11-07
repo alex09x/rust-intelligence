@@ -22,6 +22,7 @@ mod definition_at;
 mod file_lookup;
 mod name_reference;
 mod queries;
+mod ty_access;
 pub(crate) use self::definition_at::is_synthetic_def_name;
 pub(crate) use self::name_reference::span_strictly_inside;
 mod search;
@@ -102,6 +103,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 }
                 Header::from_le_v3(bytes)
             }
+            4 => {
+                if bytes.len() < crate::format::HEADER_V4_SIZE {
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "File too small for RIDX header"));
+                }
+                Header::from_le_v4(bytes)
+            }
             CURRENT_VERSION => {
                 if bytes.len() < std::mem::size_of::<Header>() {
                     return Err(io::Error::new(io::ErrorKind::InvalidData, "File too small for RIDX header"));
@@ -122,7 +129,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 
     #[inline]
-    fn bytes(&self) -> &[u8] {
+    pub(super) fn bytes(&self) -> &[u8] {
         self.buffer.as_ref()
     }
 
@@ -332,41 +339,6 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             return &[];
         }
         unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DerefEntry, count) }
-    }
-
-    /// Slice of all notes in the index (sorted by span); empty for indexes older than format version 4.
-    #[inline]
-    pub fn notes(&self) -> &[NoteEntry] {
-        let header = self.header();
-        let count = header.notes_count as usize;
-        if count == 0 {
-            return &[];
-        }
-        let start = header.notes_offset as usize;
-        let len = count * std::mem::size_of::<NoteEntry>();
-        let bytes = self.bytes();
-        if start + len > bytes.len() {
-            return &[];
-        }
-        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const NoteEntry, count) }
-    }
-
-    /// The text of the `kind` note whose span starts at `(file_id, line, col)`.
-    pub fn note_at(&self, file_id: u32, line: u32, col: u32, kind: u32) -> Option<&str> {
-        let notes = self.notes();
-        let key = (file_id, line, col);
-        let from = notes.partition_point(|n| {
-            let s = n.span();
-            (s.file_id(), s.start_line(), s.start_col()) < key
-        });
-        notes[from..]
-            .iter()
-            .take_while(|n| {
-                let s = n.span();
-                (s.file_id(), s.start_line(), s.start_col()) == key
-            })
-            .find(|n| n.kind() == kind)
-            .map(|n| self.get_str(n.text_offset()))
     }
 }
 

@@ -14,11 +14,11 @@
 //! Structures are designed for zero-copy memory-mapped reading with natural alignment.
 
 pub const MAGIC: [u8; 4] = *b"RIDX";
-pub const CURRENT_VERSION: u32 = 4;
-pub const CURRENT_FORMAT_VERSION: u32 = 4;
+pub const CURRENT_VERSION: u32 = 5;
+pub const CURRENT_FORMAT_VERSION: u32 = 5;
 pub const EXTRACTOR_VERSION: &str = "0.1.0";
 
-/// Whether a manifest of `format_version` can be opened: version 3 shards read as version 4 shards without notes.
+/// Whether a manifest of `format_version` can be opened: versions 3 and 4 read with empty newer tables.
 pub fn is_readable_format_version(format_version: u32) -> bool {
     (3..=CURRENT_FORMAT_VERSION).contains(&format_version)
 }
@@ -28,12 +28,21 @@ pub use crate::driver_hash::*;
 mod defs;
 mod entries;
 mod header;
+mod header_legacy;
 mod notes;
+mod ty;
+mod ty_prim;
 
 pub use self::defs::{DefEntry, DefKind, Span, FLAG_MACRO_EXPANSION, FLAG_REEXPORT};
 pub use self::entries::{DerefEntry, HashIndexEntry, OwnerIndexEntry, RefEntry, TypeEntry};
-pub use self::header::{FileEntry, Header, HeaderV2, HEADER_V3_SIZE};
+pub use self::header::{FileEntry, Header};
+pub use self::header_legacy::{HeaderV2, HEADER_V3_SIZE, HEADER_V4_SIZE};
 pub use self::notes::{NoteEntry, NOTE_CALL_ARGS, NOTE_LAYOUT};
+pub use self::ty::{TyBoundEntry, TyDefEntry, TyEntry, TyTag};
+pub use self::ty_prim::{
+    ConstArg, FloatTyWidth, FnAbiKind, GenericArgWord, IntTyWidth, TyDefId, TyId, TyMutability, UintTyWidth, BOUND_FLAG_MAYBE, FN_FLAG_UNSAFE, FN_FLAG_VARIADIC, LIFETIME_ELIDED,
+    LIFETIME_STATIC,
+};
 
 /// Resolves the global RIDX shared cache directory for external crate dependencies.
 /// Uses `$RIDX_CACHE_DIR` if set, or platform default:
@@ -134,7 +143,7 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 176);
+    assert!(std::mem::size_of::<Header>() == 240);
     assert!(std::mem::size_of::<NoteEntry>() == 28);
     assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);
@@ -156,6 +165,14 @@ const _: () = {
     assert!(std::mem::align_of::<DerefEntry>() == 8);
     assert!(std::mem::size_of::<FileEntry>() == 16);
     assert!(std::mem::align_of::<FileEntry>() == 8);
+    assert!(std::mem::size_of::<TyDefEntry>() == 16);
+    assert!(std::mem::align_of::<TyDefEntry>() == 8);
+    assert!(std::mem::size_of::<TyEntry>() == 16);
+    assert!(std::mem::align_of::<TyEntry>() == 4);
+    assert!(std::mem::size_of::<TyBoundEntry>() == 16);
+    assert!(std::mem::align_of::<TyBoundEntry>() == 4);
+    assert!(std::mem::size_of::<GenericArgWord>() == 4);
+    assert!(std::mem::align_of::<GenericArgWord>() == 4);
 };
 
 /// Computes an aggregate 64-bit digest over a map of file paths to their 64-bit source hashes.

@@ -39,13 +39,13 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 4, 176 bytes; version 3 is the first 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 240 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
     /// Magic signature ("RIDX")
     pub magic: [u8; 4],
-    /// Format version (currently 3)
+    /// Format version (currently 5)
     pub version: u32,
     /// Offset in string pool for crate name
     pub crate_name_offset: u32,
@@ -103,101 +103,26 @@ pub struct Header {
     pub notes_offset: u64,
     pub notes_count: u32,
     pub _pad8: u32,
-}
 
-/// Size of a version 3 header: the version 4 header without the notes table fields.
-pub const HEADER_V3_SIZE: usize = 160;
+    /// Offset of the `TyArena` definition table (`TyDefEntry`); version 5.
+    pub ty_defs_offset: u64,
+    pub ty_defs_count: u32,
+    pub _pad9: u32,
 
-/// Fixed-size header for version 2 .ridx files (128 bytes).
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HeaderV2 {
-    pub magic: [u8; 4],
-    pub version: u32,
-    pub crate_name_offset: u32,
-    pub crate_version_offset: u32,
-    pub string_pool_offset: u64,
-    pub string_pool_len: u64,
-    pub files_offset: u64,
-    pub files_count: u32,
-    pub unit_key_offset: u32,
-    pub defs_offset: u64,
-    pub defs_count: u32,
-    pub generation_offset: u32,
-    pub defs_by_hash_offset: u64,
-    pub defs_by_hash_count: u32,
-    pub _pad2: u32,
-    pub refs_offset: u64,
-    pub refs_count: u32,
-    pub _pad3: u32,
-    pub refs_by_target_offset: u64,
-    pub refs_by_target_count: u32,
-    pub _pad4: u32,
-    pub types_offset: u64,
-    pub types_count: u32,
-    pub _pad5: u32,
-}
+    /// Offset of the `TyArena` interned type table (`TyEntry`); version 5.
+    pub ty_entries_offset: u64,
+    pub ty_entries_count: u32,
+    pub _pad10: u32,
 
-impl HeaderV2 {
-    #[inline]
-    pub fn to_le(self) -> Self {
-        Self {
-            magic: self.magic,
-            version: self.version.to_le(),
-            crate_name_offset: self.crate_name_offset.to_le(),
-            crate_version_offset: self.crate_version_offset.to_le(),
-            string_pool_offset: self.string_pool_offset.to_le(),
-            string_pool_len: self.string_pool_len.to_le(),
-            files_offset: self.files_offset.to_le(),
-            files_count: self.files_count.to_le(),
-            unit_key_offset: self.unit_key_offset.to_le(),
-            defs_offset: self.defs_offset.to_le(),
-            defs_count: self.defs_count.to_le(),
-            generation_offset: self.generation_offset.to_le(),
-            defs_by_hash_offset: self.defs_by_hash_offset.to_le(),
-            defs_by_hash_count: self.defs_by_hash_count.to_le(),
-            _pad2: 0,
-            refs_offset: self.refs_offset.to_le(),
-            refs_count: self.refs_count.to_le(),
-            _pad3: 0,
-            refs_by_target_offset: self.refs_by_target_offset.to_le(),
-            refs_by_target_count: self.refs_by_target_count.to_le(),
-            _pad4: 0,
-            types_offset: self.types_offset.to_le(),
-            types_count: self.types_count.to_le(),
-            _pad5: 0,
-        }
-    }
+    /// Offset of the `TyArena` trait bound table (`TyBoundEntry`); version 5.
+    pub ty_bounds_offset: u64,
+    pub ty_bounds_count: u32,
+    pub _pad11: u32,
 
-    #[inline]
-    pub fn from_le(self) -> Self {
-        Self {
-            magic: self.magic,
-            version: u32::from_le(self.version),
-            crate_name_offset: u32::from_le(self.crate_name_offset),
-            crate_version_offset: u32::from_le(self.crate_version_offset),
-            string_pool_offset: u64::from_le(self.string_pool_offset),
-            string_pool_len: u64::from_le(self.string_pool_len),
-            files_offset: u64::from_le(self.files_offset),
-            files_count: u32::from_le(self.files_count),
-            unit_key_offset: u32::from_le(self.unit_key_offset),
-            defs_offset: u64::from_le(self.defs_offset),
-            defs_count: u32::from_le(self.defs_count),
-            generation_offset: u32::from_le(self.generation_offset),
-            defs_by_hash_offset: u64::from_le(self.defs_by_hash_offset),
-            defs_by_hash_count: u32::from_le(self.defs_by_hash_count),
-            _pad2: 0,
-            refs_offset: u64::from_le(self.refs_offset),
-            refs_count: u32::from_le(self.refs_count),
-            _pad3: 0,
-            refs_by_target_offset: u64::from_le(self.refs_by_target_offset),
-            refs_by_target_count: u32::from_le(self.refs_by_target_count),
-            _pad4: 0,
-            types_offset: u64::from_le(self.types_offset),
-            types_count: u32::from_le(self.types_count),
-            _pad5: 0,
-        }
-    }
+    /// Offset of the `TyArena` packed generic argument pool (`u32`); version 5.
+    pub ty_args_offset: u64,
+    pub ty_args_count: u32,
+    pub _pad12: u32,
 }
 
 impl Header {
@@ -237,6 +162,18 @@ impl Header {
             notes_offset: self.notes_offset.to_le(),
             notes_count: self.notes_count.to_le(),
             _pad8: 0,
+            ty_defs_offset: self.ty_defs_offset.to_le(),
+            ty_defs_count: self.ty_defs_count.to_le(),
+            _pad9: 0,
+            ty_entries_offset: self.ty_entries_offset.to_le(),
+            ty_entries_count: self.ty_entries_count.to_le(),
+            _pad10: 0,
+            ty_bounds_offset: self.ty_bounds_offset.to_le(),
+            ty_bounds_count: self.ty_bounds_count.to_le(),
+            _pad11: 0,
+            ty_args_offset: self.ty_args_offset.to_le(),
+            ty_args_count: self.ty_args_count.to_le(),
+            _pad12: 0,
         }
     }
 
@@ -276,56 +213,18 @@ impl Header {
             notes_offset: u64::from_le(self.notes_offset),
             notes_count: u32::from_le(self.notes_count),
             _pad8: 0,
-        }
-    }
-
-    /// Decodes a version 3 header (160 bytes): the version 4 layout without the notes table.
-    pub fn from_le_v3(bytes: &[u8]) -> Self {
-        let mut b = [0u8; std::mem::size_of::<Header>()];
-        b[..HEADER_V3_SIZE].copy_from_slice(&bytes[..HEADER_V3_SIZE]);
-        let raw: Header = unsafe { std::mem::transmute(b) };
-        raw.from_le()
-    }
-
-    /// Decodes a version 2 header (128 bytes), setting v3-specific table offsets and counts to 0.
-    pub fn from_le_v2(bytes: &[u8]) -> Self {
-        let mut b = [0u8; 128];
-        b.copy_from_slice(&bytes[..128]);
-        let raw: HeaderV2 = unsafe { std::mem::transmute(b) };
-        Self {
-            magic: raw.magic,
-            version: u32::from_le(raw.version),
-            crate_name_offset: u32::from_le(raw.crate_name_offset),
-            crate_version_offset: u32::from_le(raw.crate_version_offset),
-            string_pool_offset: u64::from_le(raw.string_pool_offset),
-            string_pool_len: u64::from_le(raw.string_pool_len),
-            files_offset: u64::from_le(raw.files_offset),
-            files_count: u32::from_le(raw.files_count),
-            unit_key_offset: u32::from_le(raw.unit_key_offset),
-            defs_offset: u64::from_le(raw.defs_offset),
-            defs_count: u32::from_le(raw.defs_count),
-            generation_offset: u32::from_le(raw.generation_offset),
-            defs_by_hash_offset: u64::from_le(raw.defs_by_hash_offset),
-            defs_by_hash_count: u32::from_le(raw.defs_by_hash_count),
-            _pad2: 0,
-            refs_offset: u64::from_le(raw.refs_offset),
-            refs_count: u32::from_le(raw.refs_count),
-            _pad3: 0,
-            refs_by_target_offset: u64::from_le(raw.refs_by_target_offset),
-            refs_by_target_count: u32::from_le(raw.refs_by_target_count),
-            _pad4: 0,
-            types_offset: u64::from_le(raw.types_offset),
-            types_count: u32::from_le(raw.types_count),
-            _pad5: 0,
-            defs_by_owner_offset: 0,
-            defs_by_owner_count: 0,
-            _pad6: 0,
-            derefs_offset: 0,
-            derefs_count: 0,
-            _pad7: 0,
-            notes_offset: 0,
-            notes_count: 0,
-            _pad8: 0,
+            ty_defs_offset: u64::from_le(self.ty_defs_offset),
+            ty_defs_count: u32::from_le(self.ty_defs_count),
+            _pad9: 0,
+            ty_entries_offset: u64::from_le(self.ty_entries_offset),
+            ty_entries_count: u32::from_le(self.ty_entries_count),
+            _pad10: 0,
+            ty_bounds_offset: u64::from_le(self.ty_bounds_offset),
+            ty_bounds_count: u32::from_le(self.ty_bounds_count),
+            _pad11: 0,
+            ty_args_offset: u64::from_le(self.ty_args_offset),
+            ty_args_count: u32::from_le(self.ty_args_count),
+            _pad12: 0,
         }
     }
 

@@ -14,7 +14,10 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::format::{fnv1a_64, join_resolving_overlap, DefEntry, DefKind, DerefEntry, FileEntry, HashIndexEntry, Header, NoteEntry, OwnerIndexEntry, RefEntry, TypeEntry};
+use crate::format::{
+    fnv1a_64, join_resolving_overlap, DefEntry, DefKind, DerefEntry, FileEntry, HashIndexEntry, Header, NoteEntry, OwnerIndexEntry, RefEntry, TyBoundEntry, TyDefEntry, TyEntry,
+    TypeEntry,
+};
 use crate::reader::IndexReader;
 use crate::workspace::WorkspaceIndex;
 
@@ -118,7 +121,11 @@ fn audit_shard_sizing<B: AsRef<[u8]>>(
         + u64::from(h.defs_count) * std::mem::size_of::<DefEntry>() as u64
         + u64::from(h.defs_by_hash_count) * std::mem::size_of::<HashIndexEntry>() as u64
         + u64::from(h.defs_by_owner_count) * std::mem::size_of::<OwnerIndexEntry>() as u64
-        + u64::from(h.derefs_count) * std::mem::size_of::<DerefEntry>() as u64;
+        + u64::from(h.derefs_count) * std::mem::size_of::<DerefEntry>() as u64
+        + u64::from(h.ty_defs_count) * std::mem::size_of::<TyDefEntry>() as u64
+        + u64::from(h.ty_entries_count) * std::mem::size_of::<TyEntry>() as u64
+        + u64::from(h.ty_bounds_count) * std::mem::size_of::<TyBoundEntry>() as u64
+        + u64::from(h.ty_args_count) * std::mem::size_of::<u32>() as u64;
     let body_refs_bytes = u64::from(h.refs_count) * std::mem::size_of::<RefEntry>() as u64 + u64::from(h.refs_by_target_count) * std::mem::size_of::<HashIndexEntry>() as u64;
     let body_types_notes_bytes = u64::from(h.types_count) * std::mem::size_of::<TypeEntry>() as u64 + u64::from(h.notes_count) * std::mem::size_of::<NoteEntry>() as u64;
 

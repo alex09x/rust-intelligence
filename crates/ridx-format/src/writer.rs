@@ -96,6 +96,7 @@ pub struct IndexWriter {
     types: Vec<(RawType, Option<String>)>,
     derefs: Vec<(String, String)>,
     notes: Vec<RawNote>,
+    ty_interner: crate::ty_arena::TyInterner,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -117,6 +118,7 @@ impl IndexWriter {
             types: Vec::new(),
             derefs: Vec::new(),
             notes: Vec::new(),
+            ty_interner: crate::ty_arena::TyInterner::new(),
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),
@@ -169,18 +171,46 @@ impl IndexWriter {
     /// Intern a string into the pool, returning its byte offset.
     /// Offset 0 is always reserved for the empty string (and used as a sentinel for 'no owner').
     pub fn intern_string(&mut self, s: &str) -> u32 {
-        if self.string_pool.is_empty() {
-            self.string_pool.push(0);
-            self.string_map.insert(String::new(), 0);
+        Self::intern_in_pool(&mut self.string_pool, &mut self.string_map, s)
+    }
+
+    pub(crate) fn intern_in_pool(string_pool: &mut Vec<u8>, string_map: &mut HashMap<String, u32>, s: &str) -> u32 {
+        if string_pool.is_empty() {
+            string_pool.push(0);
+            string_map.insert(String::new(), 0);
         }
-        if let Some(&offset) = self.string_map.get(s) {
+        if let Some(&offset) = string_map.get(s) {
             return offset;
         }
-        let offset = self.string_pool.len() as u32;
-        self.string_pool.extend_from_slice(s.as_bytes());
-        self.string_pool.push(0); // Null terminator
-        self.string_map.insert(s.to_string(), offset);
+        let offset = string_pool.len() as u32;
+        string_pool.extend_from_slice(s.as_bytes());
+        string_pool.push(0); // Null terminator
+        string_map.insert(s.to_string(), offset);
         offset
+    }
+
+    /// Interns a local or external definition handle inside this shard's `TyArena`.
+    pub fn intern_ty_def(&mut self, def: crate::ty_arena::RawTyDef<'_>) -> TyDefId {
+        let pool = &mut self.string_pool;
+        let map = &mut self.string_map;
+        self.ty_interner.intern_def(def, |s| Self::intern_in_pool(pool, map, s))
+    }
+
+    /// Interns a structured, `Infer`-free type inside this shard's `TyArena`.
+    pub fn intern_ty(&mut self, ty: crate::ty_arena::RawTy<'_>) -> TyId {
+        let pool = &mut self.string_pool;
+        let map = &mut self.string_map;
+        self.ty_interner.intern_ty(ty, |s| Self::intern_in_pool(pool, map, s))
+    }
+
+    /// Total count of deduplicated `TyEntry` nodes in `TyArena`.
+    pub fn ty_entry_count(&self) -> usize {
+        self.ty_interner.entries().len()
+    }
+
+    /// Read-only access to the `TyInterner` accumulated on this writer.
+    pub fn ty_interner(&self) -> &crate::ty_arena::TyInterner {
+        &self.ty_interner
     }
 
     /// Get or assign a numeric ID for a file path.

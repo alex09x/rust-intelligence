@@ -31,41 +31,7 @@ fn test_format_struct_accessors() {
     assert_eq!(fe.path_offset(), 12);
     assert_eq!(fe.source_hash(), 12345);
 
-    let hdr = Header {
-        magic: MAGIC,
-        version: CURRENT_VERSION,
-        crate_name_offset: 0,
-        crate_version_offset: 0,
-        string_pool_offset: 0,
-        string_pool_len: 0,
-        files_offset: 0,
-        files_count: 0,
-        unit_key_offset: 42,
-        defs_offset: 0,
-        defs_count: 0,
-        generation_offset: 84,
-        defs_by_hash_offset: 0,
-        defs_by_hash_count: 0,
-        _pad2: 0,
-        refs_offset: 0,
-        refs_count: 0,
-        _pad3: 0,
-        refs_by_target_offset: 0,
-        refs_by_target_count: 0,
-        _pad4: 0,
-        types_offset: 0,
-        types_count: 0,
-        _pad5: 0,
-        defs_by_owner_offset: 0,
-        defs_by_owner_count: 0,
-        _pad6: 0,
-        derefs_offset: 0,
-        derefs_count: 0,
-        _pad7: 0,
-        notes_offset: 0,
-        notes_count: 0,
-        _pad8: 0,
-    };
+    let hdr = Header { magic: MAGIC, version: CURRENT_VERSION, unit_key_offset: 42, generation_offset: 84, ..Header::default() };
     let hdr_le = hdr.to_le();
     let hdr_from = hdr_le.from_le();
     assert_eq!(hdr_from.unit_key_offset(), 42);
@@ -235,7 +201,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
     assert_eq!(std::mem::align_of::<DefKind>(), 1);
     check_layout!(FileEntry, 16, 8, [path_offset: 0, _pad: 4, source_hash: 8]);
     check_layout!(NoteEntry, 28, 4, [span: 0, text_offset: 20, kind: 24]);
-    check_layout!(Header, 176, 8, [
+    check_layout!(Header, 240, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
         unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
@@ -246,7 +212,14 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
         defs_by_owner_offset: 128, defs_by_owner_count: 136, _pad6: 140,
         derefs_offset: 144, derefs_count: 152, _pad7: 156,
         notes_offset: 160, notes_count: 168, _pad8: 172,
+        ty_defs_offset: 176, ty_defs_count: 184, _pad9: 188,
+        ty_entries_offset: 192, ty_entries_count: 200, _pad10: 204,
+        ty_bounds_offset: 208, ty_bounds_count: 216, _pad11: 220,
+        ty_args_offset: 224, ty_args_count: 232, _pad12: 236,
     ]);
+    check_layout!(TyDefEntry, 16, 8, [path_hash: 0, path_offset: 8, loc_or_unit: 12]);
+    check_layout!(TyEntry, 16, 4, [tag: 0, flags: 1, extra: 2, a: 4, b: 8, c: 12]);
+    check_layout!(TyBoundEntry, 16, 4, [trait_def: 0, args_start: 4, args_len: 8, assoc_len: 10, flags: 12]);
     check_layout!(HeaderV2, 128, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
@@ -333,6 +306,6 @@ fn test_index_writer_golden_bytes() {
     w.add_deref(p1, "golden_crate::util::Target");
     let mut bytes = Vec::new();
     w.write_to(&mut std::io::Cursor::new(&mut bytes)).unwrap();
-    assert_eq!(bytes.len(), 1112, "version 4: the version 3 layout plus 16 header bytes for the empty notes table");
-    assert_eq!(fnv1a_64(&bytes), 0xcc30_b6ed_e078_842b, "golden hash {:#x}", fnv1a_64(&bytes));
+    assert_eq!(bytes.len(), 1176, "version 5: the version 4 layout plus 64 header bytes for the four empty TyArena tables");
+    assert_eq!(fnv1a_64(&bytes), 0x6172_3684_252b_d587, "golden hash {:#x}", fnv1a_64(&bytes));
 }
