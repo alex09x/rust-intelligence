@@ -10,7 +10,7 @@
 
 use std::io::Cursor;
 
-use ridx_format::audit::{audit_reader_items, audit_sysroot, def_kind_slot};
+use ridx_format::audit::{audit_reader_items, audit_sysroot, audit_workspace_sizing, def_kind_slot};
 use ridx_format::{DefKind, IndexReader, IndexWriter, RawDefinition, WorkspaceIndex};
 
 #[repr(C, align(8))]
@@ -219,4 +219,40 @@ fn audit_sysroot_probes_vec_option_adapters_and_slices() {
     assert_eq!(rep.iter_adapters.adapter_structs, 1);
     assert_eq!(rep.iter_adapters.adapters_with_iterator_edge, 1);
     assert_eq!(rep.iter_adapters.adapters_with_item_assoc_ty, 0);
+}
+
+#[test]
+fn audit_sizing_computes_section_and_gap_bytes() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let src_dir = dir.path().join("src");
+    std::fs::create_dir_all(&src_dir).expect("create src");
+    std::fs::write(src_dir.join("lib.rs"), "pub fn run() { println!(\"hi\"); let _ = vec![1, 2]; }\n").expect("write lib.rs");
+
+    let mut w = IndexWriter::new("app", "0.1.0");
+    w.add_definition(raw_def(1, DefKind::Trait, "Future", "core::future::future::Future", None));
+    w.add_definition(raw_def(2, DefKind::Struct, "Task", "app::Task", None));
+    w.add_definition(raw_def(3, DefKind::Impl, "Task", "app::<impl core::future::future::Future for app::Task>", None));
+    w.add_definition_with_owners(raw_def(4, DefKind::AssocFn, "new", "app::Task::new", Some("fn(usize, &str) -> app::Task")), vec!["app::Task".to_string()]);
+    w.add_definition(raw_def(5, DefKind::Macro, "my_mac", "app::my_mac", None));
+    w.add_deref("app::Task", "core::future::future::Future");
+    w.add_deref("app::Task", "str");
+
+    let ridx_path = dir.path().join("app.ridx");
+    let mut f = std::fs::File::create(&ridx_path).expect("create app.ridx");
+    w.write_to(&mut f).expect("write app.ridx");
+
+    let mut ws = WorkspaceIndex::open(dir.path()).expect("open ws");
+    ws.set_workspace_root(Some(dir.path().to_path_buf()));
+
+    let sz = audit_workspace_sizing(&ws);
+    assert_eq!(sz.total_sections.shards, 1);
+    assert!(sz.total_sections.disk_bytes > 0);
+    assert!(sz.total_sections.unique_sig_string_bytes > 0);
+    assert_eq!(sz.total_gaps.fn_count, 1);
+    assert_eq!(sz.total_gaps.fn_params, 2);
+    assert_eq!(sz.total_gaps.impl_blocks, 1);
+    assert_eq!(sz.total_gaps.macro_defs, 1);
+    assert_eq!(sz.lang_items.future_trait, 1);
+    assert_eq!(sz.lang_items.deref_targets, 1);
+    assert!(sz.total_gaps.total_additive_bytes() > 0);
 }

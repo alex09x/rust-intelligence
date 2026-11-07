@@ -10,9 +10,13 @@
 
 //! Schema and empirical content audit for `.ridx` shards and workspaces.
 
+pub mod sizing;
+pub mod sizing_types;
 pub mod sysroot;
 pub mod types;
 
+pub use self::sizing::*;
+pub use self::sizing_types::*;
 pub use self::sysroot::*;
 pub use self::types::*;
 

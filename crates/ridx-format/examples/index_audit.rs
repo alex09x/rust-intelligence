@@ -14,7 +14,9 @@ use std::env;
 use std::path::Path;
 use std::process;
 
-use ridx_format::audit::{audit_sysroot, audit_workspace_items, def_kind_from_slot, AuditScope, ItemAuditReport, SysrootAuditReport, DEFAULT_SYSROOT_TARGETS};
+use ridx_format::audit::{
+    audit_sysroot, audit_workspace_items, audit_workspace_sizing, def_kind_from_slot, AuditScope, ItemAuditReport, SysrootAuditReport, DEFAULT_SYSROOT_TARGETS,
+};
 use ridx_format::WorkspaceIndex;
 
 fn parse_scope(s: &str) -> AuditScope {
@@ -253,7 +255,7 @@ fn main() {
     }
 
     if paths.is_empty() {
-        eprintln!("Usage: index_audit [--mode items|sysroot] [--scope non-sysroot|workspace|sysroot|all] <workspace_or_ridx>...");
+        eprintln!("Usage: index_audit [--mode items|sysroot|sizing] [--scope non-sysroot|workspace|sysroot|all] <workspace_or_ridx>...");
         process::exit(2);
     }
 
@@ -285,6 +287,19 @@ fn main() {
                 });
                 let report = audit_sysroot(&ws, DEFAULT_SYSROOT_TARGETS);
                 print_sysroot_report(label, &report);
+            }
+        }
+        "sizing" => {
+            for p in &paths {
+                let path = Path::new(p);
+                let label = path.file_name().and_then(|s| s.to_str()).unwrap_or(p);
+                let ws = WorkspaceIndex::open(path).unwrap_or_else(|e| {
+                    eprintln!("Failed to open {p}: {e}");
+                    process::exit(1);
+                });
+                let report = audit_workspace_sizing(&ws);
+                let line = serde_json::json!({ "corpus": label, "report": report });
+                println!("{line}");
             }
         }
         other => {
