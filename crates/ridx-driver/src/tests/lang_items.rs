@@ -151,5 +151,25 @@ fn test_driver_sysroot_lang_items_full_coverage_and_unstable_bypass() {
         assert!(ws.lang_item(kind).is_some(), "WorkspaceIndex::lang_item failed for {kind:?}");
     }
 
+    // 5. Unstable lang items must NOT pollute legacy `defs_by_owner` / `derefs` completion tables:
+    // - stable `Iterator` must not gain nightly-unstable methods (`advance_by`, `intersperse`),
+    // - unstable `core::ops::deref::Receiver` must not appear in `defs_by_owner` (`Target`) or `derefs`.
+    let iter_owned: Vec<_> = ws
+        .find_definitions_by_owner("core::iter::Iterator")
+        .into_iter()
+        .chain(ws.find_definitions_by_owner("core::iter::traits::iterator::Iterator"))
+        .map(|d| d.name.to_string())
+        .collect();
+    assert!(iter_owned.iter().any(|n| n == "next"), "stable Iterator::next must remain in defs_by_owner");
+    for unstable_m in ["advance_by", "array_chunks", "intersperse", "map_windows", "try_collect"] {
+        assert!(!iter_owned.iter().any(|n| n == unstable_m), "nightly-unstable Iterator::{unstable_m} leaked into defs_by_owner");
+        assert!(
+            !core_reader.definitions().iter().any(|d| core_reader.get_str(d.name_offset()) == unstable_m),
+            "nightly-unstable Iterator::{unstable_m} leaked into core.ridx DefEntry"
+        );
+    }
+    assert!(ws.find_definitions_by_owner("core::ops::deref::Receiver").is_empty(), "unstable core::ops::deref::Receiver leaked into defs_by_owner");
+    assert!(core_reader.find_deref_targets("core::ops::deref::LegacyReceiver").is_empty());
+
     let _ = fs::remove_dir_all(&temp_dir);
 }

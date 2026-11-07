@@ -283,3 +283,32 @@ fn test_v3_owner_matching_first_interned_string() {
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_add_definition_unowned_skips_defs_by_owner() {
+    let mut writer = crate::writer::IndexWriter::new("unowned_crate", "0.1.0");
+    let idx = writer.add_definition_unowned(crate::writer::RawDefinition {
+        def_id: 7,
+        kind: crate::format::DefKind::AssocTy,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "Target".to_string(),
+        path: "core::ops::deref::Receiver::Target".to_string(),
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+        signature: None,
+    });
+    assert_eq!(idx, 0);
+
+    let mut buf = Vec::new();
+    writer.write_to(&mut std::io::Cursor::new(&mut buf)).unwrap();
+    let reader = IndexReader::from_buffer(buf).unwrap();
+
+    assert_eq!(reader.definitions().len(), 1);
+    assert!(reader.find_definition_by_path("core::ops::deref::Receiver::Target").is_some());
+    assert!(reader.defs_by_owner().is_empty());
+    assert!(reader.find_definitions_by_owner("core::ops::deref::Receiver").is_empty());
+}

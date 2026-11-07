@@ -230,6 +230,15 @@ impl IndexWriter {
         idx
     }
 
+    /// Adds a definition without registering its lexical parent in the legacy `defs_by_owner`
+    /// table (used for nightly-`#[unstable]` sysroot lang items materialized strictly for v5
+    /// `lang_items` / `fn_sigs` / `where_preds`).
+    pub fn add_definition_unowned(&mut self, def: RawDefinition) -> u32 {
+        let idx = self.definitions.len() as u32;
+        self.definitions.push(def);
+        idx
+    }
+
     pub fn add_definition_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) -> u32 {
         let idx = self.definitions.len() as u32;
         for owner in owners {

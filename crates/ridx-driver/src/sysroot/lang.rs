@@ -17,7 +17,7 @@ use std::path::Path;
 
 use ridx_format::{IndexWriter, LangItemKind, RawDefinition};
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::{ClauseKind, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
 use super::{items, SysrootCollector};
@@ -44,33 +44,33 @@ fn emit_missing_sysroot_def<'tcx>(
         DefKind::Field => Some(sanitize_type_name(&tcx.type_of(did).skip_binder().to_string())),
         _ => None,
     };
-    let parent_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(tcx.parent(did))));
     let (file, start_line, start_col, end_line, end_col) = items::extract_def_span(tcx, did, sysroot_src);
 
-    let def_idx = writer.add_definition_with_owners(
-        RawDefinition {
-            def_id: collector.total_definitions as u32,
-            kind: map_def_kind(kind),
-            visibility: crate::ty_lower::fields::def_visibility(tcx, did, kind) as u8,
-            is_macro_expansion: false,
-            name,
-            path,
-            signature,
-            file,
-            start_line,
-            start_col,
-            end_line,
-            end_col,
-        },
-        vec![parent_path],
-    );
+    // Do NOT register unstable/private lang items into legacy v3 `defs_by_owner` or `derefs`:
+    // Phase 2/3 live type inference accesses them strictly via v5 `LangItemEntry` / `def_index`,
+    // whereas `defs_by_owner` / `derefs` feed heuristic completion on stable Rust code.
+    let def_idx = writer.add_definition_unowned(RawDefinition {
+        def_id: collector.total_definitions as u32,
+        kind: map_def_kind(kind),
+        visibility: crate::ty_lower::fields::def_visibility(tcx, did, kind) as u8,
+        is_macro_expansion: false,
+        name,
+        path,
+        signature,
+        file,
+        start_line,
+        start_col,
+        end_line,
+        end_col,
+    });
     collector.register_primary(did, kind, def_idx);
     true
 }
 
-/// Ensures every lang item in `lang_items` — and every associated item of every lang-item `Trait`
-/// — has a local `DefEntry` and is registered in `collector` for `FnSig`, `Field`, `DefTy`,
-/// `GenericParam`, and `WherePred` lowering regardless of `is_stable_api` / `is_publicly_visible`.
+/// Ensures every lang item in `lang_items` — and every associated item of newly materialized
+/// unstable lang-item `Trait`s — has a local `DefEntry` and is registered in `collector` for
+/// `FnSig`, `Field`, `DefTy`, `GenericParam`, and `WherePred` lowering regardless of
+/// `is_stable_api` / `is_publicly_visible`.
 pub fn materialize_lang_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     lang_items: &[(LangItemKind, DefId)],
@@ -78,7 +78,6 @@ pub fn materialize_lang_items<'tcx>(
     writer: &mut IndexWriter,
     visited: &mut HashSet<DefId>,
     collector: &mut SysrootCollector,
-    total_derefs: &mut usize,
 ) {
     let mut newly_added_traits = HashSet::new();
     for &(_kind, did) in lang_items {
@@ -90,26 +89,9 @@ pub fn materialize_lang_items<'tcx>(
 
     let mut seen_traits = HashSet::new();
     for &(_kind, did) in lang_items {
-        if tcx.def_kind(did) != DefKind::Trait || !seen_traits.insert(did) {
+        if !newly_added_traits.contains(&did) || !seen_traits.insert(did) {
             continue;
         }
-        let trait_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
-
-        if newly_added_traits.contains(&did) {
-            for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
-                if let ClauseKind::Trait(tp) = clause.kind().skip_binder() {
-                    let super_did = tp.trait_ref.def_id;
-                    if super_did != did && tcx.lang_items().sized_trait() != Some(super_did) && !tcx.trait_is_auto(super_did) {
-                        let super_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did)));
-                        if !super_path.starts_with("core::marker::") {
-                            writer.add_deref(trait_path.clone(), super_path);
-                            *total_derefs += 1;
-                        }
-                    }
-                }
-            }
-        }
-
         for &assoc_did in tcx.associated_item_def_ids(did) {
             let Some(sym) = tcx.opt_item_name(assoc_did) else {
                 continue;

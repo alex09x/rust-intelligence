@@ -294,7 +294,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
 
     // Collect `#[lang]` items in `cnum` and materialize unstable/private lang items & assoc items
     let crate_lang_items = crate::ty_lower::lang_items::collect_crate_lang_items(tcx, cnum);
-    lang::materialize_lang_items(tcx, &crate_lang_items, sysroot_src, &mut writer, &mut visited, &mut collector, &mut total_derefs);
+    lang::materialize_lang_items(tcx, &crate_lang_items, sysroot_src, &mut writer, &mut visited, &mut collector);
 
     if !collector.callables.is_empty()
         || !collector.impl_dids.is_empty()
