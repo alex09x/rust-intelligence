@@ -28,8 +28,8 @@ pub use format::*;
 pub use paths::normalize_path;
 pub use reader::{IndexReader, ResolvedDefinition};
 pub use ty_arena::{
-    AssocBindingIter, AssocBindingView, GenericArgIter, GenericArgView, RawGenericArg, RawTy, RawTyBound, RawTyDef, TyArenaView, TyBoundIter, TyBoundView, TyDefView, TyInterner,
-    TyKindView, TyListIter,
+    AssocBindingIter, AssocBindingView, FnSigView, GenericArgIter, GenericArgView, RawFnSig, RawGenericArg, RawTy, RawTyBound, RawTyDef, TyArenaView, TyBoundIter, TyBoundView,
+    TyDefView, TyInterner, TyKindView, TyListIter,
 };
 pub use workspace::*;
 pub use writer::{IndexWriter, RawDefinition, RawNote, RawReference, RawType};

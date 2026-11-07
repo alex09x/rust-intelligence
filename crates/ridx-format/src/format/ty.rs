@@ -189,3 +189,72 @@ impl TyEntry {
         Self { tag: self.tag, flags: self.flags, extra: u16::from_le(self.extra), a: u32::from_le(self.a), b: u32::from_le(self.b), c: u32::from_le(self.c) }
     }
 }
+
+/// Structured function or method signature (`16` bytes, align `4`), sorted ascending by `def_index`.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct FnSigEntry {
+    /// 0-based index into the `defs` section (`reader.definitions()[def_index as usize]`).
+    pub def_index: u32,
+    /// Start index of input parameter `TyId` words in `ty_args`.
+    pub inputs_start: u32,
+    /// Number of input parameters (including receiver when `FN_FLAG_HAS_SELF` is set).
+    pub inputs_len: u16,
+    /// Bitmask of `FN_FLAG_UNSAFE | FN_FLAG_VARIADIC | FN_FLAG_ASYNC | FN_FLAG_CONST | FN_FLAG_HAS_SELF`.
+    pub flags: u8,
+    /// ABI category (`FnAbiKind as u8`).
+    pub abi: u8,
+    /// Return type `TyId` in `ty_entries`.
+    pub output: u32,
+}
+
+impl FnSigEntry {
+    #[inline]
+    pub const fn to_le(self) -> Self {
+        Self {
+            def_index: self.def_index.to_le(),
+            inputs_start: self.inputs_start.to_le(),
+            inputs_len: self.inputs_len.to_le(),
+            flags: self.flags,
+            abi: self.abi,
+            output: self.output.to_le(),
+        }
+    }
+
+    #[inline]
+    pub const fn from_le(self) -> Self {
+        Self {
+            def_index: u32::from_le(self.def_index),
+            inputs_start: u32::from_le(self.inputs_start),
+            inputs_len: u16::from_le(self.inputs_len),
+            flags: self.flags,
+            abi: self.abi,
+            output: u32::from_le(self.output),
+        }
+    }
+
+    #[inline]
+    pub const fn def_index(&self) -> u32 {
+        u32::from_le(self.def_index)
+    }
+
+    #[inline]
+    pub const fn inputs_start(&self) -> u32 {
+        u32::from_le(self.inputs_start)
+    }
+
+    #[inline]
+    pub const fn inputs_len(&self) -> u16 {
+        u16::from_le(self.inputs_len)
+    }
+
+    #[inline]
+    pub const fn output_ty(&self) -> super::ty_prim::TyId {
+        super::ty_prim::TyId(u32::from_le(self.output))
+    }
+
+    #[inline]
+    pub const fn abi_kind(&self) -> super::ty_prim::FnAbiKind {
+        super::ty_prim::FnAbiKind::from_u8(self.abi)
+    }
+}

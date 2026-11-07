@@ -232,6 +232,10 @@ impl IndexWriter {
         let notes_len = (note_entries.len() * std::mem::size_of::<NoteEntry>()) as u64;
         current_offset = align_up(notes_offset + notes_len, 8);
 
+        let mut fn_sigs = self.fn_sigs.clone();
+        fn_sigs.sort_by_key(|s| s.def_index);
+        fn_sigs.dedup_by_key(|s| s.def_index);
+
         let ty_defs = self.ty_interner.defs();
         let ty_entries = self.ty_interner.entries();
         let ty_bounds = self.ty_interner.bounds();
@@ -250,6 +254,10 @@ impl IndexWriter {
         current_offset = align_up(ty_bounds_offset + ty_bounds_len, 8);
 
         let ty_args_offset = current_offset;
+        let ty_args_len = std::mem::size_of_val(ty_args) as u64;
+        current_offset = align_up(ty_args_offset + ty_args_len, 8);
+
+        let fn_sigs_offset = current_offset;
 
         let header = Header {
             magic: MAGIC,
@@ -297,6 +305,9 @@ impl IndexWriter {
             ty_args_offset,
             ty_args_count: ty_args.len() as u32,
             _pad12: 0,
+            fn_sigs_offset,
+            fn_sigs_count: fn_sigs.len() as u32,
+            _pad13: 0,
         };
 
         // Write Header in explicit little-endian format
@@ -330,6 +341,7 @@ impl IndexWriter {
         write_le_items(writer, ty_entries_offset, ty_entries, TyEntry::to_le)?;
         write_le_items(writer, ty_bounds_offset, ty_bounds, TyBoundEntry::to_le)?;
         write_le_items(writer, ty_args_offset, ty_args, u32::to_le)?;
+        write_le_items(writer, fn_sigs_offset, &fn_sigs, FnSigEntry::to_le)?;
 
         writer.flush()?;
         Ok(())

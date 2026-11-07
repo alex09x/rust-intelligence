@@ -219,11 +219,12 @@ pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<(
     // 10. Notes table (format version 4)
     check_section(buf_len, header.notes_offset, header.notes_count, std::mem::size_of::<NoteEntry>(), 4, "Notes table")?;
 
-    // 11. TyArena sections (format version 5)
+    // 11. TyArena and FnSig sections (format version 5)
     check_section(buf_len, header.ty_defs_offset, header.ty_defs_count, std::mem::size_of::<TyDefEntry>(), 8, "TyArena defs table")?;
     check_section(buf_len, header.ty_entries_offset, header.ty_entries_count, std::mem::size_of::<TyEntry>(), 4, "TyArena entries table")?;
     check_section(buf_len, header.ty_bounds_offset, header.ty_bounds_count, std::mem::size_of::<TyBoundEntry>(), 4, "TyArena bounds table")?;
     check_section(buf_len, header.ty_args_offset, header.ty_args_count, std::mem::size_of::<u32>(), 4, "TyArena args table")?;
+    check_section(buf_len, header.fn_sigs_offset, header.fn_sigs_count, std::mem::size_of::<FnSigEntry>(), 4, "FnSigs table")?;
 
     Ok(())
 }

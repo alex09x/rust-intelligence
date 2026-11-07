@@ -18,6 +18,7 @@ use rustc_middle::ty::{FloatTy, IntTy, Mutability, TyCtxt, UintTy};
 use rustc_span::def_id::DefId;
 
 use super::util::{format_assoc_fn_sig, is_publicly_visible, is_stable_api, remap_sysroot_path};
+use super::SysrootCollector;
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
@@ -28,7 +29,7 @@ pub fn extract_primitive_inherent_impls<'tcx>(
     cnum: rustc_span::def_id::CrateNum,
     writer: &mut IndexWriter,
     visited: &mut HashSet<DefId>,
-    total_definitions: &mut usize,
+    collector: &mut SysrootCollector,
     sysroot_src: Option<&Path>,
 ) {
     let primitives = [
@@ -94,9 +95,9 @@ pub fn extract_primitive_inherent_impls<'tcx>(
                     (String::new(), 0, 0, 0, 0)
                 };
 
-                writer.add_definition_with_owners(
+                let def_idx = writer.add_definition_with_owners(
                     RawDefinition {
-                        def_id: *total_definitions as u32,
+                        def_id: collector.total_definitions as u32,
                         kind: map_def_kind(a_kind),
                         visibility: 0,
                         is_macro_expansion: false,
@@ -111,7 +112,7 @@ pub fn extract_primitive_inherent_impls<'tcx>(
                     },
                     vec![owner_str.to_string()],
                 );
-                *total_definitions += 1;
+                collector.register_primary(assoc_did, a_kind, def_idx);
             }
         }
     }

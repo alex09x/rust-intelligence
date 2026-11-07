@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 5, 240 bytes; v4 is 176, v3 is 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 256 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
@@ -123,6 +123,11 @@ pub struct Header {
     pub ty_args_offset: u64,
     pub ty_args_count: u32,
     pub _pad12: u32,
+
+    /// Offset of the structured `FnSigEntry` table (sorted by `def_index`); version 5.
+    pub fn_sigs_offset: u64,
+    pub fn_sigs_count: u32,
+    pub _pad13: u32,
 }
 
 impl Header {
@@ -174,6 +179,9 @@ impl Header {
             ty_args_offset: self.ty_args_offset.to_le(),
             ty_args_count: self.ty_args_count.to_le(),
             _pad12: 0,
+            fn_sigs_offset: self.fn_sigs_offset.to_le(),
+            fn_sigs_count: self.fn_sigs_count.to_le(),
+            _pad13: 0,
         }
     }
 
@@ -225,6 +233,9 @@ impl Header {
             ty_args_offset: u64::from_le(self.ty_args_offset),
             ty_args_count: u32::from_le(self.ty_args_count),
             _pad12: 0,
+            fn_sigs_offset: u64::from_le(self.fn_sigs_offset),
+            fn_sigs_count: u32::from_le(self.fn_sigs_count),
+            _pad13: 0,
         }
     }
 

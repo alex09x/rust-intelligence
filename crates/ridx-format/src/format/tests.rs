@@ -201,7 +201,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
     assert_eq!(std::mem::align_of::<DefKind>(), 1);
     check_layout!(FileEntry, 16, 8, [path_offset: 0, _pad: 4, source_hash: 8]);
     check_layout!(NoteEntry, 28, 4, [span: 0, text_offset: 20, kind: 24]);
-    check_layout!(Header, 240, 8, [
+    check_layout!(Header, 256, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
         unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
@@ -216,10 +216,12 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
         ty_entries_offset: 192, ty_entries_count: 200, _pad10: 204,
         ty_bounds_offset: 208, ty_bounds_count: 216, _pad11: 220,
         ty_args_offset: 224, ty_args_count: 232, _pad12: 236,
+        fn_sigs_offset: 240, fn_sigs_count: 248, _pad13: 252,
     ]);
     check_layout!(TyDefEntry, 16, 8, [path_hash: 0, path_offset: 8, loc_or_unit: 12]);
     check_layout!(TyEntry, 16, 4, [tag: 0, flags: 1, extra: 2, a: 4, b: 8, c: 12]);
     check_layout!(TyBoundEntry, 16, 4, [trait_def: 0, args_start: 4, args_len: 8, assoc_len: 10, flags: 12]);
+    check_layout!(FnSigEntry, 16, 4, [def_index: 0, inputs_start: 4, inputs_len: 8, flags: 10, abi: 11, output: 12]);
     check_layout!(HeaderV2, 128, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
@@ -306,6 +308,6 @@ fn test_index_writer_golden_bytes() {
     w.add_deref(p1, "golden_crate::util::Target");
     let mut bytes = Vec::new();
     w.write_to(&mut std::io::Cursor::new(&mut bytes)).unwrap();
-    assert_eq!(bytes.len(), 1176, "version 5: the version 4 layout plus 64 header bytes for the four empty TyArena tables");
-    assert_eq!(fnv1a_64(&bytes), 0x6172_3684_252b_d587, "golden hash {:#x}", fnv1a_64(&bytes));
+    assert_eq!(bytes.len(), 1192, "version 5: the version 4 layout plus 80 header bytes for the five empty TyArena/FnSigs tables");
+    assert_eq!(fnv1a_64(&bytes), 0x1e11_ec7a_6fdb_5a31, "golden hash {:#x}", fnv1a_64(&bytes));
 }

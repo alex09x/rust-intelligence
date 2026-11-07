@@ -97,6 +97,7 @@ pub struct IndexWriter {
     derefs: Vec<(String, String)>,
     notes: Vec<RawNote>,
     ty_interner: crate::ty_arena::TyInterner,
+    fn_sigs: Vec<FnSigEntry>,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -119,6 +120,7 @@ impl IndexWriter {
             derefs: Vec::new(),
             notes: Vec::new(),
             ty_interner: crate::ty_arena::TyInterner::new(),
+            fn_sigs: Vec::new(),
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),
@@ -213,6 +215,17 @@ impl IndexWriter {
         &self.ty_interner
     }
 
+    /// Records a structured function/method signature for `def_index`.
+    pub fn add_fn_sig(&mut self, sig: crate::ty_arena::RawFnSig<'_>) {
+        let (inputs_start, inputs_len) = self.ty_interner.intern_ty_list(sig.inputs);
+        self.fn_sigs.push(FnSigEntry { def_index: sig.def_index, inputs_start, inputs_len, flags: sig.flags, abi: sig.abi as u8, output: sig.output.0 });
+    }
+
+    /// Total count of structured function signatures queued.
+    pub fn fn_sig_count(&self) -> usize {
+        self.fn_sigs.len()
+    }
+
     /// Get or assign a numeric ID for a file path.
     pub fn get_or_insert_file(&mut self, path: &str) -> u32 {
         if let Some(&id) = self.file_map.get(path) {
@@ -225,7 +238,7 @@ impl IndexWriter {
         id
     }
 
-    pub fn add_definition(&mut self, def: RawDefinition) {
+    pub fn add_definition(&mut self, def: RawDefinition) -> u32 {
         let idx = self.definitions.len() as u32;
         if let Some((parent, _)) = def.path.rsplit_once("::") {
             if !parent.is_empty() {
@@ -233,9 +246,10 @@ impl IndexWriter {
             }
         }
         self.definitions.push(def);
+        idx
     }
 
-    pub fn add_definition_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) {
+    pub fn add_definition_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) -> u32 {
         let idx = self.definitions.len() as u32;
         for owner in owners {
             if !owner.is_empty() {
@@ -249,13 +263,14 @@ impl IndexWriter {
             }
         }
         self.definitions.push(def);
+        idx
     }
 
     /// Adds a definition marked with FLAG_REEXPORT and associates it with owners.
-    pub fn add_reexport_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) {
+    pub fn add_reexport_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) -> u32 {
         let idx = self.definitions.len() as u32;
         self.reexport_indices.insert(idx);
-        self.add_definition_with_owners(def, owners);
+        self.add_definition_with_owners(def, owners)
     }
 
     pub fn add_def_owner(&mut self, def_id: u32, owner: String) {

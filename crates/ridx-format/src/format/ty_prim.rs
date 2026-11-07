@@ -200,6 +200,11 @@ pub enum FnAbiKind {
 
 impl FnAbiKind {
     #[inline]
+    pub const fn from_u8(v: u8) -> Self {
+        Self::from_u16(v as u16)
+    }
+
+    #[inline]
     pub const fn from_u16(v: u16) -> Self {
         match v {
             0 => Self::Rust,
@@ -213,6 +218,9 @@ impl FnAbiKind {
 
 pub const FN_FLAG_UNSAFE: u8 = 1 << 0;
 pub const FN_FLAG_VARIADIC: u8 = 1 << 1;
+pub const FN_FLAG_ASYNC: u8 = 1 << 2;
+pub const FN_FLAG_CONST: u8 = 1 << 3;
+pub const FN_FLAG_HAS_SELF: u8 = 1 << 4;
 pub const BOUND_FLAG_MAYBE: u32 = 1 << 0;
 
 /// Sentinel lifetime values encoded in `Ref` / `Dyn` / `GenericArgWord::from_lifetime`.

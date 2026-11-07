@@ -12,6 +12,7 @@
 //! a zero-copy `.ridx` binary index file for the compiled crate.
 #![feature(rustc_private)]
 
+extern crate rustc_abi;
 extern crate rustc_driver;
 extern crate rustc_hir;
 extern crate rustc_interface;
@@ -38,6 +39,7 @@ mod hir_visitor;
 mod metadata;
 mod notes;
 mod span_and_kind;
+pub(crate) mod ty_lower;
 mod unit_key;
 
 use build_index::*;

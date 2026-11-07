@@ -10,8 +10,8 @@
 
 //! Zero-copy `IndexReader` accessors for `notes` (v4+) and `TyArena` (v5+) sections.
 
-use crate::format::{NoteEntry, TyBoundEntry, TyDefEntry, TyEntry};
-use crate::ty_arena::TyArenaView;
+use crate::format::{FnSigEntry, NoteEntry, TyBoundEntry, TyDefEntry, TyEntry};
+use crate::ty_arena::{FnSigView, TyArenaView};
 
 use super::IndexReader;
 
@@ -92,5 +92,20 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let pool_end = pool_start.saturating_add(h.string_pool_len as usize).min(self.bytes().len());
         let pool = self.bytes().get(pool_start..pool_end).unwrap_or(&[]);
         TyArenaView::new(pool, self.ty_defs(), self.ty_entries(), self.ty_bounds(), self.ty_args_raw())
+    }
+
+    /// Raw slice of sorted `FnSigEntry` records in this shard (empty for format < v5).
+    #[inline]
+    pub fn fn_sigs(&self) -> &[FnSigEntry] {
+        let h = self.header();
+        self.typed_slice(h.fn_sigs_offset, h.fn_sigs_count)
+    }
+
+    /// Looks up the structured `FnSigView` for `def_index` in `O(log N)` via binary search.
+    #[inline]
+    pub fn fn_sig_for_def(&self, def_index: u32) -> Option<FnSigView<'_>> {
+        let sigs = self.fn_sigs();
+        let pos = sigs.binary_search_by_key(&def_index, FnSigEntry::def_index).ok()?;
+        Some(FnSigView::new(sigs[pos], self.ty_args_raw()))
     }
 }

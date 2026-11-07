@@ -43,6 +43,33 @@ pub struct SysrootExtractStats {
     pub elapsed_ms: f64,
 }
 
+/// Per-crate accumulator for sysroot definitions and structured `TyCtxt` tables.
+#[derive(Default)]
+pub struct SysrootCollector {
+    pub total_definitions: usize,
+    pub local_def_indices: HashMap<rustc_span::def_id::DefId, u32>,
+    pub callables: Vec<(rustc_span::def_id::DefId, u32)>,
+}
+
+impl SysrootCollector {
+    #[inline]
+    pub fn register_primary(&mut self, did: rustc_span::def_id::DefId, kind: DefKind, def_idx: u32) {
+        self.total_definitions += 1;
+        self.local_def_indices.insert(did, def_idx);
+        if matches!(kind, DefKind::Fn | DefKind::AssocFn) {
+            self.callables.push((did, def_idx));
+        }
+    }
+
+    #[inline]
+    pub fn register_reexport(&mut self, did: rustc_span::def_id::DefId, kind: DefKind, def_idx: u32) {
+        self.total_definitions += 1;
+        if matches!(kind, DefKind::Fn | DefKind::AssocFn) {
+            self.callables.push((did, def_idx));
+        }
+    }
+}
+
 /// Extracts definitions, owners, signatures, and deref relationships for a sysroot crate
 /// (e.g. "core", "alloc", "std") directly from pre-loaded compiler `.rmeta` metadata.
 pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroot_src: Option<&Path>) -> Option<(IndexWriter, SysrootExtractStats)> {
@@ -62,14 +89,14 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     queue_visited.insert(root_did);
     visited.insert(root_did);
 
-    let mut total_definitions = 0usize;
+    let mut collector = SysrootCollector::default();
     let mut total_derefs = 0usize;
 
     // Record the crate root definition (e.g. `core`, `alloc`, `std`)
     let (root_file, root_sl, root_sc, root_el, root_ec) = items::extract_def_span(tcx, root_did, sysroot_src);
-    writer.add_definition_with_owners(
+    let root_idx = writer.add_definition_with_owners(
         RawDefinition {
-            def_id: total_definitions as u32,
+            def_id: collector.total_definitions as u32,
             kind: map_def_kind(DefKind::Mod),
             visibility: 0,
             is_macro_expansion: false,
@@ -84,7 +111,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         },
         vec![target_crate.to_string()],
     );
-    total_definitions += 1;
+    collector.register_primary(root_did, DefKind::Mod, root_idx);
 
     while let Some(mod_did) = queue.pop_front() {
         let mod_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(mod_did)));
@@ -126,7 +153,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
                     continue;
                 }
 
-                items::record_reexport(tcx, did, name_str, &mod_path, sysroot_src, &mut writer, &mut total_definitions);
+                items::record_reexport(tcx, did, name_str, &mod_path, sysroot_src, &mut writer, &mut collector);
                 continue;
             }
 
@@ -146,7 +173,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
             if !visited.insert(did) {
                 // If already visited, record as re-export alias if exposed under different path/name
                 if alias_path != canonical_path && child.vis.is_public() {
-                    items::record_reexport(tcx, did, name_str, &mod_path, sysroot_src, &mut writer, &mut total_definitions);
+                    items::record_reexport(tcx, did, name_str, &mod_path, sysroot_src, &mut writer, &mut collector);
                 }
                 continue;
             }
@@ -161,7 +188,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
             };
 
             let raw_def = RawDefinition {
-                def_id: total_definitions as u32,
+                def_id: collector.total_definitions as u32,
                 kind: map_def_kind(kind),
                 visibility: 0,
                 is_macro_expansion: false,
@@ -183,24 +210,24 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
                 }
             }
 
-            writer.add_definition_with_owners(raw_def, owners);
-            total_definitions += 1;
+            let def_idx = writer.add_definition_with_owners(raw_def, owners);
+            collector.register_primary(did, kind, def_idx);
 
             if alias_path != canonical_path && child.vis.is_public() {
-                items::record_reexport(tcx, did, name_str, &mod_path, sysroot_src, &mut writer, &mut total_definitions);
+                items::record_reexport(tcx, did, name_str, &mod_path, sysroot_src, &mut writer, &mut collector);
             }
 
             if kind == DefKind::Trait {
-                items::extract_trait_items(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut visited, &mut total_definitions, &mut total_derefs);
+                items::extract_trait_items(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut visited, &mut collector, &mut total_derefs);
             }
 
             if kind == DefKind::Enum {
-                items::extract_enum_variants(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut visited, &mut total_definitions);
+                items::extract_enum_variants(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut visited, &mut collector);
             }
 
             match kind {
                 DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias => {
-                    items::extract_inherent_impl_items(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut assoc_visited, &mut total_definitions);
+                    items::extract_inherent_impl_items(tcx, did, &canonical_path, sysroot_src, &mut writer, &mut assoc_visited, &mut collector);
                 }
                 _ => {}
             }
@@ -208,14 +235,34 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     }
 
     // Extract primitive inherent impls (impl str, impl [T], impl u32, etc.)
-    extract_primitive_inherent_impls(tcx, cnum, &mut writer, &mut visited, &mut total_definitions, sysroot_src);
+    extract_primitive_inherent_impls(tcx, cnum, &mut writer, &mut visited, &mut collector, sysroot_src);
 
     // Extract Deref relationships and trait implementation links for types
     let sysroot_traits = traits::collect_sysroot_traits(tcx);
     traits::extract_trait_and_deref_links(tcx, cnum, &sysroot_traits, &mut writer, &mut total_derefs);
 
+    if !collector.callables.is_empty() {
+        let sysroot_units: HashMap<rustc_span::def_id::CrateNum, String> = tcx
+            .crates(())
+            .iter()
+            .copied()
+            .filter_map(|c| {
+                let name = tcx.crate_name(c).to_string();
+                matches!(name.as_str(), "core" | "alloc" | "std" | "proc_macro").then_some((c, name))
+            })
+            .collect();
+        let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, cnum, &sysroot_units, &collector.local_def_indices);
+        lowerer.record_fn_sigs(&collector.callables, &mut writer);
+    }
+
     let elapsed = start.elapsed();
-    let stats = SysrootExtractStats { crate_name: target_crate.to_string(), total_definitions, total_derefs, index_bytes: 0, elapsed_ms: elapsed.as_secs_f64() * 1000.0 };
+    let stats = SysrootExtractStats {
+        crate_name: target_crate.to_string(),
+        total_definitions: collector.total_definitions,
+        total_derefs,
+        index_bytes: 0,
+        elapsed_ms: elapsed.as_secs_f64() * 1000.0,
+    };
 
     Some((writer, stats))
 }

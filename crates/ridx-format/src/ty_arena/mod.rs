@@ -11,8 +11,10 @@
 //! Zero-copy reader views, structural interner, and formatter for `TyArena`.
 
 mod display;
+mod fn_sig;
 mod intern;
 
+pub use self::fn_sig::{FnSigView, RawFnSig};
 pub use self::intern::{RawGenericArg, RawTy, RawTyBound, RawTyDef, TyInterner};
 
 use crate::format::{
@@ -100,6 +102,11 @@ pub struct TyListIter<'a> {
 
 impl<'a> TyListIter<'a> {
     pub const EMPTY: Self = Self { words: &[] };
+
+    #[inline]
+    pub const fn from_words(words: &'a [u32]) -> Self {
+        Self { words }
+    }
 
     #[inline]
     pub fn len(&self) -> usize {

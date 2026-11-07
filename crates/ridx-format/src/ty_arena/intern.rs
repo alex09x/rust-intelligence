@@ -157,6 +157,19 @@ impl TyInterner {
         id
     }
 
+    /// Interns and deduplicates a list of `TyId`s in `ty_args` (used by `FnSigEntry` parameter lists).
+    pub fn intern_ty_list(&mut self, tys: &[TyId]) -> (u32, u16) {
+        if tys.is_empty() {
+            return (0, 0);
+        }
+        let mut buf = std::mem::take(&mut self.scratch_words);
+        buf.clear();
+        buf.extend(tys.iter().map(|t| t.0));
+        let (start, len) = self.intern_words(&buf);
+        self.scratch_words = buf;
+        (start, u16::try_from(len).unwrap_or(u16::MAX))
+    }
+
     fn intern_words(&mut self, words: &[u32]) -> (u32, u32) {
         match words {
             [] => (0, 0),

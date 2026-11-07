@@ -65,6 +65,8 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
     }
 
     // Extract all crate item definitions
+    let mut local_def_indices: std::collections::HashMap<DefId, u32> = std::collections::HashMap::with_capacity(items.len());
+    let mut callables: Vec<(DefId, u32)> = Vec::new();
     for def_id in items {
         let kind = tcx.def_kind(def_id);
         let item_span = tcx.def_ident_span(def_id).unwrap_or_else(|| tcx.def_span(def_id));
@@ -287,7 +289,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
             }
         }
 
-        visitor.writer.add_definition_with_owners(
+        let def_idx = visitor.writer.add_definition_with_owners(
             RawDefinition {
                 def_id: def_id.local_def_index.as_u32(),
                 kind: map_def_kind(kind),
@@ -304,6 +306,15 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
             },
             owners,
         );
+        local_def_indices.insert(did, def_idx);
+        if matches!(kind, hir::def::DefKind::Fn | hir::def::DefKind::AssocFn) {
+            callables.push((did, def_idx));
+        }
+    }
+
+    if !callables.is_empty() {
+        let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, rustc_span::def_id::LOCAL_CRATE, &visitor.krate_to_unit, &local_def_indices);
+        lowerer.record_fn_sigs(&callables, &mut visitor.writer);
     }
 
     // Traverse all item bodies for references and types

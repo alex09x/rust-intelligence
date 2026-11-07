@@ -296,4 +296,74 @@ fn test_backward_compat_v2_v3_v4_headers_have_empty_ty_arena() {
     let aligned_v2 = copy_aligned(&raw_v2);
     let r2 = IndexReader::from_buffer(&aligned_v2.0[..raw_v2.len()]).expect("open v2");
     assert!(r2.ty_arena().is_empty());
+    assert!(r2.fn_sigs().is_empty());
+}
+
+#[test]
+fn test_fn_sigs_roundtrip_and_binary_search() {
+    use ridx_format::{DefKind, RawDefinition, RawFnSig, FN_FLAG_ASYNC, FN_FLAG_CONST, FN_FLAG_HAS_SELF, FN_FLAG_UNSAFE, FN_FLAG_VARIADIC};
+
+    let mut w = IndexWriter::new("fnsig_demo", "0.1.0");
+    let mk_def = |id: u32, kind: DefKind, path: &str| RawDefinition {
+        def_id: id,
+        kind,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: path.rsplit("::").next().unwrap().to_string(),
+        path: path.to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: id,
+        start_col: 1,
+        end_line: id,
+        end_col: 10,
+    };
+
+    let d0 = w.add_definition(mk_def(10, DefKind::Struct, "fnsig_demo::Ctx"));
+    let d1 = w.add_definition(mk_def(11, DefKind::AssocFn, "fnsig_demo::Ctx::fetch"));
+    let d2 = w.add_definition(mk_def(12, DefKind::Fn, "fnsig_demo::c_printf"));
+    let d3 = w.add_definition(mk_def(13, DefKind::Fn, "fnsig_demo::const_id"));
+    assert_eq!((d0, d1, d2, d3), (0, 1, 2, 3));
+
+    let ctx_def = w.intern_ty_def(RawTyDef::Local { path: "fnsig_demo::Ctx", local_def_idx: d0 });
+    let ctx_ty = w.intern_ty(RawTy::Adt { def: ctx_def, args: &[] });
+    let ref_ctx = w.intern_ty(RawTy::Ref { mutability: TyMutability::Shared, inner: ctx_ty, lifetime: LIFETIME_ELIDED });
+    let ty_usize = w.intern_ty(RawTy::Uint(UintTyWidth::Usize));
+    let ty_i32 = w.intern_ty(RawTy::Int(IntTyWidth::I32));
+    let ty_u8 = w.intern_ty(RawTy::Uint(UintTyWidth::U8));
+    let ptr_u8 = w.intern_ty(RawTy::Ptr { mutability: TyMutability::Shared, inner: ty_u8 });
+    let param_t = w.intern_ty(RawTy::Param { index: 0, name: "T" });
+
+    // Insert deliberately out of order by def_index (3, 1, 2) to verify sorting + binary search
+    w.add_fn_sig(RawFnSig { def_index: d3, inputs: &[param_t], output: param_t, abi: FnAbiKind::Rust, flags: FN_FLAG_CONST });
+    w.add_fn_sig(RawFnSig { def_index: d1, inputs: &[ref_ctx, ty_usize], output: ty_usize, abi: FnAbiKind::Rust, flags: FN_FLAG_ASYNC | FN_FLAG_HAS_SELF });
+    w.add_fn_sig(RawFnSig { def_index: d2, inputs: &[ptr_u8], output: ty_i32, abi: FnAbiKind::C, flags: FN_FLAG_UNSAFE | FN_FLAG_VARIADIC });
+    assert_eq!(w.fn_sig_count(), 3);
+
+    let mut bytes = Vec::new();
+    w.write_to(&mut Cursor::new(&mut bytes)).unwrap();
+    let aligned = copy_aligned(&bytes);
+    let reader = IndexReader::from_buffer(&aligned.0[..bytes.len()]).unwrap();
+    let arena = reader.ty_arena();
+
+    assert_eq!(reader.fn_sigs().len(), 3);
+    assert!(reader.fn_sig_for_def(d0).is_none(), "struct has no FnSigEntry");
+
+    let s1 = reader.fn_sig_for_def(d1).expect("fetch sig");
+    assert!(s1.is_async() && s1.has_self() && !s1.is_unsafe() && !s1.is_const());
+    assert_eq!(s1.abi(), FnAbiKind::Rust);
+    let s1_in: Vec<String> = s1.inputs().map(|t| arena.display_ty(t)).collect();
+    assert_eq!(s1_in, vec!["&Ctx", "usize"]);
+    assert_eq!(arena.display_ty(s1.output()), "usize");
+
+    let s2 = reader.fn_sig_for_def(d2).expect("c_printf sig");
+    assert!(s2.is_unsafe() && s2.is_variadic() && !s2.is_async() && !s2.has_self());
+    assert_eq!(s2.abi(), FnAbiKind::C);
+    let s2_in: Vec<String> = s2.inputs().map(|t| arena.display_ty(t)).collect();
+    assert_eq!(s2_in, vec!["*const u8"]);
+    assert_eq!(arena.display_ty(s2.output()), "i32");
+
+    let s3 = reader.fn_sig_for_def(d3).expect("const_id sig");
+    assert!(s3.is_const() && !s3.has_self());
+    assert_eq!(arena.display_ty(s3.output()), "T");
 }

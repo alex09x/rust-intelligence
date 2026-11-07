@@ -27,20 +27,22 @@ fn write_shard(dir: &Path, name: &str, ref_path: Option<&str>) -> PathBuf {
     let mut w = IndexWriter::new(name, "0.1.0");
     w.set_unit_key(format!("unit_{name}"));
     match ref_path {
-        None => w.add_definition(RawDefinition {
-            def_id: 1,
-            kind: DefKind::AssocFn,
-            visibility: 0,
-            is_macro_expansion: false,
-            name: "clone".to_string(),
-            path: DEF_PATH.to_string(),
-            signature: Some("fn(&self) -> Stats".to_string()),
-            file: "src/stats.rs".to_string(),
-            start_line: 12,
-            start_col: 10,
-            end_line: 12,
-            end_col: 15,
-        }),
+        None => {
+            w.add_definition(RawDefinition {
+                def_id: 1,
+                kind: DefKind::AssocFn,
+                visibility: 0,
+                is_macro_expansion: false,
+                name: "clone".to_string(),
+                path: DEF_PATH.to_string(),
+                signature: Some("fn(&self) -> Stats".to_string()),
+                file: "src/stats.rs".to_string(),
+                start_line: 12,
+                start_col: 10,
+                end_line: 12,
+                end_col: 15,
+            });
+        }
         Some(target_path) => w.add_reference(RawReference {
             file: "src/search.rs".to_string(),
             start_line: 5,

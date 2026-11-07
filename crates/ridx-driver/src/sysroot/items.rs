@@ -17,6 +17,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
 use super::util::{self, is_publicly_visible, is_stable_api, remap_sysroot_path};
+use super::SysrootCollector;
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
@@ -36,14 +37,22 @@ pub fn extract_def_span(tcx: TyCtxt<'_>, did: DefId, sysroot_src: Option<&Path>)
 }
 
 /// Records a lightweight re-export alias in the target crate index without duplicating item bodies.
-pub fn record_reexport<'tcx>(tcx: TyCtxt<'tcx>, did: DefId, name_str: &str, mod_path: &str, sysroot_src: Option<&Path>, writer: &mut IndexWriter, total_definitions: &mut usize) {
+pub fn record_reexport<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    name_str: &str,
+    mod_path: &str,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    collector: &mut SysrootCollector,
+) {
     let canonical_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
     let alias_path = format!("{mod_path}::{name_str}");
     let (file, s_line, s_col, e_line, e_col) = extract_def_span(tcx, did, sysroot_src);
     let kind = tcx.def_kind(did);
 
     let raw_def = RawDefinition {
-        def_id: *total_definitions as u32,
+        def_id: collector.total_definitions as u32,
         kind: map_def_kind(kind),
         visibility: 0,
         is_macro_expansion: false,
@@ -57,8 +66,8 @@ pub fn record_reexport<'tcx>(tcx: TyCtxt<'tcx>, did: DefId, name_str: &str, mod_
         end_col: e_col,
     };
 
-    writer.add_reexport_with_owners(raw_def, vec![mod_path.to_string()]);
-    *total_definitions += 1;
+    let def_idx = writer.add_reexport_with_owners(raw_def, vec![mod_path.to_string()]);
+    collector.register_reexport(did, kind, def_idx);
 }
 
 /// Extracts supertraits and associated items for a trait.
@@ -70,7 +79,7 @@ pub fn extract_trait_items<'tcx>(
     sysroot_src: Option<&Path>,
     writer: &mut IndexWriter,
     visited: &mut HashSet<DefId>,
-    total_definitions: &mut usize,
+    collector: &mut SysrootCollector,
     total_derefs: &mut usize,
 ) {
     for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
@@ -132,9 +141,9 @@ pub fn extract_trait_items<'tcx>(
         }
         let (a_file, a_sl, a_sc, a_el, a_ec) = extract_def_span(tcx, assoc_did, sysroot_src);
 
-        writer.add_definition_with_owners(
+        let def_idx = writer.add_definition_with_owners(
             RawDefinition {
-                def_id: *total_definitions as u32,
+                def_id: collector.total_definitions as u32,
                 kind: map_def_kind(a_kind),
                 visibility: 0,
                 is_macro_expansion: false,
@@ -149,7 +158,7 @@ pub fn extract_trait_items<'tcx>(
             },
             a_owners,
         );
-        *total_definitions += 1;
+        collector.register_primary(assoc_did, a_kind, def_idx);
     }
 }
 
@@ -185,7 +194,7 @@ pub fn extract_inherent_impl_items<'tcx>(
     sysroot_src: Option<&Path>,
     writer: &mut IndexWriter,
     assoc_visited: &mut HashMap<DefId, u32>,
-    total_definitions: &mut usize,
+    collector: &mut SysrootCollector,
 ) {
     let (impl_dids, adt_path): (Vec<DefId>, Option<String>) = match tcx.def_kind(did) {
         DefKind::TyAlias => {
@@ -242,8 +251,8 @@ pub fn extract_inherent_impl_items<'tcx>(
                 }
             }
 
-            let def_id = *total_definitions as u32;
-            writer.add_definition_with_owners(
+            let def_id = collector.total_definitions as u32;
+            let def_idx = writer.add_definition_with_owners(
                 RawDefinition {
                     def_id,
                     kind: map_def_kind(a_kind),
@@ -260,8 +269,8 @@ pub fn extract_inherent_impl_items<'tcx>(
                 },
                 a_owners,
             );
-            assoc_visited.insert(assoc_did, def_id);
-            *total_definitions += 1;
+            assoc_visited.insert(assoc_did, def_idx);
+            collector.register_primary(assoc_did, a_kind, def_idx);
         }
     }
 }
@@ -274,7 +283,7 @@ pub fn extract_enum_variants<'tcx>(
     sysroot_src: Option<&Path>,
     writer: &mut IndexWriter,
     visited: &mut HashSet<DefId>,
-    total_definitions: &mut usize,
+    collector: &mut SysrootCollector,
 ) {
     let adt_def = tcx.adt_def(did);
     for variant in adt_def.variants() {
@@ -285,9 +294,9 @@ pub fn extract_enum_variants<'tcx>(
         let v_name = variant.name.to_string();
         let v_path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(var_did)));
         let (v_file, v_sl, v_sc, v_el, v_ec) = extract_def_span(tcx, var_did, sysroot_src);
-        writer.add_definition_with_owners(
+        let def_idx = writer.add_definition_with_owners(
             RawDefinition {
-                def_id: *total_definitions as u32,
+                def_id: collector.total_definitions as u32,
                 kind: map_def_kind(DefKind::Variant),
                 visibility: 0,
                 is_macro_expansion: false,
@@ -302,6 +311,6 @@ pub fn extract_enum_variants<'tcx>(
             },
             vec![path.to_string()],
         );
-        *total_definitions += 1;
+        collector.register_primary(var_did, DefKind::Variant, def_idx);
     }
 }
