@@ -146,6 +146,44 @@ pub fn run_driver_with_env(mut args: Vec<String>, env: DriverEnv) -> Result<(), 
         }
     }
 
+    if args.iter().any(|a| a == "--audit-sysroot") {
+        struct AuditSysrootCallbacks;
+        impl Callbacks for AuditSysrootCallbacks {
+            fn after_analysis<'tcx>(&mut self, _c: &rustc_interface::interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+                let rep = sysroot::audit::audit_sysroot_completeness(tcx);
+                sysroot::audit::print_sysroot_completeness(&rep);
+                Compilation::Stop
+            }
+        }
+        let tmp = std::env::temp_dir().join(format!("ridx_audit_sysroot_{}", std::process::id()));
+        let _ = fs::create_dir_all(&tmp);
+        let src = tmp.join("lib.rs");
+        let _ = fs::write(&src, "extern crate alloc;\n");
+        let rmeta = tmp.join("libaudit_dummy.rmeta");
+        let sysroot_out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().ok();
+        let mut cargs = vec![
+            "rustc".to_string(),
+            src.to_string_lossy().into_owned(),
+            "--crate-name".to_string(),
+            "audit_dummy".to_string(),
+            "--crate-type".to_string(),
+            "lib".to_string(),
+            "--emit=metadata".to_string(),
+            "-o".to_string(),
+            rmeta.to_string_lossy().into_owned(),
+        ];
+        if let Some(out) = sysroot_out {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                cargs.push("--sysroot".to_string());
+                cargs.push(s);
+            }
+        }
+        let res = run_with_callbacks(&cargs, &mut AuditSysrootCallbacks);
+        let _ = fs::remove_dir_all(&tmp);
+        return res;
+    }
+
     if args.iter().any(|a| a == "--sysroot-cas-key") {
         let target = args
             .windows(2)

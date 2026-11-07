@@ -19,6 +19,9 @@ use rustc_middle::ty::TyCtxt;
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
+pub mod audit;
+mod audit_impls;
+pub mod audit_types;
 mod cas;
 mod items;
 mod primitives;

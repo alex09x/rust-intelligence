@@ -207,3 +207,54 @@ fn test_sysroot_core_metadata_prototype() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_sysroot_completeness_audit() {
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
+    struct CheckAuditCallbacks {
+        report: Option<crate::sysroot::audit::SysrootCompletenessReport>,
+    }
+    impl rustc_driver::Callbacks for CheckAuditCallbacks {
+        fn after_analysis<'tcx>(&mut self, _c: &rustc_interface::interface::Compiler, tcx: rustc_middle::ty::TyCtxt<'tcx>) -> rustc_driver::Compilation {
+            self.report = Some(crate::sysroot::audit::audit_sysroot_completeness(tcx));
+            rustc_driver::Compilation::Stop
+        }
+    }
+
+    let temp_dir = std::env::temp_dir().join(format!("ridx_sysroot_audit_test_{}", std::process::id()));
+    let _ = fs::create_dir_all(&temp_dir);
+    let dummy_rs = temp_dir.join("lib.rs");
+    fs::write(&dummy_rs, "extern crate alloc;\n").unwrap();
+    let sysroot_out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
+    let sysroot_path = String::from_utf8(sysroot_out.stdout).unwrap().trim().to_string();
+    let rmeta = temp_dir.join("libaudit_test.rmeta");
+    let args = vec![
+        "rustc".to_string(),
+        dummy_rs.to_string_lossy().into_owned(),
+        "--crate-name".to_string(),
+        "audit_test".to_string(),
+        "--crate-type".to_string(),
+        "lib".to_string(),
+        "--emit=metadata".to_string(),
+        "-o".to_string(),
+        rmeta.to_string_lossy().into_owned(),
+        "--sysroot".to_string(),
+        sysroot_path,
+    ];
+    let mut cb = CheckAuditCallbacks { report: None };
+    let res = crate::run_with_callbacks(&args, &mut cb);
+    let _ = fs::remove_dir_all(&temp_dir);
+    assert!(res.is_ok(), "sysroot completeness audit compiler run must succeed");
+
+    let rep = cb.report.expect("audit callback must produce report");
+    assert_eq!(rep.crates.len(), 3, "must audit core, alloc, std");
+    let total_ridx: usize = rep.crates.iter().map(|c| c.ridx_total_defs).sum();
+    let total_impls_missing: usize = rep.crates.iter().map(|c| c.trait_impl_blocks_missing).sum();
+    let total_fields_missing: usize = rep.crates.iter().map(|c| c.pub_named_fields_missing + c.pub_tuple_fields_missing).sum();
+    assert!(total_ridx > 7_000, "expected >7000 sysroot ridx defs, got {total_ridx}");
+    assert!(total_impls_missing > 2_000, "expected >2000 missing trait impl blocks, got {total_impls_missing}");
+    assert!(total_fields_missing > 50, "expected >50 missing public fields, got {total_fields_missing}");
+    for required in ["core::ops", "core::fmt", "core::iter", "alloc::collections", "std::io", "std::collections"] {
+        assert!(rep.families.iter().any(|f| f.family == required), "missing family {required}");
+    }
+}
