@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 5, 288 bytes; v4 is 176, v3 is 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 352 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
@@ -148,6 +148,16 @@ pub struct Header {
     pub def_tys_offset: u64,
     pub def_tys_count: u32,
     pub _pad17: u32,
+
+    /// Offset of the `GenericParamEntry` table (sorted by `(owner_key, param_idx)`); version 5.
+    pub generic_params_offset: u64,
+    pub generic_params_count: u32,
+    pub _pad18: u32,
+
+    /// Offset of the `WherePredEntry` table (sorted by `owner_key`); version 5.
+    pub where_preds_offset: u64,
+    pub where_preds_count: u32,
+    pub _pad19: u32,
 }
 
 impl Header {
@@ -214,6 +224,12 @@ impl Header {
             def_tys_offset: self.def_tys_offset.to_le(),
             def_tys_count: self.def_tys_count.to_le(),
             _pad17: 0,
+            generic_params_offset: self.generic_params_offset.to_le(),
+            generic_params_count: self.generic_params_count.to_le(),
+            _pad18: 0,
+            where_preds_offset: self.where_preds_offset.to_le(),
+            where_preds_count: self.where_preds_count.to_le(),
+            _pad19: 0,
         }
     }
 
@@ -280,6 +296,12 @@ impl Header {
             def_tys_offset: u64::from_le(self.def_tys_offset),
             def_tys_count: u32::from_le(self.def_tys_count),
             _pad17: 0,
+            generic_params_offset: u64::from_le(self.generic_params_offset),
+            generic_params_count: u32::from_le(self.generic_params_count),
+            _pad18: 0,
+            where_preds_offset: u64::from_le(self.where_preds_offset),
+            where_preds_count: u32::from_le(self.where_preds_count),
+            _pad19: 0,
         }
     }
 

@@ -14,6 +14,7 @@
 mod bounds;
 pub(crate) mod fields;
 mod fn_sig;
+mod generics;
 mod impls;
 
 use std::collections::HashMap;

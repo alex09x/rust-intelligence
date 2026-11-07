@@ -28,6 +28,7 @@ pub use crate::driver_hash::*;
 mod defs;
 mod entries;
 mod field_item;
+mod generic_item;
 mod header;
 mod header_legacy;
 mod impl_item;
@@ -38,8 +39,12 @@ mod ty_prim;
 pub use self::defs::{DefEntry, DefKind, Span, FLAG_MACRO_EXPANSION, FLAG_REEXPORT};
 pub use self::entries::{DerefEntry, HashIndexEntry, OwnerIndexEntry, RefEntry, TypeEntry};
 pub use self::field_item::{
-    CtorShape, DefTyEntry, FieldEntry, ItemVis, DEF_TY_FLAG_FUNDAMENTAL, DEF_TY_FLAG_MUT_STATIC, DEF_TY_FLAG_NON_EXHAUSTIVE, DEF_TY_FLAG_UNSAFE_STATIC, FIELD_FLAG_TUPLE,
-    FIELD_FLAG_UNSAFE,
+    CtorShape, DefTyEntry, FieldEntry, ItemVis, DEF_TY_FLAG_DEFAULT_ASSOC, DEF_TY_FLAG_FUNDAMENTAL, DEF_TY_FLAG_MUT_STATIC, DEF_TY_FLAG_NON_EXHAUSTIVE, DEF_TY_FLAG_UNSAFE_STATIC,
+    FIELD_FLAG_TUPLE, FIELD_FLAG_UNSAFE,
+};
+pub use self::generic_item::{
+    GenericOwner, GenericParamEntry, GenericParamKind, WherePredEntry, WherePredKind, GENERIC_OWNER_IMPL_BIT, GENERIC_PARAM_FLAG_HAS_DEFAULT, GENERIC_PARAM_FLAG_HOST_EFFECT,
+    GENERIC_PARAM_FLAG_IS_SELF, GENERIC_PARAM_FLAG_SIZED, GENERIC_PARAM_FLAG_SYNTHETIC, WHERE_FLAG_CONST, WHERE_FLAG_HRTB, WHERE_FLAG_NEGATIVE,
 };
 pub use self::header::{FileEntry, Header};
 pub use self::header_legacy::{HeaderV2, HEADER_V3_SIZE, HEADER_V4_SIZE};
@@ -150,7 +155,7 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 320);
+    assert!(std::mem::size_of::<Header>() == 352);
     assert!(std::mem::size_of::<NoteEntry>() == 28);
     assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);
@@ -190,6 +195,10 @@ const _: () = {
     assert!(std::mem::align_of::<DefTyEntry>() == 4);
     assert!(std::mem::size_of::<FnSigEntry>() == 16);
     assert!(std::mem::align_of::<FnSigEntry>() == 4);
+    assert!(std::mem::size_of::<GenericParamEntry>() == 20);
+    assert!(std::mem::align_of::<GenericParamEntry>() == 4);
+    assert!(std::mem::size_of::<WherePredEntry>() == 28);
+    assert!(std::mem::align_of::<WherePredEntry>() == 4);
 };
 
 /// Computes an aggregate 64-bit digest over a map of file paths to their 64-bit source hashes.

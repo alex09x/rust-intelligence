@@ -53,6 +53,7 @@ pub struct SysrootCollector {
     pub seen_impls: HashSet<rustc_span::def_id::DefId>,
     pub adts: Vec<(rustc_span::def_id::DefId, u32)>,
     pub def_tys: Vec<(rustc_span::def_id::DefId, u32)>,
+    pub generic_items: Vec<(rustc_span::def_id::DefId, u32)>,
 }
 
 impl SysrootCollector {
@@ -67,6 +68,12 @@ impl SysrootCollector {
                 self.def_tys.push((did, def_idx));
             }
             _ => {}
+        }
+        if matches!(
+            kind,
+            DefKind::Fn | DefKind::AssocFn | DefKind::Struct | DefKind::Union | DefKind::Enum | DefKind::Trait | DefKind::TraitAlias | DefKind::TyAlias | DefKind::AssocTy
+        ) {
+            self.generic_items.push((did, def_idx));
         }
     }
 
@@ -86,6 +93,12 @@ impl SysrootCollector {
                 self.def_tys.push((did, def_idx));
             }
             _ => {}
+        }
+        if matches!(
+            kind,
+            DefKind::Fn | DefKind::AssocFn | DefKind::Struct | DefKind::Union | DefKind::Enum | DefKind::Trait | DefKind::TraitAlias | DefKind::TyAlias | DefKind::AssocTy
+        ) {
+            self.generic_items.push((did, def_idx));
         }
     }
 
@@ -273,7 +286,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     let sysroot_traits = traits::collect_sysroot_traits(tcx);
     traits::extract_trait_and_deref_links(tcx, cnum, &sysroot_traits, &mut writer, &mut total_derefs);
 
-    if !collector.callables.is_empty() || !collector.impl_dids.is_empty() || !collector.adts.is_empty() || !collector.def_tys.is_empty() {
+    if !collector.callables.is_empty() || !collector.impl_dids.is_empty() || !collector.adts.is_empty() || !collector.def_tys.is_empty() || !collector.generic_items.is_empty() {
         let sysroot_units: HashMap<rustc_span::def_id::CrateNum, String> = tcx
             .crates(())
             .iter()
@@ -288,6 +301,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
         lowerer.record_impls(&collector.impl_dids, &mut writer);
         lowerer.record_adts(&collector.adts, &mut writer);
         lowerer.record_def_tys(&collector.def_tys, &mut writer);
+        lowerer.record_item_generics_and_preds(&collector.generic_items, &mut writer);
     }
 
     let elapsed = start.elapsed();

@@ -91,6 +91,7 @@ impl<'tcx, 'a> TcxTypeLowerer<'tcx, 'a> {
 
         let raw_assocs: Vec<RawAssocTy<'_>> = owned_assocs.iter().map(|(def_index, name, ty)| RawAssocTy { def_index: *def_index, name: name.as_str(), ty: *ty }).collect();
 
-        writer.add_impl(RawImpl { def_index, self_ty, trait_def, trait_args: &raw_trait_args, assoc_tys: &raw_assocs, assoc_defs: &assoc_defs, flags });
+        let pending_idx = writer.add_impl(RawImpl { def_index, self_ty, trait_def, trait_args: &raw_trait_args, assoc_tys: &raw_assocs, assoc_defs: &assoc_defs, flags });
+        self.record_impl_generics_and_preds(impl_did, pending_idx, writer);
     }
 }

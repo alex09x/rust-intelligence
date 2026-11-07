@@ -9,11 +9,15 @@
  */
 
 //! `IndexWriter` builder, sorting, layout, and serialization helpers for `.ridx` v5 typed tables
-//! (`TyArena`, `FnSigEntry`, `ImplEntry`, `AssocTyEntry`, `FieldEntry`, `DefTyEntry`).
+//! (`TyArena`, `FnSigEntry`, `ImplEntry`, `AssocTyEntry`, `FieldEntry`, `DefTyEntry`,
+//! `GenericParamEntry`, `WherePredEntry`).
 
 use std::io::{self, Seek, Write};
 
-use crate::format::{AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, Header, ImplEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyDefId, TyEntry, TyId, IMPL_FLAG_TRAIT};
+use crate::format::{
+    AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, Header, ImplEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyDefId, TyEntry, TyId,
+    WherePredEntry, IMPL_FLAG_TRAIT,
+};
 use crate::ty_arena::{RawDefTy, RawField, RawFnSig, RawImpl, RawTy, RawTyDef, TyInterner};
 
 use super::encode::{align_up, write_le_items};
@@ -38,6 +42,8 @@ pub(super) struct PendingImpl {
     pub flags: u8,
     pub simplified_self: u8,
     pub assoc_tys: Vec<PendingAssocTy>,
+    pub generic_params: Vec<GenericParamEntry>,
+    pub where_preds: Vec<WherePredEntry>,
 }
 
 pub(super) struct EncodedTypedSections {
@@ -46,6 +52,8 @@ pub(super) struct EncodedTypedSections {
     pub assoc_tys: Vec<AssocTyEntry>,
     pub fields: Vec<FieldEntry>,
     pub def_tys: Vec<DefTyEntry>,
+    pub generic_params: Vec<GenericParamEntry>,
+    pub where_preds: Vec<WherePredEntry>,
     pub ty_defs_offset: u64,
     pub ty_entries_offset: u64,
     pub ty_bounds_offset: u64,
@@ -55,6 +63,8 @@ pub(super) struct EncodedTypedSections {
     pub assoc_tys_offset: u64,
     pub fields_offset: u64,
     pub def_tys_offset: u64,
+    pub generic_params_offset: u64,
+    pub where_preds_offset: u64,
 }
 
 impl IndexWriter {
@@ -93,8 +103,9 @@ impl IndexWriter {
         self.fn_sigs.len()
     }
 
-    /// Records a structured inherent or trait `impl` header and its associated type bindings.
-    pub fn add_impl(&mut self, imp: RawImpl<'_>) {
+    /// Records a structured inherent or trait `impl` header and its associated type bindings,
+    /// returning the queued `pending_impl_idx` handle for attaching generic params and `where` predicates.
+    pub fn add_impl(&mut self, imp: RawImpl<'_>) -> u32 {
         let simplified = self.ty_interner.entries().get(imp.self_ty.index()).copied().map_or(SimplifiedSelfKind::Other, SimplifiedSelfKind::from_ty_entry);
 
         let pool = &mut self.string_pool;
@@ -114,6 +125,7 @@ impl IndexWriter {
         };
         let flags = (imp.flags & !IMPL_FLAG_TRAIT) | trait_flag;
 
+        let pending_idx = self.impls.len() as u32;
         self.impls.push(PendingImpl {
             def_index: imp.def_index.unwrap_or(u32::MAX),
             self_ty: imp.self_ty.0,
@@ -125,7 +137,10 @@ impl IndexWriter {
             flags,
             simplified_self: simplified as u8,
             assoc_tys,
+            generic_params: Vec::new(),
+            where_preds: Vec::new(),
         });
+        pending_idx
     }
 
     /// Total count of structured `impl` headers queued.
@@ -186,13 +201,38 @@ impl IndexWriter {
         });
 
         let total_assocs: usize = sorted_impls.iter().map(|i| i.assoc_tys.len()).sum();
+        let total_impl_gp: usize = sorted_impls.iter().map(|i| i.generic_params.len()).sum();
+        let total_impl_wp: usize = sorted_impls.iter().map(|i| i.where_preds.len()).sum();
+
+        let mut generic_params = self.def_generic_params.clone();
+        generic_params.sort_by_key(|g| (g.owner_key, g.param_idx));
+        generic_params.dedup_by_key(|g| (g.owner_key, g.param_idx));
+        generic_params.reserve(total_impl_gp);
+
+        let mut where_preds = self.def_where_preds.clone();
+        where_preds.sort_by_key(|w| w.owner_key);
+        where_preds.reserve(total_impl_wp);
+
         let mut impls = Vec::with_capacity(sorted_impls.len());
         let mut assoc_tys = Vec::with_capacity(total_assocs);
-        for (impl_idx, p) in sorted_impls.into_iter().enumerate() {
+        for (impl_idx, mut p) in sorted_impls.into_iter().enumerate() {
             let assoc_tys_start = assoc_tys.len() as u32;
             let assoc_tys_len = u16::try_from(p.assoc_tys.len()).unwrap_or(u16::MAX);
             for a in p.assoc_tys.into_iter().take(usize::from(assoc_tys_len)) {
                 assoc_tys.push(AssocTyEntry { impl_index: impl_idx as u32, def_index: a.def_index, name_offset: a.name_offset, ty: a.ty });
+            }
+            let impl_owner = GenericOwner::Impl(impl_idx as u32).to_raw();
+            if !p.generic_params.is_empty() {
+                p.generic_params.sort_by_key(|g| g.param_idx);
+                p.generic_params.dedup_by_key(|g| g.param_idx);
+                for mut gp in p.generic_params {
+                    gp.owner_key = impl_owner;
+                    generic_params.push(gp);
+                }
+            }
+            for mut wp in p.where_preds {
+                wp.owner_key = impl_owner;
+                where_preds.push(wp);
             }
             impls.push(ImplEntry {
                 def_index: p.def_index,
@@ -232,7 +272,9 @@ impl IndexWriter {
         let impls_offset = step(&mut cur, std::mem::size_of_val(impls.as_slice()));
         let assoc_tys_offset = step(&mut cur, std::mem::size_of_val(assoc_tys.as_slice()));
         let fields_offset = step(&mut cur, std::mem::size_of_val(fields.as_slice()));
-        let def_tys_offset = cur;
+        let def_tys_offset = step(&mut cur, std::mem::size_of_val(def_tys.as_slice()));
+        let generic_params_offset = step(&mut cur, std::mem::size_of_val(generic_params.as_slice()));
+        let where_preds_offset = cur;
 
         EncodedTypedSections {
             fn_sigs,
@@ -240,6 +282,8 @@ impl IndexWriter {
             assoc_tys,
             fields,
             def_tys,
+            generic_params,
+            where_preds,
             ty_defs_offset,
             ty_entries_offset,
             ty_bounds_offset,
@@ -249,6 +293,8 @@ impl IndexWriter {
             assoc_tys_offset,
             fields_offset,
             def_tys_offset,
+            generic_params_offset,
+            where_preds_offset,
         }
     }
 
@@ -271,6 +317,10 @@ impl IndexWriter {
         header.fields_count = ts.fields.len() as u32;
         header.def_tys_offset = ts.def_tys_offset;
         header.def_tys_count = ts.def_tys.len() as u32;
+        header.generic_params_offset = ts.generic_params_offset;
+        header.generic_params_count = ts.generic_params.len() as u32;
+        header.where_preds_offset = ts.where_preds_offset;
+        header.where_preds_count = ts.where_preds.len() as u32;
     }
 
     pub(super) fn write_typed_sections<W: Write + Seek>(&self, writer: &mut W, ts: &EncodedTypedSections) -> io::Result<()> {
@@ -283,6 +333,8 @@ impl IndexWriter {
         write_le_items(writer, ts.assoc_tys_offset, &ts.assoc_tys, AssocTyEntry::to_le)?;
         write_le_items(writer, ts.fields_offset, &ts.fields, FieldEntry::to_le)?;
         write_le_items(writer, ts.def_tys_offset, &ts.def_tys, DefTyEntry::to_le)?;
+        write_le_items(writer, ts.generic_params_offset, &ts.generic_params, GenericParamEntry::to_le)?;
+        write_le_items(writer, ts.where_preds_offset, &ts.where_preds, WherePredEntry::to_le)?;
         Ok(())
     }
 }

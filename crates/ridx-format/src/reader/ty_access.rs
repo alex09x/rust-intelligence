@@ -10,8 +10,10 @@
 
 //! Zero-copy `IndexReader` accessors for `notes` (v4+) and `TyArena` (v5+) sections.
 
-use crate::format::{AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, ImplEntry, NoteEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyEntry};
-use crate::ty_arena::{DefTyView, FieldIter, FieldView, FnSigView, ImplIter, ImplView, TyArenaView};
+use crate::format::{
+    AssocTyEntry, DefTyEntry, FieldEntry, FnSigEntry, GenericOwner, GenericParamEntry, ImplEntry, NoteEntry, SimplifiedSelfKind, TyBoundEntry, TyDefEntry, TyEntry, WherePredEntry,
+};
+use crate::ty_arena::{DefTyView, FieldIter, FieldView, FnSigView, GenericParamIter, ImplIter, ImplView, TyArenaView, WherePredIter};
 
 use super::IndexReader;
 
@@ -203,5 +205,63 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let all = self.def_tys();
         let pos = all.binary_search_by_key(&def_index, DefTyEntry::def_index).ok()?;
         Some(DefTyView::new(all[pos]))
+    }
+
+    /// Raw slice of sorted `GenericParamEntry` records in this shard (empty for format < v5).
+    #[inline]
+    pub fn generic_params(&self) -> &[GenericParamEntry] {
+        let h = self.header();
+        self.typed_slice(h.generic_params_offset, h.generic_params_count)
+    }
+
+    /// Binary-searches all `GenericParamEntry` declarations owned by `owner` (`Def` or `Impl`).
+    #[inline]
+    pub fn generic_params_for_owner(&self, owner: GenericOwner) -> GenericParamIter<'_> {
+        let all = self.generic_params();
+        let key = owner.to_raw();
+        let start = all.partition_point(|e| e.owner_key() < key);
+        let end = start + all[start..].partition_point(|e| e.owner_key() == key);
+        GenericParamIter::new(self.ty_arena(), &all[start..end])
+    }
+
+    /// Binary-searches all `GenericParamEntry` declarations owned by `DefEntry` `def_index`.
+    #[inline]
+    pub fn generic_params_for_def(&self, def_index: u32) -> GenericParamIter<'_> {
+        self.generic_params_for_owner(GenericOwner::Def(def_index))
+    }
+
+    /// Binary-searches all `GenericParamEntry` declarations owned by `ImplEntry` `impl_index`.
+    #[inline]
+    pub fn generic_params_for_impl(&self, impl_index: u32) -> GenericParamIter<'_> {
+        self.generic_params_for_owner(GenericOwner::Impl(impl_index))
+    }
+
+    /// Raw slice of sorted `WherePredEntry` records in this shard (empty for format < v5).
+    #[inline]
+    pub fn where_preds(&self) -> &[WherePredEntry] {
+        let h = self.header();
+        self.typed_slice(h.where_preds_offset, h.where_preds_count)
+    }
+
+    /// Binary-searches all `WherePredEntry` bounds/predicates owned by `owner` (`Def` or `Impl`).
+    #[inline]
+    pub fn where_preds_for_owner(&self, owner: GenericOwner) -> WherePredIter<'_> {
+        let all = self.where_preds();
+        let key = owner.to_raw();
+        let start = all.partition_point(|e| e.owner_key() < key);
+        let end = start + all[start..].partition_point(|e| e.owner_key() == key);
+        WherePredIter::new(self.ty_arena(), &all[start..end])
+    }
+
+    /// Binary-searches all `WherePredEntry` bounds/predicates owned by `DefEntry` `def_index`.
+    #[inline]
+    pub fn where_preds_for_def(&self, def_index: u32) -> WherePredIter<'_> {
+        self.where_preds_for_owner(GenericOwner::Def(def_index))
+    }
+
+    /// Binary-searches all `WherePredEntry` bounds/predicates owned by `ImplEntry` `impl_index`.
+    #[inline]
+    pub fn where_preds_for_impl(&self, impl_index: u32) -> WherePredIter<'_> {
+        self.where_preds_for_owner(GenericOwner::Impl(impl_index))
     }
 }

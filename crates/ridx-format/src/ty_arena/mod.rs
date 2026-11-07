@@ -13,12 +13,14 @@
 mod display;
 mod field_view;
 mod fn_sig;
+mod generic_view;
 mod impl_view;
 mod intern;
 mod iter;
 
 pub use self::field_view::{DefTyView, FieldIter, FieldView, RawDefTy, RawField};
 pub use self::fn_sig::{FnSigView, RawFnSig};
+pub use self::generic_view::{GenericParamIter, GenericParamView, RawGenericParam, RawWherePred, WherePredIter, WherePredView};
 pub use self::impl_view::{AssocTyIter, AssocTyView, ImplIter, ImplView, RawAssocTy, RawImpl};
 pub use self::intern::{RawGenericArg, RawTy, RawTyBound, RawTyDef, TyInterner};
 pub use self::iter::{AssocBindingIter, AssocBindingView, GenericArgIter, GenericArgView, TyBoundIter, TyBoundView, TyListIter, U32ListIter};

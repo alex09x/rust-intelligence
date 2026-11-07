@@ -70,6 +70,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
     let mut impl_dids: Vec<DefId> = Vec::new();
     let mut adts: Vec<(DefId, u32)> = Vec::new();
     let mut def_tys: Vec<(DefId, u32)> = Vec::new();
+    let mut generic_items: Vec<(DefId, u32)> = Vec::new();
     for def_id in items {
         let kind = tcx.def_kind(def_id);
         let did = def_id.to_def_id();
@@ -321,14 +322,29 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
             }
             _ => {}
         }
+        if matches!(
+            kind,
+            hir::def::DefKind::Fn
+                | hir::def::DefKind::AssocFn
+                | hir::def::DefKind::Struct
+                | hir::def::DefKind::Union
+                | hir::def::DefKind::Enum
+                | hir::def::DefKind::Trait
+                | hir::def::DefKind::TraitAlias
+                | hir::def::DefKind::TyAlias
+                | hir::def::DefKind::AssocTy
+        ) {
+            generic_items.push((did, def_idx));
+        }
     }
 
-    if !callables.is_empty() || !impl_dids.is_empty() || !adts.is_empty() || !def_tys.is_empty() {
+    if !callables.is_empty() || !impl_dids.is_empty() || !adts.is_empty() || !def_tys.is_empty() || !generic_items.is_empty() {
         let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, rustc_span::def_id::LOCAL_CRATE, &visitor.krate_to_unit, &local_def_indices);
         lowerer.record_fn_sigs(&callables, &mut visitor.writer);
         lowerer.record_impls(&impl_dids, &mut visitor.writer);
         lowerer.record_adts(&adts, &mut visitor.writer);
         lowerer.record_def_tys(&def_tys, &mut visitor.writer);
+        lowerer.record_item_generics_and_preds(&generic_items, &mut visitor.writer);
     }
 
     // Traverse all item bodies for references and types

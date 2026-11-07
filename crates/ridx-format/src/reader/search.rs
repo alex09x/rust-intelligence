@@ -229,6 +229,8 @@ pub(super) fn validate_sections(buf_len: usize, header: &Header) -> io::Result<(
     check_section(buf_len, header.assoc_tys_offset, header.assoc_tys_count, std::mem::size_of::<AssocTyEntry>(), 4, "AssocTys table")?;
     check_section(buf_len, header.fields_offset, header.fields_count, std::mem::size_of::<FieldEntry>(), 4, "Fields table")?;
     check_section(buf_len, header.def_tys_offset, header.def_tys_count, std::mem::size_of::<DefTyEntry>(), 4, "DefTys table")?;
+    check_section(buf_len, header.generic_params_offset, header.generic_params_count, std::mem::size_of::<GenericParamEntry>(), 4, "GenericParams table")?;
+    check_section(buf_len, header.where_preds_offset, header.where_preds_count, std::mem::size_of::<WherePredEntry>(), 4, "WherePreds table")?;
 
     Ok(())
 }

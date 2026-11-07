@@ -11,8 +11,8 @@
 //! Input descriptors and zero-copy views over `FieldEntry` and `DefTyEntry` tables.
 
 use crate::format::{
-    CtorShape, DefTyEntry, FieldEntry, ItemVis, TyId, DEF_TY_FLAG_FUNDAMENTAL, DEF_TY_FLAG_MUT_STATIC, DEF_TY_FLAG_NON_EXHAUSTIVE, DEF_TY_FLAG_UNSAFE_STATIC, FIELD_FLAG_TUPLE,
-    FIELD_FLAG_UNSAFE,
+    CtorShape, DefTyEntry, FieldEntry, ItemVis, TyId, DEF_TY_FLAG_DEFAULT_ASSOC, DEF_TY_FLAG_FUNDAMENTAL, DEF_TY_FLAG_MUT_STATIC, DEF_TY_FLAG_NON_EXHAUSTIVE,
+    DEF_TY_FLAG_UNSAFE_STATIC, FIELD_FLAG_TUPLE, FIELD_FLAG_UNSAFE,
 };
 
 use super::TyArenaView;
@@ -197,5 +197,10 @@ impl DefTyView {
     #[inline]
     pub const fn is_fundamental(&self) -> bool {
         (self.entry.flags & DEF_TY_FLAG_FUNDAMENTAL) != 0
+    }
+
+    #[inline]
+    pub const fn is_default_assoc_ty(&self) -> bool {
+        (self.entry.flags & DEF_TY_FLAG_DEFAULT_ASSOC) != 0
     }
 }

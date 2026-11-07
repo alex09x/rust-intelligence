@@ -26,6 +26,8 @@ pub const DEF_TY_FLAG_MUT_STATIC: u8 = 1 << 1;
 pub const DEF_TY_FLAG_UNSAFE_STATIC: u8 = 1 << 2;
 /// `DefTyEntry.flags`: `#[fundamental]` ADT (`Box<T>`, `Pin<P>`).
 pub const DEF_TY_FLAG_FUNDAMENTAL: u8 = 1 << 3;
+/// `DefTyEntry.flags`: trait `AssocTy` declaration carrying a default type (`type Item = DefaultTy;`).
+pub const DEF_TY_FLAG_DEFAULT_ASSOC: u8 = 1 << 4;
 
 /// Visibility level matching `DefEntry.visibility` (`0 = Public, 1 = Crate, 2 = Restricted, 3 = Private`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]

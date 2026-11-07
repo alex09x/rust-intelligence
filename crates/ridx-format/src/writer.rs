@@ -16,6 +16,7 @@ use crate::format::*;
 
 mod encode;
 mod typed;
+mod typed_generics;
 
 #[cfg(test)]
 use self::encode::align_up;
@@ -102,6 +103,8 @@ pub struct IndexWriter {
     impls: Vec<typed::PendingImpl>,
     fields: Vec<FieldEntry>,
     def_tys: Vec<DefTyEntry>,
+    def_generic_params: Vec<GenericParamEntry>,
+    def_where_preds: Vec<WherePredEntry>,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -128,6 +131,8 @@ impl IndexWriter {
             impls: Vec::new(),
             fields: Vec::new(),
             def_tys: Vec::new(),
+            def_generic_params: Vec::new(),
+            def_where_preds: Vec::new(),
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),

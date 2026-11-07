@@ -14,6 +14,7 @@ mod cache_and_workspace;
 mod cas_and_owner_bounds;
 mod fields;
 mod fn_sigs;
+mod generics;
 mod impls;
 mod notes;
 mod self_variant_paths;
