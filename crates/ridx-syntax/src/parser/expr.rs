@@ -42,57 +42,134 @@ enum Op {
 }
 
 /// The operator ahead: its binding power, token count and kind. `=>` and `||`-closures are not operators.
+#[inline]
 fn current_op(p: &mut Parser<'_>) -> Option<(u8, usize, Op)> {
-    const OPS3: &[(&str, u8, Op)] = &[("<<=", 1, Op::Assign), (">>=", 1, Op::Assign), ("..=", 2, Op::Range), ("...", 2, Op::Range)];
-    const OPS2: &[(&str, u8, Op)] = &[
-        ("||", 3, Op::Bin),
-        ("&&", 4, Op::Bin),
-        ("==", 5, Op::Bin),
-        ("!=", 5, Op::Bin),
-        ("<=", 5, Op::Bin),
-        (">=", 5, Op::Bin),
-        ("<<", 9, Op::Bin),
-        (">>", 9, Op::Bin),
-        ("+=", 1, Op::Assign),
-        ("-=", 1, Op::Assign),
-        ("*=", 1, Op::Assign),
-        ("/=", 1, Op::Assign),
-        ("%=", 1, Op::Assign),
-        ("^=", 1, Op::Assign),
-        ("&=", 1, Op::Assign),
-        ("|=", 1, Op::Assign),
-        ("..", 2, Op::Range),
-    ];
-    if p.at(T::As) {
-        return Some((12, 1, Op::Cast));
-    }
-    if !p.current().is_some_and(|k| k.is_punct()) {
-        return None;
-    }
-    if p.at_op("=>") || p.at_op("->") {
-        return None;
-    }
-    for &(s, bp, op) in OPS3 {
-        if p.at_op(s) {
-            return Some((bp, 3, op));
+    let t0 = p.tok(0)?;
+    match t0.kind {
+        T::As => Some((12, 1, Op::Cast)),
+        T::Eq => {
+            if t0.is_joint() {
+                match p.tok(1).map(|t| t.kind) {
+                    Some(T::Gt) => None, // `=>`
+                    Some(T::Eq) => Some((5, 2, Op::Bin)),
+                    _ => Some((1, 1, Op::Assign)),
+                }
+            } else {
+                Some((1, 1, Op::Assign))
+            }
         }
-    }
-    for &(s, bp, op) in OPS2 {
-        if p.at_op(s) {
-            return Some((bp, 2, op));
+        T::Minus => {
+            if t0.is_joint() {
+                match p.tok(1).map(|t| t.kind) {
+                    Some(T::Gt) => None, // `->`
+                    Some(T::Eq) => Some((1, 2, Op::Assign)),
+                    _ => Some((10, 1, Op::Bin)),
+                }
+            } else {
+                Some((10, 1, Op::Bin))
+            }
         }
+        T::Plus => {
+            if t0.is_joint() && p.tok(1).is_some_and(|t| t.kind == T::Eq) {
+                Some((1, 2, Op::Assign))
+            } else {
+                Some((10, 1, Op::Bin))
+            }
+        }
+        T::Star | T::Slash | T::Percent => {
+            if t0.is_joint() && p.tok(1).is_some_and(|t| t.kind == T::Eq) {
+                Some((1, 2, Op::Assign))
+            } else {
+                Some((11, 1, Op::Bin))
+            }
+        }
+        T::Caret => {
+            if t0.is_joint() && p.tok(1).is_some_and(|t| t.kind == T::Eq) {
+                Some((1, 2, Op::Assign))
+            } else {
+                Some((7, 1, Op::Bin))
+            }
+        }
+        T::Amp => {
+            if t0.is_joint() {
+                match p.tok(1).map(|t| t.kind) {
+                    Some(T::Amp) => Some((4, 2, Op::Bin)),
+                    Some(T::Eq) => Some((1, 2, Op::Assign)),
+                    _ => Some((8, 1, Op::Bin)),
+                }
+            } else {
+                Some((8, 1, Op::Bin))
+            }
+        }
+        T::Pipe => {
+            if t0.is_joint() {
+                match p.tok(1).map(|t| t.kind) {
+                    Some(T::Pipe) => Some((3, 2, Op::Bin)),
+                    Some(T::Eq) => Some((1, 2, Op::Assign)),
+                    _ => Some((6, 1, Op::Bin)),
+                }
+            } else {
+                Some((6, 1, Op::Bin))
+            }
+        }
+        T::Bang => {
+            if t0.is_joint() && p.tok(1).is_some_and(|t| t.kind == T::Eq) {
+                Some((5, 2, Op::Bin))
+            } else {
+                None
+            }
+        }
+        T::Lt => {
+            if t0.is_joint() {
+                if let Some(t1) = p.tok(1) {
+                    if t1.kind == T::Eq {
+                        return Some((5, 2, Op::Bin));
+                    }
+                    if t1.kind == T::Lt {
+                        if t1.is_joint() && p.tok(2).is_some_and(|t| t.kind == T::Eq) {
+                            return Some((1, 3, Op::Assign));
+                        }
+                        return Some((9, 2, Op::Bin));
+                    }
+                }
+            }
+            Some((5, 1, Op::Bin))
+        }
+        T::Gt => {
+            if t0.is_joint() {
+                if let Some(t1) = p.tok(1) {
+                    if t1.kind == T::Eq {
+                        return Some((5, 2, Op::Bin));
+                    }
+                    if t1.kind == T::Gt {
+                        if t1.is_joint() && p.tok(2).is_some_and(|t| t.kind == T::Eq) {
+                            return Some((1, 3, Op::Assign));
+                        }
+                        return Some((9, 2, Op::Bin));
+                    }
+                }
+            }
+            Some((5, 1, Op::Bin))
+        }
+        T::Dot => {
+            if t0.is_joint() {
+                if let Some(t1) = p.tok(1) {
+                    if t1.kind == T::Dot {
+                        if t1.is_joint() {
+                            if let Some(t2) = p.tok(2) {
+                                if matches!(t2.kind, T::Eq | T::Dot) {
+                                    return Some((2, 3, Op::Range));
+                                }
+                            }
+                        }
+                        return Some((2, 2, Op::Range));
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
     }
-    let (bp, op) = match p.current()? {
-        T::Eq => (1, Op::Assign),
-        T::Lt | T::Gt => (5, Op::Bin),
-        T::Pipe => (6, Op::Bin),
-        T::Caret => (7, Op::Bin),
-        T::Amp => (8, Op::Bin),
-        T::Plus | T::Minus => (10, Op::Bin),
-        T::Star | T::Slash | T::Percent => (11, Op::Bin),
-        _ => return None,
-    };
-    Some((bp, 1, op))
 }
 
 /// Whether an expression can start here (the optional operand of `return`, `break`, a range end).

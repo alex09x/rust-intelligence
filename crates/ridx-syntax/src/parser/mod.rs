@@ -27,16 +27,34 @@ use crate::tree::{Event, SyntaxTree};
 /// Parses `src` into a lossless syntax tree.
 pub fn parse(src: &str) -> SyntaxTree<'_> {
     let tokens = crate::lex(src);
-    let sig: Vec<u32> = (0..tokens.len() as u32).filter(|&i| !tokens[i as usize].is_trivia()).collect();
-    let mut p = Parser { src, tokens: &tokens, sig: &sig, pos: 0, events: Vec::with_capacity(sig.len() * 2), fuel: 0 };
+    let mut sig: Vec<u32> = Vec::with_capacity(tokens.len() * 3 / 4 + 8);
+    let mut i = 0usize;
+    let tlen = tokens.len();
+    while i < tlen {
+        if !tokens[i].is_trivia() {
+            sig.push(i as u32);
+        }
+        i += 1;
+    }
+    let events_cap = sig.len() * 3 + 16;
+    let mut p = Parser {
+        src,
+        tokens: &tokens,
+        sig: &sig,
+        pos: 0,
+        events: Vec::with_capacity(events_cap),
+        nodes_count: 0,
+        #[cfg(debug_assertions)]
+        fuel: 0,
+    };
     let m = p.start();
     items::item_list(&mut p, false);
     while !p.at_eof() {
         p.err_bump();
     }
     m.complete(&mut p, SyntaxKind::SourceFile);
-    let events = std::mem::take(&mut p.events);
-    SyntaxTree::build(src, tokens.clone(), &sig, events)
+    let Parser { events, nodes_count, .. } = p;
+    SyntaxTree::build(src, tokens, &sig, events, nodes_count as usize)
 }
 
 pub(crate) struct Parser<'a> {
@@ -45,7 +63,9 @@ pub(crate) struct Parser<'a> {
     sig: &'a [u32],
     pos: usize,
     events: Vec<Event>,
+    nodes_count: u32,
     /// Lookahead calls since the last consumed token: a loop that stops consuming is a bug, caught in debug.
+    #[cfg(debug_assertions)]
     fuel: u32,
 }
 
@@ -62,14 +82,15 @@ pub(crate) struct CompletedMarker {
 }
 
 impl Marker {
+    #[inline]
     pub(crate) fn complete(self, p: &mut Parser<'_>, kind: SyntaxKind) -> CompletedMarker {
-        if let Event::Start { kind: k, .. } = &mut p.events[self.pos as usize] {
-            *k = kind;
-        }
-        p.events.push(Event::Finish);
+        p.events[self.pos as usize].kind = kind;
+        p.nodes_count += 1;
+        p.events.push(Event::FINISH);
         CompletedMarker { pos: self.pos, kind }
     }
 
+    #[inline]
     pub(crate) fn abandon(self, p: &mut Parser<'_>) {
         if self.pos as usize == p.events.len() - 1 {
             p.events.pop();
@@ -79,97 +100,122 @@ impl Marker {
 
 impl CompletedMarker {
     /// Opens a node before this one that will contain it.
+    #[inline]
     pub(crate) fn precede(self, p: &mut Parser<'_>) -> Marker {
         let m = p.start();
-        if let Event::Start { forward_parent, .. } = &mut p.events[self.pos as usize] {
-            *forward_parent = m.pos - self.pos;
-        }
+        p.events[self.pos as usize].set_fp(m.pos - self.pos);
         m
     }
 
+    #[inline]
     pub(crate) fn kind(self) -> SyntaxKind {
         self.kind
     }
 }
 
 impl<'a> Parser<'a> {
+    #[inline]
     pub(crate) fn start(&mut self) -> Marker {
         let pos = self.events.len() as u32;
-        self.events.push(Event::Start { kind: SyntaxKind::Tombstone, forward_parent: 0 });
+        self.events.push(Event::start(SyntaxKind::Tombstone));
         Marker { pos }
     }
 
-    fn tok(&self, n: usize) -> Option<Token> {
+    #[inline]
+    pub(crate) fn tok(&self, n: usize) -> Option<Token> {
         self.sig.get(self.pos + n).map(|&i| self.tokens[i as usize])
     }
 
+    #[inline]
     pub(crate) fn nth(&mut self, n: usize) -> Option<TokenKind> {
-        self.fuel += 1;
-        debug_assert!(self.fuel < 100_000, "parser stopped consuming tokens");
+        #[cfg(debug_assertions)]
+        {
+            self.fuel += 1;
+            debug_assert!(self.fuel < 100_000, "parser stopped consuming tokens");
+        }
         self.tok(n).map(|t| t.kind)
     }
 
+    #[inline]
     pub(crate) fn current(&mut self) -> Option<TokenKind> {
         self.nth(0)
     }
 
+    #[inline]
     pub(crate) fn at(&mut self, k: TokenKind) -> bool {
         self.nth(0) == Some(k)
     }
 
+    #[inline]
     pub(crate) fn nth_at(&mut self, n: usize, k: TokenKind) -> bool {
         self.nth(n) == Some(k)
     }
 
+    #[inline]
     pub(crate) fn at_eof(&mut self) -> bool {
-        self.nth(0).is_none()
+        self.pos >= self.sig.len()
     }
 
     /// The text of the `n`th significant token ahead (contextual keywords: `union`, `default`, `macro_rules`).
+    #[inline]
     pub(crate) fn nth_text(&self, n: usize) -> &'a str {
         self.tok(n).map_or("", |t| t.text(self.src))
     }
 
+    #[inline]
+    pub(crate) fn nth_text_eq(&self, n: usize, kw: &str) -> bool {
+        let Some(t) = self.tok(n) else { return false };
+        (t.end - t.start) as usize == kw.len() && &self.src.as_bytes()[t.start as usize..t.end as usize] == kw.as_bytes()
+    }
+
+    #[inline]
     pub(crate) fn at_contextual(&mut self, kw: &str) -> bool {
-        self.at(TokenKind::Ident) && self.nth_text(0) == kw
+        self.at(TokenKind::Ident) && self.nth_text_eq(0, kw)
     }
 
     /// Whether the punctuation tokens ahead spell `op` with nothing between them (`::`, `->`, `..=`).
+    #[inline]
     pub(crate) fn at_op(&mut self, op: &str) -> bool {
-        for (i, b) in op.bytes().enumerate() {
-            let Some(t) = self.tok(i) else { return false };
-            if t.kind.punct_byte() != Some(b) || (i + 1 < op.len() && !t.is_joint()) {
-                return false;
-            }
-        }
-        true
+        self.nth_at_op(0, op)
     }
 
     /// Whether the tokens from the `n`th ahead spell `op` with nothing between them.
+    #[inline]
     pub(crate) fn nth_at_op(&mut self, n: usize, op: &str) -> bool {
-        for (i, b) in op.bytes().enumerate() {
-            let Some(t) = self.tok(n + i) else { return false };
-            if t.kind.punct_byte() != Some(b) || (i + 1 < op.len() && !t.is_joint()) {
+        let bytes = op.as_bytes();
+        let len = bytes.len();
+        if self.pos + n + len > self.sig.len() {
+            return false;
+        }
+        for (i, &b) in bytes.iter().enumerate() {
+            let t = self.tokens[self.sig[self.pos + n + i] as usize];
+            if t.kind.punct_byte() != Some(b) || (i + 1 < len && !t.is_joint()) {
                 return false;
             }
         }
         true
     }
 
+    #[inline]
     pub(crate) fn bump(&mut self) {
         if self.pos < self.sig.len() {
             self.pos += 1;
-            self.fuel = 0;
-            self.events.push(Event::Token);
+            #[cfg(debug_assertions)]
+            {
+                self.fuel = 0;
+            }
+            self.events.push(Event::TOKEN);
         }
     }
 
+    #[inline]
     pub(crate) fn bump_n(&mut self, n: usize) {
         for _ in 0..n {
             self.bump();
         }
     }
 
+    #[inline]
     pub(crate) fn eat(&mut self, k: TokenKind) -> bool {
         let hit = self.at(k);
         if hit {

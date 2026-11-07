@@ -130,9 +130,26 @@ fn is_non_ascii_ident_continue_mark(c: char) -> bool {
 
 /// Scans an identifier body starting at `pos` (where the start character at `pos` has
 /// already been validated or `pos` is the start of continuation characters).
-#[inline]
+#[inline(always)]
 pub(crate) fn scan_ident_tail(src: &str, bytes: &[u8], mut pos: usize) -> usize {
-    while pos < bytes.len() {
+    let len = bytes.len();
+    while pos < len {
+        let b = bytes[pos];
+        if is_ascii_id_cont(b) {
+            pos += 1;
+        } else if b >= 0x80 {
+            return scan_ident_tail_unicode(src, bytes, pos);
+        } else {
+            break;
+        }
+    }
+    pos
+}
+
+#[cold]
+fn scan_ident_tail_unicode(src: &str, bytes: &[u8], mut pos: usize) -> usize {
+    let len = bytes.len();
+    while pos < len {
         let b = bytes[pos];
         if is_ascii_id_cont(b) {
             pos += 1;

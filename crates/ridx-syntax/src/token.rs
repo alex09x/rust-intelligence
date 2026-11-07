@@ -194,100 +194,47 @@ impl TokenKind {
     /// Returns `true` for whitespace, comments (including doc comments), and file shebangs.
     #[inline]
     pub const fn is_trivia(self) -> bool {
-        matches!(self, Self::Whitespace | Self::LineComment | Self::BlockComment | Self::Shebang)
+        (self as u8) <= (Self::Shebang as u8)
     }
 
     /// Returns `true` for non-delimiter atomic punctuation characters eligible for [`JOINT_NEXT`].
     #[inline]
     pub const fn is_punct(self) -> bool {
-        self.punct_byte().is_some()
+        let v = self as u8;
+        v >= (Self::Bang as u8) && v <= (Self::Tilde as u8)
     }
 
     /// Returns `true` for `(`, `)`, `{`, `}`, `[`, `]`.
     #[inline]
     pub const fn is_delimiter(self) -> bool {
-        matches!(self, Self::LParen | Self::RParen | Self::LBrace | Self::RBrace | Self::LBracket | Self::RBracket)
+        let v = self as u8;
+        v >= (Self::LParen as u8) && v <= (Self::RBracket as u8)
     }
 
     /// Returns `true` for strict keywords (excluding [`Self::Underscore`]).
     #[inline]
     pub const fn is_keyword(self) -> bool {
-        matches!(
-            self,
-            Self::As
-                | Self::Async
-                | Self::Await
-                | Self::Break
-                | Self::Const
-                | Self::Continue
-                | Self::Crate
-                | Self::Dyn
-                | Self::Else
-                | Self::Enum
-                | Self::Extern
-                | Self::False
-                | Self::Fn
-                | Self::For
-                | Self::If
-                | Self::Impl
-                | Self::In
-                | Self::Let
-                | Self::Loop
-                | Self::Match
-                | Self::Mod
-                | Self::Move
-                | Self::Mut
-                | Self::Pub
-                | Self::Ref
-                | Self::Return
-                | Self::SelfKw
-                | Self::SelfType
-                | Self::Static
-                | Self::Struct
-                | Self::Super
-                | Self::Trait
-                | Self::True
-                | Self::Type
-                | Self::Unsafe
-                | Self::Use
-                | Self::Where
-                | Self::While
-        )
+        let v = self as u8;
+        v >= (Self::As as u8) && v <= (Self::While as u8)
     }
 
     /// Returns `true` for numeric, character, byte, string, and C-string literals.
     #[inline]
     pub const fn is_literal(self) -> bool {
-        matches!(self, Self::Int | Self::Float | Self::Char | Self::Byte | Self::Str | Self::RawStr | Self::ByteStr | Self::RawByteStr | Self::CStr | Self::RawCStr)
+        let v = self as u8;
+        v >= (Self::Int as u8) && v <= (Self::RawCStr as u8)
     }
 
     /// Maps an atomic punctuation [`TokenKind`] back to its ASCII byte, enabling fast
     /// multi-character operator checks (`at_op("::")`, `eat_op("->")`, `at_op(">>")`) in the parser.
     #[inline]
     pub const fn punct_byte(self) -> Option<u8> {
-        match self {
-            Self::Bang => Some(b'!'),
-            Self::Hash => Some(b'#'),
-            Self::Dollar => Some(b'$'),
-            Self::Percent => Some(b'%'),
-            Self::Amp => Some(b'&'),
-            Self::Star => Some(b'*'),
-            Self::Plus => Some(b'+'),
-            Self::Comma => Some(b','),
-            Self::Minus => Some(b'-'),
-            Self::Dot => Some(b'.'),
-            Self::Slash => Some(b'/'),
-            Self::Colon => Some(b':'),
-            Self::Semi => Some(b';'),
-            Self::Lt => Some(b'<'),
-            Self::Eq => Some(b'='),
-            Self::Gt => Some(b'>'),
-            Self::Question => Some(b'?'),
-            Self::At => Some(b'@'),
-            Self::Caret => Some(b'^'),
-            Self::Pipe => Some(b'|'),
-            Self::Tilde => Some(b'~'),
-            _ => None,
+        const BYTES: [u8; 21] = *b"!#$%&*+,-./:;<=>?@^|~";
+        let idx = (self as u8).wrapping_sub(Self::Bang as u8) as usize;
+        if idx < BYTES.len() {
+            Some(BYTES[idx])
+        } else {
+            None
         }
     }
 }

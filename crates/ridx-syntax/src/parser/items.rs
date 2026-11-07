@@ -73,10 +73,12 @@ pub(crate) fn at_item_start(p: &mut Parser<'_>) -> bool {
         Some(T::Const) => !p.nth_at(1, T::LBrace),
         Some(T::Unsafe) => matches!(p.nth(1), Some(T::Fn | T::Impl | T::Trait | T::Extern)),
         Some(T::Async) => p.nth_at(1, T::Fn) || (p.nth_at(1, T::Unsafe) && p.nth_at(2, T::Fn)),
-        Some(T::Ident) => {
-            let t = p.nth_text(0);
-            (matches!(t, "union" | "macro") && p.nth_at(1, T::Ident)) || (t == "macro_rules" && p.nth_at(1, T::Bang)) || (t == "auto" && p.nth_at(1, T::Trait))
-        }
+        Some(T::Ident) => match p.nth(1) {
+            Some(T::Ident) => p.nth_text_eq(0, "union") || p.nth_text_eq(0, "macro"),
+            Some(T::Bang) => p.nth_text_eq(0, "macro_rules"),
+            Some(T::Trait) => p.nth_text_eq(0, "auto"),
+            _ => false,
+        },
         _ => false,
     }
 }
@@ -102,8 +104,8 @@ pub(crate) fn item(p: &mut Parser<'_>) -> Option<CompletedMarker> {
                 a.complete(p, K::Abi);
             }
             Some(T::Ident)
-                if matches!(p.nth_text(0), "default" | "safe" | "auto")
-                    && matches!(p.nth(1), Some(T::Fn | T::Impl | T::Unsafe | T::Async | T::Const | T::Type | T::Trait | T::Extern | T::Static)) =>
+                if matches!(p.nth(1), Some(T::Fn | T::Impl | T::Unsafe | T::Async | T::Const | T::Type | T::Trait | T::Extern | T::Static))
+                    && matches!(p.nth_text(0), "default" | "safe" | "auto") =>
             {
                 p.bump()
             }

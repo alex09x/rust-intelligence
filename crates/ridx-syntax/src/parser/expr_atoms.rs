@@ -23,24 +23,30 @@ pub(crate) fn atom(p: &mut Parser<'_>, r: Restrictions) -> Option<CompletedMarke
             p.bump();
             K::Literal
         }
-        Some(T::Ident) if p.nth_text(0) == "try" && p.nth_at(1, T::LBrace) => {
-            p.bump();
-            stmts::block_body(p);
-            K::BlockExpr
-        }
-        Some(T::Ident) if p.nth_text(0) == "yield" && !matches!(p.nth(1), Some(T::Colon | T::Bang | T::LParen | T::Dot)) => {
-            p.bump();
-            if at_expr_start(p) {
-                expr(p);
+        Some(T::Ident) => {
+            let t = p.tok(0).unwrap();
+            match t.end - t.start {
+                3 if p.nth_at(1, T::LBrace) && &p.src.as_bytes()[t.start as usize..t.end as usize] == b"try" => {
+                    p.bump();
+                    stmts::block_body(p);
+                    K::BlockExpr
+                }
+                5 if !matches!(p.nth(1), Some(T::Colon | T::Bang | T::LParen | T::Dot)) && &p.src.as_bytes()[t.start as usize..t.end as usize] == b"yield" => {
+                    p.bump();
+                    if at_expr_start(p) {
+                        expr(p);
+                    }
+                    K::YieldExpr
+                }
+                6 if &p.src.as_bytes()[t.start as usize..t.end as usize] == b"become" && at_ident_or_path(p, 1) => {
+                    p.bump();
+                    expr(p);
+                    K::BecomeExpr
+                }
+                _ => path_expr(p, r),
             }
-            K::YieldExpr
         }
-        Some(T::Ident) if p.nth_text(0) == "become" && at_ident_or_path(p, 1) => {
-            p.bump();
-            expr(p);
-            K::BecomeExpr
-        }
-        Some(T::Ident | T::RawIdent | T::SelfKw | T::SelfType | T::Super | T::Crate | T::Lt) => path_expr(p, r),
+        Some(T::RawIdent | T::SelfKw | T::SelfType | T::Super | T::Crate | T::Lt) => path_expr(p, r),
         Some(T::Colon) if p.at_op("::") => path_expr(p, r),
         Some(T::LParen) => paren_or_tuple(p),
         Some(T::LBracket) => {

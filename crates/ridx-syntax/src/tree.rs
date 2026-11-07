@@ -37,56 +37,70 @@ pub struct SyntaxTree<'s> {
     pub nodes: Vec<Node>,
 }
 
-/// What the parser emits; the tree is built from these after parsing so a completed node can be wrapped in a new
-/// parent (`a` becomes the left side of `a + b`) without moving nodes.
+/// Compact 4-byte parser event (`Start`, `Finish`, or `Token`).
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Event {
-    /// Opens a node; `forward_parent` is the distance to a `Start` that must open before this one.
-    Start {
-        kind: SyntaxKind,
-        forward_parent: u32,
-    },
-    Finish,
-    /// Consumes the next significant token.
-    Token,
+pub(crate) struct Event {
+    pub(crate) kind: SyntaxKind,
+    fp_lo: u8,
+    fp_hi: u16,
+}
+
+const _: () = assert!(core::mem::size_of::<Event>() == 4);
+
+impl Event {
+    pub(crate) const FINISH: Self = Self { kind: SyntaxKind::Tombstone, fp_lo: 0, fp_hi: u16::MAX };
+    pub(crate) const TOKEN: Self = Self { kind: SyntaxKind::Tombstone, fp_lo: 1, fp_hi: u16::MAX };
+    pub(crate) const TOMBSTONE: Self = Self { kind: SyntaxKind::Tombstone, fp_lo: 0, fp_hi: 0 };
+
+    #[inline]
+    pub(crate) const fn start(kind: SyntaxKind) -> Self {
+        Self { kind, fp_lo: 0, fp_hi: 0 }
+    }
+
+    #[inline]
+    pub(crate) fn set_fp(&mut self, fp: u32) {
+        debug_assert!(fp < 0xFFFE_FFFF);
+        self.fp_lo = (fp & 0xFF) as u8;
+        self.fp_hi = (fp >> 8) as u16;
+    }
+
+    #[inline]
+    pub(crate) const fn fp(self) -> u32 {
+        (self.fp_lo as u32) | ((self.fp_hi as u32) << 8)
+    }
+
+    #[inline]
+    pub(crate) const fn is_special(self) -> bool {
+        self.fp_hi == u16::MAX
+    }
+
+    #[inline]
+    pub(crate) const fn is_token(self) -> bool {
+        self.fp_lo != 0
+    }
 }
 
 impl<'s> SyntaxTree<'s> {
-    pub(crate) fn build(src: &'s str, tokens: Vec<Token>, sig: &[u32], mut events: Vec<Event>) -> Self {
-        let mut nodes: Vec<Node> = Vec::with_capacity(events.len() / 3 + 1);
-        let mut stack: Vec<u32> = Vec::new();
+    pub(crate) fn build(src: &'s str, tokens: Vec<Token>, sig: &[u32], mut events: Vec<Event>, nodes_cap: usize) -> Self {
+        let mut nodes: Vec<Node> = Vec::with_capacity(nodes_cap);
+        let mut stack: Vec<u32> = Vec::with_capacity(64);
         // Nodes on the stack from this depth on have not met their first token yet.
         let mut unstarted = 0usize;
         let mut next_sig = 0usize;
         let mut last_end = 0u32;
-        let mut chain: Vec<SyntaxKind> = Vec::new();
+        let mut chain: Vec<SyntaxKind> = Vec::with_capacity(16);
         for i in 0..events.len() {
-            match std::mem::replace(&mut events[i], Event::Start { kind: SyntaxKind::Tombstone, forward_parent: 0 }) {
-                Event::Start { kind, forward_parent } => {
-                    chain.clear();
-                    chain.push(kind);
-                    let mut fp = forward_parent;
-                    let mut at = i;
-                    while fp != 0 {
-                        at += fp as usize;
-                        match std::mem::replace(&mut events[at], Event::Start { kind: SyntaxKind::Tombstone, forward_parent: 0 }) {
-                            Event::Start { kind, forward_parent } => {
-                                chain.push(kind);
-                                fp = forward_parent;
-                            }
-                            _ => unreachable!("forward parent is a Start"),
-                        }
+            let ev = events[i];
+            if ev.is_special() {
+                if ev.is_token() {
+                    let raw = sig[next_sig];
+                    next_sig += 1;
+                    for &id in &stack[unstarted..] {
+                        nodes[id as usize].first = raw;
                     }
-                    for &kind in chain.iter().rev() {
-                        if kind == SyntaxKind::Tombstone {
-                            continue;
-                        }
-                        let parent = stack.last().copied().unwrap_or(u32::MAX);
-                        stack.push(nodes.len() as u32);
-                        nodes.push(Node { kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
-                    }
-                }
-                Event::Finish => {
+                    unstarted = stack.len();
+                    last_end = raw + 1;
+                } else {
                     let id = stack.pop().expect("balanced events") as usize;
                     unstarted = unstarted.min(stack.len());
                     let len = nodes.len() as u32;
@@ -97,14 +111,35 @@ impl<'s> SyntaxTree<'s> {
                     n.end = last_end.max(n.first);
                     n.subtree_end = len;
                 }
-                Event::Token => {
-                    let raw = sig[next_sig];
-                    next_sig += 1;
-                    for &id in &stack[unstarted..] {
-                        nodes[id as usize].first = raw;
+            } else {
+                let fp0 = ev.fp();
+                if fp0 == 0 {
+                    if ev.kind != SyntaxKind::Tombstone {
+                        let parent = stack.last().copied().unwrap_or(u32::MAX);
+                        stack.push(nodes.len() as u32);
+                        nodes.push(Node { kind: ev.kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
                     }
-                    unstarted = stack.len();
-                    last_end = raw + 1;
+                } else {
+                    events[i] = Event::TOMBSTONE;
+                    chain.clear();
+                    chain.push(ev.kind);
+                    let mut fp = fp0;
+                    let mut at = i;
+                    while fp != 0 {
+                        at += fp as usize;
+                        let target = events[at];
+                        events[at] = Event::TOMBSTONE;
+                        chain.push(target.kind);
+                        fp = target.fp();
+                    }
+                    for &kind in chain.iter().rev() {
+                        if kind == SyntaxKind::Tombstone {
+                            continue;
+                        }
+                        let parent = stack.last().copied().unwrap_or(u32::MAX);
+                        stack.push(nodes.len() as u32);
+                        nodes.push(Node { kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
+                    }
                 }
             }
         }
@@ -116,45 +151,54 @@ impl<'s> SyntaxTree<'s> {
         SyntaxTree { src, tokens, nodes }
     }
 
+    #[inline]
     pub fn root(&self) -> NodeId {
         NodeId(0)
     }
 
+    #[inline]
     pub fn node(&self, id: NodeId) -> &Node {
         &self.nodes[id.0 as usize]
     }
 
+    #[inline]
     pub fn kind(&self, id: NodeId) -> SyntaxKind {
         self.node(id).kind
     }
 
+    #[inline]
     pub fn parent(&self, id: NodeId) -> Option<NodeId> {
         let p = self.node(id).parent;
         (p != u32::MAX).then_some(NodeId(p))
     }
 
     /// The direct children of `id`, in source order.
+    #[inline]
     pub fn children(&self, id: NodeId) -> Children<'_, 's> {
         let n = self.node(id);
         Children { tree: self, next: id.0 + 1, end: n.subtree_end }
     }
 
     /// The first direct child of `id` of kind `kind`.
+    #[inline]
     pub fn child(&self, id: NodeId, kind: SyntaxKind) -> Option<NodeId> {
         self.children(id).find(|&c| self.kind(c) == kind)
     }
 
     /// `id` and its descendants, in preorder.
+    #[inline]
     pub fn descendants(&self, id: NodeId) -> impl Iterator<Item = NodeId> + '_ {
         (id.0..self.node(id).subtree_end).map(NodeId)
     }
 
     /// `id`'s ancestors from its parent up to the root.
+    #[inline]
     pub fn ancestors(&self, id: NodeId) -> impl Iterator<Item = NodeId> + '_ {
         std::iter::successors(self.parent(id), move |&p| self.parent(p))
     }
 
     /// The byte range of `id`'s significant tokens.
+    #[inline]
     pub fn range(&self, id: NodeId) -> std::ops::Range<usize> {
         let n = self.node(id);
         if n.first >= n.end {
@@ -164,11 +208,13 @@ impl<'s> SyntaxTree<'s> {
         self.tokens[n.first as usize].start as usize..self.tokens[n.end as usize - 1].end as usize
     }
 
+    #[inline]
     pub fn text(&self, id: NodeId) -> &'s str {
         &self.src[self.range(id)]
     }
 
     /// The tokens `id` covers, trivia included.
+    #[inline]
     pub fn tokens_of(&self, id: NodeId) -> &[Token] {
         let n = self.node(id);
         &self.tokens[n.first as usize..n.end.max(n.first) as usize]

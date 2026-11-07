@@ -18,7 +18,15 @@ use crate::token::{TokenKind, HAS_ERROR};
 #[inline]
 pub(crate) fn scan_whitespace(src: &str, bytes: &[u8], start: usize) -> usize {
     let mut pos = start;
-    while pos < bytes.len() {
+    let len = bytes.len();
+    while pos + 4 <= len {
+        if is_ascii_ws(bytes[pos]) && is_ascii_ws(bytes[pos + 1]) && is_ascii_ws(bytes[pos + 2]) && is_ascii_ws(bytes[pos + 3]) {
+            pos += 4;
+        } else {
+            break;
+        }
+    }
+    while pos < len {
         let b = bytes[pos];
         if is_ascii_ws(b) {
             pos += 1;

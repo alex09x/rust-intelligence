@@ -10,7 +10,7 @@
 
 //! Main lossless Rust lexical scanner (`lex`).
 
-use crate::char_class::{is_ascii_id_start, is_ascii_ws, is_forbidden_raw_ident, is_ident_start_char, is_whitespace_char, scan_ident_tail};
+use crate::char_class::{is_forbidden_raw_ident, is_ident_start_char, is_whitespace_char, scan_ident_tail};
 use crate::keyword::classify_ident;
 use crate::scan_char::{scan_byte_char, scan_char_or_lifetime};
 use crate::scan_lit::{scan_number, scan_quoted_str, scan_raw_str};
@@ -29,7 +29,7 @@ pub fn lex(src: &str) -> Vec<Token> {
 
     let bytes = src.as_bytes();
     let len = bytes.len();
-    let mut tokens = Vec::with_capacity(len / 3 + 8);
+    let mut tokens = Vec::with_capacity(len / 3 + 16);
     let mut pos = 0usize;
 
     // Optional UTF-8 BOM (`\u{FEFF}`) at byte 0 is treated as leading whitespace trivia.
@@ -47,18 +47,18 @@ pub fn lex(src: &str) -> Vec<Token> {
         }
     }
 
+    let mut prev_punct = false;
     while pos < len {
         let start = pos;
         let (kind, flags, end) = scan_next_token(src, bytes, start);
         debug_assert!(end > start && end <= len);
 
-        if kind.is_punct() {
-            if let Some(prev) = tokens.last_mut() {
-                if prev.kind.is_punct() {
-                    prev.flags |= JOINT_NEXT;
-                }
-            }
+        let cur_punct = kind.is_punct();
+        if prev_punct && cur_punct {
+            let last = tokens.len() - 1;
+            tokens[last].flags |= JOINT_NEXT;
         }
+        prev_punct = cur_punct;
 
         tokens.push(Token::new(kind, flags, start as u32, end as u32));
         pos = end;
@@ -67,16 +67,13 @@ pub fn lex(src: &str) -> Vec<Token> {
     tokens
 }
 
-#[inline]
+#[inline(always)]
 fn scan_next_token(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
     let b = bytes[start];
 
-    if is_ascii_ws(b) {
-        let end = scan_whitespace(src, bytes, start);
-        return (TokenKind::Whitespace, 0, end);
-    }
-
     match b {
+        b' ' | b'\t' | b'\n' | b'\r' | 0x0B | 0x0C => (TokenKind::Whitespace, 0, scan_whitespace(src, bytes, start)),
+
         b'/' => {
             if start + 1 < bytes.len() {
                 if bytes[start + 1] == b'/' {
@@ -126,21 +123,25 @@ fn scan_next_token(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usi
         b'b' => scan_b_prefix_or_ident(src, bytes, start),
         b'c' => scan_c_prefix_or_ident(src, bytes, start),
 
-        _ if is_ascii_id_start(b) => {
+        b'a' | b'd'..=b'q' | b's'..=b'z' | b'A'..=b'Z' | b'_' => {
             let end = scan_ident_tail(src, bytes, start + 1);
-            let kind = classify_ident(&src[start..end]);
-            (kind, 0, end)
+            (classify_ident(&src[start..end]), 0, end)
         }
 
-        _ if b < 0x80 => (TokenKind::Unknown, HAS_ERROR, start + 1),
+        0x00..=0x7F => (TokenKind::Unknown, HAS_ERROR, start + 1),
 
         _ => scan_non_ascii(src, bytes, start),
     }
 }
 
 /// Handles `r"..."`, `r#"..."#`, `r#ident`, or regular identifier starting with `r`.
+#[inline]
 fn scan_r_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
     let mut p = start + 1;
+    if p >= bytes.len() || (bytes[p] != b'#' && bytes[p] != b'"') {
+        let end = scan_ident_tail(src, bytes, p);
+        return (classify_ident(&src[start..end]), 0, end);
+    }
     while p < bytes.len() && bytes[p] == b'#' {
         p += 1;
     }
@@ -163,6 +164,7 @@ fn scan_r_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, 
 }
 
 /// Handles `b'...'`, `b"..."`, `br"..."`, `br#"..."#`, or regular identifier starting with `b`.
+#[inline]
 fn scan_b_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
     if start + 1 < bytes.len() {
         match bytes[start + 1] {
@@ -187,6 +189,7 @@ fn scan_b_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, 
 }
 
 /// Handles `c"..."`, `cr"..."`, `cr#"..."#` (Rust 2021+), or regular identifier starting with `c`.
+#[inline]
 fn scan_c_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
     if start + 1 < bytes.len() {
         match bytes[start + 1] {
@@ -209,6 +212,7 @@ fn scan_c_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, 
     (kind, 0, end)
 }
 
+#[cold]
 fn scan_non_ascii(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
     let ch = src[start..].chars().next().unwrap();
     let after_first = start + ch.len_utf8();
