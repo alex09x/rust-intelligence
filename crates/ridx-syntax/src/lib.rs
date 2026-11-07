@@ -23,6 +23,7 @@
 mod char_class;
 mod keyword;
 mod lexer;
+pub mod name_res;
 pub mod parser;
 mod scan_char;
 mod scan_lit;
