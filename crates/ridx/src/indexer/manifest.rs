@@ -30,6 +30,8 @@ pub struct ManifestParams<'a> {
     pub stats: &'a ridx_format::WorkspaceStats,
     pub dep_shards: &'a [ridx_format::DependencyShardInfo],
     pub sysroot_cas_key: Option<&'a str>,
+    pub cargo_lock_hash: Option<&'a str>,
+    pub crate_features: &'a std::collections::BTreeMap<String, Vec<String>>,
 }
 
 pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
@@ -69,6 +71,8 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
         "total_types": params.stats.total_types,
         "dependency_shards": params.dep_shards,
         "sysroot_cas_key": params.sysroot_cas_key,
+        "cargo_lock_hash": params.cargo_lock_hash,
+        "crate_features": params.crate_features,
         "crates": params.stats.crate_summaries.iter().map(|c| serde_json::json!({
             "name": c.name,
             "version": c.version,

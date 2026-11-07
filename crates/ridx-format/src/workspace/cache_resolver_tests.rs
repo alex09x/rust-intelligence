@@ -83,6 +83,7 @@ fn test_resilient_cache_resolver_finds_shard_by_generation_and_version() {
         caught_panics: None,
         compiler_args: Vec::new(),
         env: std::collections::HashMap::new(),
+        ..Default::default()
     };
 
     let resolved = resolver.resolve(&dep);
@@ -137,6 +138,7 @@ fn test_cache_resolver_rejects_mismatched_version() {
         caught_panics: None,
         compiler_args: Vec::new(),
         env: std::collections::HashMap::new(),
+        ..Default::default()
     };
 
     // Resolver must reject mismatched version and return None, never substituting 0.3.0 for 0.4.0
@@ -178,6 +180,7 @@ fn test_cache_resolver_allows_resilient_shard_when_unit_key_differs_but_generati
         caught_panics: None,
         compiler_args: Vec::new(),
         env: std::collections::HashMap::new(),
+        ..Default::default()
     };
 
     let resolved = resolver.resolve(&dep);

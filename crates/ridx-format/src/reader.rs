@@ -18,6 +18,7 @@ use std::path::Path;
 
 use crate::format::*;
 
+mod cfg_access;
 mod definition_at;
 mod file_lookup;
 mod name_reference;

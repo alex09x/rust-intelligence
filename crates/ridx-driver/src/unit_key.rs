@@ -112,8 +112,14 @@ pub(crate) fn compute_dependency_unit_key_with_env(
     if let Some(m) = manifest_dir {
         key_str.push(':');
         key_str.push_str(&m.display().to_string());
+        if !is_immutable_package(m) {
+            if let Some(lock_hash) = crate::cfg_extract::resolve_workspace_cargo_lock_hash(Some(m)) {
+                key_str.push_str(":lock=");
+                key_str.push_str(&lock_hash);
+            }
+        }
     }
-    // Effective target: from args or env
+    // Effective target: from args, env, or host tuple
     let mut target = std::env::var("TARGET").ok();
     for i in 0..compiler_args.len() {
         if compiler_args[i] == "--target" && i + 1 < compiler_args.len() {
@@ -124,10 +130,9 @@ pub(crate) fn compute_dependency_unit_key_with_env(
             break;
         }
     }
-    if let Some(ref t) = target {
-        key_str.push(':');
-        key_str.push_str(t);
-    }
+    let effective_target = target.unwrap_or_else(|| rustc_session::config::host_tuple().to_string());
+    key_str.push(':');
+    key_str.push_str(&effective_target);
 
     // Extract and sort all `--cfg` flags
     let mut cfgs = Vec::new();

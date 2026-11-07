@@ -39,7 +39,7 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file (format version 5, 384 bytes; v4 is 176, v3 is 160).
+/// Fixed-size header at offset 0 of any .ridx file (format version 5, 400 bytes; v4 is 176, v3 is 160).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
@@ -168,6 +168,12 @@ pub struct Header {
     pub uses_offset: u64,
     pub uses_count: u32,
     pub _pad21: u32,
+
+    /// Offset of the `CfgEntry` table (sorted by `(key_str, Option<val_str>)`); version 5.
+    pub cfgs_offset: u64,
+    pub cfgs_count: u32,
+    /// Offset in string pool for effective target triple (or 0); version 5.
+    pub target_offset: u32,
 }
 
 impl Header {
@@ -246,6 +252,9 @@ impl Header {
             uses_offset: self.uses_offset.to_le(),
             uses_count: self.uses_count.to_le(),
             _pad21: 0,
+            cfgs_offset: self.cfgs_offset.to_le(),
+            cfgs_count: self.cfgs_count.to_le(),
+            target_offset: self.target_offset.to_le(),
         }
     }
 
@@ -324,7 +333,15 @@ impl Header {
             uses_offset: u64::from_le(self.uses_offset),
             uses_count: u32::from_le(self.uses_count),
             _pad21: 0,
+            cfgs_offset: u64::from_le(self.cfgs_offset),
+            cfgs_count: u32::from_le(self.cfgs_count),
+            target_offset: u32::from_le(self.target_offset),
         }
+    }
+
+    #[inline]
+    pub fn target_offset(&self) -> u32 {
+        u32::from_le(self.target_offset)
     }
 
     #[inline]

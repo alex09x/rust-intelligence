@@ -268,6 +268,7 @@ fn test_validate_sections_comprehensive() {
         where_preds_offset: 16,
         lang_items_offset: 16,
         uses_offset: 16,
+        cfgs_offset: 16,
         ..Header::default()
     };
     assert!(validate_sections(1000, &hdr).is_err());

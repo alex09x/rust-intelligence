@@ -161,6 +161,12 @@ pub struct DependencyShardInfo {
     pub compiler_args: Vec<String>,
     #[serde(default)]
     pub env: HashMap<String, String>,
+    #[serde(default)]
+    pub enabled_features: Vec<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub cargo_lock_hash: Option<String>,
 }
 
 pub(crate) fn default_format_version() -> u32 {
@@ -227,6 +233,10 @@ pub struct VariantManifest {
     pub dependency_shards: Vec<DependencyShardInfo>,
     #[serde(default)]
     pub sysroot_cas_key: Option<String>,
+    #[serde(default)]
+    pub cargo_lock_hash: Option<String>,
+    #[serde(default)]
+    pub crate_features: std::collections::BTreeMap<String, Vec<String>>,
 }
 
 pub(crate) fn default_manifest_version() -> String {

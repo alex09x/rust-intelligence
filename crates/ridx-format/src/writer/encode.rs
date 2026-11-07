@@ -30,6 +30,11 @@ impl IndexWriter {
             Some(g) => self.intern_string(g),
             None => 0,
         };
+        let target_triple = self.target_triple.clone();
+        let target_offset = match &target_triple {
+            Some(t) => self.intern_string(t),
+            None => 0,
+        };
 
         let definitions = std::mem::take(&mut self.definitions);
         let def_owners_raw = std::mem::take(&mut self.def_owners);
@@ -268,6 +273,7 @@ impl IndexWriter {
             notes_offset,
             notes_count: note_entries.len() as u32,
             _pad8: 0,
+            target_offset,
             ..Header::default()
         };
         self.fill_typed_header(&mut header, &typed_sections);

@@ -33,6 +33,7 @@ struct CrateIndexBuildContext<'a> {
     cache_dir: &'a Path,
     driver_hash: u64,
     compiler_args: &'a [String],
+    crate_cfg: &'a [String],
 }
 
 fn resolve_extern_and_crate_units(
@@ -167,7 +168,7 @@ fn resolve_extern_and_crate_units(
     (dep_keys_or_names, extern_units, krate_to_unit)
 }
 
-pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, env: &DriverEnv, disambiguator: Option<&str>, compiler_args: &[String]) {
+pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, env: &DriverEnv, disambiguator: Option<&str>, compiler_args: &[String], crate_cfg: &[String]) {
     let out_dir = &env.out_dir;
     let start = Instant::now();
     let local_stable_crate_id = tcx.stable_crate_id(rustc_span::def_id::LOCAL_CRATE).as_u64();
@@ -208,6 +209,7 @@ pub(crate) fn build_crate_index(tcx: TyCtxt<'_>, env: &DriverEnv, disambiguator:
         cache_dir: &env.cache_dir,
         driver_hash: env.driver_hash,
         compiler_args,
+        crate_cfg,
     };
     if is_immutable {
         build_immutable_dependency_index(tcx, ctx);

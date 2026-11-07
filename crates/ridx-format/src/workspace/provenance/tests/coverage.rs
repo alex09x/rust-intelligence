@@ -118,6 +118,7 @@ fn test_provenance_additional_coverage() {
         caught_panics: None,
         compiler_args: vec![],
         env: HashMap::new(),
+        ..Default::default()
     };
     fs::write(deps_dir.join("sample.json"), serde_json::to_string(&dep_info_mismatch).unwrap()).unwrap();
     let _ = WorkspaceIndex::load_file_metadata(&meta_test_dir.0.join("sample.ridx"), &meta_test_dir.0, "sample", "uk_sample", "different_gen_than_computed", &HashMap::new());

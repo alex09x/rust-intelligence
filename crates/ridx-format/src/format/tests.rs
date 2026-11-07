@@ -201,7 +201,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
     assert_eq!(std::mem::align_of::<DefKind>(), 1);
     check_layout!(FileEntry, 16, 8, [path_offset: 0, _pad: 4, source_hash: 8]);
     check_layout!(NoteEntry, 28, 4, [span: 0, text_offset: 20, kind: 24]);
-    check_layout!(Header, 384, 8, [
+    check_layout!(Header, 400, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
         unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
@@ -225,6 +225,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
         where_preds_offset: 336, where_preds_count: 344, _pad19: 348,
         lang_items_offset: 352, lang_items_count: 360, _pad20: 364,
         uses_offset: 368, uses_count: 376, _pad21: 380,
+        cfgs_offset: 384, cfgs_count: 392, target_offset: 396,
     ]);
     check_layout!(TyDefEntry, 16, 8, [path_hash: 0, path_offset: 8, loc_or_unit: 12]);
     check_layout!(TyEntry, 16, 4, [tag: 0, flags: 1, extra: 2, a: 4, b: 8, c: 12]);
@@ -254,6 +255,7 @@ fn test_repr_c_sizes_alignments_and_field_offsets() {
         owner_raw: 0, def_index: 4, name_offset: 8, type_def: 12, value_def: 16, macro_def: 20,
         vis: 24, flags: 25, prim_tag: 26, _pad: 27,
     ]);
+    check_layout!(CfgEntry, 8, 4, [key_offset: 0, value_offset: 4]);
     check_layout!(HeaderV2, 128, 8, [
         magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
         string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
@@ -340,6 +342,6 @@ fn test_index_writer_golden_bytes() {
     w.add_deref(p1, "golden_crate::util::Target");
     let mut bytes = Vec::new();
     w.write_to(&mut std::io::Cursor::new(&mut bytes)).unwrap();
-    assert_eq!(bytes.len(), 1320, "version 5: the version 4 layout plus 208 header bytes for v5 typed tables");
-    assert_eq!(fnv1a_64(&bytes), 0xc6c8_fcdf_f9d3_c453, "golden hash {:#x}", fnv1a_64(&bytes));
+    assert_eq!(bytes.len(), 1336, "version 5: the version 4 layout plus 224 header bytes for v5 typed tables");
+    assert_eq!(fnv1a_64(&bytes), 0x4b5f_feb8_4598_b0d8, "golden hash {:#x}", fnv1a_64(&bytes));
 }

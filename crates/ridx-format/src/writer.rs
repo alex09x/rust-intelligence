@@ -16,6 +16,7 @@ use crate::format::*;
 
 mod encode;
 mod typed;
+mod typed_cfg;
 pub(crate) mod typed_generics;
 
 #[cfg(test)]
@@ -107,6 +108,8 @@ pub struct IndexWriter {
     def_where_preds: Vec<WherePredEntry>,
     lang_items: Vec<LangItemEntry>,
     uses: Vec<UseEntry>,
+    cfgs: Vec<CfgEntry>,
+    target_triple: Option<String>,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -137,6 +140,8 @@ impl IndexWriter {
             def_where_preds: Vec::new(),
             lang_items: Vec::new(),
             uses: Vec::new(),
+            cfgs: Vec::new(),
+            target_triple: None,
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),

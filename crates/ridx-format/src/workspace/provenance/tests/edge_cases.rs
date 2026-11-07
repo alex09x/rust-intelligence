@@ -163,6 +163,7 @@ fn test_provenance_edge_cases_and_sidecar_fallback() {
         caught_panics: None,
         compiler_args: vec![],
         env: HashMap::new(),
+        ..Default::default()
     };
     fs::write(deps_dir.join("computed_crate.json"), serde_json::to_string(&dep_info).unwrap()).unwrap();
 

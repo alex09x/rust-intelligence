@@ -232,6 +232,7 @@ pub fn try_direct_crate_indexing(
     fs::create_dir_all(&direct_deps).ok()?;
     fs::create_dir_all(&direct_incr).ok()?;
 
+    let direct_lock_hash = super::feature_graph::compute_cargo_lock_hash(work_dir);
     // Execute direct indexing on changed targets in topological order
     for target_id in &sorted_target_ids {
         let (crate_name, args, env_vars, _, _) = crate_map.get(target_id)?;
@@ -247,6 +248,9 @@ pub fn try_direct_crate_indexing(
         cmd.env("RIDX_OUT_DIR", variant_out_dir);
         cmd.env("RIDX_CACHE_DIR", cache_dir);
         cmd.env("RIDX_WORKSPACE_ROOT", work_dir);
+        if let Some(ref lh) = direct_lock_hash {
+            cmd.env("RIDX_CARGO_LOCK_HASH", lh);
+        }
         cmd.env("RUSTC_BOOTSTRAP", "1");
         let target_kinds_file = variant_out_dir.join("target_kinds.json");
         if target_kinds_file.is_file() {
@@ -273,6 +277,12 @@ pub fn try_direct_crate_indexing(
     let deps_dir = variant_out_dir.join(".deps");
     let sysroot_cas_key = super::manifest::resolve_sysroot_cas_key(&deps_dir, &manifest_file, driver_bin, opts.target.as_deref());
 
+    let prev_crate_features = fs::read(variant_out_dir.join("variant_manifest.json"))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<ridx_format::VariantManifest>(&b).ok())
+        .map(|m| m.crate_features)
+        .unwrap_or_default();
+
     let params = ManifestParams {
         variant_id,
         variant_rel_dir,
@@ -290,6 +300,8 @@ pub fn try_direct_crate_indexing(
         stats: &stats,
         dep_shards: &dep_shards,
         sysroot_cas_key: sysroot_cas_key.as_deref(),
+        cargo_lock_hash: direct_lock_hash.as_deref(),
+        crate_features: &prev_crate_features,
     };
 
     publish_manifest(params).ok()?;

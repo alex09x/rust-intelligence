@@ -123,6 +123,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     let root_did = cnum.as_def_id();
     let toolchain_version = rustc_interface::util::rustc_version_str().map(|s| s.to_string()).unwrap_or_else(|| tcx.sess.cfg_version.to_string());
     let mut writer = IndexWriter::new(target_crate, &toolchain_version);
+    crate::cfg_extract::populate_crate_cfgs(tcx, &[], &[], &mut writer, false);
     let mut visited = HashSet::new();
     let mut assoc_visited = HashMap::new();
     let mut queue = VecDeque::new();

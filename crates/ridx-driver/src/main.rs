@@ -34,6 +34,7 @@ use owner::resolve_owner_from_ty;
 pub mod sysroot;
 
 mod build_index;
+pub(crate) mod cfg_extract;
 mod crate_items;
 mod hir_visitor;
 mod metadata;
@@ -99,11 +100,16 @@ struct IndexCallbacks {
     env: DriverEnv,
     disambiguator: Option<String>,
     compiler_args: Vec<String>,
+    crate_cfg: Vec<String>,
 }
 
 impl Callbacks for IndexCallbacks {
+    fn config(&mut self, config: &mut rustc_interface::Config) {
+        self.crate_cfg = config.crate_cfg.clone();
+    }
+
     fn after_analysis<'tcx>(&mut self, _compiler: &rustc_interface::interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        build_crate_index(tcx, &self.env, self.disambiguator.as_deref(), &self.compiler_args);
+        build_crate_index(tcx, &self.env, self.disambiguator.as_deref(), &self.compiler_args, &self.crate_cfg);
         Compilation::Continue
     }
 }
@@ -219,7 +225,7 @@ pub fn run_driver_with_env(mut args: Vec<String>, env: DriverEnv) -> Result<(), 
 
     let disambiguator = extract_target_disambiguator(&args);
 
-    let mut callbacks = IndexCallbacks { env, disambiguator, compiler_args: args.clone() };
+    let mut callbacks = IndexCallbacks { env, disambiguator, compiler_args: args.clone(), crate_cfg: Vec::new() };
     run_with_callbacks(&args, &mut callbacks)
 }
 

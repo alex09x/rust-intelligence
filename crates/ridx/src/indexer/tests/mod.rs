@@ -90,6 +90,7 @@ pub mod direct_tests;
 pub mod driver_tests;
 pub mod edge_tests;
 pub mod error_tests;
+pub mod feature_invalidation_tests;
 pub mod pipeline_tests;
 pub mod shard_tests;
 pub mod variant_tests;

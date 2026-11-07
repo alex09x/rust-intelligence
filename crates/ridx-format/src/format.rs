@@ -25,6 +25,7 @@ pub fn is_readable_format_version(format_version: u32) -> bool {
 
 pub use crate::driver_hash::*;
 
+mod cfg_item;
 mod defs;
 mod entries;
 mod field_item;
@@ -38,6 +39,7 @@ mod ty;
 mod ty_prim;
 mod use_item;
 
+pub use self::cfg_item::{CfgEntry, NO_CFG_VALUE};
 pub use self::defs::{DefEntry, DefKind, Span, FLAG_MACRO_EXPANSION, FLAG_REEXPORT};
 pub use self::entries::{DerefEntry, HashIndexEntry, OwnerIndexEntry, RefEntry, TypeEntry};
 pub use self::field_item::{
@@ -159,7 +161,9 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 384);
+    assert!(std::mem::size_of::<Header>() == 400);
+    assert!(std::mem::size_of::<CfgEntry>() == 8);
+    assert!(std::mem::align_of::<CfgEntry>() == 4);
     assert!(std::mem::size_of::<NoteEntry>() == 28);
     assert!(std::mem::align_of::<NoteEntry>() == 4);
     assert!(std::mem::align_of::<Header>() == 8);

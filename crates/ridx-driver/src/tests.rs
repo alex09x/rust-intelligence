@@ -12,6 +12,7 @@ use super::*;
 
 mod cache_and_workspace;
 mod cas_and_owner_bounds;
+mod cfg_and_features;
 mod fields;
 mod fn_sigs;
 mod generics;

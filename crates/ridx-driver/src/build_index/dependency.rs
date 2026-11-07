@@ -28,6 +28,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
         cache_dir,
         driver_hash,
         compiler_args,
+        crate_cfg,
     } = ctx;
     let obj_path = ridx_format::cache_object_path(cache_dir, &unit_key);
 
@@ -42,13 +43,15 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
     };
 
     if is_valid_cache {
-        let (generation, file_hashes) = {
+        let (generation, file_hashes, target_triple, enabled_features) = {
             let reader = ridx_format::IndexReader::open(&obj_path).unwrap();
             let gen = reader.generation().to_string();
             let embedded = reader.embedded_file_hashes();
+            let target_triple = reader.target_triple().to_string();
+            let enabled_features: Vec<String> = reader.enabled_features().map(str::to_string).collect();
             let mut hashes = collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
             ridx_format::merge_embedded_hashes_authoritative(&mut hashes, &embedded, manifest_dir.as_deref());
-            (gen, hashes)
+            (gen, hashes, target_triple, enabled_features)
         };
         let cas_key = sysroot::compute_sysroot_cas_key(tcx);
         let dep_info = serde_json::json!({
@@ -66,6 +69,8 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
             "extern_units": extern_units,
             "file_hashes": file_hashes,
             "compiler_args": compiler_args,
+            "enabled_features": enabled_features,
+            "target": target_triple,
             "stable_crate_id": format!("{:016x}", local_stable_crate_id),
             "caught_panics": caught_panics,
             "sysroot_cas_key": cas_key,
@@ -97,6 +102,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
         seen_refs: std::collections::HashSet::new(),
     };
     visitor.writer.set_unit_key(&unit_key);
+    let (target_triple, enabled_features) = crate::cfg_extract::populate_crate_cfgs(tcx, crate_cfg, compiler_args, &mut visitor.writer, true);
 
     extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
     crate::notes::record_adt_layouts(tcx, &mut visitor);
@@ -146,6 +152,8 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
                         "extern_units": extern_units,
                         "file_hashes": file_hashes,
                         "compiler_args": compiler_args,
+                        "enabled_features": enabled_features,
+                        "target": target_triple,
                         "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                         "caught_panics": caught_panics,
                         "sysroot_cas_key": cas_key,

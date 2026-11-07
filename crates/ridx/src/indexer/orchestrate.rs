@@ -84,6 +84,9 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let profile_name = if release { "release" } else { "dev" };
     let variant_id = compute_variant_id(profile_name, target.as_deref(), package.as_deref(), features.as_deref(), no_default_features, all_features, &manifest_path);
 
+    let config_target = find_cargo_configs(&work_dir).iter().find_map(|cfg| fs::read_to_string(cfg).ok().and_then(|c| extract_config_target(&c)));
+    let effective_target = target.clone().or_else(|| std::env::var("CARGO_BUILD_TARGET").ok()).or(config_target);
+
     let variant_rel_dir = format!("variants/{}", variant_id);
     let variant_out_dir = base_out_dir.join(&variant_rel_dir);
     if let Err(e) = fs::create_dir_all(&variant_out_dir) {
@@ -91,22 +94,18 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     }
     let variant_out_dir = variant_out_dir.canonicalize().unwrap_or(variant_out_dir);
 
-    // Isolate Cargo target cache per variant so Cargo unconditionally executes wrapper on variant switch
-    let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
-    // A fresh Cargo cache would not run the wrapper again, leaving a variant without shards (after `target/ridx`
-    // was removed, say); start the cache over when the variant has none.
-    let has_shards = fs::read_dir(&variant_out_dir).into_iter().flatten().flatten().any(|e| e.path().extension().is_some_and(|x| x == "ridx"));
-    if !has_shards {
-        let _ = fs::remove_dir_all(&cargo_target_dir);
-    }
-    let _ = fs::create_dir_all(&cargo_target_dir);
-    let check_started = std::time::SystemTime::now();
-    // The variant active before this run: a crate that fails to build now keeps its shards from there.
+    // The variant active before this run: unaffected crates are seeded from here on feature switches,
+    // and a crate that fails to build now keeps its shards from there.
     let previous_variant = fs::read(base_out_dir.join("ridx_manifest.json"))
         .ok()
         .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
         .and_then(|m| m["variant_dir"].as_str().map(|d| base_out_dir.join(d)))
         .filter(|d| d != &variant_out_dir && d.is_dir());
+
+    let cargo_cache_id = super::feature_graph::compute_shared_cargo_cache_id(profile_name, effective_target.as_deref());
+    let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&cargo_cache_id);
+    let _ = fs::create_dir_all(&cargo_target_dir);
+    let check_started = std::time::SystemTime::now();
 
     eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
     eprintln!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
@@ -155,6 +154,30 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         }
     }
 
+    let feature_graph = super::feature_graph::ResolvedFeatureGraph::resolve(
+        &manifest_path,
+        effective_target.as_deref(),
+        package.as_deref(),
+        features.as_deref(),
+        no_default_features,
+        all_features,
+    );
+    let initial_lock_hash = super::feature_graph::compute_cargo_lock_hash(&work_dir);
+    if let Some(ref fg) = feature_graph {
+        super::feature_graph::seed_unaffected_and_prune_invalidated(
+            fg,
+            &base_out_dir,
+            &variant_out_dir,
+            previous_variant.as_deref(),
+            &cargo_target_dir,
+            profile_name,
+            initial_lock_hash.as_deref(),
+        );
+    } else if !variant_has_shards(&variant_out_dir) {
+        let _ = fs::remove_dir_all(&cargo_target_dir);
+        let _ = fs::create_dir_all(&cargo_target_dir);
+    }
+
     let builder = IndexBuilder::resolve(opts.builder);
 
     eprintln!("  Action         : {} check with RUSTC_WRAPPER...", builder.as_str());
@@ -175,6 +198,9 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     }
     for (k, v) in &envs {
         cmd.env(k, v);
+    }
+    if let Some(ref lh) = initial_lock_hash {
+        cmd.env("RIDX_CARGO_LOCK_HASH", lh);
     }
 
     if opts.capture_child_output {
@@ -234,19 +260,9 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     // Collect external dependency shards recorded by compiler driver
     let deps_dir = variant_out_dir.join(".deps");
     let (dep_shards, _ws_shards) = super::shards::collect_shards_from_deps_dir(&deps_dir);
-
-    let config_files = find_cargo_configs(&work_dir);
-    let mut config_target = None;
-    for cfg in &config_files {
-        if let Ok(content) = fs::read_to_string(cfg) {
-            if let Some(t) = extract_config_target(&content) {
-                config_target = Some(t);
-                break;
-            }
-        }
-    }
-    let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
-    let effective_target = target.or(env_target).or(config_target);
+    let final_lock_hash = super::feature_graph::compute_cargo_lock_hash(&work_dir).or(initial_lock_hash);
+    let empty_features = std::collections::BTreeMap::new();
+    let crate_features = feature_graph.as_ref().map(|fg| &fg.crate_features).unwrap_or(&empty_features);
 
     let sysroot_cas_key = super::manifest::resolve_sysroot_cas_key(&deps_dir, &manifest_file, &driver_bin, effective_target.as_deref());
 
@@ -267,6 +283,8 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         stats: &stats,
         dep_shards: &dep_shards,
         sysroot_cas_key: sysroot_cas_key.as_deref(),
+        cargo_lock_hash: final_lock_hash.as_deref(),
+        crate_features,
     })?;
 
     eprintln!("\n{} Indexed workspace in {:.2} s (active variant: {})", "Success:".green().bold(), elapsed.as_secs_f64(), variant_id.cyan().bold());
@@ -289,7 +307,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
 
 /// After a check that failed for some crates: the shards it wrote replace the earlier shards of the same crates,
 /// and a crate that did not build keeps its last good shards.
-fn keep_last_good_shards(dir: &Path, started: std::time::SystemTime, previous: Option<&Path>) {
+pub(super) fn keep_last_good_shards(dir: &Path, started: std::time::SystemTime, previous: Option<&Path>) {
     let shards: Vec<(PathBuf, String, bool)> = fs::read_dir(dir)
         .into_iter()
         .flatten()
@@ -351,33 +369,5 @@ pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
             #[cfg(test)]
             panic!("{e}");
         }
-    }
-}
-
-#[cfg(test)]
-mod last_good_tests {
-    use super::*;
-
-    #[test]
-    fn test_failed_crates_keep_last_good_shards() {
-        let root = std::env::temp_dir().join(format!("ridx_last_good_{}", std::process::id()));
-        let (prev, cur) = (root.join("prev"), root.join("cur"));
-        for d in [&prev.join(".deps"), &cur.join(".deps")] {
-            fs::create_dir_all(d).unwrap();
-        }
-        fs::write(prev.join("test_suite-aa.ridx"), b"old").unwrap();
-        fs::write(prev.join("serde-aa.ridx"), b"old").unwrap();
-        fs::write(prev.join(".deps/test_suite-aa.json"), serde_json::json!({ "object_path": prev.join("test_suite-aa.ridx").display().to_string() }).to_string()).unwrap();
-        fs::write(cur.join("serde-old.ridx"), b"stale").unwrap();
-        let started = std::time::SystemTime::now();
-        std::thread::sleep(std::time::Duration::from_millis(20));
-        fs::write(cur.join("serde-new.ridx"), b"fresh").unwrap();
-        keep_last_good_shards(&cur, started, Some(&prev));
-        let mut names: Vec<String> = fs::read_dir(&cur).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).filter(|n| n.ends_with(".ridx")).collect();
-        names.sort();
-        assert_eq!(names, ["serde-new.ridx", "test_suite-aa.ridx"]);
-        let side: serde_json::Value = serde_json::from_slice(&fs::read(cur.join(".deps/test_suite-aa.json")).unwrap()).unwrap();
-        assert_eq!(side["object_path"], cur.join("test_suite-aa.ridx").display().to_string());
-        let _ = fs::remove_dir_all(&root);
     }
 }

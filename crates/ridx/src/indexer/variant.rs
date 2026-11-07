@@ -76,9 +76,9 @@ pub fn compute_variant_id_with_env(
     let effective_target = target.or(env_target).or(config_target.as_deref()).unwrap_or("host");
     effective_target.hash(&mut hasher);
 
-    // 3. Package filter and feature flags
+    // 3. Package filter and normalized feature flags
     package.unwrap_or("workspace").hash(&mut hasher);
-    features.unwrap_or("").hash(&mut hasher);
+    super::feature_graph::normalize_feature_list(features).hash(&mut hasher);
     no_default_features.hash(&mut hasher);
     all_features.hash(&mut hasher);
 
@@ -96,10 +96,9 @@ pub fn compute_variant_id_with_env(
         }
     }
 
-    // 5. Cargo.lock full file contents (captures resolved dependency graph, versions, sources, active features)
-    let lock_file = work_dir.join("Cargo.lock");
-    if let Ok(lock_bytes) = fs::read(&lock_file) {
-        lock_bytes.hash(&mut hasher);
+    // 5. Cargo.lock 64-bit FNV-1a digest (captures resolved dependency graph, versions, sources, active features)
+    if let Some(lock_hash) = super::feature_graph::compute_cargo_lock_hash(work_dir) {
+        lock_hash.hash(&mut hasher);
     }
 
     // 6. Toolchain version and host details via rustc -Vv
