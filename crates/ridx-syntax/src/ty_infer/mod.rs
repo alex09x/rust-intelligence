@@ -8,21 +8,45 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Compiler-free local type inference engine (`ty_infer`) — Phase 3 foundation (`Checkbox 3.1`):
+//! Compiler-free local type inference engine (`ty_infer`) — Phase 3 (`Checkboxes 3.1 + 3.2`):
 //! - [`arena`]: intrusive hash-consed [`InferTyArena`] with pre-interned builtins and `O(1)` [`TyFlags`].
 //! - [`uf_table`]: Tarjan union-find over [`TyVarId`] with union-by-rank, snapshot-safe path compression,
 //!   occurs-check, and Rust integer (`i32`) / float (`f64`) literal fallbacks.
 //! - [`unify`]: invariant [`equate`], directional [`coerce`], and multi-branch [`lub`].
 //! - [`expectation`]: bidirectional [`Expectation`] propagation and [`BranchCoercer`] arm joiner.
+//! - [`db`] / [`mem_ty_db`] / [`local_defs`]: zero-dependency [`TyDefDb`] boundary, [`TyLangItem`],
+//!   in-memory [`MemTyDefDb`], and CST fallback [`LocalCstDefs`].
+//! - [`body_ctx`] (`BodyInferCtx`, `FnInferResult`): zero-allocation per-function expression, pattern,
+//!   control-flow, `?` (`Try`), `.await` (`Future`), closure `Fn*`, range, and `Index` inference.
 
 pub mod arena;
+pub mod body_ctx;
+pub mod db;
 pub mod expectation;
+mod infer_expr;
+mod infer_expr_call;
+mod infer_expr_cf;
+mod infer_expr_ops;
+pub mod infer_pat;
+pub mod lang_ops;
+pub mod local_defs;
+mod local_defs_adt;
+pub mod lower_ty;
+mod lower_ty_tok;
+pub mod mem_ty_db;
+mod tok_ty_scan;
 pub mod ty;
 pub mod uf_table;
 pub mod unify;
 
 pub use arena::InferTyArena;
+pub use body_ctx::{BodyInferCtx, FnInferResult};
+pub use db::{clone_ty_into, CtorShapeKind, EmptyTyDefDb, TyDefDb, TyLangItem};
 pub use expectation::{BranchCoercer, Expectation};
+pub use infer_pat::BindingMode;
+pub use local_defs::{effective_local_def_id, LocalCstDefs};
+pub use lower_ty::LowerTyEnv;
+pub use mem_ty_db::MemTyDefDb;
 pub use ty::{is_float_prim, is_int_prim, InferTyId, InferTyKind, TyFlags, TySliceRange, TyVarId, TyVarKind};
 pub use uf_table::{InferSnapshot, UnionFindTable};
 pub use unify::{coerce, equate, lub, TypeError, UnifyResult};
