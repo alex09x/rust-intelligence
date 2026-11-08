@@ -123,6 +123,8 @@ fn main() {
     let mut grand_refs = 0usize;
     let mut grand_matched = 0usize;
     let mut grand_strict = 0usize;
+    let mut grand_strict_loc_ref_mut = 0usize;
+    let mut grand_strict_loc_ref_self = 0usize;
     let mut grand_len_loc = 0usize;
     let mut grand_len_assoc = 0usize;
     let mut grand_missing = 0usize;
@@ -184,6 +186,8 @@ fn main() {
         grand_refs += rep.phase2_driver_refs;
         grand_matched += rep.matched_refs;
         grand_strict += rep.strict_matched_refs;
+        grand_strict_loc_ref_mut += rep.strict_local_ref_mut_refs;
+        grand_strict_loc_ref_self += rep.strict_local_ref_self_refs;
         grand_len_loc += rep.lenient_local_refs;
         grand_len_assoc += rep.lenient_assoc_refs;
         grand_missing += rep.missing_refs;
@@ -225,7 +229,10 @@ fn main() {
             );
         }
         println!("\nUnified coverage: matched (CST + MacroTT) / (P2 + MacroTT + Dot) = {} / {} ({:.2}%)", uni_num, uni_den, gupct);
-        println!("Strict P2 match: {} / {} ({:.2}%); lenient_local_16b = {}, lenient_assoc_trait = {}", grand_strict, grand_refs, gspct, grand_len_loc, grand_len_assoc);
+        println!(
+            "Strict P2 match: {} / {} ({:.2}%); strict_local_ref_mut = {}, strict_local_ref_self = {}, lenient_local = {}, lenient_assoc_trait = {}",
+            grand_strict, grand_refs, gspct, grand_strict_loc_ref_mut, grand_strict_loc_ref_self, grand_len_loc, grand_len_assoc
+        );
         println!("Real renamed re-exports / type aliases kept in P2 (`leaf != ident` -> P2): {} (matched = {})", grand_moved_alias, grand_moved_alias_matched);
         let mut alias_shown = 0usize;
         for slot in 0..8 {

@@ -8,12 +8,13 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Target-equivalence check (`Strict` vs `LenientLocal16B` vs `LenientAssocTrait`) and diagnostic
-//! formatting between `ridx-driver` `RefEntry` and `ridx_syntax::name_res::ResTarget`.
+//! Target-equivalence check (`Strict` vs `LenientAssocTrait`) and diagnostic formatting between
+//! `ridx-driver` `RefEntry` and `ridx_syntax::name_res::ResTarget`.
 
 use memmap2::Mmap;
 use ridx_format::{DefKind, IndexReader, RefEntry};
 use ridx_syntax::name_res::{CrateId, FileNameRes, GlobalDefId, ImplTargetKey, ItemDb, ItemKind, ResTarget};
+use ridx_syntax::{lex, TokenKind};
 
 use crate::meta::CorpusFile;
 use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
@@ -22,8 +23,9 @@ use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_
 pub enum MatchKind {
     NoMatch = 0,
     LenientAssocTrait = 1,
-    LenientLocal16B = 2,
-    Strict = 3,
+    StrictLocalRefSelf = 2,
+    StrictLocalRefMut = 3,
+    Strict = 4,
 }
 
 impl MatchKind {
@@ -36,6 +38,71 @@ impl MatchKind {
 #[inline]
 fn norm_ident(s: &str) -> &str {
     s.strip_prefix("r#").unwrap_or(s)
+}
+
+/// Exact token-level match between `rustc` HIR `PatKind::Binding` start (`drv_tb`) and CST
+/// `LocalBindData::name_start` without any byte-distance window:
+/// - `Direct`: `drv_tb == name_start`,
+/// - `StrictLocalRefMut`: `rustc` span starts on `ref` / `mut` (`ref x`, `mut x`, `ref mut x`, `mut self`),
+/// - `StrictLocalRefSelf`: `rustc` `SelfKind::Region` lowers `Param.pat.span` starting at `&`
+///   (`&self`, `&mut self`, `&'lt self`, `&'lt mut self`).
+fn match_local_name_start(src: &str, drv_tb: u32, name_start: u32, is_self: bool) -> MatchKind {
+    if name_start == drv_tb {
+        return MatchKind::Strict;
+    }
+    if name_start < drv_tb || (drv_tb as usize) >= src.len() {
+        return MatchKind::NoMatch;
+    }
+    let s = drv_tb as usize;
+    let end_bound = src.floor_char_boundary((name_start as usize).saturating_add(16).min(src.len()));
+    let toks = lex(&src[s..end_bound]);
+    let mut idx = 0usize;
+    while idx < toks.len() && toks[idx].is_trivia() {
+        idx += 1;
+    }
+    if idx >= toks.len() {
+        return MatchKind::NoMatch;
+    }
+    if is_self && toks[idx].kind == TokenKind::Amp {
+        idx += 1;
+        while idx < toks.len() && toks[idx].is_trivia() {
+            idx += 1;
+        }
+        if idx < toks.len() && toks[idx].kind == TokenKind::Lifetime {
+            idx += 1;
+            while idx < toks.len() && toks[idx].is_trivia() {
+                idx += 1;
+            }
+        }
+        if idx < toks.len() && toks[idx].kind == TokenKind::Mut {
+            idx += 1;
+            while idx < toks.len() && toks[idx].is_trivia() {
+                idx += 1;
+            }
+        }
+        if idx < toks.len() && toks[idx].kind == TokenKind::SelfKw && drv_tb + toks[idx].start == name_start {
+            return MatchKind::StrictLocalRefSelf;
+        }
+        return MatchKind::NoMatch;
+    }
+    let mut saw_ref_mut = false;
+    while idx < toks.len() {
+        if toks[idx].is_trivia() {
+            idx += 1;
+            continue;
+        }
+        if matches!(toks[idx].kind, TokenKind::Ref | TokenKind::Mut) {
+            saw_ref_mut = true;
+            idx += 1;
+            continue;
+        }
+        break;
+    }
+    if saw_ref_mut && idx < toks.len() && drv_tb + toks[idx].start == name_start {
+        MatchKind::StrictLocalRefMut
+    } else {
+        MatchKind::NoMatch
+    }
 }
 
 pub fn ref_targets_match(r_idx: usize, reader: &IndexReader<Mmap>, db: &RidxV5ItemDb<'_>, cf: &CorpusFile, out: &FileNameRes, our: ResTarget, drv: &RefEntry) -> MatchKind {
@@ -52,13 +119,7 @@ pub fn ref_targets_match(r_idx: usize, reader: &IndexReader<Mmap>, db: &RidxV5It
                 return MatchKind::NoMatch;
             }
             if let Some(drv_tb) = cf.lines.to_byte(&cf.text, drv.target_line(), drv.target_col()) {
-                if lb.name_start == drv_tb {
-                    return MatchKind::Strict;
-                }
-                if lb.name_start > drv_tb && lb.name_start <= drv_tb + 16 {
-                    return MatchKind::LenientLocal16B;
-                }
-                return MatchKind::NoMatch;
+                return match_local_name_start(&cf.text, drv_tb, lb.name_start, lb.is_self);
             }
             MatchKind::Strict
         }

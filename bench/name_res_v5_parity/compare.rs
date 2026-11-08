@@ -34,6 +34,8 @@ pub struct CorpusReport {
     pub phase2_driver_refs: usize,
     pub matched_refs: usize,
     pub strict_matched_refs: usize,
+    pub strict_local_ref_mut_refs: usize,
+    pub strict_local_ref_self_refs: usize,
     pub lenient_local_refs: usize,
     pub lenient_assoc_refs: usize,
     pub missing_refs: usize,
@@ -247,9 +249,16 @@ fn compare_file_refs(
                 rep.strict_matched_refs += 1;
                 continue;
             }
-            MatchKind::LenientLocal16B => {
+            MatchKind::StrictLocalRefMut => {
                 rep.matched_refs += 1;
-                rep.lenient_local_refs += 1;
+                rep.strict_matched_refs += 1;
+                rep.strict_local_ref_mut_refs += 1;
+                continue;
+            }
+            MatchKind::StrictLocalRefSelf => {
+                rep.matched_refs += 1;
+                rep.strict_matched_refs += 1;
+                rep.strict_local_ref_self_refs += 1;
                 continue;
             }
             MatchKind::LenientAssocTrait => {
