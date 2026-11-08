@@ -119,7 +119,7 @@ pub(super) fn collect_crate_items<'t>(
 pub(super) fn assign_overlay_item_ids(out: &mut CollectedCrate) {
     let mut seq = out.next_overlay_seq;
     for it in &mut out.items {
-        if !it.index_def.is_some() {
+        if it.module.is_some() && !it.index_def.is_some() {
             it.index_def = GlobalDefId::new(CrateId::LOCAL_OVERLAY, seq);
             seq += 1;
         }

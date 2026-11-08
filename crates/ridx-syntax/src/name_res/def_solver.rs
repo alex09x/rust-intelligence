@@ -12,6 +12,7 @@
 //! helpers live in [`super::def_path`]).
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
 use super::def_collect::CollectedCrate;
@@ -23,7 +24,7 @@ use super::mod_tree::ModuleTree;
 use super::per_ns::{compute_vis_mod, BindingOrigin, LocalItemId, PerNs, ResolvedBinding};
 use super::use_tree::{FlatUseKind, PathAnchor};
 
-const MAX_FIXED_POINT_ROUNDS: usize = 64;
+pub(super) const MAX_FIXED_POINT_ROUNDS: usize = 64;
 
 pub(super) struct ImportSolver;
 
@@ -71,7 +72,7 @@ impl ImportSolver {
         }
 
         for it in &collected.items {
-            if it.parent_enum.is_some() {
+            if !it.module.is_some() || it.parent_enum.is_some() {
                 continue;
             }
             let name = &collected.strings[it.name_start as usize..it.name_end as usize];
@@ -160,8 +161,8 @@ impl ImportSolver {
             edition: mod_tree.edition,
             prelude_mod,
             prelude,
-            prelude_traits: Box::new([]),
-            prelude_traits_sorted: Box::new([]),
+            prelude_traits: Arc::from([]),
+            prelude_traits_sorted: Arc::from([]),
             extern_prelude,
             items: collected.items,
             item_strings: collected.strings,
@@ -202,7 +203,7 @@ impl ImportSolver {
     }
 }
 
-fn run_use_fixed_point(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleTree, ext_cache: &mut ExtScopeCache, max_rounds: usize) {
+pub(super) fn run_use_fixed_point(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleTree, ext_cache: &mut ExtScopeCache, max_rounds: usize) {
     let use_count = map.uses.uses.len();
     for _round in 0..max_rounds {
         let mut changed = false;
@@ -247,38 +248,49 @@ fn run_use_fixed_point(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &Module
     }
 }
 
-fn seed_index_fallback_defs(db: &dyn ItemDb, mod_tree: &ModuleTree, dirty_files: &[FileId], scopes: &mut [ModuleScope]) {
+pub(super) fn seed_index_fallback_defs(db: &dyn ItemDb, mod_tree: &ModuleTree, dirty_files: &[FileId], scopes: &mut [ModuleScope]) {
     let mut defs = Vec::new();
     for (midx, scope) in scopes.iter_mut().enumerate() {
-        let idx_def = scope.index_def;
-        if !idx_def.is_some() || idx_def.is_overlay() {
+        seed_index_fallback_defs_for_mod(db, mod_tree, dirty_files, midx, scope, &mut defs);
+    }
+}
+
+pub(super) fn seed_index_fallback_defs_for_mod<'a>(
+    db: &'a dyn ItemDb,
+    mod_tree: &ModuleTree,
+    dirty_files: &[FileId],
+    midx: usize,
+    scope: &mut ModuleScope,
+    defs: &mut Vec<super::db::IndexedDef<'a>>,
+) {
+    let idx_def = scope.index_def;
+    if !idx_def.is_some() || idx_def.is_overlay() {
+        return;
+    }
+    let mod_file = mod_tree.modules[midx].file;
+    let file_dirty = dirty_files.contains(&mod_file);
+    defs.clear();
+    db.module_defs(idx_def, defs);
+    let mod_id = ModuleId(midx as u32);
+    for d in &*defs {
+        if d.name.is_empty() || (file_dirty && db.def_file(d.id) == mod_file) {
             continue;
         }
-        let mod_file = mod_tree.modules[midx].file;
-        let file_dirty = dirty_files.contains(&mod_file);
-        defs.clear();
-        db.module_defs(idx_def, &mut defs);
-        let mod_id = ModuleId(midx as u32);
-        for d in &defs {
-            if d.name.is_empty() || (file_dirty && db.def_file(d.id) == mod_file) {
-                continue;
-            }
-            let (_, vmod) = compute_vis_mod(mod_tree, mod_id, d.vis, None);
-            let b = ResolvedBinding {
-                def: d.id,
-                local: LocalItemId::NONE,
-                local_mod: ModuleId::NONE,
-                vis_mod: vmod,
-                kind: d.kind,
-                vis: d.vis,
-                origin: BindingOrigin::Explicit,
-                prim_ty: 0,
-                ambiguous: false,
-            };
-            let fb = PerNs::from_binding(b, d.kind.ns_mask(d.has_value_ctor));
-            let slot = scope.entries.entry(IdentKey::new(d.name)).or_insert(PerNs::EMPTY);
-            *slot = slot.or_else_ns(fb);
-        }
+        let (_, vmod) = compute_vis_mod(mod_tree, mod_id, d.vis, None);
+        let b = ResolvedBinding {
+            def: d.id,
+            local: LocalItemId::NONE,
+            local_mod: ModuleId::NONE,
+            vis_mod: vmod,
+            kind: d.kind,
+            vis: d.vis,
+            origin: BindingOrigin::Explicit,
+            prim_ty: 0,
+            ambiguous: false,
+        };
+        let fb = PerNs::from_binding(b, d.kind.ns_mask(d.has_value_ctor));
+        let slot = scope.entries.entry(IdentKey::new(d.name)).or_insert(PerNs::EMPTY);
+        *slot = slot.or_else_ns(fb);
     }
 }
 

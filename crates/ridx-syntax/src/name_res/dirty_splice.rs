@@ -8,14 +8,14 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Incremental dirty-file splicing over [`CollectedCrate`]: reuses pre-collected items, `use`s,
-//! and `impl`s of all unchanged `.rs` files and re-scans ONLY modules residing in `dirty_files`.
+//! Incremental dirty-file splicing over [`CollectedCrate`]: tombstones dirty-file items in place
+//! (keeping every clean [`LocalItemId`] identical) and re-scans ONLY modules residing in `dirty_files`.
 
 use std::collections::HashMap;
 
-use super::db::{FileId, ItemDb, ItemKind, ModuleId, SourceDb};
+use super::db::{FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, SourceDb};
 use super::db_impls::LocalImplId;
-use super::def_collect::{assign_overlay_item_ids, CollectedCrate, Collector, MacroScopeVec};
+use super::def_collect::{assign_overlay_item_ids, CollectedCrate, Collector, LocalItemData, MacroScopeVec};
 use super::impl_collect::LocalImplArena;
 use super::mod_tree::ModuleTree;
 use super::per_ns::LocalItemId;
@@ -25,6 +25,13 @@ use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::{NodeId, SyntaxTree};
 
+pub(super) struct SplicedCrate {
+    pub(super) collected: CollectedCrate,
+    /// Maps retained clean `FlatUse` slot `0..clean_use_map.len()` to its index in `clean_collected.uses.uses`.
+    pub(super) clean_use_map: Vec<u32>,
+    pub(super) next_overlay_seq: u32,
+}
+
 impl CollectedCrate {
     pub(super) fn splice_dirty_files<'t>(
         &self,
@@ -33,26 +40,21 @@ impl CollectedCrate {
         mod_tree: &ModuleTree,
         dirty_files: &[FileId],
         get_tree: &mut impl FnMut(FileId) -> Option<&'t SyntaxTree<'t>>,
-    ) -> (CollectedCrate, u32) {
+    ) -> SplicedCrate {
         let mod_count = mod_tree.modules.len();
-        let mut old_to_new = vec![LocalItemId::NONE; self.items.len()];
         let mut items = Vec::with_capacity(self.items.len() + 16);
         for it in &self.items {
             if dirty_files.contains(&it.file) {
-                continue;
-            }
-            let new_id = LocalItemId(items.len() as u32);
-            old_to_new[it.id.0 as usize] = new_id;
-            let mut copy = *it;
-            copy.id = new_id;
-            items.push(copy);
-        }
-        for it in &mut items {
-            if it.parent_enum.is_some() {
-                it.parent_enum = old_to_new[it.parent_enum.0 as usize];
-            }
-            if it.kind == ItemKind::Enum && it.var_len > 0 {
-                it.var_start = it.id.0 + 1;
+                let mut dead = *it;
+                dead.file = FileId::NONE;
+                dead.module = ModuleId::NONE;
+                dead.index_def = GlobalDefId::NONE;
+                dead.parent_enum = LocalItemId::NONE;
+                dead.var_len = 0;
+                dead.macro_export = false;
+                items.push(dead);
+            } else {
+                items.push(*it);
             }
         }
 
@@ -62,10 +64,12 @@ impl CollectedCrate {
             uses: Vec::with_capacity(self.uses.uses.len() + 8),
             extern_crates: Vec::with_capacity(self.uses.extern_crates.len()),
         };
-        for u in &self.uses.uses {
+        let mut clean_use_map = Vec::with_capacity(self.uses.uses.len());
+        for (old_idx, u) in self.uses.uses.iter().enumerate() {
             let f = mod_tree.module(u.module).file;
             if !dirty_files.contains(&f) {
                 uses.uses.push(*u);
+                clean_use_map.push(old_idx as u32);
             }
         }
         for ec in &self.uses.extern_crates {
@@ -75,21 +79,22 @@ impl CollectedCrate {
             }
         }
 
+        let clean_items_len = self.items.len();
         let mut textual_macros = vec![Vec::new(); mod_count];
+        let mut pending_dirty_textual: Vec<(usize, ModuleId, &str)> = Vec::new();
         for (midx, tlist) in self.textual_macros.iter().enumerate() {
-            let f = mod_tree.module(ModuleId(midx as u32)).file;
-            if dirty_files.contains(&f) {
-                continue;
-            }
             for &(lid, gdef) in tlist {
-                let mapped = old_to_new.get(lid.0 as usize).copied().unwrap_or(LocalItemId::NONE);
-                if mapped.is_some() {
-                    textual_macros[midx].push((mapped, gdef));
+                let src_it = &self.items[lid.0 as usize];
+                if !dirty_files.contains(&src_it.file) {
+                    textual_macros[midx].push((lid, gdef));
+                } else if src_it.module.is_some() {
+                    let mname = &self.strings[src_it.name_start as usize..src_it.name_end as usize];
+                    pending_dirty_textual.push((midx, src_it.module, mname));
                 }
             }
         }
 
-        let local_impls = copy_clean_local_impls(&self.local_impls, dirty_files, &old_to_new);
+        let local_impls = copy_clean_local_impls(&self.local_impls, &self.items, dirty_files);
 
         let mut owned_dirty: HashMap<FileId, SyntaxTree<'_>> = HashMap::new();
         for &df in dirty_files {
@@ -143,12 +148,21 @@ impl CollectedCrate {
         }
 
         assign_overlay_item_ids(&mut coll.out);
+        for (midx, src_mod, mname) in pending_dirty_textual {
+            if let Some(found) = coll.out.items[clean_items_len..]
+                .iter()
+                .rev()
+                .find(|it| it.module == src_mod && it.kind == ItemKind::Macro && &coll.out.strings[it.name_start as usize..it.name_end as usize] == mname)
+            {
+                coll.out.textual_macros[midx].push((found.id, found.index_def));
+            }
+        }
         let seq = coll.out.next_overlay_seq;
-        (coll.out, seq)
+        SplicedCrate { collected: coll.out, clean_use_map, next_overlay_seq: seq }
     }
 }
 
-fn copy_clean_local_impls(src: &LocalImplArena, dirty_files: &[FileId], old_to_new_item: &[LocalItemId]) -> LocalImplArena {
+fn copy_clean_local_impls(src: &LocalImplArena, clean_items: &[LocalItemData], dirty_files: &[FileId]) -> LocalImplArena {
     if src.impls.is_empty() && src.trait_assocs.is_empty() && src.type_aliases.is_empty() {
         return LocalImplArena::default();
     }
@@ -180,32 +194,23 @@ fn copy_clean_local_impls(src: &LocalImplArena, dirty_files: &[FileId], old_to_n
         dst.impls.push(ic);
     }
     for &(tlid, a_s, a_l) in &src.trait_assocs {
-        let mapped = old_to_new_item.get(tlid.0 as usize).copied().unwrap_or(LocalItemId::NONE);
-        if !mapped.is_some() {
+        if dirty_files.contains(&clean_items[tlid.0 as usize].file) {
             continue;
         }
         let new_s = dst.assoc_items.len() as u32;
         for ai in &src.assoc_items[a_s as usize..a_s as usize + a_l as usize] {
-            let mut c = *ai;
-            c.owner_trait = mapped;
-            dst.assoc_items.push(c);
+            dst.assoc_items.push(*ai);
         }
-        dst.trait_assocs.push((mapped, new_s, a_l));
+        dst.trait_assocs.push((tlid, new_s, a_l));
     }
     for rts in &src.raw_trait_supers {
-        let mapped = old_to_new_item.get(rts.trait_item.0 as usize).copied().unwrap_or(LocalItemId::NONE);
-        if mapped.is_some() {
-            let mut c = *rts;
-            c.trait_item = mapped;
-            dst.raw_trait_supers.push(c);
+        if !dirty_files.contains(&clean_items[rts.trait_item.0 as usize].file) {
+            dst.raw_trait_supers.push(*rts);
         }
     }
     for ta in &src.type_aliases {
-        let mapped = old_to_new_item.get(ta.item_id.0 as usize).copied().unwrap_or(LocalItemId::NONE);
-        if mapped.is_some() {
-            let mut tc = *ta;
-            tc.item_id = mapped;
-            dst.type_aliases.push(tc);
+        if !dirty_files.contains(&clean_items[ta.item_id.0 as usize].file) {
+            dst.type_aliases.push(*ta);
         }
     }
     dst
