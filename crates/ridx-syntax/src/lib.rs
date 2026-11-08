@@ -36,6 +36,7 @@ pub mod syntax_kind;
 pub mod token;
 pub mod tree;
 mod tree_dump;
+pub mod ty_infer;
 
 pub use lexer::lex;
 pub use parser::parse;
