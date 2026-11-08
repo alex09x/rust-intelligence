@@ -34,6 +34,12 @@ pub struct ModuleScope {
     pub entries: HashMap<IdentKey, PerNs>,
     /// Anonymous trait imports (`use Trait as _;`) visible for method lookup in this module.
     pub unnamed_traits: Vec<ResolvedBinding>,
+    /// Precomputed in-order visible trait `GlobalDefId`s (`unnamed_traits` + `entries`).
+    pub(super) visible_traits: Box<[GlobalDefId]>,
+    /// Sorted copy of `visible_traits` for `O(log T)` membership checks.
+    pub(super) visible_traits_sorted: Box<[GlobalDefId]>,
+    /// Precomputed 64-bit hash of `(visible_traits, has_implicit_prelude)` for `O(1)` trait-item cache lookup.
+    pub(super) visible_traits_hash: u64,
 }
 
 impl ModuleScope {
@@ -57,6 +63,8 @@ pub struct CrateDefMap {
     pub edition: Edition,
     pub prelude_mod: Option<GlobalDefId>,
     pub prelude: HashMap<IdentKey, PerNs>,
+    pub(super) prelude_traits: Box<[GlobalDefId]>,
+    pub(super) prelude_traits_sorted: Box<[GlobalDefId]>,
     /// Crate-wide extern crate prelude (`name -> (CrateId, root GlobalDefId)`).
     pub extern_prelude: HashMap<IdentKey, (CrateId, GlobalDefId)>,
     pub items: Vec<LocalItemData>,
@@ -207,4 +215,53 @@ pub(super) fn local_mod_binding(mod_id: ModuleId, index_def: GlobalDefId, vis: V
         ambiguous: false,
     };
     PerNs::from_binding(b, NsMask::TYPE)
+}
+
+pub(super) fn finalize_in_scope_trait_tables(map: &mut CrateDefMap, mod_tree: &ModuleTree) {
+    let mut prel = Vec::with_capacity(map.prelude.len());
+    for pns in map.prelude.values() {
+        if let Some(tb) = pns.types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
+            prel.push(tb.def);
+        }
+    }
+    prel.sort_unstable();
+    prel.dedup();
+    map.prelude_traits = prel.clone().into_boxed_slice();
+    map.prelude_traits_sorted = prel.into_boxed_slice();
+
+    let mut named_buf = Vec::new();
+    for (midx, sc) in map.scopes.iter_mut().enumerate() {
+        let from_mod = ModuleId(midx as u32);
+        let mut vis_list = Vec::with_capacity(sc.unnamed_traits.len() + 16);
+        for tb in &sc.unnamed_traits {
+            if tb.def.is_some() && !vis_list.contains(&tb.def) {
+                vis_list.push(tb.def);
+            }
+        }
+        named_buf.clear();
+        for pns in sc.entries.values() {
+            if let Some(tb) = pns.filter_visible(mod_tree, from_mod).types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
+                named_buf.push(tb.def);
+            }
+        }
+        named_buf.sort_unstable();
+        named_buf.dedup();
+        for &tdef in &named_buf {
+            if !vis_list.contains(&tdef) {
+                vis_list.push(tdef);
+            }
+        }
+        let mut sorted = vis_list.clone();
+        sorted.sort_unstable();
+        sorted.dedup();
+        let include_prelude = !mod_tree.module(from_mod).has_no_implicit_prelude();
+        let mut h: u64 = if include_prelude { 0xcbf2_9ce4_8422_2325 } else { 0x8422_2325_cbf2_9ce4 };
+        for &d in &vis_list {
+            let word = ((d.krate.0 as u64) << 32) | (d.index as u64);
+            h = (h ^ word).wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        sc.visible_traits = vis_list.into_boxed_slice();
+        sc.visible_traits_sorted = sorted.into_boxed_slice();
+        sc.visible_traits_hash = h;
+    }
 }

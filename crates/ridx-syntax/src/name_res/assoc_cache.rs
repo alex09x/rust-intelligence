@@ -13,7 +13,7 @@
 
 use std::collections::HashMap;
 
-use super::db::{CrateId, FileId, GlobalDefId, IndexedDef, ItemDb, ItemKind, VisKind};
+use super::db::{CrateId, FileId, GlobalDefId, IndexedDef, ItemDb, ItemKind, NsMask, VisKind};
 use super::db_impls::{ImplTargetKey, IndexedImpl};
 use super::ident_key::IdentKey;
 
@@ -35,13 +35,24 @@ pub struct CachedTraitImpl {
     pub items: Box<[CachedAssocItem]>,
 }
 
+type ModTraitAssocMap = HashMap<IdentKey, Box<[(GlobalDefId, NsMask)]>>;
+
+#[derive(Clone, Debug)]
+struct CachedModTraitScope {
+    visible_traits: Box<[GlobalDefId]>,
+    include_prelude: bool,
+    by_name: ModTraitAssocMap,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct AssocScopeCache {
     inherent_by_target: HashMap<ImplTargetKey, Box<[CachedAssocItem]>>,
     trait_decl_by_def: HashMap<GlobalDefId, Box<[CachedAssocItem]>>,
     supertraits_by_def: HashMap<GlobalDefId, Box<[GlobalDefId]>>,
+    hierarchy_decl_by_def: HashMap<GlobalDefId, Box<[CachedAssocItem]>>,
     trait_impls_by_target: HashMap<ImplTargetKey, Box<[CachedTraitImpl]>>,
     blanket_by_trait: Option<HashMap<GlobalDefId, Box<[CachedTraitImpl]>>>,
+    clean_mod_trait_items: HashMap<u64, CachedModTraitScope>,
 }
 
 impl AssocScopeCache {
@@ -176,5 +187,50 @@ impl AssocScopeCache {
             grouped.into_iter().map(|(k, v)| (k, v.into_boxed_slice())).collect()
         });
         map.get(&trait_def).map_or(&[], |b| &**b)
+    }
+
+    pub fn hierarchy_decl_items(&mut self, db: &dyn ItemDb, trait_def: GlobalDefId) -> &[CachedAssocItem] {
+        if !self.hierarchy_decl_by_def.contains_key(&trait_def) {
+            let chain: Box<[GlobalDefId]> = self.trait_hierarchy(db, trait_def).into();
+            let mut items = Vec::new();
+            for &td in &*chain {
+                items.extend_from_slice(self.trait_decl_items(db, td));
+            }
+            self.hierarchy_decl_by_def.insert(trait_def, items.into_boxed_slice());
+        }
+        &self.hierarchy_decl_by_def[&trait_def]
+    }
+
+    pub fn clean_module_trait_candidates<'a>(
+        &'a mut self,
+        db: &dyn ItemDb,
+        scope_hash: u64,
+        visible_traits: &[GlobalDefId],
+        prelude_traits: &[GlobalDefId],
+        include_prelude: bool,
+        name: &str,
+    ) -> Option<&'a [(GlobalDefId, NsMask)]> {
+        let needs_build = match self.clean_mod_trait_items.get(&scope_hash) {
+            Some(entry) => entry.include_prelude != include_prelude || entry.visible_traits.as_ref() != visible_traits,
+            None => true,
+        };
+        if needs_build {
+            let mut grouped: HashMap<IdentKey, Vec<(GlobalDefId, NsMask)>> = HashMap::new();
+            let prel = if include_prelude { prelude_traits } else { &[] };
+            for &tdef in visible_traits.iter().chain(prel.iter()) {
+                for c in self.hierarchy_decl_items(db, tdef) {
+                    let mask = c.kind.ns_mask(false);
+                    let list = grouped.entry(c.name.clone()).or_default();
+                    if let Some(existing) = list.iter_mut().find(|(d, _)| *d == tdef) {
+                        existing.1 .0 |= mask.0;
+                    } else {
+                        list.push((tdef, mask));
+                    }
+                }
+            }
+            let by_name: ModTraitAssocMap = grouped.into_iter().map(|(k, v)| (k, v.into_boxed_slice())).collect();
+            self.clean_mod_trait_items.insert(scope_hash, CachedModTraitScope { visible_traits: visible_traits.into(), include_prelude, by_name });
+        }
+        self.clean_mod_trait_items.get(&scope_hash).and_then(|entry| entry.by_name.get(name).map(|b| &**b))
     }
 }

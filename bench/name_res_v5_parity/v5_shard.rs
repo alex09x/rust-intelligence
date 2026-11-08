@@ -10,10 +10,10 @@
 
 //! Per-shard pre-indexing (`ShardTables`) and `.ridx` `v5` enum mappers for [`crate::v5_db::RidxV5ItemDb`].
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use memmap2::Mmap;
-use ridx_format::{CtorShape, DefKind, IndexReader, ItemVis, UsePrimTy};
+use ridx_format::{CtorShape, DefKind, IndexReader, ItemVis, TyKindView, UseOwner, UsePrimTy, USE_FLAG_GLOB, USE_FLAG_UNDERSCORE};
 use ridx_syntax::name_res::{FileId, ItemKind, PrimTy, VisKind};
 
 use crate::meta::{CorpusSourceDb, ReaderMeta};
@@ -307,4 +307,51 @@ pub fn def_has_value_ctor(reader: &IndexReader<Mmap>, def_idx: u32, kind: ItemKi
         return matches!(dt.ctor_shape(), CtorShape::Tuple | CtorShape::Unit);
     }
     reader.fn_sig_for_def(def_idx).is_some() || reader.fields_for_owner(def_idx).next().is_none()
+}
+
+pub fn collect_shard_alias_pairs(reader: &IndexReader<Mmap>, out: &mut HashSet<(String, String)>) {
+    let arena = reader.ty_arena();
+    let mut owners = vec![UseOwner::CrateRoot];
+    for (didx, d) in reader.definitions().iter().enumerate() {
+        let dk = DefKind::from(d.kind);
+        if !d.is_reexport() && dk == DefKind::Mod {
+            owners.push(UseOwner::Def(didx as u32));
+        }
+        if d.is_reexport() {
+            let alias = reader.get_str(d.name_offset()).trim_start_matches("r#");
+            let sig = reader.get_str(d.sig_offset());
+            let orig_leaf = sig.rsplit("::").next().unwrap_or(sig).trim_start_matches("r#");
+            if !alias.is_empty() && !orig_leaf.is_empty() && alias != orig_leaf {
+                out.insert((alias.to_string(), orig_leaf.to_string()));
+            }
+        } else if dk == DefKind::TyAlias {
+            let alias = reader.get_str(d.name_offset()).trim_start_matches("r#");
+            if let Some(dt) = reader.def_ty_for_def(didx as u32) {
+                if let TyKindView::Adt { def, .. } = arena.kind(dt.ty()) {
+                    if let Some(td) = arena.def(def) {
+                        let orig_leaf = td.path.rsplit("::").next().unwrap_or(td.path).trim_start_matches("r#");
+                        if !alias.is_empty() && !orig_leaf.is_empty() && alias != orig_leaf {
+                            out.insert((alias.to_string(), orig_leaf.to_string()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for owner in owners {
+        for u in reader.uses_for_owner(owner) {
+            if (u.flags & (USE_FLAG_GLOB | USE_FLAG_UNDERSCORE)) != 0 || u.name.is_empty() {
+                continue;
+            }
+            let alias = u.name.trim_start_matches("r#");
+            for td_id in [u.type_def, u.value_def, u.macro_def].into_iter().flatten() {
+                if let Some(td) = arena.def(td_id) {
+                    let orig_leaf = td.path.rsplit("::").next().unwrap_or(td.path).trim_start_matches("r#");
+                    if !orig_leaf.is_empty() && alias != orig_leaf {
+                        out.insert((alias.to_string(), orig_leaf.to_string()));
+                    }
+                }
+            }
+        }
+    }
 }

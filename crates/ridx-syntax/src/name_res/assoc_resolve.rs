@@ -11,7 +11,7 @@
 //! Cached inherent, trait-item, supertrait, and in-scope trait associated-item resolution
 //! methods on [`CrateDefMap`] backed by [`super::assoc_cache::AssocScopeCache`].
 
-use super::db::{GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
+use super::db::{GlobalDefId, ItemDb, ModuleId, NsMask, VisKind};
 use super::db_impls::{ImplTargetKey, LocalImplId};
 use super::def_map::CrateDefMap;
 use super::dirty_overlay::{is_indexed_assoc_visible, is_local_assoc_visible, ResolvedAssoc};
@@ -78,37 +78,43 @@ impl CrateDefMap {
             return None;
         }
         let name = norm_ident(raw_name);
-        let mut chain = [GlobalDefId::NONE; 16];
-        let mut clen = 0usize;
-        if let Some(&(tlid, _, _)) = self.local_impls.trait_assocs.iter().find(|&&(tlid, _, _)| self.items[tlid.0 as usize].index_def == trait_def) {
-            chain[0] = trait_def;
-            clen = 1;
-            let mut head = 0usize;
-            while head < clen && clen < 16 {
-                let cur_def = chain[head];
-                head += 1;
-                if let Some(&(cur_lid, _, _)) = self.local_impls.trait_assocs.iter().find(|&&(l, _, _)| self.items[l.0 as usize].index_def == cur_def) {
-                    for &(slid, sup_def) in &self.local_impls.local_trait_supers {
-                        if slid == cur_lid && sup_def.is_some() && !chain[..clen].contains(&sup_def) && clen < 16 {
-                            chain[clen] = sup_def;
-                            clen += 1;
-                        }
-                    }
-                } else {
-                    for &td in ext_cache.assoc.trait_hierarchy(db, cur_def) {
-                        if !chain[..clen].contains(&td) && clen < 16 {
-                            chain[clen] = td;
-                            clen += 1;
-                        }
-                    }
+        if self.local_impls.trait_assocs.is_empty() {
+            for c in ext_cache.assoc.hierarchy_decl_items(db, trait_def) {
+                if c.name.as_str() == name && c.kind.ns_mask(false).0 & ns.0 != 0 {
+                    return Some(ResolvedAssoc {
+                        def: c.def,
+                        owner_impl: LocalImplId::NONE,
+                        owner_trait: LocalItemId::NONE,
+                        kind: c.kind,
+                        vis: VisKind::Public,
+                        vis_mod: ModuleId::NONE,
+                        has_self_receiver: c.has_self_receiver,
+                    });
                 }
             }
-            let _ = tlid;
-        } else {
-            for &td in ext_cache.assoc.trait_hierarchy(db, trait_def) {
-                if clen < 16 {
-                    chain[clen] = td;
-                    clen += 1;
+            return None;
+        }
+
+        let mut chain = [GlobalDefId::NONE; 16];
+        chain[0] = trait_def;
+        let mut clen = 1usize;
+        let mut head = 0usize;
+        while head < clen && clen < 16 {
+            let cur_def = chain[head];
+            head += 1;
+            if let Some(&(cur_lid, _, _)) = self.local_impls.trait_assocs.iter().find(|&&(l, _, _)| self.items[l.0 as usize].index_def == cur_def) {
+                for &(slid, sup_def) in &self.local_impls.local_trait_supers {
+                    if slid == cur_lid && sup_def.is_some() && !chain[..clen].contains(&sup_def) && clen < 16 {
+                        chain[clen] = sup_def;
+                        clen += 1;
+                    }
+                }
+            } else {
+                for &td in ext_cache.assoc.trait_hierarchy(db, cur_def) {
+                    if !chain[..clen].contains(&td) && clen < 16 {
+                        chain[clen] = td;
+                        clen += 1;
+                    }
                 }
             }
         }
@@ -253,33 +259,80 @@ impl CrateDefMap {
                 }
             }
         }
-        for tb in extra_traits.iter().chain(self.scope(from_mod).unnamed_traits.iter()) {
+        let sc = self.scope(from_mod);
+        let include_prelude = !mod_tree.module(from_mod).has_no_implicit_prelude();
+        if extra_traits.is_empty() && self.local_impls.trait_assocs.is_empty() {
+            let name = norm_ident(raw_name);
+            let slice = ext_cache.assoc.clean_module_trait_candidates(db, sc.visible_traits_hash, &sc.visible_traits, &self.prelude_traits, include_prelude, name)?;
+            let matched = SmallTraitBuf::from_filtered(slice, ns);
+            for &tdef in matched.as_slice() {
+                if let Some(assoc) = self.resolve_trait_impl_assoc_cached(db, ext_cache, target, tdef, raw_name, ns) {
+                    return Some((tdef, assoc));
+                }
+            }
+            return None;
+        }
+        for tb in extra_traits {
             if tb.def.is_some() && self.resolve_trait_assoc_cached(db, ext_cache, tb.def, raw_name, ns).is_some() {
                 if let Some(assoc) = self.resolve_trait_impl_assoc_cached(db, ext_cache, target, tb.def, raw_name, ns) {
                     return Some((tb.def, assoc));
                 }
             }
         }
-        for &pns in self.scope(from_mod).entries.values() {
-            if let Some(tb) = pns.filter_visible(mod_tree, from_mod).types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
-                if self.resolve_trait_assoc_cached(db, ext_cache, tb.def, raw_name, ns).is_some() {
-                    if let Some(assoc) = self.resolve_trait_impl_assoc_cached(db, ext_cache, target, tb.def, raw_name, ns) {
-                        return Some((tb.def, assoc));
-                    }
+        for &tdef in &*sc.visible_traits {
+            if self.resolve_trait_assoc_cached(db, ext_cache, tdef, raw_name, ns).is_some() {
+                if let Some(assoc) = self.resolve_trait_impl_assoc_cached(db, ext_cache, target, tdef, raw_name, ns) {
+                    return Some((tdef, assoc));
                 }
             }
         }
-        if !mod_tree.module(from_mod).has_no_implicit_prelude() {
-            for pns in self.prelude.values() {
-                if let Some(tb) = pns.types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
-                    if self.resolve_trait_assoc_cached(db, ext_cache, tb.def, raw_name, ns).is_some() {
-                        if let Some(assoc) = self.resolve_trait_impl_assoc_cached(db, ext_cache, target, tb.def, raw_name, ns) {
-                            return Some((tb.def, assoc));
-                        }
+        if include_prelude {
+            for &tdef in &*self.prelude_traits {
+                if self.resolve_trait_assoc_cached(db, ext_cache, tdef, raw_name, ns).is_some() {
+                    if let Some(assoc) = self.resolve_trait_impl_assoc_cached(db, ext_cache, target, tdef, raw_name, ns) {
+                        return Some((tdef, assoc));
                     }
                 }
             }
         }
         None
+    }
+}
+
+struct SmallTraitBuf {
+    inline: [GlobalDefId; 8],
+    len: usize,
+    spill: Vec<GlobalDefId>,
+}
+
+impl SmallTraitBuf {
+    #[inline]
+    fn from_filtered(slice: &[(GlobalDefId, NsMask)], ns: NsMask) -> Self {
+        let mut inline = [GlobalDefId::NONE; 8];
+        let mut len = 0usize;
+        let mut spill = Vec::new();
+        for &(tdef, mask) in slice {
+            if mask.0 & ns.0 != 0 {
+                if len < 8 {
+                    inline[len] = tdef;
+                    len += 1;
+                } else {
+                    if spill.is_empty() {
+                        spill.extend_from_slice(&inline);
+                    }
+                    spill.push(tdef);
+                }
+            }
+        }
+        Self { inline, len, spill }
+    }
+
+    #[inline]
+    fn as_slice(&self) -> &[GlobalDefId] {
+        if self.spill.is_empty() {
+            &self.inline[..self.len]
+        } else {
+            &self.spill
+        }
     }
 }

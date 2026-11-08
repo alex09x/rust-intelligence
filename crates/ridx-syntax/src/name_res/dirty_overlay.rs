@@ -232,29 +232,25 @@ impl CrateDefMap {
                 }
             }
         }
-        for tb in extra_traits.iter().chain(self.scope(from_mod).unnamed_traits.iter()) {
+        for tb in extra_traits {
             if tb.def.is_some() && self.resolve_trait_assoc(db, tb.def, raw_name, ns).is_some() {
                 if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tb.def, raw_name, ns) {
                     return Some((tb.def, assoc));
                 }
             }
         }
-        for &pns in self.scope(from_mod).entries.values() {
-            if let Some(tb) = pns.filter_visible(mod_tree, from_mod).types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
-                if self.resolve_trait_assoc(db, tb.def, raw_name, ns).is_some() {
-                    if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tb.def, raw_name, ns) {
-                        return Some((tb.def, assoc));
-                    }
+        for &tdef in &*self.scope(from_mod).visible_traits {
+            if self.resolve_trait_assoc(db, tdef, raw_name, ns).is_some() {
+                if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tdef, raw_name, ns) {
+                    return Some((tdef, assoc));
                 }
             }
         }
         if !mod_tree.module(from_mod).has_no_implicit_prelude() {
-            for pns in self.prelude.values() {
-                if let Some(tb) = pns.types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
-                    if self.resolve_trait_assoc(db, tb.def, raw_name, ns).is_some() {
-                        if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tb.def, raw_name, ns) {
-                            return Some((tb.def, assoc));
-                        }
+            for &tdef in &*self.prelude_traits {
+                if self.resolve_trait_assoc(db, tdef, raw_name, ns).is_some() {
+                    if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tdef, raw_name, ns) {
+                        return Some((tdef, assoc));
                     }
                 }
             }
@@ -262,14 +258,15 @@ impl CrateDefMap {
         None
     }
 
+    #[inline]
     pub(super) fn is_trait_def_in_scope(&self, mod_tree: &ModuleTree, from_mod: ModuleId, extra_traits: &[ResolvedBinding], trait_def: GlobalDefId) -> bool {
-        if extra_traits.iter().any(|b| b.def == trait_def) || self.scope(from_mod).unnamed_traits.iter().any(|b| b.def == trait_def) {
+        if extra_traits.iter().any(|b| b.def == trait_def) {
             return true;
         }
-        if self.scope(from_mod).entries.values().any(|&pns| pns.filter_visible(mod_tree, from_mod).types.is_some_and(|b| b.def == trait_def)) {
+        if self.scope(from_mod).visible_traits_sorted.binary_search(&trait_def).is_ok() {
             return true;
         }
-        !mod_tree.module(from_mod).has_no_implicit_prelude() && self.prelude.values().any(|pns| pns.types.is_some_and(|b| b.def == trait_def))
+        !mod_tree.module(from_mod).has_no_implicit_prelude() && self.prelude_traits_sorted.binary_search(&trait_def).is_ok()
     }
 }
 

@@ -11,14 +11,30 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-RUSTC_BIN="${RUSTC_BIN:-/home/alex09x/.rustup/toolchains/1.98.1-x86_64-unknown-linux-gnu/bin/rustc}"
-if [[ ! -x "$RUSTC_BIN" ]]; then
-  RUSTC_BIN="rustc"
+missing=()
+[[ -z "${RUSTC_BIN:-}" ]] && missing+=("RUSTC_BIN")
+[[ -z "${RIDX_DEPS_DIR:-}" ]] && missing+=("RIDX_DEPS_DIR")
+[[ -z "${RIDX_FORMAT_RLIB:-}" ]] && missing+=("RIDX_FORMAT_RLIB")
+if (( ${#missing[@]} > 0 )); then
+  echo "error: missing required environment variable(s): ${missing[*]}" >&2
+  echo "usage: RUSTC_BIN=/path/to/rustc RIDX_DEPS_DIR=/path/to/deps RIDX_FORMAT_RLIB=/path/to/libridx_format.rlib $0 [args...]" >&2
+  exit 2
 fi
 
-RIDX_DEPS_DIR="${RIDX_DEPS_DIR:-/tmp/ridx-b9-ws/target/release/deps}"
-RIDX_FORMAT_RLIB="${RIDX_FORMAT_RLIB:-/tmp/ridx-b9-ws/target/release/libridx_format.rlib}"
-OUT_BIN_DIR="${OUT_BIN_DIR:-/tmp/ridx-v5-2_5/bin}"
+if [[ ! -x "$RUSTC_BIN" ]]; then
+  echo "error: RUSTC_BIN is not executable: $RUSTC_BIN" >&2
+  exit 2
+fi
+if [[ ! -d "$RIDX_DEPS_DIR" ]]; then
+  echo "error: RIDX_DEPS_DIR is not a directory: $RIDX_DEPS_DIR" >&2
+  exit 2
+fi
+if [[ ! -f "$RIDX_FORMAT_RLIB" ]]; then
+  echo "error: RIDX_FORMAT_RLIB does not exist: $RIDX_FORMAT_RLIB" >&2
+  exit 2
+fi
+
+OUT_BIN_DIR="${OUT_BIN_DIR:-${TMPDIR:-/tmp}/ridx-name-res-v5-parity-bin}"
 mkdir -p "$OUT_BIN_DIR"
 
 SERDE_JSON_RLIB="$(ls -t "$RIDX_DEPS_DIR"/libserde_json-*.rlib | head -n1)"

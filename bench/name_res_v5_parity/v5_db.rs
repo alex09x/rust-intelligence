@@ -11,7 +11,7 @@
 //! Pre-indexed `WorkspaceIndex` (`v5` `.ridx`) adapter state (`RidxV5ItemDb`) mapping
 //! compiler shards, `TyArena` definitions/types, and `ImplEntry` tables onto `ItemDb`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use memmap2::Mmap;
 use ridx_format::{
@@ -22,7 +22,7 @@ use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, Impl
 use ridx_syntax::{parse, SyntaxKind as K};
 
 use crate::meta::{CorpusSourceDb, ReaderMeta};
-use crate::v5_shard::{build_shard_tables, ShardTables};
+use crate::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
 
 /// Sentinel `def_idx` representing a shard's crate-root module (`UseOwner::CrateRoot`).
 pub const CRATE_ROOT_DEF_IDX: u32 = u32::MAX - 1;
@@ -42,6 +42,7 @@ pub struct RidxV5ItemDb<'w> {
     pub trait_supertraits: HashMap<GlobalDefId, Vec<GlobalDefId>>,
     pub impl_assoc_parent: HashMap<GlobalDefId, (GlobalDefId, ImplTargetKey)>,
     pub impl_self_target: HashMap<GlobalDefId, ImplTargetKey>,
+    pub valid_alias_leaf_pairs: HashSet<(String, String)>,
 }
 
 impl<'w> RidxV5ItemDb<'w> {
@@ -55,8 +56,11 @@ impl<'w> RidxV5ItemDb<'w> {
         }
 
         let mut shards = Vec::with_capacity(n);
+        let mut valid_alias_leaf_pairs = HashSet::new();
         for idx in 0..n {
-            shards.push(build_shard_tables(&ws.readers()[idx], &metas[idx], src));
+            let rdr = &ws.readers()[idx];
+            shards.push(build_shard_tables(rdr, &metas[idx], src));
+            collect_shard_alias_pairs(rdr, &mut valid_alias_leaf_pairs);
         }
 
         let mut db = Self {
@@ -70,6 +74,7 @@ impl<'w> RidxV5ItemDb<'w> {
             trait_supertraits: HashMap::new(),
             impl_assoc_parent: HashMap::new(),
             impl_self_target: HashMap::new(),
+            valid_alias_leaf_pairs,
         };
         db.index_all_impls_and_traits();
         db.index_proc_macro_exports(src);

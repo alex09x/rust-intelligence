@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
 use super::def_collect::CollectedCrate;
-use super::def_map::{extern_crate_binding, local_mod_binding, CrateDefMap, ModuleScope, UseDiag};
+use super::def_map::{extern_crate_binding, finalize_in_scope_trait_tables, local_mod_binding, CrateDefMap, ModuleScope, UseDiag};
 use super::def_path::{apply_glob_use, resolve_segments, resolve_use_leaf};
 use super::ext_scope::{indexed_use_to_per_ns, ExtScopeCache};
 use super::ident_key::IdentKey;
@@ -160,6 +160,8 @@ impl ImportSolver {
             edition: mod_tree.edition,
             prelude_mod,
             prelude,
+            prelude_traits: Box::new([]),
+            prelude_traits_sorted: Box::new([]),
             extern_prelude,
             items: collected.items,
             item_strings: collected.strings,
@@ -183,6 +185,7 @@ impl ImportSolver {
                 map.diagnostics.push(UseDiag::UnresolvedUse { module: u.module, use_index: uidx as u32 });
             }
         }
+        finalize_in_scope_trait_tables(&mut map, mod_tree);
         map
     }
 

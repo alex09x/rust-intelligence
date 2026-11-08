@@ -265,4 +265,19 @@ impl CrateSnapshot {
         let mut ext_c = self.ext_cache.borrow_mut();
         self.clean_def_map.resolve_file_paths_into(db, &self.mod_tree, &mut ext_c, file, st, out);
     }
+
+    /// Resolves all paths in `st` for `file` against a dirty overlay `def_map` (and optional `new_mod_tree`),
+    /// reusing the snapshot's warm [`ExtScopeCache`].
+    pub fn resolve_dirty_file_paths_into(
+        &self,
+        db: &dyn ItemDb,
+        new_mod_tree: Option<&ModuleTree>,
+        def_map: &CrateDefMap,
+        file: FileId,
+        st: &SyntaxTree<'_>,
+        out: &mut FileNameRes,
+    ) {
+        let mut ext_c = self.ext_cache.borrow_mut();
+        def_map.resolve_file_paths_into(db, new_mod_tree.unwrap_or(&self.mod_tree), &mut ext_c, file, st, out);
+    }
 }
