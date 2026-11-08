@@ -12,11 +12,12 @@
 //! std/core prelude fixtures without external `.ridx` files (`0` heap allocations per query).
 
 use super::arena::InferTyArena;
-use super::db::{clone_ty_into, CtorShapeKind, TyDefDb, TyLangItem};
+use super::db::{clone_ty_into, CtorShapeKind, MethodCand, TyDefDb, TyLangItem};
+use super::mem_ty_db_methods::{InherentMethodEntry, TraitAssocRuleEntry, TraitImplEntry, TraitMethodDeclEntry};
 use super::ty::{InferTyId, InferTyKind, TyVarKind};
 use super::uf_table::{InlineTyBuf, UnionFindTable};
 use super::unify;
-use crate::name_res::GlobalDefId;
+use crate::name_res::{GlobalDefId, ImplTargetKey};
 
 #[derive(Clone, Debug)]
 struct FnEntry {
@@ -33,7 +34,7 @@ struct DefEntry {
     shape: CtorShapeKind,
     ty: InferTyId,
     tuple_fields: Vec<InferTyId>,
-    named_fields: Vec<(String, InferTyId)>,
+    named_fields: Vec<(String, InferTyId, GlobalDefId)>,
 }
 
 #[derive(Clone, Debug)]
@@ -63,6 +64,12 @@ pub struct MemTyDefDb {
     lang_items: Vec<(TyLangItem, GlobalDefId)>,
     assoc_rules: Vec<AssocRule>,
     fn_bounds: Vec<FnBoundEntry>,
+    pub(super) inherent_methods: Vec<InherentMethodEntry>,
+    pub(super) trait_methods: Vec<TraitMethodDeclEntry>,
+    pub(super) trait_impls: Vec<TraitImplEntry>,
+    pub(super) supertraits: Vec<(GlobalDefId, GlobalDefId)>,
+    pub(super) param_bounds: Vec<(GlobalDefId, u16, GlobalDefId)>,
+    pub(super) trait_assoc_rules: Vec<TraitAssocRuleEntry>,
     pub cstr: Option<GlobalDefId>,
 }
 
@@ -107,14 +114,18 @@ impl MemTyDefDb {
         if let Some(d) = self.defs.iter_mut().find(|e| e.def == def) {
             d.tuple_fields = fields.to_vec();
             for (idx, &fty) in fields.iter().enumerate() {
-                d.named_fields.push((idx.to_string(), fty));
+                d.named_fields.push((idx.to_string(), fty, GlobalDefId::NONE));
             }
         }
     }
 
     pub fn add_field(&mut self, owner_def: GlobalDefId, name: &str, ty: InferTyId) {
+        self.add_field_with_def(owner_def, name, ty, GlobalDefId::NONE);
+    }
+
+    pub fn add_field_with_def(&mut self, owner_def: GlobalDefId, name: &str, ty: InferTyId, field_def: GlobalDefId) {
         if let Some(d) = self.defs.iter_mut().find(|e| e.def == owner_def) {
-            d.named_fields.push((name.to_string(), ty));
+            d.named_fields.push((name.to_string(), ty, field_def));
         }
     }
 
@@ -162,9 +173,13 @@ impl TyDefDb for MemTyDefDb {
     }
 
     fn field_ty(&self, owner_def: GlobalDefId, name: &str, arena: &mut InferTyArena) -> Option<(u16, InferTyId)> {
+        self.field_ty_and_def(owner_def, name, arena).map(|(gc, ty, _)| (gc, ty))
+    }
+
+    fn field_ty_and_def(&self, owner_def: GlobalDefId, name: &str, arena: &mut InferTyArena) -> Option<(u16, InferTyId, GlobalDefId)> {
         let entry = self.defs.iter().find(|d| d.def == owner_def)?;
-        let &(_, fty) = entry.named_fields.iter().find(|(n, _)| n == name)?;
-        Some((entry.generic_count, clone_ty_into(&self.templates, fty, arena)))
+        let &(_, fty, fdef) = entry.named_fields.iter().find(|(n, _, _)| n == name)?;
+        Some((entry.generic_count, clone_ty_into(&self.templates, fty, arena), fdef))
     }
 
     fn lang_item(&self, item: TyLangItem) -> Option<GlobalDefId> {
@@ -221,6 +236,55 @@ impl TyDefDb for MemTyDefDb {
     fn cstr_def(&self) -> Option<GlobalDefId> {
         self.cstr
     }
+
+    fn project_trait_assoc(
+        &self,
+        trait_def: GlobalDefId,
+        assoc_def: GlobalDefId,
+        self_ty: InferTyId,
+        trait_args: &[InferTyId],
+        arena: &mut InferTyArena,
+        vars: &mut UnionFindTable,
+    ) -> Option<InferTyId> {
+        self.query_trait_assoc_rule(trait_def, assoc_def, self_ty, trait_args, arena, vars)
+    }
+
+    fn inherent_method_cands(&self, target: ImplTargetKey, method_name: &str, _arena: &mut InferTyArena, out: &mut Vec<MethodCand>) {
+        self.query_inherent_methods(target, method_name, out);
+    }
+
+    fn trait_impl_method_cands(
+        &self,
+        target: ImplTargetKey,
+        trait_def: GlobalDefId,
+        method_name: &str,
+        step_ty: InferTyId,
+        arena: &mut InferTyArena,
+        vars: &mut UnionFindTable,
+        out: &mut Vec<MethodCand>,
+    ) {
+        self.query_trait_impl_methods(target, trait_def, method_name, step_ty, arena, vars, out);
+    }
+
+    fn trait_decl_method_cand(&self, trait_def: GlobalDefId, trait_args: &[InferTyId], self_ty: InferTyId, method_name: &str, arena: &mut InferTyArena) -> Option<MethodCand> {
+        self.query_trait_decl_method(trait_def, trait_args, self_ty, method_name, arena, 0)
+    }
+
+    fn trait_supertraits(&self, trait_def: GlobalDefId, out: &mut Vec<GlobalDefId>) {
+        for &(sub, sup) in &self.supertraits {
+            if sub == trait_def && !out.contains(&sup) {
+                out.push(sup);
+            }
+        }
+    }
+
+    fn param_trait_bounds(&self, owner_def: GlobalDefId, param_idx: u16, out: &mut Vec<GlobalDefId>) {
+        for &(od, pi, tdef) in &self.param_bounds {
+            if od == owner_def && pi == param_idx && !out.contains(&tdef) {
+                out.push(tdef);
+            }
+        }
+    }
 }
 
 pub(super) fn instantiate_in_arena(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyId]) -> InferTyId {
@@ -250,27 +314,43 @@ fn instantiate_arena_rec(arena: &mut InferTyArena, ty: InferTyId, subst: &[Infer
             arena.mk_array(s, len)
         }
         InferTyKind::Tuple(r) => {
-            let mut b = InlineTyBuf::new();
-            for idx in 0..r.len as usize {
-                b.push(instantiate_arena_rec(arena, arena.slice(r)[idx], subst, depth + 1));
-            }
+            let b = inst_slice_arena(arena, r, subst, depth + 1);
             arena.mk_tuple(b.as_slice())
         }
         InferTyKind::Adt { def, args } => {
-            let mut b = InlineTyBuf::new();
-            for idx in 0..args.len as usize {
-                b.push(instantiate_arena_rec(arena, arena.slice(args)[idx], subst, depth + 1));
-            }
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
             arena.mk_adt(def, b.as_slice())
         }
         InferTyKind::FnPtr { sig } => {
-            let mut b = InlineTyBuf::new();
-            for idx in 0..sig.len as usize {
-                b.push(instantiate_arena_rec(arena, arena.slice(sig)[idx], subst, depth + 1));
-            }
+            let b = inst_slice_arena(arena, sig, subst, depth + 1);
             let s = b.as_slice();
             arena.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
         }
+        InferTyKind::FnDef { def, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_fn_def(def, b.as_slice())
+        }
+        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
+            let ns = instantiate_arena_rec(arena, self_ty, subst, depth + 1);
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_alias(trait_def, assoc_def, ns, b.as_slice())
+        }
+        InferTyKind::Dyn { principal, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_dyn(principal, b.as_slice())
+        }
+        InferTyKind::Opaque { def, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_opaque(def, b.as_slice())
+        }
         _ => ty,
     }
+}
+
+fn inst_slice_arena(arena: &mut InferTyArena, r: super::ty::TySliceRange, subst: &[InferTyId], depth: u8) -> InlineTyBuf {
+    let mut b = InlineTyBuf::new();
+    for idx in 0..r.len as usize {
+        b.push(instantiate_arena_rec(arena, arena.slice(r)[idx], subst, depth));
+    }
+    b
 }

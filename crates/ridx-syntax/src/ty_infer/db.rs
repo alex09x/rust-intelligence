@@ -12,9 +12,9 @@
 //! (matching `ridx-format::LangItemKind`), constructor shapes, and arena type cloner (`clone_ty_into`).
 
 use super::arena::InferTyArena;
-use super::ty::{InferTyId, InferTyKind};
+use super::ty::{InferTyId, InferTyKind, TySliceRange};
 use super::uf_table::{InlineTyBuf, UnionFindTable};
-use crate::name_res::GlobalDefId;
+use crate::name_res::{GlobalDefId, ImplTargetKey};
 
 /// Compiler `#[lang = "..."]` items and associated trait items used during local type inference.
 /// Discriminants match `ridx_format::LangItemKind` 1-to-1 for zero-cost bridging.
@@ -118,6 +118,28 @@ pub enum CtorShapeKind {
     Record = 3,
 }
 
+/// Candidate method produced during `3.3` inherent / trait / bound method resolution (`Copy`, `0` heap allocs).
+#[derive(Clone, Copy, Debug)]
+pub struct MethodCand {
+    /// Resolved `AssocFn` `GlobalDefId` (`impl`'s `AssocFn` when defined/overridden, else `trait`'s `AssocFn`).
+    pub method_def: GlobalDefId,
+    /// Enclosing `Trait` `GlobalDefId` (`GlobalDefId::NONE` for inherent methods).
+    pub trait_def: GlobalDefId,
+    /// Callable `GlobalDefId` holding generic `Fn*` parameter bounds (`trait` `AssocFn` when default or fallback).
+    pub bound_owner_def: GlobalDefId,
+    /// Number of non-lifetime generic parameters on the `impl` (`0` for direct `Param`/`Dyn`/`Opaque` bounds).
+    pub container_generics: u16,
+    /// Number of non-lifetime generic parameters declared on the method itself.
+    pub method_generics: u16,
+    /// `true` when `method_sig` uses `Trait` parameter indexing (`Param(0) = Self`, `1..1+N = trait_args`).
+    pub has_fixed_trait_subst: bool,
+    pub fixed_self_ty: InferTyId,
+    pub fixed_trait_args: TySliceRange,
+    pub is_blanket_impl: bool,
+    /// CST `NodeId` when backed by `LocalCstDefs` (`u32::MAX` when backed by `TyDefDb`).
+    pub cst_fn_node: u32,
+}
+
 /// External/indexed type & signature provider decoupling `ridx-syntax::ty_infer` from `ridx-format`.
 /// All methods materialize types directly into the caller's reusable [`InferTyArena`] (`0` heap allocs).
 pub trait TyDefDb {
@@ -136,6 +158,11 @@ pub trait TyDefDb {
     /// returning `(generic_count, field_ty)` parameterized by `Param { idx, .. }`.
     fn field_ty(&self, owner_def: GlobalDefId, name: &str, arena: &mut InferTyArena) -> Option<(u16, InferTyId)>;
 
+    /// Field type + field `GlobalDefId` by name (or `"0"`, `"1"` for tuple fields).
+    fn field_ty_and_def(&self, owner_def: GlobalDefId, name: &str, arena: &mut InferTyArena) -> Option<(u16, InferTyId, GlobalDefId)> {
+        self.field_ty(owner_def, name, arena).map(|(gc, ty)| (gc, ty, GlobalDefId::NONE))
+    }
+
     /// Resolves a known compiler [`TyLangItem`] to its [`GlobalDefId`].
     fn lang_item(&self, item: TyLangItem) -> Option<GlobalDefId>;
 
@@ -146,10 +173,62 @@ pub trait TyDefDb {
     /// `IndexOutput`, `IntoIteratorItem`, `IteratorItem`, or operator `Output`) for `self_ty` and `trait_args`.
     fn project_assoc_ty(&self, assoc_item: TyLangItem, self_ty: InferTyId, trait_args: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> Option<InferTyId>;
 
+    /// Projects an arbitrary trait associated type `<self_ty as trait_def<trait_args>>::assoc_def`.
+    fn project_trait_assoc(
+        &self,
+        _trait_def: GlobalDefId,
+        _assoc_def: GlobalDefId,
+        _self_ty: InferTyId,
+        _trait_args: &[InferTyId],
+        _arena: &mut InferTyArena,
+        _vars: &mut UnionFindTable,
+    ) -> Option<InferTyId> {
+        None
+    }
+
     /// Queries an `Fn*` / `AsyncFn*` trait bound on generic parameter `param_idx` of `owner_def`,
     /// appending expected closure parameter types (containing `Param { idx, .. }`) to `inputs_out`
     /// and returning `(fn_trait_item, ret_ty)`.
     fn param_fn_bound(&self, owner_def: GlobalDefId, param_idx: u16, arena: &mut InferTyArena, inputs_out: &mut Vec<InferTyId>) -> Option<(TyLangItem, InferTyId)>;
+
+    /// Appends inherent `impl` method candidates (`has_self == true`) matching `(target, method_name)`.
+    fn inherent_method_cands(&self, _target: ImplTargetKey, _method_name: &str, _arena: &mut InferTyArena, _out: &mut Vec<MethodCand>) {}
+
+    /// Appends concrete and blanket `impl Trait for ...` method candidates (`has_self == true`) for `trait_def`
+    /// (including supertraits of `trait_def`) matching `(target, method_name)` and compatible with `step_ty`.
+    #[allow(clippy::too_many_arguments)]
+    fn trait_impl_method_cands(
+        &self,
+        _target: ImplTargetKey,
+        _trait_def: GlobalDefId,
+        _method_name: &str,
+        _step_ty: InferTyId,
+        _arena: &mut InferTyArena,
+        _vars: &mut UnionFindTable,
+        _out: &mut Vec<MethodCand>,
+    ) {
+    }
+
+    /// Looks up `method_name` (`has_self == true`) directly on `trait_def` (or its supertraits) for `Param`/`Dyn`/`Opaque` receivers.
+    fn trait_decl_method_cand(&self, _trait_def: GlobalDefId, _trait_args: &[InferTyId], _self_ty: InferTyId, _method_name: &str, _arena: &mut InferTyArena) -> Option<MethodCand> {
+        None
+    }
+
+    /// Materializes `cand.method_def`'s formal parameter types (`inputs_out[0]` = `self_param_ty`) and return type.
+    fn method_sig(&self, cand: &MethodCand, arena: &mut InferTyArena, inputs_out: &mut Vec<InferTyId>) -> Option<InferTyId> {
+        self.fn_sig(cand.method_def, arena, inputs_out).map(|(_, out)| out)
+    }
+
+    /// Appends direct supertraits (and optional instantiated trait args) of `trait_def`.
+    fn trait_supertraits(&self, _trait_def: GlobalDefId, _out: &mut Vec<GlobalDefId>) {}
+
+    /// Appends trait bounds `Param(param_idx): BoundTrait` declared on `owner_def` (`Fn` or `AssocFn` or `Impl`).
+    fn param_trait_bounds(&self, _owner_def: GlobalDefId, _param_idx: u16, _out: &mut Vec<GlobalDefId>) {}
+
+    /// Verifies blanket-impl `where` bounds after binding `subst` against a method receiver.
+    fn check_blanket_method_bounds(&self, _method_def: GlobalDefId, _subst: &[InferTyId], _arena: &mut InferTyArena, _vars: &mut UnionFindTable) -> bool {
+        true
+    }
 
     /// Optional `core::ffi::CStr` definition for `c"..."` literals (`&CStr`).
     fn cstr_def(&self) -> Option<GlobalDefId> {

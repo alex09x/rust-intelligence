@@ -160,6 +160,46 @@ pub fn collect_dot_access_spans(st: &SyntaxTree<'_>) -> HashSet<(u32, u32)> {
     set
 }
 
+/// Classifies a dot-access site (`.method()` / `.field` / `.0`), returning `Some((tok_span, in_macro_tt))`
+/// unless the token lies inside an attribute, `macro_rules!`, or item declaration name.
+pub fn classify_dot_site(st: &SyntaxTree<'_>, sb: u32, eb: u32) -> Option<((u32, u32), bool)> {
+    let tidx = st.tokens.partition_point(|t| t.end <= sb);
+    let tok = *st.tokens.get(tidx)?;
+    let exact_tok = (tok.start == sb && tok.end == eb) || (tok.kind == T::RawIdent && tok.start + 2 == sb && tok.end == eb);
+    if !exact_tok || !matches!(tok.kind, T::Ident | T::RawIdent | T::Int) {
+        return None;
+    }
+    let mut best_nid = st.root();
+    let mut best_len = u32::MAX;
+    for i in 0..st.nodes.len() {
+        let nid = NodeId(i as u32);
+        let nr = st.range(nid);
+        if (nr.start as u32) <= tok.start && tok.end <= (nr.end as u32) {
+            let l = (nr.end - nr.start) as u32;
+            if l <= best_len {
+                best_len = l;
+                best_nid = nid;
+            }
+        }
+    }
+    let mut cur = Some(best_nid);
+    let mut in_macro_tt = false;
+    while let Some(nid) = cur {
+        let k = st.kind(nid);
+        if matches!(k, K::Attr | K::MacroRules) {
+            return None;
+        }
+        if k == K::Name && !st.parent(nid).is_some_and(|p| matches!(st.kind(p), K::MethodCallExpr | K::FieldExpr)) {
+            return None;
+        }
+        if k == K::TokenTree && st.parent(nid).is_some_and(|p| st.kind(p) == K::MacroCall) {
+            in_macro_tt = true;
+        }
+        cur = st.parent(nid);
+    }
+    Some(((tok.start, tok.end), in_macro_tt))
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn classify_ref_site(
     reader: &IndexReader<Mmap>,

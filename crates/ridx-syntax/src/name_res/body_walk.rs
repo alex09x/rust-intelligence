@@ -59,6 +59,8 @@ impl<'a, 's> FileResolver<'a, 's> {
         if !inner.enabled {
             return;
         }
+        self.out.prelude_traits = std::sync::Arc::clone(&self.map.prelude_traits);
+        self.record_mod_trait_scope(self.st.root(), self.cur_mod);
         self.walk_container_items(self.st.root(), false);
     }
 
@@ -100,12 +102,14 @@ impl<'a, 's> FileResolver<'a, 's> {
                                 if let Some(edge) = self.mod_tree.children(self.cur_mod).iter().find(|e| self.mod_tree.child_name(e) == target) {
                                     let prev_m = self.cur_mod;
                                     self.cur_mod = edge.child;
+                                    self.record_mod_trait_scope(il, edge.child);
                                     self.walk_container_items(il, false);
                                     self.cur_mod = prev_m;
                                 }
                             }
                         } else {
                             self.ribs.push_block_rib(self.map, self.db, self.mod_tree, self.ext_cache, self.file, self.cur_mod, self.st, il);
+                            self.record_top_block_rib_traits(il);
                             self.walk_container_items(il, true);
                             self.ribs.pop_block_rib();
                         }
@@ -257,6 +261,9 @@ impl<'a, 's> FileResolver<'a, 's> {
         if let Some(wc) = self.st.child(impl_node, K::WhereClause) {
             self.walk_where_clause(wc);
         }
+        if trait_def.is_some() {
+            self.out.self_trait_scopes.push((impl_node, NodeId(self.st.node(impl_node).subtree_end), trait_def));
+        }
         self.ribs.self_ctx = Some(SelfCtx { target, trait_def, self_has_value_ctor: true });
         if let Some(il) = self.st.child(impl_node, K::ItemList) {
             if in_block {
@@ -283,6 +290,9 @@ impl<'a, 's> FileResolver<'a, 's> {
 
     fn walk_trait_item(&mut self, trait_node: NodeId) {
         let trait_def = self.lookup_item_def(trait_node);
+        if trait_def.is_some() {
+            self.out.self_trait_scopes.push((trait_node, NodeId(self.st.node(trait_node).subtree_end), trait_def));
+        }
         let (gm, bm) = self.push_item_generics(trait_node, trait_def);
         let prev_self = self.ribs.self_ctx;
         self.ribs.self_ctx = Some(SelfCtx { target: ImplTargetKey::Unknown, trait_def, self_has_value_ctor: false });

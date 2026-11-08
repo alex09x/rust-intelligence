@@ -19,9 +19,15 @@ mod did_change_bench;
 mod meta;
 mod site_classify;
 mod target_match;
+mod ty_parity;
+mod ty_report;
 mod v5_db;
 mod v5_db_queries;
 mod v5_shard;
+mod v5_ty_db;
+mod v5_ty_lower;
+mod v5_ty_proj;
+mod v5_ty_tables;
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::path::{Path, PathBuf};
@@ -32,6 +38,7 @@ use ridx_format::WorkspaceIndex;
 use crate::compare::run_corpus;
 use crate::meta::{load_reader_metas, CorpusSourceDb};
 use crate::site_classify::SynthReason;
+use crate::ty_report::print_ty_parity_tables;
 use crate::v5_db::RidxV5ItemDb;
 
 struct CountingAlloc;
@@ -132,6 +139,7 @@ fn main() {
     let mut grand_mtt_refs = 0usize;
     let mut grand_mtt_matched = 0usize;
     let mut grand_dot = 0usize;
+    let mut grand_dot_matched = 0usize;
     let mut grand_synth = 0usize;
     let mut grand_synth_reasons = [0usize; 4];
     let mut grand_moved_alias = 0usize;
@@ -154,7 +162,8 @@ fn main() {
         let rep = run_corpus(cname, &src_db, &item_db, verbose_samples, run_did_change);
         let pct = if rep.phase2_driver_refs == 0 { 100.0 } else { (rep.matched_refs as f64) * 100.0 / (rep.phase2_driver_refs as f64) };
         let spct = if rep.phase2_driver_refs == 0 { 100.0 } else { (rep.strict_matched_refs as f64) * 100.0 / (rep.phase2_driver_refs as f64) };
-        let uni_num = rep.matched_refs + rep.matched_macro_arg_refs;
+        let dot_mat = rep.ty_stats.dot_cst_matched + rep.ty_stats.dot_mtt_matched;
+        let uni_num = rep.matched_refs + rep.matched_macro_arg_refs + dot_mat;
         let uni_den = rep.phase2_driver_refs + rep.macro_arg_refs + rep.excluded_dot_refs;
         let upct = if uni_den == 0 { 100.0 } else { (uni_num as f64) * 100.0 / (uni_den as f64) };
         let fdiv = rep.files.max(1) as f64;
@@ -195,6 +204,7 @@ fn main() {
         grand_mtt_refs += rep.macro_arg_refs;
         grand_mtt_matched += rep.matched_macro_arg_refs;
         grand_dot += rep.excluded_dot_refs;
+        grand_dot_matched += dot_mat;
         grand_synth += rep.excluded_synth_refs;
         for k in 0..4 {
             grand_synth_reasons[k] += rep.synth_by_reason[k];
@@ -207,7 +217,7 @@ fn main() {
     if !all_reports.is_empty() && grand_refs > 0 {
         let gpct = (grand_matched as f64) * 100.0 / (grand_refs as f64);
         let gspct = (grand_strict as f64) * 100.0 / (grand_refs as f64);
-        let uni_num = grand_matched + grand_mtt_matched;
+        let uni_num = grand_matched + grand_mtt_matched + grand_dot_matched;
         let uni_den = grand_refs + grand_mtt_refs + grand_dot;
         let gupct = (uni_num as f64) * 100.0 / (uni_den as f64);
         if all_reports.len() > 1 {
@@ -228,7 +238,7 @@ fn main() {
                 gupct
             );
         }
-        println!("\nUnified coverage: matched (CST + MacroTT) / (P2 + MacroTT + Dot) = {} / {} ({:.2}%)", uni_num, uni_den, gupct);
+        println!("\nUnified coverage: matched (CST + MacroTT + Dot) / (P2 + MacroTT + Dot) = {} / {} ({:.2}%)", uni_num, uni_den, gupct);
         println!(
             "Strict P2 match: {} / {} ({:.2}%); strict_local_ref_mut = {}, strict_local_ref_self = {}, lenient_local = {}, lenient_assoc_trait = {}",
             grand_strict, grand_refs, gspct, grand_strict_loc_ref_mut, grand_strict_loc_ref_self, grand_len_loc, grand_len_assoc
@@ -288,6 +298,8 @@ fn main() {
             }
         }
     }
+
+    print_ty_parity_tables(&all_reports, verbose_samples);
 
     if verbose_samples > 0 {
         for rep in &all_reports {

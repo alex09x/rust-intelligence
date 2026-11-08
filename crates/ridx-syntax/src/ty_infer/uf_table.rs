@@ -326,21 +326,28 @@ impl UnionFindTable {
     }
 }
 
-pub(super) struct InlineTyBuf {
-    inline: [InferTyId; 8],
+pub struct InlineTyBuf {
+    inline: [InferTyId; 24],
     len: usize,
     spill: Vec<InferTyId>,
 }
 
+impl Default for InlineTyBuf {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InlineTyBuf {
     #[inline]
-    pub(super) fn new() -> Self {
-        Self { inline: [InferTyId::UNKNOWN; 8], len: 0, spill: Vec::new() }
+    pub fn new() -> Self {
+        Self { inline: [InferTyId::UNKNOWN; 24], len: 0, spill: Vec::new() }
     }
 
     #[inline]
-    pub(super) fn push(&mut self, ty: InferTyId) {
-        if self.len < 8 {
+    pub fn push(&mut self, ty: InferTyId) {
+        if self.len < 24 {
             self.inline[self.len] = ty;
             self.len += 1;
         } else {
@@ -352,7 +359,7 @@ impl InlineTyBuf {
     }
 
     #[inline]
-    pub(super) fn as_slice(&self) -> &[InferTyId] {
+    pub fn as_slice(&self) -> &[InferTyId] {
         if self.spill.is_empty() {
             &self.inline[..self.len]
         } else {

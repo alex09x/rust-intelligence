@@ -108,6 +108,16 @@ impl InferTyArena {
     }
 
     #[inline]
+    pub fn intern_slice(&mut self, items: &[InferTyId]) -> TySliceRange {
+        if items.is_empty() {
+            return TySliceRange::EMPTY;
+        }
+        let start = self.ty_lists.len() as u32;
+        self.ty_lists.extend_from_slice(items);
+        TySliceRange { start, len: items.len() as u16 }
+    }
+
+    #[inline]
     pub fn mk_infer(&mut self, var: TyVarId) -> InferTyId {
         self.push_raw(InferTyKind::Infer(var), TyFlags::HAS_INFER, 0)
     }

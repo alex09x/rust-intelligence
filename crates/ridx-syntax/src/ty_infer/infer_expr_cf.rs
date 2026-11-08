@@ -16,7 +16,9 @@ use super::expectation::{BranchCoercer, Expectation};
 use super::infer_expr::is_expr_node;
 use super::infer_pat::BindingMode;
 use super::lang_ops::unwrap_for_iter_elem;
-use super::ty::InferTyId;
+use super::ty::{InferTyId, InferTyKind};
+use super::uf_table::InlineTyBuf;
+use crate::name_res::GlobalDefId;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
 use crate::tree::NodeId;
@@ -28,6 +30,64 @@ pub(super) fn extract_label_span(st: &crate::tree::SyntaxTree<'_>, node: NodeId)
 }
 
 impl<'a, 's> Runner<'a, 's> {
+    /// Coerces `actual` toward `expected` (extending `unify::coerce` with `FnDef -> FnPtr` and `Closure -> impl Fn*`).
+    pub(super) fn coerce_expr(&mut self, actual: InferTyId, expected: InferTyId) -> InferTyId {
+        let act = self.ctx.table.shallow_resolve(actual);
+        let exp = self.ctx.table.shallow_resolve(expected);
+        if act == InferTyId::NEVER {
+            return InferTyId::NEVER;
+        }
+        match (self.ctx.table.arena.kind(act), self.ctx.table.arena.kind(exp)) {
+            (InferTyKind::FnDef { def, args }, InferTyKind::FnPtr { .. }) => {
+                if let Some(fp) = self.fn_def_as_fn_ptr(def, args) {
+                    let _ = self.ctx.table.coerce(fp, exp);
+                    return self.ctx.table.shallow_resolve(exp);
+                }
+            }
+            (InferTyKind::Closure { sig, .. }, InferTyKind::Opaque { def, args }) | (InferTyKind::Closure { sig, .. }, InferTyKind::Dyn { principal: def, args })
+                if self.db.lang_item_of_def(def).is_some_and(|l| l.is_fn_trait()) && args.len >= 2 =>
+            {
+                let s = self.ctx.table.arena.slice(sig);
+                let mut in_buf = InlineTyBuf::new();
+                for &inp in &s[..s.len() - 1] {
+                    in_buf.push(inp);
+                }
+                let out_ty = s[s.len() - 1];
+                let act_tup = self.ctx.table.arena.mk_tuple(in_buf.as_slice());
+                let exp_tup = self.ctx.table.arena.slice(args)[0];
+                let exp_ret = self.ctx.table.arena.slice(args)[1];
+                let _ = self.ctx.table.equate(act_tup, exp_tup);
+                let _ = self.ctx.table.coerce(out_ty, exp_ret);
+                return self.ctx.table.shallow_resolve(exp);
+            }
+            _ => {}
+        }
+        let _ = self.ctx.table.coerce(act, exp);
+        self.ctx.table.shallow_resolve(act)
+    }
+
+    pub(super) fn fn_def_as_fn_ptr(&mut self, def: GlobalDefId, args: super::ty::TySliceRange) -> Option<InferTyId> {
+        let mut subst = InlineTyBuf::new();
+        for &a in self.ctx.table.arena.slice(args) {
+            subst.push(a);
+        }
+        let mut raw_ins = core::mem::take(&mut self.ctx.sig_inputs_buf);
+        let sig_opt = self
+            .db
+            .fn_sig(def, &mut self.ctx.table.arena, &mut raw_ins)
+            .or_else(|| self.local_defs.fn_sig(def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw_ins));
+        let res = sig_opt.map(|(_, raw_ret)| {
+            let mut inst_ins = InlineTyBuf::new();
+            for &inp in &raw_ins {
+                inst_ins.push(self.ctx.table.instantiate(inp, subst.as_slice()));
+            }
+            let inst_ret = self.ctx.table.instantiate(raw_ret, subst.as_slice());
+            self.ctx.table.arena.mk_fn_ptr(inst_ins.as_slice(), inst_ret)
+        });
+        self.ctx.sig_inputs_buf = raw_ins;
+        res
+    }
+
     pub(super) fn infer_if_expr(&mut self, expr: NodeId, expectation: Expectation) -> InferTyId {
         let mut kids = self.st.children(expr).filter(|&c| is_expr_node(self.st.kind(c)));
         if let Some(cond) = kids.next() {

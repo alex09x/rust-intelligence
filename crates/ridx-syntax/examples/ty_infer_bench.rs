@@ -17,7 +17,7 @@ use std::hint::black_box;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
-use ridx_syntax::name_res::{CrateDefMap, CrateId, Edition, GlobalDefId, ItemKind, MemItemDb, MemSourceDb, ModuleTree, OwnedDef, VisKind};
+use ridx_syntax::name_res::{CrateDefMap, CrateId, Edition, GlobalDefId, ImplTargetKey, ItemKind, MemItemDb, MemSourceDb, ModuleTree, OwnedDef, VisKind};
 use ridx_syntax::parse;
 use ridx_syntax::syntax_kind::SyntaxKind as K;
 use ridx_syntax::ty_infer::{BodyInferCtx, BranchCoercer, CtorShapeKind, Expectation, FnInferResult, InferTyId, InferenceTable, LocalCstDefs, MemTyDefDb, TyLangItem};
@@ -121,6 +121,14 @@ fn process(pkt: &Packet<Option<u64>>, slice: &[u64], flag: bool) -> Option<u64> 
     };
     Some(acc)
 }
+
+fn process_methods(items: &Vec<u64>, pkt: &Packet<Option<u64>>) -> Option<u64> {
+    let n = items.len() as u64;
+    let first = *items.first()?;
+    let mapped = items.clone().into_iter().map(|v| v + first + n);
+    let _ = mapped;
+    pkt.payload
+}
 "#;
 
 fn main() {
@@ -164,11 +172,24 @@ fn main() {
     let none_def = GlobalDefId::new(std_c, 12);
     let fn_once_def = GlobalDefId::new(std_c, 13);
     let range_def = GlobalDefId::new(std_c, 14);
+    let vec_def = GlobalDefId::new(std_c, 15);
+    let clone_tr = GlobalDefId::new(std_c, 16);
+    let into_iter_tr = GlobalDefId::new(std_c, 17);
+    let iter_tr = GlobalDefId::new(std_c, 18);
+    let iter_item_assoc = GlobalDefId::new(std_c, 19);
+    let into_iter_adt = GlobalDefId::new(std_c, 20);
+    let map_adt = GlobalDefId::new(std_c, 21);
+    let fn_mut_def = GlobalDefId::new(std_c, 22);
     for (id, n, k, c) in [
         (opt_def, "Option", ItemKind::Enum, false),
         (some_def, "Some", ItemKind::Variant, true),
         (none_def, "None", ItemKind::Variant, true),
         (fn_once_def, "FnOnce", ItemKind::Trait, false),
+        (fn_mut_def, "FnMut", ItemKind::Trait, false),
+        (vec_def, "Vec", ItemKind::Struct, false),
+        (clone_tr, "Clone", ItemKind::Trait, false),
+        (into_iter_tr, "IntoIterator", ItemKind::Trait, false),
+        (iter_tr, "Iterator", ItemKind::Trait, false),
     ] {
         item_db.add_module_def(prelude, OwnedDef { id, name: n.into(), kind: k, vis: VisKind::Public, has_value_ctor: c });
     }
@@ -177,13 +198,42 @@ fn main() {
     ty_db.add_lang_item(TyLangItem::OptionSome, some_def);
     ty_db.add_lang_item(TyLangItem::OptionNone, none_def);
     ty_db.add_lang_item(TyLangItem::FnOnce, fn_once_def);
+    ty_db.add_lang_item(TyLangItem::FnMut, fn_mut_def);
     ty_db.add_lang_item(TyLangItem::Range, range_def);
-    let p0 = ty_db.param(0);
+    ty_db.add_lang_item(TyLangItem::Iterator, iter_tr);
+    ty_db.add_lang_item(TyLangItem::IteratorItem, iter_item_assoc);
+    let (p0, p1, p2) = (ty_db.param(0), ty_db.param(1), ty_db.param(2));
     ty_db.add_adt(opt_def, 1, CtorShapeKind::None);
     ty_db.add_variant(some_def, opt_def, 1, CtorShapeKind::Tuple);
     ty_db.set_tuple_fields(some_def, &[p0]);
     ty_db.add_variant(none_def, opt_def, 1, CtorShapeKind::Unit);
     ty_db.add_adt(range_def, 1, CtorShapeKind::Record);
+    let vec_p0 = ty_db.add_adt(vec_def, 1, CtorShapeKind::None);
+    let into_iter_p0 = ty_db.add_adt(into_iter_adt, 1, CtorShapeKind::None);
+    let _ = ty_db.add_adt(map_adt, 2, CtorShapeKind::None);
+    let sl_p0 = ty_db.templates.mk_slice(p0);
+    ty_db.add_assoc_rule(TyLangItem::DerefTarget, 1, vec_p0, &[], sl_p0);
+    let (ref_vec, ref_sl, ref_p0) = (ty_db.templates.mk_ref(false, vec_p0), ty_db.templates.mk_ref(false, sl_p0), ty_db.templates.mk_ref(false, p0));
+    let opt_ref_p0 = ty_db.templates.mk_adt(opt_def, &[ref_p0]);
+    let (vec_len_fn, sl_first_fn, vec_clone_fn, vec_ii_fn, iter_map_fn) =
+        (GlobalDefId::new(std_c, 50), GlobalDefId::new(std_c, 51), GlobalDefId::new(std_c, 52), GlobalDefId::new(std_c, 53), GlobalDefId::new(std_c, 54));
+    ty_db.add_fn(vec_len_fn, 1, &[ref_vec], InferTyId::USIZE);
+    ty_db.add_inherent_method(ImplTargetKey::Adt(vec_def), "len", vec_len_fn, 1, 0);
+    ty_db.add_fn(sl_first_fn, 1, &[ref_sl], opt_ref_p0);
+    ty_db.add_inherent_method(ImplTargetKey::Slice, "first", sl_first_fn, 1, 0);
+    ty_db.add_fn(vec_clone_fn, 1, &[ref_vec], vec_p0);
+    ty_db.add_trait_method(clone_tr, 0, "clone", vec_clone_fn, 0);
+    ty_db.add_trait_impl(clone_tr, 1, vec_p0, &[], &[("clone", vec_clone_fn, 0)]);
+    ty_db.add_fn(vec_ii_fn, 1, &[vec_p0], into_iter_p0);
+    ty_db.add_trait_method(into_iter_tr, 0, "into_iter", vec_ii_fn, 0);
+    ty_db.add_trait_impl(into_iter_tr, 1, vec_p0, &[], &[("into_iter", vec_ii_fn, 0)]);
+    let self_item = ty_db.templates.mk_alias(iter_tr, iter_item_assoc, p0, &[]);
+    let map_ret = ty_db.templates.mk_adt(map_adt, &[p0, p2]);
+    ty_db.add_fn(iter_map_fn, 3, &[p0, p2], map_ret);
+    ty_db.add_param_fn_bound(iter_map_fn, 2, TyLangItem::FnMut, &[self_item], p1);
+    ty_db.add_trait_method(iter_tr, 0, "map", iter_map_fn, 2);
+    ty_db.add_assoc_rule(TyLangItem::IteratorItem, 1, into_iter_p0, &[], p0);
+    ty_db.add_trait_impl(iter_tr, 1, into_iter_p0, &[], &[]);
 
     let mut sources = MemSourceDb::new();
     let file = sources.add_file("src/lib.rs", BENCH_SRC);
@@ -221,4 +271,29 @@ fn main() {
         bytes_body
     );
     assert_eq!(allocs_body, 0, "expected 0 heap allocations in steady-state BodyInferCtx::infer_fn_into loop");
+
+    let m_node = st.descendants(st.root()).find(|&n| st.kind(n) == K::Fn && st.child(n, K::Name).is_some_and(|nn| st.text(nn) == "process_methods")).expect("process_methods fn");
+    for _ in 0..16 {
+        ctx.infer_fn_into(&st, &file_res, &ty_db, &local_defs, m_node, &mut res);
+        black_box(res.body_ty);
+    }
+    ALLOCS.store(0, Ordering::Relaxed);
+    BYTES.store(0, Ordering::Relaxed);
+    let t2 = Instant::now();
+    for _ in 0..iters_body {
+        ctx.infer_fn_into(&st, &file_res, &ty_db, &local_defs, m_node, &mut res);
+        black_box(res.body_ty);
+    }
+    let ns_m = t2.elapsed().as_nanos() as f64;
+    let allocs_m = ALLOCS.load(Ordering::Relaxed);
+    let bytes_m = BYTES.load(Ordering::Relaxed);
+    println!(
+        "ty_infer_bench (3.3 methods+autoderef): iters={} total_ms={:.2} ns/fn={:.1} warm_allocs={} warm_bytes={}",
+        iters_body,
+        ns_m / 1_000_000.0,
+        ns_m / (iters_body as f64),
+        allocs_m,
+        bytes_m
+    );
+    assert_eq!(allocs_m, 0, "expected 0 heap allocations in steady-state 3.3 method resolution loop");
 }

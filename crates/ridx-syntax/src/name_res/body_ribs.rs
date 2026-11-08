@@ -267,3 +267,34 @@ pub(super) fn block_has_inner_items(st: &SyntaxTree<'_>, block_node: NodeId) -> 
         )
     })
 }
+
+impl super::body_walk::FileResolver<'_, '_> {
+    #[inline]
+    pub(super) fn record_mod_trait_scope(&mut self, container: NodeId, m: super::db::ModuleId) {
+        let end = NodeId(self.st.node(container).subtree_end);
+        let vis = std::sync::Arc::clone(&self.map.scope(m).visible_traits);
+        let inc = !self.mod_tree.module(m).has_no_implicit_prelude();
+        self.out.mod_trait_scopes.push((container, end, vis, inc));
+    }
+
+    pub(super) fn record_top_block_rib_traits(&mut self, container: NodeId) {
+        let Some(rib) = self.ribs.block_ribs.last() else {
+            return;
+        };
+        let end = NodeId(self.st.node(container).subtree_end);
+        for tb in &rib.unnamed_traits {
+            let eff = super::dirty_overlay::effective_local_or_def(tb.def, tb.local);
+            if eff.is_some() {
+                self.out.block_trait_imports.push((container, end, eff));
+            }
+        }
+        for pns in rib.entries.values() {
+            if let Some(tb) = pns.types.filter(|b| !b.ambiguous && b.kind == ItemKind::Trait) {
+                let eff = super::dirty_overlay::effective_local_or_def(tb.def, tb.local);
+                if eff.is_some() {
+                    self.out.block_trait_imports.push((container, end, eff));
+                }
+            }
+        }
+    }
+}

@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Compiler-free local type inference engine (`ty_infer`) — Phase 3 (`Checkboxes 3.1 + 3.2`):
+//! Compiler-free local type inference engine (`ty_infer`) — Phase 3 (`Checkboxes 3.1 + 3.2 + 3.3`):
 //! - [`arena`]: intrusive hash-consed [`InferTyArena`] with pre-interned builtins and `O(1)` [`TyFlags`].
 //! - [`uf_table`]: Tarjan union-find over [`TyVarId`] with union-by-rank, snapshot-safe path compression,
 //!   occurs-check, and Rust integer (`i32`) / float (`f64`) literal fallbacks.
@@ -16,32 +16,40 @@
 //! - [`expectation`]: bidirectional [`Expectation`] propagation and [`BranchCoercer`] arm joiner.
 //! - [`db`] / [`mem_ty_db`] / [`local_defs`]: zero-dependency [`TyDefDb`] boundary, [`TyLangItem`],
 //!   in-memory [`MemTyDefDb`], and CST fallback [`LocalCstDefs`].
+//! - [`autoderef`] / `method_res`: cycle-guarded `Deref` chain, receiver autoref/unsizing, inherent-first
+//!   then scoped-trait method resolution, generic signature substitution, and `.field` / `.method()` [`ResolvedDotRef`](body_ctx::ResolvedDotRef).
 //! - [`body_ctx`] (`BodyInferCtx`, `FnInferResult`): zero-allocation per-function expression, pattern,
 //!   control-flow, `?` (`Try`), `.await` (`Future`), closure `Fn*`, range, and `Index` inference.
 
 pub mod arena;
+pub mod autoderef;
 pub mod body_ctx;
 pub mod db;
 pub mod expectation;
 mod infer_expr;
 mod infer_expr_call;
 mod infer_expr_cf;
+mod infer_expr_closure;
 mod infer_expr_ops;
 pub mod infer_pat;
 pub mod lang_ops;
 pub mod local_defs;
 mod local_defs_adt;
+mod local_defs_impl;
+mod local_defs_proj;
 pub mod lower_ty;
 mod lower_ty_tok;
 pub mod mem_ty_db;
+mod mem_ty_db_methods;
+mod method_res;
 mod tok_ty_scan;
 pub mod ty;
 pub mod uf_table;
 pub mod unify;
 
 pub use arena::InferTyArena;
-pub use body_ctx::{BodyInferCtx, FnInferResult};
-pub use db::{clone_ty_into, CtorShapeKind, EmptyTyDefDb, TyDefDb, TyLangItem};
+pub use body_ctx::{BodyInferCtx, FnInferResult, ResolvedDotRef};
+pub use db::{clone_ty_into, CtorShapeKind, EmptyTyDefDb, MethodCand, TyDefDb, TyLangItem};
 pub use expectation::{BranchCoercer, Expectation};
 pub use infer_pat::BindingMode;
 pub use local_defs::{effective_local_def_id, LocalCstDefs};

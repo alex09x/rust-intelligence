@@ -23,6 +23,7 @@ use ridx_syntax::{parse, SyntaxKind as K};
 
 use crate::meta::{CorpusSourceDb, ReaderMeta};
 use crate::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
+use crate::v5_ty_tables::V5TyTables;
 
 /// Sentinel `def_idx` representing a shard's crate-root module (`UseOwner::CrateRoot`).
 pub const CRATE_ROOT_DEF_IDX: u32 = u32::MAX - 1;
@@ -43,6 +44,7 @@ pub struct RidxV5ItemDb<'w> {
     pub impl_assoc_parent: HashMap<GlobalDefId, (GlobalDefId, ImplTargetKey)>,
     pub impl_self_target: HashMap<GlobalDefId, ImplTargetKey>,
     pub valid_alias_leaf_pairs: HashSet<(String, String)>,
+    pub ty_tables: V5TyTables<'w>,
 }
 
 impl<'w> RidxV5ItemDb<'w> {
@@ -75,9 +77,11 @@ impl<'w> RidxV5ItemDb<'w> {
             impl_assoc_parent: HashMap::new(),
             impl_self_target: HashMap::new(),
             valid_alias_leaf_pairs,
+            ty_tables: V5TyTables::default(),
         };
         db.index_all_impls_and_traits();
         db.index_proc_macro_exports(src);
+        db.build_ty_tables();
         db
     }
 

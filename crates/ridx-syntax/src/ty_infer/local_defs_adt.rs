@@ -133,6 +133,18 @@ impl LocalCstDefs {
         db: &dyn TyDefDb,
         table: &mut InferenceTable,
     ) -> Option<(u16, InferTyId)> {
+        self.field_ty_and_def(owner_def, name, st, file_res, db, table).map(|(gc, ty, _)| (gc, ty))
+    }
+
+    pub fn field_ty_and_def(
+        &self,
+        owner_def: GlobalDefId,
+        name: &str,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        table: &mut InferenceTable,
+    ) -> Option<(u16, InferTyId, GlobalDefId)> {
         if let Ok(tuple_idx) = name.parse::<usize>() {
             let (owner_node, gc, inner_toks) = self.body_tokens_of(st, owner_def, CtorShapeKind::Tuple)?;
             let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false };
@@ -144,12 +156,13 @@ impl LocalCstDefs {
                 }
                 if let Some(ti) = skip_leading_attrs_vis(clause, 0) {
                     if cur_i == tuple_idx {
-                        found = Some(env.lower_tok_slice_ty(table, &clause[ti..], 0));
+                        let fdef = GlobalDefId::new(CrateId::LOCAL_OVERLAY, 0xB000_0000 | clause[ti].start);
+                        found = Some((env.lower_tok_slice_ty(table, &clause[ti..], 0), fdef));
                     }
                     cur_i += 1;
                 }
             });
-            return found.map(|t| (gc, t));
+            return found.map(|(t, d)| (gc, t, d));
         }
         let (owner_node, gc, inner_toks) = self.body_tokens_of(st, owner_def, CtorShapeKind::Record)?;
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false };
@@ -165,10 +178,11 @@ impl LocalCstDefs {
                 return;
             }
             if let Some(ci) = next_sig_idx(clause, ni + 1).filter(|&i| clause[i].kind == T::Colon && !is_double_colon(clause, i)) {
-                found = Some(env.lower_tok_slice_ty(table, &clause[ci + 1..], 0));
+                let fdef = GlobalDefId::new(CrateId::LOCAL_OVERLAY, 0xB000_0000 | clause[ni].start);
+                found = Some((env.lower_tok_slice_ty(table, &clause[ci + 1..], 0), fdef));
             }
         });
-        found.map(|t| (gc, t))
+        found.map(|(t, d)| (gc, t, d))
     }
 
     fn body_tokens_of<'s>(&self, st: &'s SyntaxTree<'_>, def: GlobalDefId, expected: CtorShapeKind) -> Option<(NodeId, u16, &'s [Token])> {

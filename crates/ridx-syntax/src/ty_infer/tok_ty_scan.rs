@@ -26,23 +26,43 @@ pub(super) fn eval_const_uint_expr(st: &SyntaxTree<'_>, expr: NodeId) -> Option<
 }
 
 pub(super) fn parse_uint_lit(raw: &str) -> Option<u64> {
-    let trimmed = raw.trim_end_matches(|c: char| c.is_ascii_alphabetic() || c == '_');
-    let clean: String;
-    let s = if trimmed.contains('_') {
-        clean = trimmed.chars().filter(|&c| c != '_').collect();
-        clean.as_str()
+    let (radix, body) = if let Some(h) = raw.strip_prefix("0x").or_else(|| raw.strip_prefix("0X")) {
+        (16u64, h)
+    } else if let Some(b) = raw.strip_prefix("0b").or_else(|| raw.strip_prefix("0B")) {
+        (2u64, b)
+    } else if let Some(o) = raw.strip_prefix("0o").or_else(|| raw.strip_prefix("0O")) {
+        (8u64, o)
     } else {
-        trimmed
+        (10u64, raw)
     };
-    if let Some(hex) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
-        u64::from_str_radix(hex, 16).ok()
-    } else if let Some(bin) = s.strip_prefix("0b").or_else(|| s.strip_prefix("0B")) {
-        u64::from_str_radix(bin, 2).ok()
-    } else if let Some(oct) = s.strip_prefix("0o").or_else(|| s.strip_prefix("0O")) {
-        u64::from_str_radix(oct, 8).ok()
+    let trimmed = if radix == 16 {
+        body.strip_suffix("usize")
+            .or_else(|| body.strip_suffix("isize"))
+            .or_else(|| body.strip_suffix("u128"))
+            .or_else(|| body.strip_suffix("i128"))
+            .or_else(|| body.strip_suffix("u64"))
+            .or_else(|| body.strip_suffix("i64"))
+            .or_else(|| body.strip_suffix("u32"))
+            .or_else(|| body.strip_suffix("i32"))
+            .or_else(|| body.strip_suffix("u16"))
+            .or_else(|| body.strip_suffix("i16"))
+            .or_else(|| body.strip_suffix("u8"))
+            .or_else(|| body.strip_suffix("i8"))
+            .unwrap_or(body)
     } else {
-        s.parse::<u64>().ok()
+        body.trim_end_matches(|c: char| c.is_ascii_alphabetic() || c == '_')
+    };
+    let mut val = 0u64;
+    let mut any_digit = false;
+    for b in trimmed.bytes() {
+        if b == b'_' {
+            continue;
+        }
+        let d = (b as char).to_digit(radix as u32)? as u64;
+        val = val.checked_mul(radix)?.checked_add(d)?;
+        any_digit = true;
     }
+    any_digit.then_some(val)
 }
 
 #[inline]

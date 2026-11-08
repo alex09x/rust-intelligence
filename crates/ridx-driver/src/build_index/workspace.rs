@@ -42,7 +42,8 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
     let generation = format!("{:016x}", snapshot_digest);
     let cargo_lock_hash = crate::cfg_extract::resolve_workspace_cargo_lock_hash(manifest_dir.as_deref());
 
-    if out_file_path.is_file() {
+    let need_exprty = crate::expr_ty_dump::dump_enabled() && !crate::expr_ty_dump::exprty_sidecar_path(&out_file_path).is_file();
+    if out_file_path.is_file() && !need_exprty {
         if let Ok(existing) = ridx_format::IndexReader::open(&out_file_path) {
             if existing.header().version == ridx_format::CURRENT_FORMAT_VERSION && existing.unit_key() == unit_key && existing.generation() == generation {
                 let target_triple = existing.target_triple().to_string();
@@ -93,7 +94,7 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
     visitor.writer.set_unit_key(&unit_key);
     let (target_triple, enabled_features) = crate::cfg_extract::populate_crate_cfgs(tcx, crate_cfg, compiler_args, &mut visitor.writer, true);
 
-    extract_crate_items(tcx, &mut visitor, None);
+    let expr_ty_dump = extract_crate_items(tcx, &mut visitor, None);
     crate::notes::record_adt_layouts(tcx, &mut visitor);
 
     visitor.writer.set_generation(&generation);
@@ -117,6 +118,9 @@ pub(super) fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildC
                     eprintln!("ridx-driver: failed to atomically rename {:?} to {:?}: {e}", tmp_file_path, out_file_path);
                     let _ = fs::remove_file(&tmp_file_path);
                 } else {
+                    if let Some(ref dump) = expr_ty_dump {
+                        crate::expr_ty_dump::write_exprty_sidecar(&out_file_path, dump);
+                    }
                     publish_workspace_sidecar(
                         tcx,
                         &crate_name,

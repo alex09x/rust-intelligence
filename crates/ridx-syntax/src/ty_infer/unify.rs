@@ -84,6 +84,7 @@ fn equate_rec(arena: &InferTyArena, vars: &mut UnionFindTable, raw_a: InferTyId,
         (InferTyKind::Infer(va), InferTyKind::Infer(vb)) => unify_var_var(vars, va, vb, a, b),
         (InferTyKind::Infer(va), _) => unify_var_ty(arena, vars, va, b),
         (_, InferTyKind::Infer(vb)) => unify_var_ty(arena, vars, vb, a),
+        (InferTyKind::Param { idx: i1, .. }, InferTyKind::Param { idx: i2, .. }) if i1 == i2 => Ok(()),
 
         (InferTyKind::Ref { is_mut: m1, inner: i1 }, InferTyKind::Ref { is_mut: m2, inner: i2 })
         | (InferTyKind::Ptr { is_mut: m1, inner: i1 }, InferTyKind::Ptr { is_mut: m2, inner: i2 }) => {

@@ -39,6 +39,7 @@ pub mod sysroot;
 mod build_index;
 pub(crate) mod cfg_extract;
 mod crate_items;
+pub(crate) mod expr_ty_dump;
 mod hir_visitor;
 pub(crate) mod macro_extract;
 mod metadata;

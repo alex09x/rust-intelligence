@@ -17,12 +17,15 @@ use std::time::Instant;
 use memmap2::Mmap;
 use ridx_format::{DefKind, IndexReader};
 use ridx_syntax::name_res::{CrateId, CrateSnapshot, FileId, FileNameRes, SourceDb};
+use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, LocalCstDefs, ResolvedDotRef};
 use ridx_syntax::{parse, SyntaxTree};
 
 use crate::did_change_bench::{bench_did_change, DidChangeReport};
 use crate::meta::{CorpusFile, CorpusSourceDb};
-use crate::site_classify::{classify_ref_site, collect_dot_access_spans, collect_unit_alias_pairs, SiteKind};
+use crate::site_classify::{classify_dot_site, classify_ref_site, collect_dot_access_spans, collect_unit_alias_pairs, SiteKind};
 use crate::target_match::{describe_our_target, ref_targets_match, MatchKind};
+use crate::ty_parity::{match_dot_ref, run_file_ty_infer_and_expr_parity, TyParityStats};
+use crate::ty_report::load_exprty_sidecar;
 use crate::v5_db::RidxV5ItemDb;
 use crate::{reset_alloc_counters, snapshot_alloc_counters};
 
@@ -59,6 +62,7 @@ pub struct CorpusReport {
     pub macro_miss_buckets: HashMap<String, usize>,
     pub samples: Vec<String>,
     pub did_change: Option<DidChangeReport>,
+    pub ty_stats: TyParityStats,
 }
 
 pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_samples: usize, run_did_change: bool) -> CorpusReport {
@@ -85,6 +89,11 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
     }
 
     let mut res_buf = FileNameRes::default();
+    let mut local_defs = LocalCstDefs::new();
+    let mut infer_ctx = BodyInferCtx::new();
+    let mut fn_res = FnInferResult::new();
+    let mut body_nodes = Vec::new();
+    let mut dot_map: HashMap<(u32, u32), Vec<ResolvedDotRef>> = HashMap::new();
 
     for &r_idx in &unit_indices {
         let meta = &db.metas[r_idx];
@@ -134,15 +143,33 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
             rep.files += 1;
         }
 
-        // Compare against `.ridx` `RefEntry`s.
+        // Compare against `.ridx` `RefEntry`s + `.ridx.exprty` compiler `TypeckResults`.
         let reader = &db.ws.readers()[r_idx];
+        let sidecar = load_exprty_sidecar(&db.ws.paths()[r_idx], meta.source_root.as_deref(), src);
         for &(fid, ref st) in &parsed_trees {
             let Some(&ridx_fid) = fid_to_ridx.get(&fid) else {
                 continue;
             };
             snap.resolve_file_paths_into(db, fid, st, &mut res_buf);
             let cf = &src.files[fid.0 as usize];
-            compare_file_refs(r_idx, reader, cf, st, &res_buf, &unit_alias_pairs, db, ridx_fid, max_samples, &mut rep);
+            run_file_ty_infer_and_expr_parity(
+                r_idx,
+                fid,
+                cf,
+                st,
+                &res_buf,
+                &snap.clean_def_map,
+                db,
+                sidecar.as_ref(),
+                &mut local_defs,
+                &mut infer_ctx,
+                &mut fn_res,
+                &mut body_nodes,
+                &mut dot_map,
+                max_samples,
+                &mut rep.ty_stats,
+            );
+            compare_file_refs(r_idx, reader, cf, st, &res_buf, &dot_map, &unit_alias_pairs, db, ridx_fid, max_samples, &mut rep);
         }
     }
 
@@ -160,6 +187,7 @@ fn compare_file_refs(
     cf: &CorpusFile,
     st: &SyntaxTree<'_>,
     out: &FileNameRes,
+    dot_map: &HashMap<(u32, u32), Vec<ResolvedDotRef>>,
     unit_alias_pairs: &HashSet<(String, String)>,
     db: &RidxV5ItemDb<'_>,
     ridx_fid: u32,
@@ -192,6 +220,9 @@ fn compare_file_refs(
         let dkind = DefKind::from(r.kind);
         if dot_spans.contains(&(sb, eb)) && matches!(dkind, DefKind::AssocFn | DefKind::Field | DefKind::Fn) {
             rep.excluded_dot_refs += 1;
+            if let Some((tok_span, is_mtt)) = classify_dot_site(st, sb, eb) {
+                match_dot_ref(r_idx, reader, db, cf, out, dot_map, sb, eb, tok_span, is_mtt, r, max_samples, &mut rep.ty_stats);
+            }
             continue;
         }
 

@@ -15,7 +15,7 @@ use super::db::{CtorShapeKind, TyDefDb, TyLangItem};
 use super::lower_ty::LowerTyEnv;
 use super::ty::InferTyId;
 use super::InferenceTable;
-use crate::name_res::{CrateDefMap, CrateId, FileId, FileNameRes, GlobalDefId, ItemKind, LocalItemId};
+use crate::name_res::{CrateDefMap, CrateId, FileId, FileNameRes, GlobalDefId, ItemDb, ItemKind, LocalItemId};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
@@ -54,11 +54,30 @@ pub(super) struct LocalVariantNode {
     pub tok_end: u32,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct LocalImplNode {
+    pub node: NodeId,
+    pub impl_generics: u16,
+    pub has_for: bool,
+    pub is_negative: bool,
+    pub trait_path: Option<NodeId>,
+    pub indexed_in_clean_db: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(super) struct LocalTraitNode {
+    pub def: GlobalDefId,
+    pub node: NodeId,
+    pub trait_generics: u16,
+}
+
 /// Reusable per-file CST definition table for unindexed or dirty-overlay items.
 #[derive(Clone, Debug, Default)]
 pub struct LocalCstDefs {
     pub(super) items: Vec<LocalItemNode>,
     pub(super) variants: Vec<LocalVariantNode>,
+    pub(super) impls: Vec<LocalImplNode>,
+    pub(super) traits: Vec<LocalTraitNode>,
 }
 
 impl LocalCstDefs {
@@ -76,45 +95,72 @@ impl LocalCstDefs {
     pub fn clear(&mut self) {
         self.items.clear();
         self.variants.clear();
+        self.impls.clear();
+        self.traits.clear();
     }
 
     /// Indexes all items in `st` into reusable buffers (`0` heap allocations when warm).
     pub fn index_file(&mut self, st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, file: FileId) {
-        self.clear();
-        self.scan_container(st, st.root(), None, def_map, file);
+        self.index_file_with_item_db(st, def_map, None, file);
     }
 
-    fn scan_container(&mut self, st: &SyntaxTree<'_>, container: NodeId, impl_node: Option<NodeId>, def_map: Option<&CrateDefMap>, file: FileId) {
+    /// Indexes all items in `st`, resolving clean `.ridx` definitions through `item_db` when provided.
+    pub fn index_file_with_item_db(&mut self, st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) {
+        self.clear();
+        let clean_db = item_db.is_some() && def_map.is_some_and(|dm| !dm.is_dirty_file(file));
+        self.scan_container(st, st.root(), None, def_map, item_db, file, clean_db);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn scan_container(
+        &mut self,
+        st: &SyntaxTree<'_>,
+        container: NodeId,
+        impl_node: Option<NodeId>,
+        def_map: Option<&CrateDefMap>,
+        item_db: Option<&dyn ItemDb>,
+        file: FileId,
+        clean_mod_scope: bool,
+    ) {
         for ch in st.children(container) {
             match st.kind(ch) {
                 K::Module | K::ExternBlock => {
                     if let Some(il) = st.child(ch, K::ItemList) {
-                        self.scan_container(st, il, None, def_map, file);
+                        self.scan_container(st, il, None, def_map, item_db, file, clean_mod_scope);
                     }
                 }
                 K::Impl => {
+                    let has_for = st.own_tokens(ch).any(|(_, t)| t.kind == T::For);
+                    let is_negative = has_for && st.own_tokens(ch).any(|(_, t)| t.kind == T::Bang);
+                    let trait_path = if has_for { st.children(ch).find(|&c| st.kind(c).is_type()).and_then(|tn| st.child(tn, K::Path)) } else { None };
+                    self.impls.push(LocalImplNode { node: ch, impl_generics: count_cst_generics(st, ch), has_for, is_negative, trait_path, indexed_in_clean_db: clean_mod_scope });
                     if let Some(il) = st.child(ch, K::ItemList) {
-                        self.scan_container(st, il, Some(ch), def_map, file);
+                        self.scan_container(st, il, Some(ch), def_map, item_db, file, clean_mod_scope);
                     }
                 }
                 K::Trait => {
+                    let def = resolve_item_node_def(st, ch, false, def_map, item_db, file);
+                    if def.is_some() {
+                        self.traits.push(LocalTraitNode { def, node: ch, trait_generics: count_cst_generics(st, ch) });
+                    }
                     if let Some(il) = st.child(ch, K::ItemList) {
-                        self.scan_container(st, il, None, def_map, file);
+                        self.scan_container(st, il, Some(ch), def_map, item_db, file, clean_mod_scope);
                     }
                 }
                 K::Fn => {
-                    let def = resolve_item_node_def(st, ch, impl_node.is_some(), def_map, file);
+                    let def = resolve_item_node_def(st, ch, impl_node.is_some(), def_map, item_db, file);
                     if def.is_some() {
-                        let gc = count_cst_generics(st, ch) + impl_node.map_or(0, |im| count_cst_generics(st, im));
+                        let parent_gc = impl_node.map_or(0, |im| if st.kind(im) == K::Trait { 1 + count_cst_generics(st, im) } else { count_cst_generics(st, im) });
+                        let gc = parent_gc + count_cst_generics(st, ch);
                         let kind = if impl_node.is_some() { ItemKind::AssocFn } else { ItemKind::Fn };
                         self.items.push(LocalItemNode { def, node: ch, impl_node, kind, generic_count: gc, shape: CtorShapeKind::None });
                     }
                     if let Some(body) = st.child(ch, K::BlockExpr) {
-                        self.scan_block_items(st, body, def_map, file);
+                        self.scan_block_items(st, body, def_map, item_db, file, 0);
                     }
                 }
                 K::Struct | K::Union => {
-                    let def = resolve_item_node_def(st, ch, false, def_map, file);
+                    let def = resolve_item_node_def(st, ch, false, def_map, item_db, file);
                     if def.is_some() {
                         let gc = count_cst_generics(st, ch);
                         let kind = if st.kind(ch) == K::Struct { ItemKind::Struct } else { ItemKind::Union };
@@ -123,7 +169,7 @@ impl LocalCstDefs {
                     }
                 }
                 K::Enum => {
-                    let def = resolve_item_node_def(st, ch, false, def_map, file);
+                    let def = resolve_item_node_def(st, ch, false, def_map, item_db, file);
                     if def.is_some() {
                         let gc = count_cst_generics(st, ch);
                         self.items.push(LocalItemNode { def, node: ch, impl_node: None, kind: ItemKind::Enum, generic_count: gc, shape: CtorShapeKind::None });
@@ -131,14 +177,14 @@ impl LocalCstDefs {
                     }
                 }
                 K::TypeAlias => {
-                    let def = resolve_item_node_def(st, ch, impl_node.is_some(), def_map, file);
+                    let def = resolve_item_node_def(st, ch, impl_node.is_some(), def_map, item_db, file);
                     if def.is_some() {
                         let gc = count_cst_generics(st, ch);
                         self.items.push(LocalItemNode { def, node: ch, impl_node, kind: ItemKind::TypeAlias, generic_count: gc, shape: CtorShapeKind::None });
                     }
                 }
                 K::Const | K::Static => {
-                    let def = resolve_item_node_def(st, ch, impl_node.is_some(), def_map, file);
+                    let def = resolve_item_node_def(st, ch, impl_node.is_some(), def_map, item_db, file);
                     if def.is_some() {
                         let kind = if st.kind(ch) == K::Static { ItemKind::Static } else { ItemKind::Const };
                         self.items.push(LocalItemNode { def, node: ch, impl_node, kind, generic_count: 0, shape: CtorShapeKind::None });
@@ -149,8 +195,16 @@ impl LocalCstDefs {
         }
     }
 
-    fn scan_block_items(&mut self, st: &SyntaxTree<'_>, block: NodeId, def_map: Option<&CrateDefMap>, file: FileId) {
-        self.scan_container(st, block, None, def_map, file);
+    fn scan_block_items(&mut self, st: &SyntaxTree<'_>, block: NodeId, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId, depth: u16) {
+        if depth > 96 {
+            return;
+        }
+        self.scan_container(st, block, None, def_map, item_db, file, false);
+        for ch in st.children(block) {
+            if !st.kind(ch).is_item() {
+                self.scan_block_items(st, ch, def_map, item_db, file, depth + 1);
+            }
+        }
     }
 
     #[inline]
@@ -161,6 +215,24 @@ impl LocalCstDefs {
     #[inline]
     pub fn fn_def_for_node(&self, fn_node: NodeId) -> GlobalDefId {
         self.items.iter().find(|i| i.node == fn_node).map_or(GlobalDefId::NONE, |i| i.def)
+    }
+
+    pub fn owner_generics_and_self_ty(
+        &self,
+        owner: Option<NodeId>,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        table: &mut InferenceTable,
+    ) -> (u16, Option<InferTyId>) {
+        match owner {
+            Some(im) if st.kind(im) == K::Trait => (1 + count_cst_generics(st, im), Some(table.arena.mk_param(0, GlobalDefId::NONE))),
+            Some(im) => {
+                let (gc, sty) = self.lower_impl_self_ty(im, st, file_res, db, table);
+                (gc, Some(sty))
+            }
+            None => (0, None),
+        }
     }
 
     pub fn lower_impl_self_ty(&self, impl_node: NodeId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, table: &mut InferenceTable) -> (u16, InferTyId) {
@@ -189,13 +261,13 @@ impl LocalCstDefs {
         table: &mut InferenceTable,
         depth: u8,
     ) -> Option<(u16, InferTyId)> {
-        if depth > 32 {
+        if depth > 16 {
             return None;
         }
         let item = self.items.iter().find(|i| i.def == def && i.kind == ItemKind::TypeAlias)?;
         let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false };
-        Some((item.generic_count, env.lower_cst_ty(table, ty_node)))
+        Some((item.generic_count, env.lower_cst_ty_rec(table, ty_node, depth + 1)))
     }
 
     pub fn const_or_static_ty(&self, def: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, table: &mut InferenceTable) -> Option<InferTyId> {
@@ -216,13 +288,7 @@ impl LocalCstDefs {
         inputs_out: &mut Vec<InferTyId>,
     ) -> Option<(u16, InferTyId)> {
         let item = self.items.iter().find(|i| i.def == def && matches!(i.kind, ItemKind::Fn | ItemKind::AssocFn))?;
-        let (impl_gc, self_ty) = match item.impl_node {
-            Some(im) => {
-                let (gc, sty) = self.lower_impl_self_ty(im, st, file_res, db, table);
-                (gc, Some(sty))
-            }
-            None => (0, None),
-        };
+        let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
         inputs_out.clear();
         if let Some(pl) = st.child(item.node, K::ParamList) {
@@ -258,13 +324,7 @@ impl LocalCstDefs {
         inputs_out: &mut Vec<InferTyId>,
     ) -> Option<(TyLangItem, InferTyId)> {
         let item = self.items.iter().find(|i| i.def == owner_def)?;
-        let (impl_gc, self_ty) = match item.impl_node {
-            Some(im) => {
-                let (gc, sty) = self.lower_impl_self_ty(im, st, file_res, db, table);
-                (gc, Some(sty))
-            }
-            None => (0, None),
-        };
+        let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
         super::local_defs_adt::extract_cst_fn_bound(st, file_res, db, item.node, impl_gc, param_idx, &env, table, inputs_out)
     }
@@ -290,13 +350,21 @@ pub(super) fn count_cst_generics(st: &SyntaxTree<'_>, owner: NodeId) -> u16 {
     st.children(gpl).filter(|&c| matches!(st.kind(c), K::TypeParam | K::ConstParam)).count() as u16
 }
 
-fn resolve_item_node_def(st: &SyntaxTree<'_>, node: NodeId, is_assoc: bool, def_map: Option<&CrateDefMap>, file: FileId) -> GlobalDefId {
+fn resolve_item_node_def(st: &SyntaxTree<'_>, node: NodeId, is_assoc: bool, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) -> GlobalDefId {
     let Some(nn) = st.child(node, K::Name) else {
         return GlobalDefId::NONE;
     };
     let r = st.range(nn);
     let (s, e) = (r.start as u32, r.end as u32);
     if let Some(dm) = def_map {
+        if let Some(idb) = item_db {
+            if !dm.is_dirty_file(file) {
+                let d = idb.def_at_byte_span(dm.krate, file, s, e);
+                if d.is_some() {
+                    return d;
+                }
+            }
+        }
         if is_assoc {
             if let Some(ai) = dm.local_impls.assoc_items.iter().find(|a| a.file == file && a.span_start == s && a.span_end == e) {
                 if ai.def.is_some() {

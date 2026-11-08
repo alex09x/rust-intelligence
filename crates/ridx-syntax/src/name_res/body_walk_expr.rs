@@ -41,6 +41,7 @@ impl<'a, 's> FileResolver<'a, 's> {
         let has_items = block_has_inner_items(self.st, block);
         if has_items {
             self.ribs.push_block_rib(self.map, self.db, self.mod_tree, self.ext_cache, self.file, self.cur_mod, self.st, block);
+            self.record_top_block_rib_traits(block);
         }
 
         for ch in self.st.children(block) {

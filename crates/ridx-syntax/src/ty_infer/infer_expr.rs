@@ -33,6 +33,16 @@ pub(super) fn is_expr_node(k: K) -> bool {
 
 impl<'a, 's> Runner<'a, 's> {
     pub(super) fn infer_expr(&mut self, expr: NodeId, expectation: Expectation) -> InferTyId {
+        if self.expr_depth > 384 {
+            return InferTyId::UNKNOWN;
+        }
+        self.expr_depth += 1;
+        let ty = self.infer_expr_inner(expr, expectation);
+        self.expr_depth -= 1;
+        ty
+    }
+
+    fn infer_expr_inner(&mut self, expr: NodeId, expectation: Expectation) -> InferTyId {
         let raw = match self.st.kind(expr) {
             K::Literal => self.infer_literal_tokens(expr),
             K::PathExpr => self.st.child(expr, K::Path).map_or(InferTyId::UNKNOWN, |p| self.infer_value_path(p)),
@@ -77,7 +87,7 @@ impl<'a, 's> Runner<'a, 's> {
             K::CastExpr => self.infer_cast_expr(expr),
             K::RangeExpr => self.infer_range_expr(expr),
             K::ClosureExpr => return self.infer_closure_expr(expr, expectation),
-            K::MethodCallExpr => self.infer_method_call_fallback(expr),
+            K::MethodCallExpr => self.infer_method_call_expr(expr, expectation),
             _ => InferTyId::UNKNOWN,
         };
         let ty = match expectation.coercion_target(&mut self.ctx.table) {
@@ -107,10 +117,42 @@ impl<'a, 's> Runner<'a, 's> {
     pub(super) fn infer_value_path(&mut self, path_node: NodeId) -> InferTyId {
         let mut explicit = InlineTyBuf::new();
         self.collect_path_turbofish(path_node, &mut explicit);
-        let Some(rref) = self.file_res.path_tail_ref(path_node) else {
+        let Some(rref) = self.file_res.path_tail_ref_in_st(self.st, path_node) else {
             return InferTyId::UNKNOWN;
         };
-        self.instantiate_target_value(rref.target, explicit.as_slice())
+        let target = if matches!(rref.target, ResTarget::Def { def, local, kind: ItemKind::AssocFn } if !def.is_some() && !local.is_some()) {
+            self.resolve_unindexed_ufcs_target(path_node, rref.target)
+        } else {
+            rref.target
+        };
+        self.instantiate_target_value(target, explicit.as_slice())
+    }
+
+    fn resolve_unindexed_ufcs_target(&mut self, path_node: NodeId, fallback: ResTarget) -> ResTarget {
+        let mut segs = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment);
+        let Some(qual_seg) = segs.next() else {
+            return fallback;
+        };
+        let Some(tail_seg) = segs.last() else {
+            return fallback;
+        };
+        let fn_name =
+            self.st.own_tokens(tail_seg).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map(|(_, t)| crate::sema_fn::norm_ident(t.text(self.st.src))).unwrap_or("");
+        let qr = self.st.range(qual_seg);
+        let (target_k, tr_def) =
+            match self.file_res.refs_starting_in(qr.start as u32, qr.end as u32).iter().find(|r| r.path_node == path_node && r.end <= qr.end as u32).map(|r| r.target) {
+                Some(ResTarget::SelfTy { target, trait_def }) => (target, trait_def),
+                Some(ResTarget::Prim(p)) => (crate::name_res::ImplTargetKey::Prim(p), crate::name_res::GlobalDefId::NONE),
+                Some(rt @ ResTarget::Def { kind: ItemKind::Trait, .. }) => (crate::name_res::ImplTargetKey::Unknown, effective_target_def(rt)),
+                Some(rt @ ResTarget::Def { .. }) => (crate::name_res::ImplTargetKey::Adt(effective_target_def(rt)), crate::name_res::GlobalDefId::NONE),
+                _ => return fallback,
+            };
+        let resolved_def = self.local_defs.resolve_ufcs_assoc_fn(target_k, tr_def, fn_name, self.st, self.file_res, self.db, &mut self.ctx.table);
+        if resolved_def.is_some() {
+            ResTarget::Def { def: resolved_def, local: crate::name_res::LocalItemId::NONE, kind: ItemKind::AssocFn }
+        } else {
+            fallback
+        }
     }
 
     pub(super) fn instantiate_target_value(&mut self, target: ResTarget, explicit_args: &[InferTyId]) -> InferTyId {
@@ -136,8 +178,8 @@ impl<'a, 's> Runner<'a, 's> {
                     for &a in self.ctx.table.arena.slice(args) {
                         subst.push(a);
                     }
-                    if let Some(fp) = self.tuple_ctor_fn_ptr(def, subst.as_slice(), sty) {
-                        return fp;
+                    if let Some(fd) = self.tuple_ctor_fn_def(def, subst.as_slice()) {
+                        return fd;
                     }
                 }
                 sty
@@ -175,8 +217,8 @@ impl<'a, 's> Runner<'a, 's> {
                         }
                         let inst_ty = self.ctx.table.instantiate(tpl_ty, subst.as_slice());
                         if shape == CtorShapeKind::Tuple {
-                            if let Some(fp) = self.tuple_ctor_fn_ptr(eff_def, subst.as_slice(), inst_ty) {
-                                return fp;
+                            if let Some(fd) = self.tuple_ctor_fn_def(eff_def, subst.as_slice()) {
+                                return fd;
                             }
                         }
                         inst_ty
@@ -192,19 +234,12 @@ impl<'a, 's> Runner<'a, 's> {
         }
     }
 
-    fn tuple_ctor_fn_ptr(&mut self, def: crate::name_res::GlobalDefId, subst: &[InferTyId], ret_ty: InferTyId) -> Option<InferTyId> {
+    fn tuple_ctor_fn_def(&mut self, def: crate::name_res::GlobalDefId, subst: &[InferTyId]) -> Option<InferTyId> {
         let mut raw = core::mem::take(&mut self.ctx.sig_inputs_buf);
         let ok = self.db.ctor_tuple_fields(def, &mut self.ctx.table.arena, &mut raw).is_some()
             || self.local_defs.ctor_tuple_fields(def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw).is_some();
-        let res = ok.then(|| {
-            let mut ins = InlineTyBuf::new();
-            for &f in &raw {
-                ins.push(self.ctx.table.instantiate(f, subst));
-            }
-            self.ctx.table.arena.mk_fn_ptr(ins.as_slice(), ret_ty)
-        });
         self.ctx.sig_inputs_buf = raw;
-        res
+        ok.then(|| self.ctx.table.arena.mk_fn_def(def, subst))
     }
 
     fn infer_tuple_expr(&mut self, expr: NodeId, expectation: Expectation) -> InferTyId {

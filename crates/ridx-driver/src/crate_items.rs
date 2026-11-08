@@ -10,7 +10,7 @@
 
 use super::*;
 
-pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisitor<'tcx>, package_root: Option<&Path>) {
+pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisitor<'tcx>, package_root: Option<&Path>) -> Option<crate::expr_ty_dump::ExprTyDump> {
     let mut items: Vec<rustc_hir::def_id::LocalDefId> = tcx.hir_crate_items(()).definitions().collect();
     let mut seen_items: std::collections::HashSet<rustc_hir::def_id::LocalDefId> = items.iter().copied().collect();
     for &def_id in &items.clone() {
@@ -341,7 +341,7 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
     }
 
     let lang_items = crate::ty_lower::lang_items::collect_crate_lang_items(tcx, rustc_span::def_id::LOCAL_CRATE);
-    {
+    let expr_dump = {
         let mut lowerer = crate::ty_lower::TcxTypeLowerer::new(tcx, rustc_span::def_id::LOCAL_CRATE, &visitor.krate_to_unit, &local_def_indices);
         lowerer.record_fn_sigs(&callables, &mut visitor.writer);
         lowerer.record_impls(&impl_dids, &mut visitor.writer);
@@ -350,9 +350,12 @@ pub(crate) fn extract_crate_items<'tcx>(tcx: TyCtxt<'tcx>, visitor: &mut HirVisi
         lowerer.record_item_generics_and_preds(&generic_items, &mut visitor.writer);
         lowerer.record_lang_items(&lang_items, &mut visitor.writer);
         lowerer.record_local_crate_uses(&mut visitor.writer);
-    }
+        (package_root.is_none() && crate::expr_ty_dump::dump_enabled())
+            .then(|| crate::expr_ty_dump::collect_crate_expr_types(tcx, &mut lowerer, &mut visitor.writer, &local_def_indices, package_root))
+    };
     crate::macro_extract::record_local_macro_defs(tcx, &macro_items, &mut visitor.writer);
 
     // Traverse all item bodies for references and types
     tcx.hir_visit_all_item_likes_in_crate(visitor);
+    expr_dump
 }

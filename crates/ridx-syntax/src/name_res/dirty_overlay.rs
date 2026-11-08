@@ -17,6 +17,18 @@ use super::mod_tree::ModuleTree;
 use super::per_ns::{is_descendant_or_eq, LocalItemId, ResolvedBinding};
 use crate::sema_fn::norm_ident;
 
+/// Produces a stable [`GlobalDefId`] for both indexed defs and unindexed local CST items.
+#[inline]
+pub(super) fn effective_local_or_def(def: GlobalDefId, local: LocalItemId) -> GlobalDefId {
+    if def.is_some() {
+        def
+    } else if local.is_some() {
+        GlobalDefId::new(CrateId::LOCAL_OVERLAY, 0x8000_0000 | local.0)
+    } else {
+        GlobalDefId::NONE
+    }
+}
+
 /// Unified view of either a clean indexed `impl` or a dirty/local CST `impl`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MergedImplRef {

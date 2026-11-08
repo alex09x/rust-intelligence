@@ -11,20 +11,29 @@
 //! Per-function body inference context ([`BodyInferCtx`]) and queryable output table
 //! ([`FnInferResult`]), engineered for `0` steady-state heap allocations across functions.
 
-use super::db::TyDefDb;
+use super::db::{MethodCand, TyDefDb};
 use super::expectation::{BranchCoercer, Expectation};
+use super::infer_expr::is_expr_node;
 use super::infer_pat::BindingMode;
 use super::local_defs::{lower_self_param_ty, LocalCstDefs};
 use super::lower_ty::LowerTyEnv;
-use super::ty::{InferTyId, InferTyKind};
-use super::uf_table::InlineTyBuf;
+use super::ty::InferTyId;
 use super::InferenceTable;
-use crate::name_res::{FileNameRes, GlobalDefId, LocalBindId};
+use crate::name_res::{FileNameRes, GlobalDefId, ItemKind, LocalBindId};
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
 use crate::tree::{NodeId, SyntaxTree};
 
-/// Finalized local type inference output for a single `K::Fn` item.
+/// Type-dependent `.method()` or `.field` reference resolved during body inference (`Checkbox 3.3`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ResolvedDotRef {
+    pub start: u32,
+    pub end: u32,
+    pub def: GlobalDefId,
+    pub kind: ItemKind,
+}
+
+/// Finalized local type inference output for a single `K::Fn` / `K::Const` / `K::Static` item.
 #[derive(Clone, Debug)]
 pub struct FnInferResult {
     pub fn_node: NodeId,
@@ -33,6 +42,7 @@ pub struct FnInferResult {
     pub expr_tys: Vec<(NodeId, InferTyId)>,
     pub pat_tys: Vec<(NodeId, InferTyId)>,
     pub local_tys: Vec<(LocalBindId, InferTyId)>,
+    pub dot_refs: Vec<ResolvedDotRef>,
 }
 
 impl Default for FnInferResult {
@@ -43,7 +53,7 @@ impl Default for FnInferResult {
 
 impl FnInferResult {
     pub fn new() -> Self {
-        Self { fn_node: NodeId(0), ret_ty: InferTyId::UNKNOWN, body_ty: InferTyId::UNKNOWN, expr_tys: Vec::new(), pat_tys: Vec::new(), local_tys: Vec::new() }
+        Self { fn_node: NodeId(0), ret_ty: InferTyId::UNKNOWN, body_ty: InferTyId::UNKNOWN, expr_tys: Vec::new(), pat_tys: Vec::new(), local_tys: Vec::new(), dot_refs: Vec::new() }
     }
 
     #[inline]
@@ -54,6 +64,7 @@ impl FnInferResult {
         self.expr_tys.clear();
         self.pat_tys.clear();
         self.local_tys.clear();
+        self.dot_refs.clear();
     }
 
     #[inline]
@@ -94,6 +105,8 @@ pub struct BodyInferCtx {
     pub(super) sig_inputs_buf: Vec<InferTyId>,
     pub(super) bound_inputs_buf: Vec<InferTyId>,
     pub(super) exp_elems_buf: Vec<Expectation>,
+    pub(super) method_cands_buf: Vec<MethodCand>,
+    pub(super) scope_traits_buf: Vec<GlobalDefId>,
     pub(super) closure_seq: u32,
 }
 
@@ -115,6 +128,8 @@ impl BodyInferCtx {
             sig_inputs_buf: Vec::with_capacity(16),
             bound_inputs_buf: Vec::with_capacity(8),
             exp_elems_buf: Vec::with_capacity(16),
+            method_cands_buf: Vec::with_capacity(16),
+            scope_traits_buf: Vec::with_capacity(32),
             closure_seq: 0,
         }
     }
@@ -126,7 +141,7 @@ impl BodyInferCtx {
         out
     }
 
-    /// Infers `fn_node` into caller-owned `out`, reusing both `self.table` and `out`'s `Vec` capacities.
+    /// Infers `fn_node` (`K::Fn`, `K::Const`, or `K::Static`) into caller-owned `out`, reusing capacities.
     pub fn infer_fn_into(&mut self, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, local_defs: &LocalCstDefs, fn_node: NodeId, out: &mut FnInferResult) {
         self.table.clear();
         self.break_stack.clear();
@@ -135,6 +150,8 @@ impl BodyInferCtx {
         self.sig_inputs_buf.clear();
         self.bound_inputs_buf.clear();
         self.exp_elems_buf.clear();
+        self.method_cands_buf.clear();
+        self.scope_traits_buf.clear();
         self.closure_seq = 0;
         out.clear();
         out.fn_node = fn_node;
@@ -144,19 +161,17 @@ impl BodyInferCtx {
         self.local_slots.clear();
         self.local_slots.resize(loc_hi - loc_lo, InferTyId::NONE);
 
-        let impl_node = st.ancestors(fn_node).find(|&a| st.kind(a) == K::Impl);
-        let (impl_gc, self_ty) = match impl_node {
-            Some(im) => {
-                let (gc, sty) = local_defs.lower_impl_self_ty(im, st, file_res, db, &mut self.table);
-                (gc, Some(sty))
-            }
-            None => (0, None),
-        };
+        let impl_node = st.ancestors(fn_node).find(|&a| matches!(st.kind(a), K::Impl | K::Trait));
+        let (impl_gc, self_ty) = local_defs.owner_generics_and_self_ty(impl_node, st, file_res, db, &mut self.table);
         let fn_def = local_defs.fn_def_for_node(fn_node);
         let is_async_fn = st.own_tokens(fn_node).any(|(_, t)| t.kind == T::Async);
 
-        let mut env = Runner { ctx: self, st, file_res, db, local_defs, fn_node, fn_def, impl_node, impl_gc, self_ty, loc_lo, loc_hi, out };
-        env.bind_fn_params_and_infer_body(is_async_fn);
+        let mut env = Runner { ctx: self, st, file_res, db, local_defs, fn_node, fn_def, impl_node, impl_gc, self_ty, loc_lo, loc_hi, expr_depth: 0, out };
+        if matches!(st.kind(fn_node), K::Const | K::Static) {
+            env.infer_const_or_static_body();
+        } else {
+            env.bind_fn_params_and_infer_body(is_async_fn);
+        }
         env.finalize_result();
     }
 }
@@ -174,6 +189,7 @@ pub(super) struct Runner<'a, 's> {
     pub self_ty: Option<InferTyId>,
     pub loc_lo: usize,
     pub loc_hi: usize,
+    pub expr_depth: u16,
     pub out: &'a mut FnInferResult,
 }
 
@@ -227,64 +243,6 @@ impl<'a, 's> Runner<'a, 's> {
     #[inline]
     pub fn find_decl_local(&self, decl_node: NodeId) -> Option<LocalBindId> {
         self.file_res.locals[self.loc_lo..self.loc_hi].iter().find(|l| l.decl_node == decl_node).map(|l| l.id)
-    }
-
-    /// Coerces `actual` toward `expected` (extending `unify::coerce` with `FnDef -> FnPtr` and `Closure/FnDef -> impl Fn*`).
-    pub fn coerce_expr(&mut self, actual: InferTyId, expected: InferTyId) -> InferTyId {
-        let act = self.ctx.table.shallow_resolve(actual);
-        let exp = self.ctx.table.shallow_resolve(expected);
-        if act == InferTyId::NEVER {
-            return InferTyId::NEVER;
-        }
-        match (self.ctx.table.arena.kind(act), self.ctx.table.arena.kind(exp)) {
-            (InferTyKind::FnDef { def, args }, InferTyKind::FnPtr { .. }) => {
-                if let Some(fp) = self.fn_def_as_fn_ptr(def, args) {
-                    let _ = self.ctx.table.coerce(fp, exp);
-                    return self.ctx.table.shallow_resolve(exp);
-                }
-            }
-            (InferTyKind::Closure { sig, .. }, InferTyKind::Opaque { def, args }) | (InferTyKind::Closure { sig, .. }, InferTyKind::Dyn { principal: def, args })
-                if self.db.lang_item_of_def(def).is_some_and(|l| l.is_fn_trait()) && args.len >= 2 =>
-            {
-                let s = self.ctx.table.arena.slice(sig);
-                let mut in_buf = InlineTyBuf::new();
-                for &inp in &s[..s.len() - 1] {
-                    in_buf.push(inp);
-                }
-                let out_ty = s[s.len() - 1];
-                let act_tup = self.ctx.table.arena.mk_tuple(in_buf.as_slice());
-                let exp_tup = self.ctx.table.arena.slice(args)[0];
-                let exp_ret = self.ctx.table.arena.slice(args)[1];
-                let _ = self.ctx.table.equate(act_tup, exp_tup);
-                let _ = self.ctx.table.coerce(out_ty, exp_ret);
-                return self.ctx.table.shallow_resolve(exp);
-            }
-            _ => {}
-        }
-        let _ = self.ctx.table.coerce(act, exp);
-        self.ctx.table.shallow_resolve(act)
-    }
-
-    pub fn fn_def_as_fn_ptr(&mut self, def: GlobalDefId, args: super::ty::TySliceRange) -> Option<InferTyId> {
-        let mut subst = InlineTyBuf::new();
-        for &a in self.ctx.table.arena.slice(args) {
-            subst.push(a);
-        }
-        let mut raw_ins = core::mem::take(&mut self.ctx.sig_inputs_buf);
-        let sig_opt = self
-            .db
-            .fn_sig(def, &mut self.ctx.table.arena, &mut raw_ins)
-            .or_else(|| self.local_defs.fn_sig(def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw_ins));
-        let res = sig_opt.map(|(_, raw_ret)| {
-            let mut inst_ins = InlineTyBuf::new();
-            for &inp in &raw_ins {
-                inst_ins.push(self.ctx.table.instantiate(inp, subst.as_slice()));
-            }
-            let inst_ret = self.ctx.table.instantiate(raw_ret, subst.as_slice());
-            self.ctx.table.arena.mk_fn_ptr(inst_ins.as_slice(), inst_ret)
-        });
-        self.ctx.sig_inputs_buf = raw_ins;
-        res
     }
 
     fn bind_fn_params_and_infer_body(&mut self, is_async_fn: bool) {
@@ -352,14 +310,32 @@ impl<'a, 's> Runner<'a, 's> {
         self.ctx.ret_stack.pop();
     }
 
+    fn infer_const_or_static_body(&mut self) {
+        let tenv = self.ty_env(false);
+        let decl_ty = self
+            .fn_def
+            .is_some()
+            .then(|| self.db.def_ty(self.fn_def, &mut self.ctx.table.arena).map(|(_, _, t)| t))
+            .flatten()
+            .unwrap_or_else(|| self.st.children(self.fn_node).find(|&c| self.st.kind(c).is_type()).map_or(InferTyId::UNKNOWN, |tn| tenv.lower_cst_ty(&mut self.ctx.table, tn)));
+        self.out.ret_ty = decl_ty;
+        if let Some(init) = self.st.children(self.fn_node).find(|&c| is_expr_node(self.st.kind(c))) {
+            let bty = self.infer_expr(init, Expectation::HasType(decl_ty));
+            let _ = self.coerce_expr(bty, decl_ty);
+            self.out.body_ty = bty;
+        }
+    }
+
     fn finalize_result(&mut self) {
         self.out.ret_ty = self.ctx.table.resolve_with_fallback(self.out.ret_ty);
         self.out.body_ty = self.ctx.table.resolve_with_fallback(self.out.body_ty);
         for pair in &mut self.out.expr_tys {
-            pair.1 = self.ctx.table.resolve_with_fallback(pair.1);
+            let resolved = self.ctx.table.resolve_with_fallback(pair.1);
+            pair.1 = super::autoderef::normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, resolved);
         }
         for pair in &mut self.out.pat_tys {
-            pair.1 = self.ctx.table.resolve_with_fallback(pair.1);
+            let resolved = self.ctx.table.resolve_with_fallback(pair.1);
+            pair.1 = super::autoderef::normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, resolved);
         }
         let fn_end = self.st.node(self.fn_node).subtree_end;
         for (off, &raw) in self.ctx.local_slots.iter().enumerate() {
@@ -368,13 +344,16 @@ impl<'a, 's> Runner<'a, 's> {
                 let decl = self.file_res.local_data(lid).decl_node;
                 if decl.0 >= self.fn_node.0 && decl.0 < fn_end {
                     let resolved = self.ctx.table.resolve_with_fallback(raw);
-                    self.out.local_tys.push((lid, resolved));
+                    let norm = super::autoderef::normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, resolved);
+                    self.out.local_tys.push((lid, norm));
                 }
             }
         }
         self.out.expr_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.pat_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.local_tys.sort_unstable_by_key(|&(l, _)| l);
+        self.out.dot_refs.sort_unstable_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
+        self.out.dot_refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.def == b.def);
     }
 }
 

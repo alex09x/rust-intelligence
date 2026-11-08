@@ -11,6 +11,8 @@
 //! File-level expression, type, pattern, and `use`-tree path resolution (`FileNameRes`, `ResolvedRef`,
 //! `ResTarget`, `LocalBindData`, `GenericBindData`).
 
+use std::sync::Arc;
+
 use super::body_ribs::RibStack;
 use super::body_walk::FileResolver;
 use super::crate_snapshot::CrateSnapshot;
@@ -180,6 +182,11 @@ pub struct FileNameRes {
     pub refs: Vec<ResolvedRef>,
     pub locals: Vec<LocalBindData>,
     pub generics: Vec<GenericBindData>,
+    pub prelude_traits: Arc<[GlobalDefId]>,
+    pub mod_trait_scopes: Vec<(NodeId, NodeId, Arc<[GlobalDefId]>, bool)>,
+    pub block_trait_imports: Vec<(NodeId, NodeId, GlobalDefId)>,
+    pub self_trait_scopes: Vec<(NodeId, NodeId, GlobalDefId)>,
+    pub param_trait_bounds: Vec<(GenericBindId, GlobalDefId)>,
     pub(super) ribs: RibStack,
 }
 
@@ -194,7 +201,42 @@ impl FileNameRes {
         self.refs.clear();
         self.locals.clear();
         self.generics.clear();
+        self.mod_trait_scopes.clear();
+        self.block_trait_imports.clear();
+        self.self_trait_scopes.clear();
+        self.param_trait_bounds.clear();
         self.ribs.clear();
+    }
+
+    /// Appends all traits visible for method resolution at `node` into `out` (`0` heap allocations when warm).
+    pub fn collect_traits_in_scope_at(&self, node: NodeId, out: &mut Vec<GlobalDefId>) {
+        out.clear();
+        for &(s, e, tdef) in &self.self_trait_scopes {
+            if node.0 >= s.0 && node.0 < e.0 && tdef.is_some() && !out.contains(&tdef) {
+                out.push(tdef);
+            }
+        }
+        for &(s, e, tdef) in self.block_trait_imports.iter().rev() {
+            if node.0 >= s.0 && node.0 < e.0 && tdef.is_some() && !out.contains(&tdef) {
+                out.push(tdef);
+            }
+        }
+        let mut include_prelude = true;
+        if let Some((_, _, vis, inc)) = self.mod_trait_scopes.iter().rfind(|&&(s, e, _, _)| node.0 >= s.0 && node.0 < e.0) {
+            include_prelude = *inc;
+            for &tdef in vis.iter() {
+                if tdef.is_some() && !out.contains(&tdef) {
+                    out.push(tdef);
+                }
+            }
+        }
+        if include_prelude {
+            for &tdef in self.prelude_traits.iter() {
+                if tdef.is_some() && !out.contains(&tdef) {
+                    out.push(tdef);
+                }
+            }
+        }
     }
 
     pub(super) fn finalize(&mut self) {
@@ -218,6 +260,23 @@ impl FileNameRes {
     /// Returns the tail segment resolution of `path_node` (`K::Path`), if resolved.
     pub fn path_tail_ref(&self, path_node: NodeId) -> Option<&ResolvedRef> {
         self.refs.iter().find(|r| r.path_node == path_node && r.is_segment_tail)
+    }
+
+    /// `O(log N)` tail-segment resolution lookup bounded by `path_node`'s CST byte range.
+    #[inline]
+    pub fn path_tail_ref_in_st(&self, st: &SyntaxTree<'_>, path_node: NodeId) -> Option<&ResolvedRef> {
+        let nr = st.range(path_node);
+        let lo = self.refs.partition_point(|r| r.start < nr.start as u32);
+        let hi = lo + self.refs[lo..].partition_point(|r| r.start <= nr.end as u32);
+        self.refs[lo..hi].iter().find(|r| r.path_node == path_node && r.is_segment_tail)
+    }
+
+    /// `O(log N)` slice of references starting inside `[start..=end]`.
+    #[inline]
+    pub fn refs_starting_in(&self, start: u32, end: u32) -> &[ResolvedRef] {
+        let lo = self.refs.partition_point(|r| r.start < start);
+        let hi = lo + self.refs[lo..].partition_point(|r| r.start <= end);
+        &self.refs[lo..hi]
     }
 
     #[inline]

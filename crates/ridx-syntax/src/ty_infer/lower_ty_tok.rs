@@ -16,7 +16,7 @@ use super::tok_ty_scan::{find_top_tok, for_each_top_comma, for_each_top_comma_fl
 use super::ty::InferTyId;
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
-use crate::name_res::GlobalDefId;
+use crate::name_res::{GlobalDefId, ItemKind, ResTarget};
 use crate::token::{Token, TokenKind as T};
 
 impl<'a, 's> LowerTyEnv<'a, 's> {
@@ -155,12 +155,16 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
 
     fn lower_tok_path_ty(&self, table: &mut InferenceTable, toks: &[Token], as_dyn: bool, as_opaque: bool, depth: u8) -> InferTyId {
         let mut cur = 0usize;
+        let mut first_ident: Option<Token> = None;
         let mut last_ident: Option<Token> = None;
         let mut args = InlineTyBuf::new();
         while let Some(i) = next_sig_idx(toks, cur) {
             match toks[i].kind {
                 T::Colon if is_double_colon(toks, i) => cur = i + 2,
                 T::Ident | T::RawIdent | T::SelfType | T::SelfKw | T::Super | T::Crate => {
+                    if first_ident.is_none() {
+                        first_ident = Some(toks[i]);
+                    }
                     last_ident = Some(toks[i]);
                     args = InlineTyBuf::new();
                     cur = i + 1;
@@ -209,6 +213,23 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         let Some(rref) = self.file_res.refs_at_span(id_tok.start, id_tok.end).first() else {
             return InferTyId::UNKNOWN;
         };
-        self.finish_resolved_type(table, rref.target, args.as_slice(), None, GlobalDefId::NONE, as_dyn, as_opaque, depth)
+        let mut qself_ty = None;
+        if matches!(rref.target, ResTarget::Def { kind: ItemKind::AssocTy, .. }) {
+            if let Some(ftok) = first_ident.filter(|ft| ft.start != id_tok.start) {
+                qself_ty = Some(if ftok.kind == T::SelfType {
+                    self.self_ty.unwrap_or(InferTyId::UNKNOWN)
+                } else if let Some(fref) = self.file_res.refs_at_span(ftok.start, ftok.end).first() {
+                    match fref.target {
+                        ResTarget::Generic(gid) => self.resolve_generic_param(table, gid),
+                        ResTarget::SelfTy { .. } => self.self_ty.unwrap_or(InferTyId::UNKNOWN),
+                        ResTarget::Prim(p) => InferTyId::from_prim(p),
+                        _ => InferTyId::UNKNOWN,
+                    }
+                } else {
+                    InferTyId::UNKNOWN
+                });
+            }
+        }
+        self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, GlobalDefId::NONE, as_dyn, as_opaque, depth)
     }
 }

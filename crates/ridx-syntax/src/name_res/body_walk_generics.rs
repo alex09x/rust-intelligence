@@ -149,9 +149,14 @@ impl<'a, 's> FileResolver<'a, 's> {
         for tb in self.st.children(tbl).filter(|&c| self.st.kind(c) == K::TypeBound) {
             let is_maybe = self.st.own_tokens(tb).any(|(_, t)| t.kind == T::Question);
             if let Some(p) = self.st.child(tb, K::Path) {
-                if let Some(ResTarget::Def { def, kind: ItemKind::Trait, .. }) = self.resolve_cst_path(p, PathCtx::TypeBound) {
-                    if !is_maybe && attach_param.is_some() && def.is_some() {
-                        self.ribs.param_bounds.push((attach_param, def));
+                if let Some(rt @ ResTarget::Def { kind: ItemKind::Trait, .. }) = self.resolve_cst_path(p, PathCtx::TypeBound) {
+                    let eff = match rt {
+                        ResTarget::Def { def, local, .. } => super::dirty_overlay::effective_local_or_def(def, local),
+                        _ => GlobalDefId::NONE,
+                    };
+                    if !is_maybe && attach_param.is_some() && eff.is_some() {
+                        self.ribs.param_bounds.push((attach_param, eff));
+                        self.out.param_trait_bounds.push((attach_param, eff));
                     }
                 }
             }
