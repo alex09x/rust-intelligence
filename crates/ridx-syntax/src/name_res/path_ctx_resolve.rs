@@ -42,8 +42,25 @@ impl<'a, 's> FileResolver<'a, 's> {
     #[inline]
     pub(super) fn emit_ref(&mut self, start: u32, end: u32, path_node: NodeId, target: ResTarget, ctx: PathCtx, is_segment_tail: bool) {
         if start < end {
+            let tail = &self.out.refs[self.out.refs.len().saturating_sub(64)..];
+            if tail.iter().any(|r| r.start == start && r.end == end && r.target == target) {
+                return;
+            }
             self.out.refs.push(ResolvedRef { start, end, path_node, target, ctx, is_segment_tail });
         }
+    }
+
+    pub(super) fn emit_use_leaf_pns(&mut self, start: u32, end: u32, path_node: NodeId, pns: PerNs) -> Option<ResTarget> {
+        let mut first = None;
+        for b in [pns.types, pns.values, pns.macros].into_iter().flatten() {
+            if let Some(rt) = binding_to_res_target(b) {
+                self.emit_ref(start, end, path_node, rt, PathCtx::UseTree, true);
+                if first.is_none() {
+                    first = Some(rt);
+                }
+            }
+        }
+        first
     }
 
     /// Checks whether a bare `K::IdentPat` resolves to an in-scope unit variant, unit struct, or `const`.
@@ -133,7 +150,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 .map(|(d, k)| (ResTarget::Def { def: d, local: LocalItemId::NONE, kind: k }, trait_def))
                 .or_else(|| {
                     self.map
-                        .resolve_trait_impl_assoc(self.db, self_key, trait_def, seg0.name, ns)
+                        .resolve_trait_impl_assoc_cached(self.db, self.ext_cache, self_key, trait_def, seg0.name, ns)
                         .map(|a| (ResTarget::Def { def: a.def, local: LocalItemId::NONE, kind: a.kind }, trait_def))
                 })
         } else if self_param_gid.is_some() {
@@ -297,7 +314,8 @@ impl<'a, 's> FileResolver<'a, 's> {
                 } else {
                     self.lookup_bare_all_ns(s0.name)
                 };
-                pns.types.or(pns.values).or(pns.macros).and_then(binding_to_res_target)
+                self.walk_segment_args(s0.seg_node, GlobalDefId::NONE);
+                return self.emit_use_leaf_pns(s0.start, s0.end, path_node, pns);
             }
         };
         self.walk_segment_args(s0.seg_node, GlobalDefId::NONE);

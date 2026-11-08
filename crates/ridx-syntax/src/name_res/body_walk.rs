@@ -11,13 +11,14 @@
 //! Module and item CST walker (`FileResolver`) for [`FileNameRes`].
 
 use super::attr::{eval_inner_attrs, eval_outer_attrs, EffectiveAttrs};
-use super::body_ribs::{norm_byte_span, BlockAssocEntry, RibStack, SelfCtx};
+use super::body_ribs::{norm_byte_span, RibStack, SelfCtx};
 use super::db::{FileId, GlobalDefId, ItemDb, ItemKind, ModuleId};
 use super::db_impls::ImplTargetKey;
 use super::def_map::CrateDefMap;
 use super::ext_scope::ExtScopeCache;
 use super::mod_tree::ModuleTree;
 use super::path_res::{FileNameRes, GenericBindId, LocalBindData, LocalBindId, PathCtx, ResTarget};
+use super::per_ns::LocalItemId;
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
@@ -112,6 +113,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 }
             }
             K::Use => self.walk_use_item(item),
+            K::ExternCrate => self.walk_extern_crate_item(item),
             K::Fn => self.walk_fn_item(item),
             K::Impl => self.walk_impl_item(item, in_body),
             K::Trait => self.walk_trait_item(item),
@@ -142,11 +144,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                     self.walk_container_items(il, false);
                 }
             }
-            K::MacroCall => {
-                if let Some(p) = self.st.child(item, K::Path) {
-                    self.resolve_cst_path(p, PathCtx::MacroCall);
-                }
-            }
+            K::MacroCall => self.walk_macro_call_node(item, false),
             _ => {}
         }
         if let Some(s) = saved {
@@ -154,9 +152,49 @@ impl<'a, 's> FileResolver<'a, 's> {
         }
     }
 
+    fn walk_extern_crate_item(&mut self, ec_node: NodeId) {
+        let mut saw_crate = false;
+        for (_, tok) in self.st.own_tokens(ec_node) {
+            if tok.is_trivia() {
+                continue;
+            }
+            if !saw_crate {
+                if tok.kind == T::Crate {
+                    saw_crate = true;
+                }
+                continue;
+            }
+            match tok.kind {
+                T::SelfKw => {
+                    let rdef = self.map.scopes.first().map_or(GlobalDefId::NONE, |s| s.index_def);
+                    if rdef.is_some() {
+                        self.emit_ref(tok.start, tok.end, ec_node, ResTarget::Def { def: rdef, local: LocalItemId::NONE, kind: ItemKind::Mod }, PathCtx::UseTree, true);
+                    }
+                }
+                T::Ident | T::RawIdent => {
+                    let orig = norm_ident(tok.text(self.st.src));
+                    let rdef = self
+                        .map
+                        .extern_prelude
+                        .get(orig)
+                        .map(|&(_, d)| d)
+                        .or_else(|| self.db.extern_crate(self.map.krate, orig).map(|cid| self.db.crate_root_def(cid).unwrap_or(GlobalDefId::new(cid, 0))));
+                    if let Some(d) = rdef {
+                        self.emit_ref(tok.start, tok.end, ec_node, ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::Mod }, PathCtx::UseTree, true);
+                    }
+                }
+                _ => {}
+            }
+            break;
+        }
+    }
+
     fn walk_fn_item(&mut self, fn_node: NodeId) {
         let owner_def = self.lookup_item_def(fn_node);
         let (gm, bm) = self.push_item_generics(fn_node, owner_def);
+        if let Some(wc) = self.st.child(fn_node, K::WhereClause) {
+            self.walk_where_clause(wc);
+        }
         let loc_mark = self.ribs.locals_active.len();
         if let Some(pl) = self.st.child(fn_node, K::ParamList) {
             for param in self.st.children(pl) {
@@ -190,9 +228,6 @@ impl<'a, 's> FileResolver<'a, 's> {
             if let Some(tn) = self.st.children(rt).find(|&c| self.st.kind(c).is_type()) {
                 self.walk_type(tn);
             }
-        }
-        if let Some(wc) = self.st.child(fn_node, K::WhereClause) {
-            self.walk_where_clause(wc);
         }
         if let Some(body) = self.st.child(fn_node, K::BlockExpr) {
             self.walk_block_expr(body, true);
@@ -274,11 +309,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 K::Fn => self.walk_fn_item(ch),
                 K::TypeAlias => self.walk_type_alias(ch),
                 K::Const => self.walk_const_or_static(ch),
-                K::MacroCall => {
-                    if let Some(p) = self.st.child(ch, K::Path) {
-                        self.resolve_cst_path(p, PathCtx::MacroCall);
-                    }
-                }
+                K::MacroCall => self.walk_macro_call_node(ch, false),
                 _ => {}
             }
             self.ribs.local_barrier = lb;
@@ -291,9 +322,11 @@ impl<'a, 's> FileResolver<'a, 's> {
             match self.st.kind(ch) {
                 K::TypeBoundList => self.walk_type_bound_list(ch, GenericBindId::NONE),
                 K::WhereClause => self.walk_where_clause(ch),
-                k if k.is_type() => self.walk_type(ch),
                 _ => {}
             }
+        }
+        for ch in self.st.children(node).filter(|&c| self.st.kind(c).is_type()) {
+            self.walk_type(ch);
         }
         self.pop_generics(gm, bm);
     }
@@ -301,12 +334,14 @@ impl<'a, 's> FileResolver<'a, 's> {
     fn walk_const_or_static(&mut self, node: NodeId) {
         let (gm, bm) = self.push_item_generics(node, self.lookup_item_def(node));
         let lb = self.ribs.enter_assoc_item_barrier();
+        if let Some(wc) = self.st.child(node, K::WhereClause) {
+            self.walk_where_clause(wc);
+        }
         for ch in self.st.children(node) {
-            match self.st.kind(ch) {
-                k if k.is_type() => self.walk_type(ch),
-                K::WhereClause => self.walk_where_clause(ch),
-                k if k.is_expr() => self.walk_expr(ch),
-                _ => {}
+            if self.st.kind(ch).is_type() {
+                self.walk_type(ch);
+            } else if super::body_walk_expr::is_expr_or_macro(self.st.kind(ch)) {
+                self.walk_expr(ch);
             }
         }
         self.ribs.local_barrier = lb;
@@ -324,36 +359,6 @@ impl<'a, 's> FileResolver<'a, 's> {
         }
         let r = self.st.range(nn);
         self.map.items.iter().find(|it| it.file == self.file && it.span_start == r.start as u32 && it.span_end == r.end as u32).map_or(GlobalDefId::NONE, |it| it.index_def)
-    }
-
-    fn register_block_impl_assocs(&mut self, il: NodeId, target: ImplTargetKey, trait_def: GlobalDefId) {
-        if self.ribs.block_ribs.is_empty() {
-            return;
-        }
-        let mut entries = Vec::new();
-        for ch in self.st.children(il) {
-            if !self.node_cfg_enabled(ch) {
-                continue;
-            }
-            let kind = match self.st.kind(ch) {
-                K::Fn => ItemKind::AssocFn,
-                K::Const => ItemKind::AssocConst,
-                K::TypeAlias => ItemKind::AssocTy,
-                _ => continue,
-            };
-            let Some(nn) = self.st.child(ch, K::Name) else {
-                continue;
-            };
-            let (ns, ne) = norm_byte_span(self.st.src, self.st.range(nn));
-            let mut def = self.db.def_at_byte_span(self.map.krate, self.file, ns, ne);
-            if !def.is_some() {
-                def = self.ribs.alloc_synthetic_def();
-            }
-            entries.push(BlockAssocEntry { target, trait_def, name_start: ns, name_end: ne, def, kind });
-        }
-        if let Some(rib) = self.ribs.block_ribs.last_mut() {
-            rib.assocs.extend(entries);
-        }
     }
 
     #[inline]

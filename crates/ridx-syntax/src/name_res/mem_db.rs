@@ -101,6 +101,7 @@ pub struct MemItemDb {
     module_defs: HashMap<GlobalDefId, Vec<OwnedDef>>,
     module_uses: HashMap<GlobalDefId, Vec<OwnedUse>>,
     assoc_items: HashMap<GlobalDefId, Vec<OwnedDef>>,
+    supertraits: HashMap<GlobalDefId, Vec<GlobalDefId>>,
     impls_by_target: HashMap<ImplTargetKey, Vec<IndexedImpl>>,
     impls_by_crate: HashMap<CrateId, Vec<IndexedImpl>>,
     lang_items: HashMap<u16, GlobalDefId>,
@@ -223,6 +224,10 @@ impl MemItemDb {
         self.assoc_items.entry(owner_def).or_default().push(item);
     }
 
+    pub fn add_trait_supertrait(&mut self, trait_def: GlobalDefId, super_def: GlobalDefId) {
+        self.supertraits.entry(trait_def).or_default().push(super_def);
+    }
+
     pub fn set_lang_item(&mut self, lang_kind: u16, def: GlobalDefId) {
         self.lang_items.insert(lang_kind, def);
     }
@@ -342,6 +347,12 @@ impl ItemDb for MemItemDb {
     fn assoc_items<'a>(&'a self, owner_def: GlobalDefId, out: &mut Vec<IndexedDef<'a>>) {
         if let Some(list) = self.assoc_items.get(&owner_def) {
             out.extend(list.iter().map(|d| IndexedDef { id: d.id, name: &d.name, kind: d.kind, vis: d.vis, has_value_ctor: d.has_value_ctor }));
+        }
+    }
+
+    fn trait_supertraits(&self, trait_def: GlobalDefId, out: &mut Vec<GlobalDefId>) {
+        if let Some(list) = self.supertraits.get(&trait_def) {
+            out.extend_from_slice(list);
         }
     }
 

@@ -265,7 +265,7 @@ impl !SendMarker for Buffer {}
     let new_op = dm.resolve_inherent_assoc(&db, &snap.mod_tree, ModuleId::ROOT, buf_key, "new_op", NsMask::VALUE).unwrap();
     assert!(new_op.def.is_overlay() && new_op.has_self_receiver);
     let cap_c = dm.resolve_inherent_assoc(&db, &snap.mod_tree, ModuleId::ROOT, buf_key, "CAP", NsMask::VALUE).unwrap();
-    assert!(cap_c.def.is_overlay() && cap_c.kind == ItemKind::Const);
+    assert!(cap_c.def.is_overlay() && cap_c.kind == ItemKind::AssocConst);
     let via_alias = dm.resolve_inherent_assoc(&db, &snap.mod_tree, ModuleId::ROOT, buf_key, "via_alias", NsMask::VALUE).unwrap();
     assert!(via_alias.def.is_overlay() && !via_alias.has_self_receiver);
 

@@ -159,6 +159,8 @@ fn copy_clean_local_impls(src: &LocalImplArena, dirty_files: &[FileId], old_to_n
         impls: Vec::with_capacity(src.impls.len() + 4),
         assoc_items: Vec::with_capacity(src.assoc_items.len() + 8),
         trait_assocs: Vec::with_capacity(src.trait_assocs.len()),
+        raw_trait_supers: Vec::with_capacity(src.raw_trait_supers.len()),
+        local_trait_supers: Vec::new(),
         type_aliases: Vec::with_capacity(src.type_aliases.len()),
     };
     for imp in &src.impls {
@@ -189,6 +191,14 @@ fn copy_clean_local_impls(src: &LocalImplArena, dirty_files: &[FileId], old_to_n
             dst.assoc_items.push(c);
         }
         dst.trait_assocs.push((mapped, new_s, a_l));
+    }
+    for rts in &src.raw_trait_supers {
+        let mapped = old_to_new_item.get(rts.trait_item.0 as usize).copied().unwrap_or(LocalItemId::NONE);
+        if mapped.is_some() {
+            let mut c = *rts;
+            c.trait_item = mapped;
+            dst.raw_trait_supers.push(c);
+        }
     }
     for ta in &src.type_aliases {
         let mapped = old_to_new_item.get(ta.item_id.0 as usize).copied().unwrap_or(LocalItemId::NONE);

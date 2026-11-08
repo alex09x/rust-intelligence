@@ -46,7 +46,51 @@ pub(super) fn resolve_local_impls_and_assocs(map: &mut CrateDefMap, db: &dyn Ite
         }
     }
 
-    // 2. Match trait associated items against `ItemDb::assoc_items` (or assign `LOCAL_OVERLAY`).
+    // 2. Match trait associated items against `ItemDb::assoc_items` (or assign `LOCAL_OVERLAY`),
+    // and resolve transitive supertraits for locally scanned `trait` definitions.
+    map.local_impls.local_trait_supers.clear();
+    let mut direct_supers = Vec::with_capacity(map.local_impls.raw_trait_supers.len());
+    for idx in 0..map.local_impls.raw_trait_supers.len() {
+        let rts = map.local_impls.raw_trait_supers[idx];
+        if let Some(tb) = resolve_arena_path_types(map, db, mod_tree, ext_cache, rts.module, rts.anchor, rts.seg_start, rts.seg_len) {
+            if tb.kind == ItemKind::Trait && tb.def.is_some() {
+                direct_supers.push((rts.trait_item, tb.def));
+            }
+        }
+    }
+    for &(tlid, _, _) in &map.local_impls.trait_assocs {
+        let mut chain = Vec::with_capacity(4);
+        for &(slid, sdef) in &direct_supers {
+            if slid == tlid && !chain.contains(&sdef) {
+                chain.push(sdef);
+            }
+        }
+        let mut head = 0usize;
+        let mut idx_supers = Vec::new();
+        while head < chain.len() && chain.len() < 16 {
+            let cur = chain[head];
+            head += 1;
+            if let Some(&(sub_lid, _, _)) = map.local_impls.trait_assocs.iter().find(|&&(l, _, _)| map.items[l.0 as usize].index_def == cur) {
+                for &(slid, sdef) in &direct_supers {
+                    if slid == sub_lid && !chain.contains(&sdef) && chain.len() < 16 {
+                        chain.push(sdef);
+                    }
+                }
+            } else {
+                idx_supers.clear();
+                db.trait_supertraits(cur, &mut idx_supers);
+                for &sdef in &idx_supers {
+                    if sdef.is_some() && !chain.contains(&sdef) && chain.len() < 16 {
+                        chain.push(sdef);
+                    }
+                }
+            }
+        }
+        for sdef in chain {
+            map.local_impls.local_trait_supers.push((tlid, sdef));
+        }
+    }
+
     let mut scratch_assoc: Vec<IndexedDef<'_>> = Vec::new();
     for &(trait_lid, a_start, a_len) in &map.local_impls.trait_assocs {
         let trait_def = map.items[trait_lid.0 as usize].index_def;

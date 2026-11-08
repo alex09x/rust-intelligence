@@ -262,7 +262,7 @@ impl CrateDefMap {
         None
     }
 
-    fn is_trait_def_in_scope(&self, mod_tree: &ModuleTree, from_mod: ModuleId, extra_traits: &[ResolvedBinding], trait_def: GlobalDefId) -> bool {
+    pub(super) fn is_trait_def_in_scope(&self, mod_tree: &ModuleTree, from_mod: ModuleId, extra_traits: &[ResolvedBinding], trait_def: GlobalDefId) -> bool {
         if extra_traits.iter().any(|b| b.def == trait_def) || self.scope(from_mod).unnamed_traits.iter().any(|b| b.def == trait_def) {
             return true;
         }
@@ -273,14 +273,14 @@ impl CrateDefMap {
     }
 }
 
-fn is_local_assoc_visible(tree: &ModuleTree, from_mod: ModuleId, vis: VisKind, vis_mod: ModuleId) -> bool {
+pub(super) fn is_local_assoc_visible(tree: &ModuleTree, from_mod: ModuleId, vis: VisKind, vis_mod: ModuleId) -> bool {
     match vis {
         VisKind::Public | VisKind::Crate => true,
         VisKind::Private | VisKind::Super | VisKind::Restricted => is_descendant_or_eq(tree, from_mod, vis_mod),
     }
 }
 
-fn is_indexed_assoc_visible(cur_krate: CrateId, owner_krate: CrateId, vis: VisKind) -> bool {
+pub(super) fn is_indexed_assoc_visible(cur_krate: CrateId, owner_krate: CrateId, vis: VisKind) -> bool {
     match vis {
         VisKind::Public => true,
         VisKind::Crate => cur_krate == owner_krate,

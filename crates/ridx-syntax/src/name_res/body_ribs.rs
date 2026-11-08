@@ -47,6 +47,7 @@ pub(super) struct BlockItemRib {
     pub entries: HashMap<IdentKey, PerNs>,
     pub unnamed_traits: Vec<ResolvedBinding>,
     pub enum_variants: Vec<(GlobalDefId, IdentKey, ResolvedBinding, NsMask)>,
+    pub alias_targets: Vec<(GlobalDefId, ImplTargetKey)>,
     pub assocs: Vec<BlockAssocEntry>,
 }
 
@@ -56,6 +57,7 @@ impl BlockItemRib {
         self.entries.clear();
         self.unnamed_traits.clear();
         self.enum_variants.clear();
+        self.alias_targets.clear();
         self.assocs.clear();
     }
 }
@@ -215,6 +217,19 @@ impl RibStack {
             }
         }
         PerNs::EMPTY
+    }
+
+    pub fn has_block_enum(&self, enum_def: GlobalDefId) -> bool {
+        self.block_ribs.iter().rev().any(|rib| rib.enum_variants.iter().any(|(edef, _, _, _)| *edef == enum_def))
+    }
+
+    pub fn lookup_block_alias_target(&self, alias_def: GlobalDefId) -> Option<ImplTargetKey> {
+        for rib in self.block_ribs.iter().rev() {
+            if let Some(&(_, target)) = rib.alias_targets.iter().find(|&&(d, _)| d == alias_def) {
+                return Some(target);
+            }
+        }
+        None
     }
 
     pub fn lookup_block_assoc(&self, src: &str, target: ImplTargetKey, trait_def: GlobalDefId, norm_name: &str, ns: NsMask) -> Option<(GlobalDefId, ItemKind)> {

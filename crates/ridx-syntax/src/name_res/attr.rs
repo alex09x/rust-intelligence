@@ -40,12 +40,27 @@ pub struct EffectiveAttrs<'s> {
     pub no_std: bool,
     /// `#![no_core]` was active.
     pub no_core: bool,
+    /// `#[proc_macro]` or `#[proc_macro_attribute]` was active on a `fn` item.
+    pub is_proc_macro_fn: bool,
+    /// Exported trait name from `#[proc_macro_derive(TraitName, ...)]`, if active.
+    pub proc_macro_derive_name: Option<&'s str>,
 }
 
 impl Default for EffectiveAttrs<'_> {
     #[inline]
     fn default() -> Self {
-        Self { enabled: true, explicit_path: None, macro_use: false, macro_use_filter: None, macro_export: false, no_implicit_prelude: false, no_std: false, no_core: false }
+        Self {
+            enabled: true,
+            explicit_path: None,
+            macro_use: false,
+            macro_use_filter: None,
+            macro_export: false,
+            no_implicit_prelude: false,
+            no_std: false,
+            no_core: false,
+            is_proc_macro_fn: false,
+            proc_macro_derive_name: None,
+        }
     }
 }
 
@@ -166,6 +181,18 @@ fn eval_meta_item<'s>(src: &'s str, tokens: &[Token], db: &dyn ItemDb, krate: Cr
         }
         "no_core" => {
             out.no_core = true;
+        }
+        "proc_macro" | "proc_macro_attribute" => {
+            out.is_proc_macro_fn = true;
+        }
+        "proc_macro_derive" => {
+            if let Some(paren_inner) = paren_inner_tokens(rest) {
+                if let Some(tok) = paren_inner.iter().find(|t| !t.kind.is_trivia()) {
+                    if matches!(tok.kind, T::Ident | T::RawIdent) {
+                        out.proc_macro_derive_name = Some(norm_ident(tok.text(src)));
+                    }
+                }
+            }
         }
         _ => {}
     }

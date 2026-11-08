@@ -17,10 +17,10 @@ use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask
 use super::def_collect::CollectedCrate;
 use super::def_map::{extern_crate_binding, local_mod_binding, CrateDefMap, ModuleScope, UseDiag};
 use super::def_path::{apply_glob_use, resolve_segments, resolve_use_leaf};
-use super::ext_scope::ExtScopeCache;
+use super::ext_scope::{indexed_use_to_per_ns, ExtScopeCache};
 use super::ident_key::IdentKey;
 use super::mod_tree::ModuleTree;
-use super::per_ns::{compute_vis_mod, BindingOrigin, PerNs, ResolvedBinding};
+use super::per_ns::{compute_vis_mod, BindingOrigin, LocalItemId, PerNs, ResolvedBinding};
 use super::use_tree::{FlatUseKind, PathAnchor};
 
 const MAX_FIXED_POINT_ROUNDS: usize = 64;
@@ -39,7 +39,7 @@ impl ImportSolver {
             let rdef = db.crate_root_def(cid).unwrap_or(GlobalDefId::new(cid, 0));
             extern_prelude.insert(IdentKey::new(ename), (cid, rdef));
         }
-        for builtin_ext in ["core", "std", "alloc"] {
+        for builtin_ext in ["core", "std", "alloc", "proc_macro", "test"] {
             if (builtin_ext == "std" && mod_tree.no_std) || mod_tree.no_core {
                 continue;
             }
@@ -152,6 +152,8 @@ impl ImportSolver {
             }
         }
 
+        seed_index_fallback_defs(db, mod_tree, dirty_files, &mut scopes);
+
         let use_count = collected.uses.uses.len();
         let mut map = CrateDefMap {
             krate: mod_tree.krate,
@@ -170,46 +172,9 @@ impl ImportSolver {
             diagnostics,
         };
 
-        for _round in 0..MAX_FIXED_POINT_ROUNDS {
-            let mut changed = false;
-            for uidx in 0..use_count {
-                let u = map.uses.uses[uidx];
-                match u.kind {
-                    FlatUseKind::Named | FlatUseKind::Underscore => {
-                        let resolved = resolve_use_leaf(&map, db, mod_tree, ext_cache, &u);
-                        if resolved.is_empty() || map.resolved_uses[uidx] == resolved {
-                            continue;
-                        }
-                        map.resolved_uses[uidx] = resolved;
-                        changed = true;
-                        if u.kind == FlatUseKind::Underscore {
-                            if let Some(tb) = resolved.types.filter(|b| b.kind == ItemKind::Trait) {
-                                let list = &mut map.scopes[u.module.0 as usize].unnamed_traits;
-                                if !list.iter().any(|x| x.same_target(tb)) {
-                                    list.push(tb);
-                                }
-                            }
-                        } else {
-                            let bind = map.uses.bind_name(&u);
-                            let rebound = resolved.rebind(u.vis, u.vis_mod, BindingOrigin::Explicit);
-                            let entries = &mut map.scopes[u.module.0 as usize].entries;
-                            if let Some(slot) = entries.get_mut(bind) {
-                                slot.merge_explicit(rebound);
-                            } else {
-                                let mut slot = PerNs::EMPTY;
-                                slot.merge_explicit(rebound);
-                                entries.insert(IdentKey::new(bind), slot);
-                            }
-                        }
-                    }
-                    FlatUseKind::Glob => {
-                        changed |= apply_glob_use(&mut map, db, mod_tree, ext_cache, uidx);
-                    }
-                }
-            }
-            if !changed {
-                break;
-            }
+        run_use_fixed_point(&mut map, db, mod_tree, ext_cache, MAX_FIXED_POINT_ROUNDS);
+        if seed_index_fallback_uses(&mut map, db, mod_tree, dirty_files, ext_cache) {
+            run_use_fixed_point(&mut map, db, mod_tree, ext_cache, 4);
         }
 
         for uidx in 0..use_count {
@@ -232,4 +197,154 @@ impl ImportSolver {
     ) -> PerNs {
         resolve_segments(map, db, mod_tree, ext_cache, from_mod, anchor, segments, false)
     }
+}
+
+fn run_use_fixed_point(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleTree, ext_cache: &mut ExtScopeCache, max_rounds: usize) {
+    let use_count = map.uses.uses.len();
+    for _round in 0..max_rounds {
+        let mut changed = false;
+        for uidx in 0..use_count {
+            let u = map.uses.uses[uidx];
+            match u.kind {
+                FlatUseKind::Named | FlatUseKind::Underscore => {
+                    let resolved = resolve_use_leaf(map, db, mod_tree, ext_cache, &u);
+                    if resolved.is_empty() || map.resolved_uses[uidx] == resolved {
+                        continue;
+                    }
+                    map.resolved_uses[uidx] = resolved;
+                    changed = true;
+                    if u.kind == FlatUseKind::Underscore {
+                        if let Some(tb) = resolved.types.filter(|b| b.kind == ItemKind::Trait) {
+                            let list = &mut map.scopes[u.module.0 as usize].unnamed_traits;
+                            if !list.iter().any(|x| x.same_target(tb)) {
+                                list.push(tb);
+                            }
+                        }
+                    } else {
+                        let bind = map.uses.bind_name(&u);
+                        let rebound = resolved.rebind(u.vis, u.vis_mod, BindingOrigin::Explicit);
+                        let entries = &mut map.scopes[u.module.0 as usize].entries;
+                        if let Some(slot) = entries.get_mut(bind) {
+                            slot.merge_explicit(rebound);
+                        } else {
+                            let mut slot = PerNs::EMPTY;
+                            slot.merge_explicit(rebound);
+                            entries.insert(IdentKey::new(bind), slot);
+                        }
+                    }
+                }
+                FlatUseKind::Glob => {
+                    changed |= apply_glob_use(map, db, mod_tree, ext_cache, uidx);
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+}
+
+fn seed_index_fallback_defs(db: &dyn ItemDb, mod_tree: &ModuleTree, dirty_files: &[FileId], scopes: &mut [ModuleScope]) {
+    let mut defs = Vec::new();
+    for (midx, scope) in scopes.iter_mut().enumerate() {
+        let idx_def = scope.index_def;
+        if !idx_def.is_some() || idx_def.is_overlay() {
+            continue;
+        }
+        let mod_file = mod_tree.modules[midx].file;
+        let file_dirty = dirty_files.contains(&mod_file);
+        defs.clear();
+        db.module_defs(idx_def, &mut defs);
+        let mod_id = ModuleId(midx as u32);
+        for d in &defs {
+            if d.name.is_empty() || (file_dirty && db.def_file(d.id) == mod_file) {
+                continue;
+            }
+            let (_, vmod) = compute_vis_mod(mod_tree, mod_id, d.vis, None);
+            let b = ResolvedBinding {
+                def: d.id,
+                local: LocalItemId::NONE,
+                local_mod: ModuleId::NONE,
+                vis_mod: vmod,
+                kind: d.kind,
+                vis: d.vis,
+                origin: BindingOrigin::Explicit,
+                prim_ty: 0,
+                ambiguous: false,
+            };
+            let fb = PerNs::from_binding(b, d.kind.ns_mask(d.has_value_ctor));
+            let slot = scope.entries.entry(IdentKey::new(d.name)).or_insert(PerNs::EMPTY);
+            *slot = slot.or_else_ns(fb);
+        }
+    }
+}
+
+fn seed_index_fallback_uses(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleTree, dirty_files: &[FileId], ext_cache: &mut ExtScopeCache) -> bool {
+    let mut uses = Vec::new();
+    let mut glob_targets: Vec<(GlobalDefId, VisKind, ModuleId)> = Vec::new();
+    let mut any_changed = false;
+    for midx in 0..map.scopes.len() {
+        let idx_def = map.scopes[midx].index_def;
+        let mod_file = mod_tree.modules[midx].file;
+        if !idx_def.is_some() || idx_def.is_overlay() || dirty_files.contains(&mod_file) {
+            continue;
+        }
+        uses.clear();
+        glob_targets.clear();
+        db.module_uses(idx_def, &mut uses);
+        let mod_id = ModuleId(midx as u32);
+        for u in &uses {
+            if u.is_prelude {
+                continue;
+            }
+            let (_, vmod) = compute_vis_mod(mod_tree, mod_id, u.vis, None);
+            if u.is_glob {
+                if u.type_def.is_some() && u.type_def != idx_def {
+                    glob_targets.push((u.type_def, u.vis, vmod));
+                }
+                continue;
+            }
+            if u.is_underscore {
+                if u.type_def.is_some() && db.def_kind(u.type_def) == Some(ItemKind::Trait) {
+                    let tb = ResolvedBinding {
+                        def: u.type_def,
+                        local: LocalItemId::NONE,
+                        local_mod: ModuleId::NONE,
+                        vis_mod: vmod,
+                        kind: ItemKind::Trait,
+                        vis: u.vis,
+                        origin: BindingOrigin::Explicit,
+                        prim_ty: 0,
+                        ambiguous: false,
+                    };
+                    let list = &mut map.scopes[midx].unnamed_traits;
+                    if !list.iter().any(|x| x.same_target(tb)) {
+                        list.push(tb);
+                        any_changed = true;
+                    }
+                }
+                continue;
+            }
+            if u.name.is_empty() {
+                continue;
+            }
+            let pns = indexed_use_to_per_ns(db, u).rebind(u.vis, vmod, BindingOrigin::Explicit);
+            if !pns.is_empty() {
+                let slot = map.scopes[midx].entries.entry(IdentKey::new(u.name)).or_insert(PerNs::EMPTY);
+                let next = slot.or_else_ns(pns);
+                if next != *slot {
+                    *slot = next;
+                    any_changed = true;
+                }
+            }
+        }
+        for (gdef, gvis, gvmod) in &glob_targets {
+            let ext_s = ext_cache.module_scope(db, *gdef);
+            let pairs: Vec<(IdentKey, PerNs)> = ext_s.entries.iter().map(|(k, &v)| (k.clone(), v.rebind(*gvis, *gvmod, BindingOrigin::Glob))).collect();
+            for (k, pns) in pairs {
+                any_changed |= map.scopes[midx].entries.entry(k).or_insert(PerNs::EMPTY).merge_glob(pns);
+            }
+        }
+    }
+    any_changed
 }

@@ -62,11 +62,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                     }
                 }
             }
-            K::MacroCall => {
-                if let Some(p) = self.st.child(ty_node, K::Path) {
-                    self.resolve_cst_path(p, PathCtx::MacroCall);
-                }
-            }
+            K::MacroCall => self.walk_macro_call_node(ty_node, false),
             _ => {
                 for ch in self.st.children(ty_node) {
                     if self.st.kind(ch).is_type() {
@@ -226,7 +222,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                     if trait_def.is_some() {
                         if let Some(nn) = self.st.child(arg, K::Name) {
                             let r = self.st.range(nn);
-                            if let Some(assoc) = self.map.resolve_trait_assoc(self.db, trait_def, norm_ident(self.st.text(nn)), NsMask::TYPE) {
+                            if let Some(assoc) = self.map.resolve_trait_assoc_cached(self.db, self.ext_cache, trait_def, norm_ident(self.st.text(nn)), NsMask::TYPE) {
                                 let rt = ResTarget::Def { def: assoc.def, local: LocalItemId::NONE, kind: assoc.kind };
                                 self.emit_ref(r.start as u32, r.end as u32, NodeId(u32::MAX), rt, PathCtx::Type, false);
                             }

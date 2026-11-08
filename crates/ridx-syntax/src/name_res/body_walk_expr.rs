@@ -20,6 +20,11 @@ use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
 use crate::tree::NodeId;
 
+#[inline]
+pub(super) fn is_expr_or_macro(k: K) -> bool {
+    k.is_expr() || k == K::MacroCall
+}
+
 impl<'a, 's> FileResolver<'a, 's> {
     #[inline]
     pub(super) fn expr_cfg_enabled(&self, node: NodeId) -> bool {
@@ -47,7 +52,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                     if let Some(tn) = self.st.children(ch).find(|&c| self.st.kind(c).is_type()) {
                         self.walk_type(tn);
                     }
-                    if let Some(en) = self.st.children(ch).find(|&c| self.st.kind(c).is_expr()) {
+                    if let Some(en) = self.st.children(ch).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                         self.walk_expr(en);
                     }
                     if let Some(le) = self.st.child(ch, K::LetElse) {
@@ -61,9 +66,14 @@ impl<'a, 's> FileResolver<'a, 's> {
                 }
                 K::ExprStmt => {
                     if self.expr_cfg_enabled(ch) {
-                        if let Some(en) = self.st.children(ch).find(|&c| self.st.kind(c).is_expr()) {
+                        if let Some(en) = self.st.children(ch).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                             self.walk_expr(en);
                         }
+                    }
+                }
+                K::MacroCall => {
+                    if self.expr_cfg_enabled(ch) {
+                        self.walk_macro_call_node(ch, true);
                     }
                 }
                 k if k.is_item() => self.walk_block_scoped_item(ch),
@@ -94,7 +104,7 @@ impl<'a, 's> FileResolver<'a, 's> {
             K::RecordExpr => self.walk_record_expr(expr),
             K::BlockExpr => self.walk_block_expr(expr, false),
             K::LetExpr => {
-                if let Some(en) = self.st.children(expr).find(|&c| self.st.kind(c).is_expr()) {
+                if let Some(en) = self.st.children(expr).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                     self.walk_expr(en);
                 }
                 if let Some(pn) = self.st.children(expr).find(|&c| self.st.kind(c).is_pat()) {
@@ -102,7 +112,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 }
             }
             K::IfExpr => {
-                let mut expr_kids = self.st.children(expr).filter(|&c| self.st.kind(c).is_expr());
+                let mut expr_kids = self.st.children(expr).filter(|&c| is_expr_or_macro(self.st.kind(c)));
                 let (cond_opt, then_opt, else_opt) = (expr_kids.next(), expr_kids.next(), expr_kids.next());
                 let cond_mark = self.ribs.locals_active.len();
                 if let Some(cond) = cond_opt {
@@ -117,7 +127,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 }
             }
             K::WhileExpr => {
-                let mut expr_kids = self.st.children(expr).filter(|&c| self.st.kind(c).is_expr());
+                let mut expr_kids = self.st.children(expr).filter(|&c| is_expr_or_macro(self.st.kind(c)));
                 let (cond_opt, body_opt) = (expr_kids.next(), expr_kids.next());
                 let cond_mark = self.ribs.locals_active.len();
                 if let Some(cond) = cond_opt {
@@ -130,7 +140,7 @@ impl<'a, 's> FileResolver<'a, 's> {
             }
             K::ForExpr => {
                 let pat_opt = self.st.children(expr).find(|&c| self.st.kind(c).is_pat());
-                let mut expr_kids = self.st.children(expr).filter(|&c| self.st.kind(c).is_expr());
+                let mut expr_kids = self.st.children(expr).filter(|&c| is_expr_or_macro(self.st.kind(c)));
                 let (iter_opt, body_opt) = (expr_kids.next(), expr_kids.next());
                 if let Some(it_expr) = iter_opt {
                     self.walk_expr(it_expr);
@@ -145,7 +155,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 self.ribs.locals_active.truncate(for_mark);
             }
             K::MatchExpr => {
-                if let Some(scrut) = self.st.children(expr).find(|&c| self.st.kind(c).is_expr()) {
+                if let Some(scrut) = self.st.children(expr).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                     self.walk_expr(scrut);
                 }
                 if let Some(al) = self.st.child(expr, K::MatchArmList) {
@@ -158,11 +168,11 @@ impl<'a, 's> FileResolver<'a, 's> {
                             self.walk_pat(pn, None, false);
                         }
                         if let Some(mg) = self.st.child(arm, K::MatchGuard) {
-                            if let Some(ge) = self.st.children(mg).find(|&c| self.st.kind(c).is_expr()) {
+                            if let Some(ge) = self.st.children(mg).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                                 self.walk_expr(ge);
                             }
                         }
-                        if let Some(be) = self.st.children(arm).find(|&c| self.st.kind(c).is_expr()) {
+                        if let Some(be) = self.st.children(arm).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                             self.walk_expr(be);
                         }
                         self.ribs.locals_active.truncate(arm_mark);
@@ -189,14 +199,14 @@ impl<'a, 's> FileResolver<'a, 's> {
                         self.walk_type(tn);
                     }
                 }
-                if let Some(body) = self.st.children(expr).find(|&c| self.st.kind(c).is_expr()) {
+                if let Some(body) = self.st.children(expr).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                     self.walk_expr(body);
                 }
                 self.ribs.locals_active.truncate(cl_mark);
             }
             K::CastExpr => {
                 for ch in self.st.children(expr) {
-                    if self.st.kind(ch).is_expr() {
+                    if is_expr_or_macro(self.st.kind(ch)) {
                         self.walk_expr(ch);
                     } else if self.st.kind(ch).is_type() {
                         self.walk_type(ch);
@@ -206,10 +216,10 @@ impl<'a, 's> FileResolver<'a, 's> {
             K::MethodCallExpr => {
                 for ch in self.st.children(expr) {
                     match self.st.kind(ch) {
-                        k if k.is_expr() => self.walk_expr(ch),
+                        k if is_expr_or_macro(k) => self.walk_expr(ch),
                         K::GenericArgList => self.walk_generic_arg_list(ch, GlobalDefId::NONE),
                         K::ArgList => {
-                            for arg in self.st.children(ch).filter(|&a| self.st.kind(a).is_expr()) {
+                            for arg in self.st.children(ch).filter(|&a| is_expr_or_macro(self.st.kind(a))) {
                                 self.walk_expr(arg);
                             }
                         }
@@ -219,23 +229,19 @@ impl<'a, 's> FileResolver<'a, 's> {
             }
             K::CallExpr => {
                 for ch in self.st.children(expr) {
-                    if self.st.kind(ch).is_expr() {
+                    if is_expr_or_macro(self.st.kind(ch)) {
                         self.walk_expr(ch);
                     } else if self.st.kind(ch) == K::ArgList {
-                        for arg in self.st.children(ch).filter(|&a| self.st.kind(a).is_expr()) {
+                        for arg in self.st.children(ch).filter(|&a| is_expr_or_macro(self.st.kind(a))) {
                             self.walk_expr(arg);
                         }
                     }
                 }
             }
-            K::MacroCall => {
-                if let Some(p) = self.st.child(expr, K::Path) {
-                    self.resolve_cst_path(p, PathCtx::MacroCall);
-                }
-            }
+            K::MacroCall => self.walk_macro_call_node(expr, true),
             _ => {
                 for ch in self.st.children(expr) {
-                    if self.st.kind(ch).is_expr() {
+                    if is_expr_or_macro(self.st.kind(ch)) {
                         self.walk_expr(ch);
                     }
                 }
@@ -262,10 +268,10 @@ impl<'a, 's> FileResolver<'a, 's> {
                         }
                     }
                 }
-                if let Some(en) = self.st.children(ch).find(|&c| self.st.kind(c).is_expr()) {
+                if let Some(en) = self.st.children(ch).find(|&c| is_expr_or_macro(self.st.kind(c))) {
                     self.walk_expr(en);
                 }
-            } else if self.st.kind(ch).is_expr() {
+            } else if is_expr_or_macro(self.st.kind(ch)) {
                 self.walk_expr(ch);
             }
         }

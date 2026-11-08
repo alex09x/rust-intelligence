@@ -158,10 +158,20 @@ impl<'a, 's> FileResolver<'a, 's> {
         }
         while let Some((ti, tok)) = next_sig(toks, idx) {
             match tok.kind {
-                T::Semi | T::Star => return,
+                T::Semi => return,
+                T::Star => {
+                    if plen > 0 {
+                        self.resolve_raw_path(NodeId(u32::MAX), leading_colon2, &prefix[..plen], PathCtx::Type);
+                    }
+                    return;
+                }
                 T::LBrace => {
                     if let Some(close_b) = find_matching_delim(toks, ti) {
                         let inner = &toks[ti + 1..close_b];
+                        if next_sig(inner, 0).is_none() && plen > 0 {
+                            self.resolve_raw_path(NodeId(u32::MAX), leading_colon2, &prefix[..plen], PathCtx::Type);
+                            return;
+                        }
                         let (saved_len, saved_c2) = (plen, leading_colon2);
                         let (mut start, mut depth) = (0usize, 0u32);
                         for (off, bt) in inner.iter().enumerate() {
@@ -186,7 +196,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                         let last_idx = plen - 1;
                         let saved = prefix[last_idx];
                         prefix[last_idx] = RawSeg { start: tok.start, end: tok.end, ..saved };
-                        self.resolve_raw_path(NodeId(u32::MAX), leading_colon2, &prefix[..plen], PathCtx::UseTree);
+                        self.resolve_raw_path(NodeId(u32::MAX), leading_colon2, &prefix[..plen], PathCtx::Type);
                         prefix[last_idx] = saved;
                         return;
                     }

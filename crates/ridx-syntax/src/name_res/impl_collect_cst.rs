@@ -117,9 +117,9 @@ impl LocalImplArena {
     ) {
         for ch in st.children(item_list) {
             let kind = match st.kind(ch) {
-                K::Fn => ItemKind::Fn,
-                K::Const => ItemKind::Const,
-                K::TypeAlias => ItemKind::TypeAlias,
+                K::Fn => ItemKind::AssocFn,
+                K::Const => ItemKind::AssocConst,
+                K::TypeAlias => ItemKind::AssocTy,
                 K::MacroCall if mbe_depth < MAX_MBE_DEPTH => {
                     if let Some(exp) = expand_assoc_macro(st, ch, mod_tree, mod_id, db, krate, macro_defs, macro_env) {
                         let exp_st = parse(&exp);
@@ -154,7 +154,7 @@ impl LocalImplArena {
             }
             let (raw_vis, in_path) = extract_visibility(st, ch);
             let (vis, vis_mod) = if owner_trait.is_some() || is_trait_impl { (VisKind::Public, ModuleId::NONE) } else { compute_vis_mod(mod_tree, mod_id, raw_vis, in_path) };
-            let has_self_receiver = kind == ItemKind::Fn && st.child(ch, K::ParamList).is_some_and(|pl| st.child(pl, K::SelfParam).is_some());
+            let has_self_receiver = kind == ItemKind::AssocFn && st.child(ch, K::ParamList).is_some_and(|pl| st.child(pl, K::SelfParam).is_some());
             let (name_start, name_end) = self.push_str(name);
             let nr = st.range(nn);
             self.assoc_items.push(LocalAssocItem {

@@ -11,18 +11,22 @@
 //! Lazy builder (`RibStack::push_block_rib`) for inner item & `use` symbol tables inside block expressions.
 
 use super::attr::eval_outer_attrs;
-use super::body_ribs::{norm_byte_span, BlockItemRib, RibStack};
+use super::body_ribs::{norm_byte_span, BlockAssocEntry, BlockItemRib, RibStack};
+use super::body_walk::FileResolver;
 use super::db::{FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, NsMask, VisKind};
+use super::db_impls::ImplTargetKey;
 use super::def_collect_items::{parse_enum_variants, struct_has_value_ctor};
 use super::def_map::{extern_crate_binding, CrateDefMap};
 use super::def_path::{apply_glob_to_entries, resolve_segments};
 use super::ext_scope::ExtScopeCache;
 use super::ident_key::IdentKey;
 use super::mod_tree::ModuleTree;
-use super::per_ns::{BindingOrigin, LocalItemId, PerNs, ResolvedBinding};
+use super::per_ns::{BindingOrigin, LocalItemId, PerNs, PrimTy, ResolvedBinding};
+use super::type_head_eval::path_has_leading_colon2;
 use super::use_tree::{FlatUse, FlatUseKind, PathAnchor, UseArena};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
+use crate::token::TokenKind as T;
 use crate::tree::{NodeId, SyntaxTree};
 
 impl RibStack {
@@ -42,6 +46,7 @@ impl RibStack {
         rib.clear();
         let mut use_arena = std::mem::take(&mut self.use_arena_scratch);
         use_arena.clear();
+        let mut block_aliases: Vec<(GlobalDefId, NodeId)> = Vec::new();
         for ch in st.children(container) {
             let ck = st.kind(ch);
             match ck {
@@ -72,6 +77,11 @@ impl RibStack {
                     let mut def = db.def_at_byte_span(map.krate, file, ns, ne);
                     if !def.is_some() {
                         def = self.alloc_synthetic_def();
+                    }
+                    if ck == K::TypeAlias {
+                        if let Some(ty_node) = st.children(ch).find(|&c| st.kind(c).is_type()) {
+                            block_aliases.push((def, ty_node));
+                        }
                     }
                     let has_ctor = ck == K::Struct && struct_has_value_ctor(st, ch);
                     let b = private_block_binding(def, module, kind);
@@ -138,9 +148,116 @@ impl RibStack {
                 _ => {}
             }
         }
+        resolve_block_aliases(&mut rib, &block_aliases, map, db, mod_tree, ext_cache, module, st);
         use_arena.clear();
         self.use_arena_scratch = use_arena;
         self.block_ribs.push(rib);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resolve_block_aliases(
+    rib: &mut BlockItemRib,
+    aliases: &[(GlobalDefId, NodeId)],
+    map: &CrateDefMap,
+    db: &dyn ItemDb,
+    mod_tree: &ModuleTree,
+    ext_cache: &mut ExtScopeCache,
+    module: ModuleId,
+    st: &SyntaxTree<'_>,
+) {
+    if aliases.is_empty() {
+        return;
+    }
+    for _ in 0..4 {
+        let mut changed = false;
+        for &(alias_def, ty_node) in aliases {
+            if rib.alias_targets.iter().any(|&(d, _)| d == alias_def) {
+                continue;
+            }
+            let target = eval_block_type_target(rib, map, db, mod_tree, ext_cache, module, st, ty_node);
+            if target != ImplTargetKey::Unknown {
+                rib.alias_targets.push((alias_def, target));
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn eval_block_type_target(
+    rib: &BlockItemRib,
+    map: &CrateDefMap,
+    db: &dyn ItemDb,
+    mod_tree: &ModuleTree,
+    ext_cache: &mut ExtScopeCache,
+    module: ModuleId,
+    st: &SyntaxTree<'_>,
+    ty_node: NodeId,
+) -> ImplTargetKey {
+    match st.kind(ty_node) {
+        K::ParenType => st
+            .children(ty_node)
+            .find(|&c| st.kind(c).is_type())
+            .map_or(ImplTargetKey::Unknown, |inner| eval_block_type_target(rib, map, db, mod_tree, ext_cache, module, st, inner)),
+        K::NeverType => ImplTargetKey::Never,
+        K::SliceType => ImplTargetKey::Slice,
+        K::ArrayType => ImplTargetKey::Array,
+        K::TupleType => ImplTargetKey::Tuple(st.children(ty_node).filter(|&c| st.kind(c).is_type()).count().min(u16::MAX as usize) as u16),
+        K::RefType => ImplTargetKey::Ref { is_mut: st.own_tokens(ty_node).any(|(_, t)| t.kind == T::Mut) },
+        K::PtrType => ImplTargetKey::Ptr { is_mut: st.own_tokens(ty_node).any(|(_, t)| t.kind == T::Mut) },
+        K::PathType => {
+            let Some(p) = st.child(ty_node, K::Path) else {
+                return ImplTargetKey::Unknown;
+            };
+            let leading = path_has_leading_colon2(st, p);
+            let mut anchor = if leading { PathAnchor::ExternRoot } else { PathAnchor::Bare };
+            let mut super_cnt = 0u16;
+            let mut segs: [&str; 16] = [""; 16];
+            let mut len = 0usize;
+            for (idx, seg) in st.children(p).filter(|&c| st.kind(c) == K::PathSegment).enumerate() {
+                let Some((_, tok)) = st.own_tokens(seg).next() else {
+                    return ImplTargetKey::Unknown;
+                };
+                if tok.kind == T::Lt || len >= 16 {
+                    return ImplTargetKey::Unknown;
+                }
+                match tok.kind {
+                    T::Crate if idx == 0 && !leading => anchor = PathAnchor::CrateRoot,
+                    T::SelfKw if idx == 0 && !leading => anchor = PathAnchor::SelfMod,
+                    T::Super if !leading && (idx == 0 || matches!(anchor, PathAnchor::Super(_))) => {
+                        super_cnt += 1;
+                        anchor = PathAnchor::Super(super_cnt);
+                    }
+                    _ => {
+                        segs[len] = norm_ident(tok.text(st.src));
+                        len += 1;
+                    }
+                }
+            }
+            let tb = if anchor == PathAnchor::Bare && len == 1 {
+                rib.entries.get(segs[0]).and_then(|pns| pns.types).or_else(|| resolve_segments(map, db, mod_tree, ext_cache, module, anchor, &segs[..1], false).types)
+            } else {
+                resolve_segments(map, db, mod_tree, ext_cache, module, anchor, &segs[..len], false).types
+            };
+            let Some(tb) = tb else {
+                return ImplTargetKey::Unknown;
+            };
+            if tb.prim_ty != 0 {
+                return PrimTy::from_code(tb.prim_ty).map_or(ImplTargetKey::Unknown, ImplTargetKey::Prim);
+            }
+            match tb.kind {
+                ItemKind::Struct | ItemKind::Enum | ItemKind::Union if tb.def.is_some() => ImplTargetKey::Adt(tb.def),
+                ItemKind::TypeAlias if tb.def.is_some() => {
+                    rib.alias_targets.iter().find(|&&(d, _)| d == tb.def).map(|&(_, t)| t).or_else(|| map.resolve_alias_target(db, tb.def)).unwrap_or(ImplTargetKey::Unknown)
+                }
+                _ => ImplTargetKey::Unknown,
+            }
+        }
+        _ => ImplTargetKey::Unknown,
     }
 }
 
@@ -187,4 +304,36 @@ fn resolve_block_flat_use(map: &CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleT
     }
     let vec_segs: Vec<&str> = spans.iter().map(|&sp| arena.str_span(sp)).collect();
     resolve_segments(map, db, mod_tree, ext_cache, u.module, u.anchor, &vec_segs, true)
+}
+
+impl FileResolver<'_, '_> {
+    pub(super) fn register_block_impl_assocs(&mut self, il: NodeId, target: ImplTargetKey, trait_def: GlobalDefId) {
+        if self.ribs.block_ribs.is_empty() {
+            return;
+        }
+        let mut entries = Vec::new();
+        for ch in self.st.children(il) {
+            if !self.node_cfg_enabled(ch) {
+                continue;
+            }
+            let kind = match self.st.kind(ch) {
+                K::Fn => ItemKind::AssocFn,
+                K::Const => ItemKind::AssocConst,
+                K::TypeAlias => ItemKind::AssocTy,
+                _ => continue,
+            };
+            let Some(nn) = self.st.child(ch, K::Name) else {
+                continue;
+            };
+            let (ns, ne) = norm_byte_span(self.st.src, self.st.range(nn));
+            let mut def = self.db.def_at_byte_span(self.map.krate, self.file, ns, ne);
+            if !def.is_some() {
+                def = self.ribs.alloc_synthetic_def();
+            }
+            entries.push(BlockAssocEntry { target, trait_def, name_start: ns, name_end: ne, def, kind });
+        }
+        if let Some(rib) = self.ribs.block_ribs.last_mut() {
+            rib.assocs.extend(entries);
+        }
+    }
 }

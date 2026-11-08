@@ -132,7 +132,9 @@ impl<'a, 's> FileResolver<'a, 's> {
         }
         match tb.kind {
             ItemKind::Struct | ItemKind::Enum | ItemKind::Union if tb.def.is_some() => ImplTargetKey::Adt(tb.def),
-            ItemKind::TypeAlias if tb.def.is_some() => self.map.resolve_alias_target(self.db, tb.def).unwrap_or(ImplTargetKey::Unknown),
+            ItemKind::TypeAlias if tb.def.is_some() => {
+                self.ribs.lookup_block_alias_target(tb.def).or_else(|| self.map.resolve_alias_target(self.db, tb.def)).unwrap_or(ImplTargetKey::Unknown)
+            }
             _ => ImplTargetKey::Unknown,
         }
     }
@@ -196,15 +198,18 @@ impl<'a, 's> FileResolver<'a, 's> {
         match tb.kind {
             ItemKind::Mod if tb.def.is_some() => Some(StepState::ExtMod(tb.def)),
             ItemKind::Enum if tb.local.is_some() => Some(StepState::LocalEnum(tb.local, tb.def)),
-            ItemKind::Enum if tb.def.is_overlay() => Some(StepState::BlockEnum(tb.def)),
+            ItemKind::Enum if self.ribs.has_block_enum(tb.def) => Some(StepState::BlockEnum(tb.def)),
             ItemKind::Enum if tb.def.is_some() => Some(StepState::ExtEnum(tb.def)),
             ItemKind::Struct | ItemKind::Union if tb.def.is_some() => Some(StepState::TypeTarget(ImplTargetKey::Adt(tb.def))),
             ItemKind::Trait if tb.def.is_some() => Some(StepState::TraitTarget(tb.def)),
             ItemKind::TypeAlias if tb.def.is_some() => {
-                let target = self.map.resolve_alias_target(self.db, tb.def)?;
+                let target = self.ribs.lookup_block_alias_target(tb.def).or_else(|| self.map.resolve_alias_target(self.db, tb.def))?;
                 if let ImplTargetKey::Adt(adt_def) = target {
                     if let Some(lid) = self.find_local_enum_by_def(adt_def) {
                         return Some(StepState::LocalEnum(lid, adt_def));
+                    }
+                    if self.ribs.has_block_enum(adt_def) {
+                        return Some(StepState::BlockEnum(adt_def));
                     }
                     if self.db.def_kind(adt_def) == Some(ItemKind::Enum) {
                         return Some(StepState::ExtEnum(adt_def));
@@ -247,7 +252,7 @@ impl<'a, 's> FileResolver<'a, 's> {
         if let Some((bdef, bkind)) = self.ribs.lookup_block_assoc(self.st.src, target, GlobalDefId::NONE, seg, ns) {
             return Some((ResTarget::Def { def: bdef, local: LocalItemId::NONE, kind: bkind }, GlobalDefId::NONE));
         }
-        if let Some(inh) = self.map.resolve_inherent_assoc(self.db, self.mod_tree, self.cur_mod, target, seg, ns) {
+        if let Some(inh) = self.map.resolve_inherent_assoc_cached(self.db, self.ext_cache, self.mod_tree, self.cur_mod, target, seg, ns) {
             return Some((ResTarget::Def { def: inh.def, local: LocalItemId::NONE, kind: inh.kind }, GlobalDefId::NONE));
         }
         let extra = if self.ribs.block_ribs.is_empty() {
@@ -256,7 +261,7 @@ impl<'a, 's> FileResolver<'a, 's> {
             self.ribs.refresh_unnamed_traits_scratch();
             &self.ribs.extra_traits_scratch[..]
         };
-        if let Some((tdef, tr_assoc)) = self.map.resolve_in_scope_trait_assoc(self.db, self.mod_tree, self.cur_mod, extra, target, seg, ns) {
+        if let Some((tdef, tr_assoc)) = self.map.resolve_in_scope_trait_assoc_cached(self.db, self.ext_cache, self.mod_tree, self.cur_mod, extra, target, seg, ns) {
             return Some((ResTarget::Def { def: tr_assoc.def, local: LocalItemId::NONE, kind: tr_assoc.kind }, tdef));
         }
         None

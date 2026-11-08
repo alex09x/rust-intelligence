@@ -99,6 +99,15 @@ pub(super) struct LocalTypeAlias {
     pub raw_head: RawSelfHead,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct RawTraitSuper {
+    pub trait_item: LocalItemId,
+    pub module: ModuleId,
+    pub anchor: PathAnchor,
+    pub seg_start: u32,
+    pub seg_len: u16,
+}
+
 /// Contiguous arena of locally parsed `impl` blocks, `trait` associated items, and `type` aliases.
 #[derive(Clone, Debug, Default)]
 pub struct LocalImplArena {
@@ -109,6 +118,8 @@ pub struct LocalImplArena {
     pub assoc_items: Vec<LocalAssocItem>,
     /// `(trait_local_id, assoc_start, assoc_len)` for locally scanned `trait` definitions.
     pub(super) trait_assocs: Vec<(LocalItemId, u32, u16)>,
+    pub(super) raw_trait_supers: Vec<RawTraitSuper>,
+    pub(super) local_trait_supers: Vec<(LocalItemId, GlobalDefId)>,
     pub(super) type_aliases: Vec<LocalTypeAlias>,
 }
 

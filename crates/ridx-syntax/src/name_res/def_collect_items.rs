@@ -14,7 +14,7 @@ use super::attr::{eval_attr_bracket_tokens, eval_outer_attrs, extract_visibility
 use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, VisKind};
 use super::db_impls::LocalImplId;
 use super::def_collect::{Collector, LocalItemData, MacroScopeVec};
-use super::impl_collect::LocalTypeAlias;
+use super::impl_collect::{LocalTypeAlias, RawTraitSuper};
 use super::mbe_parse::MacroRulesDef;
 use super::mod_macro_scope::has_scope_item_kw;
 use super::per_ns::{compute_vis_mod, LocalItemId};
@@ -42,13 +42,38 @@ impl<'a> Collector<'a> {
         let has_value_ctor = kind == ItemKind::Struct && struct_has_value_ctor(st, node);
         let index_def = self.find_idx_def(name, kind);
         let nr = st.range(name_node);
-        self.push_item(mod_id, file, LocalItemId::NONE, index_def, name, kind, vis, vis_mod, has_value_ctor, false, nr.start as u32, nr.end as u32)
+        let lid = self.push_item(mod_id, file, LocalItemId::NONE, index_def, name, kind, vis, vis_mod, has_value_ctor, false, nr.start as u32, nr.end as u32);
+        if kind == ItemKind::Fn && vis == VisKind::Public {
+            let pm_name = attrs.proc_macro_derive_name.or(attrs.is_proc_macro_fn.then_some(name));
+            if let Some(mname) = pm_name.filter(|s| !s.is_empty()) {
+                let m_idx = self.find_idx_def(mname, ItemKind::Macro);
+                self.push_item(mod_id, file, LocalItemId::NONE, m_idx, mname, ItemKind::Macro, VisKind::Public, ModuleId::NONE, false, true, nr.start as u32, nr.end as u32);
+            }
+        }
+        lid
     }
 
     pub(super) fn collect_trait_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId, macro_env: &MacroScopeVec) {
         let lid = self.collect_named_item(mod_id, file, st, node, ItemKind::Trait);
-        if !lid.is_some() || !self.should_scan_impls(file) {
+        if !lid.is_some() {
             return;
+        }
+        let idx_def = self.out.items[lid.0 as usize].index_def;
+        if !self.should_scan_impls(file) && idx_def.is_some() {
+            return;
+        }
+        for tbl in st.children(node).filter(|&c| st.kind(c) == K::TypeBoundList) {
+            for tb in st.children(tbl).filter(|&c| st.kind(c) == K::TypeBound) {
+                if st.own_tokens(tb).any(|(_, t)| t.kind == T::Question) {
+                    continue;
+                }
+                if let Some(p) = st.child(tb, K::Path) {
+                    let (anchor, seg_start, seg_len) = self.out.local_impls.push_cst_path(st, p);
+                    if seg_len > 0 {
+                        self.out.local_impls.raw_trait_supers.push(RawTraitSuper { trait_item: lid, module: mod_id, anchor, seg_start, seg_len });
+                    }
+                }
+            }
         }
         let a_start = self.out.local_impls.assoc_items.len() as u32;
         if let Some(il) = st.child(node, K::ItemList) {
@@ -60,7 +85,11 @@ impl<'a> Collector<'a> {
 
     pub(super) fn collect_type_alias_item(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, node: NodeId) {
         let lid = self.collect_named_item(mod_id, file, st, node, ItemKind::TypeAlias);
-        if !lid.is_some() || !self.should_scan_impls(file) {
+        if !lid.is_some() {
+            return;
+        }
+        let idx_def = self.out.items[lid.0 as usize].index_def;
+        if !self.should_scan_impls(file) && idx_def.is_some() && self.db.type_alias_target(idx_def).is_some() {
             return;
         }
         if let Some(ty_node) = st.children(node).find(|&c| st.kind(c).is_type()) {

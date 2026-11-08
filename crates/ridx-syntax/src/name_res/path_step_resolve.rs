@@ -39,6 +39,23 @@ impl<'a, 's> FileResolver<'a, 's> {
     pub(super) fn resolve_remaining_segments(&mut self, path_node: NodeId, mut cur: StepState, rest: &[RawSeg<'_>], ctx: PathCtx) -> Option<ResTarget> {
         for (idx, &seg) in rest.iter().enumerate() {
             let is_last = idx + 1 == rest.len();
+            if is_last && ctx == PathCtx::UseTree {
+                let opt_pns = match cur {
+                    StepState::LocalMod(m) => Some(self.map.scopes[m.0 as usize].get(seg.name).filter_visible(self.mod_tree, self.cur_mod)),
+                    StepState::ExtMod(mdef) => Some(self.ext_cache.module_scope(self.db, mdef).get(seg.name)),
+                    StepState::LocalEnum(elid, _) => Some(self.lookup_local_enum_variant(elid, seg.name)),
+                    StepState::ExtEnum(edef) => Some(self.ext_cache.enum_scope(self.db, edef).get(seg.name)),
+                    StepState::BlockEnum(edef) => Some(self.ribs.lookup_block_enum_variant(edef, seg.name)),
+                    _ => None,
+                };
+                if let Some(pns) = opt_pns {
+                    if !pns.is_empty() {
+                        let owner_tr = pns.types.filter(|b| b.kind == ItemKind::Trait).map_or(GlobalDefId::NONE, |b| b.def);
+                        self.walk_segment_args(seg.seg_node, owner_tr);
+                        return self.emit_use_leaf_pns(seg.start, seg.end, path_node, pns);
+                    }
+                }
+            }
             let ns = if is_last { ctx_ns(ctx) } else { NsMask::TYPE };
             let (rt, next_state, owner_tr) = self.step_one_segment(cur, seg.name, ns, is_last, ctx)?;
             self.walk_segment_args(seg.seg_node, owner_tr);
@@ -98,7 +115,9 @@ impl<'a, 's> FileResolver<'a, 's> {
                     .ribs
                     .lookup_block_assoc(self.st.src, ImplTargetKey::Unknown, tdef, seg, ns)
                     .map(|(d, k)| ResTarget::Def { def: d, local: LocalItemId::NONE, kind: k })
-                    .or_else(|| self.map.resolve_trait_assoc(self.db, tdef, seg, ns).map(|a| ResTarget::Def { def: a.def, local: LocalItemId::NONE, kind: a.kind }))?;
+                    .or_else(|| {
+                        self.map.resolve_trait_assoc_cached(self.db, self.ext_cache, tdef, seg, ns).map(|a| ResTarget::Def { def: a.def, local: LocalItemId::NONE, kind: a.kind })
+                    })?;
                 let nst = if is_last { None } else { self.res_target_to_step_state(rt) };
                 Some((rt, nst, GlobalDefId::NONE))
             }
@@ -148,7 +167,7 @@ impl<'a, 's> FileResolver<'a, 's> {
             }
         }
         if trait_def.is_some() {
-            if let Some(a) = self.map.resolve_trait_impl_assoc(self.db, target, trait_def, seg, ns) {
+            if let Some(a) = self.map.resolve_trait_impl_assoc_cached(self.db, self.ext_cache, target, trait_def, seg, ns) {
                 return Some((ResTarget::Def { def: a.def, local: LocalItemId::NONE, kind: a.kind }, trait_def));
             }
         }
@@ -165,7 +184,7 @@ impl<'a, 's> FileResolver<'a, 's> {
             }
         }
         for &tdef in &bound_traits[..b_len] {
-            if let Some(a) = self.map.resolve_trait_assoc(self.db, tdef, seg, ns) {
+            if let Some(a) = self.map.resolve_trait_assoc_cached(self.db, self.ext_cache, tdef, seg, ns) {
                 return Some((ResTarget::Def { def: a.def, local: LocalItemId::NONE, kind: a.kind }, tdef));
             }
         }
@@ -176,7 +195,7 @@ impl<'a, 's> FileResolver<'a, 's> {
             &self.ribs.extra_traits_scratch[..]
         };
         self.map
-            .resolve_in_scope_trait_assoc(self.db, self.mod_tree, self.cur_mod, extra, ImplTargetKey::Param, seg, ns)
+            .resolve_in_scope_trait_assoc_cached(self.db, self.ext_cache, self.mod_tree, self.cur_mod, extra, ImplTargetKey::Param, seg, ns)
             .map(|(tdef, a)| (ResTarget::Def { def: a.def, local: LocalItemId::NONE, kind: a.kind }, tdef))
     }
 

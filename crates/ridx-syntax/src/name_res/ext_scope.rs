@@ -40,6 +40,7 @@ pub struct ExtScopeCache {
     mod_scopes: HashMap<GlobalDefId, ExtModuleScope>,
     enum_scopes: HashMap<GlobalDefId, ExtModuleScope>,
     in_progress: Vec<GlobalDefId>,
+    pub(super) assoc: super::assoc_cache::AssocScopeCache,
 }
 
 impl ExtScopeCache {
@@ -197,7 +198,7 @@ fn build_primitive_scope() -> ExtModuleScope {
     ExtModuleScope { entries }
 }
 
-fn indexed_use_to_per_ns(db: &dyn ItemDb, u: &super::db::IndexedUse<'_>) -> PerNs {
+pub(super) fn indexed_use_to_per_ns(db: &dyn ItemDb, u: &super::db::IndexedUse<'_>) -> PerNs {
     let types = if u.prim_ty_code != 0 {
         PrimTy::from_code(u.prim_ty_code).map(|p| ResolvedBinding::primitive(p, u.vis, ModuleId::NONE, BindingOrigin::Explicit))
     } else if u.type_def.is_some() {

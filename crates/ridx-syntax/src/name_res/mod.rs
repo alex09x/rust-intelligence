@@ -26,6 +26,8 @@
 //! - [`mem_db`]: fast in-memory [`MemSourceDb`] and [`MemItemDb`] implementations.
 
 mod adt_tok_walk;
+mod assoc_cache;
+mod assoc_resolve;
 pub mod attr;
 mod block_rib_build;
 mod body_ribs;
@@ -49,6 +51,7 @@ pub mod ident_key;
 pub mod impl_collect;
 mod impl_collect_cst;
 mod impl_resolve;
+mod macro_tt_walk;
 pub mod mbe_expand;
 pub mod mbe_parse;
 pub mod mem_db;
@@ -60,6 +63,7 @@ mod path_ctx_resolve;
 pub mod path_res;
 mod path_step_resolve;
 pub mod per_ns;
+mod tok_delim;
 mod tok_slice_scan;
 mod type_head_eval;
 mod use_lower;
