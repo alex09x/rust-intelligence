@@ -239,8 +239,17 @@ impl FileNameRes {
         }
     }
 
+    /// Returns `true` if any inner `impl Trait`, block `use Trait`, or inline `mod` begins or ends inside `(start..end)`.
+    #[inline]
+    pub fn has_inner_trait_scopes(&self, start: NodeId, end: u32) -> bool {
+        let s0 = start.0;
+        self.block_trait_imports.iter().any(|&(s, e, _)| (s.0 > s0 && s.0 < end) || (e.0 > s0 && e.0 < end))
+            || self.self_trait_scopes.iter().any(|&(s, e, _)| (s.0 > s0 && s.0 < end) || (e.0 > s0 && e.0 < end))
+            || self.mod_trait_scopes.iter().any(|(s, e, _, _)| (s.0 > s0 && s.0 < end) || (e.0 > s0 && e.0 < end))
+    }
+
     pub(super) fn finalize(&mut self) {
-        self.refs.sort_unstable_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
+        self.refs.sort_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
         self.refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.target == b.target);
     }
 

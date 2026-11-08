@@ -83,7 +83,7 @@ impl LocalCstDefs {
             }
             return Some((v.enum_generics, v.shape, table.arena.mk_adt(v.enum_def, params.as_slice())));
         }
-        let item = self.items.iter().find(|i| i.def == def)?;
+        let item = self.find_item_by_def(def)?;
         match item.kind {
             ItemKind::Struct | ItemKind::Enum | ItemKind::Union => {
                 let mut params = InlineTyBuf::new();
@@ -102,6 +102,49 @@ impl LocalCstDefs {
             }
             _ => None,
         }
+    }
+
+    pub fn lower_type_alias(
+        &self,
+        def: GlobalDefId,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        table: &mut InferenceTable,
+        depth: u8,
+    ) -> Option<(u16, InferTyId)> {
+        if depth > 16 {
+            return None;
+        }
+        let item = self.find_item_by_def(def).filter(|i| i.kind == ItemKind::TypeAlias)?;
+        let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false };
+        Some((item.generic_count, env.lower_cst_ty_rec(table, ty_node, depth + 1)))
+    }
+
+    pub fn const_or_static_ty(&self, def: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, table: &mut InferenceTable) -> Option<InferTyId> {
+        let item = self.find_item_by_def(def).filter(|i| matches!(i.kind, ItemKind::Const | ItemKind::Static))?;
+        let self_ty = item.impl_node.map(|im| self.lower_impl_self_ty(im, st, file_res, db, table).1);
+        let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: 0, item_owner: Some(item.node), in_body: false };
+        Some(env.lower_cst_ty(table, ty_node))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn param_fn_bound(
+        &self,
+        owner_def: GlobalDefId,
+        param_idx: u16,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        table: &mut InferenceTable,
+        inputs_out: &mut Vec<InferTyId>,
+    ) -> Option<(TyLangItem, InferTyId)> {
+        let item = self.find_item_by_def(owner_def)?;
+        let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
+        extract_cst_fn_bound(st, file_res, db, item.node, impl_gc, param_idx, &env, table, inputs_out)
     }
 
     pub fn ctor_tuple_fields(
@@ -189,7 +232,7 @@ impl LocalCstDefs {
         if let Some(v) = self.variants.iter().find(|v| v.def == def && v.shape == expected) {
             return Some((v.enum_node, v.enum_generics, &st.tokens[v.tok_start as usize..v.tok_end as usize]));
         }
-        let item = self.items.iter().find(|i| i.def == def && i.shape == expected)?;
+        let item = self.find_item_by_def(def).filter(|i| i.shape == expected)?;
         let tt = st.child(item.node, K::TokenTree)?;
         let toks = st.tokens_of(tt);
         let (open, close) = (next_sig_idx(toks, 0)?, rfind_sig_idx(toks)?);
@@ -276,7 +319,7 @@ fn scan_bound_list_for_fn(
         }
         let tail = st.children(p).filter(|&c| st.kind(c) == K::PathSegment).last()?;
         let mut args = InlineTyBuf::new();
-        env.collect_segment_args(table, tail, &mut args, 0);
+        env.collect_segment_args(table, tail, true, &mut args, 0);
         if args.as_slice().len() >= 2 {
             let tup = args.as_slice()[0];
             let ret = args.as_slice()[1];

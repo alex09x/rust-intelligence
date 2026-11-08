@@ -230,6 +230,7 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                 });
             }
         }
-        self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, GlobalDefId::NONE, as_dyn, as_opaque, depth)
+        let aname = crate::sema_fn::norm_ident(id_tok.text(self.st.src));
+        self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, GlobalDefId::NONE, aname, as_dyn, as_opaque, depth)
     }
 }

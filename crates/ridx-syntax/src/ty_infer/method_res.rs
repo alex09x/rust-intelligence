@@ -12,14 +12,14 @@
 //! autoderef + `xform_self_ty` autoref order, inherent -> concrete trait -> blanket trait precedence,
 //! method turbofish (`::<...>`), `Fn*` closure bound propagation, and `.method()` `dot_refs`.
 
-use super::autoderef::{build_autoderef_steps, impl_target_key_of_ty, normalize_ty, MAX_AUTODEREF_STEPS};
+use super::autoderef::{build_autoderef_steps_with_owner, impl_target_key_of_ty, MAX_AUTODEREF_STEPS};
 use super::body_ctx::{ResolvedDotRef, Runner};
 use super::db::MethodCand;
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
-use crate::name_res::{GlobalDefId, ImplTargetKey, ItemKind};
+use crate::name_res::{CrateId, GlobalDefId, ImplTargetKey, ItemKind};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::NodeId;
@@ -61,7 +61,8 @@ impl<'a, 's> Runner<'a, 's> {
         let name_range = self.st.range(name_node);
 
         let mut steps = [InferTyId::UNKNOWN; MAX_AUTODEREF_STEPS];
-        let step_len = build_autoderef_steps(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, recv_ty, &mut steps);
+        let owner = self.norm_owner();
+        let step_len = build_autoderef_steps_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, recv_ty, &mut steps);
         if step_len == 1 && matches!(self.ctx.table.arena.kind(steps[0]), InferTyKind::Unknown | InferTyKind::Infer(_)) {
             self.infer_untyped_args(args);
             return InferTyId::UNKNOWN;
@@ -84,10 +85,17 @@ impl<'a, 's> Runner<'a, 's> {
             self.out.dot_refs.push(ResolvedDotRef { start: name_range.start as u32, end: name_range.end as u32, def: matched.cand.method_def, kind: ItemKind::AssocFn });
         }
 
-        let norm_ret = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, matched.inst_ret);
-        self.pre_unify_call_return(norm_ret, expectation);
+        if !matches!(expectation, super::Expectation::None) {
+            let pre_ret = self.norm(matched.inst_ret);
+            self.pre_unify_call_return(pre_ret, expectation);
+        }
         self.check_call_args_with_bounds(matched.cand.bound_owner_def, &matched.raw_params.as_slice()[1..], matched.subst.as_slice(), args);
-        normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, norm_ret)
+        let t_end = (1 + matched.cand.fixed_trait_args.len as usize).min(matched.subst.as_slice().len());
+        if matched.cand.trait_def.is_some() && matched.cand.has_fixed_trait_subst && t_end > 1 {
+            let _ = self.solve_obligation(matched.cand.trait_def, matched.subst.as_slice()[0], &matched.subst.as_slice()[1..t_end], false, 0);
+        }
+        self.solve_call_obligations(matched.cand.bound_owner_def, matched.cand.cst_fn_node, matched.subst.as_slice());
+        self.norm(matched.inst_ret)
     }
 
     fn collect_gal_turbofish(&mut self, gal: NodeId, out: &mut InlineTyBuf) {
@@ -158,16 +166,7 @@ impl<'a, 's> Runner<'a, 's> {
             self.local_defs.inherent_method_cands(h, method_name, self.st, self.file_res, self.db, &mut self.ctx.table, cands);
             let before = cands.len();
             self.db.inherent_method_cands(h, method_name, &mut self.ctx.table.arena, cands);
-            // Deduplicate if both dirty local CST and clean `.ridx` emitted the same `method_def`.
-            let mut w = before;
-            for r in before..cands.len() {
-                let md = cands[r].method_def;
-                if !cands[..before].iter().any(|c| c.method_def == md) {
-                    cands[w] = cands[r];
-                    w += 1;
-                }
-            }
-            cands.truncate(w);
+            super::local_defs::LocalCstDefs::dedup_inherent_cands(before, cands);
         }
         cands.len()
     }
@@ -187,28 +186,47 @@ impl<'a, 's> Runner<'a, 's> {
                     }
                 }
                 InferTyKind::Param { idx, def } => {
-                    self.collect_param_bounds(idx, def, scope_traits);
-                    for &btr in scope_traits.iter() {
+                    let mut p_bounds = core::mem::take(&mut self.ctx.param_bounds_buf);
+                    self.collect_param_bounds(idx, def, &mut p_bounds);
+                    for &btr in p_bounds.iter() {
                         if let Some(c) = self.local_defs.trait_decl_method_cand(btr, &[], st_ty, method_name, self.st, self.file_res, self.db, &mut self.ctx.table) {
                             cands.push(c);
                         }
                     }
-                    scope_traits.clear();
+                    self.ctx.param_bounds_buf = p_bounds;
                 }
                 _ => {}
             }
         }
 
-        // 2. Traits in lexical / prelude / enclosing-impl scope + transitive supertraits.
-        self.file_res.collect_traits_in_scope_at(expr, scope_traits);
-        let mut cursor = 0usize;
-        while cursor < scope_traits.len() && scope_traits.len() < 96 {
-            let tdef = scope_traits[cursor];
-            cursor += 1;
-            self.local_defs.collect_supertraits_into(tdef, self.st, self.file_res, self.db, scope_traits);
-        }
+        // 2. Traits in lexical / prelude / enclosing-impl scope + transitive supertraits (cached per fn when no inner scopes).
+        let use_fn_cache = !self.ctx.fn_has_inner_trait_scopes;
+        let mut fn_cached = if use_fn_cache { core::mem::take(&mut self.ctx.fn_scope_traits_buf) } else { Vec::new() };
+        let active_traits: &mut Vec<GlobalDefId> = if use_fn_cache {
+            if !self.ctx.fn_scope_traits_ready {
+                fn_cached.clear();
+                self.file_res.collect_traits_in_scope_at(expr, &mut fn_cached);
+                let mut cursor = 0usize;
+                while cursor < fn_cached.len() && fn_cached.len() < 96 {
+                    let tdef = fn_cached[cursor];
+                    cursor += 1;
+                    self.local_defs.collect_supertraits_into(tdef, self.st, self.file_res, self.db, &mut fn_cached);
+                }
+                self.ctx.fn_scope_traits_ready = true;
+            }
+            &mut fn_cached
+        } else {
+            self.file_res.collect_traits_in_scope_at(expr, scope_traits);
+            let mut cursor = 0usize;
+            while cursor < scope_traits.len() && scope_traits.len() < 96 {
+                let tdef = scope_traits[cursor];
+                cursor += 1;
+                self.local_defs.collect_supertraits_into(tdef, self.st, self.file_res, self.db, scope_traits);
+            }
+            scope_traits
+        };
 
-        for &tdef in scope_traits.iter() {
+        for &tdef in active_traits.iter() {
             // Fast O(1)-filtered check: skip traits that do not declare `method_name` directly!
             let declares = self.local_defs.trait_decl_method_cand_direct(tdef, &[], InferTyId::UNKNOWN, method_name, self.st, &mut self.ctx.table).is_some()
                 || self.db.trait_decl_method_cand(tdef, &[], InferTyId::UNKNOWN, method_name, &mut self.ctx.table.arena).is_some();
@@ -234,11 +252,16 @@ impl<'a, 's> Runner<'a, 's> {
                 self.push_trait_impl_cands_for(ImplTargetKey::Param, tdef, method_name, ref_sh, cands);
             }
         }
+        if use_fn_cache {
+            self.ctx.fn_scope_traits_buf = fn_cached;
+        }
     }
 
     fn push_trait_impl_cands_for(&mut self, head: ImplTargetKey, tdef: GlobalDefId, method_name: &str, probe_ty: InferTyId, cands: &mut Vec<MethodCand>) {
+        let start = cands.len();
         self.local_defs.trait_impl_method_cands(head, tdef, method_name, probe_ty, self.st, self.file_res, self.db, &mut self.ctx.table, cands);
         self.db.trait_impl_method_cands(head, tdef, method_name, probe_ty, &mut self.ctx.table.arena, &mut self.ctx.table.vars, cands);
+        self.local_defs.collapse_overloaded_trait_cands(start, tdef, method_name, probe_ty, self.st, self.file_res, self.db, &mut self.ctx.table, cands);
     }
 
     fn collect_param_bounds(&self, idx: u16, pdef: GlobalDefId, out: &mut Vec<GlobalDefId>) {
@@ -322,8 +345,8 @@ impl<'a, 's> Runner<'a, 's> {
 
         let snap = self.ctx.table.start_snapshot();
         let mut subst = InlineTyBuf::new();
+        let mut imp_vars = InlineTyBuf::new();
         if cand.has_fixed_trait_subst {
-            let mut imp_vars = InlineTyBuf::new();
             for _ in 0..cand.container_generics {
                 imp_vars.push(self.ctx.table.new_ty_var());
             }
@@ -331,7 +354,13 @@ impl<'a, 's> Runner<'a, 's> {
             subst.push(s_ty);
             for idx in 0..cand.fixed_trait_args.len as usize {
                 let ta = self.ctx.table.arena.slice(cand.fixed_trait_args)[idx];
-                let inst_ta = if cand.container_generics > 0 { self.ctx.table.instantiate(ta, imp_vars.as_slice()) } else { ta };
+                let inst_ta = if ta == InferTyId::NONE {
+                    self.ctx.table.new_ty_var()
+                } else if cand.container_generics > 0 {
+                    self.ctx.table.instantiate(ta, imp_vars.as_slice())
+                } else {
+                    ta
+                };
                 subst.push(inst_ta);
             }
         } else {
@@ -344,14 +373,22 @@ impl<'a, 's> Runner<'a, 's> {
         }
 
         let xform_self = self.ctx.table.instantiate(raw_params.as_slice()[0], subst.as_slice());
-        let norm_xform = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, xform_self);
-        let cgc = (cand.container_generics as usize).min(subst.as_slice().len());
-        if self.ctx.table.equate(norm_xform, rcvr).is_ok()
-            && (!cand.is_blanket_impl || self.db.check_blanket_method_bounds(cand.method_def, &subst.as_slice()[..cgc], &mut self.ctx.table.arena, &mut self.ctx.table.vars))
-        {
-            self.ctx.table.commit(snap);
-            let inst_ret = self.ctx.table.instantiate(raw_ret, subst.as_slice());
-            return Some(MatchedMethod { cand: *cand, subst, raw_params, inst_ret });
+        let norm_xform = self.norm(xform_self);
+        if self.ctx.table.equate(norm_xform, rcvr).is_ok() {
+            let cgc = (cand.container_generics as usize).min(subst.as_slice().len());
+            let impl_subst = if cand.has_fixed_trait_subst { imp_vars.as_slice() } else { &subst.as_slice()[..cgc] };
+            let blanket_ok = if !cand.is_blanket_impl {
+                true
+            } else if cand.impl_owner.krate == CrateId::LOCAL_OVERLAY {
+                self.check_local_cst_impl_bounds(NodeId(cand.impl_owner.index), cand.container_generics, impl_subst)
+            } else {
+                self.db.check_blanket_method_bounds(cand, impl_subst, &mut self.ctx.table.arena, &mut self.ctx.table.vars)
+            };
+            if blanket_ok {
+                self.ctx.table.commit(snap);
+                let inst_ret = self.ctx.table.instantiate(raw_ret, subst.as_slice());
+                return Some(MatchedMethod { cand: *cand, subst, raw_params, inst_ret });
+            }
         }
         self.ctx.table.rollback_to(snap);
         None

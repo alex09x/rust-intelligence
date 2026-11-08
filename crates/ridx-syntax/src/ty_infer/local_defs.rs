@@ -78,6 +78,15 @@ pub struct LocalCstDefs {
     pub(super) variants: Vec<LocalVariantNode>,
     pub(super) impls: Vec<LocalImplNode>,
     pub(super) traits: Vec<LocalTraitNode>,
+    by_def: Vec<(u64, u32)>,
+    by_node: Vec<(u32, u32)>,
+    file_krate: CrateId,
+    clean_indexed: bool,
+}
+
+#[inline]
+fn def_sort_key(def: GlobalDefId) -> u64 {
+    ((def.krate.0 as u64) << 32) | (def.index as u64)
 }
 
 impl LocalCstDefs {
@@ -97,6 +106,24 @@ impl LocalCstDefs {
         self.variants.clear();
         self.impls.clear();
         self.traits.clear();
+        self.by_def.clear();
+        self.by_node.clear();
+        self.file_krate = CrateId::NONE;
+        self.clean_indexed = false;
+    }
+
+    #[inline]
+    pub fn is_clean_indexed(&self) -> bool {
+        self.clean_indexed
+    }
+
+    #[inline]
+    pub(super) fn find_item_by_def(&self, def: GlobalDefId) -> Option<&LocalItemNode> {
+        if !def.is_some() || (self.clean_indexed && !def.is_overlay() && def.krate != self.file_krate) {
+            return None;
+        }
+        let idx = self.by_def.binary_search_by_key(&def_sort_key(def), |&(k, _)| k).ok()?;
+        self.items.get(self.by_def[idx].1 as usize)
     }
 
     /// Indexes all items in `st` into reusable buffers (`0` heap allocations when warm).
@@ -108,7 +135,16 @@ impl LocalCstDefs {
     pub fn index_file_with_item_db(&mut self, st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) {
         self.clear();
         let clean_db = item_db.is_some() && def_map.is_some_and(|dm| !dm.is_dirty_file(file));
+        self.file_krate = def_map.map_or(CrateId::NONE, |dm| dm.krate);
+        self.clean_indexed = clean_db;
         self.scan_container(st, st.root(), None, def_map, item_db, file, clean_db);
+        for (idx, it) in self.items.iter().enumerate() {
+            let i32_idx = idx as u32;
+            self.by_def.push((def_sort_key(it.def), i32_idx));
+            self.by_node.push((it.node.0, i32_idx));
+        }
+        self.by_def.sort_unstable_by_key(|&(k, _)| k);
+        self.by_node.sort_unstable_by_key(|&(n, _)| n);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -209,12 +245,20 @@ impl LocalCstDefs {
 
     #[inline]
     pub fn adt_generic_count(&self, def: GlobalDefId) -> Option<u16> {
-        self.items.iter().find(|i| i.def == def).map(|i| i.generic_count)
+        self.find_item_by_def(def).map(|i| i.generic_count)
     }
 
     #[inline]
     pub fn fn_def_for_node(&self, fn_node: NodeId) -> GlobalDefId {
-        self.items.iter().find(|i| i.node == fn_node).map_or(GlobalDefId::NONE, |i| i.def)
+        let Ok(idx) = self.by_node.binary_search_by_key(&fn_node.0, |&(n, _)| n) else {
+            return GlobalDefId::NONE;
+        };
+        self.items.get(self.by_node[idx].1 as usize).map_or(GlobalDefId::NONE, |i| i.def)
+    }
+
+    #[inline]
+    pub fn fn_node_for_def(&self, def: GlobalDefId) -> u32 {
+        self.find_item_by_def(def).map_or(u32::MAX, |i| i.node.0)
     }
 
     pub fn owner_generics_and_self_ty(
@@ -252,32 +296,6 @@ impl LocalCstDefs {
         (impl_gc, env.lower_cst_ty(table, sn))
     }
 
-    pub fn lower_type_alias(
-        &self,
-        def: GlobalDefId,
-        st: &SyntaxTree<'_>,
-        file_res: &FileNameRes,
-        db: &dyn TyDefDb,
-        table: &mut InferenceTable,
-        depth: u8,
-    ) -> Option<(u16, InferTyId)> {
-        if depth > 16 {
-            return None;
-        }
-        let item = self.items.iter().find(|i| i.def == def && i.kind == ItemKind::TypeAlias)?;
-        let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false };
-        Some((item.generic_count, env.lower_cst_ty_rec(table, ty_node, depth + 1)))
-    }
-
-    pub fn const_or_static_ty(&self, def: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, table: &mut InferenceTable) -> Option<InferTyId> {
-        let item = self.items.iter().find(|i| i.def == def && matches!(i.kind, ItemKind::Const | ItemKind::Static))?;
-        let self_ty = item.impl_node.map(|im| self.lower_impl_self_ty(im, st, file_res, db, table).1);
-        let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: 0, item_owner: Some(item.node), in_body: false };
-        Some(env.lower_cst_ty(table, ty_node))
-    }
-
     pub fn fn_sig(
         &self,
         def: GlobalDefId,
@@ -287,7 +305,7 @@ impl LocalCstDefs {
         table: &mut InferenceTable,
         inputs_out: &mut Vec<InferTyId>,
     ) -> Option<(u16, InferTyId)> {
-        let item = self.items.iter().find(|i| i.def == def && matches!(i.kind, ItemKind::Fn | ItemKind::AssocFn))?;
+        let item = self.find_item_by_def(def).filter(|i| matches!(i.kind, ItemKind::Fn | ItemKind::AssocFn))?;
         let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
         inputs_out.clear();
@@ -310,23 +328,6 @@ impl LocalCstDefs {
             }
         }
         Some((item.generic_count, ret))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn param_fn_bound(
-        &self,
-        owner_def: GlobalDefId,
-        param_idx: u16,
-        st: &SyntaxTree<'_>,
-        file_res: &FileNameRes,
-        db: &dyn TyDefDb,
-        table: &mut InferenceTable,
-        inputs_out: &mut Vec<InferTyId>,
-    ) -> Option<(TyLangItem, InferTyId)> {
-        let item = self.items.iter().find(|i| i.def == owner_def)?;
-        let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
-        super::local_defs_adt::extract_cst_fn_bound(st, file_res, db, item.node, impl_gc, param_idx, &env, table, inputs_out)
     }
 }
 

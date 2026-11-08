@@ -146,10 +146,17 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
         // Compare against `.ridx` `RefEntry`s + `.ridx.exprty` compiler `TypeckResults`.
         let reader = &db.ws.readers()[r_idx];
         let sidecar = load_exprty_sidecar(&db.ws.paths()[r_idx], meta.source_root.as_deref(), src);
+        if let Some(ref sc) = sidecar {
+            rep.ty_stats.exprty_total += sc.total_recs;
+            rep.ty_stats.exprty_no_cst_node += sc.unmapped_file_recs;
+            rep.ty_stats.exprty_no_cst_unreached += sc.unmapped_file_recs;
+        }
+        let mut visited_fids: HashSet<u32> = HashSet::new();
         for &(fid, ref st) in &parsed_trees {
             let Some(&ridx_fid) = fid_to_ridx.get(&fid) else {
                 continue;
             };
+            visited_fids.insert(fid.0);
             snap.resolve_file_paths_into(db, fid, st, &mut res_buf);
             let cf = &src.files[fid.0 as usize];
             run_file_ty_infer_and_expr_parity(
@@ -170,6 +177,13 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
                 &mut rep.ty_stats,
             );
             compare_file_refs(r_idx, reader, cf, st, &res_buf, &dot_map, &unit_alias_pairs, db, ridx_fid, max_samples, &mut rep);
+        }
+        if let Some(ref sc) = sidecar {
+            for (&sfid, recs) in &sc.by_file {
+                if !visited_fids.contains(&sfid) {
+                    crate::ty_funnel::account_unreached_file_recs(recs, &mut rep.ty_stats);
+                }
+            }
         }
     }
 

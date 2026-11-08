@@ -11,9 +11,10 @@
 //! Zero-dependency trait boundary ([`TyDefDb`]), `#[repr(u16)]`-aligned [`TyLangItem`] catalog
 //! (matching `ridx-format::LangItemKind`), constructor shapes, and arena type cloner (`clone_ty_into`).
 
+pub use super::arena::clone_ty_into;
 use super::arena::InferTyArena;
-use super::ty::{InferTyId, InferTyKind, TySliceRange};
-use super::uf_table::{InlineTyBuf, UnionFindTable};
+use super::ty::{InferTyId, TySliceRange};
+use super::uf_table::UnionFindTable;
 use crate::name_res::{GlobalDefId, ImplTargetKey};
 
 /// Compiler `#[lang = "..."]` items and associated trait items used during local type inference.
@@ -136,8 +137,27 @@ pub struct MethodCand {
     pub fixed_self_ty: InferTyId,
     pub fixed_trait_args: TySliceRange,
     pub is_blanket_impl: bool,
+    /// Enclosing `impl` identifier (`CrateId::LOCAL_OVERLAY` + `NodeId` for local CST, `(r_idx, impl_idx)` for `.ridx`).
+    pub impl_owner: GlobalDefId,
     /// CST `NodeId` when backed by `LocalCstDefs` (`u32::MAX` when backed by `TyDefDb`).
     pub cst_fn_node: u32,
+}
+
+/// Trait associated-function canonical metadata (`Checkbox 3.4`, `Copy`, `0` heap allocs).
+/// Lifts both `Trait::fn` and `Type::trait_fn` to `(trait_fn_def, [Self, TraitArgs.., MethodArgs..])`.
+#[derive(Clone, Copy, Debug)]
+pub struct TraitAssocFnMeta {
+    pub trait_def: GlobalDefId,
+    pub trait_fn_def: GlobalDefId,
+    pub trait_generics: u16,
+    pub method_generics: u16,
+}
+
+/// Parameterized `where`-clause or inline generic obligation (`Checkbox 3.4`, `Copy`, `0` heap allocs).
+#[derive(Clone, Copy, Debug)]
+pub enum WhereObligation {
+    TraitBound { lhs_ty: InferTyId, trait_def: GlobalDefId, trait_args: TySliceRange },
+    ProjectionEq { lhs_ty: InferTyId, trait_def: GlobalDefId, assoc_def: GlobalDefId, trait_args: TySliceRange, rhs_ty: InferTyId },
 }
 
 /// External/indexed type & signature provider decoupling `ridx-syntax::ty_infer` from `ridx-format`.
@@ -225,9 +245,41 @@ pub trait TyDefDb {
     /// Appends trait bounds `Param(param_idx): BoundTrait` declared on `owner_def` (`Fn` or `AssocFn` or `Impl`).
     fn param_trait_bounds(&self, _owner_def: GlobalDefId, _param_idx: u16, _out: &mut Vec<GlobalDefId>) {}
 
-    /// Verifies blanket-impl `where` bounds after binding `subst` against a method receiver.
-    fn check_blanket_method_bounds(&self, _method_def: GlobalDefId, _subst: &[InferTyId], _arena: &mut InferTyArena, _vars: &mut UnionFindTable) -> bool {
+    /// Verifies blanket-impl `where` bounds after binding `impl_subst` against a method receiver.
+    fn check_blanket_method_bounds(&self, _cand: &MethodCand, _impl_subst: &[InferTyId], _arena: &mut InferTyArena, _vars: &mut UnionFindTable) -> bool {
         true
+    }
+
+    /// Returns canonical trait `AssocFn` metadata if `assoc_fn` is a trait declaration method or a trait-`impl` override.
+    fn trait_of_assoc_fn(&self, _assoc_fn: GlobalDefId) -> Option<TraitAssocFnMeta> {
+        None
+    }
+
+    /// Looks up canonical trait `AssocFn` metadata by `(trait_def, fn_name)` (including static methods without `self`).
+    fn trait_assoc_fn_by_name(&self, _trait_def: GlobalDefId, _fn_name: &str) -> Option<TraitAssocFnMeta> {
+        None
+    }
+
+    /// Appends parameterized `TraitBound` and `ProjectionEq` `where` obligations declared on `owner_def` (and enclosing `impl`/`trait`).
+    fn owner_where_obligations(&self, _owner_def: GlobalDefId, _arena: &mut InferTyArena, _out: &mut Vec<WhereObligation>) {}
+
+    /// Solves `<self_ty as trait_def<trait_args>>` against concrete and bound-checked blanket impls (`Checkbox 3.4`),
+    /// committing variable bindings into `vars` when a unique candidate impl matches.
+    fn solve_trait_obligation(&self, _trait_def: GlobalDefId, _self_ty: InferTyId, _trait_args: &[InferTyId], _arena: &mut InferTyArena, _vars: &mut UnionFindTable) -> bool {
+        false
+    }
+
+    /// Projects `<Param(param_idx) as trait_def<trait_args>>::assoc_def` from `owner_def`'s `ProjectionEq` bounds.
+    fn project_param_assoc(
+        &self,
+        _owner_def: GlobalDefId,
+        _param_idx: u16,
+        _trait_def: GlobalDefId,
+        _assoc_def: GlobalDefId,
+        _trait_args: &[InferTyId],
+        _arena: &mut InferTyArena,
+    ) -> Option<InferTyId> {
+        None
     }
 
     /// Optional `core::ffi::CStr` definition for `c"..."` literals (`&CStr`).
@@ -265,81 +317,4 @@ impl TyDefDb for EmptyTyDefDb {
     fn param_fn_bound(&self, _: GlobalDefId, _: u16, _: &mut InferTyArena, _: &mut Vec<InferTyId>) -> Option<(TyLangItem, InferTyId)> {
         None
     }
-}
-
-/// Copies a template [`InferTyId`] from `src` into `dst` with zero heap allocations.
-pub fn clone_ty_into(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena) -> InferTyId {
-    clone_ty_rec(src, id, dst, 0)
-}
-
-fn clone_ty_rec(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena, depth: u8) -> InferTyId {
-    if !id.is_some() || (id.0 as usize) < InferTyId::BUILTIN_COUNT || depth > 64 {
-        return id;
-    }
-    match src.kind(id) {
-        InferTyKind::Unknown => InferTyId::UNKNOWN,
-        InferTyKind::Never => InferTyId::NEVER,
-        InferTyKind::Prim(p) => InferTyId::from_prim(p),
-        InferTyKind::Ref { is_mut, inner } => {
-            let sub = clone_ty_rec(src, inner, dst, depth + 1);
-            dst.mk_ref(is_mut, sub)
-        }
-        InferTyKind::Ptr { is_mut, inner } => {
-            let sub = clone_ty_rec(src, inner, dst, depth + 1);
-            dst.mk_ptr(is_mut, sub)
-        }
-        InferTyKind::Slice(elem) => {
-            let sub = clone_ty_rec(src, elem, dst, depth + 1);
-            dst.mk_slice(sub)
-        }
-        InferTyKind::Array { elem, len } => {
-            let sub = clone_ty_rec(src, elem, dst, depth + 1);
-            dst.mk_array(sub, len)
-        }
-        InferTyKind::Param { idx, def } => dst.mk_param(idx, def),
-        InferTyKind::Tuple(r) => {
-            let buf = clone_slice(src, r, dst, depth + 1);
-            dst.mk_tuple(buf.as_slice())
-        }
-        InferTyKind::Adt { def, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_adt(def, buf.as_slice())
-        }
-        InferTyKind::FnPtr { sig } => {
-            let buf = clone_slice(src, sig, dst, depth + 1);
-            let s = buf.as_slice();
-            dst.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
-        }
-        InferTyKind::FnDef { def, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_fn_def(def, buf.as_slice())
-        }
-        InferTyKind::Closure { id: cid, sig } => {
-            let buf = clone_slice(src, sig, dst, depth + 1);
-            let s = buf.as_slice();
-            dst.mk_closure(cid, &s[..s.len() - 1], s[s.len() - 1])
-        }
-        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
-            let ns = clone_ty_rec(src, self_ty, dst, depth + 1);
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_alias(trait_def, assoc_def, ns, buf.as_slice())
-        }
-        InferTyKind::Dyn { principal, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_dyn(principal, buf.as_slice())
-        }
-        InferTyKind::Opaque { def, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_opaque(def, buf.as_slice())
-        }
-        InferTyKind::Infer(_) => InferTyId::UNKNOWN,
-    }
-}
-
-fn clone_slice(src: &InferTyArena, r: super::ty::TySliceRange, dst: &mut InferTyArena, depth: u8) -> InlineTyBuf {
-    let mut buf = InlineTyBuf::new();
-    for &elem in src.slice(r) {
-        buf.push(clone_ty_rec(src, elem, dst, depth));
-    }
-    buf
 }

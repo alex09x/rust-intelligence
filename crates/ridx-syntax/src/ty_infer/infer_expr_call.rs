@@ -11,7 +11,6 @@
 //! Call (`CallExpr`), function/constructor signature instantiation, and `Fn*` bound argument
 //! checking for [`super::body_ctx::Runner`].
 
-use super::autoderef::normalize_ty;
 use super::body_ctx::Runner;
 use super::db::TyLangItem;
 use super::expectation::Expectation;
@@ -127,10 +126,20 @@ impl<'a, 's> Runner<'a, 's> {
         self.ctx.sig_inputs_buf = raw_ins;
 
         let inst_ret = self.ctx.table.instantiate(raw_ret, subst.as_slice());
-        let norm_ret = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, inst_ret);
-        self.pre_unify_call_return(norm_ret, expectation);
+        if !matches!(expectation, Expectation::None) {
+            let pre_ret = self.norm(inst_ret);
+            self.pre_unify_call_return(pre_ret, expectation);
+        }
         self.check_call_args_with_bounds(def, raw_params.as_slice(), subst.as_slice(), args);
-        normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, norm_ret)
+        if let Some(meta) = self.db.trait_of_assoc_fn(def).or_else(|| self.local_defs.trait_of_assoc_fn(def, self.st, self.file_res, self.db)) {
+            let t_end = 1 + meta.trait_generics as usize;
+            if subst.as_slice().len() >= t_end {
+                let _ = self.solve_obligation(meta.trait_def, subst.as_slice()[0], &subst.as_slice()[1..t_end], false, 0);
+            }
+        }
+        let cst_fn = self.local_defs.fn_node_for_def(def);
+        self.solve_call_obligations(def, cst_fn, subst.as_slice());
+        self.norm(inst_ret)
     }
 
     pub(super) fn check_call_args_with_bounds(&mut self, bound_owner_def: GlobalDefId, raw_params: &[InferTyId], subst: &[InferTyId], args: &[NodeId]) {
@@ -140,7 +149,7 @@ impl<'a, 's> Runner<'a, 's> {
             }
             if let Some(&rp) = raw_params.get(i) {
                 let raw_p = self.ctx.table.instantiate(rp, subst);
-                let p_ty = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, raw_p);
+                let p_ty = self.norm(raw_p);
                 let a_ty = self.infer_expr(arg_node, Expectation::HasType(p_ty));
                 let _ = self.coerce_expr(a_ty, p_ty);
                 if let InferTyKind::Param { idx: gp_idx, .. } = self.ctx.table.arena.kind(rp) {
@@ -194,7 +203,7 @@ impl<'a, 's> Runner<'a, 's> {
                 }
             }
             let raw_p = self.ctx.table.instantiate(rp, subst);
-            let p_ty = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, raw_p);
+            let p_ty = self.norm(raw_p);
             let a_ty = self.infer_expr(arg_node, Expectation::HasType(p_ty));
             let _ = self.coerce_expr(a_ty, p_ty);
         }
@@ -210,10 +219,10 @@ impl<'a, 's> Runner<'a, 's> {
             let mut ins = InlineTyBuf::new();
             for &inp in &raw_b_ins {
                 let inst_i = self.ctx.table.instantiate(inp, subst);
-                ins.push(normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, inst_i));
+                ins.push(self.norm(inst_i));
             }
             let inst_r = self.ctx.table.instantiate(raw_ret, subst);
-            let ret = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, inst_r);
+            let ret = self.norm(inst_r);
             (ins, ret, li.is_async_fn_trait())
         });
         self.ctx.bound_inputs_buf = raw_b_ins;
@@ -236,11 +245,11 @@ impl<'a, 's> Runner<'a, 's> {
                     let mut inst_ins = InlineTyBuf::new();
                     for &ri in &raw_ins {
                         let ii = self.ctx.table.instantiate(ri, f_subst.as_slice());
-                        inst_ins.push(normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, ii));
+                        inst_ins.push(self.norm(ii));
                     }
                     self.ctx.sig_inputs_buf = raw_ins;
                     let ir = self.ctx.table.instantiate(raw_ret, f_subst.as_slice());
-                    let norm_r = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, ir);
+                    let norm_r = self.norm(ir);
                     for (&fi, &bi) in inst_ins.as_slice().iter().zip(b_ins.as_slice().iter()) {
                         let _ = self.ctx.table.equate(fi, bi);
                     }
@@ -270,7 +279,7 @@ impl<'a, 's> Runner<'a, 's> {
 
     pub(super) fn pre_unify_call_return(&mut self, ret_ty: InferTyId, expectation: Expectation) {
         if let Some(raw_exp) = expectation.only_has_type(&mut self.ctx.table) {
-            let exp_ret = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, raw_exp);
+            let exp_ret = self.norm(raw_exp);
             let snap = self.ctx.table.start_snapshot();
             if self.ctx.table.coerce(ret_ty, exp_ret).is_ok() {
                 self.ctx.table.commit(snap);

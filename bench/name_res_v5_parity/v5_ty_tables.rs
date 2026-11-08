@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 use ridx_format::{DefKind, GenericParamKind, IndexReader, TyDefId};
 use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
-use ridx_syntax::ty_infer::TyLangItem;
+use ridx_syntax::ty_infer::{TraitAssocFnMeta, TyLangItem};
 
 use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
 
@@ -64,6 +64,8 @@ pub struct V5TyTables<'w> {
     pub assoc_to_impl: HashMap<GlobalDefId, u32>,
     pub trait_non_lt_gc: HashMap<GlobalDefId, u16>,
     pub trait_methods: HashMap<(GlobalDefId, u64), TraitMethodInfo<'w>>,
+    pub trait_assoc_fns: HashMap<(GlobalDefId, u64), TraitMethodInfo<'w>>,
+    pub trait_fn_meta: HashMap<GlobalDefId, TraitAssocFnMeta>,
     pub trait_assoc_tys: HashMap<(GlobalDefId, u64), (GlobalDefId, &'w str, u16)>,
     pub assoc_ty_names: HashMap<GlobalDefId, &'w str>,
     pub inherent_methods: HashMap<(ImplTargetKey, u64), Vec<InherentMethodInfo<'w>>>,
@@ -186,19 +188,16 @@ impl<'w> RidxV5ItemDb<'w> {
 
         for r_idx in 0..n {
             let reader = &self.ws.readers()[r_idx];
-            let arena = reader.ty_arena();
             let krate = CrateId(r_idx as u32);
             let defs = reader.definitions();
 
             for (&trait_didx, assocs) in &self.shards[r_idx].trait_assocs {
-                let trait_gid = GlobalDefId::new(krate, trait_didx);
+                let trait_gid = self.canonical_def(GlobalDefId::new(krate, trait_didx));
                 let trait_gc = count_def_non_lt_non_self(reader, trait_didx);
                 self.ty_tables.trait_non_lt_gc.insert(trait_gid, trait_gc);
                 let mut assoc_ord = 0u16;
                 for &adidx in assocs {
-                    let Some(ad) = defs.get(adidx as usize) else {
-                        continue;
-                    };
+                    let Some(ad) = defs.get(adidx as usize) else { continue };
                     let aname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
                     if aname.is_empty() {
                         continue;
@@ -206,9 +205,15 @@ impl<'w> RidxV5ItemDb<'w> {
                     let nh = fnv1a_str(aname);
                     match DefKind::from(ad.kind) {
                         DefKind::AssocFn => {
+                            let method_gc = count_def_non_lt_non_self(reader, adidx);
+                            let info = TraitMethodInfo { name: aname, method_didx: adidx, trait_gc, method_gc };
+                            self.ty_tables.trait_assoc_fns.insert((trait_gid, nh), info);
+                            let fn_gid = GlobalDefId::new(krate, adidx);
+                            self.ty_tables
+                                .trait_fn_meta
+                                .insert(fn_gid, TraitAssocFnMeta { trait_def: trait_gid, trait_fn_def: fn_gid, trait_generics: trait_gc, method_generics: method_gc });
                             if reader.fn_sig_for_def(adidx).is_some_and(|s| s.has_self()) {
-                                let method_gc = count_def_non_lt_non_self(reader, adidx);
-                                self.ty_tables.trait_methods.insert((trait_gid, nh), TraitMethodInfo { name: aname, method_didx: adidx, trait_gc, method_gc });
+                                self.ty_tables.trait_methods.insert((trait_gid, nh), info);
                             }
                         }
                         DefKind::AssocTy => {
@@ -221,6 +226,13 @@ impl<'w> RidxV5ItemDb<'w> {
                     }
                 }
             }
+        }
+
+        for r_idx in 0..n {
+            let reader = &self.ws.readers()[r_idx];
+            let arena = reader.ty_arena();
+            let krate = CrateId(r_idx as u32);
+            let defs = reader.definitions();
 
             for iv in reader.impls_iter() {
                 let impl_idx = iv.index();
@@ -242,9 +254,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 let impl_gc = count_impl_non_lt(reader, impl_idx);
                 if iv.is_inherent() {
                     for assoc_didx in iv.assoc_def_indices() {
-                        let Some(ad) = defs.get(assoc_didx as usize) else {
-                            continue;
-                        };
+                        let Some(ad) = defs.get(assoc_didx as usize) else { continue };
                         if DefKind::from(ad.kind) != DefKind::AssocFn || !reader.fn_sig_for_def(assoc_didx).is_some_and(|s| s.has_self()) {
                             continue;
                         }
@@ -262,6 +272,16 @@ impl<'w> RidxV5ItemDb<'w> {
                     let tgid = self.ty_def_gid(r_idx, td);
                     if !tgid.is_some() {
                         continue;
+                    }
+                    for assoc_didx in iv.assoc_def_indices() {
+                        if let Some(ad) = defs.get(assoc_didx as usize).filter(|a| DefKind::from(a.kind) == DefKind::AssocFn) {
+                            let mname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
+                            if let Some(&tm) = self.ty_tables.trait_assoc_fns.get(&(tgid, fnv1a_str(mname))).filter(|t| t.name == mname) {
+                                let tfn = GlobalDefId::new(tgid.krate, tm.method_didx);
+                                let meta = TraitAssocFnMeta { trait_def: tgid, trait_fn_def: tfn, trait_generics: tm.trait_gc, method_generics: tm.method_gc };
+                                self.ty_tables.trait_fn_meta.insert(GlobalDefId::new(krate, assoc_didx), meta);
+                            }
+                        }
                     }
                     let is_blanket = target == ImplTargetKey::Param;
                     let info = TraitImplInfo { r_idx: r_idx as u32, impl_idx, impl_gc, is_blanket };

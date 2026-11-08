@@ -11,7 +11,7 @@
 //! Corpus source loader (`CorpusSourceDb`), UTF-8 `(line, char_col)` <-> byte offset converter
 //! (`LineIndex`), and `.deps/*.json` compilation-unit metadata loader for `v5` parity runs.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -206,7 +206,7 @@ pub struct ReaderMeta {
     pub is_test_harness: bool,
     pub source_root: Option<PathBuf>,
     pub root_rs_abs: Option<PathBuf>,
-    pub extern_units: HashMap<String, String>,
+    pub extern_units: BTreeMap<String, String>,
 }
 
 pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
@@ -221,7 +221,7 @@ pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
         let mut is_test_harness = false;
         let mut source_root = ws.source_root_at(idx).map(Path::to_path_buf);
         let mut root_rs_abs: Option<PathBuf> = None;
-        let mut extern_units: HashMap<String, String> = HashMap::new();
+        let mut extern_units: BTreeMap<String, String> = BTreeMap::new();
 
         if let Some(meta_path) = ws.meta_path_at(idx) {
             if let Ok(raw) = fs::read_to_string(meta_path) {

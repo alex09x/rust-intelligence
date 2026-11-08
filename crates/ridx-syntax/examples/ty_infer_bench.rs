@@ -17,7 +17,7 @@ use std::hint::black_box;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
-use ridx_syntax::name_res::{CrateDefMap, CrateId, Edition, GlobalDefId, ImplTargetKey, ItemKind, MemItemDb, MemSourceDb, ModuleTree, OwnedDef, VisKind};
+use ridx_syntax::name_res::{CrateDefMap, CrateId, Edition, FileId, GlobalDefId, ImplTargetKey, IndexedImpl, ItemKind, MemItemDb, MemSourceDb, ModuleTree, OwnedDef, VisKind};
 use ridx_syntax::parse;
 use ridx_syntax::syntax_kind::SyntaxKind as K;
 use ridx_syntax::ty_infer::{BodyInferCtx, BranchCoercer, CtorShapeKind, Expectation, FnInferResult, InferTyId, InferenceTable, LocalCstDefs, MemTyDefDb, TyLangItem};
@@ -129,6 +129,13 @@ fn process_methods(items: &Vec<u64>, pkt: &Packet<Option<u64>>) -> Option<u64> {
     let _ = mapped;
     pkt.payload
 }
+
+fn process_traits<I: Iterator<Item = u64>>(it: I, items: Vec<u64>) -> Vec<u64> {
+    let head: Option<<I as Iterator>::Item> = Some(42);
+    let extra = Vec::from([1u64, 2u64]);
+    let _ = (head, extra, it);
+    items.into_iter().collect::<Vec<_>>()
+}
 "#;
 
 fn main() {
@@ -180,6 +187,8 @@ fn main() {
     let into_iter_adt = GlobalDefId::new(std_c, 20);
     let map_adt = GlobalDefId::new(std_c, 21);
     let fn_mut_def = GlobalDefId::new(std_c, 22);
+    let from_tr = GlobalDefId::new(std_c, 23);
+    let from_iter_tr = GlobalDefId::new(std_c, 24);
     for (id, n, k, c) in [
         (opt_def, "Option", ItemKind::Enum, false),
         (some_def, "Some", ItemKind::Variant, true),
@@ -190,9 +199,12 @@ fn main() {
         (clone_tr, "Clone", ItemKind::Trait, false),
         (into_iter_tr, "IntoIterator", ItemKind::Trait, false),
         (iter_tr, "Iterator", ItemKind::Trait, false),
+        (from_tr, "From", ItemKind::Trait, false),
+        (from_iter_tr, "FromIterator", ItemKind::Trait, false),
     ] {
         item_db.add_module_def(prelude, OwnedDef { id, name: n.into(), kind: k, vis: VisKind::Public, has_value_ctor: c });
     }
+    item_db.add_assoc_item(iter_tr, OwnedDef { id: iter_item_assoc, name: "Item".into(), kind: ItemKind::AssocTy, vis: VisKind::Public, has_value_ctor: false });
     let mut ty_db = MemTyDefDb::new();
     ty_db.add_lang_item(TyLangItem::Option, opt_def);
     ty_db.add_lang_item(TyLangItem::OptionSome, some_def);
@@ -232,8 +244,23 @@ fn main() {
     ty_db.add_fn(iter_map_fn, 3, &[p0, p2], map_ret);
     ty_db.add_param_fn_bound(iter_map_fn, 2, TyLangItem::FnMut, &[self_item], p1);
     ty_db.add_trait_method(iter_tr, 0, "map", iter_map_fn, 2);
+    ty_db.add_trait_assoc_rule(iter_tr, iter_item_assoc, 1, into_iter_p0, &[], p0);
     ty_db.add_assoc_rule(TyLangItem::IteratorItem, 1, into_iter_p0, &[], p0);
     ty_db.add_trait_impl(iter_tr, 1, into_iter_p0, &[], &[]);
+    let (from_fn, vec_from_arr_fn, iter_collect_fn, vec_from_imp) =
+        (GlobalDefId::new(std_c, 55), GlobalDefId::new(std_c, 56), GlobalDefId::new(std_c, 57), GlobalDefId::new(std_c, 58));
+    ty_db.add_fn(from_fn, 2, &[p1], p0);
+    ty_db.add_trait_method(from_tr, 1, "from", from_fn, 0);
+    item_db.add_assoc_item(from_tr, OwnedDef { id: from_fn, name: "from".into(), kind: ItemKind::AssocFn, vis: VisKind::Public, has_value_ctor: false });
+    let arr2_p0 = ty_db.templates.mk_array(p0, 2);
+    ty_db.add_fn(vec_from_arr_fn, 1, &[arr2_p0], vec_p0);
+    ty_db.add_trait_impl(from_tr, 1, vec_p0, &[arr2_p0], &[("from", vec_from_arr_fn, 0)]);
+    item_db.add_impl(IndexedImpl { id: vec_from_imp, file: FileId::NONE, target: ImplTargetKey::Adt(vec_def), trait_def: from_tr, is_negative: false });
+    item_db.add_assoc_item(vec_from_imp, OwnedDef { id: vec_from_arr_fn, name: "from".into(), kind: ItemKind::AssocFn, vis: VisKind::Public, has_value_ctor: false });
+    ty_db.add_fn(iter_collect_fn, 2, &[p0], p1);
+    ty_db.add_where_trait_bound(iter_collect_fn, p1, from_iter_tr, &[self_item]);
+    ty_db.add_trait_method(iter_tr, 0, "collect", iter_collect_fn, 1);
+    ty_db.add_trait_impl(from_iter_tr, 1, vec_p0, &[p0], &[]);
 
     let mut sources = MemSourceDb::new();
     let file = sources.add_file("src/lib.rs", BENCH_SRC);
@@ -296,4 +323,29 @@ fn main() {
         bytes_m
     );
     assert_eq!(allocs_m, 0, "expected 0 heap allocations in steady-state 3.3 method resolution loop");
+
+    let tr_node = st.descendants(st.root()).find(|&n| st.kind(n) == K::Fn && st.child(n, K::Name).is_some_and(|nn| st.text(nn) == "process_traits")).expect("process_traits fn");
+    for _ in 0..16 {
+        ctx.infer_fn_into(&st, &file_res, &ty_db, &local_defs, tr_node, &mut res);
+        black_box(res.body_ty);
+    }
+    ALLOCS.store(0, Ordering::Relaxed);
+    BYTES.store(0, Ordering::Relaxed);
+    let t3 = Instant::now();
+    for _ in 0..iters_body {
+        ctx.infer_fn_into(&st, &file_res, &ty_db, &local_defs, tr_node, &mut res);
+        black_box(res.body_ty);
+    }
+    let ns_tr = t3.elapsed().as_nanos() as f64;
+    let allocs_tr = ALLOCS.load(Ordering::Relaxed);
+    let bytes_tr = BYTES.load(Ordering::Relaxed);
+    println!(
+        "ty_infer_bench (3.4 trait-solve+proj): iters={} total_ms={:.2} ns/fn={:.1} warm_allocs={} warm_bytes={}",
+        iters_body,
+        ns_tr / 1_000_000.0,
+        ns_tr / (iters_body as f64),
+        allocs_tr,
+        bytes_tr
+    );
+    assert_eq!(allocs_tr, 0, "expected 0 heap allocations in steady-state 3.4 trait solving loop");
 }

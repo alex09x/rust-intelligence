@@ -12,13 +12,13 @@
 //! (`Deref::Target` & `<T as Trait>::Assoc`), and unindexed UFCS lookup on [`LocalCstDefs`].
 
 use super::autoderef::impl_target_key_of_ty;
-use super::db::{MethodCand, TyDefDb};
+use super::db::{MethodCand, TraitAssocFnMeta, TyDefDb};
 use super::local_defs::{count_cst_generics, LocalCstDefs};
 use super::lower_ty::{effective_target_def, LowerTyEnv};
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
-use crate::name_res::{FileNameRes, GlobalDefId, ImplTargetKey};
+use crate::name_res::{CrateId, FileNameRes, GlobalDefId, ImplTargetKey, ItemKind};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::{NodeId, SyntaxTree};
@@ -60,6 +60,7 @@ impl LocalCstDefs {
                 fixed_self_ty: InferTyId::NONE,
                 fixed_trait_args: super::ty::TySliceRange::EMPTY,
                 is_blanket_impl: false,
+                impl_owner: GlobalDefId::new(CrateId::LOCAL_OVERLAY, imp.node.0),
                 cst_fn_node: fn_node.0,
             });
         }
@@ -105,6 +106,7 @@ impl LocalCstDefs {
             if !probe_impl_self_compat(table, imp.impl_generics, self_ty, step_ty) {
                 continue;
             }
+            let imp_owner = GlobalDefId::new(CrateId::LOCAL_OVERLAY, imp.node.0);
             if let Some(fn_node) = find_assoc_fn(st, imp.node, method_name, true) {
                 let mdef = self.fn_def_for_node(fn_node);
                 if mdef.is_some() && !out.iter().any(|c| c.method_def == mdef && !c.has_fixed_trait_subst) {
@@ -118,6 +120,7 @@ impl LocalCstDefs {
                         fixed_self_ty: InferTyId::NONE,
                         fixed_trait_args: super::ty::TySliceRange::EMPTY,
                         is_blanket_impl: is_blanket,
+                        impl_owner: imp_owner,
                         cst_fn_node: fn_node.0,
                     });
                 }
@@ -132,7 +135,46 @@ impl LocalCstDefs {
                 dc.fixed_self_ty = self_ty;
                 dc.fixed_trait_args = table.arena.intern_slice(tr_args.as_slice());
                 dc.is_blanket_impl = is_blanket;
+                dc.impl_owner = imp_owner;
                 out.push(dc);
+            }
+        }
+    }
+
+    pub fn dedup_inherent_cands(before: usize, cands: &mut Vec<MethodCand>) {
+        let mut w = before;
+        for r in before..cands.len() {
+            let md = cands[r].method_def;
+            if !cands[..before].iter().any(|c| c.method_def == md) {
+                cands[w] = cands[r];
+                w += 1;
+            }
+        }
+        cands.truncate(w);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn collapse_overloaded_trait_cands(
+        &self,
+        start: usize,
+        tdef: GlobalDefId,
+        method_name: &str,
+        probe_ty: InferTyId,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        table: &mut InferenceTable,
+        cands: &mut Vec<MethodCand>,
+    ) {
+        if cands.len() - start <= 1 {
+            return;
+        }
+        let any_non_blanket = cands[start..].iter().any(|c| !c.is_blanket_impl);
+        if let Some(mut poly) = self.trait_decl_method_cand(tdef, &[], probe_ty, method_name, st, file_res, db, table) {
+            if poly.fixed_trait_args.len > 0 {
+                poly.is_blanket_impl = !any_non_blanket;
+                cands.truncate(start);
+                cands.push(poly);
             }
         }
     }
@@ -201,7 +243,7 @@ impl LocalCstDefs {
         }
         let mut padded = InlineTyBuf::new();
         for i in 0..tr.trait_generics as usize {
-            padded.push(trait_args.get(i).copied().unwrap_or(InferTyId::UNKNOWN));
+            padded.push(trait_args.get(i).copied().unwrap_or(InferTyId::NONE));
         }
         let args_range = table.arena.intern_slice(padded.as_slice());
         Some(MethodCand {
@@ -214,8 +256,34 @@ impl LocalCstDefs {
             fixed_self_ty: self_ty,
             fixed_trait_args: args_range,
             is_blanket_impl: false,
+            impl_owner: GlobalDefId::NONE,
             cst_fn_node: fn_node.0,
         })
+    }
+
+    pub fn trait_of_assoc_fn(&self, assoc_fn: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb) -> Option<TraitAssocFnMeta> {
+        let item = self.find_item_by_def(assoc_fn).filter(|i| i.kind == ItemKind::AssocFn)?;
+        let owner = item.impl_node?;
+        let mgc = count_cst_generics(st, item.node);
+        if st.kind(owner) == K::Trait {
+            let tr = self.traits.iter().find(|t| t.node == owner)?;
+            return Some(TraitAssocFnMeta { trait_def: tr.def, trait_fn_def: assoc_fn, trait_generics: tr.trait_generics, method_generics: mgc });
+        }
+        let imp = self.impls.iter().find(|im| im.node == owner && im.has_for && !im.is_negative)?;
+        let tp = imp.trait_path?;
+        let trait_def = file_res.path_tail_ref_in_st(st, tp).map_or(GlobalDefId::NONE, |r| effective_target_def(r.target));
+        if !trait_def.is_some() {
+            return None;
+        }
+        let fn_name = norm_ident(st.text(st.child(item.node, K::Name)?));
+        if let Some(tr) = self.traits.iter().find(|t| t.def == trait_def) {
+            let tr_fn = find_assoc_fn(st, tr.node, fn_name, false)?;
+            let tr_fn_def = self.fn_def_for_node(tr_fn);
+            if tr_fn_def.is_some() {
+                return Some(TraitAssocFnMeta { trait_def, trait_fn_def: tr_fn_def, trait_generics: tr.trait_generics, method_generics: mgc });
+            }
+        }
+        db.trait_assoc_fn_by_name(trait_def, fn_name)
     }
 
     pub fn collect_supertraits_into(&self, trait_def: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, out: &mut Vec<GlobalDefId>) {
@@ -272,7 +340,7 @@ impl LocalCstDefs {
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: Some(impl_node), impl_generics: impl_gc, item_owner: None, in_body: false };
         let mut tr_args = InlineTyBuf::new();
         if let Some(tail) = st.children(tr_path).filter(|&c| st.kind(c) == K::PathSegment).last() {
-            env.collect_segment_args(table, tail, &mut tr_args, 0);
+            env.collect_segment_args(table, tail, false, &mut tr_args, 0);
         }
         let self_ty = env.lower_cst_ty(table, self_node);
         Some((tr_def, tr_args, self_ty))

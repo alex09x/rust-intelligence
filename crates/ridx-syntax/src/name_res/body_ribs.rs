@@ -288,13 +288,19 @@ impl super::body_walk::FileResolver<'_, '_> {
                 self.out.block_trait_imports.push((container, end, eff));
             }
         }
+        let mut named = Vec::with_capacity(rib.entries.len());
         for pns in rib.entries.values() {
             if let Some(tb) = pns.types.filter(|b| !b.ambiguous && b.kind == ItemKind::Trait) {
                 let eff = super::dirty_overlay::effective_local_or_def(tb.def, tb.local);
                 if eff.is_some() {
-                    self.out.block_trait_imports.push((container, end, eff));
+                    named.push(eff);
                 }
             }
+        }
+        named.sort_unstable();
+        named.dedup();
+        for eff in named {
+            self.out.block_trait_imports.push((container, end, eff));
         }
     }
 }

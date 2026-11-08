@@ -11,7 +11,7 @@
 //! Per-function body inference context ([`BodyInferCtx`]) and queryable output table
 //! ([`FnInferResult`]), engineered for `0` steady-state heap allocations across functions.
 
-use super::db::{MethodCand, TyDefDb};
+use super::db::{MethodCand, TyDefDb, WhereObligation};
 use super::expectation::{BranchCoercer, Expectation};
 use super::infer_expr::is_expr_node;
 use super::infer_pat::BindingMode;
@@ -107,6 +107,11 @@ pub struct BodyInferCtx {
     pub(super) exp_elems_buf: Vec<Expectation>,
     pub(super) method_cands_buf: Vec<MethodCand>,
     pub(super) scope_traits_buf: Vec<GlobalDefId>,
+    pub(super) fn_scope_traits_buf: Vec<GlobalDefId>,
+    pub(super) param_bounds_buf: Vec<GlobalDefId>,
+    pub(super) where_obls_buf: Vec<WhereObligation>,
+    pub(super) fn_has_inner_trait_scopes: bool,
+    pub(super) fn_scope_traits_ready: bool,
     pub(super) closure_seq: u32,
 }
 
@@ -130,6 +135,11 @@ impl BodyInferCtx {
             exp_elems_buf: Vec::with_capacity(16),
             method_cands_buf: Vec::with_capacity(16),
             scope_traits_buf: Vec::with_capacity(32),
+            fn_scope_traits_buf: Vec::with_capacity(32),
+            param_bounds_buf: Vec::with_capacity(16),
+            where_obls_buf: Vec::with_capacity(16),
+            fn_has_inner_trait_scopes: false,
+            fn_scope_traits_ready: false,
             closure_seq: 0,
         }
     }
@@ -152,6 +162,12 @@ impl BodyInferCtx {
         self.exp_elems_buf.clear();
         self.method_cands_buf.clear();
         self.scope_traits_buf.clear();
+        self.fn_scope_traits_buf.clear();
+        self.param_bounds_buf.clear();
+        self.where_obls_buf.clear();
+        let fn_sub_end = st.node(fn_node).subtree_end;
+        self.fn_has_inner_trait_scopes = file_res.has_inner_trait_scopes(fn_node, fn_sub_end);
+        self.fn_scope_traits_ready = false;
         self.closure_seq = 0;
         out.clear();
         out.fn_node = fn_node;
@@ -327,15 +343,18 @@ impl<'a, 's> Runner<'a, 's> {
     }
 
     fn finalize_result(&mut self) {
-        self.out.ret_ty = self.ctx.table.resolve_with_fallback(self.out.ret_ty);
-        self.out.body_ty = self.ctx.table.resolve_with_fallback(self.out.body_ty);
+        let owner = self.norm_owner();
+        let rr = self.ctx.table.resolve_with_fallback(self.out.ret_ty);
+        self.out.ret_ty = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, rr);
+        let rb = self.ctx.table.resolve_with_fallback(self.out.body_ty);
+        self.out.body_ty = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, rb);
         for pair in &mut self.out.expr_tys {
             let resolved = self.ctx.table.resolve_with_fallback(pair.1);
-            pair.1 = super::autoderef::normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, resolved);
+            pair.1 = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, resolved);
         }
         for pair in &mut self.out.pat_tys {
             let resolved = self.ctx.table.resolve_with_fallback(pair.1);
-            pair.1 = super::autoderef::normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, resolved);
+            pair.1 = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, resolved);
         }
         let fn_end = self.st.node(self.fn_node).subtree_end;
         for (off, &raw) in self.ctx.local_slots.iter().enumerate() {
@@ -344,7 +363,7 @@ impl<'a, 's> Runner<'a, 's> {
                 let decl = self.file_res.local_data(lid).decl_node;
                 if decl.0 >= self.fn_node.0 && decl.0 < fn_end {
                     let resolved = self.ctx.table.resolve_with_fallback(raw);
-                    let norm = super::autoderef::normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, resolved);
+                    let norm = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, resolved);
                     self.out.local_tys.push((lid, norm));
                 }
             }
@@ -352,7 +371,7 @@ impl<'a, 's> Runner<'a, 's> {
         self.out.expr_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.pat_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.local_tys.sort_unstable_by_key(|&(l, _)| l);
-        self.out.dot_refs.sort_unstable_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
+        self.out.dot_refs.sort_unstable_by_key(|a| (a.start, a.end, a.def, a.kind as u8));
         self.out.dot_refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.def == b.def);
     }
 }

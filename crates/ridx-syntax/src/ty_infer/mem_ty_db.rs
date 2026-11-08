@@ -12,8 +12,9 @@
 //! std/core prelude fixtures without external `.ridx` files (`0` heap allocations per query).
 
 use super::arena::InferTyArena;
-use super::db::{clone_ty_into, CtorShapeKind, MethodCand, TyDefDb, TyLangItem};
+use super::db::{clone_ty_into, CtorShapeKind, MethodCand, TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
 use super::mem_ty_db_methods::{InherentMethodEntry, TraitAssocRuleEntry, TraitImplEntry, TraitMethodDeclEntry};
+use super::mem_ty_db_traits::MemWhereEntry;
 use super::ty::{InferTyId, InferTyKind, TyVarKind};
 use super::uf_table::{InlineTyBuf, UnionFindTable};
 use super::unify;
@@ -70,6 +71,7 @@ pub struct MemTyDefDb {
     pub(super) supertraits: Vec<(GlobalDefId, GlobalDefId)>,
     pub(super) param_bounds: Vec<(GlobalDefId, u16, GlobalDefId)>,
     pub(super) trait_assoc_rules: Vec<TraitAssocRuleEntry>,
+    pub(super) where_entries: Vec<MemWhereEntry>,
     pub cstr: Option<GlobalDefId>,
 }
 
@@ -284,6 +286,38 @@ impl TyDefDb for MemTyDefDb {
                 out.push(tdef);
             }
         }
+    }
+
+    fn check_blanket_method_bounds(&self, cand: &MethodCand, impl_subst: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
+        self.query_blanket_method_bounds(cand, impl_subst, arena, vars)
+    }
+
+    fn trait_of_assoc_fn(&self, assoc_fn: GlobalDefId) -> Option<TraitAssocFnMeta> {
+        self.query_trait_of_assoc_fn(assoc_fn)
+    }
+
+    fn trait_assoc_fn_by_name(&self, trait_def: GlobalDefId, fn_name: &str) -> Option<TraitAssocFnMeta> {
+        self.query_trait_assoc_fn_by_name(trait_def, fn_name)
+    }
+
+    fn owner_where_obligations(&self, owner_def: GlobalDefId, arena: &mut InferTyArena, out: &mut Vec<WhereObligation>) {
+        self.query_owner_where_obligations(owner_def, arena, out);
+    }
+
+    fn solve_trait_obligation(&self, trait_def: GlobalDefId, self_ty: InferTyId, trait_args: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
+        self.query_solve_trait_obligation(trait_def, self_ty, trait_args, arena, vars, 0)
+    }
+
+    fn project_param_assoc(
+        &self,
+        owner_def: GlobalDefId,
+        param_idx: u16,
+        trait_def: GlobalDefId,
+        assoc_def: GlobalDefId,
+        trait_args: &[InferTyId],
+        arena: &mut InferTyArena,
+    ) -> Option<InferTyId> {
+        self.query_project_param_assoc(owner_def, param_idx, trait_def, assoc_def, trait_args, arena)
     }
 }
 

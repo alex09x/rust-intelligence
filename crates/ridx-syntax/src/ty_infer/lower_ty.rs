@@ -16,7 +16,7 @@ use super::db::{TyDefDb, TyLangItem};
 use super::local_defs::{effective_local_def_id, LocalCstDefs};
 use super::mem_ty_db::instantiate_in_arena;
 use super::tok_ty_scan::{eval_const_uint_expr, next_sig_idx, rfind_sig_idx};
-use super::ty::InferTyId;
+use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
 use crate::name_res::{FileNameRes, GenericBindId, GlobalDefId, ImplTargetKey, ItemKind, ResTarget};
@@ -159,6 +159,7 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
     pub(super) fn lower_cst_path_ty(&self, table: &mut InferenceTable, path_node: NodeId, as_dyn: bool, as_opaque: bool, depth: u8) -> InferTyId {
         let mut qself_ty: Option<InferTyId> = None;
         let mut qtrait_def = GlobalDefId::NONE;
+        let mut qtrait_args = InlineTyBuf::new();
         let mut seg_iter = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment);
         let first_seg = seg_iter.next();
         let tail_seg = seg_iter.last().or(first_seg);
@@ -171,12 +172,15 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                     if let Some(tr_ref) = self.file_res.path_tail_ref_in_st(self.st, tp) {
                         qtrait_def = effective_target_def(tr_ref.target);
                     }
+                    if let Some(tp_tail) = self.st.children(tp).filter(|&c| self.st.kind(c) == K::PathSegment).last() {
+                        self.collect_segment_args(table, tp_tail, false, &mut qtrait_args, depth + 1);
+                    }
                 }
             }
         }
-        let mut args = InlineTyBuf::new();
+        let mut args = qtrait_args;
         if let Some(seg) = tail_seg {
-            self.collect_segment_args(table, seg, &mut args, depth + 1);
+            self.collect_segment_args(table, seg, as_dyn || as_opaque, &mut args, depth + 1);
         }
 
         let rref = self.file_res.path_tail_ref_in_st(self.st, path_node);
@@ -202,43 +206,46 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         if qself_ty.is_none() && matches!(rref.target, ResTarget::Def { kind: ItemKind::AssocTy, .. }) {
             qself_ty = Some(self.resolve_unbracketed_assoc_qself(table, first_seg, tail_seg, depth + 1));
         }
-        self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, qtrait_def, as_dyn, as_opaque, depth)
+        let seg_name = tail_seg
+            .and_then(|s| self.st.own_tokens(s).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map(|(_, t)| crate::sema_fn::norm_ident(t.text(self.st.src))))
+            .unwrap_or("");
+        self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, qtrait_def, seg_name, as_dyn, as_opaque, depth)
     }
 
     fn resolve_unbracketed_assoc_qself(&self, table: &mut InferenceTable, first_seg: Option<NodeId>, tail_seg: Option<NodeId>, depth: u8) -> InferTyId {
-        let Some(fseg) = first_seg else {
+        let Some(fseg) = first_seg.filter(|&f| Some(f) != tail_seg) else {
             return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
         };
-        if Some(fseg) == tail_seg {
-            return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
-        }
         let Some((_, tok)) = self.st.own_tokens(fseg).find(|(_, t)| matches!(t.kind, T::SelfType | T::Ident | T::RawIdent)) else {
             return InferTyId::UNKNOWN;
         };
         if tok.kind == T::SelfType {
             return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
         }
-        let Some(fref) = self.file_res.refs_at_span(tok.start, tok.end).first() else {
-            return InferTyId::UNKNOWN;
-        };
+        let Some(fref) = self.file_res.refs_at_span(tok.start, tok.end).first() else { return InferTyId::UNKNOWN };
         match fref.target {
             ResTarget::Generic(gid) => self.resolve_generic_param(table, gid),
             ResTarget::SelfTy { .. } => self.self_ty.unwrap_or(InferTyId::UNKNOWN),
             ResTarget::Prim(p) => InferTyId::from_prim(p),
             ResTarget::Def { kind: ItemKind::Struct | ItemKind::Enum | ItemKind::Union | ItemKind::TypeAlias, .. } => {
                 let mut fargs = InlineTyBuf::new();
-                self.collect_segment_args(table, fseg, &mut fargs, depth + 1);
-                self.finish_resolved_type(table, fref.target, fargs.as_slice(), None, GlobalDefId::NONE, false, false, depth + 1)
+                self.collect_segment_args(table, fseg, false, &mut fargs, depth + 1);
+                self.finish_resolved_type(table, fref.target, fargs.as_slice(), None, GlobalDefId::NONE, "", false, false, depth + 1)
             }
             _ => InferTyId::UNKNOWN,
         }
     }
 
-    pub(super) fn collect_segment_args(&self, table: &mut InferenceTable, seg: NodeId, out: &mut InlineTyBuf, depth: u8) {
+    pub(super) fn collect_segment_args(&self, table: &mut InferenceTable, seg: NodeId, include_assoc_eq: bool, out: &mut InlineTyBuf, depth: u8) {
         if let Some(gal) = self.st.child(seg, K::GenericArgList) {
             for ga in self.st.children(gal) {
                 match self.st.kind(ga) {
-                    K::TypeArg | K::AssocTypeArg => {
+                    K::TypeArg => {
+                        if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type()) {
+                            out.push(self.lower_cst_ty_rec(table, tn, depth));
+                        }
+                    }
+                    K::AssocTypeArg if include_assoc_eq && self.st.own_tokens(ga).any(|(_, t)| t.kind == T::Eq) => {
                         if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type()) {
                             out.push(self.lower_cst_ty_rec(table, tn, depth));
                         }
@@ -275,6 +282,7 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         explicit_args: &[InferTyId],
         qself_ty: Option<InferTyId>,
         qtrait_def: GlobalDefId,
+        assoc_name: &str,
         as_dyn: bool,
         as_opaque: bool,
         depth: u8,
@@ -328,19 +336,34 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                         InferTyId::UNKNOWN
                     }
                     ItemKind::AssocTy => {
-                        let sty = qself_ty.unwrap_or_else(|| self.self_ty.unwrap_or(InferTyId::UNKNOWN));
-                        if let Some(li) = self.db.lang_item_of_def(eff_def).or_else(|| self.db.lang_item_of_def(qtrait_def).and_then(trait_default_assoc)) {
-                            if let Some(proj) = self.db.project_assoc_ty(li, sty, explicit_args, &mut table.arena, &mut table.vars) {
+                        let raw_sty = qself_ty.unwrap_or_else(|| self.self_ty.unwrap_or(InferTyId::UNKNOWN));
+                        let sty = table.shallow_resolve(raw_sty);
+                        let (qtr, adef, qargs) =
+                            self.local_defs.resolve_assoc_trait_and_args(qtrait_def, eff_def, assoc_name, sty, self.self_ty, self.impl_owner, explicit_args, self.st, table);
+                        let eargs = qargs.as_slice();
+                        if let InferTyKind::Param { idx, .. } = table.arena.kind(sty) {
+                            let owner_def = self.item_owner.map_or(GlobalDefId::NONE, |n| self.local_defs.fn_def_for_node(n));
+                            if owner_def.is_some() {
+                                if let Some(proj) = self.db.project_param_assoc(owner_def, idx, qtr, adef, eargs, &mut table.arena) {
+                                    return proj;
+                                }
+                            }
+                            if let Some(proj) = super::trait_solve::project_cst_param_assoc(self, table, idx, qtr, adef, eargs, depth + 1) {
                                 return proj;
                             }
                         }
-                        if let Some(proj) = self.db.project_trait_assoc(qtrait_def, eff_def, sty, explicit_args, &mut table.arena, &mut table.vars) {
+                        if let Some(li) = self.db.lang_item_of_def(adef).or_else(|| self.db.lang_item_of_def(qtr).and_then(trait_default_assoc)) {
+                            if let Some(proj) = self.db.project_assoc_ty(li, sty, eargs, &mut table.arena, &mut table.vars) {
+                                return proj;
+                            }
+                        }
+                        if let Some(proj) = self.db.project_trait_assoc(qtr, adef, sty, eargs, &mut table.arena, &mut table.vars) {
                             return proj;
                         }
-                        if let Some(proj) = self.local_defs.project_trait_assoc_rec(qtrait_def, eff_def, sty, explicit_args, self.st, self.file_res, self.db, table, depth + 1) {
+                        if let Some(proj) = self.local_defs.project_trait_assoc_rec(qtr, adef, sty, eargs, self.st, self.file_res, self.db, table, depth + 1) {
                             return proj;
                         }
-                        table.arena.mk_alias(qtrait_def, eff_def, sty, explicit_args)
+                        table.arena.mk_alias(qtr, adef, sty, eargs)
                     }
                     _ => InferTyId::UNKNOWN,
                 }

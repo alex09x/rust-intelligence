@@ -114,47 +114,6 @@ impl<'a, 's> Runner<'a, 's> {
         }
     }
 
-    pub(super) fn infer_value_path(&mut self, path_node: NodeId) -> InferTyId {
-        let mut explicit = InlineTyBuf::new();
-        self.collect_path_turbofish(path_node, &mut explicit);
-        let Some(rref) = self.file_res.path_tail_ref_in_st(self.st, path_node) else {
-            return InferTyId::UNKNOWN;
-        };
-        let target = if matches!(rref.target, ResTarget::Def { def, local, kind: ItemKind::AssocFn } if !def.is_some() && !local.is_some()) {
-            self.resolve_unindexed_ufcs_target(path_node, rref.target)
-        } else {
-            rref.target
-        };
-        self.instantiate_target_value(target, explicit.as_slice())
-    }
-
-    fn resolve_unindexed_ufcs_target(&mut self, path_node: NodeId, fallback: ResTarget) -> ResTarget {
-        let mut segs = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment);
-        let Some(qual_seg) = segs.next() else {
-            return fallback;
-        };
-        let Some(tail_seg) = segs.last() else {
-            return fallback;
-        };
-        let fn_name =
-            self.st.own_tokens(tail_seg).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map(|(_, t)| crate::sema_fn::norm_ident(t.text(self.st.src))).unwrap_or("");
-        let qr = self.st.range(qual_seg);
-        let (target_k, tr_def) =
-            match self.file_res.refs_starting_in(qr.start as u32, qr.end as u32).iter().find(|r| r.path_node == path_node && r.end <= qr.end as u32).map(|r| r.target) {
-                Some(ResTarget::SelfTy { target, trait_def }) => (target, trait_def),
-                Some(ResTarget::Prim(p)) => (crate::name_res::ImplTargetKey::Prim(p), crate::name_res::GlobalDefId::NONE),
-                Some(rt @ ResTarget::Def { kind: ItemKind::Trait, .. }) => (crate::name_res::ImplTargetKey::Unknown, effective_target_def(rt)),
-                Some(rt @ ResTarget::Def { .. }) => (crate::name_res::ImplTargetKey::Adt(effective_target_def(rt)), crate::name_res::GlobalDefId::NONE),
-                _ => return fallback,
-            };
-        let resolved_def = self.local_defs.resolve_ufcs_assoc_fn(target_k, tr_def, fn_name, self.st, self.file_res, self.db, &mut self.ctx.table);
-        if resolved_def.is_some() {
-            ResTarget::Def { def: resolved_def, local: crate::name_res::LocalItemId::NONE, kind: ItemKind::AssocFn }
-        } else {
-            fallback
-        }
-    }
-
     pub(super) fn instantiate_target_value(&mut self, target: ResTarget, explicit_args: &[InferTyId]) -> InferTyId {
         match target {
             ResTarget::Local(lid) => self.get_local(lid),

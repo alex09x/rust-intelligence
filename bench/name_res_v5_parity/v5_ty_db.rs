@@ -15,7 +15,7 @@
 use ridx_format::{CtorShape, DefKind, TyKindView, WherePredKind};
 use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
-use ridx_syntax::ty_infer::{CtorShapeKind, InferTyArena, InferTyId, InferTyKind, MethodCand, TyDefDb, TyLangItem, UnionFindTable};
+use ridx_syntax::ty_infer::{CtorShapeKind, InferTyArena, InferTyId, InferTyKind, MethodCand, TraitAssocFnMeta, TyDefDb, TyLangItem, UnionFindTable, WhereObligation};
 
 use crate::v5_db::RidxV5ItemDb;
 use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
@@ -181,19 +181,15 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
 
     fn inherent_method_cands(&self, target: ImplTargetKey, method_name: &str, _arena: &mut InferTyArena, out: &mut Vec<MethodCand>) {
         let key = (norm_target_key(self, target), fnv1a_str(method_name));
-        let Some(list) = self.ty_tables.inherent_methods.get(&key) else {
-            return;
-        };
-        for info in list {
-            if info.name != method_name {
-                continue;
-            }
+        let Some(list) = self.ty_tables.inherent_methods.get(&key) else { return };
+        for info in list.iter().filter(|i| i.name == method_name) {
             let mdef = GlobalDefId::new(CrateId(info.r_idx), info.method_didx);
             if !out.iter().any(|c| c.method_def == mdef) {
                 out.push(MethodCand {
                     method_def: mdef,
                     trait_def: GlobalDefId::NONE,
                     bound_owner_def: mdef,
+                    impl_owner: GlobalDefId::NONE,
                     container_generics: info.impl_gc,
                     method_generics: info.method_gc,
                     has_fixed_trait_subst: false,
@@ -218,33 +214,23 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     ) {
         let trait_def = self.canonical_def(raw_trait);
         let target = norm_target_key(self, raw_target);
-        let Some(&tm_info) = self.ty_tables.trait_methods.get(&(trait_def, fnv1a_str(method_name))).filter(|i| i.name == method_name) else {
-            return;
-        };
+        let Some(&tm_info) = self.ty_tables.trait_methods.get(&(trait_def, fnv1a_str(method_name))).filter(|i| i.name == method_name) else { return };
         let impls = if target == ImplTargetKey::Param { self.ty_tables.blanket_trait_impls.get(&trait_def) } else { self.ty_tables.concrete_trait_impls.get(&(trait_def, target)) };
-        let Some(impls) = impls else {
-            return;
-        };
+        let Some(impls) = impls else { return };
         let trait_mdef = GlobalDefId::new(trait_def.krate, tm_info.method_didx);
 
         for imp in impls {
-            let Some((raw_self, raw_targs)) = self.probe_impl_compat(imp, step_ty, arena, vars) else {
-                continue;
-            };
+            let Some((raw_self, raw_targs)) = self.probe_impl_compat(imp, step_ty, arena, vars) else { continue };
             let r_idx = imp.r_idx as usize;
             let reader = &self.ws.readers()[r_idx];
-            let Some(iv) = reader.impl_view(imp.impl_idx) else {
-                continue;
-            };
-            let mut over_didx = None;
-            for adidx in iv.assoc_def_indices() {
-                if let Some(ad) = reader.definitions().get(adidx as usize) {
-                    if DefKind::from(ad.kind) == DefKind::AssocFn && reader.get_str(ad.name_offset()).trim_start_matches("r#") == method_name {
-                        over_didx = Some(adidx);
-                        break;
-                    }
-                }
-            }
+            let Some(iv) = reader.impl_view(imp.impl_idx) else { continue };
+            let imp_owner = GlobalDefId::new(CrateId(imp.r_idx), imp.impl_idx);
+            let over_didx = iv.assoc_def_indices().find(|&adidx| {
+                reader
+                    .definitions()
+                    .get(adidx as usize)
+                    .is_some_and(|ad| DefKind::from(ad.kind) == DefKind::AssocFn && reader.get_str(ad.name_offset()).trim_start_matches("r#") == method_name)
+            });
             if let Some(mdidx) = over_didx {
                 let mdef = GlobalDefId::new(CrateId(imp.r_idx), mdidx);
                 if !out.iter().any(|c| c.method_def == mdef && !c.has_fixed_trait_subst) {
@@ -253,6 +239,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
                         method_def: mdef,
                         trait_def,
                         bound_owner_def: mdef,
+                        impl_owner: imp_owner,
                         container_generics: imp.impl_gc,
                         method_generics: mgc,
                         has_fixed_trait_subst: false,
@@ -272,6 +259,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
                     method_def: trait_mdef,
                     trait_def,
                     bound_owner_def: trait_mdef,
+                    impl_owner: imp_owner,
                     container_generics: imp.impl_gc,
                     method_generics: tm_info.method_gc,
                     has_fixed_trait_subst: true,
@@ -289,7 +277,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
         let tm = self.ty_tables.trait_methods.get(&(trait_def, fnv1a_str(method_name))).filter(|i| i.name == method_name)?;
         let mut padded = InlineTyBuf::new();
         for i in 0..tm.trait_gc as usize {
-            padded.push(trait_args.get(i).copied().unwrap_or(InferTyId::UNKNOWN));
+            padded.push(trait_args.get(i).copied().unwrap_or(InferTyId::NONE));
         }
         let args_r = arena.intern_slice(padded.as_slice());
         let mdef = GlobalDefId::new(trait_def.krate, tm.method_didx);
@@ -297,6 +285,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
             method_def: mdef,
             trait_def,
             bound_owner_def: mdef,
+            impl_owner: GlobalDefId::NONE,
             container_generics: 0,
             method_generics: tm.method_gc,
             has_fixed_trait_subst: true,
@@ -322,9 +311,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     fn param_trait_bounds(&self, raw_owner: GlobalDefId, param_idx: u16, out: &mut Vec<GlobalDefId>) {
         let owner = self.canonical_def(raw_owner);
         let r_idx = owner.krate.0 as usize;
-        let Some(reader) = self.ws.readers().get(r_idx) else {
-            return;
-        };
+        let Some(reader) = self.ws.readers().get(r_idx) else { return };
         let va = reader.ty_arena();
         for wp in self.iter_owner_where_preds(r_idx, owner.index) {
             if wp.kind() != WherePredKind::TraitBound || wp.is_negative() {
@@ -343,14 +330,36 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
         }
     }
 
-    fn check_blanket_method_bounds(&self, raw_method: GlobalDefId, subst: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
-        let mdef = self.canonical_def(raw_method);
-        let Some(&impl_idx) = self.ty_tables.assoc_to_impl.get(&mdef) else {
-            return true;
-        };
-        let r_idx = mdef.krate.0 as usize;
-        let remap = ParamRemap::for_impl(self, r_idx, impl_idx, arena);
-        self.check_impl_where_bounds(r_idx, impl_idx, &remap, subst, arena, vars, 0)
+    fn check_blanket_method_bounds(&self, cand: &MethodCand, subst: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
+        self.v5_check_blanket_method_bounds(cand, subst, arena, vars)
+    }
+
+    fn trait_of_assoc_fn(&self, assoc_fn: GlobalDefId) -> Option<TraitAssocFnMeta> {
+        self.v5_trait_of_assoc_fn(assoc_fn)
+    }
+
+    fn trait_assoc_fn_by_name(&self, trait_def: GlobalDefId, fn_name: &str) -> Option<TraitAssocFnMeta> {
+        self.v5_trait_assoc_fn_by_name(trait_def, fn_name)
+    }
+
+    fn owner_where_obligations(&self, owner_def: GlobalDefId, arena: &mut InferTyArena, out: &mut Vec<WhereObligation>) {
+        self.v5_owner_where_obligations(owner_def, arena, out);
+    }
+
+    fn solve_trait_obligation(&self, trait_def: GlobalDefId, self_ty: InferTyId, trait_args: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
+        self.v5_solve_trait_obligation(trait_def, self_ty, trait_args, arena, vars)
+    }
+
+    fn project_param_assoc(
+        &self,
+        owner_def: GlobalDefId,
+        param_idx: u16,
+        trait_def: GlobalDefId,
+        assoc_def: GlobalDefId,
+        trait_args: &[InferTyId],
+        arena: &mut InferTyArena,
+    ) -> Option<InferTyId> {
+        self.v5_project_param_assoc(owner_def, param_idx, trait_def, assoc_def, trait_args, arena)
     }
 }
 

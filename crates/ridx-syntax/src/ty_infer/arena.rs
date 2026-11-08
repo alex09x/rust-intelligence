@@ -11,6 +11,7 @@
 //! Intrusive hash-consed [`InferTyArena`] with pre-interned builtins and zero-allocation reuse.
 
 use super::ty::{InferTyId, InferTyKind, TyFlags, TySliceRange, TyVarId};
+use super::uf_table::InlineTyBuf;
 use crate::name_res::{GlobalDefId, PrimTy};
 
 /// Intrusive hash-consed arena of [`InferTyKind`]s with zero per-type heap allocations.
@@ -70,15 +71,23 @@ impl InferTyArena {
 
     /// Resets dynamic entries while keeping all underlying `Vec` capacities (`0` allocations on next fn).
     pub fn clear(&mut self) {
+        if self.dynamic_count > 0 {
+            let dyn_len = self.hashes.len().saturating_sub(InferTyId::BUILTIN_COUNT);
+            if dyn_len * 2 < self.buckets.len() {
+                let mask = self.buckets.len() - 1;
+                for &h in &self.hashes[InferTyId::BUILTIN_COUNT..] {
+                    self.buckets[(h as usize) & mask] = u32::MAX;
+                }
+            } else {
+                self.buckets.fill(u32::MAX);
+            }
+            self.dynamic_count = 0;
+        }
         self.kinds.truncate(InferTyId::BUILTIN_COUNT);
         self.flags.truncate(InferTyId::BUILTIN_COUNT);
         self.hashes.truncate(InferTyId::BUILTIN_COUNT);
         self.next.truncate(InferTyId::BUILTIN_COUNT);
         self.ty_lists.clear();
-        if self.dynamic_count > 0 {
-            self.buckets.fill(u32::MAX);
-            self.dynamic_count = 0;
-        }
     }
 
     #[inline]
@@ -298,4 +307,81 @@ fn mix_hash(tag: u8, a: u64, b: u64, list: &[InferTyId]) -> u64 {
         h = (h ^ (item.0 as u64)).wrapping_mul(0x517c_c1b7_2722_0a95);
     }
     h ^ (h >> 31)
+}
+
+/// Copies a template [`InferTyId`] from `src` into `dst` with zero heap allocations.
+pub fn clone_ty_into(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena) -> InferTyId {
+    clone_ty_rec(src, id, dst, 0)
+}
+
+fn clone_ty_rec(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena, depth: u8) -> InferTyId {
+    if !id.is_some() || (id.0 as usize) < InferTyId::BUILTIN_COUNT || depth > 64 {
+        return id;
+    }
+    match src.kind(id) {
+        InferTyKind::Unknown => InferTyId::UNKNOWN,
+        InferTyKind::Never => InferTyId::NEVER,
+        InferTyKind::Prim(p) => InferTyId::from_prim(p),
+        InferTyKind::Ref { is_mut, inner } => {
+            let sub = clone_ty_rec(src, inner, dst, depth + 1);
+            dst.mk_ref(is_mut, sub)
+        }
+        InferTyKind::Ptr { is_mut, inner } => {
+            let sub = clone_ty_rec(src, inner, dst, depth + 1);
+            dst.mk_ptr(is_mut, sub)
+        }
+        InferTyKind::Slice(elem) => {
+            let sub = clone_ty_rec(src, elem, dst, depth + 1);
+            dst.mk_slice(sub)
+        }
+        InferTyKind::Array { elem, len } => {
+            let sub = clone_ty_rec(src, elem, dst, depth + 1);
+            dst.mk_array(sub, len)
+        }
+        InferTyKind::Param { idx, def } => dst.mk_param(idx, def),
+        InferTyKind::Tuple(r) => {
+            let buf = clone_slice(src, r, dst, depth + 1);
+            dst.mk_tuple(buf.as_slice())
+        }
+        InferTyKind::Adt { def, args } => {
+            let buf = clone_slice(src, args, dst, depth + 1);
+            dst.mk_adt(def, buf.as_slice())
+        }
+        InferTyKind::FnPtr { sig } => {
+            let buf = clone_slice(src, sig, dst, depth + 1);
+            let s = buf.as_slice();
+            dst.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
+        }
+        InferTyKind::FnDef { def, args } => {
+            let buf = clone_slice(src, args, dst, depth + 1);
+            dst.mk_fn_def(def, buf.as_slice())
+        }
+        InferTyKind::Closure { id: cid, sig } => {
+            let buf = clone_slice(src, sig, dst, depth + 1);
+            let s = buf.as_slice();
+            dst.mk_closure(cid, &s[..s.len() - 1], s[s.len() - 1])
+        }
+        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
+            let ns = clone_ty_rec(src, self_ty, dst, depth + 1);
+            let buf = clone_slice(src, args, dst, depth + 1);
+            dst.mk_alias(trait_def, assoc_def, ns, buf.as_slice())
+        }
+        InferTyKind::Dyn { principal, args } => {
+            let buf = clone_slice(src, args, dst, depth + 1);
+            dst.mk_dyn(principal, buf.as_slice())
+        }
+        InferTyKind::Opaque { def, args } => {
+            let buf = clone_slice(src, args, dst, depth + 1);
+            dst.mk_opaque(def, buf.as_slice())
+        }
+        InferTyKind::Infer(_) => InferTyId::UNKNOWN,
+    }
+}
+
+fn clone_slice(src: &InferTyArena, r: TySliceRange, dst: &mut InferTyArena, depth: u8) -> InlineTyBuf {
+    let mut buf = InlineTyBuf::new();
+    for &elem in src.slice(r) {
+        buf.push(clone_ty_rec(src, elem, dst, depth));
+    }
+    buf
 }

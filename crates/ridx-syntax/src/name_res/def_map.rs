@@ -177,24 +177,34 @@ impl CrateDefMap {
     }
 
     /// Collects all traits in scope inside `module` (explicit/glob named traits, `use Trait as _;`,
-    /// and standard prelude traits when implicit prelude is active).
+    /// and standard prelude traits when implicit prelude is active) in deterministic order.
     pub fn traits_in_scope(&self, mod_tree: &ModuleTree, module: ModuleId) -> Vec<ResolvedBinding> {
         let sc = self.scope(module);
         let mut out: Vec<ResolvedBinding> = Vec::with_capacity(sc.unnamed_traits.len() + 16);
         out.extend(sc.unnamed_traits.iter().copied());
-        for pns in sc.entries.values() {
-            if let Some(t) = pns.types {
-                if !t.ambiguous && t.kind == ItemKind::Trait && !out.iter().any(|x| x.same_target(t)) {
-                    out.push(t);
-                }
+        let mut named: Vec<(&str, ResolvedBinding)> = Vec::with_capacity(sc.entries.len());
+        for (k, pns) in &sc.entries {
+            if let Some(t) = pns.types.filter(|t| !t.ambiguous && t.kind == ItemKind::Trait) {
+                named.push((k.as_str(), t));
+            }
+        }
+        named.sort_unstable_by(|a, b| a.0.cmp(b.0));
+        for (_, t) in named {
+            if !out.iter().any(|x| x.same_target(t)) {
+                out.push(t);
             }
         }
         if !mod_tree.module(module).has_no_implicit_prelude() {
-            for pns in self.prelude.values() {
-                if let Some(t) = pns.types {
-                    if t.kind == ItemKind::Trait && !out.iter().any(|x| x.same_target(t)) {
-                        out.push(t);
-                    }
+            let mut prel: Vec<(&str, ResolvedBinding)> = Vec::with_capacity(self.prelude.len());
+            for (k, pns) in &self.prelude {
+                if let Some(t) = pns.types.filter(|t| t.kind == ItemKind::Trait) {
+                    prel.push((k.as_str(), t));
+                }
+            }
+            prel.sort_unstable_by(|a, b| a.0.cmp(b.0));
+            for (_, t) in prel {
+                if !out.iter().any(|x| x.same_target(t)) {
+                    out.push(t);
                 }
             }
         }

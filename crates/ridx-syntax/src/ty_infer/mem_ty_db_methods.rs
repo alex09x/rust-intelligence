@@ -18,7 +18,7 @@ use super::mem_ty_db::{instantiate_in_arena, MemTyDefDb};
 use super::ty::{InferTyId, InferTyKind, TyVarKind};
 use super::uf_table::{InlineTyBuf, UnionFindTable};
 use super::unify;
-use crate::name_res::{GlobalDefId, ImplTargetKey};
+use crate::name_res::{CrateId, GlobalDefId, ImplTargetKey};
 
 #[derive(Clone, Debug)]
 pub(super) struct InherentMethodEntry {
@@ -45,6 +45,7 @@ pub(super) struct TraitImplEntry {
     pub impl_generics: u16,
     pub self_ty: InferTyId,
     pub trait_args: Vec<InferTyId>,
+    pub bounds: Vec<(InferTyId, GlobalDefId, Vec<InferTyId>)>,
     pub overrides: Vec<(String, GlobalDefId, u16)>,
     pub is_blanket: bool,
 }
@@ -74,10 +75,24 @@ impl MemTyDefDb {
 
     /// Registers `impl<G..> Trait<Args..> for SelfTy` with optional method overrides `(name, impl_fn_def, method_generics)`.
     pub fn add_trait_impl(&mut self, trait_def: GlobalDefId, impl_generics: u16, self_ty: InferTyId, trait_args: &[InferTyId], overrides: &[(&str, GlobalDefId, u16)]) {
+        self.add_trait_impl_with_bounds(trait_def, impl_generics, self_ty, trait_args, &[], overrides);
+    }
+
+    /// Registers `impl<G..> Trait<Args..> for SelfTy where Bounds..` (`Checkbox 3.4`).
+    pub fn add_trait_impl_with_bounds(
+        &mut self,
+        trait_def: GlobalDefId,
+        impl_generics: u16,
+        self_ty: InferTyId,
+        trait_args: &[InferTyId],
+        bounds: &[(InferTyId, GlobalDefId, &[InferTyId])],
+        overrides: &[(&str, GlobalDefId, u16)],
+    ) {
         let is_blanket = matches!(self.templates.kind(self_ty), InferTyKind::Param { .. });
         let target = if is_blanket { ImplTargetKey::Param } else { impl_target_key_of_ty(&self.templates, self_ty) };
+        let bvec = bounds.iter().map(|&(lhs, td, args)| (lhs, td, args.to_vec())).collect();
         let ov = overrides.iter().map(|&(n, d, mg)| (n.to_string(), d, mg)).collect();
-        self.trait_impls.push(TraitImplEntry { target, trait_def, impl_generics, self_ty, trait_args: trait_args.to_vec(), overrides: ov, is_blanket });
+        self.trait_impls.push(TraitImplEntry { target, trait_def, impl_generics, self_ty, trait_args: trait_args.to_vec(), bounds: bvec, overrides: ov, is_blanket });
     }
 
     pub fn add_supertrait(&mut self, sub_trait: GlobalDefId, super_trait: GlobalDefId) {
@@ -105,6 +120,7 @@ impl MemTyDefDb {
                     fixed_self_ty: InferTyId::NONE,
                     fixed_trait_args: super::ty::TySliceRange::EMPTY,
                     is_blanket_impl: false,
+                    impl_owner: GlobalDefId::NONE,
                     cst_fn_node: u32::MAX,
                 });
             }
@@ -122,7 +138,7 @@ impl MemTyDefDb {
         vars: &mut UnionFindTable,
         out: &mut Vec<MethodCand>,
     ) {
-        for imp in &self.trait_impls {
+        for (imp_idx, imp) in self.trait_impls.iter().enumerate() {
             if imp.trait_def != trait_def {
                 continue;
             }
@@ -145,6 +161,7 @@ impl MemTyDefDb {
             if !compat {
                 continue;
             }
+            let imp_owner = GlobalDefId::new(CrateId(0), imp_idx as u32);
             if let Some(&(_, ov_def, ov_mg)) = imp.overrides.iter().find(|(n, _, _)| n == method_name) {
                 let bound_owner = self.trait_methods.iter().find(|tm| tm.trait_def == trait_def && tm.name == method_name).map_or(ov_def, |tm| tm.method_def);
                 out.push(MethodCand {
@@ -157,6 +174,7 @@ impl MemTyDefDb {
                     fixed_self_ty: InferTyId::NONE,
                     fixed_trait_args: super::ty::TySliceRange::EMPTY,
                     is_blanket_impl: imp.is_blanket,
+                    impl_owner: imp_owner,
                     cst_fn_node: u32::MAX,
                 });
                 continue;
@@ -171,6 +189,7 @@ impl MemTyDefDb {
                 dc.fixed_self_ty = self_tpl;
                 dc.fixed_trait_args = arena.intern_slice(tr_args.as_slice());
                 dc.is_blanket_impl = imp.is_blanket;
+                dc.impl_owner = imp_owner;
                 out.push(dc);
             }
         }
@@ -191,7 +210,7 @@ impl MemTyDefDb {
         if let Some(tm) = self.trait_methods.iter().find(|m| m.trait_def == trait_def && m.name == method_name) {
             let mut padded = InlineTyBuf::new();
             for i in 0..tm.trait_generics as usize {
-                padded.push(trait_args.get(i).copied().unwrap_or(InferTyId::UNKNOWN));
+                padded.push(trait_args.get(i).copied().unwrap_or(InferTyId::NONE));
             }
             let args_r = arena.intern_slice(padded.as_slice());
             return Some(MethodCand {
@@ -204,6 +223,7 @@ impl MemTyDefDb {
                 fixed_self_ty: self_ty,
                 fixed_trait_args: args_r,
                 is_blanket_impl: false,
+                impl_owner: GlobalDefId::NONE,
                 cst_fn_node: u32::MAX,
             });
         }
@@ -228,7 +248,10 @@ impl MemTyDefDb {
         vars: &mut UnionFindTable,
     ) -> Option<InferTyId> {
         for r in &self.trait_assoc_rules {
-            if (trait_def.is_some() && r.trait_def != trait_def) || r.assoc_def != assoc_def || r.trait_args.len() != trait_args.len() {
+            if (trait_def.is_some() && r.trait_def != trait_def && !self.has_supertrait_path(trait_def, r.trait_def))
+                || r.assoc_def != assoc_def
+                || r.trait_args.len() != trait_args.len()
+            {
                 continue;
             }
             let snap = vars.start_snapshot();

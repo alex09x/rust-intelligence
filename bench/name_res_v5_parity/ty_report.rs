@@ -8,10 +8,10 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! `.ridx.exprty` sidecar loader, structural `InferTyId` oracle comparator (`tys_eq`),
-//! and Phase `3.3` + `3.7` 7-corpus summary table printer.
+//! `.ridx.exprty` sidecar loader, strict-vs-lenient structural `InferTyId` oracle comparator
+//! (`tys_eq_mode`), and Phase `3.4` + `3.7` 7-corpus summary table printer.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -21,10 +21,15 @@ use ridx_syntax::ty_infer::{InferTyArena, InferTyId, InferTyKind, TySliceRange};
 
 use crate::compare::CorpusReport;
 use crate::meta::CorpusSourceDb;
+use crate::ty_funnel::print_funnel_strictness_and_latency;
 use crate::v5_db::RidxV5ItemDb;
 
 pub const EXPRTY_MAGIC: &[u8; 8] = b"RIDXETY1";
 pub const DESUGARED_TY_FLAG: u32 = 0x8000_0000;
+
+pub const EQ_STRICT: u8 = 0;
+pub const EQ_LENIENT_DYN_OPAQUE: u8 = 1 << 0;
+pub const EQ_LENIENT_ARRAY_LEN: u8 = 1 << 1;
 
 #[derive(Clone, Copy)]
 pub struct ExprTyRec {
@@ -37,7 +42,9 @@ pub struct ExprTyRec {
 
 #[derive(Default)]
 pub struct ExprTySidecar {
-    pub by_file: HashMap<FileId, Vec<ExprTyRec>>,
+    pub total_recs: usize,
+    pub unmapped_file_recs: usize,
+    pub by_file: BTreeMap<u32, Vec<ExprTyRec>>,
 }
 
 pub fn load_exprty_sidecar(ridx_path: &Path, source_root: Option<&Path>, src: &CorpusSourceDb) -> Option<ExprTySidecar> {
@@ -58,16 +65,17 @@ pub fn load_exprty_sidecar(ridx_path: &Path, source_root: Option<&Path>, src: &C
         off += slen;
         fmap.push(src.lookup_abs_or_rel(source_root, s).unwrap_or(FileId::NONE));
     }
-    let mut sidecar = ExprTySidecar::default();
+    let mut sidecar = ExprTySidecar { total_recs: recs_len, unmapped_file_recs: 0, by_file: BTreeMap::new() };
     for _ in 0..recs_len {
         let chunk = bytes.get(off..off + 24)?;
         off += 24;
         let fidx = u32::from_le_bytes(chunk[0..4].try_into().unwrap()) as usize;
         let fid = fmap.get(fidx).copied().unwrap_or(FileId::NONE);
         if !fid.is_some() {
+            sidecar.unmapped_file_recs += 1;
             continue;
         }
-        sidecar.by_file.entry(fid).or_default().push(ExprTyRec {
+        sidecar.by_file.entry(fid.0).or_default().push(ExprTyRec {
             start: u32::from_le_bytes(chunk[4..8].try_into().unwrap()),
             end: u32::from_le_bytes(chunk[8..12].try_into().unwrap()),
             owner_def_idx: u32::from_le_bytes(chunk[12..16].try_into().unwrap()),
@@ -98,37 +106,68 @@ pub fn ty_contains_unknown(arena: &InferTyArena, ty: InferTyId, depth: u8) -> bo
     }
 }
 
-pub fn tys_eq(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, a: InferTyId, b: InferTyId, depth: u8) -> bool {
+/// Compares `a` and `b`, returning `Some(EQ_STRICT)` (`0`) when strictly structurally equal, or
+/// bitflags (`EQ_LENIENT_DYN_OPAQUE` / `EQ_LENIENT_ARRAY_LEN`) when equal ONLY via lenient rules.
+pub fn tys_eq_mode(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, a: InferTyId, b: InferTyId, depth: u8) -> Option<u8> {
     if a == b && !ty_contains_unknown(arena, a, 0) {
-        return true;
+        return Some(EQ_STRICT);
     }
     if depth > 24 || !a.is_some() || !b.is_some() {
-        return false;
+        return None;
     }
     match (arena.kind(a), arena.kind(b)) {
-        (InferTyKind::Unknown | InferTyKind::Infer(_), _) | (_, InferTyKind::Unknown | InferTyKind::Infer(_)) => false,
-        (InferTyKind::Never, InferTyKind::Never) => true,
-        (InferTyKind::Prim(pa), InferTyKind::Prim(pb)) => pa == pb,
-        (InferTyKind::Param { idx: ia, .. }, InferTyKind::Param { idx: ib, .. }) => ia == ib,
+        (InferTyKind::Unknown | InferTyKind::Infer(_), _) | (_, InferTyKind::Unknown | InferTyKind::Infer(_)) => None,
+        (InferTyKind::Never, InferTyKind::Never) => Some(EQ_STRICT),
+        (InferTyKind::Prim(pa), InferTyKind::Prim(pb)) => (pa == pb).then_some(EQ_STRICT),
+        (InferTyKind::Param { idx: ia, .. }, InferTyKind::Param { idx: ib, .. }) => (ia == ib).then_some(EQ_STRICT),
         (InferTyKind::Ref { is_mut: ma, inner: ia }, InferTyKind::Ref { is_mut: mb, inner: ib })
-        | (InferTyKind::Ptr { is_mut: ma, inner: ia }, InferTyKind::Ptr { is_mut: mb, inner: ib }) => ma == mb && tys_eq(db, arena, ia, ib, depth + 1),
-        (InferTyKind::Slice(ea), InferTyKind::Slice(eb)) => tys_eq(db, arena, ea, eb, depth + 1),
+        | (InferTyKind::Ptr { is_mut: ma, inner: ia }, InferTyKind::Ptr { is_mut: mb, inner: ib }) => {
+            if ma == mb {
+                tys_eq_mode(db, arena, ia, ib, depth + 1)
+            } else {
+                None
+            }
+        }
+        (InferTyKind::Slice(ea), InferTyKind::Slice(eb)) => tys_eq_mode(db, arena, ea, eb, depth + 1),
         (InferTyKind::Array { elem: ea, len: la }, InferTyKind::Array { elem: eb, len: lb }) => {
-            (la == lb || la == u64::MAX || lb == u64::MAX) && tys_eq(db, arena, ea, eb, depth + 1)
+            let m = tys_eq_mode(db, arena, ea, eb, depth + 1)?;
+            if la == lb {
+                Some(m)
+            } else if la == u64::MAX || lb == u64::MAX {
+                Some(m | EQ_LENIENT_ARRAY_LEN)
+            } else {
+                None
+            }
         }
         (InferTyKind::Tuple(ra), InferTyKind::Tuple(rb))
         | (InferTyKind::FnPtr { sig: ra }, InferTyKind::FnPtr { sig: rb })
-        | (InferTyKind::Closure { sig: ra, .. }, InferTyKind::Closure { sig: rb, .. }) => slice_tys_eq(db, arena, ra, rb, depth + 1),
+        | (InferTyKind::Closure { sig: ra, .. }, InferTyKind::Closure { sig: rb, .. }) => slice_tys_eq_mode(db, arena, ra, rb, depth + 1),
         (InferTyKind::Adt { def: da, args: ra }, InferTyKind::Adt { def: d2, args: rb }) | (InferTyKind::FnDef { def: da, args: ra }, InferTyKind::FnDef { def: d2, args: rb }) => {
-            defs_same_item(db, da, d2) && adt_args_eq(db, arena, ra, rb, depth + 1)
+            if defs_same_item(db, da, d2) {
+                adt_args_eq_mode(db, arena, ra, rb, depth + 1)
+            } else {
+                None
+            }
         }
-        (InferTyKind::Dyn { principal: da, .. }, InferTyKind::Dyn { principal: d2, .. }) | (InferTyKind::Opaque { def: da, .. }, InferTyKind::Opaque { def: d2, .. }) => {
-            defs_same_item(db, da, d2)
+        (InferTyKind::Dyn { principal: da, args: ra }, InferTyKind::Dyn { principal: d2, args: rb })
+        | (InferTyKind::Opaque { def: da, args: ra }, InferTyKind::Opaque { def: d2, args: rb }) => {
+            if !defs_same_item(db, da, d2) {
+                return None;
+            }
+            if let Some(m) = slice_tys_eq_mode(db, arena, ra, rb, depth + 1) {
+                Some(m)
+            } else {
+                Some(EQ_LENIENT_DYN_OPAQUE)
+            }
         }
         (InferTyKind::Alias { trait_def: ta, assoc_def: aa, self_ty: sa, .. }, InferTyKind::Alias { trait_def: tb, assoc_def: ab, self_ty: sb, .. }) => {
-            defs_same_item(db, ta, tb) && defs_same_item(db, aa, ab) && tys_eq(db, arena, sa, sb, depth + 1)
+            if defs_same_item(db, ta, tb) && defs_same_item(db, aa, ab) {
+                tys_eq_mode(db, arena, sa, sb, depth + 1)
+            } else {
+                None
+            }
         }
-        _ => false,
+        _ => None,
     }
 }
 
@@ -170,30 +209,36 @@ fn defs_same_item(db: &RidxV5ItemDb<'_>, a: GlobalDefId, b: GlobalDefId) -> bool
     ra == rb && sa.file_id() == sb.file_id() && sa.start_line() > 0 && sa.start_line() == sb.start_line() && sa.start_col() == sb.start_col()
 }
 
-fn slice_tys_eq(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, ra: TySliceRange, rb: TySliceRange, depth: u8) -> bool {
+fn slice_tys_eq_mode(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, ra: TySliceRange, rb: TySliceRange, depth: u8) -> Option<u8> {
     let (sa, sb) = (arena.slice(ra), arena.slice(rb));
-    sa.len() == sb.len() && sa.iter().zip(sb.iter()).all(|(&x, &y)| tys_eq(db, arena, x, y, depth))
+    if sa.len() != sb.len() {
+        return None;
+    }
+    let mut acc = EQ_STRICT;
+    for (&x, &y) in sa.iter().zip(sb.iter()) {
+        acc |= tys_eq_mode(db, arena, x, y, depth)?;
+    }
+    Some(acc)
 }
 
-fn adt_args_eq(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, ra: TySliceRange, rb: TySliceRange, depth: u8) -> bool {
+fn adt_args_eq_mode(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, ra: TySliceRange, rb: TySliceRange, depth: u8) -> Option<u8> {
     let (sa, sb) = (arena.slice(ra), arena.slice(rb));
     let common = sa.len().min(sb.len());
+    let mut acc = EQ_STRICT;
     for i in 0..common {
         if sa[i] == InferTyId::UNKNOWN && sb[i] == InferTyId::UNKNOWN {
             continue;
         }
-        if !tys_eq(db, arena, sa[i], sb[i], depth) {
-            return false;
-        }
+        acc |= tys_eq_mode(db, arena, sa[i], sb[i], depth)?;
     }
-    true
+    Some(acc)
 }
 
 pub fn print_ty_parity_tables(all_reports: &[CorpusReport], verbose_samples: usize) {
     if all_reports.is_empty() {
         return;
     }
-    println!("\n=== Phase `3.3` + `3.7` Live Type Inference, `.method()`/`.field` (`Excl Dot`), & Compiler `TypeckResults` Parity ===");
+    println!("\n=== Phase `3.4` + `3.7` Live Type Inference, `.method()`/`.field` (`Excl Dot`), & Compiler `TypeckResults` Parity ===");
     println!(
         "| Corpus | Bodies | Exprs vs `rustc` | Expr Match % | Expr Unk | Expr Diff | Dot CST Match | Dot CST % | Dot MacroTT | Dot Total / Excl Dot | Unified % (`+Dot`) | warm ns/fn | warm allocs/fn |"
     );
@@ -281,6 +326,8 @@ pub fn print_ty_parity_tables(all_reports: &[CorpusReport], verbose_samples: usi
         (g_ns as f64) / g_fdiv,
         (g_allocs as f64) / g_fdiv,
     );
+
+    print_funnel_strictness_and_latency(all_reports);
 
     if verbose_samples > 0 {
         for r in all_reports {
