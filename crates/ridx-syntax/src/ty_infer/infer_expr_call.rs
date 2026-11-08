@@ -34,6 +34,8 @@ impl<'a, 's> Runner<'a, 's> {
                 if arg_len < arg_nodes.len() {
                     arg_nodes[arg_len] = ch;
                     arg_len += 1;
+                } else {
+                    let _ = self.infer_expr(ch, Expectation::None);
                 }
             }
         }

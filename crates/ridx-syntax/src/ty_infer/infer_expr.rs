@@ -47,7 +47,7 @@ impl<'a, 's> Runner<'a, 's> {
             K::Literal => self.infer_literal_tokens(expr),
             K::PathExpr => self.st.child(expr, K::Path).map_or(InferTyId::UNKNOWN, |p| self.infer_value_path(p)),
             K::ParenExpr => {
-                let inner = self.st.children(expr).find(|&c| is_expr_node(self.st.kind(c))).map_or(InferTyId::UNIT, |c| self.infer_expr(c, expectation));
+                let inner = self.st.children(expr).find(|&c| is_expr_node(self.st.kind(c))).map_or(InferTyId::UNKNOWN, |c| self.infer_expr(c, expectation));
                 return self.record_expr(expr, inner);
             }
             K::TupleExpr => self.infer_tuple_expr(expr, expectation),
@@ -88,6 +88,10 @@ impl<'a, 's> Runner<'a, 's> {
             K::RangeExpr => self.infer_range_expr(expr),
             K::ClosureExpr => return self.infer_closure_expr(expr, expectation),
             K::MethodCallExpr => self.infer_method_call_expr(expr, expectation),
+            K::Error => {
+                self.infer_error_recovery_node(expr);
+                InferTyId::UNKNOWN
+            }
             _ => InferTyId::UNKNOWN,
         };
         let ty = match expectation.coercion_target(&mut self.ctx.table) {
@@ -208,7 +212,12 @@ impl<'a, 's> Runner<'a, 's> {
             if len < kids.len() {
                 kids[len] = ch;
                 len += 1;
+            } else {
+                let _ = self.infer_expr(ch, Expectation::None);
             }
+        }
+        if len == 0 && !self.st.own_tokens(expr).any(|(_, t)| t.kind == T::RParen) {
+            return InferTyId::UNKNOWN;
         }
         let mut exps = core::mem::take(&mut self.ctx.exp_elems_buf);
         expectation.tuple_elem_expectations(&mut self.ctx.table, len, &mut exps);
@@ -295,6 +304,7 @@ impl<'a, 's> Runner<'a, 's> {
                     }
                     tail_ty = Some(t);
                 }
+                K::Error => self.infer_error_recovery_node(ch),
                 _ => {}
             }
         }
@@ -355,5 +365,21 @@ impl<'a, 's> Runner<'a, 's> {
             self.infer_pat(pat, init_ty, BindingMode::ByValue, None);
         }
         InferTyId::BOOL
+    }
+
+    fn infer_error_recovery_node(&mut self, err_node: NodeId) {
+        if self.expr_depth > 384 {
+            return;
+        }
+        self.expr_depth += 1;
+        for ch in self.st.children(err_node) {
+            let k = self.st.kind(ch);
+            if is_expr_node(k) {
+                let _ = self.infer_expr(ch, Expectation::None);
+            } else if k == K::Error {
+                self.infer_error_recovery_node(ch);
+            }
+        }
+        self.expr_depth -= 1;
     }
 }

@@ -35,8 +35,13 @@ pub(crate) fn generic_args(p: &mut Parser<'_>) {
                 K::ConstArg
             }
             Some(k) if k.is_literal() || k == T::Minus || k == T::True || k == T::False => {
-                p.eat(T::Minus);
-                p.bump();
+                if p.eat(T::Minus) {
+                    if p.current().is_some_and(|c| c.is_literal() || matches!(c, T::True | T::False)) {
+                        p.bump();
+                    }
+                } else {
+                    p.bump();
+                }
                 K::ConstArg
             }
             Some(T::Ident) if assoc_arg_ahead(p) => {
@@ -132,8 +137,11 @@ pub(crate) fn opt_generic_params(p: &mut Parser<'_>) {
                 if p.eat(T::Eq) {
                     if p.at(T::LBrace) {
                         super::stmts::block(p);
-                    } else {
-                        p.eat(T::Minus);
+                    } else if p.eat(T::Minus) {
+                        if p.current().is_some_and(|c| c.is_literal() || matches!(c, T::True | T::False)) {
+                            p.bump();
+                        }
+                    } else if p.current().is_some_and(|c| c.is_literal() || matches!(c, T::True | T::False | T::Ident)) {
                         p.bump();
                     }
                 }

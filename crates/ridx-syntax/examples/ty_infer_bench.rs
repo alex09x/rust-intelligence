@@ -136,6 +136,15 @@ fn process_traits<I: Iterator<Item = u64>>(it: I, items: Vec<u64>) -> Vec<u64> {
     let _ = (head, extra, it);
     items.into_iter().collect::<Vec<_>>()
 }
+
+fn process_partial(items: &Vec<u64>, pkt: &Packet<Option<u64>>) -> Option<u64> {
+    let unk = missing_symbol + ;
+    let tup = (items, pkt);
+    let _ = tup.0.;
+    let _ = items.;
+    let _ = unk;
+    pkt.payload
+}
 "#;
 
 fn main() {
@@ -348,4 +357,30 @@ fn main() {
         bytes_tr
     );
     assert_eq!(allocs_tr, 0, "expected 0 heap allocations in steady-state 3.4 trait solving loop");
+
+    let p_node = st.descendants(st.root()).find(|&n| st.kind(n) == K::Fn && st.child(n, K::Name).is_some_and(|nn| st.text(nn) == "process_partial")).expect("process_partial fn");
+    for _ in 0..16 {
+        ctx.infer_fn_into(&st, &file_res, &ty_db, &local_defs, p_node, &mut res);
+        black_box(res.incomplete_dots.len());
+    }
+    ALLOCS.store(0, Ordering::Relaxed);
+    BYTES.store(0, Ordering::Relaxed);
+    let t4 = Instant::now();
+    for _ in 0..iters_body {
+        ctx.infer_fn_into(&st, &file_res, &ty_db, &local_defs, p_node, &mut res);
+        black_box(res.incomplete_dots.len());
+    }
+    let ns_p = t4.elapsed().as_nanos() as f64;
+    let allocs_p = ALLOCS.load(Ordering::Relaxed);
+    let bytes_p = BYTES.load(Ordering::Relaxed);
+    println!(
+        "ty_infer_bench (3.5 partial-dot+recovery): iters={} total_ms={:.2} ns/fn={:.1} warm_allocs={} warm_bytes={}",
+        iters_body,
+        ns_p / 1_000_000.0,
+        ns_p / (iters_body as f64),
+        allocs_p,
+        bytes_p
+    );
+    assert_eq!(allocs_p, 0, "expected 0 heap allocations in steady-state 3.5 partial-code recovery loop");
+    assert_eq!(res.incomplete_dots.len(), 2, "expected both `tup.0.` and `items.` incomplete dots to be recorded");
 }

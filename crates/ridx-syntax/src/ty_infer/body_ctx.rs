@@ -43,6 +43,8 @@ pub struct FnInferResult {
     pub pat_tys: Vec<(NodeId, InferTyId)>,
     pub local_tys: Vec<(LocalBindId, InferTyId)>,
     pub dot_refs: Vec<ResolvedDotRef>,
+    /// Byte end offset of an incomplete trailing `.` (`x.` or `self.0.`) paired with receiver type.
+    pub incomplete_dots: Vec<(u32, InferTyId)>,
 }
 
 impl Default for FnInferResult {
@@ -53,7 +55,16 @@ impl Default for FnInferResult {
 
 impl FnInferResult {
     pub fn new() -> Self {
-        Self { fn_node: NodeId(0), ret_ty: InferTyId::UNKNOWN, body_ty: InferTyId::UNKNOWN, expr_tys: Vec::new(), pat_tys: Vec::new(), local_tys: Vec::new(), dot_refs: Vec::new() }
+        Self {
+            fn_node: NodeId(0),
+            ret_ty: InferTyId::UNKNOWN,
+            body_ty: InferTyId::UNKNOWN,
+            expr_tys: Vec::new(),
+            pat_tys: Vec::new(),
+            local_tys: Vec::new(),
+            dot_refs: Vec::new(),
+            incomplete_dots: Vec::new(),
+        }
     }
 
     #[inline]
@@ -65,21 +76,7 @@ impl FnInferResult {
         self.pat_tys.clear();
         self.local_tys.clear();
         self.dot_refs.clear();
-    }
-
-    #[inline]
-    pub fn expr_ty(&self, node: NodeId) -> Option<InferTyId> {
-        self.expr_tys.binary_search_by_key(&node, |&(n, _)| n).ok().map(|i| self.expr_tys[i].1)
-    }
-
-    #[inline]
-    pub fn pat_ty(&self, node: NodeId) -> Option<InferTyId> {
-        self.pat_tys.binary_search_by_key(&node, |&(n, _)| n).ok().map(|i| self.pat_tys[i].1)
-    }
-
-    #[inline]
-    pub fn local_ty(&self, id: LocalBindId) -> Option<InferTyId> {
-        self.local_tys.binary_search_by_key(&id, |&(l, _)| l).ok().map(|i| self.local_tys[i].1)
+        self.incomplete_dots.clear();
     }
 }
 
@@ -283,9 +280,11 @@ impl<'a, 's> Runner<'a, 's> {
                         self.record_pat(p, pty);
                     }
                     K::Param => {
-                        let pty = match idx_inputs.get(param_cursor).copied() {
+                        let cst_tn = self.st.children(p).find(|&c| self.st.kind(c).is_type());
+                        let has_impl_tr = cst_tn.is_some_and(|tn| self.st.descendants(tn).any(|d| self.st.kind(d) == K::ImplTraitType));
+                        let pty = match idx_inputs.get(param_cursor).copied().filter(|_| !has_impl_tr) {
                             Some(t) => t,
-                            None => match self.st.children(p).find(|&c| self.st.kind(c).is_type()) {
+                            None => match cst_tn {
                                 Some(tn) => tenv.lower_cst_ty(&mut self.ctx.table, tn),
                                 None => self.ctx.table.new_ty_var(),
                             },
@@ -342,37 +341,45 @@ impl<'a, 's> Runner<'a, 's> {
         }
     }
 
+    #[inline]
+    fn finalize_ty(&mut self, owner: super::autoderef::NormOwner, raw: InferTyId) -> InferTyId {
+        let r1 = self.ctx.table.resolve_with_fallback(raw);
+        let norm = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, r1);
+        self.ctx.table.resolve_with_fallback(norm)
+    }
+
     fn finalize_result(&mut self) {
         let owner = self.norm_owner();
-        let rr = self.ctx.table.resolve_with_fallback(self.out.ret_ty);
-        self.out.ret_ty = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, rr);
-        let rb = self.ctx.table.resolve_with_fallback(self.out.body_ty);
-        self.out.body_ty = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, rb);
-        for pair in &mut self.out.expr_tys {
-            let resolved = self.ctx.table.resolve_with_fallback(pair.1);
-            pair.1 = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, resolved);
+        self.out.ret_ty = self.finalize_ty(owner, self.out.ret_ty);
+        self.out.body_ty = self.finalize_ty(owner, self.out.body_ty);
+        for i in 0..self.out.expr_tys.len() {
+            self.out.expr_tys[i].1 = self.finalize_ty(owner, self.out.expr_tys[i].1);
         }
-        for pair in &mut self.out.pat_tys {
-            let resolved = self.ctx.table.resolve_with_fallback(pair.1);
-            pair.1 = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, resolved);
+        for i in 0..self.out.pat_tys.len() {
+            self.out.pat_tys[i].1 = self.finalize_ty(owner, self.out.pat_tys[i].1);
         }
         let fn_end = self.st.node(self.fn_node).subtree_end;
-        for (off, &raw) in self.ctx.local_slots.iter().enumerate() {
+        for off in 0..self.ctx.local_slots.len() {
+            let raw = self.ctx.local_slots[off];
             if raw.is_some() {
                 let lid = LocalBindId(self.ctx.local_slot_base + off as u32);
                 let decl = self.file_res.local_data(lid).decl_node;
                 if decl.0 >= self.fn_node.0 && decl.0 < fn_end {
-                    let resolved = self.ctx.table.resolve_with_fallback(raw);
-                    let norm = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, resolved);
+                    let norm = self.finalize_ty(owner, raw);
                     self.out.local_tys.push((lid, norm));
                 }
             }
+        }
+        for i in 0..self.out.incomplete_dots.len() {
+            self.out.incomplete_dots[i].1 = self.finalize_ty(owner, self.out.incomplete_dots[i].1);
         }
         self.out.expr_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.pat_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.local_tys.sort_unstable_by_key(|&(l, _)| l);
         self.out.dot_refs.sort_unstable_by_key(|a| (a.start, a.end, a.def, a.kind as u8));
         self.out.dot_refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.def == b.def);
+        self.out.incomplete_dots.sort_unstable_by_key(|&(off, _)| off);
+        self.out.incomplete_dots.dedup_by_key(|p| p.0);
     }
 }
 

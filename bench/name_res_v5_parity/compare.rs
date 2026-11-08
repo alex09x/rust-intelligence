@@ -21,6 +21,7 @@ use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, LocalCstDefs, ResolvedD
 use ridx_syntax::{parse, SyntaxTree};
 
 use crate::did_change_bench::{bench_did_change, DidChangeReport};
+use crate::fault_bench::{run_file_fault_and_partial_dot, FaultBenchStats};
 use crate::meta::{CorpusFile, CorpusSourceDb};
 use crate::site_classify::{classify_dot_site, classify_ref_site, collect_dot_access_spans, collect_unit_alias_pairs, SiteKind};
 use crate::target_match::{describe_our_target, ref_targets_match, MatchKind};
@@ -63,9 +64,10 @@ pub struct CorpusReport {
     pub samples: Vec<String>,
     pub did_change: Option<DidChangeReport>,
     pub ty_stats: TyParityStats,
+    pub fault_stats: FaultBenchStats,
 }
 
-pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_samples: usize, run_did_change: bool) -> CorpusReport {
+pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_samples: usize, run_did_change: bool, fault_n: usize) -> CorpusReport {
     let mut rep = CorpusReport { corpus: name.to_string(), ..CorpusReport::default() };
 
     let mut seen_units: HashSet<(String, bool, u32)> = HashSet::new();
@@ -177,6 +179,25 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
                 &mut rep.ty_stats,
             );
             compare_file_refs(r_idx, reader, cf, st, &res_buf, &dot_map, &unit_alias_pairs, db, ridx_fid, max_samples, &mut rep);
+            if fault_n > 0 {
+                run_file_fault_and_partial_dot(
+                    r_idx,
+                    fid,
+                    cf,
+                    st,
+                    &snap,
+                    db,
+                    sidecar.as_ref(),
+                    fault_n,
+                    max_samples,
+                    &mut res_buf,
+                    &mut local_defs,
+                    &mut infer_ctx,
+                    &mut fn_res,
+                    &mut body_nodes,
+                    &mut rep.fault_stats,
+                );
+            }
         }
         if let Some(ref sc) = sidecar {
             for (&sfid, recs) in &sc.by_file {

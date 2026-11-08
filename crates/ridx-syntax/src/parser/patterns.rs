@@ -116,8 +116,13 @@ fn pattern_single(p: &mut Parser<'_>) {
             K::BoxPat
         }
         Some(k) if k.is_literal() || matches!(k, T::Minus | T::True | T::False) => {
-            p.eat(T::Minus);
-            p.bump();
+            if p.eat(T::Minus) {
+                if p.current().is_some_and(|c| c.is_literal() || matches!(c, T::True | T::False)) {
+                    p.bump();
+                }
+            } else {
+                p.bump();
+            }
             maybe_range(p, K::LiteralPat)
         }
         Some(T::Ident | T::RawIdent) if !matches!(p.nth(1), Some(T::LParen | T::LBrace | T::Bang)) && !p.nth_at_op(1, "::") => {
@@ -166,7 +171,12 @@ fn maybe_range(p: &mut Parser<'_>, kind: K) -> K {
 
 fn range_end(p: &mut Parser<'_>) {
     let m = p.start();
-    if p.eat(T::Minus) || p.current().is_some_and(|k| k.is_literal()) {
+    if p.eat(T::Minus) {
+        if p.current().is_some_and(|k| k.is_literal()) {
+            p.bump();
+        }
+        m.complete(p, K::LiteralPat);
+    } else if p.current().is_some_and(|k| k.is_literal()) {
         p.bump();
         m.complete(p, K::LiteralPat);
     } else {

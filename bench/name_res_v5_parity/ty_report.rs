@@ -171,7 +171,7 @@ pub fn tys_eq_mode(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, a: InferTyId, b:
     }
 }
 
-fn defs_same_item(db: &RidxV5ItemDb<'_>, a: GlobalDefId, b: GlobalDefId) -> bool {
+pub(crate) fn defs_same_item(db: &RidxV5ItemDb<'_>, a: GlobalDefId, b: GlobalDefId) -> bool {
     if !a.is_some() || !b.is_some() {
         return false;
     }

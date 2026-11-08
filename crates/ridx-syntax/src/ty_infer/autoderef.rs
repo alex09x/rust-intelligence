@@ -242,6 +242,23 @@ fn normalize_ty_rec(
                     }
                 }
             }
+            if let InferTyKind::Opaque { def, args: oargs } | InferTyKind::Dyn { principal: def, args: oargs } = table.arena.kind(norm_self) {
+                if oargs.len >= 1
+                    && matches!(
+                        (db.lang_item_of_def(def), db.lang_item_of_def(assoc_def)),
+                        (
+                            Some(super::db::TyLangItem::Iterator | super::db::TyLangItem::IntoIterator),
+                            Some(super::db::TyLangItem::IteratorItem | super::db::TyLangItem::IntoIteratorItem)
+                        ) | (
+                            Some(super::db::TyLangItem::Future | super::db::TyLangItem::IntoFuture),
+                            Some(super::db::TyLangItem::FutureOutput | super::db::TyLangItem::IntoFutureOutput)
+                        )
+                    )
+                {
+                    let elem = table.arena.slice(oargs)[0];
+                    return normalize_ty_rec(table, db, local_defs, st, file_res, owner, elem, depth + 1);
+                }
+            }
             if let Some(li) = db.lang_item_of_def(assoc_def) {
                 if let Some(p) = db.project_assoc_ty(li, norm_self, norm_args.as_slice(), &mut table.arena, &mut table.vars) {
                     return normalize_ty_rec(table, db, local_defs, st, file_res, owner, p, depth + 1);

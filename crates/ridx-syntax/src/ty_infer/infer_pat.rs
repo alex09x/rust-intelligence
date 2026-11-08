@@ -31,17 +31,18 @@ pub enum BindingMode {
 impl BindingMode {
     #[inline]
     pub const fn peel_ref(self, ref_is_mut: bool) -> Self {
-        match self {
-            Self::ByValue => Self::ByRef(ref_is_mut),
-            Self::ByRef(prev_mut) => Self::ByRef(prev_mut && ref_is_mut),
-        }
+        Self::ByRef(match self {
+            Self::ByValue => ref_is_mut,
+            Self::ByRef(prev_mut) => prev_mut && ref_is_mut,
+        })
     }
 }
 
 impl<'a, 's> Runner<'a, 's> {
     fn peel_ergonomics(&mut self, raw_ty: InferTyId, mut mode: BindingMode) -> (InferTyId, BindingMode) {
         let mut cur = self.ctx.table.shallow_resolve(raw_ty);
-        while let InferTyKind::Ref { is_mut, inner } = self.ctx.table.arena.kind(cur) {
+        for _ in 0..32 {
+            let InferTyKind::Ref { is_mut, inner } = self.ctx.table.arena.kind(cur) else { break };
             mode = mode.peel_ref(is_mut);
             cur = self.ctx.table.shallow_resolve(inner);
         }
@@ -49,7 +50,22 @@ impl<'a, 's> Runner<'a, 's> {
     }
 
     pub(super) fn infer_pat(&mut self, pat: NodeId, expected_ty: InferTyId, mode: BindingMode, or_base: Option<usize>) -> InferTyId {
-        let exp = self.ctx.table.shallow_resolve(expected_ty);
+        if self.expr_depth > 384 {
+            let exp = self.ctx.table.shallow_resolve(expected_ty);
+            return self.record_pat(pat, exp);
+        }
+        self.expr_depth += 1;
+        let out = self.infer_pat_inner(pat, expected_ty, mode, or_base);
+        self.expr_depth -= 1;
+        out
+    }
+
+    fn infer_pat_inner(&mut self, pat: NodeId, expected_ty: InferTyId, mode: BindingMode, or_base: Option<usize>) -> InferTyId {
+        let mut exp = self.ctx.table.shallow_resolve(expected_ty);
+        if self.ctx.table.arena.flags(exp).has_alias() {
+            let own = self.norm_owner();
+            exp = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, own, exp);
+        }
         match self.st.kind(pat) {
             K::WildcardPat | K::RestPat | K::Error => self.record_pat(pat, exp),
             K::ParenPat => {

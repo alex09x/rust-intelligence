@@ -95,7 +95,7 @@ impl<'a, 's> Runner<'a, 's> {
             let _ = self.coerce_expr(cty, InferTyId::BOOL);
         }
         let Some(then_blk) = kids.next() else {
-            return InferTyId::UNIT;
+            return InferTyId::UNKNOWN;
         };
         if let Some(else_node) = kids.next() {
             let mut coercer = BranchCoercer::new(&mut self.ctx.table, expectation);
@@ -174,7 +174,9 @@ impl<'a, 's> Runner<'a, 's> {
         let (ls, le) = extract_label_span(self.st, expr).unwrap_or((0, 0));
         let mut kids = self.st.children(expr).filter(|&c| is_expr_node(self.st.kind(c)));
         let iter_ty = kids.next().map_or(InferTyId::UNKNOWN, |it| self.infer_expr(it, Expectation::None));
-        let elem_ty = unwrap_for_iter_elem(&mut self.ctx.table, self.db, iter_ty);
+        let raw_elem = unwrap_for_iter_elem(&mut self.ctx.table, self.db, iter_ty);
+        let owner = self.norm_owner();
+        let elem_ty = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw_elem);
         if let Some(pat) = self.st.children(expr).find(|&c| self.st.kind(c).is_pat()) {
             self.infer_pat(pat, elem_ty, BindingMode::ByValue, None);
         }

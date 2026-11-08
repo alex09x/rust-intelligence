@@ -86,6 +86,9 @@ impl<'a, 's> Runner<'a, 's> {
             return self.resolve_field_with_autoderef(recv_ty, fname, None, (r.start as u32, r.end as u32));
         }
         let Some((_, idx_tok)) = self.st.own_tokens(expr).find(|(_, t)| matches!(t.kind, T::Int | T::Float)) else {
+            if let Some((_, dtok)) = self.st.own_tokens(expr).filter(|(_, t)| t.kind == T::Dot).last() {
+                self.out.incomplete_dots.push((dtok.end, recv_ty));
+            }
             return InferTyId::UNKNOWN;
         };
         let mut cur = recv_ty;
@@ -100,6 +103,10 @@ impl<'a, 's> Runner<'a, 's> {
                 continue;
             }
             cur = self.resolve_field_with_autoderef(cur, part, part.parse::<usize>().ok(), (p_start, p_end));
+        }
+        if tok_text.ends_with('.') {
+            self.out.incomplete_dots.push((idx_tok.end, cur));
+            return InferTyId::UNKNOWN;
         }
         cur
     }
@@ -148,17 +155,23 @@ impl<'a, 's> Runner<'a, 's> {
         };
         let base_ty = self.infer_expr(base, Expectation::None);
         let idx_ty = kids.next().map_or(InferTyId::UNKNOWN, |idx| self.infer_expr(idx, Expectation::None));
-        infer_index_op(&mut self.ctx.table, self.db, base_ty, idx_ty)
+        let raw = infer_index_op(&mut self.ctx.table, self.db, base_ty, idx_ty);
+        let owner = self.norm_owner();
+        super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw)
     }
 
     pub(super) fn infer_try_expr(&mut self, expr: NodeId) -> InferTyId {
         let op_ty = self.st.children(expr).find(|&c| is_expr_node(self.st.kind(c))).map_or(InferTyId::UNKNOWN, |c| self.infer_expr(c, Expectation::None));
-        unwrap_try_ty(&mut self.ctx.table, self.db, op_ty)
+        let raw = unwrap_try_ty(&mut self.ctx.table, self.db, op_ty);
+        let owner = self.norm_owner();
+        super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw)
     }
 
     pub(super) fn infer_await_expr(&mut self, expr: NodeId) -> InferTyId {
         let op_ty = self.st.children(expr).find(|&c| is_expr_node(self.st.kind(c))).map_or(InferTyId::UNKNOWN, |c| self.infer_expr(c, Expectation::None));
-        unwrap_await_ty(&mut self.ctx.table, self.db, op_ty)
+        let raw = unwrap_await_ty(&mut self.ctx.table, self.db, op_ty);
+        let owner = self.norm_owner();
+        super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw)
     }
 
     pub(super) fn infer_ref_expr(&mut self, expr: NodeId, expectation: Expectation) -> InferTyId {
@@ -296,14 +309,17 @@ impl<'a, 's> Runner<'a, 's> {
             }
             b"<<" | b">>" => {
                 let lty = self.infer_expr(lhs, Expectation::None);
-                let rty = rhs_opt.map_or(InferTyId::UNKNOWN, |r| self.infer_expr(r, Expectation::None));
+                let Some(rhs) = rhs_opt else {
+                    return InferTyId::UNKNOWN;
+                };
+                let rty = self.infer_expr(rhs, Expectation::None);
                 let li = if op == b"<<" { TyLangItem::Shl } else { TyLangItem::Shr };
                 self.db.project_assoc_ty(li, lty, &[rty], &mut self.ctx.table.arena, &mut self.ctx.table.vars).unwrap_or_else(|| self.ctx.table.shallow_resolve(lty))
             }
             _ => {
                 let lty = self.infer_expr(lhs, Expectation::None);
                 let Some(rhs) = rhs_opt else {
-                    return lty;
+                    return InferTyId::UNKNOWN;
                 };
                 let op_li = match op {
                     b"+" => Some(TyLangItem::Add),

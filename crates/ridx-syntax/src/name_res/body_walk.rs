@@ -34,6 +34,7 @@ pub(super) struct FileResolver<'a, 's> {
     pub st: &'a SyntaxTree<'s>,
     pub out: &'a mut FileNameRes,
     pub ribs: RibStack,
+    pub target_range: Option<(u32, u32)>,
 }
 
 impl<'a, 's> FileResolver<'a, 's> {
@@ -50,7 +51,12 @@ impl<'a, 's> FileResolver<'a, 's> {
     ) -> Self {
         let cur_mod =
             mod_tree.modules.iter().find(|m| m.file == file && !m.is_inline()).or_else(|| mod_tree.modules.iter().find(|m| m.file == file)).map_or(ModuleId::ROOT, |m| m.id);
-        Self { map, db, mod_tree, ext_cache, file, cur_mod, st, out, ribs }
+        Self { map, db, mod_tree, ext_cache, file, cur_mod, st, out, ribs, target_range: None }
+    }
+
+    #[inline]
+    fn overlaps_target(&self, node: NodeId) -> bool {
+        self.target_range.is_none_or(|(ts, te)| node.0 < te && ts < self.st.node(node).subtree_end)
     }
 
     pub fn walk_file(&mut self) {
@@ -74,6 +80,9 @@ impl<'a, 's> FileResolver<'a, 's> {
 
     fn walk_container_items(&mut self, container: NodeId, in_body: bool) {
         for ch in self.st.children(container) {
+            if !in_body && !self.overlaps_target(ch) && matches!(self.st.kind(ch), K::Fn | K::Const | K::Static | K::Impl | K::Module | K::ExternBlock) {
+                continue;
+            }
             if self.st.kind(ch).is_item() || self.st.kind(ch) == K::MacroCall {
                 self.walk_item(ch, in_body);
             }
@@ -311,7 +320,7 @@ impl<'a, 's> FileResolver<'a, 's> {
 
     fn walk_assoc_item_list(&mut self, il: NodeId) {
         for ch in self.st.children(il) {
-            if !self.node_cfg_enabled(ch) {
+            if (matches!(self.st.kind(ch), K::Fn | K::Const) && !self.overlaps_target(ch)) || !self.node_cfg_enabled(ch) {
                 continue;
             }
             let lb = self.ribs.enter_assoc_item_barrier();

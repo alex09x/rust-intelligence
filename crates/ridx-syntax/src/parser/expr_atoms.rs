@@ -192,6 +192,9 @@ fn record_fields(p: &mut Parser<'_>) {
         f.complete(p, K::RecordExprField);
         if !p.eat(T::Comma) {
             if p.mark_pos() == before {
+                if matches!(p.current(), Some(T::Semi | T::RParen | T::RBracket)) {
+                    break;
+                }
                 p.err_bump();
             } else {
                 break;
@@ -210,10 +213,15 @@ fn paren_or_tuple(p: &mut Parser<'_>) -> K {
         let before = p.mark_pos();
         super::items::attrs(p);
         expr(p);
-        n += 1;
+        if p.mark_pos() > before {
+            n += 1;
+        }
         trailing = p.eat(T::Comma);
         if !trailing {
             if p.mark_pos() == before {
+                if matches!(p.current(), Some(T::Semi | T::RBrace | T::RBracket)) {
+                    break;
+                }
                 p.err_bump();
             } else {
                 break;

@@ -43,6 +43,8 @@ impl<'a, 's> Runner<'a, 's> {
                 if arg_len < arg_nodes.len() {
                     arg_nodes[arg_len] = ch;
                     arg_len += 1;
+                } else {
+                    let _ = self.infer_expr(ch, Expectation::None);
                 }
             }
         }
@@ -201,7 +203,7 @@ impl<'a, 's> Runner<'a, 's> {
 
         // 2. Traits in lexical / prelude / enclosing-impl scope + transitive supertraits (cached per fn when no inner scopes).
         let use_fn_cache = !self.ctx.fn_has_inner_trait_scopes;
-        let mut fn_cached = if use_fn_cache { core::mem::take(&mut self.ctx.fn_scope_traits_buf) } else { Vec::new() };
+        let mut fn_cached = core::mem::take(&mut self.ctx.fn_scope_traits_buf);
         let active_traits: &mut Vec<GlobalDefId> = if use_fn_cache {
             if !self.ctx.fn_scope_traits_ready {
                 fn_cached.clear();
@@ -252,9 +254,7 @@ impl<'a, 's> Runner<'a, 's> {
                 self.push_trait_impl_cands_for(ImplTargetKey::Param, tdef, method_name, ref_sh, cands);
             }
         }
-        if use_fn_cache {
-            self.ctx.fn_scope_traits_buf = fn_cached;
-        }
+        self.ctx.fn_scope_traits_buf = fn_cached;
     }
 
     fn push_trait_impl_cands_for(&mut self, head: ImplTargetKey, tdef: GlobalDefId, method_name: &str, probe_ty: InferTyId, cands: &mut Vec<MethodCand>) {

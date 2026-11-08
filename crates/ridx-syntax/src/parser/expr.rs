@@ -369,6 +369,9 @@ pub(crate) fn arg_list(p: &mut Parser<'_>) {
         expr(p);
         if !p.eat(T::Comma) {
             if p.mark_pos() == before {
+                if matches!(p.current(), Some(T::Semi | T::RBrace | T::RBracket)) {
+                    break;
+                }
                 p.err_bump();
             } else {
                 break;

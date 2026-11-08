@@ -106,7 +106,7 @@ impl GenericBindData {
 
 /// Syntactic role of a resolved path or identifier site.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PathCtx {
     Expr = 0,
     RecordExpr = 1,
@@ -120,7 +120,7 @@ pub enum PathCtx {
 }
 
 /// Semantic target of a resolved identifier / path segment.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ResTarget {
     /// Module, ADT, variant, function, associated item, field, const, static, type alias, or macro.
     Def { def: GlobalDefId, local: LocalItemId, kind: ItemKind },
@@ -249,7 +249,7 @@ impl FileNameRes {
     }
 
     pub(super) fn finalize(&mut self) {
-        self.refs.sort_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
+        self.refs.sort_unstable_by_key(|a| (a.start, a.end, a.target, !a.is_segment_tail, a.path_node.0, a.ctx));
         self.refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.target == b.target);
     }
 
@@ -325,6 +325,29 @@ impl CrateDefMap {
         out.ribs = ribs;
         out.finalize();
     }
+
+    /// Resolves only the ancestor chain and body of `target_fn` inside `st`, pruning sibling items (`0` warm allocs).
+    #[allow(clippy::too_many_arguments)]
+    pub fn resolve_fn_paths_into(
+        &self,
+        db: &dyn ItemDb,
+        mod_tree: &ModuleTree,
+        ext_cache: &mut ExtScopeCache,
+        file: FileId,
+        st: &SyntaxTree<'_>,
+        target_fn: NodeId,
+        out: &mut FileNameRes,
+    ) {
+        out.clear();
+        out.file = file;
+        let ribs = std::mem::take(&mut out.ribs);
+        let mut resolver = FileResolver::new(self, db, mod_tree, ext_cache, file, st, out, ribs);
+        resolver.target_range = Some((target_fn.0, st.node(target_fn).subtree_end));
+        resolver.walk_file();
+        let ribs = resolver.ribs;
+        out.ribs = ribs;
+        out.finalize();
+    }
 }
 
 impl CrateSnapshot {
@@ -332,6 +355,12 @@ impl CrateSnapshot {
     pub fn resolve_file_paths_into(&self, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, out: &mut FileNameRes) {
         let mut ext_c = self.ext_cache.borrow_mut();
         self.clean_def_map.resolve_file_paths_into(db, &self.mod_tree, &mut ext_c, file, st, out);
+    }
+
+    /// Resolves only `target_fn`'s ancestor chain and body inside `st`, reusing the snapshot's warm [`ExtScopeCache`].
+    pub fn resolve_fn_paths_into(&self, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, target_fn: NodeId, out: &mut FileNameRes) {
+        let mut ext_c = self.ext_cache.borrow_mut();
+        self.clean_def_map.resolve_fn_paths_into(db, &self.mod_tree, &mut ext_c, file, st, target_fn, out);
     }
 
     /// Resolves all paths in `st` for `file` against a dirty overlay `def_map` (and optional `new_mod_tree`),

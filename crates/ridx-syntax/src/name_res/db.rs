@@ -142,7 +142,7 @@ pub enum VisKind {
 
 /// Kind of an indexed or local definition, aligned with `ridx-format::DefKind`.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ItemKind {
     Mod = 0,
     Struct = 1,

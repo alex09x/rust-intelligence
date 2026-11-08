@@ -38,7 +38,7 @@ impl Default for LocalImplId {
 }
 
 /// Canonical simplified self-type head of an `impl` block (matches `.ridx` `v5` `SimplifiedType` buckets).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ImplTargetKey {
     #[default]
     Unknown,

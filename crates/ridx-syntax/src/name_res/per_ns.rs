@@ -17,7 +17,7 @@ use crate::sema_fn::norm_ident;
 
 /// Builtin Rust primitive type codes (`1..=17`, `0` = none), aligned with `IndexedUse::prim_ty_code`.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PrimTy {
     I8 = 1,
     I16 = 2,
@@ -114,7 +114,7 @@ impl PrimTy {
 }
 
 /// Arena index into [`super::def_map::CrateDefMap::items`] for locally parsed CST definitions.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LocalItemId(pub u32);
 
 impl LocalItemId {

@@ -16,6 +16,8 @@
 
 mod compare;
 mod did_change_bench;
+mod fault_bench;
+mod fault_report;
 mod meta;
 mod site_classify;
 mod target_match;
@@ -38,6 +40,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use ridx_format::WorkspaceIndex;
 
 use crate::compare::run_corpus;
+use crate::fault_report::print_fault_bench_tables;
 use crate::meta::{load_reader_metas, CorpusSourceDb};
 use crate::site_classify::SynthReason;
 use crate::ty_report::print_ty_parity_tables;
@@ -89,6 +92,7 @@ fn main() {
     let mut filter_corpus: Option<String> = None;
     let mut verbose_samples: usize = 8;
     let mut run_did_change = false;
+    let mut fault_n: usize = 0;
 
     let mut i = 1usize;
     while i < args.len() {
@@ -111,6 +115,15 @@ fn main() {
             }
             "--bench-did-change" => {
                 run_did_change = true;
+            }
+            "--bench-fault" => {
+                if fault_n == 0 {
+                    fault_n = 10;
+                }
+            }
+            "--fault-n" if i + 1 < args.len() => {
+                fault_n = args[i + 1].parse().unwrap_or(10);
+                i += 1;
             }
             _ => {}
         }
@@ -161,7 +174,7 @@ fn main() {
         let metas = load_reader_metas(&ws);
         let item_db = RidxV5ItemDb::build(&ws, &src_db, metas);
 
-        let rep = run_corpus(cname, &src_db, &item_db, verbose_samples, run_did_change);
+        let rep = run_corpus(cname, &src_db, &item_db, verbose_samples, run_did_change, fault_n);
         let pct = if rep.phase2_driver_refs == 0 { 100.0 } else { (rep.matched_refs as f64) * 100.0 / (rep.phase2_driver_refs as f64) };
         let spct = if rep.phase2_driver_refs == 0 { 100.0 } else { (rep.strict_matched_refs as f64) * 100.0 / (rep.phase2_driver_refs as f64) };
         let dot_mat = rep.ty_stats.dot_cst_matched + rep.ty_stats.dot_mtt_matched;
@@ -302,6 +315,9 @@ fn main() {
     }
 
     print_ty_parity_tables(&all_reports, verbose_samples);
+    if fault_n > 0 {
+        print_fault_bench_tables(&all_reports, fault_n, verbose_samples);
+    }
 
     if verbose_samples > 0 {
         for rep in &all_reports {

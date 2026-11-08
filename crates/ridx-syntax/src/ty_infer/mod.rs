@@ -43,6 +43,7 @@ pub mod mem_ty_db;
 mod mem_ty_db_methods;
 mod mem_ty_db_traits;
 mod method_res;
+pub mod partial_code;
 mod tok_ty_scan;
 pub mod trait_solve;
 mod trait_solve_cst;

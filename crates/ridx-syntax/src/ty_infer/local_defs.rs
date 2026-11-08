@@ -78,14 +78,14 @@ pub struct LocalCstDefs {
     pub(super) variants: Vec<LocalVariantNode>,
     pub(super) impls: Vec<LocalImplNode>,
     pub(super) traits: Vec<LocalTraitNode>,
-    by_def: Vec<(u64, u32)>,
-    by_node: Vec<(u32, u32)>,
-    file_krate: CrateId,
-    clean_indexed: bool,
+    pub(super) by_def: Vec<(u64, u32)>,
+    pub(super) by_node: Vec<(u32, u32)>,
+    pub(super) file_krate: CrateId,
+    pub(super) clean_indexed: bool,
 }
 
 #[inline]
-fn def_sort_key(def: GlobalDefId) -> u64 {
+pub(super) fn def_sort_key(def: GlobalDefId) -> u64 {
     ((def.krate.0 as u64) << 32) | (def.index as u64)
 }
 
@@ -137,7 +137,7 @@ impl LocalCstDefs {
         let clean_db = item_db.is_some() && def_map.is_some_and(|dm| !dm.is_dirty_file(file));
         self.file_krate = def_map.map_or(CrateId::NONE, |dm| dm.krate);
         self.clean_indexed = clean_db;
-        self.scan_container(st, st.root(), None, def_map, item_db, file, clean_db);
+        self.scan_container(st, st.root(), None, def_map, item_db, file, clean_db, None);
         for (idx, it) in self.items.iter().enumerate() {
             let i32_idx = idx as u32;
             self.by_def.push((def_sort_key(it.def), i32_idx));
@@ -148,7 +148,7 @@ impl LocalCstDefs {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn scan_container(
+    pub(super) fn scan_container(
         &mut self,
         st: &SyntaxTree<'_>,
         container: NodeId,
@@ -157,12 +157,17 @@ impl LocalCstDefs {
         item_db: Option<&dyn ItemDb>,
         file: FileId,
         clean_mod_scope: bool,
+        target: Option<(u32, u32)>,
     ) {
         for ch in st.children(container) {
+            let overlaps = target.is_none_or(|(ts, te)| ch.0 < te && ts < st.node(ch).subtree_end);
+            if clean_mod_scope && !overlaps && matches!(st.kind(ch), K::Fn | K::Const | K::Static | K::Impl | K::Module | K::ExternBlock) {
+                continue;
+            }
             match st.kind(ch) {
                 K::Module | K::ExternBlock => {
                     if let Some(il) = st.child(ch, K::ItemList) {
-                        self.scan_container(st, il, None, def_map, item_db, file, clean_mod_scope);
+                        self.scan_container(st, il, None, def_map, item_db, file, clean_mod_scope, target);
                     }
                 }
                 K::Impl => {
@@ -171,7 +176,7 @@ impl LocalCstDefs {
                     let trait_path = if has_for { st.children(ch).find(|&c| st.kind(c).is_type()).and_then(|tn| st.child(tn, K::Path)) } else { None };
                     self.impls.push(LocalImplNode { node: ch, impl_generics: count_cst_generics(st, ch), has_for, is_negative, trait_path, indexed_in_clean_db: clean_mod_scope });
                     if let Some(il) = st.child(ch, K::ItemList) {
-                        self.scan_container(st, il, Some(ch), def_map, item_db, file, clean_mod_scope);
+                        self.scan_container(st, il, Some(ch), def_map, item_db, file, clean_mod_scope, target);
                     }
                 }
                 K::Trait => {
@@ -179,8 +184,10 @@ impl LocalCstDefs {
                     if def.is_some() {
                         self.traits.push(LocalTraitNode { def, node: ch, trait_generics: count_cst_generics(st, ch) });
                     }
-                    if let Some(il) = st.child(ch, K::ItemList) {
-                        self.scan_container(st, il, Some(ch), def_map, item_db, file, clean_mod_scope);
+                    if overlaps {
+                        if let Some(il) = st.child(ch, K::ItemList) {
+                            self.scan_container(st, il, Some(ch), def_map, item_db, file, clean_mod_scope, target);
+                        }
                     }
                 }
                 K::Fn => {
@@ -191,8 +198,10 @@ impl LocalCstDefs {
                         let kind = if impl_node.is_some() { ItemKind::AssocFn } else { ItemKind::Fn };
                         self.items.push(LocalItemNode { def, node: ch, impl_node, kind, generic_count: gc, shape: CtorShapeKind::None });
                     }
-                    if let Some(body) = st.child(ch, K::BlockExpr) {
-                        self.scan_block_items(st, body, def_map, item_db, file, 0);
+                    if overlaps {
+                        if let Some(body) = st.child(ch, K::BlockExpr) {
+                            self.scan_block_items(st, body, def_map, item_db, file, 0);
+                        }
                     }
                 }
                 K::Struct | K::Union => {
@@ -235,7 +244,7 @@ impl LocalCstDefs {
         if depth > 96 {
             return;
         }
-        self.scan_container(st, block, None, def_map, item_db, file, false);
+        self.scan_container(st, block, None, def_map, item_db, file, false, None);
         for ch in st.children(block) {
             if !st.kind(ch).is_item() {
                 self.scan_block_items(st, ch, def_map, item_db, file, depth + 1);
