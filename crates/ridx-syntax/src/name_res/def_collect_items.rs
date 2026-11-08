@@ -30,7 +30,9 @@ impl<'a> Collector<'a> {
         if !attrs.enabled {
             return LocalItemId::NONE;
         }
-        let Some(name_node) = st.child(node, K::Name) else { return LocalItemId::NONE };
+        let Some(name_node) = st.child(node, K::Name) else {
+            return LocalItemId::NONE;
+        };
         let name = norm_ident(st.text(name_node));
         if name.is_empty() || name == "_" {
             return LocalItemId::NONE;
@@ -73,7 +75,9 @@ impl<'a> Collector<'a> {
         if !attrs.enabled {
             return;
         }
-        let Some(name_node) = st.child(node, K::Name) else { return };
+        let Some(name_node) = st.child(node, K::Name) else {
+            return;
+        };
         let name = norm_ident(st.text(name_node));
         if name.is_empty() {
             return;
@@ -83,7 +87,9 @@ impl<'a> Collector<'a> {
         let enum_idx_def = self.find_idx_def(name, ItemKind::Enum);
         let nr = st.range(name_node);
         let enum_local = self.push_item(mod_id, file, LocalItemId::NONE, enum_idx_def, name, ItemKind::Enum, vis, vis_mod, false, false, nr.start as u32, nr.end as u32);
-        let Some(tt_node) = st.child(node, K::TokenTree) else { return };
+        let Some(tt_node) = st.child(node, K::TokenTree) else {
+            return;
+        };
         self.scratch_var_defs.clear();
         if enum_idx_def.is_some() {
             self.db.enum_variants(enum_idx_def, &mut self.scratch_var_defs);
@@ -104,7 +110,9 @@ impl<'a> Collector<'a> {
         if !attrs.enabled {
             return;
         }
-        let Some(name_node) = st.child(node, K::Name) else { return };
+        let Some(name_node) = st.child(node, K::Name) else {
+            return;
+        };
         let name = norm_ident(st.text(name_node));
         if name.is_empty() {
             return;
@@ -228,14 +236,14 @@ impl<'a> Collector<'a> {
     }
 }
 
-fn struct_has_value_ctor(st: &SyntaxTree<'_>, struct_node: NodeId) -> bool {
+pub(super) fn struct_has_value_ctor(st: &SyntaxTree<'_>, struct_node: NodeId) -> bool {
     match st.child(struct_node, K::TokenTree) {
         None => true,
         Some(tt) => !st.text(tt).starts_with('{'),
     }
 }
 
-fn parse_enum_variants<'s>(src: &'s str, toks: &[Token], db: &dyn ItemDb, krate: CrateId) -> Vec<(&'s str, bool, u32, u32)> {
+pub(super) fn parse_enum_variants<'s>(src: &'s str, toks: &[Token], db: &dyn ItemDb, krate: CrateId) -> Vec<(&'s str, bool, u32, u32)> {
     let sig: Vec<Token> = toks.iter().copied().filter(|t| !t.is_trivia()).collect();
     if sig.len() < 2 || sig[0].kind != T::LBrace {
         return Vec::new();
@@ -284,7 +292,9 @@ fn push_variant_slice<'s>(src: &'s str, mut slice: &[Token], db: &dyn ItemDb, kr
     if !attrs.enabled {
         return;
     }
-    let Some(&name_tok) = slice.first() else { return };
+    let Some(&name_tok) = slice.first() else {
+        return;
+    };
     if !matches!(name_tok.kind, T::Ident | T::RawIdent) {
         return;
     }

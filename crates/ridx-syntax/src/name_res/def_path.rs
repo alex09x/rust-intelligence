@@ -71,7 +71,9 @@ pub(super) fn resolve_segments(
         PathAnchor::Super(n) => (Container::LocalMod(step_super(mod_tree, from_mod, n)), 0usize),
         PathAnchor::ExternRoot => {
             if map.edition.has_uniform_paths() {
-                let Some(&(cid, rdef)) = map.extern_prelude.get(first) else { return PerNs::EMPTY };
+                let Some(&(cid, rdef)) = map.extern_prelude.get(first) else {
+                    return PerNs::EMPTY;
+                };
                 if segs.len() == 1 {
                     return PerNs::from_binding(extern_crate_binding(cid, map.krate, rdef), NsMask::TYPE);
                 }
@@ -89,7 +91,9 @@ pub(super) fn resolve_segments(
                 if segs.len() == 1 {
                     return first_pns;
                 }
-                let Some(next_c) = binding_to_container(first_pns.types) else { return PerNs::EMPTY };
+                let Some(next_c) = binding_to_container(first_pns.types) else {
+                    return PerNs::EMPTY;
+                };
                 (next_c, 1usize)
             }
         }
@@ -177,7 +181,9 @@ fn lookup_in_container(map: &CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleTree
 pub(super) fn apply_glob_use(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &ModuleTree, ext_cache: &mut ExtScopeCache, uidx: usize) -> bool {
     let u = map.uses.uses[uidx];
     let target_pns = resolve_use_leaf(map, db, mod_tree, ext_cache, &u);
-    let Some(container) = binding_to_container(target_pns.types) else { return false };
+    let Some(container) = binding_to_container(target_pns.types) else {
+        return false;
+    };
     if let Container::LocalMod(src_m) = container {
         if src_m == u.module {
             return false;
@@ -256,7 +262,7 @@ pub(super) fn apply_glob_use(map: &mut CrateDefMap, db: &dyn ItemDb, mod_tree: &
     changed
 }
 
-fn step_super(tree: &ModuleTree, mut cur: ModuleId, count: u16) -> ModuleId {
+pub(super) fn step_super(tree: &ModuleTree, mut cur: ModuleId, count: u16) -> ModuleId {
     for _ in 0..count {
         let p = tree.module(cur).parent;
         if p.is_some() {
@@ -266,4 +272,71 @@ fn step_super(tree: &ModuleTree, mut cur: ModuleId, count: u16) -> ModuleId {
         }
     }
     cur
+}
+
+pub(super) fn apply_glob_to_entries(
+    map: &CrateDefMap,
+    db: &dyn ItemDb,
+    mod_tree: &ModuleTree,
+    ext_cache: &mut ExtScopeCache,
+    from_mod: ModuleId,
+    target_type: Option<ResolvedBinding>,
+    rib: &mut super::body_ribs::BlockItemRib,
+) {
+    let super::body_ribs::BlockItemRib { entries: dst, enum_variants: block_enum_vars, .. } = rib;
+    let put = |dst: &mut std::collections::HashMap<super::ident_key::IdentKey, PerNs>, name: &str, pns: PerNs| {
+        let rebound = pns.rebind(VisKind::Private, from_mod, BindingOrigin::Glob);
+        dst.entry(super::ident_key::IdentKey::new(name)).or_insert(PerNs::EMPTY).merge_glob(rebound);
+    };
+    if let Some(tb) = target_type.filter(|b| b.kind == ItemKind::Enum) {
+        if block_enum_vars.iter().any(|(edef, ..)| *edef == tb.def) {
+            for (edef, vname, vb, mask) in block_enum_vars {
+                if *edef == tb.def {
+                    put(dst, vname.as_str(), PerNs::from_binding(*vb, *mask));
+                }
+            }
+            return;
+        }
+    }
+    let Some(container) = binding_to_container(target_type) else {
+        return;
+    };
+    match container {
+        Container::LocalMod(src_m) => {
+            for (k, &pns) in &map.scopes[src_m.0 as usize].entries {
+                let vis_pns = pns.filter_visible(mod_tree, from_mod);
+                if !vis_pns.is_empty() {
+                    put(dst, k, vis_pns);
+                }
+            }
+        }
+        Container::ExtMod(mdef) => {
+            for (k, &pns) in &ext_cache.module_scope(db, mdef).entries {
+                put(dst, k, pns);
+            }
+        }
+        Container::ExtEnum(edef) => {
+            for (k, &pns) in &ext_cache.enum_scope(db, edef).entries {
+                put(dst, k, pns);
+            }
+        }
+        Container::LocalEnum(elid) => {
+            let eit = map.items[elid.0 as usize];
+            let s = eit.var_start as usize;
+            for vit in &map.items[s..s + eit.var_len as usize] {
+                let b = ResolvedBinding {
+                    def: vit.index_def,
+                    local: vit.id,
+                    local_mod: ModuleId::NONE,
+                    vis_mod: vit.vis_mod,
+                    kind: ItemKind::Variant,
+                    vis: vit.vis,
+                    origin: BindingOrigin::Glob,
+                    prim_ty: 0,
+                    ambiguous: false,
+                };
+                put(dst, map.item_name(vit.id), PerNs::from_binding(b, ItemKind::Variant.ns_mask(vit.has_value_ctor)));
+            }
+        }
+    }
 }

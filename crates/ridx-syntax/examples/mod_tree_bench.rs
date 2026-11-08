@@ -132,23 +132,30 @@ struct CorpusFixture {
 }
 
 fn collect_repo(dir: &Path, out_rs: &mut Vec<PathBuf>, out_manifests: &mut Vec<PathBuf>) {
+    if dir.parent().is_none() {
+        return;
+    }
     let Ok(rd) = std::fs::read_dir(dir) else {
         return;
     };
     let mut entries: Vec<_> = rd.flatten().collect();
     entries.sort_by_key(|e| e.file_name());
     for e in entries {
+        let Ok(ft) = e.file_type() else { continue };
+        if ft.is_symlink() {
+            continue;
+        }
         let p = e.path();
         let name = e.file_name();
         let s = name.to_string_lossy();
-        if p.is_dir() {
-            if matches!(s.as_ref(), "target" | ".git" | "node_modules" | "fixtures") {
+        if ft.is_dir() {
+            if matches!(s.as_ref(), "target" | ".git" | "node_modules" | "fixtures" | "proc" | "sys" | "dev") {
                 continue;
             }
             collect_repo(&p, out_rs, out_manifests);
-        } else if s == "Cargo.toml" {
+        } else if ft.is_file() && s == "Cargo.toml" {
             out_manifests.push(p);
-        } else if p.extension().and_then(|x| x.to_str()) == Some("rs") {
+        } else if ft.is_file() && p.extension().and_then(|x| x.to_str()) == Some("rs") {
             out_rs.push(p);
         }
     }
@@ -339,9 +346,18 @@ fn bench_corpus(fx: &CorpusFixture) {
 fn main() {
     let mut dirs: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
     if dirs.is_empty() {
-        let ws = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent);
-        if let Some(w) = ws {
-            dirs.push(w.to_path_buf());
+        if let Ok(ws) = std::env::var("RIDX_WS_SRC") {
+            let p = PathBuf::from(ws);
+            if p.parent().is_some() && p.join("Cargo.toml").is_file() {
+                dirs.push(p);
+            }
+        } else if let Some(w) = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent) {
+            if w.parent().is_some() && w.join("Cargo.toml").is_file() {
+                dirs.push(w.to_path_buf());
+            }
+        }
+        if dirs.is_empty() {
+            dirs.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")));
         }
         if let Ok(bench_root) = std::env::var("RIDX_BENCH_REPOS") {
             if let Ok(rd) = std::fs::read_dir(bench_root) {

@@ -345,6 +345,10 @@ impl ItemDb for MemItemDb {
         }
     }
 
+    fn adt_field(&self, adt_or_variant_def: GlobalDefId, field_name: &str) -> Option<GlobalDefId> {
+        self.assoc_items.get(&adt_or_variant_def)?.iter().find(|d| d.kind == super::db::ItemKind::Field && d.name == field_name).map(|d| d.id)
+    }
+
     fn lang_item(&self, lang_kind: u16) -> Option<GlobalDefId> {
         self.lang_items.get(&lang_kind).copied()
     }

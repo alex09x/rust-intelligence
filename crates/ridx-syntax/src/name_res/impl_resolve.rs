@@ -59,8 +59,9 @@ pub(super) fn resolve_local_impls_and_assocs(map: &mut CrateDefMap, db: &dyn Ite
         let str_buf = &map.local_impls.strings;
         for ai in &mut map.local_impls.assoc_items[s..e] {
             let aname = &str_buf[ai.name_start as usize..ai.name_end as usize];
-            if let Some(found) = scratch_assoc.iter().find(|d| d.name == aname && d.kind == ai.kind) {
+            if let Some(found) = scratch_assoc.iter().find(|d| d.name == aname && d.kind.ns_mask(false) == ai.kind.ns_mask(false)) {
                 ai.def = found.id;
+                ai.kind = found.kind;
             } else {
                 ai.def = GlobalDefId::new(CrateId::LOCAL_OVERLAY, next_overlay_seq);
                 next_overlay_seq += 1;
@@ -110,8 +111,9 @@ pub(super) fn resolve_local_impls_and_assocs(map: &mut CrateDefMap, db: &dyn Ite
         let str_buf = &map.local_impls.strings;
         for ai in &mut map.local_impls.assoc_items[s..e] {
             let aname = &str_buf[ai.name_start as usize..ai.name_end as usize];
-            if let Some(found) = scratch_assoc.iter().find(|d| d.name == aname && d.kind == ai.kind) {
+            if let Some(found) = scratch_assoc.iter().find(|d| d.name == aname && d.kind.ns_mask(false) == ai.kind.ns_mask(false)) {
                 ai.def = found.id;
+                ai.kind = found.kind;
             } else {
                 ai.def = GlobalDefId::new(CrateId::LOCAL_OVERLAY, next_overlay_seq);
                 next_overlay_seq += 1;

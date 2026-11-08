@@ -89,6 +89,14 @@ impl UseArena {
     }
 
     #[inline]
+    pub fn clear(&mut self) {
+        self.strings.clear();
+        self.segs.clear();
+        self.uses.clear();
+        self.extern_crates.clear();
+    }
+
+    #[inline]
     pub(super) fn push_str(&mut self, s: &str) -> (u32, u32) {
         let start = self.strings.len() as u32;
         self.strings.push_str(s);
@@ -130,8 +138,12 @@ impl UseArena {
         let (raw_vis, in_path) = extract_visibility(st, node);
         let (vis, vis_mod) = compute_vis_mod(mod_tree, module, raw_vis, in_path);
         let sig: Vec<Token> = body_tokens_after_headers(st, node).iter().copied().filter(|t| !t.is_trivia() && t.kind != T::Semi).collect();
-        let Some(crate_pos) = sig.iter().position(|t| t.kind == T::Crate) else { return };
-        let Some(&target_tok) = sig.get(crate_pos + 1) else { return };
+        let Some(crate_pos) = sig.iter().position(|t| t.kind == T::Crate) else {
+            return;
+        };
+        let Some(&target_tok) = sig.get(crate_pos + 1) else {
+            return;
+        };
         let (is_self, orig_str) = match target_tok.kind {
             T::SelfKw => (true, "self"),
             T::Ident | T::RawIdent => (false, norm_ident(target_tok.text(st.src))),

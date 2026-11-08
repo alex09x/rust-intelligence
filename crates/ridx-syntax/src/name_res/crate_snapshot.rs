@@ -34,7 +34,7 @@ pub struct CrateSnapshot {
     pub mod_tree: ModuleTree,
     pub clean_def_map: CrateDefMap,
     clean_collected: CollectedCrate,
-    ext_cache: RefCell<ExtScopeCache>,
+    pub(super) ext_cache: RefCell<ExtScopeCache>,
 }
 
 impl CrateSnapshot {
@@ -155,7 +155,9 @@ impl CrateSnapshot {
                     if attrs.explicit_path.is_some() || attrs.macro_use || child_idx >= expected_children.len() {
                         return false;
                     }
-                    let Some(nn) = st.child(ch, K::Name) else { return false };
+                    let Some(nn) = st.child(ch, K::Name) else {
+                        return false;
+                    };
                     let name = norm_ident(st.text(nn));
                     let is_inline = st.child(ch, K::ItemList).is_some();
                     let (vis, _) = extract_visibility(st, ch);

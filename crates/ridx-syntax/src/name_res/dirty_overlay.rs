@@ -14,7 +14,7 @@ use super::db::{CrateId, FileId, GlobalDefId, IndexedDef, ItemDb, ItemKind, Modu
 use super::db_impls::{ImplTargetKey, IndexedImpl, LocalImplId};
 use super::def_map::CrateDefMap;
 use super::mod_tree::ModuleTree;
-use super::per_ns::{is_descendant_or_eq, LocalItemId};
+use super::per_ns::{is_descendant_or_eq, LocalItemId, ResolvedBinding};
 use crate::sema_fn::norm_ident;
 
 /// Unified view of either a clean indexed `impl` or a dirty/local CST `impl`.
@@ -156,9 +156,12 @@ impl CrateDefMap {
         })
     }
 
-    /// Resolves `<T as Trait>::name` — prefers the specialized item on `(target, trait_def)` `impl`,
-    /// falling back to the trait declaration's default item when omitted in the `impl` body.
+    /// Resolves `<T as Trait>::name` — checks the trait declaration first as a fast O(1) guard,
+    /// then prefers a specialized item on `(target, trait_def)` `impl` when `target` is concrete.
     pub fn resolve_trait_impl_assoc(&self, db: &dyn ItemDb, target: ImplTargetKey, trait_def: GlobalDefId, raw_name: &str, ns: NsMask) -> Option<ResolvedAssoc> {
+        if matches!(target, ImplTargetKey::Unknown | ImplTargetKey::Param) {
+            return self.resolve_trait_assoc(db, trait_def, raw_name, ns);
+        }
         let name = norm_ident(raw_name);
         let mut impls = Vec::new();
         self.merged_impls_for_target(db, target, true, &mut impls);
@@ -199,6 +202,74 @@ impl CrateDefMap {
             }
         }
         self.resolve_trait_assoc(db, trait_def, raw_name, ns)
+    }
+
+    /// Resolves `Target::name` through traits visible in `from_mod` (plus block-local `extra_traits`).
+    /// Prefers concrete `impl Trait for Target` items first so competing trait names disambiguate
+    /// toward the trait actually implemented by `Target`, then falls back to blanket/declaration items.
+    #[allow(clippy::too_many_arguments)]
+    pub fn resolve_in_scope_trait_assoc(
+        &self,
+        db: &dyn ItemDb,
+        mod_tree: &ModuleTree,
+        from_mod: ModuleId,
+        extra_traits: &[ResolvedBinding],
+        target: ImplTargetKey,
+        raw_name: &str,
+        ns: NsMask,
+    ) -> Option<(GlobalDefId, ResolvedAssoc)> {
+        if target != ImplTargetKey::Unknown {
+            let mut impls = Vec::new();
+            self.merged_impls_for_target(db, target, false, &mut impls);
+            for mimp in &impls {
+                if !mimp.trait_def.is_some() || mimp.is_negative {
+                    continue;
+                }
+                if self.is_trait_def_in_scope(mod_tree, from_mod, extra_traits, mimp.trait_def) {
+                    if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, mimp.trait_def, raw_name, ns) {
+                        return Some((mimp.trait_def, assoc));
+                    }
+                }
+            }
+        }
+        for tb in extra_traits.iter().chain(self.scope(from_mod).unnamed_traits.iter()) {
+            if tb.def.is_some() && self.resolve_trait_assoc(db, tb.def, raw_name, ns).is_some() {
+                if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tb.def, raw_name, ns) {
+                    return Some((tb.def, assoc));
+                }
+            }
+        }
+        for &pns in self.scope(from_mod).entries.values() {
+            if let Some(tb) = pns.filter_visible(mod_tree, from_mod).types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
+                if self.resolve_trait_assoc(db, tb.def, raw_name, ns).is_some() {
+                    if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tb.def, raw_name, ns) {
+                        return Some((tb.def, assoc));
+                    }
+                }
+            }
+        }
+        if !mod_tree.module(from_mod).has_no_implicit_prelude() {
+            for pns in self.prelude.values() {
+                if let Some(tb) = pns.types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
+                    if self.resolve_trait_assoc(db, tb.def, raw_name, ns).is_some() {
+                        if let Some(assoc) = self.resolve_trait_impl_assoc(db, target, tb.def, raw_name, ns) {
+                            return Some((tb.def, assoc));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn is_trait_def_in_scope(&self, mod_tree: &ModuleTree, from_mod: ModuleId, extra_traits: &[ResolvedBinding], trait_def: GlobalDefId) -> bool {
+        if extra_traits.iter().any(|b| b.def == trait_def) || self.scope(from_mod).unnamed_traits.iter().any(|b| b.def == trait_def) {
+            return true;
+        }
+        if self.scope(from_mod).entries.values().any(|&pns| pns.filter_visible(mod_tree, from_mod).types.is_some_and(|b| b.def == trait_def)) {
+            return true;
+        }
+        !mod_tree.module(from_mod).has_no_implicit_prelude() && self.prelude.values().any(|pns| pns.types.is_some_and(|b| b.def == trait_def))
     }
 }
 

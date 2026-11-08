@@ -154,20 +154,29 @@ fn seed_minimal_sysroot(db: &mut MemItemDb) -> (CrateId, CrateId, CrateId) {
 }
 
 fn collect_repo(dir: &Path, out_rs: &mut Vec<PathBuf>, out_manifests: &mut Vec<PathBuf>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    if dir.parent().is_none() {
+        return;
+    }
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     let mut entries: Vec<_> = rd.flatten().collect();
     entries.sort_by_key(|e| e.file_name());
     for e in entries {
+        let Ok(ft) = e.file_type() else { continue };
+        if ft.is_symlink() {
+            continue;
+        }
         let p = e.path();
         let s = e.file_name().to_string_lossy().into_owned();
-        if p.is_dir() {
-            if matches!(s.as_str(), "target" | ".git" | "node_modules" | "fixtures") {
+        if ft.is_dir() {
+            if matches!(s.as_str(), "target" | ".git" | "node_modules" | "fixtures" | "proc" | "sys" | "dev") {
                 continue;
             }
             collect_repo(&p, out_rs, out_manifests);
-        } else if s == "Cargo.toml" {
+        } else if ft.is_file() && s == "Cargo.toml" {
             out_manifests.push(p);
-        } else if p.extension().and_then(|x| x.to_str()) == Some("rs") {
+        } else if ft.is_file() && p.extension().and_then(|x| x.to_str()) == Some("rs") {
             out_rs.push(p);
         }
     }
@@ -188,7 +197,9 @@ fn parse_manifest_meta(toml_text: &str) -> (String, Edition, Option<String>, Vec
             section = &line[1..line.len() - 1];
             continue;
         }
-        let Some((k, v)) = line.split_once('=') else { continue };
+        let Some((k, v)) = line.split_once('=') else {
+            continue;
+        };
         let k = k.trim().trim_matches('"');
         let v = v.trim().trim_matches('"');
         match section {
@@ -227,14 +238,22 @@ fn bench_dir(root: &Path) {
     let (core_k, alloc_k, std_k) = seed_minimal_sysroot(&mut db);
     let mut crates = Vec::new();
     for mp in &manifests {
-        let Ok(t) = std::fs::read_to_string(mp) else { continue };
+        let Ok(t) = std::fs::read_to_string(mp) else {
+            continue;
+        };
         if !t.contains("[package]") {
             continue;
         }
         let (pkg, ed, explicit_lib, feats) = parse_manifest_meta(&t);
         let cdir = mp.parent().unwrap_or(root);
         let rel = cdir.strip_prefix(root).unwrap_or(Path::new("")).to_string_lossy().replace('\\', "/");
-        let join_r = |s: &str| if rel.is_empty() { s.to_string() } else { format!("{rel}/{s}") };
+        let join_r = |s: &str| {
+            if rel.is_empty() {
+                s.to_string()
+            } else {
+                format!("{rel}/{s}")
+            }
+        };
         let lib_fid = explicit_lib
             .as_deref()
             .and_then(|lp| sources.resolve_path(&join_r(lp)))
@@ -342,32 +361,25 @@ fn bench_dir(root: &Path) {
 
     let denom = reached_files.max(1) as f64;
     let label = root.file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "repo".into());
-    println!(
-        "{:<18} files={:>5} items={:>6} uses={:>6} (ws+std_ok={:>5}) | def_map={:>8.1} ns/file ({:>6.2} ms) | allocs/file={:>5.1} bytes/file={:>7.1}",
-        label,
-        reached_files,
-        total_items,
-        total_uses,
-        final_res_ok,
-        best.as_nanos() as f64 / denom,
-        best.as_secs_f64() * 1000.0,
-        (allocs.allocs + allocs.reallocs) as f64 / denom,
-        allocs.total_bytes as f64 / denom,
-    );
+    let (ns_f, ms_t, all_f, b_f) =
+        (best.as_nanos() as f64 / denom, best.as_secs_f64() * 1000.0, (allocs.allocs + allocs.reallocs) as f64 / denom, allocs.total_bytes as f64 / denom);
+    println!("{label:<18} files={reached_files:>5} items={total_items:>6} uses={total_uses:>6} (ws+std_ok={final_res_ok:>5}) | def_map={ns_f:>8.1} ns/file ({ms_t:>6.2} ms) | allocs/file={all_f:>5.1} bytes/file={b_f:>7.1}");
 }
 
 fn main() {
     let mut dirs: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
     if dirs.is_empty() {
-        if let Some(w) = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent) {
-            dirs.push(w.to_path_buf());
-        }
-        if let Ok(bench_root) = std::env::var("RIDX_BENCH_REPOS") {
-            if let Ok(rd) = std::fs::read_dir(bench_root) {
-                let mut sub: Vec<PathBuf> = rd.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
-                sub.sort();
-                dirs.extend(sub);
-            }
+        let ws = std::env::var("RIDX_WS_SRC")
+            .ok()
+            .map(PathBuf::from)
+            .or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).map(Path::to_path_buf))
+            .filter(|p| p.parent().is_some() && p.join("Cargo.toml").is_file())
+            .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+        dirs.push(ws);
+        if let Some(rd) = std::env::var("RIDX_BENCH_REPOS").ok().and_then(|d| std::fs::read_dir(d).ok()) {
+            let mut sub: Vec<PathBuf> = rd.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
+            sub.sort();
+            dirs.extend(sub);
         }
     }
     for d in dirs {

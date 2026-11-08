@@ -321,6 +321,16 @@ pub trait ItemDb {
     /// Appends inherent and trait associated items on `owner_def` into `out`.
     fn assoc_items<'a>(&'a self, _owner_def: GlobalDefId, _out: &mut Vec<IndexedDef<'a>>) {}
 
+    /// Resolves a named field on `adt_or_variant_def` (`Struct`, `Union`, or `Variant`), if indexed.
+    fn adt_field(&self, _adt_or_variant_def: GlobalDefId, _field_name: &str) -> Option<GlobalDefId> {
+        None
+    }
+
+    /// Resolves an indexed definition in `(krate, file)` whose identifier byte span is `[start..end)`.
+    fn def_at_byte_span(&self, _krate: CrateId, _file: FileId, _start: u32, _end: u32) -> GlobalDefId {
+        GlobalDefId::NONE
+    }
+
     /// Looks up a lang item (`u16` discriminant matching `LangItemKind`) across visible shards.
     fn lang_item(&self, _lang_kind: u16) -> Option<GlobalDefId> {
         None

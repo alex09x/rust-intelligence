@@ -114,19 +114,28 @@ fn seed_minimal_sysroot(db: &mut MemItemDb) -> (CrateId, CrateId, CrateId) {
 }
 
 fn collect_repo(dir: &Path, out_rs: &mut Vec<PathBuf>, out_manifests: &mut Vec<PathBuf>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    if dir.parent().is_none() {
+        return;
+    }
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     let mut entries: Vec<_> = rd.filter_map(|e| e.ok()).collect();
     entries.sort_by_key(|e| e.file_name());
     for e in entries {
+        let Ok(ft) = e.file_type() else { continue };
+        if ft.is_symlink() {
+            continue;
+        }
         let p = e.path();
         let s = e.file_name().to_string_lossy().into_owned();
-        if p.is_dir() {
-            if !matches!(s.as_str(), "target" | ".git" | "node_modules" | "fixtures") {
+        if ft.is_dir() {
+            if !matches!(s.as_str(), "target" | ".git" | "node_modules" | "fixtures" | "proc" | "sys" | "dev") {
                 collect_repo(&p, out_rs, out_manifests);
             }
-        } else if s == "Cargo.toml" {
+        } else if ft.is_file() && s == "Cargo.toml" {
             out_manifests.push(p);
-        } else if p.extension().and_then(|x| x.to_str()) == Some("rs") {
+        } else if ft.is_file() && p.extension().and_then(|x| x.to_str()) == Some("rs") {
             out_rs.push(p);
         }
     }
@@ -147,7 +156,9 @@ fn parse_manifest_meta(toml_text: &str) -> (String, Edition, Option<String>, Vec
             section = &line[1..line.len() - 1];
             continue;
         }
-        let Some((k, v)) = line.split_once('=') else { continue };
+        let Some((k, v)) = line.split_once('=') else {
+            continue;
+        };
         let (k, v) = (k.trim().trim_matches('"'), v.trim().trim_matches('"'));
         match section {
             "package" if k == "name" => name = v.replace('-', "_"),
@@ -185,14 +196,22 @@ fn bench_repo(root: &Path) {
     let (core_k, alloc_k, std_k) = seed_minimal_sysroot(&mut db);
     let mut crates = Vec::new();
     for mp in &manifests {
-        let Ok(t) = std::fs::read_to_string(mp) else { continue };
+        let Ok(t) = std::fs::read_to_string(mp) else {
+            continue;
+        };
         if !t.contains("[package]") {
             continue;
         }
         let (pkg, ed, explicit_lib, feats) = parse_manifest_meta(&t);
         let cdir = mp.parent().unwrap_or(root);
         let rel = cdir.strip_prefix(root).unwrap_or(Path::new("")).to_string_lossy().replace('\\', "/");
-        let join_r = |s: &str| if rel.is_empty() { s.to_string() } else { format!("{rel}/{s}") };
+        let join_r = |s: &str| {
+            if rel.is_empty() {
+                s.to_string()
+            } else {
+                format!("{rel}/{s}")
+            }
+        };
         let lib_fid = explicit_lib
             .as_deref()
             .and_then(|lp| sources.resolve_path(&join_r(lp)))
@@ -294,20 +313,35 @@ fn bench_repo(root: &Path) {
     );
 }
 
+fn default_ws_root() -> PathBuf {
+    if let Ok(ws) = std::env::var("RIDX_WS_SRC") {
+        let p = PathBuf::from(ws);
+        if p.parent().is_some() && p.join("Cargo.toml").is_file() {
+            return p;
+        }
+    }
+    let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    if let Some(w) = manifest_dir.parent().and_then(Path::parent) {
+        if w.parent().is_some() && w.join("Cargo.toml").is_file() {
+            return w.to_path_buf();
+        }
+    }
+    manifest_dir.to_path_buf()
+}
+
 fn main() {
-    let ws_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(|p| p.parent()).unwrap_or(Path::new("."));
-    bench_repo(ws_root);
-    let mut extra: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
-    if extra.is_empty() {
+    let mut dirs: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
+    if dirs.is_empty() {
+        dirs.push(default_ws_root());
         if let Ok(dir) = std::env::var("RIDX_BENCH_REPOS") {
             if let Ok(rd) = std::fs::read_dir(dir) {
                 let mut sub: Vec<_> = rd.filter_map(|e| e.ok().map(|x| x.path())).filter(|p| p.is_dir()).collect();
                 sub.sort();
-                extra.extend(sub);
+                dirs.extend(sub);
             }
         }
     }
-    for p in extra {
+    for p in dirs {
         bench_repo(&p);
     }
 }
