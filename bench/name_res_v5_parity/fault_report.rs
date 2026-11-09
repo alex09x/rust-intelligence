@@ -15,7 +15,7 @@ use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree};
 
 use crate::compare::CorpusReport;
 use crate::ty_report::{defs_same_item, ty_contains_unknown, tys_eq_mode, EQ_STRICT};
-use crate::v5_db::RidxV5ItemDb;
+use ridx::live::v5_db::RidxV5ItemDb;
 
 /// Ordered from weakest (`PrefixHead`) to strongest (`StrictFull`) so `Option::max` picks the strictest match.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

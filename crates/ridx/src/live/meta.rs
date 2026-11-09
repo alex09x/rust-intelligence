@@ -297,10 +297,8 @@ pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
                         }
                         for (k, v) in obj {
                             let norm_k = k.split('-').next().unwrap_or(k).replace('-', "_");
-                            if !extern_units.contains_key(&norm_k) {
-                                if let Some(uk) = v.as_str() {
-                                    extern_units.insert(norm_k, uk.to_string());
-                                }
+                            if let Some(uk) = v.as_str() {
+                                extern_units.entry(norm_k).or_insert_with(|| uk.to_string());
                             }
                         }
                     }

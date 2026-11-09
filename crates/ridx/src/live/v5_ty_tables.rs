@@ -17,7 +17,7 @@ use ridx_format::{DefKind, GenericParamKind, IndexReader, TyDefId};
 use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
 use ridx_syntax::ty_infer::{TraitAssocFnMeta, TyLangItem};
 
-use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
+use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
 
 #[inline]
 pub fn fnv1a_str(s: &str) -> u64 {
@@ -323,7 +323,7 @@ impl<'w> RidxV5ItemDb<'w> {
                         if !aname.is_empty() {
                             let nh = fnv1a_str(aname);
                             self.ty_tables.trait_assoc_tys.entry((tgid, nh)).or_insert_with(|| {
-                                let agid = GlobalDefId::new(tgid.krate, crate::v5_db::TY_DEF_SYNTH_BIT | 0x2000_0000 | ((nh as u32) & 0x1fff_ffff));
+                                let agid = GlobalDefId::new(tgid.krate, super::v5_db::TY_DEF_SYNTH_BIT | 0x2000_0000 | ((nh as u32) & 0x1fff_ffff));
                                 self.ty_tables.assoc_ty_names.insert(agid, aname);
                                 (agid, aname, 0)
                             });
@@ -355,7 +355,14 @@ impl<'w> RidxV5ItemDb<'w> {
         self.populate_v5_std_macro_gids();
     }
 
-    fn detect_impl_self_fn_bound_arity<B: AsRef<[u8]>>(&self, r_idx: usize, reader: &IndexReader<B>, arena: ridx_format::TyArenaView<'_>, impl_idx: u32, self_ty: ridx_format::TyId) -> u8 {
+    fn detect_impl_self_fn_bound_arity<B: AsRef<[u8]>>(
+        &self,
+        r_idx: usize,
+        reader: &IndexReader<B>,
+        arena: ridx_format::TyArenaView<'_>,
+        impl_idx: u32,
+        self_ty: ridx_format::TyId,
+    ) -> u8 {
         let ridx_format::TyKindView::Param { index: self_pidx, .. } = arena.kind(self_ty) else { return u8::MAX };
         for wp in reader.where_preds_for_impl(impl_idx) {
             if wp.kind() != ridx_format::WherePredKind::TraitBound || wp.is_negative() {
@@ -390,4 +397,4 @@ pub fn count_impl_non_lt<B: AsRef<[u8]>>(reader: &IndexReader<B>, impl_idx: u32)
     reader.generic_params_for_impl(impl_idx).filter(|p| !matches!(p.kind, GenericParamKind::Lifetime)).count() as u16
 }
 
-pub use crate::v5_ty_defaults::u16_to_ty_lang;
+pub use super::v5_ty_defaults::u16_to_ty_lang;

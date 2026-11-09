@@ -20,8 +20,8 @@ use ridx_syntax::name_res::{CrateId, CrateSnapshot, FileId, FileNameRes, SourceD
 use ridx_syntax::parse;
 use ridx_syntax::ty_infer::{extract_file_fn_summaries, DirtyFileTracker, FnBodySummary};
 
-use crate::meta::CorpusSourceDb;
-use crate::v5_db::RidxV5ItemDb;
+use ridx::live::meta::CorpusSourceDb;
+use ridx::live::v5_db::RidxV5ItemDb;
 use crate::{reset_alloc_counters, snapshot_alloc_counters};
 
 struct DirtyFileOverlay<'a> {

@@ -12,7 +12,7 @@
 
 use ridx_syntax::name_res::{CrateId, GlobalDefId, IndexedDef, IndexedUse, ItemDb, ItemKind};
 
-use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX};
+use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX};
 
 #[inline]
 fn norm_ident(s: &str) -> &str {

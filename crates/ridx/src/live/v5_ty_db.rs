@@ -8,19 +8,19 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Full [`ridx_syntax::ty_infer::TyDefDb`] implementation on [`crate::v5_db::RidxV5ItemDb`]
+//! Full [`ridx_syntax::ty_infer::TyDefDb`] implementation on [`super::v5_db::RidxV5ItemDb`]
 //! backed by `.ridx` `v5` `FnSigEntry`, `DefTyEntry`, `FieldEntry`, `ImplEntry`, `WherePredEntry`,
-//! and pre-indexed [`crate::v5_ty_tables::V5TyTables`].
+//! and pre-indexed [`super::v5_ty_tables::V5TyTables`].
 
 use ridx_format::{CtorShape, DefKind, TyKindView, WherePredKind};
 use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{CtorShapeKind, InferTyArena, InferTyId, InferTyKind, MethodCand, TraitAssocFnMeta, TyDefDb, TyLangItem, UnionFindTable, WhereObligation};
 
-use crate::v5_db::RidxV5ItemDb;
-use crate::v5_ty_defaults::assoc_lang_to_trait_and_name;
-use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
-use crate::v5_ty_tables::fnv1a_str;
+use super::v5_db::RidxV5ItemDb;
+use super::v5_ty_defaults::assoc_lang_to_trait_and_name;
+use super::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
+use super::v5_ty_tables::fnv1a_str;
 
 impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     fn fn_sig(&self, raw_def: GlobalDefId, arena: &mut InferTyArena, inputs_out: &mut Vec<InferTyId>) -> Option<(u16, InferTyId)> {
@@ -258,7 +258,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
             if let Some(mdidx) = over_didx {
                 let mdef = GlobalDefId::new(CrateId(imp.r_idx), mdidx);
                 if !out.iter().any(|c| c.method_def == mdef && !c.has_fixed_trait_subst) {
-                    let mgc = crate::v5_ty_tables::count_def_non_lt_non_self(reader, mdidx);
+                    let mgc = super::v5_ty_tables::count_def_non_lt_non_self(reader, mdidx);
                     out.push(MethodCand {
                         method_def: mdef,
                         trait_def,

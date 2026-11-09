@@ -9,16 +9,16 @@
  */
 
 //! Default generic type parameter lowering (`T = Default`) and stdlib macro result type
-//! construction (`StdMacroTy`) for [`crate::v5_db::RidxV5ItemDb`] (`0` steady-state heap allocs).
+//! construction (`StdMacroTy`) for [`super::v5_db::RidxV5ItemDb`] (`0` steady-state heap allocs).
 
 use ridx_format::{GenericParamKind, TyKindView, WherePredKind};
 use ridx_syntax::name_res::GlobalDefId;
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{unify, InferTyArena, InferTyId, StdMacroTy, TyDefDb, TyLangItem, TySliceRange, UnionFindTable};
 
-use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
-use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
-use crate::v5_ty_proj::instantiate_v5;
+use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
+use super::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
+use super::v5_ty_proj::instantiate_v5;
 
 impl<'w> RidxV5ItemDb<'w> {
     pub(crate) fn populate_v5_std_macro_gids(&mut self) {

@@ -18,11 +18,11 @@ use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, InferTyId, LocalCstDefs
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree};
 
 use crate::compare::CorpusReport;
-use crate::meta::CorpusFile;
+use ridx::live::meta::CorpusFile;
 use crate::ty_parity::TyParityStats;
 use crate::ty_report::{ty_contains_unknown, tys_eq_mode, ExprTyRec, DESUGARED_TY_FLAG, EQ_LENIENT_ARRAY_LEN, EQ_LENIENT_DYN_OPAQUE, EQ_STRICT};
-use crate::v5_db::RidxV5ItemDb;
-use crate::v5_ty_lower::{lower_v5_ty, ParamRemap};
+use ridx::live::v5_db::RidxV5ItemDb;
+use ridx::live::v5_ty_lower::{lower_v5_ty, ParamRemap};
 
 pub const CLAIM_NONE: u8 = 0;
 pub const CLAIM_PAREN: u8 = 1;

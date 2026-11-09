@@ -20,9 +20,9 @@ use ridx_syntax::name_res::{FileId, GlobalDefId};
 use ridx_syntax::ty_infer::{InferTyArena, InferTyId, InferTyKind, TySliceRange};
 
 use crate::compare::CorpusReport;
-use crate::meta::CorpusSourceDb;
+use ridx::live::meta::CorpusSourceDb;
 use crate::ty_funnel::print_funnel_strictness_and_latency;
-use crate::v5_db::RidxV5ItemDb;
+use ridx::live::v5_db::RidxV5ItemDb;
 
 pub const EXPRTY_MAGIC: &[u8; 8] = b"RIDXETY1";
 pub const DESUGARED_TY_FLAG: u32 = 0x8000_0000;

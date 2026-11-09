@@ -8,13 +8,13 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! `ridx_syntax::name_res::ItemDb` implementation for [`crate::v5_db::RidxV5ItemDb`].
+//! `ridx_syntax::name_res::ItemDb` implementation for [`super::v5_db::RidxV5ItemDb`].
 
 use ridx_format::{DefKind, LangItemKind, UseOwner, USE_FLAG_GLOB, USE_FLAG_PRELUDE, USE_FLAG_REEXPORT, USE_FLAG_UNDERSCORE};
 use ridx_syntax::name_res::{CrateId, Edition, FileId, GlobalDefId, ImplTargetKey, IndexedDef, IndexedImpl, IndexedUse, ItemDb, ItemKind, VisKind};
 
-use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
-use crate::v5_shard::{def_has_value_ctor, map_ridx_kind, map_use_prim, map_vis};
+use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
+use super::v5_shard::{def_has_value_ctor, map_ridx_kind, map_use_prim, map_vis};
 
 impl<'w> RidxV5ItemDb<'w> {
     fn push_def_idx<'a>(&'a self, r_idx: usize, didx: u32, out: &mut Vec<IndexedDef<'a>>) {
@@ -83,12 +83,12 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
 
     #[inline]
     fn resolve_include_file(&self, from_file: FileId, rel_or_abs: &str) -> Option<(FileId, &str)> {
-        crate::meta::resolve_include_in_corpus(self.src, from_file, rel_or_abs)
+        super::meta::resolve_include_in_corpus(self.src, from_file, rel_or_abs)
     }
 
     #[inline]
     fn include_bytes_len(&self, from_file: FileId, rel_or_abs: &str) -> Option<u64> {
-        crate::meta::include_bytes_len_in_corpus(self.src, from_file, rel_or_abs)
+        super::meta::include_bytes_len_in_corpus(self.src, from_file, rel_or_abs)
     }
 
     fn extern_crate(&self, from_krate: CrateId, extern_name: &str) -> Option<CrateId> {
@@ -146,17 +146,17 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
 
     #[inline]
     fn macro_rules_body(&self, krate: CrateId, module_path: &str, call_path: &str) -> Option<&str> {
-        crate::v5_macro_res::resolve_v5_macro_rules(self, krate, module_path, call_path).map(|(b, _)| b)
+        super::v5_macro_res::resolve_v5_macro_rules(self, krate, module_path, call_path).map(|(b, _)| b)
     }
 
     #[inline]
     fn macro_rules_with_crate(&self, krate: CrateId, module_path: &str, call_path: &str) -> Option<(&str, &str)> {
-        crate::v5_macro_res::resolve_v5_macro_rules(self, krate, module_path, call_path)
+        super::v5_macro_res::resolve_v5_macro_rules(self, krate, module_path, call_path)
     }
 
     #[inline]
     fn macro_rules_by_def(&self, from_krate: CrateId, def: GlobalDefId) -> Option<(&str, &str)> {
-        crate::v5_macro_res::body_of_macro_gid(self, from_krate.0 as usize, def)
+        super::v5_macro_res::body_of_macro_gid(self, from_krate.0 as usize, def)
     }
 
     fn def_kind(&self, def: GlobalDefId) -> Option<ItemKind> {

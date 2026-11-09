@@ -25,11 +25,11 @@ use ridx_syntax::{parse, NodeId, SyntaxKind as K, SyntaxTree, TokenKind as T};
 
 use crate::fault_completion::CompletionMethodIndex;
 use crate::fault_report::{build_masked_base_for_body, classify_recv_match, RecvMatch};
-use crate::meta::CorpusFile;
+use ridx::live::meta::CorpusFile;
 use crate::ty_parity::collect_active_body_nodes;
 use crate::ty_report::{ty_contains_unknown, ExprTyRec, ExprTySidecar, DESUGARED_TY_FLAG};
-use crate::v5_db::RidxV5ItemDb;
-use crate::v5_ty_lower::{lower_v5_ty, ParamRemap};
+use ridx::live::v5_db::RidxV5ItemDb;
+use ridx::live::v5_ty_lower::{lower_v5_ty, ParamRemap};
 
 #[derive(Default)]
 pub struct FaultBenchStats {
