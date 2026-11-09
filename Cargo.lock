@@ -263,6 +263,7 @@ dependencies = [
  "memmap2",
  "protobuf",
  "ridx-format",
+ "ridx-syntax",
  "ridx-test-support",
  "scip",
  "serde",
@@ -288,6 +289,10 @@ dependencies = [
  "serde_json",
  "tempfile",
 ]
+
+[[package]]
+name = "ridx-syntax"
+version = "0.2.0"
 
 [[package]]
 name = "ridx-test-support"

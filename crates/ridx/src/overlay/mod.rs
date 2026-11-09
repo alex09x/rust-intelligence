@@ -104,7 +104,7 @@ pub struct DocumentOverlay {
     /// Comment and string/char literal byte spans, in text order.
     pub(crate) opaque: Vec<(usize, usize)>,
     /// Incremental dirty-function tracker and local type inference cache (`Checkbox 4.1`).
-    pub dirty_tracker: crate::ty_infer::DirtyFileTracker,
+    pub dirty_tracker: ridx_syntax::ty_infer::DirtyFileTracker,
 }
 
 /// Resolves the compiled baseline text by checking whether the live buffer hash or on-disk file hash matches `expected_hash`.
@@ -133,7 +133,7 @@ impl DocumentOverlay {
             symbols: Vec::new(),
             scopes: Vec::new(),
             opaque: Vec::new(),
-            dirty_tracker: crate::ty_infer::DirtyFileTracker::new(),
+            dirty_tracker: ridx_syntax::ty_infer::DirtyFileTracker::new(),
         };
         overlay.reparse();
         overlay
@@ -146,7 +146,7 @@ impl DocumentOverlay {
         let content_hash = normalized_source_hash(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
         let compiled_text = if is_compiled { Some(text.clone()) } else { None };
-        let mut dirty_tracker = crate::ty_infer::DirtyFileTracker::new();
+        let mut dirty_tracker = ridx_syntax::ty_infer::DirtyFileTracker::new();
         if let Some(ref compiled) = compiled_text {
             dirty_tracker.set_baseline(compiled);
         }
@@ -175,7 +175,7 @@ impl DocumentOverlay {
         let content_hash = normalized_source_hash(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
         let compiled_text = resolve_compiled_text(content_hash, &text, disk_text.as_deref(), expected_hash);
-        let mut dirty_tracker = crate::ty_infer::DirtyFileTracker::new();
+        let mut dirty_tracker = ridx_syntax::ty_infer::DirtyFileTracker::new();
         if let Some(ref compiled) = compiled_text {
             dirty_tracker.set_baseline(compiled);
         }
@@ -234,18 +234,18 @@ impl DocumentOverlay {
 
     /// Returns telemetry from the most recent `didChange` dirty-function tracking pass (`Checkbox 4.1`).
     #[inline]
-    pub fn dirty_fn_stats(&self) -> crate::ty_infer::DirtyFnUpdateStats {
+    pub fn dirty_fn_stats(&self) -> ridx_syntax::ty_infer::DirtyFnUpdateStats {
         self.dirty_tracker.last_stats()
     }
 
     /// Returns the cached inference result if `byte_offset` falls inside a dirty function body.
     #[inline]
-    pub fn dirty_fn_at_offset(&self, byte_offset: u32) -> Option<&crate::ty_infer::CachedDirtyFn> {
+    pub fn dirty_fn_at_offset(&self, byte_offset: u32) -> Option<&ridx_syntax::ty_infer::CachedDirtyFn> {
         self.dirty_tracker.dirty_fn_at_offset(byte_offset)
     }
 
     /// Returns the cached inference result if `(line_1based, col_1based)` falls inside a dirty function body.
-    pub fn dirty_fn_at_position(&self, line: u32, col: u32) -> Option<&crate::ty_infer::CachedDirtyFn> {
+    pub fn dirty_fn_at_position(&self, line: u32, col: u32) -> Option<&ridx_syntax::ty_infer::CachedDirtyFn> {
         let byte_off = self.position_to_byte_offset(line.saturating_sub(1), col.saturating_sub(1)) as u32;
         self.dirty_tracker.dirty_fn_at_offset(byte_off)
     }
