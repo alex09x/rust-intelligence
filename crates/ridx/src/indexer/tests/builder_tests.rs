@@ -10,7 +10,7 @@
 
 //! Unit tests for index builder resolution and check command construction.
 
-use crate::indexer::builder::{build_check_command, build_check_command_with_no_deps, lib_and_bin_fallback_args, IndexBuilder};
+use crate::indexer::builder::{build_check_command, build_check_command_with_no_deps, lib_and_bin_fallback_args, without_keep_going, IndexBuilder};
 use crate::indexer::types::IndexOptions;
 use std::path::{Path, PathBuf};
 
@@ -87,11 +87,12 @@ fn test_build_check_command_cargo_and_mitts_parity() {
     assert_eq!(cargo_prog, "cargo");
     assert_eq!(mitts_prog, "mitts");
 
-    // Args are identical but for Cargo's `--keep-going` (indexing the crates that build when one fails).
-    assert_eq!(mitts_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--workspace",]);
+    // Both builders keep going past a failed unit, so the crates that build are indexed when one fails.
     assert_eq!(cargo_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--keep-going", "--workspace",]);
+    assert_eq!(mitts_args, cargo_args);
 
-    // The fallback pass of a builder without `--keep-going` narrows the targets and keeps the rest.
+    // A Mitts release without `--keep-going` gets the same pass without it, then libraries and binaries alone.
+    assert_eq!(without_keep_going(&mitts_args), vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--workspace",]);
     assert_eq!(lib_and_bin_fallback_args(&mitts_args), vec!["check", "--manifest-path", "/ws/Cargo.toml", "--lib", "--bins", "--workspace",]);
 
     // Envs are identical
@@ -152,6 +153,7 @@ fn test_build_check_command_options_flags() {
             "--manifest-path",
             "/ws/Cargo.toml",
             "--all-targets",
+            "--keep-going",
             "-p",
             "pkg_a",
             "--release",

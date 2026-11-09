@@ -92,6 +92,11 @@ impl std::str::FromStr for IndexBuilder {
     }
 }
 
+/// The check arguments for a builder release that does not know `--keep-going` yet.
+pub fn without_keep_going(args: &[String]) -> Vec<String> {
+    args.iter().filter(|a| *a != "--keep-going").cloned().collect()
+}
+
 /// The arguments of the check pass narrowed to library and binary targets.
 ///
 /// A builder without `--keep-going` stops at the first unit that fails, so one broken test harness leaves
@@ -100,6 +105,9 @@ impl std::str::FromStr for IndexBuilder {
 pub fn lib_and_bin_fallback_args(args: &[String]) -> Vec<String> {
     let mut out = Vec::with_capacity(args.len() + 1);
     for a in args {
+        if a == "--keep-going" {
+            continue;
+        }
         if a == "--all-targets" {
             out.push("--lib".to_string());
             out.push("--bins".to_string());
@@ -149,9 +157,7 @@ pub fn build_check_command_with_no_deps(
 
     let mut args = vec!["check".to_string(), "--manifest-path".to_string(), manifest_path.display().to_string(), "--all-targets".to_string()];
     // One crate that fails to build (a test harness needing another toolchain) must not leave the rest unindexed.
-    if builder == IndexBuilder::Cargo {
-        args.push("--keep-going".to_string());
-    }
+    args.push("--keep-going".to_string());
     if let Some(ref p) = opts.package {
         args.push("-p".to_string());
         args.push(p.clone());

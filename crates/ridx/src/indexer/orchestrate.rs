@@ -192,7 +192,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let (program, args, envs) =
         build_check_command(&opts, builder, &manifest_path, &work_dir, &driver_bin, &variant_out_dir, &cache_dir, &cargo_target_dir, &target_kinds_file, ld_path.as_deref());
 
-    let run_check = |args: &[String]| -> Result<(bool, String, String), String> {
+    let run_check = |args: &[String]| -> Result<(bool, String, String, Option<i32>), String> {
         let mut cmd = Command::new(&program);
         cmd.current_dir(&work_dir);
         cmd.args(args);
@@ -207,20 +207,24 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             let output = cmd.output().map_err(failed)?;
             let stderr_str = String::from_utf8_lossy(&output.stderr);
             let tail: Vec<&str> = stderr_str.lines().rev().take(20).collect();
-            Ok((output.status.success(), output.status.to_string(), tail.into_iter().rev().collect::<Vec<_>>().join("\n")))
+            Ok((output.status.success(), output.status.to_string(), tail.into_iter().rev().collect::<Vec<_>>().join("\n"), output.status.code()))
         } else {
             let status = cmd.status().map_err(failed)?;
-            Ok((status.success(), status.to_string(), String::new()))
+            Ok((status.success(), status.to_string(), String::new(), status.code()))
         }
     };
 
-    let (ok, status, stderr_tail) = run_check(&args)?;
-    if !ok && builder == IndexBuilder::Mitts {
-        // Mitts has no `--keep-going`: index the libraries and binaries the failed unit kept from building.
-        eprintln!("  warning: mitts check exited with status {status}; indexing libraries and binaries without the other targets");
-        let (lib_ok, lib_status, _) = run_check(&super::builder::lib_and_bin_fallback_args(&args))?;
-        if !lib_ok {
-            eprintln!("  warning: mitts check of libraries and binaries exited with status {lib_status}");
+    let (mut ok, mut status, mut stderr_tail, code) = run_check(&args)?;
+    // Exit status 2 is a rejected command line: a Mitts release without `--keep-going`. It stops at the first
+    // failed unit, so after a failure the libraries and binaries that unit kept from building are indexed alone.
+    if !ok && builder == IndexBuilder::Mitts && code == Some(2) {
+        (ok, status, stderr_tail, _) = run_check(&super::builder::without_keep_going(&args))?;
+        if !ok {
+            eprintln!("  warning: mitts check exited with status {status}; indexing libraries and binaries without the other targets");
+            let (lib_ok, lib_status, _, _) = run_check(&super::builder::lib_and_bin_fallback_args(&args))?;
+            if !lib_ok {
+                eprintln!("  warning: mitts check of libraries and binaries exited with status {lib_status}");
+            }
         }
     }
     // The crates that built are indexed even when another failed: publish them.
