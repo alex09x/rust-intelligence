@@ -19,10 +19,10 @@ use ridx_syntax::ty_infer::{
     unify, vars_has_unresolved_infer, InferTyArena, InferTyId, InferTyKind, MethodCand, TraitAssocFnMeta, TyLangItem, TyVarKind, UnionFindTable, WhereObligation,
 };
 
-use crate::v5_db::RidxV5ItemDb;
-use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
-use crate::v5_ty_proj::instantiate_v5;
-use crate::v5_ty_tables::{fnv1a_str, TraitImplInfo};
+use super::v5_db::RidxV5ItemDb;
+use super::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
+use super::v5_ty_proj::instantiate_v5;
+use super::v5_ty_tables::{fnv1a_str, TraitImplInfo};
 
 impl<'w> RidxV5ItemDb<'w> {
     #[inline]
@@ -332,8 +332,8 @@ impl<'w> RidxV5ItemDb<'w> {
         let concrete = self.ty_tables.concrete_trait_impls.get(&(trait_gid, head)).map_or(&[][..], |v| v.as_slice());
         let blanket = self.ty_tables.blanket_trait_impls.get(&trait_gid).map_or(&[][..], |v| v.as_slice());
 
-        let concrete_fn = matches!(arena.kind(cur), InferTyKind::FnDef { .. } | InferTyKind::Closure { .. } | InferTyKind::FnPtr { .. })
-            && !vars_has_unresolved_infer(arena, vars, cur);
+        let concrete_fn =
+            matches!(arena.kind(cur), InferTyKind::FnDef { .. } | InferTyKind::Closure { .. } | InferTyKind::FnPtr { .. }) && !vars_has_unresolved_infer(arena, vars, cur);
         let has_infer = !concrete_fn && (vars_has_unresolved_infer(arena, vars, cur) || trait_args.iter().any(|&t| vars_has_unresolved_infer(arena, vars, t)));
         let total_cands = concrete.len() + blanket.len();
         let mut match_count = 0usize;

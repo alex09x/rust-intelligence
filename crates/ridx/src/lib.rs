@@ -11,5 +11,6 @@
 pub mod cli;
 pub mod compare;
 pub mod indexer;
+pub mod live;
 pub mod lsp;
 pub mod overlay;

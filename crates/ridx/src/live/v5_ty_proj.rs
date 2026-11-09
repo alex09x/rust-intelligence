@@ -17,9 +17,9 @@ use ridx_syntax::ty_infer::autoderef::impl_target_key_of_ty;
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{unify, InferTyArena, InferTyId, InferTyKind, TyDefDb, UnionFindTable};
 
-use crate::v5_db::RidxV5ItemDb;
-use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
-use crate::v5_ty_tables::{fnv1a_str, TraitImplInfo};
+use super::v5_db::RidxV5ItemDb;
+use super::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
+use super::v5_ty_tables::{fnv1a_str, TraitImplInfo};
 
 pub struct ChainedWherePreds<'a> {
     first: Option<WherePredIter<'a>>,
@@ -312,7 +312,9 @@ impl<'w> RidxV5ItemDb<'w> {
 
     pub fn probe_impl_compat(&self, imp: &TraitImplInfo, raw_step_ty: InferTyId, arena: &mut InferTyArena, vars: &mut UnionFindTable) -> Option<(InferTyId, InlineTyBuf)> {
         let step_ty = vars.shallow_resolve(arena, raw_step_ty);
-        if matches!(arena.kind(step_ty), InferTyKind::Unknown | InferTyKind::Infer(_)) || (imp.fn_bound_arity != u8::MAX && self.callable_input_arity(step_ty, arena).is_some_and(|a| a != imp.fn_bound_arity)) {
+        if matches!(arena.kind(step_ty), InferTyKind::Unknown | InferTyKind::Infer(_))
+            || (imp.fn_bound_arity != u8::MAX && self.callable_input_arity(step_ty, arena).is_some_and(|a| a != imp.fn_bound_arity))
+        {
             return None;
         }
         let r_idx = imp.r_idx as usize;
@@ -337,62 +339,4 @@ impl<'w> RidxV5ItemDb<'w> {
     }
 }
 
-pub fn instantiate_v5(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyId], depth: u8) -> InferTyId {
-    if depth > 48 || !arena.flags(ty).has_param() {
-        return ty;
-    }
-    match arena.kind(ty) {
-        InferTyKind::Param { idx, .. } => subst.get(idx as usize).copied().unwrap_or(InferTyId::UNKNOWN),
-        InferTyKind::Ref { is_mut, inner } => {
-            let s = instantiate_v5(arena, inner, subst, depth + 1);
-            arena.mk_ref(is_mut, s)
-        }
-        InferTyKind::Ptr { is_mut, inner } => {
-            let s = instantiate_v5(arena, inner, subst, depth + 1);
-            arena.mk_ptr(is_mut, s)
-        }
-        InferTyKind::Slice(e) => {
-            let s = instantiate_v5(arena, e, subst, depth + 1);
-            arena.mk_slice(s)
-        }
-        InferTyKind::Array { elem, len } => {
-            let s = instantiate_v5(arena, elem, subst, depth + 1);
-            let l = arena.resolve_array_len(len, subst);
-            arena.mk_array(s, l)
-        }
-        InferTyKind::Tuple(r) => {
-            let b = inst_slice_v5(arena, r, subst, depth + 1);
-            arena.mk_tuple(b.as_slice())
-        }
-        InferTyKind::Adt { def, args } => {
-            let b = inst_slice_v5(arena, args, subst, depth + 1);
-            arena.mk_adt(def, b.as_slice())
-        }
-        InferTyKind::FnPtr { sig } => {
-            let b = inst_slice_v5(arena, sig, subst, depth + 1);
-            let s = b.as_slice();
-            arena.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
-        }
-        InferTyKind::FnDef { def, args } => {
-            let b = inst_slice_v5(arena, args, subst, depth + 1);
-            arena.mk_fn_def(def, b.as_slice())
-        }
-        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
-            let (ns, b) = (instantiate_v5(arena, self_ty, subst, depth + 1), inst_slice_v5(arena, args, subst, depth + 1));
-            arena.mk_alias(trait_def, assoc_def, ns, b.as_slice())
-        }
-        InferTyKind::Dyn { principal, args } | InferTyKind::Opaque { def: principal, args } => {
-            let b = inst_slice_v5(arena, args, subst, depth + 1);
-            if matches!(arena.kind(ty), InferTyKind::Dyn { .. }) { arena.mk_dyn(principal, b.as_slice()) } else { arena.mk_opaque(principal, b.as_slice()) }
-        }
-        _ => ty,
-    }
-}
-
-fn inst_slice_v5(arena: &mut InferTyArena, r: ridx_syntax::ty_infer::TySliceRange, subst: &[InferTyId], depth: u8) -> InlineTyBuf {
-    let mut b = InlineTyBuf::new();
-    for idx in 0..r.len as usize {
-        b.push(instantiate_v5(arena, arena.slice(r)[idx], subst, depth));
-    }
-    b
-}
+pub use super::v5_ty_inst::instantiate_v5;

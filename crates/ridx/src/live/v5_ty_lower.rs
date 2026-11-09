@@ -19,7 +19,7 @@ use ridx_syntax::name_res::{CrateId, GlobalDefId, PrimTy};
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{InferTyArena, InferTyId};
 
-use crate::v5_db::RidxV5ItemDb;
+use super::v5_db::RidxV5ItemDb;
 
 #[derive(Clone, Copy)]
 struct ParamSlot {
@@ -347,7 +347,7 @@ fn lower_existential_bounds(
     let mut slen = 0usize;
     for assoc in b.assocs {
         if slen < s_assocs.len() {
-            let nh = crate::v5_ty_tables::fnv1a_str(assoc.name);
+            let nh = super::v5_ty_tables::fnv1a_str(assoc.name);
             let ord = db
                 .ty_tables
                 .trait_assoc_tys

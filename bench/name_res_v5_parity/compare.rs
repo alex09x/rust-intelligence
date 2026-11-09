@@ -23,12 +23,12 @@ use ridx_syntax::{parse, SyntaxTree};
 use crate::did_change_bench::{bench_did_change, DidChangeReport};
 use crate::fault_bench::{run_file_fault_and_partial_dot, FaultBenchStats};
 use crate::fault_completion::CompletionMethodIndex;
-use crate::meta::{CorpusFile, CorpusSourceDb};
+use ridx::live::meta::{CorpusFile, CorpusSourceDb};
 use crate::site_classify::{classify_dot_site, classify_ref_site, collect_dot_access_spans, collect_unit_alias_pairs, SiteKind};
 use crate::target_match::{describe_our_target, ref_targets_match, MatchKind};
 use crate::ty_parity::{match_dot_ref, run_file_ty_infer_and_expr_parity, TyParityStats};
 use crate::ty_report::load_exprty_sidecar;
-use crate::v5_db::RidxV5ItemDb;
+use ridx::live::v5_db::RidxV5ItemDb;
 use crate::{reset_alloc_counters, snapshot_alloc_counters};
 
 #[derive(Default)]

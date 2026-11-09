@@ -19,9 +19,9 @@ use ridx_format::{
 use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, ImplTargetKey, IndexedImpl, PrimTy};
 use ridx_syntax::{parse, SyntaxKind as K};
 
-use crate::meta::{CorpusSourceDb, ReaderMeta};
-use crate::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
-use crate::v5_ty_tables::V5TyTables;
+use super::meta::{CorpusSourceDb, ReaderMeta};
+use super::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
+use super::v5_ty_tables::V5TyTables;
 
 /// Sentinel `def_idx` representing a shard's crate-root module (`UseOwner::CrateRoot`).
 pub const CRATE_ROOT_DEF_IDX: u32 = u32::MAX - 1;
@@ -61,9 +61,8 @@ impl<'w> RidxV5ItemDb<'w> {
 
         let mut shards = Vec::with_capacity(n);
         let mut valid_alias_leaf_pairs = HashSet::new();
-        for idx in 0..n {
-            let rdr = &ws.readers()[idx];
-            shards.push(build_shard_tables(rdr, &metas[idx], src));
+        for (rdr, meta) in ws.readers().iter().zip(metas.iter()).take(n) {
+            shards.push(build_shard_tables(rdr, meta, src));
             collect_shard_alias_pairs(rdr, &mut valid_alias_leaf_pairs);
         }
 
@@ -368,7 +367,11 @@ impl<'w> RidxV5ItemDb<'w> {
             TyKindView::Float(FloatTyWidth::F64) => ImplTargetKey::Prim(PrimTy::F64),
             TyKindView::Adt { def, .. } => {
                 let g = self.resolve_ty_def(r_idx, arena, def);
-                g.is_some().then_some(ImplTargetKey::Adt(g)).unwrap_or(ImplTargetKey::Unknown)
+                if g.is_some() {
+                    ImplTargetKey::Adt(g)
+                } else {
+                    ImplTargetKey::Unknown
+                }
             }
             TyKindView::Ref { mutability, .. } => ImplTargetKey::Ref { is_mut: mutability == TyMutability::Mut },
             TyKindView::Ptr { mutability, .. } => ImplTargetKey::Ptr { is_mut: mutability == TyMutability::Mut },
@@ -385,4 +388,4 @@ impl<'w> RidxV5ItemDb<'w> {
     }
 }
 
-pub use crate::v5_shard::lookup_def_idx_by_exact_path;
+pub use super::v5_shard::lookup_def_idx_by_exact_path;

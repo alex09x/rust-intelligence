@@ -27,7 +27,7 @@ use ridx_syntax::ty_infer::{BodyInferCtx, InferTyArena, InferTyId, InferTyKind, 
 use ridx_syntax::{NodeId, SyntaxTree};
 
 use crate::ty_report::ty_contains_unknown;
-use crate::v5_db::RidxV5ItemDb;
+use ridx::live::v5_db::RidxV5ItemDb;
 
 const SKOLEM_CRATE: CrateId = CrateId(0xFFFE);
 

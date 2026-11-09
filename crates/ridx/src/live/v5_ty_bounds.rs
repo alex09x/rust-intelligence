@@ -16,10 +16,10 @@ use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey, PrimTy};
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{unify, InferTyArena, InferTyId, InferTyKind, TyVarKind, UnionFindTable};
 
-use crate::v5_db::{RidxV5ItemDb, IMPL_SYNTH_BIT};
-use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
-use crate::v5_ty_proj::instantiate_v5;
-use crate::v5_ty_tables::TraitImplInfo;
+use super::v5_db::{RidxV5ItemDb, IMPL_SYNTH_BIT};
+use super::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
+use super::v5_ty_proj::instantiate_v5;
+use super::v5_ty_tables::TraitImplInfo;
 
 impl<'w> RidxV5ItemDb<'w> {
     pub(crate) fn v5_param_trait_bounds(&self, raw_owner: GlobalDefId, param_idx: u16, out: &mut Vec<GlobalDefId>) {
@@ -89,7 +89,7 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
     }
-
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn equate_supertrait_args(
         &self,
         b_tr: GlobalDefId,
@@ -267,8 +267,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 }
             }
         }
-        let bounds_ok =
-            (imp.impl_gc == 0 && !imp.is_blanket) || self.check_impl_where_bounds_ext(r_idx, imp.impl_idx, &remap, subst.as_slice(), arena, vars, false, depth + 1);
+        let bounds_ok = (imp.impl_gc == 0 && !imp.is_blanket) || self.check_impl_where_bounds_ext(r_idx, imp.impl_idx, &remap, subst.as_slice(), arena, vars, false, depth + 1);
         if !bounds_ok {
             return false;
         }

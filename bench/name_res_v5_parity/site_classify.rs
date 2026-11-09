@@ -18,8 +18,8 @@ use ridx_format::{DefKind, IndexReader, RefEntry};
 use ridx_syntax::name_res::{CrateSnapshot, GlobalDefId, ImplTargetKey, ItemDb, ItemKind};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree, TokenKind as T};
 
-use crate::meta::CorpusFile;
-use crate::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
+use ridx::live::meta::CorpusFile;
+use ridx::live::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SynthReason {

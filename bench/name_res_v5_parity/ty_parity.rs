@@ -20,11 +20,11 @@ use ridx_syntax::name_res::{eval_outer_attrs, CrateDefMap, CrateId, FileId, File
 use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, LocalCstDefs, ResolvedDotRef};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree};
 
-use crate::meta::CorpusFile;
+use ridx::live::meta::CorpusFile;
 use crate::target_match::ref_targets_match;
 use crate::ty_funnel::{compare_fn_expr_tys, finalize_reached_file_funnel, CLAIM_NONE};
 use crate::ty_report::ExprTySidecar;
-use crate::v5_db::RidxV5ItemDb;
+use ridx::live::v5_db::RidxV5ItemDb;
 use crate::{reset_alloc_counters, snapshot_alloc_counters};
 
 #[derive(Default)]

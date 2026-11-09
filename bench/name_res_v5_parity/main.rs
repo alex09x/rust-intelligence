@@ -19,36 +19,24 @@ mod did_change_bench;
 mod fault_bench;
 mod fault_completion;
 mod fault_report;
-mod meta;
 mod site_classify;
 mod target_match;
 mod ty_funnel;
 mod ty_parity;
 mod ty_report;
-mod v5_db;
-mod v5_db_queries;
-mod v5_macro_res;
-mod v5_shard;
-mod v5_trait_solve;
-mod v5_ty_bounds;
-mod v5_ty_db;
-mod v5_ty_defaults;
-mod v5_ty_lower;
-mod v5_ty_proj;
-mod v5_ty_tables;
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use ridx::live::meta::{load_reader_metas, CorpusSourceDb};
+use ridx::live::v5_db::RidxV5ItemDb;
 use ridx_format::WorkspaceIndex;
 
 use crate::compare::run_corpus;
 use crate::fault_report::print_fault_bench_tables;
-use crate::meta::{load_reader_metas, CorpusSourceDb};
 use crate::site_classify::SynthReason;
 use crate::ty_report::print_ty_parity_tables;
-use crate::v5_db::RidxV5ItemDb;
 
 struct CountingAlloc;
 

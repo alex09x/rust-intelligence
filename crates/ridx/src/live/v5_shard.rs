@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Per-shard pre-indexing (`ShardTables`) and `.ridx` `v5` enum mappers for [`crate::v5_db::RidxV5ItemDb`].
+//! Per-shard pre-indexing (`ShardTables`) and `.ridx` `v5` enum mappers for [`super::v5_db::RidxV5ItemDb`].
 
 use std::collections::{HashMap, HashSet};
 
@@ -16,8 +16,8 @@ use memmap2::Mmap;
 use ridx_format::{CtorShape, DefKind, IndexReader, ItemVis, TyKindView, UseOwner, UsePrimTy, USE_FLAG_GLOB, USE_FLAG_UNDERSCORE};
 use ridx_syntax::name_res::{FileId, ItemKind, PrimTy, VisKind};
 
-use crate::meta::{CorpusSourceDb, ReaderMeta};
-use crate::v5_db::CRATE_ROOT_DEF_IDX;
+use super::meta::{CorpusSourceDb, ReaderMeta};
+use super::v5_db::CRATE_ROOT_DEF_IDX;
 
 pub struct ShardTables {
     pub root_mod_def_idx: Option<u32>,
@@ -97,7 +97,14 @@ pub fn build_shard_tables(reader: &IndexReader<Mmap>, meta: &ReaderMeta, src: &C
         let raw_p = reader.get_str(d.path_offset());
         if !raw_p.is_empty() && !matches!(dk, DefKind::Impl | DefKind::Use) {
             let is_pri = !d.is_reexport() && !matches!(dk, DefKind::StructCtor | DefKind::VariantCtor);
-            canon_path_hash.entry(crate::v5_ty_tables::fnv1a_str(raw_p)).and_modify(|e| if is_pri && !e.1 { *e = (didx, true); }).or_insert((didx, is_pri));
+            canon_path_hash
+                .entry(super::v5_ty_tables::fnv1a_str(raw_p))
+                .and_modify(|e| {
+                    if is_pri && !e.1 {
+                        *e = (didx, true);
+                    }
+                })
+                .or_insert((didx, is_pri));
         }
         if d.is_reexport() {
             if meta.is_sysroot {
@@ -235,7 +242,7 @@ pub fn build_shard_tables(reader: &IndexReader<Mmap>, meta: &ReaderMeta, src: &C
         if let Some(td) = ty_arena.def(ridx_format::TyDefId(i as u32)) {
             let is_local_synth = td.local_def_idx.map_or(td.extern_unit.is_none(), |idx| idx as usize >= defs.len());
             if is_local_synth && !td.path.is_empty() {
-                synth_ty_def_by_path.entry(td.path.to_string()).or_insert(crate::v5_db::TY_DEF_SYNTH_BIT | (i as u32));
+                synth_ty_def_by_path.entry(td.path.to_string()).or_insert(super::v5_db::TY_DEF_SYNTH_BIT | (i as u32));
             }
         }
     }
@@ -378,7 +385,7 @@ pub fn collect_shard_alias_pairs(reader: &IndexReader<Mmap>, out: &mut HashSet<(
 }
 
 pub fn lookup_def_idx_by_exact_path(reader: &IndexReader<Mmap>, shard: &ShardTables, path: &str) -> Option<u32> {
-    if let Some(&(didx, _)) = shard.canon_path_hash.get(&crate::v5_ty_tables::fnv1a_str(path)) {
+    if let Some(&(didx, _)) = shard.canon_path_hash.get(&super::v5_ty_tables::fnv1a_str(path)) {
         if reader.definitions().get(didx as usize).is_some_and(|d| reader.get_str(d.path_offset()) == path) {
             return Some(didx);
         }
