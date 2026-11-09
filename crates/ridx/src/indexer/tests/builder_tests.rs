@@ -10,7 +10,7 @@
 
 //! Unit tests for index builder resolution and check command construction.
 
-use crate::indexer::builder::{build_check_command, build_check_command_with_no_deps, IndexBuilder};
+use crate::indexer::builder::{build_check_command, build_check_command_with_no_deps, lib_and_bin_fallback_args, IndexBuilder};
 use crate::indexer::types::IndexOptions;
 use std::path::{Path, PathBuf};
 
@@ -90,6 +90,9 @@ fn test_build_check_command_cargo_and_mitts_parity() {
     // Args are identical but for Cargo's `--keep-going` (indexing the crates that build when one fails).
     assert_eq!(mitts_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--workspace",]);
     assert_eq!(cargo_args, vec!["check", "--manifest-path", "/ws/Cargo.toml", "--all-targets", "--keep-going", "--workspace",]);
+
+    // The fallback pass of a builder without `--keep-going` narrows the targets and keeps the rest.
+    assert_eq!(lib_and_bin_fallback_args(&mitts_args), vec!["check", "--manifest-path", "/ws/Cargo.toml", "--lib", "--bins", "--workspace",]);
 
     // Envs are identical
     assert_eq!(cargo_envs, mitts_envs);

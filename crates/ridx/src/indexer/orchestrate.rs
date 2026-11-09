@@ -192,51 +192,46 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let (program, args, envs) =
         build_check_command(&opts, builder, &manifest_path, &work_dir, &driver_bin, &variant_out_dir, &cache_dir, &cargo_target_dir, &target_kinds_file, ld_path.as_deref());
 
-    let mut cmd = Command::new(&program);
-    cmd.current_dir(&work_dir);
-    for arg in &args {
-        cmd.arg(arg);
-    }
-    for (k, v) in &envs {
-        cmd.env(k, v);
-    }
-    if let Some(ref lh) = initial_lock_hash {
-        cmd.env("RIDX_CARGO_LOCK_HASH", lh);
-    }
-
-    if opts.capture_child_output {
-        let output = match cmd.output() {
-            Ok(o) => o,
-            Err(e) => {
-                return Err(format!("failed to execute {} check: {e}", builder.as_str()));
-            }
-        };
-        if !output.status.success() && variant_has_shards(&variant_out_dir) {
-            eprintln!("  warning: {} check exited with status {}; publishing the crates that built", builder.as_str(), output.status);
-            keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
-        } else if !output.status.success() {
+    let run_check = |args: &[String]| -> Result<(bool, String, String), String> {
+        let mut cmd = Command::new(&program);
+        cmd.current_dir(&work_dir);
+        cmd.args(args);
+        for (k, v) in &envs {
+            cmd.env(k, v);
+        }
+        if let Some(ref lh) = initial_lock_hash {
+            cmd.env("RIDX_CARGO_LOCK_HASH", lh);
+        }
+        let failed = |e: std::io::Error| format!("failed to execute {} check: {e}", builder.as_str());
+        if opts.capture_child_output {
+            let output = cmd.output().map_err(failed)?;
             let stderr_str = String::from_utf8_lossy(&output.stderr);
             let tail: Vec<&str> = stderr_str.lines().rev().take(20).collect();
-            let tail_joined = tail.into_iter().rev().collect::<Vec<_>>().join("\n");
-            if tail_joined.is_empty() {
-                return Err(format!("{} check exited with status {}", builder.as_str(), output.status));
-            }
-            return Err(format!("{} check exited with status {}\n{}", builder.as_str(), output.status, tail_joined));
+            Ok((output.status.success(), output.status.to_string(), tail.into_iter().rev().collect::<Vec<_>>().join("\n")))
+        } else {
+            let status = cmd.status().map_err(failed)?;
+            Ok((status.success(), status.to_string(), String::new()))
         }
-    } else {
-        let status = match cmd.status() {
-            Ok(s) => s,
-            Err(e) => {
-                return Err(format!("failed to execute {} check: {e}", builder.as_str()));
-            }
-        };
-        // With `--keep-going` the crates that build are indexed even when another fails: publish them.
-        if !status.success() && variant_has_shards(&variant_out_dir) {
-            eprintln!("  warning: {} check exited with status {status}; publishing the crates that built", builder.as_str());
-            keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
-        } else if !status.success() {
+    };
+
+    let (ok, status, stderr_tail) = run_check(&args)?;
+    if !ok && builder == IndexBuilder::Mitts {
+        // Mitts has no `--keep-going`: index the libraries and binaries the failed unit kept from building.
+        eprintln!("  warning: mitts check exited with status {status}; indexing libraries and binaries without the other targets");
+        let (lib_ok, lib_status, _) = run_check(&super::builder::lib_and_bin_fallback_args(&args))?;
+        if !lib_ok {
+            eprintln!("  warning: mitts check of libraries and binaries exited with status {lib_status}");
+        }
+    }
+    // The crates that built are indexed even when another failed: publish them.
+    if !ok && variant_has_shards(&variant_out_dir) {
+        eprintln!("  warning: {} check exited with status {status}; publishing the crates that built", builder.as_str());
+        keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
+    } else if !ok {
+        if stderr_tail.is_empty() {
             return Err(format!("{} check exited with status {status}", builder.as_str()));
         }
+        return Err(format!("{} check exited with status {status}\n{stderr_tail}", builder.as_str()));
     }
 
     if !all_features {

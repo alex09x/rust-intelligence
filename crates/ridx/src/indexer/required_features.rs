@@ -69,7 +69,9 @@ fn enabled_features(pkg: &serde_json::Value, requested: &[String], no_default_fe
 }
 
 /// The `check` invocations covering `targets`: one per package and required-feature set, naming each target.
-pub fn check_args(targets: &[SkippedTarget], manifest_path: &Path, features: &[String]) -> Vec<Vec<String>> {
+/// A builder that cannot select examples and benches by name (`named_examples` false) checks every target of the
+/// package instead; only the skipped targets' own shards are kept afterwards.
+pub fn check_args(targets: &[SkippedTarget], manifest_path: &Path, features: &[String], named_examples: bool) -> Vec<Vec<String>> {
     let mut groups: BTreeMap<(String, Vec<String>), Vec<&SkippedTarget>> = BTreeMap::new();
     for t in targets {
         let mut feats = t.required.clone();
@@ -80,9 +82,13 @@ pub fn check_args(targets: &[SkippedTarget], manifest_path: &Path, features: &[S
         .into_iter()
         .map(|((package, feats), ts)| {
             let mut args = vec!["check".to_string(), "--manifest-path".to_string(), manifest_path.display().to_string(), "-p".to_string(), package];
-            for t in ts {
-                args.push(format!("--{}", t.kind));
-                args.push(t.name.clone());
+            if !named_examples && ts.iter().any(|t| matches!(t.kind.as_str(), "example" | "bench")) {
+                args.push("--all-targets".to_string());
+            } else {
+                for t in ts {
+                    args.push(format!("--{}", t.kind));
+                    args.push(t.name.clone());
+                }
             }
             let all: Vec<String> = feats.into_iter().chain(features.iter().cloned()).collect();
             args.push("--features".to_string());
@@ -114,7 +120,8 @@ pub fn index_skipped_targets(
         return;
     };
     let _ = fs::create_dir_all(&scratch);
-    for args in check_args(&targets, manifest_path, features) {
+    // Mitts selects binaries and tests by name, not examples or benches.
+    for args in check_args(&targets, manifest_path, features, program != super::builder::IndexBuilder::Mitts.as_str()) {
         let mut cmd = Command::new(program);
         cmd.current_dir(work_dir).args(&args);
         for (k, v) in envs {
@@ -285,9 +292,13 @@ mod tests {
         let skipped = skipped_targets(&meta, &[], false);
         let names: Vec<&str> = skipped.iter().map(|t| t.name.as_str()).collect();
         assert_eq!(names, ["find", "01_quick", "derive_ui"]);
-        let args = check_args(&skipped, Path::new("/w/Cargo.toml"), &[]);
+        let args = check_args(&skipped, Path::new("/w/Cargo.toml"), &[], true);
         assert_eq!(args.len(), 2);
         assert!(args.iter().any(|a| a.ends_with(&["--example".into(), "find".into(), "--example".into(), "01_quick".into(), "--features".into(), "cargo".into()])));
+        // Without named examples the package's targets are checked together; a named test stays named.
+        let unnamed = check_args(&skipped, Path::new("/w/Cargo.toml"), &[], false);
+        assert!(unnamed.iter().any(|a| a.ends_with(&["clap".into(), "--all-targets".into(), "--features".into(), "cargo".into()])));
+        assert!(unnamed.iter().any(|a| a.ends_with(&["--test".into(), "derive_ui".into(), "--features".into(), "cargo,derive".into()])));
         assert!(skipped_targets(&meta, &["cargo".to_string(), "derive".to_string()], false).is_empty());
     }
 

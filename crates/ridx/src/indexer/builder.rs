@@ -92,6 +92,24 @@ impl std::str::FromStr for IndexBuilder {
     }
 }
 
+/// The arguments of the check pass narrowed to library and binary targets.
+///
+/// A builder without `--keep-going` stops at the first unit that fails, so one broken test harness leaves
+/// every crate downstream of it unindexed. Tests, examples and benches are leaves of the unit graph: a pass
+/// over libraries and binaries alone builds everything those leaves could have blocked.
+pub fn lib_and_bin_fallback_args(args: &[String]) -> Vec<String> {
+    let mut out = Vec::with_capacity(args.len() + 1);
+    for a in args {
+        if a == "--all-targets" {
+            out.push("--lib".to_string());
+            out.push("--bins".to_string());
+        } else {
+            out.push(a.clone());
+        }
+    }
+    out
+}
+
 /// Pure function to build the program, argument vector, and environment variables
 /// for the index check command.
 #[allow(clippy::too_many_arguments)]
