@@ -3,6 +3,7 @@ members = [
     "crates/ridx-format",
     "crates/ridx-driver",
     "crates/ridx",
+    "crates/ridx-syntax",
     "crates/ridx-test-support",
 ]
 exclude = [
