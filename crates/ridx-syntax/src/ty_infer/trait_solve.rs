@@ -218,6 +218,19 @@ impl<'a, 's> Runner<'a, 's> {
         check_cst_impl_bounds_senv(senv, impl_node, impl_gc, subst, &mut self.ctx.table, true, 0)
     }
 
+    pub(super) fn call_has_live_infer(&mut self, raw_params: &[InferTyId], subst: &[InferTyId], norm_ret: InferTyId) -> bool {
+        if !self.ctx.deferred_proj_eqs.is_empty() || self.ctx.table.arena.flags(norm_ret).has_alias() || self.ctx.table.has_unresolved_infer(norm_ret) {
+            return true;
+        }
+        for &rp in raw_params {
+            let ip = self.ctx.table.instantiate(rp, subst);
+            if self.ctx.table.arena.flags(ip).has_alias() || self.ctx.table.has_unresolved_infer(ip) {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Evaluates `ProjectionEq` and `TraitBound` obligations after call argument typechecking (`Checkbox 3.4`).
     pub(super) fn solve_call_obligations(&mut self, bound_owner_def: GlobalDefId, cst_fn_node: u32, subst: &[InferTyId]) {
         let mut obls = core::mem::take(&mut self.ctx.where_obls_buf);
@@ -268,7 +281,9 @@ impl<'a, 's> Runner<'a, 's> {
                     let args_r = self.ctx.table.arena.intern_slice(inst_args.as_slice());
                     self.ctx.deferred_trait_bounds.push((trait_def, norm_lhs, args_r));
                 }
-                let _ = self.solve_obligation(trait_def, norm_lhs, inst_args.as_slice(), false, 0);
+                if self.ctx.table.has_unresolved_infer(norm_lhs) || inst_args.as_slice().iter().any(|&a| self.ctx.table.has_unresolved_infer(a)) {
+                    let _ = self.solve_obligation(trait_def, norm_lhs, inst_args.as_slice(), false, 0);
+                }
             }
         }
         self.ctx.where_obls_buf = obls;
@@ -324,22 +339,39 @@ pub(super) fn solve_obligation_senv(
         while let InferTyKind::Ref { inner, .. } = table.arena.kind(fn_self) {
             fn_self = table.shallow_resolve(inner);
         }
-        if let InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } = table.arena.kind(fn_self) {
-            if sig.len >= 1 {
+        let fn_sig = match table.arena.kind(fn_self) {
+            InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } if sig.len >= 1 => {
                 let mut sb = InlineTyBuf::new();
                 for &x in table.arena.slice(sig) {
                     sb.push(x);
                 }
-                let sl = sb.as_slice();
-                let (ret_ty, tup) = (sl[sl.len() - 1], table.arena.mk_tuple(&sl[..sl.len() - 1]));
-                let snap = table.start_snapshot();
-                if targs.as_slice().first().is_none_or(|&a0| table.equate(a0, tup).is_ok()) && targs.as_slice().get(1).is_none_or(|&a1| table.coerce(ret_ty, a1).is_ok()) {
-                    table.commit(snap);
-                    return true;
-                }
-                table.rollback_to(snap);
-                return false;
+                Some(sb)
             }
+            InferTyKind::FnDef { def, args } => table.arena.overlay_fn_sig(def).filter(|s| s.len >= 1).map(|sig| {
+                let (mut fa, mut raw, mut sb) = (InlineTyBuf::new(), InlineTyBuf::new(), InlineTyBuf::new());
+                for &x in table.arena.slice(args) {
+                    fa.push(x);
+                }
+                for &x in table.arena.slice(sig) {
+                    raw.push(x);
+                }
+                for &x in raw.as_slice() {
+                    sb.push(table.instantiate(x, fa.as_slice()));
+                }
+                sb
+            }),
+            _ => None,
+        };
+        if let Some(sb) = fn_sig {
+            let sl = sb.as_slice();
+            let (ret_ty, tup) = (sl[sl.len() - 1], table.arena.mk_tuple(&sl[..sl.len() - 1]));
+            let snap = table.start_snapshot();
+            if targs.as_slice().first().is_none_or(|&a0| table.equate(a0, tup).is_ok()) && targs.as_slice().get(1).is_none_or(|&a1| table.coerce(ret_ty, a1).is_ok()) {
+                table.commit(snap);
+                return true;
+            }
+            table.rollback_to(snap);
+            return false;
         }
     }
     if let InferTyKind::Param { idx, def: pdef } = table.arena.kind(self_ty) {

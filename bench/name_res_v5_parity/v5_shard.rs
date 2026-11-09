@@ -47,6 +47,7 @@ pub struct ShardTables {
     pub synth_macro_by_name: HashMap<String, u32>,
     /// Unmaterialized `TyDefEntry` path (`local_def_idx == 0x7FFF_FFFF`, e.g. `core::sync::atomic::Atomic`) -> `TY_DEF_SYNTH_BIT | ty_def_idx`.
     pub synth_ty_def_by_path: HashMap<String, u32>,
+    pub canon_path_hash: HashMap<u64, (u32, bool)>,
 }
 
 #[inline]
@@ -87,11 +88,17 @@ pub fn build_shard_tables(reader: &IndexReader<Mmap>, meta: &ReaderMeta, src: &C
     let mut line_col_defs: HashMap<(u32, u32), Vec<u32>> = HashMap::new();
     let mut span_to_def_idx: HashMap<(FileId, u32, u32), u32> = HashMap::new();
     let mut reexport_sig_to_idx: HashMap<String, u32> = HashMap::new();
+    let mut canon_path_hash: HashMap<u64, (u32, bool)> = HashMap::with_capacity(defs.len());
 
     let cname_prefix = format!("{}::", meta.crate_name);
     for (i, d) in defs.iter().enumerate() {
         let didx = i as u32;
         let dk = DefKind::from(d.kind);
+        let raw_p = reader.get_str(d.path_offset());
+        if !raw_p.is_empty() && !matches!(dk, DefKind::Impl | DefKind::Use) {
+            let is_pri = !d.is_reexport() && !matches!(dk, DefKind::StructCtor | DefKind::VariantCtor);
+            canon_path_hash.entry(crate::v5_ty_tables::fnv1a_str(raw_p)).and_modify(|e| if is_pri && !e.1 { *e = (didx, true); }).or_insert((didx, is_pri));
+        }
         if d.is_reexport() {
             if meta.is_sysroot {
                 let sig = reader.get_str(d.sig_offset());
@@ -248,6 +255,7 @@ pub fn build_shard_tables(reader: &IndexReader<Mmap>, meta: &ReaderMeta, src: &C
         synth_macros: Vec::new(),
         synth_macro_by_name: HashMap::new(),
         synth_ty_def_by_path,
+        canon_path_hash,
     }
 }
 
@@ -367,4 +375,16 @@ pub fn collect_shard_alias_pairs(reader: &IndexReader<Mmap>, out: &mut HashSet<(
             }
         }
     }
+}
+
+pub fn lookup_def_idx_by_exact_path(reader: &IndexReader<Mmap>, shard: &ShardTables, path: &str) -> Option<u32> {
+    if let Some(&(didx, _)) = shard.canon_path_hash.get(&crate::v5_ty_tables::fnv1a_str(path)) {
+        if reader.definitions().get(didx as usize).is_some_and(|d| reader.get_str(d.path_offset()) == path) {
+            return Some(didx);
+        }
+    }
+    let def = reader.find_definition_by_path(path)?;
+    let base = reader.definitions().as_ptr() as usize;
+    let ptr = def as *const ridx_format::DefEntry as usize;
+    Some(((ptr - base) / std::mem::size_of::<ridx_format::DefEntry>()) as u32)
 }

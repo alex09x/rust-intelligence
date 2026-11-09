@@ -343,6 +343,7 @@ impl LocalCstDefs {
                 ret = table.arena.mk_opaque(fut_def, &[ret]);
             }
         }
+        table.arena.record_overlay_fn_sig(def, inputs_out, ret);
         Some((item.generic_count, ret))
     }
 }

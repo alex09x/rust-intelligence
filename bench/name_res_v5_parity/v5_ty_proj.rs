@@ -240,7 +240,11 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
 
+        let cur_arity = self.callable_input_arity(self_ty, arena);
         for imp in concrete.iter().chain(blanket.iter()) {
+            if imp.fn_bound_arity != u8::MAX && cur_arity.is_some_and(|a| a != imp.fn_bound_arity) {
+                continue;
+            }
             let r_idx = imp.r_idx as usize;
             let reader = &self.ws.readers()[r_idx];
             let Some(iv) = reader.impl_view(imp.impl_idx) else { continue };
@@ -308,7 +312,7 @@ impl<'w> RidxV5ItemDb<'w> {
 
     pub fn probe_impl_compat(&self, imp: &TraitImplInfo, raw_step_ty: InferTyId, arena: &mut InferTyArena, vars: &mut UnionFindTable) -> Option<(InferTyId, InlineTyBuf)> {
         let step_ty = vars.shallow_resolve(arena, raw_step_ty);
-        if matches!(arena.kind(step_ty), InferTyKind::Unknown | InferTyKind::Infer(_)) {
+        if matches!(arena.kind(step_ty), InferTyKind::Unknown | InferTyKind::Infer(_)) || (imp.fn_bound_arity != u8::MAX && self.callable_input_arity(step_ty, arena).is_some_and(|a| a != imp.fn_bound_arity)) {
             return None;
         }
         let r_idx = imp.r_idx as usize;
@@ -378,13 +382,8 @@ pub fn instantiate_v5(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyI
             arena.mk_alias(trait_def, assoc_def, ns, b.as_slice())
         }
         InferTyKind::Dyn { principal, args } | InferTyKind::Opaque { def: principal, args } => {
-            let is_dyn = matches!(arena.kind(ty), InferTyKind::Dyn { .. });
             let b = inst_slice_v5(arena, args, subst, depth + 1);
-            if is_dyn {
-                arena.mk_dyn(principal, b.as_slice())
-            } else {
-                arena.mk_opaque(principal, b.as_slice())
-            }
+            if matches!(arena.kind(ty), InferTyKind::Dyn { .. }) { arena.mk_dyn(principal, b.as_slice()) } else { arena.mk_opaque(principal, b.as_slice()) }
         }
         _ => ty,
     }

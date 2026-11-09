@@ -17,21 +17,29 @@
 //!   default generic type arguments (`Vec<T, Global>`), nested closure `def_span`, and `0` warm allocations.
 
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::cell::Cell;
 
 use ridx_syntax::name_res::{CrateId, CrateSnapshot, Edition, GlobalDefId, ImplTargetKey, ItemKind, MemItemDb, MemSourceDb, OwnedDef, OwnedUse, ResTarget, SourceDb, VisKind};
 use ridx_syntax::ty_infer::{effective_local_def_id, BodyInferCtx, CtorShapeKind, FnInferResult, InferTyId, InferTyKind, LocalCstDefs, MemTyDefDb, TyLangItem};
 use ridx_syntax::{parse, NodeId, SyntaxKind as K, SyntaxTree};
 
 struct CountingAlloc;
-static ALLOCS: AtomicU64 = AtomicU64::new(0);
+
+thread_local! {
+    static THREAD_ALLOCS: Cell<(bool, u64)> = const { Cell::new((false, 0)) };
+}
 
 #[global_allocator]
 static GLOBAL: CountingAlloc = CountingAlloc;
 
 unsafe impl GlobalAlloc for CountingAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        ALLOCS.fetch_add(1, Ordering::Relaxed);
+        let _ = THREAD_ALLOCS.try_with(|c| {
+            let (active, n) = c.get();
+            if active {
+                c.set((true, n + 1));
+            }
+        });
         unsafe { System.alloc(layout) }
     }
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
@@ -263,9 +271,13 @@ pub fn exercise_macros(opt: Option<u64>, flag: bool) -> bool {
 
     // Warmup pass so scratch vectors reach steady-state capacity.
     ctx.infer_fn_into(&st, &res_buf, &ty_db, &local_defs, fn_node, &mut fn_res);
-    ALLOCS.store(0, Ordering::SeqCst);
+    THREAD_ALLOCS.with(|c| c.set((true, 0)));
     ctx.infer_fn_into(&st, &res_buf, &ty_db, &local_defs, fn_node, &mut fn_res);
-    let warm_allocs = ALLOCS.load(Ordering::SeqCst);
+    let warm_allocs = THREAD_ALLOCS.with(|c| {
+        let (_, n) = c.get();
+        c.set((false, 0));
+        n
+    });
     assert_eq!(warm_allocs, 0, "expected 0 warm heap allocations during macro body inference, got {warm_allocs}");
 
     assert_eq!(ctx.table.arena.format_ty(local_ty_by_name(&st, &res_buf, &fn_res, "pair")), "(i32, u8)");

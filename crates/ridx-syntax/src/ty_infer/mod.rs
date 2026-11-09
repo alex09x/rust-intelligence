@@ -256,4 +256,60 @@ impl InferenceTable {
         }
         buf
     }
+
+    /// Returns `true` if `ty` contains any inference variable (`InferTyKind::Infer`) not yet bound to a concrete type.
+    #[inline]
+    pub fn has_unresolved_infer(&mut self, ty: InferTyId) -> bool {
+        vars_has_unresolved_infer(&self.arena, &mut self.vars, ty)
+    }
+}
+
+/// Returns `true` if `ty` contains any inference variable (`InferTyKind::Infer`) not yet bound in `vars`.
+#[inline]
+pub fn vars_has_unresolved_infer(arena: &InferTyArena, vars: &mut UnionFindTable, ty: InferTyId) -> bool {
+    vars_has_unresolved_infer_rec(arena, vars, ty, 0)
+}
+
+fn vars_has_unresolved_infer_rec(arena: &InferTyArena, vars: &mut UnionFindTable, ty: InferTyId, depth: u8) -> bool {
+    if depth > 16 || !ty.is_some() || !arena.flags(ty).has_infer() {
+        return false;
+    }
+    let cur = vars.shallow_resolve(arena, ty);
+    if !arena.flags(cur).has_infer() {
+        return false;
+    }
+    match arena.kind(cur) {
+        InferTyKind::Infer(_) => true,
+        InferTyKind::Ref { inner, .. } | InferTyKind::Ptr { inner, .. } | InferTyKind::Slice(inner) | InferTyKind::Array { elem: inner, .. } => {
+            vars_has_unresolved_infer_rec(arena, vars, inner, depth + 1)
+        }
+        InferTyKind::Tuple(r)
+        | InferTyKind::Adt { args: r, .. }
+        | InferTyKind::FnPtr { sig: r }
+        | InferTyKind::FnDef { args: r, .. }
+        | InferTyKind::Closure { sig: r, .. }
+        | InferTyKind::Dyn { args: r, .. }
+        | InferTyKind::Opaque { args: r, .. } => {
+            for idx in 0..r.len as usize {
+                let elem = arena.slice(r)[idx];
+                if vars_has_unresolved_infer_rec(arena, vars, elem, depth + 1) {
+                    return true;
+                }
+            }
+            false
+        }
+        InferTyKind::Alias { self_ty, args, .. } => {
+            if vars_has_unresolved_infer_rec(arena, vars, self_ty, depth + 1) {
+                return true;
+            }
+            for idx in 0..args.len as usize {
+                let elem = arena.slice(args)[idx];
+                if vars_has_unresolved_infer_rec(arena, vars, elem, depth + 1) {
+                    return true;
+                }
+            }
+            false
+        }
+        _ => false,
+    }
 }

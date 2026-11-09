@@ -15,7 +15,9 @@ use ridx_format::WherePredKind;
 use ridx_syntax::name_res::{GlobalDefId, ImplTargetKey, PrimTy};
 use ridx_syntax::ty_infer::autoderef::impl_target_key_of_ty;
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
-use ridx_syntax::ty_infer::{unify, InferTyArena, InferTyId, InferTyKind, MethodCand, TraitAssocFnMeta, TyLangItem, TyVarKind, UnionFindTable, WhereObligation};
+use ridx_syntax::ty_infer::{
+    unify, vars_has_unresolved_infer, InferTyArena, InferTyId, InferTyKind, MethodCand, TraitAssocFnMeta, TyLangItem, TyVarKind, UnionFindTable, WhereObligation,
+};
 
 use crate::v5_db::RidxV5ItemDb;
 use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
@@ -128,8 +130,8 @@ impl<'w> RidxV5ItemDb<'w> {
         }
         let reader = &self.ws.readers()[r_idx];
         let va = reader.ty_arena();
-        let (mut has_proj_eq, mut has_deferred) = (false, false);
-        for wp in reader.where_preds_for_impl(impl_idx) {
+        let (mut has_proj_eq, mut deferred_mask) = (false, 0u64);
+        for (pred_idx, wp) in reader.where_preds_for_impl(impl_idx).enumerate() {
             if wp.kind() == WherePredKind::ProjectionEq {
                 has_proj_eq = true;
                 continue;
@@ -147,7 +149,7 @@ impl<'w> RidxV5ItemDb<'w> {
             let tmp_lhs = vars.shallow_resolve(arena, ilhs);
             let inst_lhs = if matches!(arena.kind(tmp_lhs), InferTyKind::Alias { .. }) { self.norm_v5_top_alias(tmp_lhs, arena, vars, depth + 1) } else { tmp_lhs };
             if matches!(arena.kind(inst_lhs), InferTyKind::Infer(_)) || (matches!(arena.kind(inst_lhs), InferTyKind::Alias { .. }) && arena.flags(inst_lhs).has_infer()) {
-                has_deferred = true;
+                deferred_mask |= 1u64 << pred_idx.min(63);
                 continue;
             }
             let mut raw_targs = InlineTyBuf::new();
@@ -166,9 +168,9 @@ impl<'w> RidxV5ItemDb<'w> {
         if has_proj_eq {
             self.eval_impl_proj_eqs(r_idx, impl_idx, remap, subst, arena, vars, depth + 1);
         }
-        if has_proj_eq && has_deferred {
-            for wp in reader.where_preds_for_impl(impl_idx) {
-                if wp.kind() != WherePredKind::TraitBound || wp.is_negative() {
+        if has_proj_eq && deferred_mask != 0 {
+            for (pred_idx, wp) in reader.where_preds_for_impl(impl_idx).enumerate() {
+                if (deferred_mask & (1u64 << pred_idx.min(63))) == 0 || wp.kind() != WherePredKind::TraitBound || wp.is_negative() {
                     continue;
                 }
                 let Some(td) = wp.trait_def() else { continue };
@@ -290,6 +292,11 @@ impl<'w> RidxV5ItemDb<'w> {
                 match arena.kind(fn_cur) {
                     InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } if sig.len > 0 => {
                         if let Some(&a0) = trait_args.first() {
+                            if let InferTyKind::Tuple(r) = arena.kind(vars.shallow_resolve(arena, a0)) {
+                                if r.len + 1 != sig.len {
+                                    return false;
+                                }
+                            }
                             let mut sb = InlineTyBuf::new();
                             for &x in arena.slice(sig) {
                                 sb.push(x);
@@ -325,11 +332,19 @@ impl<'w> RidxV5ItemDb<'w> {
         let concrete = self.ty_tables.concrete_trait_impls.get(&(trait_gid, head)).map_or(&[][..], |v| v.as_slice());
         let blanket = self.ty_tables.blanket_trait_impls.get(&trait_gid).map_or(&[][..], |v| v.as_slice());
 
+        let concrete_fn = matches!(arena.kind(cur), InferTyKind::FnDef { .. } | InferTyKind::Closure { .. } | InferTyKind::FnPtr { .. })
+            && !vars_has_unresolved_infer(arena, vars, cur);
+        let has_infer = !concrete_fn && (vars_has_unresolved_infer(arena, vars, cur) || trait_args.iter().any(|&t| vars_has_unresolved_infer(arena, vars, t)));
+        let total_cands = concrete.len() + blanket.len();
         let mut match_count = 0usize;
         let mut unique_imp: Option<TraitImplInfo> = None;
-        for &imp in concrete.iter().chain(blanket.iter()) {
+        for (i, &imp) in concrete.iter().chain(blanket.iter()).enumerate() {
             let snap = vars.start_snapshot();
             let ok = self.try_bind_v5_trait_impl(&imp, cur, trait_args, arena, vars, depth);
+            if ok && (!has_infer || (match_count == 0 && i + 1 == total_cands)) {
+                vars.commit(snap);
+                return true;
+            }
             vars.rollback_to(snap);
             if ok {
                 match_count += 1;

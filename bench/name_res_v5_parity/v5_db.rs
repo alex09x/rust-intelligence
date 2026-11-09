@@ -13,10 +13,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use memmap2::Mmap;
 use ridx_format::{
-    DefEntry, DefKind, FloatTyWidth, IndexReader, IntTyWidth, TyArenaView, TyDefId, TyId, TyKindView, TyMutability, UintTyWidth, UseOwner, WherePredKind, WorkspaceIndex,
-    IMPL_FLAG_NEGATIVE,
+    DefKind, FloatTyWidth, IntTyWidth, TyArenaView, TyDefId, TyId, TyKindView, TyMutability, UintTyWidth, UseOwner, WherePredKind, WorkspaceIndex, IMPL_FLAG_NEGATIVE,
 };
 use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, ImplTargetKey, IndexedImpl, PrimTy};
 use ridx_syntax::{parse, SyntaxKind as K};
@@ -96,7 +94,7 @@ impl<'w> RidxV5ItemDb<'w> {
             return;
         }
         let reader = &self.ws.readers()[r_idx];
-        if lookup_def_idx_by_exact_path(reader, name).is_some_and(|didx| DefKind::from(reader.definitions()[didx as usize].kind) == DefKind::Macro) {
+        if lookup_def_idx_by_exact_path(reader, &self.shards[r_idx], name).is_some_and(|didx| DefKind::from(reader.definitions()[didx as usize].kind) == DefKind::Macro) {
             return;
         }
         let shard = &mut self.shards[r_idx];
@@ -311,19 +309,20 @@ impl<'w> RidxV5ItemDb<'w> {
             }
             GlobalDefId::new(CrateId(r_idx as u32), didx)
         };
-        if let Some(didx) = lookup_def_idx_by_exact_path(reader, raw_path) {
+        let shard = &self.shards[r_idx];
+        if let Some(didx) = lookup_def_idx_by_exact_path(reader, shard, raw_path) {
             return follow_reexport(didx);
         }
         if let Some(stripped) = raw_path.strip_prefix(cname).and_then(|s| s.strip_prefix("::")) {
             if stripped.is_empty() {
                 return self.crate_root_gid(r_idx);
             }
-            if let Some(didx) = lookup_def_idx_by_exact_path(reader, stripped) {
+            if let Some(didx) = lookup_def_idx_by_exact_path(reader, shard, stripped) {
                 return follow_reexport(didx);
             }
         }
         let prefixed = format!("{cname}::{raw_path}");
-        if let Some(didx) = lookup_def_idx_by_exact_path(reader, &prefixed) {
+        if let Some(didx) = lookup_def_idx_by_exact_path(reader, shard, &prefixed) {
             return follow_reexport(didx);
         }
         if let Some(&didx) = self.shards[r_idx].reexport_sig_to_idx.get(raw_path).or_else(|| self.shards[r_idx].reexport_sig_to_idx.get(&prefixed)) {
@@ -386,9 +385,4 @@ impl<'w> RidxV5ItemDb<'w> {
     }
 }
 
-pub fn lookup_def_idx_by_exact_path(reader: &IndexReader<Mmap>, path: &str) -> Option<u32> {
-    let def = reader.find_definition_by_path(path)?;
-    let base = reader.definitions().as_ptr() as usize;
-    let ptr = def as *const DefEntry as usize;
-    Some(((ptr - base) / std::mem::size_of::<DefEntry>()) as u32)
-}
+pub use crate::v5_shard::lookup_def_idx_by_exact_path;

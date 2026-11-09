@@ -194,7 +194,9 @@ impl<'w> RidxV5ItemDb<'w> {
     pub(crate) fn fn_output_only(&self, raw_def: GlobalDefId, arena: &mut InferTyArena) -> Option<InferTyId> {
         let def = self.canonical_def(raw_def);
         let r_idx = def.krate.0 as usize;
-        let reader = self.ws.readers().get(r_idx)?;
+        let Some(reader) = self.ws.readers().get(r_idx) else {
+            return arena.overlay_fn_sig(raw_def).and_then(|sig| arena.slice(sig).last().copied());
+        };
         if let Some(sig) = reader.fn_sig_for_def(def.index) {
             let gen_owner = reader.def_ty_for_def(def.index).and_then(|dt| dt.parent_def_index()).unwrap_or(def.index);
             let remap = ParamRemap::for_def(self, r_idx, gen_owner, false, arena);
@@ -209,10 +211,27 @@ impl<'w> RidxV5ItemDb<'w> {
     pub(crate) fn unify_fndef_inputs(&self, raw_def: GlobalDefId, fargs: &[InferTyId], arg_tup: InferTyId, arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
         let def = self.canonical_def(raw_def);
         let r_idx = def.krate.0 as usize;
-        let Some(reader) = self.ws.readers().get(r_idx) else { return true };
+        let Some(reader) = self.ws.readers().get(r_idx) else {
+            let Some(sig) = arena.overlay_fn_sig(raw_def).filter(|s| s.len >= 1) else { return true };
+            let mut raw_ins = InlineTyBuf::new();
+            for &x in &arena.slice(sig)[..sig.len as usize - 1] {
+                raw_ins.push(x);
+            }
+            let mut ins = InlineTyBuf::new();
+            for &raw_in in raw_ins.as_slice() {
+                ins.push(instantiate_v5(arena, raw_in, fargs, 0));
+            }
+            let in_tup = arena.mk_tuple(ins.as_slice());
+            return unify::equate(arena, vars, arg_tup, in_tup).is_ok();
+        };
+        let resolved_tup = vars.shallow_resolve(arena, arg_tup);
+        let expected_arity = if let ridx_syntax::ty_infer::InferTyKind::Tuple(r) = arena.kind(resolved_tup) { Some(r.len as usize) } else { None };
         let va = reader.ty_arena();
         let mut ins = InlineTyBuf::new();
         if let Some(sig) = reader.fn_sig_for_def(def.index) {
+            if expected_arity.is_some_and(|n| n != sig.inputs().len()) {
+                return false;
+            }
             let gen_owner = reader.def_ty_for_def(def.index).and_then(|dt| dt.parent_def_index()).unwrap_or(def.index);
             let remap = ParamRemap::for_def(self, r_idx, gen_owner, false, arena);
             for inp in sig.inputs() {

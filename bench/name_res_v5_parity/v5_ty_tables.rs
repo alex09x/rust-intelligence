@@ -52,6 +52,7 @@ pub struct TraitImplInfo {
     pub impl_idx: u32,
     pub impl_gc: u16,
     pub is_blanket: bool,
+    pub fn_bound_arity: u8,
 }
 
 #[derive(Default)]
@@ -341,7 +342,8 @@ impl<'w> RidxV5ItemDb<'w> {
                     let is_ref_to_param =
                         matches!(arena.kind(iv.self_ty()), ridx_format::TyKindView::Ref { inner, .. } if matches!(arena.kind(inner), ridx_format::TyKindView::Param { .. }));
                     let is_blanket = target == ImplTargetKey::Param || is_ref_to_param;
-                    let info = TraitImplInfo { r_idx: r_idx as u32, impl_idx, impl_gc, is_blanket };
+                    let fn_bound_arity = self.detect_impl_self_fn_bound_arity(r_idx, reader, arena, impl_idx, iv.self_ty());
+                    let info = TraitImplInfo { r_idx: r_idx as u32, impl_idx, impl_gc, is_blanket, fn_bound_arity };
                     if target == ImplTargetKey::Param {
                         self.ty_tables.blanket_trait_impls.entry(tgid).or_default().push(info);
                     } else {
@@ -351,6 +353,32 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
         self.populate_v5_std_macro_gids();
+    }
+
+    fn detect_impl_self_fn_bound_arity<B: AsRef<[u8]>>(&self, r_idx: usize, reader: &IndexReader<B>, arena: ridx_format::TyArenaView<'_>, impl_idx: u32, self_ty: ridx_format::TyId) -> u8 {
+        let ridx_format::TyKindView::Param { index: self_pidx, .. } = arena.kind(self_ty) else { return u8::MAX };
+        for wp in reader.where_preds_for_impl(impl_idx) {
+            if wp.kind() != ridx_format::WherePredKind::TraitBound || wp.is_negative() {
+                continue;
+            }
+            let lhs_ok = match arena.kind(wp.lhs_ty()) {
+                ridx_format::TyKindView::Param { index, .. } => index == self_pidx,
+                ridx_format::TyKindView::Ref { inner, .. } => matches!(arena.kind(inner), ridx_format::TyKindView::Param { index, .. } if index == self_pidx),
+                _ => false,
+            };
+            let Some(td) = wp.trait_def().filter(|_| lhs_ok) else { continue };
+            if !self.ty_tables.gid_to_lang.get(&self.canonical_def(self.ty_def_gid(r_idx, td))).is_some_and(|l| l.is_fn_trait()) {
+                continue;
+            }
+            if let Some(tid) = wp.trait_args().find_map(|ga| if let ridx_format::GenericArgView::Type(t) = ga { Some(t) } else { None }) {
+                match arena.kind(tid) {
+                    ridx_format::TyKindView::Unit => return 0,
+                    ridx_format::TyKindView::Tuple(elems) => return elems.len() as u8,
+                    _ => {}
+                }
+            }
+        }
+        u8::MAX
     }
 }
 

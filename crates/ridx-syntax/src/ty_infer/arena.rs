@@ -28,6 +28,7 @@ pub struct InferTyArena {
     next: Vec<u32>,
     buckets: Vec<u32>,
     dynamic_count: usize,
+    overlay_fn_sigs: Vec<(GlobalDefId, TySliceRange)>,
 }
 
 impl Default for InferTyArena {
@@ -47,6 +48,7 @@ impl InferTyArena {
             next: Vec::with_capacity(cap),
             buckets: vec![u32::MAX; cap * 2],
             dynamic_count: 0,
+            overlay_fn_sigs: Vec::with_capacity(8),
         };
         arena.seed_builtins();
         arena
@@ -92,6 +94,23 @@ impl InferTyArena {
         self.hashes.truncate(InferTyId::BUILTIN_COUNT);
         self.next.truncate(InferTyId::BUILTIN_COUNT);
         self.ty_lists.clear();
+        self.overlay_fn_sigs.clear();
+    }
+
+    #[inline]
+    pub fn overlay_fn_sig(&self, def: GlobalDefId) -> Option<TySliceRange> {
+        self.overlay_fn_sigs.iter().find_map(|&(d, s)| (d == def).then_some(s))
+    }
+
+    pub fn record_overlay_fn_sig(&mut self, def: GlobalDefId, inputs: &[InferTyId], output: InferTyId) {
+        if self.overlay_fn_sig(def).is_some() {
+            return;
+        }
+        let start = self.ty_lists.len() as u32;
+        self.ty_lists.extend_from_slice(inputs);
+        self.ty_lists.push(output);
+        let len = (inputs.len() + 1) as u16;
+        self.overlay_fn_sigs.push((def, TySliceRange { start, len }));
     }
 
     #[inline]

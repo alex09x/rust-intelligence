@@ -145,6 +145,10 @@ impl<'a, 's> Runner<'a, 's> {
             self.pre_unify_call_return(pre_ret, expectation, subst.as_slice());
         }
         self.check_call_args_with_bounds(def, raw_params.as_slice(), subst.as_slice(), args, clos_dyn_hint);
+        let pre_norm_ret = self.norm(inst_ret);
+        if !subst.as_slice().iter().any(|&s| self.ctx.table.has_unresolved_infer(s)) && !self.call_has_live_infer(raw_params.as_slice(), subst.as_slice(), pre_norm_ret) {
+            return pre_norm_ret;
+        }
         if let Some(meta) = self.db.trait_of_assoc_fn(def).or_else(|| self.local_defs.trait_of_assoc_fn(def, self.root_st, self.root_file_res, self.db)) {
             let t_end = 1 + meta.trait_generics as usize;
             if subst.as_slice().len() >= t_end {

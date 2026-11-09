@@ -91,6 +91,10 @@ impl<'a, 's> Runner<'a, 's> {
             self.pre_unify_call_return(pre_ret, expectation, matched.subst.as_slice());
         }
         self.check_call_args_with_bounds(matched.cand.bound_owner_def, &matched.raw_params.as_slice()[1..], matched.subst.as_slice(), args, None);
+        let pre_norm_ret = self.norm(matched.inst_ret);
+        if !self.call_has_live_infer(matched.raw_params.as_slice(), matched.subst.as_slice(), pre_norm_ret) {
+            return pre_norm_ret;
+        }
         let t_end = (1 + matched.cand.fixed_trait_args.len as usize).min(matched.subst.as_slice().len());
         if matched.cand.trait_def.is_some() && matched.cand.has_fixed_trait_subst && t_end > 1 {
             let tslice = &matched.subst.as_slice()[1..t_end];

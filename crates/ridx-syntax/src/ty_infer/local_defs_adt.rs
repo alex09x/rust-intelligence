@@ -205,6 +205,9 @@ impl LocalCstDefs {
                 fields_out.push(env.lower_tok_slice_ty(table, &clause[ti..], 0));
             }
         });
+        if let Some((_, _, tpl_ty)) = self.def_ty(def, st, file_res, db, table) {
+            table.arena.record_overlay_fn_sig(def, fields_out, tpl_ty);
+        }
         Some(gc)
     }
 

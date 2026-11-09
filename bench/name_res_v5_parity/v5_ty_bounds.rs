@@ -198,6 +198,29 @@ impl<'w> RidxV5ItemDb<'w> {
         None
     }
 
+    pub(crate) fn callable_input_arity(&self, mut ty: InferTyId, arena: &InferTyArena) -> Option<u8> {
+        while let InferTyKind::Ref { inner, .. } = arena.kind(ty) {
+            ty = inner;
+        }
+        match arena.kind(ty) {
+            InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } if sig.len >= 1 => Some((sig.len - 1) as u8),
+            InferTyKind::FnDef { def, .. } => {
+                let cdef = self.canonical_def(def);
+                let Some(reader) = self.ws.readers().get(cdef.krate.0 as usize) else {
+                    return arena.overlay_fn_sig(def).filter(|s| s.len >= 1).map(|s| (s.len - 1) as u8);
+                };
+                if let Some(sig) = reader.fn_sig_for_def(cdef.index) {
+                    return Some(sig.inputs().len() as u8);
+                }
+                reader.def_ty_for_def(cdef.index).filter(|d| d.ctor_shape() == ridx_format::CtorShape::Tuple).map(|_| reader.fields_for_owner(cdef.index).len() as u8)
+            }
+            InferTyKind::Prim(_) | InferTyKind::Tuple(_) | InferTyKind::Array { .. } | InferTyKind::Slice(_) | InferTyKind::Ptr { .. } | InferTyKind::Never => Some(254),
+            InferTyKind::Adt { def, .. } if !self.metas.get(def.krate.0 as usize).is_some_and(|m| m.is_sysroot) => Some(254),
+            _ => None,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn try_bind_v5_trait_impl(
         &self,
         imp: &TraitImplInfo,
@@ -207,6 +230,9 @@ impl<'w> RidxV5ItemDb<'w> {
         vars: &mut UnionFindTable,
         depth: u8,
     ) -> bool {
+        if imp.fn_bound_arity != u8::MAX && self.callable_input_arity(cur, arena).is_some_and(|a| a != imp.fn_bound_arity) {
+            return false;
+        }
         let r_idx = imp.r_idx as usize;
         let reader = &self.ws.readers()[r_idx];
         let Some(iv) = reader.impl_view(imp.impl_idx) else { return false };
@@ -241,7 +267,8 @@ impl<'w> RidxV5ItemDb<'w> {
                 }
             }
         }
-        let bounds_ok = (imp.impl_gc == 0 && !imp.is_blanket) || self.check_impl_where_bounds_ext(r_idx, imp.impl_idx, &remap, subst.as_slice(), arena, vars, false, depth + 1);
+        let bounds_ok =
+            (imp.impl_gc == 0 && !imp.is_blanket) || self.check_impl_where_bounds_ext(r_idx, imp.impl_idx, &remap, subst.as_slice(), arena, vars, false, depth + 1);
         if !bounds_ok {
             return false;
         }

@@ -80,10 +80,17 @@ pub(super) fn try_solve_local_cst_impls(
 ) -> bool {
     let self_head = impl_target_key_of_ty(&table.arena, self_ty);
     let self_is_var = matches!(table.arena.kind(self_ty), InferTyKind::Infer(_));
+    let has_infer = table.has_unresolved_infer(self_ty) || trait_args.iter().any(|&t| table.has_unresolved_infer(t));
     let mut match_count = 0u32;
     let mut unique_imp: Option<(NodeId, u16)> = None;
     for imp in &senv.local_defs.impls {
         if imp.indexed_in_clean_db || !imp.has_for || imp.is_negative {
+            continue;
+        }
+        let Some(tp) = imp.trait_path else {
+            continue;
+        };
+        if senv.file_res.path_tail_ref_in_st(senv.st, tp).map_or(GlobalDefId::NONE, |r| effective_target_def(r.target)) != trait_def {
             continue;
         }
         let Some((imp_tr, imp_args, imp_self)) = senv.local_defs.lower_trait_impl_header(imp.node, imp.impl_generics, senv.st, senv.file_res, senv.db, table) else { continue };
@@ -96,6 +103,10 @@ pub(super) fn try_solve_local_cst_impls(
         }
         let snap = table.start_snapshot();
         let ok = bind_and_check_cst_impl(senv, (imp.node, imp.impl_generics, imp_self, is_blanket), imp_args.as_slice(), self_ty, trait_args, table, depth);
+        if ok && !has_infer {
+            table.commit(snap);
+            return true;
+        }
         table.rollback_to(snap);
         if ok {
             match_count += 1;

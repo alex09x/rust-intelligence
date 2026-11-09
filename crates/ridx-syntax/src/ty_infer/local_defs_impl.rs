@@ -103,10 +103,13 @@ impl LocalCstDefs {
             } else if is_blanket || impl_target_key_of_ty(&table.arena, self_ty) != target {
                 continue;
             }
+            let imp_owner = GlobalDefId::new(CrateId::LOCAL_OVERLAY, imp.node.0);
+            if is_blanket && out.iter().any(|c| c.impl_owner == imp_owner) {
+                continue;
+            }
             if !probe_impl_self_compat(table, imp.impl_generics, self_ty, step_ty) {
                 continue;
             }
-            let imp_owner = GlobalDefId::new(CrateId::LOCAL_OVERLAY, imp.node.0);
             if let Some(fn_node) = find_assoc_fn(st, imp.node, method_name, true) {
                 let mdef = self.fn_def_for_node(fn_node);
                 if mdef.is_some() && !out.iter().any(|c| c.method_def == mdef && !c.has_fixed_trait_subst) {
