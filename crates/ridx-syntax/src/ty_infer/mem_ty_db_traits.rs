@@ -14,7 +14,7 @@
 use super::arena::InferTyArena;
 use super::autoderef::impl_target_key_of_ty;
 use super::db::{clone_ty_into, MethodCand, TraitAssocFnMeta, WhereObligation};
-use super::mem_ty_db::{instantiate_in_arena, MemTyDefDb};
+use super::mem_ty_db::MemTyDefDb;
 use super::mem_ty_db_methods::TraitImplEntry;
 use super::ty::{InferTyId, InferTyKind, TyVarKind};
 use super::uf_table::{InlineTyBuf, UnionFindTable};
@@ -231,4 +231,77 @@ impl MemTyDefDb {
         }
         None
     }
+}
+
+pub(super) fn instantiate_in_arena(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyId]) -> InferTyId {
+    instantiate_arena_rec(arena, ty, subst, 0)
+}
+
+fn instantiate_arena_rec(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyId], depth: u8) -> InferTyId {
+    if depth > 64 || !arena.flags(ty).has_param() {
+        return ty;
+    }
+    match arena.kind(ty) {
+        InferTyKind::Param { idx, .. } => subst.get(idx as usize).copied().unwrap_or(InferTyId::UNKNOWN),
+        InferTyKind::Ref { is_mut, inner } => {
+            let s = instantiate_arena_rec(arena, inner, subst, depth + 1);
+            arena.mk_ref(is_mut, s)
+        }
+        InferTyKind::Ptr { is_mut, inner } => {
+            let s = instantiate_arena_rec(arena, inner, subst, depth + 1);
+            arena.mk_ptr(is_mut, s)
+        }
+        InferTyKind::Slice(e) => {
+            let s = instantiate_arena_rec(arena, e, subst, depth + 1);
+            arena.mk_slice(s)
+        }
+        InferTyKind::Array { elem, len } => {
+            let s = instantiate_arena_rec(arena, elem, subst, depth + 1);
+            arena.mk_array(s, len)
+        }
+        InferTyKind::Tuple(r) => {
+            let b = inst_slice_arena(arena, r, subst, depth + 1);
+            arena.mk_tuple(b.as_slice())
+        }
+        InferTyKind::Adt { def, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_adt(def, b.as_slice())
+        }
+        InferTyKind::FnPtr { sig } => {
+            let b = inst_slice_arena(arena, sig, subst, depth + 1);
+            let s = b.as_slice();
+            arena.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
+        }
+        InferTyKind::FnDef { def, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_fn_def(def, b.as_slice())
+        }
+        InferTyKind::Closure { def_start, def_end, sig } => {
+            let b = inst_slice_arena(arena, sig, subst, depth + 1);
+            let s = b.as_slice();
+            arena.mk_closure(def_start, def_end, &s[..s.len() - 1], s[s.len() - 1])
+        }
+        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
+            let ns = instantiate_arena_rec(arena, self_ty, subst, depth + 1);
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_alias(trait_def, assoc_def, ns, b.as_slice())
+        }
+        InferTyKind::Dyn { principal, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_dyn(principal, b.as_slice())
+        }
+        InferTyKind::Opaque { def, args } => {
+            let b = inst_slice_arena(arena, args, subst, depth + 1);
+            arena.mk_opaque(def, b.as_slice())
+        }
+        _ => ty,
+    }
+}
+
+fn inst_slice_arena(arena: &mut InferTyArena, r: super::ty::TySliceRange, subst: &[InferTyId], depth: u8) -> InlineTyBuf {
+    let mut b = InlineTyBuf::new();
+    for idx in 0..r.len as usize {
+        b.push(instantiate_arena_rec(arena, arena.slice(r)[idx], subst, depth));
+    }
+    b
 }

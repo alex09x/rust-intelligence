@@ -12,7 +12,7 @@
 //! [`InferTyId`], supporting primitives, generic parameters, `Self`, ADTs, type aliases,
 //! `Fn(A, B) -> R` parenthesized sugar, `impl Trait` / `dyn Trait`, and `<T as Trait>::Assoc`.
 
-use super::db::{TyDefDb, TyLangItem};
+use super::db::TyDefDb;
 use super::local_defs::{effective_local_def_id, LocalCstDefs};
 use super::mem_ty_db::instantiate_in_arena;
 use super::tok_ty_scan::{eval_const_uint_expr, next_sig_idx, rfind_sig_idx};
@@ -38,17 +38,42 @@ pub struct LowerTyEnv<'a, 's> {
     pub item_owner: Option<NodeId>,
     /// When `true` (inside a function body), `_` and elided generic args allocate fresh `TyVar`s.
     pub in_body: bool,
+    /// Optional root-file `(st, file_res, expanded_spans)` when lowering inside a macro sub-tree.
+    pub sub_map: Option<(&'a SyntaxTree<'s>, &'a FileNameRes, Option<&'a [crate::name_res::mbe_expand::ExpandedSpanMap]>)>,
 }
 
 impl<'a, 's> LowerTyEnv<'a, 's> {
     #[inline]
+    pub(super) fn defs_ctx(&self) -> (&'a SyntaxTree<'s>, &'a FileNameRes) {
+        self.sub_map.map_or((self.st, self.file_res), |(rst, rfr, _)| (rst, rfr))
+    }
+
+    #[inline]
+    pub(super) fn root_owner_env(&self) -> Self {
+        let (st, file_res) = self.defs_ctx();
+        Self {
+            st,
+            file_res,
+            db: self.db,
+            local_defs: self.local_defs,
+            self_ty: self.self_ty,
+            impl_owner: self.impl_owner,
+            impl_generics: self.impl_generics,
+            item_owner: self.item_owner,
+            in_body: false,
+            sub_map: None,
+        }
+    }
+
+    #[inline]
     pub(super) fn resolve_generic_param(&self, table: &mut InferenceTable, gid: GenericBindId) -> InferTyId {
-        let g = self.file_res.generic_data(gid);
+        let (dst, dfr) = if self.file_res.generics.len() > gid.0 as usize { (self.defs_ctx().0, self.file_res) } else { self.defs_ctx() };
+        let g = dfr.generic_data(gid);
         if g.is_const {
             return InferTyId::UNKNOWN;
         }
         let idx = if self.impl_owner == Some(g.owner_node) {
-            if self.st.kind(g.owner_node) == K::Trait {
+            if dst.kind(g.owner_node) == K::Trait {
                 1 + g.index
             } else {
                 g.index
@@ -200,40 +225,17 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         if let Some(prim) = prim_opt {
             return InferTyId::from_prim(prim);
         }
-        let Some(rref) = rref else {
+        let mapped_target = rref.map(|r| r.target).or_else(|| self.resolve_mapped_type_target(tail_seg?));
+        let Some(target) = mapped_target else {
             return InferTyId::UNKNOWN;
         };
-        if qself_ty.is_none() && matches!(rref.target, ResTarget::Def { kind: ItemKind::AssocTy, .. }) {
+        if qself_ty.is_none() && matches!(target, ResTarget::Def { kind: ItemKind::AssocTy, .. }) {
             qself_ty = Some(self.resolve_unbracketed_assoc_qself(table, first_seg, tail_seg, depth + 1));
         }
         let seg_name = tail_seg
             .and_then(|s| self.st.own_tokens(s).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map(|(_, t)| crate::sema_fn::norm_ident(t.text(self.st.src))))
             .unwrap_or("");
-        self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, qtrait_def, seg_name, as_dyn, as_opaque, depth)
-    }
-
-    fn resolve_unbracketed_assoc_qself(&self, table: &mut InferenceTable, first_seg: Option<NodeId>, tail_seg: Option<NodeId>, depth: u8) -> InferTyId {
-        let Some(fseg) = first_seg.filter(|&f| Some(f) != tail_seg) else {
-            return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
-        };
-        let Some((_, tok)) = self.st.own_tokens(fseg).find(|(_, t)| matches!(t.kind, T::SelfType | T::Ident | T::RawIdent)) else {
-            return InferTyId::UNKNOWN;
-        };
-        if tok.kind == T::SelfType {
-            return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
-        }
-        let Some(fref) = self.file_res.refs_at_span(tok.start, tok.end).first() else { return InferTyId::UNKNOWN };
-        match fref.target {
-            ResTarget::Generic(gid) => self.resolve_generic_param(table, gid),
-            ResTarget::SelfTy { .. } => self.self_ty.unwrap_or(InferTyId::UNKNOWN),
-            ResTarget::Prim(p) => InferTyId::from_prim(p),
-            ResTarget::Def { kind: ItemKind::Struct | ItemKind::Enum | ItemKind::Union | ItemKind::TypeAlias, .. } => {
-                let mut fargs = InlineTyBuf::new();
-                self.collect_segment_args(table, fseg, false, &mut fargs, depth + 1);
-                self.finish_resolved_type(table, fref.target, fargs.as_slice(), None, GlobalDefId::NONE, "", false, false, depth + 1)
-            }
-            _ => InferTyId::UNKNOWN,
-        }
+        self.finish_resolved_type(table, target, args.as_slice(), qself_ty, qtrait_def, seg_name, as_dyn, as_opaque, depth)
     }
 
     pub(super) fn collect_segment_args(&self, table: &mut InferenceTable, seg: NodeId, include_assoc_eq: bool, out: &mut InlineTyBuf, depth: u8) {
@@ -287,6 +289,23 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         as_opaque: bool,
         depth: u8,
     ) -> InferTyId {
+        self.finish_resolved_type_ext(table, target, explicit_args, qself_ty, qtrait_def, assoc_name, as_dyn, as_opaque, true, depth)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn finish_resolved_type_ext(
+        &self,
+        table: &mut InferenceTable,
+        target: ResTarget,
+        explicit_args: &[InferTyId],
+        qself_ty: Option<InferTyId>,
+        qtrait_def: GlobalDefId,
+        assoc_name: &str,
+        as_dyn: bool,
+        as_opaque: bool,
+        use_defaults: bool,
+        depth: u8,
+    ) -> InferTyId {
         match target {
             ResTarget::Prim(p) => InferTyId::from_prim(p),
             ResTarget::Generic(gid) => self.resolve_generic_param(table, gid),
@@ -313,33 +332,29 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                         let g_count =
                             self.db.def_ty(eff_def, &mut table.arena).map(|(g, ..)| g).or_else(|| self.local_defs.adt_generic_count(eff_def)).unwrap_or(explicit_args.len() as u16);
                         let mut full = InlineTyBuf::new();
-                        for i in 0..g_count as usize {
-                            full.push(explicit_args.get(i).copied().unwrap_or_else(|| self.placeholder_ty(table)));
-                        }
+                        self.fill_type_args(table, eff_def, g_count, explicit_args, use_defaults, depth, &mut full);
                         table.arena.mk_adt(eff_def, full.as_slice())
                     }
                     ItemKind::TypeAlias => {
+                        let (dst, dfr) = self.defs_ctx();
                         if let Some((g_count, _, target_ty)) = self.db.def_ty(eff_def, &mut table.arena) {
                             let mut full = InlineTyBuf::new();
-                            for i in 0..g_count as usize {
-                                full.push(explicit_args.get(i).copied().unwrap_or_else(|| self.placeholder_ty(table)));
-                            }
+                            self.fill_type_args(table, eff_def, g_count, explicit_args, use_defaults, depth, &mut full);
                             return instantiate_in_arena(&mut table.arena, target_ty, full.as_slice());
                         }
-                        if let Some((g_count, target_ty)) = self.local_defs.lower_type_alias(eff_def, self.st, self.file_res, self.db, table, depth + 1) {
+                        if let Some((g_count, target_ty)) = self.local_defs.lower_type_alias(eff_def, dst, dfr, self.db, table, depth + 1) {
                             let mut full = InlineTyBuf::new();
-                            for i in 0..g_count as usize {
-                                full.push(explicit_args.get(i).copied().unwrap_or_else(|| self.placeholder_ty(table)));
-                            }
+                            self.fill_type_args(table, eff_def, g_count, explicit_args, use_defaults, depth, &mut full);
                             return instantiate_in_arena(&mut table.arena, target_ty, full.as_slice());
                         }
                         InferTyId::UNKNOWN
                     }
                     ItemKind::AssocTy => {
+                        let (dst, dfr) = self.defs_ctx();
                         let raw_sty = qself_ty.unwrap_or_else(|| self.self_ty.unwrap_or(InferTyId::UNKNOWN));
                         let sty = table.shallow_resolve(raw_sty);
                         let (qtr, adef, qargs) =
-                            self.local_defs.resolve_assoc_trait_and_args(qtrait_def, eff_def, assoc_name, sty, self.self_ty, self.impl_owner, explicit_args, self.st, table);
+                            self.local_defs.resolve_assoc_trait_and_args(qtrait_def, eff_def, assoc_name, sty, self.self_ty, self.impl_owner, explicit_args, dst, table);
                         let eargs = qargs.as_slice();
                         if let InferTyKind::Param { idx, .. } = table.arena.kind(sty) {
                             let owner_def = self.item_owner.map_or(GlobalDefId::NONE, |n| self.local_defs.fn_def_for_node(n));
@@ -348,11 +363,11 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                                     return proj;
                                 }
                             }
-                            if let Some(proj) = super::trait_solve::project_cst_param_assoc(self, table, idx, qtr, adef, eargs, depth + 1) {
+                            if let Some(proj) = super::trait_solve::project_cst_param_assoc(&self.root_owner_env(), table, idx, qtr, adef, eargs, depth + 1) {
                                 return proj;
                             }
                         }
-                        if let Some(li) = self.db.lang_item_of_def(adef).or_else(|| self.db.lang_item_of_def(qtr).and_then(trait_default_assoc)) {
+                        if let Some(li) = self.db.lang_item_of_def(adef).or_else(|| self.db.lang_item_of_def(qtr).and_then(super::lower_ty_tok::trait_default_assoc)) {
                             if let Some(proj) = self.db.project_assoc_ty(li, sty, eargs, &mut table.arena, &mut table.vars) {
                                 return proj;
                             }
@@ -360,7 +375,7 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                         if let Some(proj) = self.db.project_trait_assoc(qtr, adef, sty, eargs, &mut table.arena, &mut table.vars) {
                             return proj;
                         }
-                        if let Some(proj) = self.local_defs.project_trait_assoc_rec(qtr, adef, sty, eargs, self.st, self.file_res, self.db, table, depth + 1) {
+                        if let Some(proj) = self.local_defs.project_trait_assoc_rec(qtr, adef, sty, eargs, dst, dfr, self.db, table, depth + 1) {
                             return proj;
                         }
                         table.arena.mk_alias(qtr, adef, sty, eargs)
@@ -370,19 +385,6 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
             }
             ResTarget::Local(_) => InferTyId::UNKNOWN,
         }
-    }
-}
-
-fn trait_default_assoc(item: TyLangItem) -> Option<TyLangItem> {
-    match item {
-        TyLangItem::Try => Some(TyLangItem::TryOutput),
-        TyLangItem::Future => Some(TyLangItem::FutureOutput),
-        TyLangItem::IntoFuture => Some(TyLangItem::IntoFutureOutput),
-        TyLangItem::Deref => Some(TyLangItem::DerefTarget),
-        TyLangItem::Index => Some(TyLangItem::IndexOutput),
-        TyLangItem::IntoIterator => Some(TyLangItem::IntoIteratorItem),
-        TyLangItem::Iterator => Some(TyLangItem::IteratorItem),
-        _ => None,
     }
 }
 

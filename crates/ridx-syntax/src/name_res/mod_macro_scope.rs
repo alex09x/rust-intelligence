@@ -15,6 +15,7 @@ use std::cell::OnceCell;
 
 use super::attr::{eval_outer_attrs, EffectiveAttrs};
 use super::db::{FileId, ModuleId};
+use super::include_eval::{is_include_call_path, resolve_include_target};
 use super::mbe_parse::MacroRulesDef;
 use super::mod_builder::Builder;
 use crate::parser::parse;
@@ -70,6 +71,60 @@ impl<'a, 't> Builder<'a, 't> {
         let call_has_mod = has_mod_or_macro_kw(inner_call);
         let raw_call = st.text(path_node).trim();
 
+        if is_include_call_path(raw_call) {
+            let attrs = eval_outer_attrs(st, call_node, self.db, self.krate);
+            if !attrs.enabled {
+                return;
+            }
+            let mod_path = self.tree.crate_path(mod_id).to_string();
+            let db = self.db;
+            let krate = self.krate;
+            let defs = &self.macro_defs;
+            let exported = &self.exported_macros;
+            let env_snap: &[u32] = macro_env.as_slice();
+            let inc_opt = resolve_include_target(st, call_node, file, db, self.sources, krate, &mut |mpath, margs| {
+                if !mpath.contains("::") {
+                    let sname = norm_ident(mpath);
+                    if let Some(idx) = env_snap
+                        .iter()
+                        .rev()
+                        .copied()
+                        .find(|&i| defs[i as usize].name == sname)
+                        .or_else(|| exported.iter().rev().copied().find(|&i| defs[i as usize].name == sname))
+                    {
+                        let e = &defs[idx as usize];
+                        let parsed = e.parsed.get_or_init(|| MacroRulesDef::parse_body(&e.body));
+                        return parsed.as_ref()?.expand(margs, "crate");
+                    }
+                }
+                let (b, dc) = db.macro_rules_with_crate(krate, &mod_path, mpath)?;
+                MacroRulesDef::parse_body(b)?.expand(margs, dc)
+            });
+            let Some(inc_file) = inc_opt else {
+                self.mod_has_unexpanded_macro[mod_id.0 as usize] = true;
+                return;
+            };
+            if inc_file == file || inc_file == self.root_file || self.in_flight_files.contains(&inc_file) {
+                return;
+            }
+            if !self.tree.file_to_modules.contains(&(inc_file, mod_id)) {
+                self.tree.file_to_modules.push((inc_file, mod_id));
+            }
+            let inc_src = self.sources.file_text(inc_file);
+            let owned_inc;
+            let inc_st: &SyntaxTree<'_> = match (self.borrow_cached)(inc_file) {
+                Some(borrowed) => borrowed,
+                None => {
+                    owned_inc = parse(inc_src);
+                    &owned_inc
+                }
+            };
+            self.in_flight_files.push(inc_file);
+            self.scan_container(mod_id, inc_file, inc_st, inc_st.root(), macro_env, 0);
+            self.in_flight_files.pop();
+            return;
+        }
+
         if !raw_call.contains("::") {
             let short_name = norm_ident(raw_call);
             let defs = &self.macro_defs;
@@ -100,7 +155,7 @@ impl<'a, 't> Builder<'a, 't> {
                     };
                     exp
                 };
-                if has_mod_or_macro_kw(&expanded) {
+                if has_mod_or_macro_kw(&expanded) || expanded.contains("include!") {
                     let exp_tree = parse(&expanded);
                     self.scan_container(mod_id, file, &exp_tree, exp_tree.root(), macro_env, mbe_depth + 1);
                 }
@@ -109,10 +164,13 @@ impl<'a, 't> Builder<'a, 't> {
         }
 
         let mod_path = self.tree.crate_path(mod_id);
-        let Some(ext_body) = self.db.macro_rules_body(self.krate, mod_path, raw_call) else {
+        let Some((ext_body, dollar_crate)) = self.db.macro_rules_with_crate(self.krate, mod_path, raw_call) else {
+            if eval_outer_attrs(st, call_node, self.db, self.krate).enabled {
+                self.mod_has_unexpanded_macro[mod_id.0 as usize] = true;
+            }
             return;
         };
-        if !call_has_mod && !has_mod_or_macro_kw(ext_body) {
+        if !call_has_mod && !has_mod_or_macro_kw(ext_body) && !ext_body.contains("include!") {
             return;
         }
         let attrs = eval_outer_attrs(st, call_node, self.db, self.krate);
@@ -122,10 +180,10 @@ impl<'a, 't> Builder<'a, 't> {
         let Some(parsed) = MacroRulesDef::parse_body(ext_body) else {
             return;
         };
-        let Some(expanded) = parsed.expand(inner_call, "crate") else {
+        let Some(expanded) = parsed.expand(inner_call, dollar_crate) else {
             return;
         };
-        if has_mod_or_macro_kw(&expanded) {
+        if has_mod_or_macro_kw(&expanded) || expanded.contains("include!") {
             let exp_tree = parse(&expanded);
             self.scan_container(mod_id, file, &exp_tree, exp_tree.root(), macro_env, mbe_depth + 1);
         }

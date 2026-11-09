@@ -81,14 +81,28 @@ impl Event {
 }
 
 impl<'s> SyntaxTree<'s> {
-    pub(crate) fn build(src: &'s str, tokens: Vec<Token>, sig: &[u32], mut events: Vec<Event>, nodes_cap: usize) -> Self {
+    pub(crate) fn build(src: &'s str, mut tokens: Vec<Token>, sig: &[u32], mut events: Vec<Event>, nodes_cap: usize) -> Self {
         let mut nodes: Vec<Node> = Vec::with_capacity(nodes_cap);
         let mut stack: Vec<u32> = Vec::with_capacity(64);
-        // Nodes on the stack from this depth on have not met their first token yet.
+        let mut chain: Vec<SyntaxKind> = Vec::with_capacity(16);
+        Self::build_into(src, &mut tokens, sig, &mut events, &mut nodes, &mut stack, &mut chain)
+    }
+
+    pub(crate) fn build_into(
+        src: &'s str,
+        tokens_slot: &mut Vec<Token>,
+        sig: &[u32],
+        events: &mut [Event],
+        nodes_slot: &mut Vec<Node>,
+        stack: &mut Vec<u32>,
+        chain: &mut Vec<SyntaxKind>,
+    ) -> Self {
+        nodes_slot.clear();
+        stack.clear();
+        chain.clear();
         let mut unstarted = 0usize;
         let mut next_sig = 0usize;
         let mut last_end = 0u32;
-        let mut chain: Vec<SyntaxKind> = Vec::with_capacity(16);
         for i in 0..events.len() {
             let ev = events[i];
             if ev.is_special() {
@@ -96,15 +110,15 @@ impl<'s> SyntaxTree<'s> {
                     let raw = sig[next_sig];
                     next_sig += 1;
                     for &id in &stack[unstarted..] {
-                        nodes[id as usize].first = raw;
+                        nodes_slot[id as usize].first = raw;
                     }
                     unstarted = stack.len();
                     last_end = raw + 1;
                 } else {
                     let id = stack.pop().expect("balanced events") as usize;
                     unstarted = unstarted.min(stack.len());
-                    let len = nodes.len() as u32;
-                    let n = &mut nodes[id];
+                    let len = nodes_slot.len() as u32;
+                    let n = &mut nodes_slot[id];
                     if n.first == u32::MAX {
                         n.first = last_end;
                     }
@@ -116,8 +130,8 @@ impl<'s> SyntaxTree<'s> {
                 if fp0 == 0 {
                     if ev.kind != SyntaxKind::Tombstone {
                         let parent = stack.last().copied().unwrap_or(u32::MAX);
-                        stack.push(nodes.len() as u32);
-                        nodes.push(Node { kind: ev.kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
+                        stack.push(nodes_slot.len() as u32);
+                        nodes_slot.push(Node { kind: ev.kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
                     }
                 } else {
                     events[i] = Event::TOMBSTONE;
@@ -137,13 +151,15 @@ impl<'s> SyntaxTree<'s> {
                             continue;
                         }
                         let parent = stack.last().copied().unwrap_or(u32::MAX);
-                        stack.push(nodes.len() as u32);
-                        nodes.push(Node { kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
+                        stack.push(nodes_slot.len() as u32);
+                        nodes_slot.push(Node { kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
                     }
                 }
             }
         }
         debug_assert!(stack.is_empty());
+        let tokens = core::mem::take(tokens_slot);
+        let mut nodes = core::mem::take(nodes_slot);
         if let Some(root) = nodes.first_mut() {
             root.first = 0;
             root.end = tokens.len() as u32;

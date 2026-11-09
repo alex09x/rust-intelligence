@@ -11,12 +11,12 @@
 //! Corpus source loader (`CorpusSourceDb`), UTF-8 `(line, char_col)` <-> byte offset converter
 //! (`LineIndex`), and `.deps/*.json` compilation-unit metadata loader for `v5` parity runs.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use ridx_format::WorkspaceIndex;
-use ridx_syntax::name_res::{join_norm_path, Edition, FileId, SourceDb};
+use ridx_syntax::name_res::{join_norm_into, join_norm_path, Edition, FileId, SourceDb};
 
 /// Fast `(1-based line, 1-based char_col)` <-> UTF-8 byte offset converter for one source file.
 pub struct LineIndex {
@@ -91,7 +91,8 @@ impl CorpusSourceDb {
     pub fn load(ws_root: &Path) -> Self {
         let canon_root = ws_root.canonicalize().unwrap_or_else(|_| ws_root.to_path_buf());
         let mut raw_paths = Vec::new();
-        collect_rs_files(ws_root, &mut raw_paths);
+        let mut ancestors = Vec::new();
+        collect_rs_files(ws_root, &mut ancestors, &mut raw_paths);
         raw_paths.sort();
 
         let mut files = Vec::with_capacity(raw_paths.len());
@@ -109,12 +110,51 @@ impl CorpusSourceDb {
             by_rel.insert(rel_path.clone(), id);
             by_abs.insert(abs.clone(), id);
             if let Ok(ca) = abs.canonicalize() {
-                by_abs.insert(ca, id);
+                by_abs.entry(ca).or_insert(id);
             }
             files.push(CorpusFile { rel_path, text, lines });
         }
 
         Self { ws_root: ws_root.to_path_buf(), canon_root, files, by_rel, by_abs }
+    }
+
+    pub fn load_out_dirs(&mut self, metas: &[ReaderMeta]) {
+        let mut seen_dirs = HashSet::new();
+        for m in metas {
+            if m.is_dependency {
+                continue;
+            }
+            let Some(out_dir_str) = m.env.get("OUT_DIR") else {
+                continue;
+            };
+            let out_dir = PathBuf::from(out_dir_str);
+            if !seen_dirs.insert(out_dir.clone()) || !out_dir.is_dir() {
+                continue;
+            }
+            let mut extra = Vec::new();
+            let mut ancestors = Vec::new();
+            collect_rs_files(&out_dir, &mut ancestors, &mut extra);
+            extra.sort();
+            for abs in extra {
+                if self.by_abs.contains_key(&abs) {
+                    continue;
+                }
+                let Ok(text) = fs::read_to_string(&abs) else {
+                    continue;
+                };
+                let norm_abs = join_norm_path("", &abs.to_string_lossy());
+                let id = FileId(self.files.len() as u32);
+                let lines = LineIndex::new(&text);
+                self.by_rel.entry(norm_abs.clone()).or_insert(id);
+                self.by_abs.insert(abs.clone(), id);
+                if let Ok(ca) = abs.canonicalize() {
+                    let norm_ca = join_norm_path("", &ca.to_string_lossy());
+                    self.by_rel.entry(norm_ca).or_insert(id);
+                    self.by_abs.entry(ca).or_insert(id);
+                }
+                self.files.push(CorpusFile { rel_path: norm_abs, text, lines });
+            }
+        }
     }
 
     pub fn lookup_abs_or_rel(&self, source_root: Option<&Path>, raw_file: &str) -> Option<FileId> {
@@ -151,7 +191,13 @@ impl CorpusSourceDb {
 impl SourceDb for CorpusSourceDb {
     #[inline]
     fn resolve_path(&self, normalized_path: &str) -> Option<FileId> {
-        self.by_rel.get(normalized_path).copied()
+        if let Some(&fid) = self.by_rel.get(normalized_path) {
+            return Some(fid);
+        }
+        if normalized_path.starts_with('/') {
+            return self.lookup_abs_or_rel(None, normalized_path);
+        }
+        None
     }
 
     #[inline]
@@ -165,35 +211,36 @@ impl SourceDb for CorpusSourceDb {
     }
 }
 
-fn collect_rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    if dir == Path::new("/") {
+fn collect_rs_files(dir: &Path, ancestors: &mut Vec<PathBuf>, out: &mut Vec<PathBuf>) {
+    if dir == Path::new("/") || ancestors.len() >= 32 {
+        return;
+    }
+    let Ok(canon_dir) = dir.canonicalize() else {
+        return;
+    };
+    if ancestors.contains(&canon_dir) {
         return;
     }
     let Ok(rd) = fs::read_dir(dir) else {
         return;
     };
+    ancestors.push(canon_dir);
     for entry in rd.flatten() {
-        let Ok(ft) = entry.file_type() else {
+        let p = entry.path();
+        let Ok(md) = fs::metadata(&p) else {
             continue;
         };
-        if ft.is_symlink() {
-            continue;
-        }
-        let p = entry.path();
-        if ft.is_dir() {
+        if md.is_dir() {
             let name = entry.file_name();
-            if matches!(name.to_str(), Some("target" | ".git" | "node_modules" | "test_data" | "tests" | "benches" | "examples")) {
-                // Keep workspace member subdirs even if named `tests`/`benches`? Wait: Cargo crates CAN live under `crates/` or root;
-                // only skip `.git`, `target`, `node_modules` so integration test/bench/example units resolve too!
-            }
             if matches!(name.to_str(), Some("target" | ".git" | "node_modules")) {
                 continue;
             }
-            collect_rs_files(&p, out);
-        } else if ft.is_file() && p.extension().and_then(|s| s.to_str()) == Some("rs") {
+            collect_rs_files(&p, ancestors, out);
+        } else if md.is_file() && p.extension().and_then(|s| s.to_str()) == Some("rs") {
             out.push(p);
         }
     }
+    ancestors.pop();
 }
 
 /// Extracted sidecar metadata for one `IndexReader` slot in `WorkspaceIndex`.
@@ -207,6 +254,7 @@ pub struct ReaderMeta {
     pub source_root: Option<PathBuf>,
     pub root_rs_abs: Option<PathBuf>,
     pub extern_units: BTreeMap<String, String>,
+    pub env: BTreeMap<String, String>,
 }
 
 pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
@@ -222,6 +270,7 @@ pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
         let mut source_root = ws.source_root_at(idx).map(Path::to_path_buf);
         let mut root_rs_abs: Option<PathBuf> = None;
         let mut extern_units: BTreeMap<String, String> = BTreeMap::new();
+        let mut env: BTreeMap<String, String> = BTreeMap::new();
 
         if let Some(meta_path) = ws.meta_path_at(idx) {
             if let Ok(raw) = fs::read_to_string(meta_path) {
@@ -255,6 +304,13 @@ pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
                             }
                         }
                     }
+                    if let Some(obj) = val.get("env").and_then(|v| v.as_object()) {
+                        for (k, v) in obj {
+                            if let Some(ev) = v.as_str() {
+                                env.insert(k.clone(), ev.to_string());
+                            }
+                        }
+                    }
                     if let Some(args) = val.get("compiler_args").and_then(|v| v.as_array()) {
                         let strs: Vec<&str> = args.iter().filter_map(|x| x.as_str()).collect();
                         parse_compiler_args(&strs, source_root.as_deref(), &mut edition, &mut is_test_harness, &mut root_rs_abs);
@@ -263,9 +319,47 @@ pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
             }
         }
 
-        out.push(ReaderMeta { crate_name, edition, is_dependency, is_sysroot, target_kind, is_test_harness, source_root, root_rs_abs, extern_units });
+        out.push(ReaderMeta { crate_name, edition, is_dependency, is_sysroot, target_kind, is_test_harness, source_root, root_rs_abs, extern_units, env });
     }
     out
+}
+
+#[inline]
+pub fn resolve_include_in_corpus<'w>(src: &'w CorpusSourceDb, from_file: FileId, rel_or_abs: &str) -> Option<(FileId, &'w str)> {
+    let base_dir = if from_file.is_some() {
+        let fp = src.file_path(from_file);
+        match fp.rfind('/') {
+            Some(0) => "/",
+            Some(idx) => &fp[..idx],
+            None => "",
+        }
+    } else {
+        ""
+    };
+    let mut norm = String::with_capacity(base_dir.len() + rel_or_abs.len() + 1);
+    join_norm_into(&mut norm, base_dir, rel_or_abs, "");
+    let fid = src.resolve_path(&norm)?;
+    Some((fid, src.file_text(fid)))
+}
+
+pub fn include_bytes_len_in_corpus(src: &CorpusSourceDb, from_file: FileId, rel_or_abs: &str) -> Option<u64> {
+    if let Some((_, text)) = resolve_include_in_corpus(src, from_file, rel_or_abs) {
+        return Some(text.len() as u64);
+    }
+    let base_dir = if from_file.is_some() {
+        let fp = src.file_path(from_file);
+        match fp.rfind('/') {
+            Some(0) => "/",
+            Some(idx) => &fp[..idx],
+            None => "",
+        }
+    } else {
+        ""
+    };
+    let mut norm = String::with_capacity(base_dir.len() + rel_or_abs.len() + 1);
+    join_norm_into(&mut norm, base_dir, rel_or_abs, "");
+    let fs_path = if norm.starts_with('/') { PathBuf::from(&norm) } else { src.ws_root.join(&norm) };
+    fs::metadata(&fs_path).ok().map(|m| m.len())
 }
 
 fn parse_compiler_args(args: &[&str], source_root: Option<&Path>, edition: &mut Edition, is_test: &mut bool, root_rs: &mut Option<PathBuf>) {

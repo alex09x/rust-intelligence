@@ -171,9 +171,10 @@ pub enum InferTyKind {
         def: GlobalDefId,
         args: TySliceRange,
     },
-    /// Local closure with unique body-local `id` and signature `[inputs..., output]`.
+    /// Local closure keyed by header/callsite byte span `[def_start..def_end)` and signature `[inputs..., output]`.
     Closure {
-        id: u32,
+        def_start: u32,
+        def_end: u32,
         sig: TySliceRange,
     },
     Param {

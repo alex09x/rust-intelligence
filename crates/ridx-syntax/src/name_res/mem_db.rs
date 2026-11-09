@@ -52,7 +52,6 @@ impl MemSourceDb {
     pub fn len(&self) -> usize {
         self.paths.len()
     }
-
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.paths.is_empty()
@@ -64,12 +63,10 @@ impl SourceDb for MemSourceDb {
     fn resolve_path(&self, normalized_path: &str) -> Option<FileId> {
         self.by_path.get(normalized_path).copied()
     }
-
     #[inline]
     fn file_path(&self, file: FileId) -> &str {
         &self.paths[file.0 as usize]
     }
-
     #[inline]
     fn file_text(&self, file: FileId) -> &str {
         &self.texts[file.0 as usize]
@@ -86,6 +83,7 @@ struct CrateMemEntry {
     cfg_kvs: Vec<(String, String)>,
     /// Optional indexed `macro_rules!` bodies keyed by call path (`"cfg_if"`, `"cfg::alloc"`).
     macros: HashMap<String, String>,
+    envs: HashMap<String, String>,
     externs: HashMap<String, CrateId>,
     root_def: Option<GlobalDefId>,
     prelude_mod: Option<GlobalDefId>,
@@ -105,6 +103,9 @@ pub struct MemItemDb {
     impls_by_target: HashMap<ImplTargetKey, Vec<IndexedImpl>>,
     impls_by_crate: HashMap<CrateId, Vec<IndexedImpl>>,
     lang_items: HashMap<u16, GlobalDefId>,
+    macro_defs: HashMap<GlobalDefId, (String, String)>,
+    include_files: HashMap<(FileId, String), (FileId, String)>,
+    include_bytes: HashMap<(FileId, String), u64>,
 }
 
 #[derive(Clone, Debug)]
@@ -165,6 +166,15 @@ impl MemItemDb {
 
     pub fn add_macro_rules(&mut self, krate: CrateId, call_path: impl Into<String>, body: impl Into<String>) {
         self.crates.entry(krate).or_default().macros.insert(call_path.into(), body.into());
+    }
+
+    pub fn add_macro_def_body(&mut self, def: GlobalDefId, body: impl Into<String>, dollar_crate: impl Into<String>) {
+        self.def_kinds.insert(def, super::db::ItemKind::Macro);
+        self.macro_defs.insert(def, (body.into(), dollar_crate.into()));
+    }
+
+    pub fn set_env(&mut self, krate: CrateId, key: impl Into<String>, value: impl Into<String>) {
+        self.crates.entry(krate).or_default().envs.insert(key.into(), value.into());
     }
 
     pub fn add_extern_crate(&mut self, from_krate: CrateId, extern_name: impl Into<String>, target: CrateId) {
@@ -231,6 +241,12 @@ impl MemItemDb {
     pub fn set_lang_item(&mut self, lang_kind: u16, def: GlobalDefId) {
         self.lang_items.insert(lang_kind, def);
     }
+    pub fn set_include_file(&mut self, from_file: FileId, rel_or_abs: impl Into<String>, target_file: FileId, text: impl Into<String>) {
+        self.include_files.insert((from_file, rel_or_abs.into()), (target_file, text.into()));
+    }
+    pub fn set_include_bytes_len(&mut self, from_file: FileId, rel_or_abs: impl Into<String>, len: u64) {
+        self.include_bytes.insert((from_file, rel_or_abs.into()), len);
+    }
 }
 
 impl ItemDb for MemItemDb {
@@ -238,20 +254,29 @@ impl ItemDb for MemItemDb {
     fn cfg_flag(&self, krate: CrateId, key: &str) -> bool {
         self.crates.get(&krate).is_some_and(|c| c.cfg_flags.binary_search_by(|k| k.as_str().cmp(key)).is_ok())
     }
-
     #[inline]
     fn cfg_key_value(&self, krate: CrateId, key: &str, value: &str) -> bool {
         self.crates.get(&krate).is_some_and(|c| c.cfg_kvs.binary_search_by(|(k, v)| k.as_str().cmp(key).then_with(|| v.as_str().cmp(value))).is_ok())
     }
-
     #[inline]
     fn crate_edition(&self, krate: CrateId) -> Edition {
         self.crates.get(&krate).map_or(Edition::Edition2021, |c| c.edition)
     }
-
     #[inline]
     fn crate_name(&self, krate: CrateId) -> &str {
         self.crates.get(&krate).map_or("", |c| c.name.as_str())
+    }
+    #[inline]
+    fn crate_env(&self, krate: CrateId, key: &str) -> Option<&str> {
+        self.crates.get(&krate)?.envs.get(key).map(String::as_str)
+    }
+    #[inline]
+    fn resolve_include_file(&self, from_file: FileId, rel_or_abs: &str) -> Option<(FileId, &str)> {
+        self.include_files.get(&(from_file, rel_or_abs.to_owned())).map(|(f, s)| (*f, s.as_str()))
+    }
+    #[inline]
+    fn include_bytes_len(&self, from_file: FileId, rel_or_abs: &str) -> Option<u64> {
+        self.include_bytes.get(&(from_file, rel_or_abs.to_owned())).copied()
     }
 
     #[inline]
@@ -279,6 +304,13 @@ impl ItemDb for MemItemDb {
     fn macro_rules_body(&self, krate: CrateId, _module_path: &str, call_path: &str) -> Option<&str> {
         let m = &self.crates.get(&krate)?.macros;
         m.get(call_path).or_else(|| call_path.rsplit("::").next().and_then(|s| m.get(s))).map(String::as_str)
+    }
+
+    #[inline]
+    fn macro_rules_by_def(&self, from_krate: CrateId, def: GlobalDefId) -> Option<(&str, &str)> {
+        let (body, dc) = self.macro_defs.get(&def)?;
+        let eff_dc = if def.krate == from_krate { "crate" } else { dc.as_str() };
+        Some((body.as_str(), eff_dc))
     }
 
     #[inline]

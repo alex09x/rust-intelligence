@@ -104,7 +104,9 @@ fn equate_rec(arena: &InferTyArena, vars: &mut UnionFindTable, raw_a: InferTyId,
         (InferTyKind::Adt { def: d1, args: r1 }, InferTyKind::Adt { def: d2, args: r2 }) if d1 == d2 => equate_slices(arena, vars, r1, r2, depth + 1),
         (InferTyKind::FnPtr { sig: r1 }, InferTyKind::FnPtr { sig: r2 }) => equate_slices(arena, vars, r1, r2, depth + 1),
         (InferTyKind::FnDef { def: d1, args: r1 }, InferTyKind::FnDef { def: d2, args: r2 }) if d1 == d2 => equate_slices(arena, vars, r1, r2, depth + 1),
-        (InferTyKind::Closure { id: i1, sig: r1 }, InferTyKind::Closure { id: i2, sig: r2 }) if i1 == i2 => equate_slices(arena, vars, r1, r2, depth + 1),
+        (InferTyKind::Closure { def_start: s1, def_end: e1, sig: r1 }, InferTyKind::Closure { def_start: s2, def_end: e2, sig: r2 }) if s1 == s2 && e1 == e2 => {
+            equate_slices(arena, vars, r1, r2, depth + 1)
+        }
         (InferTyKind::Alias { trait_def: t1, assoc_def: a1, self_ty: s1, args: r1 }, InferTyKind::Alias { trait_def: t2, assoc_def: a2, self_ty: s2, args: r2 })
             if t1 == t2 && a1 == a2 =>
         {

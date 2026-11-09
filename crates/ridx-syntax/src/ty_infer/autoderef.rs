@@ -101,6 +101,7 @@ fn autoderef_step_rec(
                     impl_generics: owner.impl_gc,
                     item_owner: owner.fn_node,
                     in_body: false,
+                    sub_map: None,
                 };
                 if let Some(p) = super::trait_solve::project_cst_param_assoc(&env, table, idx, deref_tr, deref_tgt, &[], depth + 1) {
                     return Some(normalize_ty_with_owner(table, db, local_defs, st, file_res, owner, p));
@@ -236,6 +237,7 @@ fn normalize_ty_rec(
                         impl_generics: owner.impl_gc,
                         item_owner: owner.fn_node,
                         in_body: false,
+                        sub_map: None,
                     };
                     if let Some(p) = super::trait_solve::project_cst_param_assoc(&env, table, idx, trait_def, assoc_def, norm_args.as_slice(), depth + 1) {
                         return normalize_ty_rec(table, db, local_defs, st, file_res, owner, p, depth + 1);

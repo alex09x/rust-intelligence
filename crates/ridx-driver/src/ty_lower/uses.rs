@@ -338,7 +338,7 @@ impl<'tcx, 'a> TcxTypeLowerer<'tcx, 'a> {
                                 continue;
                             }
                         }
-                        if !is_stable_api(tcx, norm) && !self.local_def_indices.contains_key(&norm) {
+                        if !is_stable_api(tcx, norm) && !self.local_def_indices.contains_key(&norm) && !crate::sysroot::is_materialized_unstable_type(tcx, norm) {
                             continue;
                         }
                         let is_reexport = !child.reexport_chain.is_empty() || norm.krate != cnum || (!norm.is_crate_root() && tcx.parent(norm) != mod_did);

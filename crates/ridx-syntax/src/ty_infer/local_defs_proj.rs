@@ -221,6 +221,7 @@ impl LocalCstDefs {
                             impl_generics: imp.impl_generics,
                             item_owner: Some(ta_node),
                             in_body: false,
+                            sub_map: None,
                         };
                         let raw_rhs = env.lower_cst_ty_rec(table, rhs_ty_node, depth + 1);
                         let inst_rhs = table.instantiate(raw_rhs, subst.as_slice());
@@ -252,6 +253,7 @@ impl LocalCstDefs {
                     impl_generics: impl_gc,
                     item_owner: Some(ta_node),
                     in_body: false,
+                    sub_map: None,
                 };
                 let raw_rhs = env.lower_cst_ty_rec(table, rhs_ty_node, depth + 1);
                 let inst_rhs = table.instantiate(raw_rhs, res_subst.as_slice());

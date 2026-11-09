@@ -51,6 +51,7 @@ pub mod ident_key;
 pub mod impl_collect;
 mod impl_collect_cst;
 mod impl_resolve;
+pub mod include_eval;
 mod macro_tt_walk;
 pub mod mbe_expand;
 pub mod mbe_parse;

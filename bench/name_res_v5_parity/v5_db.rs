@@ -34,6 +34,7 @@ pub const PROC_MACRO_SYNTH_BIT: u32 = 0x4000_0000;
 
 pub struct RidxV5ItemDb<'w> {
     pub ws: &'w WorkspaceIndex,
+    pub src: &'w CorpusSourceDb,
     pub metas: Vec<ReaderMeta>,
     pub shards: Vec<ShardTables>,
     pub sysroot_by_name: HashMap<String, usize>,
@@ -67,6 +68,7 @@ impl<'w> RidxV5ItemDb<'w> {
 
         let mut db = Self {
             ws,
+            src,
             metas,
             shards,
             sysroot_by_name,

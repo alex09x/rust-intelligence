@@ -139,9 +139,10 @@ pub fn tys_eq_mode(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, a: InferTyId, b:
                 None
             }
         }
-        (InferTyKind::Tuple(ra), InferTyKind::Tuple(rb))
-        | (InferTyKind::FnPtr { sig: ra }, InferTyKind::FnPtr { sig: rb })
-        | (InferTyKind::Closure { sig: ra, .. }, InferTyKind::Closure { sig: rb, .. }) => slice_tys_eq_mode(db, arena, ra, rb, depth + 1),
+        (InferTyKind::Tuple(ra), InferTyKind::Tuple(rb)) | (InferTyKind::FnPtr { sig: ra }, InferTyKind::FnPtr { sig: rb }) => slice_tys_eq_mode(db, arena, ra, rb, depth + 1),
+        (InferTyKind::Closure { def_start: sa, def_end: ea, sig: ra }, InferTyKind::Closure { def_start: sb, def_end: eb, sig: rb }) => {
+            (sa == sb && ea == eb).then(|| slice_tys_eq_mode(db, arena, ra, rb, depth + 1)).flatten()
+        }
         (InferTyKind::Adt { def: da, args: ra }, InferTyKind::Adt { def: d2, args: rb }) | (InferTyKind::FnDef { def: da, args: ra }, InferTyKind::FnDef { def: d2, args: rb }) => {
             if defs_same_item(db, da, d2) {
                 adt_args_eq_mode(db, arena, ra, rb, depth + 1)

@@ -61,6 +61,10 @@ pub struct V5TyTables<'w> {
     pub lang_to_gid: HashMap<u16, GlobalDefId>,
     pub gid_to_lang: HashMap<GlobalDefId, TyLangItem>,
     pub cstr_gid: Option<GlobalDefId>,
+    pub vec_gid: Option<GlobalDefId>,
+    pub global_gid: Option<GlobalDefId>,
+    pub fmt_args_gid: Option<GlobalDefId>,
+    pub fmt_err_gid: Option<GlobalDefId>,
     pub assoc_to_impl: HashMap<GlobalDefId, u32>,
     pub trait_non_lt_gc: HashMap<GlobalDefId, u16>,
     pub trait_methods: HashMap<(GlobalDefId, u64), TraitMethodInfo<'w>>,
@@ -293,6 +297,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 }
             }
         }
+        self.populate_v5_std_macro_gids();
     }
 }
 

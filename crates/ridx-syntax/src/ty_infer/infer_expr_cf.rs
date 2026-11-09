@@ -75,7 +75,7 @@ impl<'a, 's> Runner<'a, 's> {
         let sig_opt = self
             .db
             .fn_sig(def, &mut self.ctx.table.arena, &mut raw_ins)
-            .or_else(|| self.local_defs.fn_sig(def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw_ins));
+            .or_else(|| self.local_defs.fn_sig(def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_ins));
         let res = sig_opt.map(|(_, raw_ret)| {
             let mut inst_ins = InlineTyBuf::new();
             for &inp in &raw_ins {
@@ -175,8 +175,7 @@ impl<'a, 's> Runner<'a, 's> {
         let mut kids = self.st.children(expr).filter(|&c| is_expr_node(self.st.kind(c)));
         let iter_ty = kids.next().map_or(InferTyId::UNKNOWN, |it| self.infer_expr(it, Expectation::None));
         let raw_elem = unwrap_for_iter_elem(&mut self.ctx.table, self.db, iter_ty);
-        let owner = self.norm_owner();
-        let elem_ty = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw_elem);
+        let elem_ty = self.norm(raw_elem);
         if let Some(pat) = self.st.children(expr).find(|&c| self.st.kind(c).is_pat()) {
             self.infer_pat(pat, elem_ty, BindingMode::ByValue, None);
         }
@@ -213,4 +212,58 @@ impl<'a, 's> Runner<'a, 's> {
         let _ = self.coerce_expr(val_ty, ret_exp);
         InferTyId::NEVER
     }
+
+    #[inline]
+    fn finalize_ty(&mut self, owner: super::autoderef::NormOwner, raw: InferTyId) -> InferTyId {
+        let r1 = self.ctx.table.resolve_with_fallback(raw);
+        let norm = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.root_st, self.root_file_res, owner, r1);
+        self.ctx.table.resolve_with_fallback(norm)
+    }
+
+    pub(super) fn finalize_result(&mut self) {
+        let owner = self.norm_owner();
+        self.out.ret_ty = self.finalize_ty(owner, self.out.ret_ty);
+        self.out.body_ty = self.finalize_ty(owner, self.out.body_ty);
+        for i in 0..self.out.expr_tys.len() {
+            self.out.expr_tys[i].1 = self.finalize_ty(owner, self.out.expr_tys[i].1);
+        }
+        for i in 0..self.out.macro_expr_tys.len() {
+            self.out.macro_expr_tys[i].ty = self.finalize_ty(owner, self.out.macro_expr_tys[i].ty);
+        }
+        for i in 0..self.out.pat_tys.len() {
+            self.out.pat_tys[i].1 = self.finalize_ty(owner, self.out.pat_tys[i].1);
+        }
+        let fn_end = self.st.node(self.fn_node).subtree_end;
+        for off in 0..self.ctx.local_slots.len() {
+            let raw = self.ctx.local_slots[off];
+            if raw.is_some() {
+                let lid = crate::name_res::LocalBindId(self.ctx.local_slot_base + off as u32);
+                let decl = self.file_res.local_data(lid).decl_node;
+                if decl.0 >= self.fn_node.0 && decl.0 < fn_end {
+                    let norm = self.finalize_ty(owner, raw);
+                    self.out.local_tys.push((lid, norm));
+                }
+            }
+        }
+        for i in 0..self.out.incomplete_dots.len() {
+            self.out.incomplete_dots[i].1 = self.finalize_ty(owner, self.out.incomplete_dots[i].1);
+        }
+        self.out.expr_tys.sort_unstable_by_key(|&(n, _)| n);
+        self.out.macro_expr_tys.sort_unstable_by_key(|m| (m.start, m.end, m.kind as u16));
+        self.out.macro_expr_tys.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.kind == b.kind);
+        self.out.pat_tys.sort_unstable_by_key(|&(n, _)| n);
+        self.out.local_tys.sort_unstable_by_key(|&(l, _)| l);
+        self.out.dot_refs.sort_unstable_by_key(|a| (a.start, a.end, a.def, a.kind as u8));
+        self.out.dot_refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.def == b.def);
+        self.out.incomplete_dots.sort_unstable_by_key(|&(off, _)| off);
+        self.out.incomplete_dots.dedup_by_key(|p| p.0);
+    }
+}
+
+pub(super) fn enclosing_local_window(st: &crate::tree::SyntaxTree<'_>, file_res: &crate::name_res::FileNameRes, fn_node: NodeId) -> (usize, usize) {
+    let top_item = st.ancestors(fn_node).filter(|&a| matches!(st.kind(a), K::Fn | K::Const | K::Static)).last().unwrap_or(fn_node);
+    let top_end = st.node(top_item).subtree_end;
+    let lo = file_res.locals.partition_point(|l| l.decl_node.0 < top_item.0);
+    let hi = lo + file_res.locals[lo..].partition_point(|l| l.decl_node.0 < top_end);
+    (lo, hi)
 }

@@ -18,6 +18,7 @@ use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{CtorShapeKind, InferTyArena, InferTyId, InferTyKind, MethodCand, TraitAssocFnMeta, TyDefDb, TyLangItem, UnionFindTable, WhereObligation};
 
 use crate::v5_db::RidxV5ItemDb;
+use crate::v5_ty_defaults::assoc_lang_to_trait_and_name;
 use crate::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
 use crate::v5_ty_tables::fnv1a_str;
 
@@ -361,6 +362,14 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     ) -> Option<InferTyId> {
         self.v5_project_param_assoc(owner_def, param_idx, trait_def, assoc_def, trait_args, arena)
     }
+
+    fn generic_param_default_ty(&self, def: GlobalDefId, param_idx: u16, arena: &mut InferTyArena) -> Option<InferTyId> {
+        self.v5_generic_param_default_ty(def, param_idx, arena)
+    }
+
+    fn std_macro_ty(&self, kind: ridx_syntax::ty_infer::StdMacroTy, arena: &mut InferTyArena) -> Option<InferTyId> {
+        self.v5_std_macro_ty(kind, arena)
+    }
 }
 
 fn norm_target_key(db: &RidxV5ItemDb<'_>, key: ImplTargetKey) -> ImplTargetKey {
@@ -368,32 +377,5 @@ fn norm_target_key(db: &RidxV5ItemDb<'_>, key: ImplTargetKey) -> ImplTargetKey {
         ImplTargetKey::Adt(d) => ImplTargetKey::Adt(db.canonical_def(d)),
         ImplTargetKey::Dyn(d) => ImplTargetKey::Dyn(db.canonical_def(d)),
         other => other,
-    }
-}
-
-const fn assoc_lang_to_trait_and_name(item: TyLangItem) -> Option<(TyLangItem, &'static str)> {
-    match item {
-        TyLangItem::DerefTarget => Some((TyLangItem::Deref, "Target")),
-        TyLangItem::TryOutput => Some((TyLangItem::Try, "Output")),
-        TyLangItem::FutureOutput => Some((TyLangItem::Future, "Output")),
-        TyLangItem::IntoFutureOutput => Some((TyLangItem::IntoFuture, "Output")),
-        TyLangItem::IndexOutput => Some((TyLangItem::Index, "Output")),
-        TyLangItem::IntoIteratorItem => Some((TyLangItem::IntoIterator, "Item")),
-        TyLangItem::IteratorItem => Some((TyLangItem::Iterator, "Item")),
-        TyLangItem::FnOnceOutput => Some((TyLangItem::FnOnce, "Output")),
-        TyLangItem::AsyncFnOnceOutput => Some((TyLangItem::AsyncFnOnce, "Output")),
-        TyLangItem::Add
-        | TyLangItem::Sub
-        | TyLangItem::Mul
-        | TyLangItem::Div
-        | TyLangItem::Rem
-        | TyLangItem::Neg
-        | TyLangItem::Not
-        | TyLangItem::BitXor
-        | TyLangItem::BitAnd
-        | TyLangItem::BitOr
-        | TyLangItem::Shl
-        | TyLangItem::Shr => Some((item, "Output")),
-        _ => None,
     }
 }

@@ -18,10 +18,10 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use ridx_format::{FnAbiKind, IndexWriter, RawTy, TyId};
+use ridx_format::IndexWriter;
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, def::DefKind as HirDefKind};
-use rustc_middle::ty::{Ty, TyCtxt, TyKind, TypeckResults};
+use rustc_middle::ty::{TyCtxt, TypeckResults};
 use rustc_span::def_id::DefId;
 
 use crate::ty_lower::TcxTypeLowerer;
@@ -142,8 +142,8 @@ impl<'tcx> Visitor<'tcx> for BodyExprCollector<'tcx, '_, '_> {
             if let Some(raw) = self.typeck.expr_ty_opt(expr) {
                 if let Some((file_idx, start, end)) = self.resolve_byte_span(expr.span) {
                     let adj = self.typeck.expr_ty_adjusted_opt(expr).unwrap_or(raw);
-                    let raw_id = lower_expr_ty(self.lowerer, raw, self.writer).0;
-                    let adj_id = lower_expr_ty(self.lowerer, adj, self.writer).0 & !DESUGARED_TY_FLAG;
+                    let raw_id = self.lowerer.lower_ty(raw, self.writer).0;
+                    let adj_id = self.lowerer.lower_ty(adj, self.writer).0 & !DESUGARED_TY_FLAG;
                     let flag = if expr.span.desugaring_kind().is_some() { DESUGARED_TY_FLAG } else { 0 };
                     self.records.push(ExprTyRecord { file_idx, start, end, owner_def_idx: self.owner_def_idx, raw_ty: raw_id, adj_ty_flagged: adj_id | flag });
                 }
@@ -180,17 +180,4 @@ impl<'tcx> BodyExprCollector<'tcx, '_, '_> {
         };
         Some((fidx, lo.pos.0, hi.pos.0))
     }
-}
-
-fn lower_expr_ty<'tcx>(lowerer: &mut TcxTypeLowerer<'tcx, '_>, ty: Ty<'tcx>, writer: &mut IndexWriter) -> TyId {
-    if let TyKind::Closure(_did, args) = *ty.kind() {
-        let sig = args.as_closure().sig().skip_binder();
-        let inputs: Vec<TyId> = match sig.inputs().first().map(|t| t.kind()) {
-            Some(TyKind::Tuple(list)) => list.iter().map(|t| lower_expr_ty(lowerer, t, writer)).collect(),
-            _ => Vec::new(),
-        };
-        let output = lower_expr_ty(lowerer, sig.output(), writer);
-        return writer.intern_ty(RawTy::FnPtr { inputs: &inputs, output, abi: FnAbiKind::RustCall, is_unsafe: false, is_variadic: false });
-    }
-    lowerer.lower_ty(ty, writer)
 }

@@ -12,8 +12,8 @@
 //! `ParamRemap` alignment across standalone definitions, `impl` blocks, traits, and `.exprty` bodies.
 
 use ridx_format::{
-    ConstArg, FloatTyWidth, FnAbiKind, GenericArgIter, GenericArgView, GenericParamIter, GenericParamKind, IntTyWidth, LangItemKind, TyArenaView, TyId, TyKindView, TyMutability,
-    UintTyWidth, WherePredIter, WherePredKind,
+    ConstArg, FloatTyWidth, FnAbiKind, GenericArgIter, GenericArgView, GenericParamIter, GenericParamKind, IntTyWidth, LangItemKind, TyArenaView, TyDefId, TyId, TyKindView,
+    TyMutability, UintTyWidth, WherePredIter, WherePredKind,
 };
 use ridx_syntax::name_res::{CrateId, GlobalDefId, PrimTy};
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
@@ -234,6 +234,15 @@ fn lower_v5_ty_rec(db: &RidxV5ItemDb<'_>, r_idx: usize, va: TyArenaView<'_>, ty_
             arena.mk_adt(g, abuf.as_slice())
         }
         TyKindView::FnDef { def, args } => {
+            if let Some((cs, ce)) = parse_closure_def_span(va, def) {
+                let mut abuf = InlineTyBuf::new();
+                lower_generic_args(db, r_idx, va, args, remap, arena, &mut abuf, depth + 1);
+                let s = abuf.as_slice();
+                return match s.split_last() {
+                    Some((&out, ins)) => arena.mk_closure(cs, ce, ins, out),
+                    None => arena.mk_closure(cs, ce, &[], InferTyId::UNIT),
+                };
+            }
             let g = db.ty_def_gid(r_idx, def);
             if !g.is_some() {
                 return InferTyId::UNKNOWN;
@@ -249,7 +258,7 @@ fn lower_v5_ty_rec(db: &RidxV5ItemDb<'_>, r_idx: usize, va: TyArenaView<'_>, ty_
             }
             let out = lower_v5_ty_rec(db, r_idx, va, output, remap, arena, depth + 1);
             if abi == FnAbiKind::RustCall {
-                arena.mk_closure(0, ins.as_slice(), out)
+                arena.mk_closure(0, 0, ins.as_slice(), out)
             } else {
                 arena.mk_fn_ptr(ins.as_slice(), out)
             }
@@ -342,4 +351,12 @@ fn lower_existential_bounds(
     } else {
         arena.mk_opaque(principal, args.as_slice())
     }
+}
+
+#[inline]
+fn parse_closure_def_span(va: TyArenaView<'_>, def: TyDefId) -> Option<(u32, u32)> {
+    let td = va.def(def)?;
+    let rest = td.path.strip_prefix("{closure}@")?;
+    let (s_str, e_str) = rest.split_once("..")?;
+    Some((s_str.parse().ok()?, e_str.parse().ok()?))
 }

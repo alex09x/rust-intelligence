@@ -12,10 +12,11 @@
 //! std/core prelude fixtures without external `.ridx` files (`0` heap allocations per query).
 
 use super::arena::InferTyArena;
-use super::db::{clone_ty_into, CtorShapeKind, MethodCand, TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
+use super::db::{clone_ty_into, CtorShapeKind, MethodCand, StdMacroTy, TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
 use super::mem_ty_db_methods::{InherentMethodEntry, TraitAssocRuleEntry, TraitImplEntry, TraitMethodDeclEntry};
+pub(super) use super::mem_ty_db_traits::instantiate_in_arena;
 use super::mem_ty_db_traits::MemWhereEntry;
-use super::ty::{InferTyId, InferTyKind, TyVarKind};
+use super::ty::{InferTyId, TyVarKind};
 use super::uf_table::{InlineTyBuf, UnionFindTable};
 use super::unify;
 use crate::name_res::{GlobalDefId, ImplTargetKey};
@@ -72,7 +73,12 @@ pub struct MemTyDefDb {
     pub(super) param_bounds: Vec<(GlobalDefId, u16, GlobalDefId)>,
     pub(super) trait_assoc_rules: Vec<TraitAssocRuleEntry>,
     pub(super) where_entries: Vec<MemWhereEntry>,
+    pub(super) generic_defaults: Vec<(GlobalDefId, u16, InferTyId)>,
     pub cstr: Option<GlobalDefId>,
+    pub vec_def: Option<GlobalDefId>,
+    pub global_alloc_def: Option<GlobalDefId>,
+    pub fmt_args_def: Option<GlobalDefId>,
+    pub fmt_err_def: Option<GlobalDefId>,
 }
 
 impl MemTyDefDb {
@@ -110,6 +116,10 @@ impl MemTyDefDb {
 
     pub fn add_def_ty(&mut self, def: GlobalDefId, generic_count: u16, ty: InferTyId) {
         self.defs.push(DefEntry { def, generic_count, shape: CtorShapeKind::None, ty, tuple_fields: Vec::new(), named_fields: Vec::new() });
+    }
+
+    pub fn add_generic_default(&mut self, def: GlobalDefId, param_idx: u16, default_ty: InferTyId) {
+        self.generic_defaults.push((def, param_idx, default_ty));
     }
 
     pub fn set_tuple_fields(&mut self, def: GlobalDefId, fields: &[InferTyId]) {
@@ -319,72 +329,30 @@ impl TyDefDb for MemTyDefDb {
     ) -> Option<InferTyId> {
         self.query_project_param_assoc(owner_def, param_idx, trait_def, assoc_def, trait_args, arena)
     }
-}
 
-pub(super) fn instantiate_in_arena(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyId]) -> InferTyId {
-    instantiate_arena_rec(arena, ty, subst, 0)
-}
+    fn generic_param_default_ty(&self, def: GlobalDefId, param_idx: u16, arena: &mut InferTyArena) -> Option<InferTyId> {
+        self.generic_defaults.iter().find(|&&(d, idx, _)| d == def && idx == param_idx).map(|&(_, _, t)| clone_ty_into(&self.templates, t, arena))
+    }
 
-fn instantiate_arena_rec(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyId], depth: u8) -> InferTyId {
-    if depth > 64 || !arena.flags(ty).has_param() {
-        return ty;
+    fn std_macro_ty(&self, kind: StdMacroTy, arena: &mut InferTyArena) -> Option<InferTyId> {
+        match kind {
+            StdMacroTy::Vec(elem) => {
+                let vd = self.vec_def?;
+                if let Some(gd) = self.global_alloc_def {
+                    let gty = arena.mk_adt(gd, &[]);
+                    Some(arena.mk_adt(vd, &[elem, gty]))
+                } else {
+                    Some(arena.mk_adt(vd, &[elem]))
+                }
+            }
+            StdMacroTy::String => self.lang_item(TyLangItem::String).map(|d| arena.mk_adt(d, &[])),
+            StdMacroTy::FmtArguments => self.fmt_args_def.map(|d| arena.mk_adt(d, &[])),
+            StdMacroTy::FmtResult => {
+                let res_d = self.lang_item(TyLangItem::Result)?;
+                let err_ty = self.fmt_err_def.map_or(InferTyId::UNKNOWN, |d| arena.mk_adt(d, &[]));
+                Some(arena.mk_adt(res_d, &[InferTyId::UNIT, err_ty]))
+            }
+            StdMacroTy::OptionStr => self.lang_item(TyLangItem::Option).map(|d| arena.mk_adt(d, &[InferTyId::STR_REF])),
+        }
     }
-    match arena.kind(ty) {
-        InferTyKind::Param { idx, .. } => subst.get(idx as usize).copied().unwrap_or(InferTyId::UNKNOWN),
-        InferTyKind::Ref { is_mut, inner } => {
-            let s = instantiate_arena_rec(arena, inner, subst, depth + 1);
-            arena.mk_ref(is_mut, s)
-        }
-        InferTyKind::Ptr { is_mut, inner } => {
-            let s = instantiate_arena_rec(arena, inner, subst, depth + 1);
-            arena.mk_ptr(is_mut, s)
-        }
-        InferTyKind::Slice(e) => {
-            let s = instantiate_arena_rec(arena, e, subst, depth + 1);
-            arena.mk_slice(s)
-        }
-        InferTyKind::Array { elem, len } => {
-            let s = instantiate_arena_rec(arena, elem, subst, depth + 1);
-            arena.mk_array(s, len)
-        }
-        InferTyKind::Tuple(r) => {
-            let b = inst_slice_arena(arena, r, subst, depth + 1);
-            arena.mk_tuple(b.as_slice())
-        }
-        InferTyKind::Adt { def, args } => {
-            let b = inst_slice_arena(arena, args, subst, depth + 1);
-            arena.mk_adt(def, b.as_slice())
-        }
-        InferTyKind::FnPtr { sig } => {
-            let b = inst_slice_arena(arena, sig, subst, depth + 1);
-            let s = b.as_slice();
-            arena.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
-        }
-        InferTyKind::FnDef { def, args } => {
-            let b = inst_slice_arena(arena, args, subst, depth + 1);
-            arena.mk_fn_def(def, b.as_slice())
-        }
-        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
-            let ns = instantiate_arena_rec(arena, self_ty, subst, depth + 1);
-            let b = inst_slice_arena(arena, args, subst, depth + 1);
-            arena.mk_alias(trait_def, assoc_def, ns, b.as_slice())
-        }
-        InferTyKind::Dyn { principal, args } => {
-            let b = inst_slice_arena(arena, args, subst, depth + 1);
-            arena.mk_dyn(principal, b.as_slice())
-        }
-        InferTyKind::Opaque { def, args } => {
-            let b = inst_slice_arena(arena, args, subst, depth + 1);
-            arena.mk_opaque(def, b.as_slice())
-        }
-        _ => ty,
-    }
-}
-
-fn inst_slice_arena(arena: &mut InferTyArena, r: super::ty::TySliceRange, subst: &[InferTyId], depth: u8) -> InlineTyBuf {
-    let mut b = InlineTyBuf::new();
-    for idx in 0..r.len as usize {
-        b.push(instantiate_arena_rec(arena, arena.slice(r)[idx], subst, depth));
-    }
-    b
 }

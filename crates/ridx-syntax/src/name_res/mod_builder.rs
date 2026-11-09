@@ -28,6 +28,7 @@ pub(super) struct Builder<'a, 't> {
     pub(super) root_file: FileId,
     pub(super) raw_edges: Vec<(ModuleId, ModChild)>,
     pub(super) in_flight_files: Vec<FileId>,
+    pub(super) mod_has_unexpanded_macro: Vec<bool>,
     pub(super) macro_defs: Vec<LazyMacro<'a>>,
     pub(super) exported_macros: MacroEnv,
     pub(super) any_def_has_mod: bool,
@@ -57,6 +58,7 @@ impl<'a, 't> Builder<'a, 't> {
             root_file: FileId::NONE,
             raw_edges: Vec::new(),
             in_flight_files: Vec::new(),
+            mod_has_unexpanded_macro: Vec::with_capacity(4),
             macro_defs: Vec::new(),
             exported_macros: Vec::new(),
             any_def_has_mod: false,
@@ -68,6 +70,7 @@ impl<'a, 't> Builder<'a, 't> {
 
     pub(super) fn run(mut self, root_file: FileId) -> ModuleTree {
         self.build_root(root_file);
+        self.supplement_indexed_submodules();
         self.finalize()
     }
 
@@ -118,6 +121,7 @@ impl<'a, 't> Builder<'a, 't> {
             vis: VisKind::Public,
             flags,
         });
+        self.mod_has_unexpanded_macro.push(false);
         self.tree.file_to_modules.push((root_file, ModuleId::ROOT));
         if !inner.enabled {
             self.tree.diagnostics.push(ModDiag::DisabledCrateRoot { file: root_file });
@@ -178,6 +182,7 @@ impl<'a, 't> Builder<'a, 't> {
             vis,
             flags,
         });
+        self.mod_has_unexpanded_macro.push(false);
         if file.is_some() {
             self.tree.file_to_modules.push((file, id));
         }

@@ -262,6 +262,23 @@ pub trait ItemDb {
         ""
     }
 
+    /// Looks up a compile-time Cargo/rustc environment variable (`OUT_DIR`, `CARGO_MANIFEST_DIR`, ...)
+    /// recorded for `krate`.
+    fn crate_env(&self, _krate: CrateId, _key: &str) -> Option<&str> {
+        None
+    }
+
+    /// Resolves an `include!(...)` target relative to `from_file` (or absolute) to `(FileId, source_text)`
+    /// when a backing [`SourceDb`] is attached to this [`ItemDb`].
+    fn resolve_include_file(&self, _from_file: FileId, _rel_or_abs: &str) -> Option<(FileId, &str)> {
+        None
+    }
+
+    /// Returns the exact byte length of an `include_bytes!(...)` target relative to `from_file` (or absolute).
+    fn include_bytes_len(&self, _from_file: FileId, _rel_or_abs: &str) -> Option<u64> {
+        None
+    }
+
     /// Resolves an external dependency crate available to `from_krate` under `extern_name`.
     fn extern_crate(&self, _from_krate: CrateId, _extern_name: &str) -> Option<CrateId> {
         None
@@ -283,6 +300,18 @@ pub trait ItemDb {
     /// Looks up a declarative `macro_rules!` body (`($pat) => { $body }; ...`) for item-level
     /// expansion when `call_path` (e.g. `"cfg_if"` or `"cfg::alloc"`) is invoked in `module_path`.
     fn macro_rules_body(&self, _krate: CrateId, _module_path: &str, _call_path: &str) -> Option<&str> {
+        None
+    }
+
+    /// Like [`ItemDb::macro_rules_body`], also returning the `$crate` substitution token
+    /// (`"crate"` for crate-local macros or the dependency crate alias for external macros).
+    fn macro_rules_with_crate(&self, krate: CrateId, module_path: &str, call_path: &str) -> Option<(&str, &str)> {
+        self.macro_rules_body(krate, module_path, call_path).map(|b| (b, "crate"))
+    }
+
+    /// Looks up the declarative `macro_rules!` `(body, dollar_crate)` for a resolved macro [`GlobalDefId`]
+    /// invoked inside `from_krate`.
+    fn macro_rules_by_def(&self, _from_krate: CrateId, _def: GlobalDefId) -> Option<(&str, &str)> {
         None
     }
 

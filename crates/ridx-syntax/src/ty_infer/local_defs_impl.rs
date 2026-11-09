@@ -337,7 +337,8 @@ impl LocalCstDefs {
         let self_node = tys.next()?;
         let tr_path = st.child(tr_ty_node, K::Path)?;
         let tr_def = file_res.path_tail_ref_in_st(st, tr_path).map_or(GlobalDefId::NONE, |r| effective_target_def(r.target));
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: Some(impl_node), impl_generics: impl_gc, item_owner: None, in_body: false };
+        let env =
+            LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: Some(impl_node), impl_generics: impl_gc, item_owner: None, in_body: false, sub_map: None };
         let mut tr_args = InlineTyBuf::new();
         if let Some(tail) = st.children(tr_path).filter(|&c| st.kind(c) == K::PathSegment).last() {
             env.collect_segment_args(table, tail, false, &mut tr_args, 0);

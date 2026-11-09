@@ -88,6 +88,7 @@ impl<'a, 's> Runner<'a, 's> {
             K::RangeExpr => self.infer_range_expr(expr),
             K::ClosureExpr => return self.infer_closure_expr(expr, expectation),
             K::MethodCallExpr => self.infer_method_call_expr(expr, expectation),
+            K::MacroCall => return self.infer_macro_call(expr, expectation, false),
             K::Error => {
                 self.infer_error_recovery_node(expr);
                 InferTyId::UNKNOWN
@@ -123,10 +124,11 @@ impl<'a, 's> Runner<'a, 's> {
             ResTarget::Local(lid) => self.get_local(lid),
             ResTarget::Prim(p) => InferTyId::from_prim(p),
             ResTarget::Generic(gid) => {
-                let g = self.file_res.generic_data(gid);
+                let (dst, dfr) = if self.file_res.generics.len() > gid.0 as usize { (self.root_st, self.file_res) } else { (self.root_st, self.root_file_res) };
+                let g = dfr.generic_data(gid);
                 if g.is_const {
                     let tenv = self.ty_env(false);
-                    self.st.children(g.decl_node).find(|&c| self.st.kind(c).is_type()).map_or(InferTyId::UNKNOWN, |tn| tenv.lower_cst_ty(&mut self.ctx.table, tn))
+                    dst.children(g.decl_node).find(|&c| dst.kind(c).is_type()).map_or(InferTyId::UNKNOWN, |tn| tenv.root_owner_env().lower_cst_ty(&mut self.ctx.table, tn))
                 } else {
                     InferTyId::UNKNOWN
                 }
@@ -158,7 +160,7 @@ impl<'a, 's> Runner<'a, 's> {
                         let gc = self
                             .db
                             .fn_sig(eff_def, &mut self.ctx.table.arena, &mut scratch)
-                            .or_else(|| self.local_defs.fn_sig(eff_def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut scratch))
+                            .or_else(|| self.local_defs.fn_sig(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut scratch))
                             .map(|(g, _)| g)
                             .unwrap_or(explicit_args.len() as u16);
                         self.ctx.sig_inputs_buf = scratch;
@@ -169,8 +171,10 @@ impl<'a, 's> Runner<'a, 's> {
                         self.ctx.table.arena.mk_fn_def(eff_def, subst.as_slice())
                     }
                     ItemKind::Struct | ItemKind::Variant | ItemKind::TypeAlias => {
-                        let info =
-                            self.db.def_ty(eff_def, &mut self.ctx.table.arena).or_else(|| self.local_defs.def_ty(eff_def, self.st, self.file_res, self.db, &mut self.ctx.table));
+                        let info = self
+                            .db
+                            .def_ty(eff_def, &mut self.ctx.table.arena)
+                            .or_else(|| self.local_defs.def_ty(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table));
                         let Some((gc, shape, tpl_ty)) = info else {
                             return InferTyId::UNKNOWN;
                         };
@@ -189,7 +193,7 @@ impl<'a, 's> Runner<'a, 's> {
                     ItemKind::Const | ItemKind::Static | ItemKind::AssocConst => self
                         .db
                         .def_ty(eff_def, &mut self.ctx.table.arena)
-                        .or_else(|| self.local_defs.def_ty(eff_def, self.st, self.file_res, self.db, &mut self.ctx.table))
+                        .or_else(|| self.local_defs.def_ty(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table))
                         .map_or(InferTyId::UNKNOWN, |(_, _, t)| t),
                     _ => InferTyId::UNKNOWN,
                 }
@@ -200,7 +204,7 @@ impl<'a, 's> Runner<'a, 's> {
     fn tuple_ctor_fn_def(&mut self, def: crate::name_res::GlobalDefId, subst: &[InferTyId]) -> Option<InferTyId> {
         let mut raw = core::mem::take(&mut self.ctx.sig_inputs_buf);
         let ok = self.db.ctor_tuple_fields(def, &mut self.ctx.table.arena, &mut raw).is_some()
-            || self.local_defs.ctor_tuple_fields(def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw).is_some();
+            || self.local_defs.ctor_tuple_fields(def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw).is_some();
         self.ctx.sig_inputs_buf = raw;
         ok.then(|| self.ctx.table.arena.mk_fn_def(def, subst))
     }
@@ -221,12 +225,14 @@ impl<'a, 's> Runner<'a, 's> {
         }
         let mut exps = core::mem::take(&mut self.ctx.exp_elems_buf);
         expectation.tuple_elem_expectations(&mut self.ctx.table, len, &mut exps);
+        let mut local_exps = [Expectation::None; 24];
+        let copy_len = exps.len().min(len);
+        local_exps[..copy_len].copy_from_slice(&exps[..copy_len]);
+        self.ctx.exp_elems_buf = exps;
         let mut out = InlineTyBuf::new();
         for (i, &ch) in kids[..len].iter().enumerate() {
-            let e_exp = exps.get(i).copied().unwrap_or(Expectation::None);
-            out.push(self.infer_expr(ch, e_exp));
+            out.push(self.infer_expr(ch, local_exps[i]));
         }
-        self.ctx.exp_elems_buf = exps;
         self.ctx.table.arena.mk_tuple(out.as_slice())
     }
 
@@ -281,6 +287,8 @@ impl<'a, 's> Runner<'a, 's> {
             v
         });
 
+        let shadow_mark = self.ctx.macro_local_shadows.len();
+        let sub_loc_mark = self.ctx.sub_locals_buf.len();
         let mut diverged = false;
         let mut tail_ty: Option<InferTyId> = None;
         for ch in self.st.children(block) {
@@ -292,7 +300,8 @@ impl<'a, 's> Runner<'a, 's> {
                 }
                 K::ExprStmt => {
                     if let Some(en) = self.st.children(ch).find(|&c| is_expr_node(self.st.kind(c))) {
-                        if self.infer_expr(en, Expectation::None) == InferTyId::NEVER {
+                        let t = if self.st.kind(en) == K::MacroCall { self.infer_macro_call(en, Expectation::None, true) } else { self.infer_expr(en, Expectation::None) };
+                        if t == InferTyId::NEVER {
                             diverged = true;
                         }
                     }
@@ -308,6 +317,8 @@ impl<'a, 's> Runner<'a, 's> {
                 _ => {}
             }
         }
+        self.ctx.macro_local_shadows.truncate(shadow_mark);
+        self.ctx.sub_locals_buf.truncate(sub_loc_mark);
         let mut res_ty = tail_ty.unwrap_or(if diverged { InferTyId::NEVER } else { InferTyId::UNIT });
         if let Some(exp) = inner_exp.coercion_target(&mut self.ctx.table) {
             res_ty = self.coerce_expr(res_ty, exp);

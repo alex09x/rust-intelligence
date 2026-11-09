@@ -197,6 +197,8 @@ impl CleanSolverBase {
             resolved_uses[new_idx] = clean_map.resolved_uses[old_idx as usize];
         }
 
+        let mut macro_bodies = spliced.collected.macro_bodies.clone();
+        macro_bodies.sort_unstable_by_key(|&(lid, ..)| lid);
         let mut map = CrateDefMap {
             krate: mod_tree.krate,
             edition: mod_tree.edition,
@@ -211,6 +213,8 @@ impl CleanSolverBase {
             scopes,
             resolved_uses,
             dirty_files: dirty_files.to_vec(),
+            mod_tree: Arc::new(mod_tree.clone()),
+            macro_bodies,
             local_impls: spliced.collected.local_impls.clone(),
             local_alias_targets: HashMap::new(),
             diagnostics: Vec::new(),
@@ -299,6 +303,8 @@ impl CleanSolverBase {
             }
         }
 
+        let mut macro_bodies = spliced.collected.macro_bodies;
+        macro_bodies.sort_unstable_by_key(|&(lid, ..)| lid);
         let use_count = spliced.collected.uses.uses.len();
         let mut map = CrateDefMap {
             krate: mod_tree.krate,
@@ -314,6 +320,8 @@ impl CleanSolverBase {
             scopes,
             resolved_uses: vec![PerNs::EMPTY; use_count],
             dirty_files: dirty_files.to_vec(),
+            mod_tree: Arc::new(mod_tree.clone()),
+            macro_bodies,
             local_impls: spliced.collected.local_impls,
             local_alias_targets: HashMap::new(),
             diagnostics: Vec::new(),

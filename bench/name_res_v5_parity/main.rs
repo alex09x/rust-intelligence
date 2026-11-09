@@ -17,6 +17,7 @@
 mod compare;
 mod did_change_bench;
 mod fault_bench;
+mod fault_completion;
 mod fault_report;
 mod meta;
 mod site_classify;
@@ -26,9 +27,11 @@ mod ty_parity;
 mod ty_report;
 mod v5_db;
 mod v5_db_queries;
+mod v5_macro_res;
 mod v5_shard;
 mod v5_trait_solve;
 mod v5_ty_db;
+mod v5_ty_defaults;
 mod v5_ty_lower;
 mod v5_ty_proj;
 mod v5_ty_tables;
@@ -170,8 +173,9 @@ fn main() {
         }
         let mut ws = WorkspaceIndex::open_with_cache_dir(&out_dir, &cache_dir).unwrap_or_else(|e| panic!("open {}: {e}", out_dir.display()));
         ws.set_workspace_root(Some(ws_src.clone()));
-        let src_db = CorpusSourceDb::load(&ws_src);
         let metas = load_reader_metas(&ws);
+        let mut src_db = CorpusSourceDb::load(&ws_src);
+        src_db.load_out_dirs(&metas);
         let item_db = RidxV5ItemDb::build(&ws, &src_db, metas);
 
         let rep = run_corpus(cname, &src_db, &item_db, verbose_samples, run_did_change, fault_n);

@@ -12,12 +12,15 @@
 //! types stored inside CST `TokenTree` nodes (`struct` fields, tuple-variant payloads, `fn(...)`).
 
 use super::lower_ty::LowerTyEnv;
+use super::mem_ty_db::instantiate_in_arena;
 use super::tok_ty_scan::{find_top_tok, for_each_top_comma, for_each_top_comma_flag, is_double_colon, matching_angle, matching_delim, next_sig_idx, parse_uint_lit};
 use super::ty::InferTyId;
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
 use crate::name_res::{GlobalDefId, ItemKind, ResTarget};
+use crate::syntax_kind::SyntaxKind as K;
 use crate::token::{Token, TokenKind as T};
+use crate::tree::NodeId;
 
 impl<'a, 's> LowerTyEnv<'a, 's> {
     pub(super) fn lower_fn_ptr_params(&self, table: &mut InferenceTable, toks: &[Token], out: &mut InlineTyBuf, depth: u8) {
@@ -232,5 +235,96 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         }
         let aname = crate::sema_fn::norm_ident(id_tok.text(self.st.src));
         self.finish_resolved_type(table, rref.target, args.as_slice(), qself_ty, GlobalDefId::NONE, aname, as_dyn, as_opaque, depth)
+    }
+
+    #[inline]
+    pub(super) fn finish_ufcs_qself_type(&self, table: &mut InferenceTable, target: ResTarget, qseg: NodeId, explicit_args: &[InferTyId]) -> InferTyId {
+        let use_defaults = self.st.child(qseg, K::GenericArgList).is_some();
+        self.finish_resolved_type_ext(table, target, explicit_args, None, GlobalDefId::NONE, "", false, false, use_defaults, 0)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn fill_type_args(
+        &self,
+        table: &mut InferenceTable,
+        def: GlobalDefId,
+        g_count: u16,
+        explicit_args: &[InferTyId],
+        use_defaults: bool,
+        depth: u8,
+        out: &mut InlineTyBuf,
+    ) {
+        for i in 0..g_count as usize {
+            if let Some(&ea) = explicit_args.get(i) {
+                out.push(ea);
+                continue;
+            }
+            if use_defaults && depth <= 32 {
+                let (dst, dfr) = self.defs_ctx();
+                let def_ty = self
+                    .db
+                    .generic_param_default_ty(def, i as u16, &mut table.arena)
+                    .or_else(|| self.local_defs.generic_param_default_ty(def, i as u16, dst, dfr, self.db, table, depth + 1));
+                if let Some(dty) = def_ty {
+                    out.push(instantiate_in_arena(&mut table.arena, dty, out.as_slice()));
+                    continue;
+                }
+            }
+            out.push(self.placeholder_ty(table));
+        }
+    }
+
+    pub(super) fn resolve_mapped_type_target(&self, tail_seg: NodeId) -> Option<ResTarget> {
+        let (_, rfr, spans_opt) = self.sub_map?;
+        let (ts, te) = self.st.own_tokens(tail_seg).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent | T::SelfType)).map_or_else(
+            || {
+                let sr = self.st.range(tail_seg);
+                (sr.start as u32, sr.end as u32)
+            },
+            |(_, t)| (t.start, t.end),
+        );
+        let (os, oe) = match spans_opt {
+            None => (ts, te),
+            Some(spans) => crate::name_res::mbe_expand::map_span_range(spans, ts, te)?,
+        };
+        rfr.refs_at_span(os, oe).iter().find(|r| !matches!(r.target, ResTarget::Local(_))).map(|r| r.target)
+    }
+
+    pub(super) fn resolve_unbracketed_assoc_qself(&self, table: &mut InferenceTable, first_seg: Option<NodeId>, tail_seg: Option<NodeId>, depth: u8) -> InferTyId {
+        let Some(fseg) = first_seg.filter(|&f| Some(f) != tail_seg) else {
+            return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
+        };
+        let Some((_, tok)) = self.st.own_tokens(fseg).find(|(_, t)| matches!(t.kind, T::SelfType | T::Ident | T::RawIdent)) else {
+            return InferTyId::UNKNOWN;
+        };
+        if tok.kind == T::SelfType {
+            return self.self_ty.unwrap_or(InferTyId::UNKNOWN);
+        }
+        let Some(fref) = self.file_res.refs_at_span(tok.start, tok.end).first() else { return InferTyId::UNKNOWN };
+        match fref.target {
+            ResTarget::Generic(gid) => self.resolve_generic_param(table, gid),
+            ResTarget::SelfTy { .. } => self.self_ty.unwrap_or(InferTyId::UNKNOWN),
+            ResTarget::Prim(p) => InferTyId::from_prim(p),
+            ResTarget::Def { kind: ItemKind::Struct | ItemKind::Enum | ItemKind::Union | ItemKind::TypeAlias, .. } => {
+                let mut fargs = InlineTyBuf::new();
+                self.collect_segment_args(table, fseg, false, &mut fargs, depth + 1);
+                self.finish_resolved_type(table, fref.target, fargs.as_slice(), None, GlobalDefId::NONE, "", false, false, depth + 1)
+            }
+            _ => InferTyId::UNKNOWN,
+        }
+    }
+}
+
+pub(super) fn trait_default_assoc(item: super::db::TyLangItem) -> Option<super::db::TyLangItem> {
+    use super::db::TyLangItem;
+    match item {
+        TyLangItem::Try => Some(TyLangItem::TryOutput),
+        TyLangItem::Future => Some(TyLangItem::FutureOutput),
+        TyLangItem::IntoFuture => Some(TyLangItem::IntoFutureOutput),
+        TyLangItem::Deref => Some(TyLangItem::DerefTarget),
+        TyLangItem::Index => Some(TyLangItem::IndexOutput),
+        TyLangItem::IntoIterator => Some(TyLangItem::IntoIteratorItem),
+        TyLangItem::Iterator => Some(TyLangItem::IteratorItem),
+        _ => None,
     }
 }

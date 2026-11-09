@@ -160,6 +160,21 @@ pub enum WhereObligation {
     ProjectionEq { lhs_ty: InferTyId, trait_def: GlobalDefId, assoc_def: GlobalDefId, trait_args: TySliceRange, rhs_ty: InferTyId },
 }
 
+/// Result type shapes produced by built-in / stdlib declarative macro families (`Checkbox 3.6.2`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StdMacroTy {
+    /// `vec![...]` -> `alloc::vec::Vec<elem, alloc::alloc::Global>`.
+    Vec(InferTyId),
+    /// `format!(...)` -> `alloc::string::String`.
+    String,
+    /// `format_args!(...)` / `format_args_nl!(...)` -> `core::fmt::Arguments<'_>`.
+    FmtArguments,
+    /// `core::fmt::Result` (`Result<(), core::fmt::Error>`).
+    FmtResult,
+    /// `option_env!(...)` -> `core::option::Option<&'static str>`.
+    OptionStr,
+}
+
 /// External/indexed type & signature provider decoupling `ridx-syntax::ty_infer` from `ridx-format`.
 /// All methods materialize types directly into the caller's reusable [`InferTyArena`] (`0` heap allocs).
 pub trait TyDefDb {
@@ -285,6 +300,21 @@ pub trait TyDefDb {
     /// Optional `core::ffi::CStr` definition for `c"..."` literals (`&CStr`).
     fn cstr_def(&self) -> Option<GlobalDefId> {
         None
+    }
+
+    /// Returns the parameterized default type (`Param { idx: 0..param_idx }`) declared on non-lifetime
+    /// generic parameter `param_idx` of `def` (e.g. `Global` on `Vec<T, A = Global>`).
+    fn generic_param_default_ty(&self, _def: GlobalDefId, _param_idx: u16, _arena: &mut InferTyArena) -> Option<InferTyId> {
+        None
+    }
+
+    /// Constructs a well-known stdlib macro result type (`Vec<T, Global>`, `String`, `fmt::Arguments`, `fmt::Result`, `Option<&str>`).
+    fn std_macro_ty(&self, kind: StdMacroTy, arena: &mut InferTyArena) -> Option<InferTyId> {
+        match kind {
+            StdMacroTy::String => self.lang_item(TyLangItem::String).map(|d| arena.mk_adt(d, &[])),
+            StdMacroTy::OptionStr => self.lang_item(TyLangItem::Option).map(|d| arena.mk_adt(d, &[InferTyId::STR_REF])),
+            _ => None,
+        }
     }
 }
 

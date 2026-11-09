@@ -293,3 +293,93 @@ pub(crate) fn name(p: &mut Parser<'_>) {
         p.expect(TokenKind::Ident);
     }
 }
+
+/// Reusable zero-allocation scratch buffers for sub-tree parsing inside `ty_infer`.
+#[derive(Debug, Default)]
+pub(crate) struct ParseScratch {
+    pub tokens: Vec<Token>,
+    pub sig: Vec<u32>,
+    pub events: Vec<Event>,
+    pub nodes: Vec<crate::tree::Node>,
+    pub stack: Vec<u32>,
+    pub chain: Vec<SyntaxKind>,
+}
+
+impl ParseScratch {
+    #[inline]
+    pub(crate) const fn new() -> Self {
+        Self { tokens: Vec::new(), sig: Vec::new(), events: Vec::new(), nodes: Vec::new(), stack: Vec::new(), chain: Vec::new() }
+    }
+
+    pub(crate) fn with_capacity() -> Self {
+        Self {
+            tokens: Vec::with_capacity(128),
+            sig: Vec::with_capacity(128),
+            events: Vec::with_capacity(384),
+            nodes: Vec::with_capacity(128),
+            stack: Vec::with_capacity(32),
+            chain: Vec::with_capacity(16),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn reclaim<'s>(&mut self, st: SyntaxTree<'s>) {
+        self.tokens = st.tokens;
+        self.nodes = st.nodes;
+    }
+
+    pub(crate) fn borrow_prebuilt<'s>(&mut self, src: &'s str, toks: &[Token], nds: &[crate::tree::Node]) -> SyntaxTree<'s> {
+        self.tokens.clear();
+        self.tokens.extend_from_slice(toks);
+        self.nodes.clear();
+        self.nodes.extend_from_slice(nds);
+        SyntaxTree { src, tokens: core::mem::take(&mut self.tokens), nodes: core::mem::take(&mut self.nodes) }
+    }
+
+    pub(crate) fn parse_expr_slice<'s>(&mut self, src: &'s str, tok_slice: &[Token]) -> (SyntaxTree<'s>, Option<crate::tree::NodeId>) {
+        let st = self.run_slice(src, tok_slice, SyntaxKind::SourceFile, |p| {
+            expr::expr(p);
+        });
+        let en = st.children(st.root()).find(|&c| st.kind(c).is_expr() || st.kind(c) == SyntaxKind::MacroCall);
+        (st, en)
+    }
+
+    pub(crate) fn parse_pat_slice<'s>(&mut self, src: &'s str, tok_slice: &[Token]) -> (SyntaxTree<'s>, Option<crate::tree::NodeId>) {
+        let st = self.run_slice(src, tok_slice, SyntaxKind::SourceFile, |p| {
+            patterns::pattern(p);
+        });
+        let pn = st.children(st.root()).find(|&c| st.kind(c).is_pat());
+        (st, pn)
+    }
+
+    fn run_slice<'s>(&mut self, src: &'s str, tok_slice: &[Token], root_kind: SyntaxKind, f: impl FnOnce(&mut Parser<'_>)) -> SyntaxTree<'s> {
+        self.tokens.clear();
+        self.tokens.extend_from_slice(tok_slice);
+        self.sig.clear();
+        for (i, t) in self.tokens.iter().enumerate() {
+            if !t.is_trivia() {
+                self.sig.push(i as u32);
+            }
+        }
+        let mut ev = core::mem::take(&mut self.events);
+        ev.clear();
+        let mut p = Parser {
+            src,
+            tokens: &self.tokens,
+            sig: &self.sig,
+            pos: 0,
+            events: ev,
+            nodes_count: 0,
+            #[cfg(debug_assertions)]
+            fuel: 0,
+        };
+        let m = p.start();
+        f(&mut p);
+        while !p.at_eof() {
+            p.err_bump();
+        }
+        m.complete(&mut p, root_kind);
+        self.events = p.events;
+        SyntaxTree::build_into(src, &mut self.tokens, &self.sig, &mut self.events, &mut self.nodes, &mut self.stack, &mut self.chain)
+    }
+}

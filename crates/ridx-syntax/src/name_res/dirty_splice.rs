@@ -95,6 +95,7 @@ impl CollectedCrate {
         }
 
         let local_impls = copy_clean_local_impls(&self.local_impls, &self.items, dirty_files);
+        let macro_bodies: Vec<(LocalItemId, u32, u32)> = self.macro_bodies.iter().copied().filter(|&(lid, _, _)| !dirty_files.contains(&self.items[lid.0 as usize].file)).collect();
 
         let mut owned_dirty: HashMap<FileId, SyntaxTree<'_>> = HashMap::new();
         for &df in dirty_files {
@@ -105,6 +106,7 @@ impl CollectedCrate {
 
         let mut coll = Collector {
             db,
+            sources,
             krate: mod_tree.krate,
             mod_tree,
             dirty_files,
@@ -115,11 +117,13 @@ impl CollectedCrate {
                 strings: self.strings.clone(),
                 uses,
                 textual_macros,
+                macro_bodies,
                 local_impls,
                 scan_all_impls: self.scan_all_impls,
                 next_overlay_seq: self.next_overlay_seq,
             },
             macro_defs: Vec::new(),
+            in_flight_includes: Vec::new(),
             scratch_idx_defs: Vec::new(),
             scratch_var_defs: Vec::new(),
             scratch_toks: Vec::with_capacity(64),

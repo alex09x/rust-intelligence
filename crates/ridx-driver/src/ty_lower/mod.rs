@@ -142,9 +142,43 @@ impl<'tcx, 'a> TcxTypeLowerer<'tcx, 'a> {
             TyKind::Param(p) => writer.intern_ty(RawTy::Param { index: p.index, name: p.name.as_str() }),
             TyKind::Dynamic(preds, reg) => self.lower_dynamic_ty(preds, reg, writer),
             TyKind::Alias(_is_rigid, alias_ty) => self.lower_alias_ty(alias_ty, writer),
+            TyKind::Closure(did, args) => {
+                let def = self.lower_closure_def(did, writer);
+                let sig = args.as_closure().sig().skip_binder();
+                let mut owned_args: Vec<OwnedArg> = match sig.inputs().first().map(|t| t.kind()) {
+                    Some(TyKind::Tuple(list)) => list.iter().map(|t| OwnedArg::Type(self.lower_ty(t, writer))).collect(),
+                    _ => Vec::new(),
+                };
+                owned_args.push(OwnedArg::Type(self.lower_ty(sig.output(), writer)));
+                let raw_args = build_raw_generic_args(&owned_args, &[]);
+                writer.intern_ty(RawTy::FnDef { def, args: &raw_args })
+            }
             _ => writer.intern_ty(RawTy::Unknown),
         };
         self.ty_cache.insert(ty, id);
+        id
+    }
+
+    fn lower_closure_def(&mut self, did: DefId, writer: &mut IndexWriter) -> TyDefId {
+        if let Some(&cached) = self.def_cache.get(&did) {
+            return cached;
+        }
+        let span = self.tcx.def_span(did).source_callsite();
+        let sm = self.tcx.sess.source_map();
+        let (start, end) = if !span.is_dummy() {
+            let lo = sm.lookup_byte_offset(span.lo());
+            let hi = sm.lookup_byte_offset(span.hi());
+            if std::sync::Arc::ptr_eq(&lo.sf, &hi.sf) && lo.pos.0 <= hi.pos.0 {
+                (lo.pos.0, hi.pos.0)
+            } else {
+                (0, 0)
+            }
+        } else {
+            (0, 0)
+        };
+        let path = format!("{{closure}}@{start}..{end}");
+        let id = writer.intern_ty_def(RawTyDef::Local { path: &path, local_def_idx: u32::MAX });
+        self.def_cache.insert(did, id);
         id
     }
 

@@ -12,10 +12,9 @@
 
 use super::body_ctx::Runner;
 use super::db::TyLangItem;
-use super::lower_ty::effective_target_def;
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
-use crate::name_res::{GlobalDefId, ItemKind, LocalBindId, PathCtx, ResTarget};
+use crate::name_res::{ItemKind, LocalBindId, PathCtx, ResTarget};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
@@ -63,8 +62,7 @@ impl<'a, 's> Runner<'a, 's> {
     fn infer_pat_inner(&mut self, pat: NodeId, expected_ty: InferTyId, mode: BindingMode, or_base: Option<usize>) -> InferTyId {
         let mut exp = self.ctx.table.shallow_resolve(expected_ty);
         if self.ctx.table.arena.flags(exp).has_alias() {
-            let own = self.norm_owner();
-            exp = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, own, exp);
+            exp = self.norm(exp);
         }
         match self.st.kind(pat) {
             K::WildcardPat | K::RestPat | K::Error => self.record_pat(pat, exp),
@@ -235,7 +233,11 @@ impl<'a, 's> Runner<'a, 's> {
         if let Some(nn) = self.st.child(pat, K::Name) {
             let r = self.st.range(nn);
             if subpat.is_none() {
-                if let Some(rref) = self.file_res.refs_at_span(r.start as u32, r.end as u32).iter().find(|rf| rf.ctx == PathCtx::PatValue) {
+                let unit_pat_ref = self.file_res.refs_at_span(r.start as u32, r.end as u32).iter().find(|rf| {
+                    rf.ctx == PathCtx::PatValue
+                        || (self.sub.is_some() && matches!(rf.target, ResTarget::Def { kind: ItemKind::Variant | ItemKind::Struct | ItemKind::Const | ItemKind::AssocConst, .. }))
+                });
+                if let Some(rref) = unit_pat_ref {
                     let (peeled, _) = self.peel_ergonomics(exp, mode);
                     let item_ty = self.instantiate_target_value(rref.target, &[]);
                     let _ = self.ctx.table.equate(peeled, item_ty);
@@ -254,6 +256,8 @@ impl<'a, 's> Runner<'a, 's> {
                 let lid = self.resolve_pat_local_id(pat, r.start as u32, r.end as u32, norm, or_base);
                 if lid.is_some() {
                     self.set_local(lid, bound_ty);
+                } else if self.sub.is_some() {
+                    self.bind_sub_local(norm, bound_ty);
                 }
             }
             if let Some(sp) = subpat {
@@ -288,7 +292,13 @@ impl<'a, 's> Runner<'a, 's> {
         raw_fields.clear();
         let found = owner_def.is_some()
             && (self.db.ctor_tuple_fields(owner_def, &mut self.ctx.table.arena, &mut raw_fields).is_some()
-                || self.local_defs.ctor_tuple_fields(owner_def, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw_fields).is_some());
+                || self.local_defs.ctor_tuple_fields(owner_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_fields).is_some());
+        let mut fields_buf = InlineTyBuf::new();
+        for &rf in &raw_fields {
+            fields_buf.push(rf);
+        }
+        self.ctx.sig_inputs_buf = raw_fields;
+        let fields = fields_buf.as_slice();
         let mut stack_pats = [NodeId(0); 24];
         let mut sub_len = 0usize;
         for c in self.st.children(pat).filter(|&c| self.st.kind(c).is_pat()) {
@@ -299,7 +309,7 @@ impl<'a, 's> Runner<'a, 's> {
         }
         let sub_pats = &stack_pats[..sub_len];
         let rest_pos = sub_pats.iter().position(|&c| self.st.kind(c) == K::RestPat);
-        let total = raw_fields.len();
+        let total = fields.len();
         for (i, &sp) in sub_pats.iter().enumerate() {
             if Some(i) == rest_pos {
                 self.record_pat(sp, InferTyId::UNIT);
@@ -309,11 +319,9 @@ impl<'a, 's> Runner<'a, 's> {
                 Some(rp) if i > rp => total.saturating_sub(sub_pats.len() - 1 - rp) + (i - rp - 1),
                 _ => i,
             };
-            let fty =
-                if found { raw_fields.get(field_idx).copied().map_or(InferTyId::UNKNOWN, |raw| self.ctx.table.instantiate(raw, subst.as_slice())) } else { InferTyId::UNKNOWN };
+            let fty = if found { fields.get(field_idx).copied().map_or(InferTyId::UNKNOWN, |raw| self.ctx.table.instantiate(raw, subst.as_slice())) } else { InferTyId::UNKNOWN };
             self.infer_pat(sp, fty, sub_mode, or_base);
         }
-        self.ctx.sig_inputs_buf = raw_fields;
         self.record_pat(pat, exp)
     }
 
@@ -340,54 +348,6 @@ impl<'a, 's> Runner<'a, 's> {
             self.infer_pat(sub_pat, fty, sub_mode, or_base);
         }
         self.record_pat(pat, exp)
-    }
-
-    pub(super) fn instantiate_pat_ctor(&mut self, node_with_path: NodeId, expected_adt_ty: InferTyId) -> (GlobalDefId, InlineTyBuf) {
-        let mut subst = InlineTyBuf::new();
-        let Some(p) = self.st.child(node_with_path, K::Path) else {
-            return (GlobalDefId::NONE, subst);
-        };
-        let Some(rref) = self.file_res.path_tail_ref(p) else {
-            return (GlobalDefId::NONE, subst);
-        };
-        if matches!(rref.target, ResTarget::SelfTy { .. }) {
-            if let Some(sty) = self.self_ty {
-                let _ = self.ctx.table.equate(expected_adt_ty, sty);
-                let res_sty = self.ctx.table.shallow_resolve(sty);
-                if let InferTyKind::Adt { def, args } = self.ctx.table.arena.kind(res_sty) {
-                    for &a in self.ctx.table.arena.slice(args) {
-                        subst.push(a);
-                    }
-                    return (def, subst);
-                }
-            }
-        }
-        let mut explicit = InlineTyBuf::new();
-        self.collect_path_turbofish(p, &mut explicit);
-        let raw_def = effective_target_def(rref.target);
-        if !raw_def.is_some() {
-            return (GlobalDefId::NONE, subst);
-        }
-        let def_info = self.db.def_ty(raw_def, &mut self.ctx.table.arena).or_else(|| self.local_defs.def_ty(raw_def, self.st, self.file_res, self.db, &mut self.ctx.table));
-        let Some((gc, _, tpl_ty)) = def_info else {
-            return (raw_def, subst);
-        };
-        for i in 0..gc as usize {
-            subst.push(explicit.as_slice().get(i).copied().unwrap_or_else(|| self.ctx.table.new_ty_var()));
-        }
-        let inst_adt = self.ctx.table.instantiate(tpl_ty, subst.as_slice());
-        let _ = self.ctx.table.equate(expected_adt_ty, inst_adt);
-        if let ResTarget::Def { kind: ItemKind::TypeAlias, .. } = rref.target {
-            let res_inst = self.ctx.table.shallow_resolve(inst_adt);
-            if let InferTyKind::Adt { def: real_def, args } = self.ctx.table.arena.kind(res_inst) {
-                let mut real_subst = InlineTyBuf::new();
-                for &a in self.ctx.table.arena.slice(args) {
-                    real_subst.push(a);
-                }
-                return (real_def, real_subst);
-            }
-        }
-        (raw_def, subst)
     }
 }
 

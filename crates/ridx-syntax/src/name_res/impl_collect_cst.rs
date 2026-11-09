@@ -12,7 +12,7 @@
 //! inside `impl` / `trait` blocks.
 
 use super::attr::{eval_outer_attrs, extract_visibility};
-use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, VisKind};
+use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, SourceDb, VisKind};
 use super::db_impls::{ImplTargetKey, LocalImplId};
 use super::def_collect::MacroScopeVec;
 use super::impl_collect::{LocalAssocItem, LocalImplArena, LocalImplData};
@@ -38,6 +38,7 @@ impl LocalImplArena {
         mod_id: ModuleId,
         file: FileId,
         db: &dyn ItemDb,
+        sources: &dyn SourceDb,
         krate: CrateId,
         macro_defs: &mut Vec<(String, String, Option<MacroRulesDef>)>,
         macro_env: &MacroScopeVec,
@@ -72,7 +73,7 @@ impl LocalImplArena {
         let impl_id = LocalImplId(self.impls.len() as u32);
         let assoc_start = self.assoc_items.len() as u32;
         if let Some(il) = st.child(impl_node, K::ItemList) {
-            self.collect_assoc_list(st, il, mod_tree, mod_id, file, impl_id, LocalItemId::NONE, has_trait, db, krate, macro_defs, macro_env, 0);
+            self.collect_assoc_list(st, il, mod_tree, mod_id, file, impl_id, LocalItemId::NONE, has_trait, db, sources, krate, macro_defs, macro_env, 0);
         }
         let assoc_len = (self.assoc_items.len() as u32 - assoc_start).min(u16::MAX as u32) as u16;
         let r = st.range(impl_node);
@@ -110,6 +111,7 @@ impl LocalImplArena {
         owner_trait: LocalItemId,
         is_trait_impl: bool,
         db: &dyn ItemDb,
+        sources: &dyn SourceDb,
         krate: CrateId,
         macro_defs: &mut Vec<(String, String, Option<MacroRulesDef>)>,
         macro_env: &MacroScopeVec,
@@ -121,18 +123,19 @@ impl LocalImplArena {
                 K::Const => ItemKind::AssocConst,
                 K::TypeAlias => ItemKind::AssocTy,
                 K::MacroCall if mbe_depth < MAX_MBE_DEPTH => {
-                    if let Some(exp) = expand_assoc_macro(st, ch, mod_tree, mod_id, db, krate, macro_defs, macro_env) {
+                    if let Some((exp, next_file)) = expand_assoc_macro(st, ch, mod_tree, mod_id, file, db, sources, krate, macro_defs, macro_env) {
                         let exp_st = parse(&exp);
                         self.collect_assoc_list(
                             &exp_st,
                             exp_st.root(),
                             mod_tree,
                             mod_id,
-                            file,
+                            next_file,
                             owner_impl,
                             owner_trait,
                             is_trait_impl,
                             db,
+                            sources,
                             krate,
                             macro_defs,
                             macro_env,
@@ -188,30 +191,64 @@ fn expand_assoc_macro(
     call_node: NodeId,
     mod_tree: &ModuleTree,
     mod_id: ModuleId,
+    file: FileId,
     db: &dyn ItemDb,
+    sources: &dyn SourceDb,
     krate: CrateId,
     macro_defs: &mut [(String, String, Option<MacroRulesDef>)],
     macro_env: &MacroScopeVec,
-) -> Option<String> {
+) -> Option<(String, FileId)> {
     let (path_node, tt_node) = (st.child(call_node, K::Path)?, st.child(call_node, K::TokenTree)?);
+    let raw_call = st.text(path_node).trim();
+    if super::include_eval::is_include_call_path(raw_call) {
+        if !eval_outer_attrs(st, call_node, db, krate).enabled {
+            return None;
+        }
+        let mod_path = mod_tree.crate_path(mod_id);
+        let inc_file = super::include_eval::resolve_include_target(st, call_node, file, db, sources, krate, &mut |mpath, margs| {
+            if !mpath.contains("::") {
+                let short = norm_ident(mpath);
+                if let Some(&(_, idx, _, _)) = macro_env.iter().rfind(|(n, _, _, _)| n == short) {
+                    let (_, body, cache) = &mut macro_defs[idx];
+                    if cache.is_none() {
+                        *cache = MacroRulesDef::parse_body(body);
+                    }
+                    return cache.as_ref()?.expand(margs, "crate");
+                }
+            }
+            let (b, dc) = db.macro_rules_with_crate(krate, mod_path, mpath)?;
+            MacroRulesDef::parse_body(b)?.expand(margs, dc)
+        })?;
+        if inc_file == file {
+            return None;
+        }
+        return Some((sources.file_text(inc_file).to_string(), inc_file));
+    }
     let tt = st.text(tt_node);
     let inner = if tt.len() >= 2 { &tt[1..tt.len() - 1] } else { tt };
-    if !has_scope_item_kw(inner) {
+    let inner_has_kw = has_scope_item_kw(inner);
+    if !raw_call.contains("::") {
+        let short = norm_ident(raw_call);
+        if let Some(&(_, idx, _, _)) = macro_env.iter().rfind(|(n, _, _, _)| n == short) {
+            let (_, body, cache) = &mut macro_defs[idx];
+            if !inner_has_kw && !has_scope_item_kw(body) && !body.contains('!') {
+                return None;
+            }
+            if !eval_outer_attrs(st, call_node, db, krate).enabled {
+                return None;
+            }
+            if cache.is_none() {
+                *cache = MacroRulesDef::parse_body(body);
+            }
+            return cache.as_ref()?.expand(inner, "crate").map(|s| (s, file));
+        }
+    }
+    let (b, dc) = db.macro_rules_with_crate(krate, mod_tree.crate_path(mod_id), raw_call)?;
+    if !inner_has_kw && !has_scope_item_kw(b) && !b.contains('!') {
         return None;
     }
     if !eval_outer_attrs(st, call_node, db, krate).enabled {
         return None;
     }
-    let raw_call = st.text(path_node).trim();
-    if !raw_call.contains("::") {
-        let short = norm_ident(raw_call);
-        if let Some(&(_, idx, _, _)) = macro_env.iter().rfind(|(n, _, _, _)| n == short) {
-            let (_, body, cache) = &mut macro_defs[idx];
-            if cache.is_none() {
-                *cache = MacroRulesDef::parse_body(body);
-            }
-            return cache.as_ref()?.expand(inner, "crate");
-        }
-    }
-    db.macro_rules_body(krate, mod_tree.crate_path(mod_id), raw_call).and_then(MacroRulesDef::parse_body).and_then(|d| d.expand(inner, "crate"))
+    MacroRulesDef::parse_body(b).and_then(|d| d.expand(inner, dc)).map(|s| (s, file))
 }

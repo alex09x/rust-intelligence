@@ -155,6 +155,8 @@ impl ImportSolver {
 
         seed_index_fallback_defs(db, mod_tree, dirty_files, &mut scopes);
 
+        let mut macro_bodies = collected.macro_bodies;
+        macro_bodies.sort_unstable_by_key(|&(lid, ..)| lid);
         let use_count = collected.uses.uses.len();
         let mut map = CrateDefMap {
             krate: mod_tree.krate,
@@ -170,6 +172,8 @@ impl ImportSolver {
             scopes,
             resolved_uses: vec![PerNs::EMPTY; use_count],
             dirty_files: dirty_files.to_vec(),
+            mod_tree: Arc::new(mod_tree.clone()),
+            macro_bodies,
             local_impls: collected.local_impls,
             local_alias_targets: HashMap::new(),
             diagnostics,

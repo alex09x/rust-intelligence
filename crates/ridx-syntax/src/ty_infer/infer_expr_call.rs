@@ -12,13 +12,13 @@
 //! checking for [`super::body_ctx::Runner`].
 
 use super::body_ctx::Runner;
-use super::db::TyLangItem;
+use super::db::{MethodCand, TyLangItem};
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
 use super::lang_ops::{extract_expected_callable_sig, unwrap_await_ty};
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
-use crate::name_res::GlobalDefId;
+use crate::name_res::{CrateId, GlobalDefId};
 use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::NodeId;
 
@@ -62,8 +62,8 @@ impl<'a, 's> Runner<'a, 's> {
                     &mut self.ctx.table,
                     self.db,
                     self.local_defs,
-                    self.st,
-                    self.file_res,
+                    self.root_st,
+                    self.root_file_res,
                     self.fn_def,
                     Expectation::HasType(resolved_callee),
                     &mut bound_ins,
@@ -96,16 +96,16 @@ impl<'a, 's> Runner<'a, 's> {
 
     fn resolve_fn_or_ctor_sig(&mut self, def: GlobalDefId, raw_ins: &mut Vec<InferTyId>) -> Option<InferTyId> {
         if let Some((_, ret)) =
-            self.db.fn_sig(def, &mut self.ctx.table.arena, raw_ins).or_else(|| self.local_defs.fn_sig(def, self.st, self.file_res, self.db, &mut self.ctx.table, raw_ins))
+            self.db.fn_sig(def, &mut self.ctx.table.arena, raw_ins).or_else(|| self.local_defs.fn_sig(def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, raw_ins))
         {
             return Some(ret);
         }
         let has_fields = self.db.ctor_tuple_fields(def, &mut self.ctx.table.arena, raw_ins).is_some()
-            || self.local_defs.ctor_tuple_fields(def, self.st, self.file_res, self.db, &mut self.ctx.table, raw_ins).is_some();
+            || self.local_defs.ctor_tuple_fields(def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, raw_ins).is_some();
         if !has_fields {
             return None;
         }
-        self.db.def_ty(def, &mut self.ctx.table.arena).or_else(|| self.local_defs.def_ty(def, self.st, self.file_res, self.db, &mut self.ctx.table)).map(|(_, _, ty)| ty)
+        self.db.def_ty(def, &mut self.ctx.table.arena).or_else(|| self.local_defs.def_ty(def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table)).map(|(_, _, ty)| ty)
     }
 
     fn infer_fn_def_call(&mut self, def: GlobalDefId, subst_range: super::ty::TySliceRange, args: &[NodeId], expectation: Expectation) -> InferTyId {
@@ -133,7 +133,7 @@ impl<'a, 's> Runner<'a, 's> {
             self.pre_unify_call_return(pre_ret, expectation);
         }
         self.check_call_args_with_bounds(def, raw_params.as_slice(), subst.as_slice(), args);
-        if let Some(meta) = self.db.trait_of_assoc_fn(def).or_else(|| self.local_defs.trait_of_assoc_fn(def, self.st, self.file_res, self.db)) {
+        if let Some(meta) = self.db.trait_of_assoc_fn(def).or_else(|| self.local_defs.trait_of_assoc_fn(def, self.root_st, self.root_file_res, self.db)) {
             let t_end = 1 + meta.trait_generics as usize;
             if subst.as_slice().len() >= t_end {
                 let _ = self.solve_obligation(meta.trait_def, subst.as_slice()[0], &subst.as_slice()[1..t_end], false, 0);
@@ -216,7 +216,7 @@ impl<'a, 's> Runner<'a, 's> {
         let b_opt = self
             .db
             .param_fn_bound(fn_def, param_idx, &mut self.ctx.table.arena, &mut raw_b_ins)
-            .or_else(|| self.local_defs.param_fn_bound(fn_def, param_idx, self.st, self.file_res, self.db, &mut self.ctx.table, &mut raw_b_ins));
+            .or_else(|| self.local_defs.param_fn_bound(fn_def, param_idx, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_b_ins));
         let res = b_opt.map(|(li, raw_ret)| {
             let mut ins = InlineTyBuf::new();
             for &inp in &raw_b_ins {
@@ -305,5 +305,83 @@ impl<'a, 's> Runner<'a, 's> {
                 }
             }
         }
+    }
+
+    pub(super) fn collect_gal_turbofish(&mut self, gal: NodeId, out: &mut InlineTyBuf) {
+        let tenv = self.ty_env(true);
+        for ga in self.st.children(gal) {
+            if matches!(self.st.kind(ga), K::TypeArg | K::AssocTypeArg) {
+                if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type()) {
+                    out.push(tenv.lower_cst_ty(&mut self.ctx.table, tn));
+                }
+            } else if self.st.kind(ga) == K::ConstArg {
+                out.push(InferTyId::UNKNOWN);
+            }
+        }
+    }
+
+    pub(super) fn infer_untyped_args(&mut self, args: &[NodeId]) {
+        for &a in args {
+            let _ = self.infer_expr(a, Expectation::None);
+        }
+    }
+
+    pub(super) fn cand_matches_completion_rcvr(&mut self, cand: &MethodCand, rcvr: InferTyId) -> bool {
+        let mut raw_ins = core::mem::take(&mut self.ctx.sig_inputs_buf);
+        let has_sig = if cand.cst_fn_node != u32::MAX {
+            self.local_defs.fn_sig(cand.method_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_ins).is_some()
+        } else {
+            self.db.method_sig(cand, &mut self.ctx.table.arena, &mut raw_ins).is_some()
+                || self.local_defs.fn_sig(cand.method_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_ins).is_some()
+        };
+        let Some(&self_param_ty) = raw_ins.first().filter(|_| has_sig) else {
+            self.ctx.sig_inputs_buf = raw_ins;
+            return false;
+        };
+        self.ctx.sig_inputs_buf = raw_ins;
+        let snap = self.ctx.table.start_snapshot();
+        let (mut subst, mut imp_vars) = (InlineTyBuf::new(), InlineTyBuf::new());
+        if cand.has_fixed_trait_subst {
+            for _ in 0..cand.container_generics {
+                imp_vars.push(self.ctx.table.new_ty_var());
+            }
+            subst.push(if cand.container_generics > 0 { self.ctx.table.instantiate(cand.fixed_self_ty, imp_vars.as_slice()) } else { cand.fixed_self_ty });
+            for idx in 0..cand.fixed_trait_args.len as usize {
+                let ta = self.ctx.table.arena.slice(cand.fixed_trait_args)[idx];
+                subst.push(if ta == InferTyId::NONE {
+                    self.ctx.table.new_ty_var()
+                } else if cand.container_generics > 0 {
+                    self.ctx.table.instantiate(ta, imp_vars.as_slice())
+                } else {
+                    ta
+                });
+            }
+        } else {
+            for _ in 0..cand.container_generics {
+                subst.push(self.ctx.table.new_ty_var());
+            }
+        }
+        for _ in 0..cand.method_generics {
+            subst.push(self.ctx.table.new_ty_var());
+        }
+        let norm_xform = {
+            let xf = self.ctx.table.instantiate(self_param_ty, subst.as_slice());
+            self.norm(xf)
+        };
+        let mut ok = self.ctx.table.equate(norm_xform, rcvr).is_ok();
+        if ok {
+            let cgc = (cand.container_generics as usize).min(subst.as_slice().len());
+            let impl_subst = if cand.has_fixed_trait_subst { imp_vars.as_slice() } else { &subst.as_slice()[..cgc] };
+            ok = if cand.impl_owner.krate == CrateId::LOCAL_OVERLAY {
+                self.check_local_cst_impl_bounds(NodeId(cand.impl_owner.index), cand.container_generics, impl_subst)
+            } else {
+                self.db.check_blanket_method_bounds(cand, impl_subst, &mut self.ctx.table.arena, &mut self.ctx.table.vars)
+            };
+        }
+        if ok {
+            ok = self.check_completion_method_obligations(cand, subst.as_slice());
+        }
+        self.ctx.table.rollback_to(snap);
+        ok
     }
 }

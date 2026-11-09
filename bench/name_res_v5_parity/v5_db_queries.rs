@@ -76,6 +76,21 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
         self.metas.get(krate.0 as usize).map_or("", |m| m.crate_name.as_str())
     }
 
+    #[inline]
+    fn crate_env(&self, krate: CrateId, key: &str) -> Option<&str> {
+        self.metas.get(krate.0 as usize)?.env.get(key).map(String::as_str)
+    }
+
+    #[inline]
+    fn resolve_include_file(&self, from_file: FileId, rel_or_abs: &str) -> Option<(FileId, &str)> {
+        crate::meta::resolve_include_in_corpus(self.src, from_file, rel_or_abs)
+    }
+
+    #[inline]
+    fn include_bytes_len(&self, from_file: FileId, rel_or_abs: &str) -> Option<u64> {
+        crate::meta::include_bytes_len_in_corpus(self.src, from_file, rel_or_abs)
+    }
+
     fn extern_crate(&self, from_krate: CrateId, extern_name: &str) -> Option<CrateId> {
         let from_idx = from_krate.0 as usize;
         if let Some(uk) = self.metas.get(from_idx).and_then(|m| m.extern_units.get(extern_name)) {
@@ -129,41 +144,19 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
         g.is_some().then_some(g)
     }
 
+    #[inline]
     fn macro_rules_body(&self, krate: CrateId, module_path: &str, call_path: &str) -> Option<&str> {
-        let r_idx = krate.0 as usize;
-        let reader = self.ws.readers().get(r_idx)?;
-        let macro_name = call_path.rsplit("::").next().unwrap_or(call_path);
+        crate::v5_macro_res::resolve_v5_macro_rules(self, krate, module_path, call_path).map(|(b, _)| b)
+    }
 
-        if let Some((prefix, _)) = call_path.rsplit_once("::") {
-            let ext_first = prefix.split("::").next().unwrap_or(prefix);
-            if let Some(ext_r) = self.resolve_extern_name_to_reader(r_idx, ext_first) {
-                let er = &self.ws.readers()[ext_r];
-                if let Some(mv) =
-                    er.macro_defs_iter().find(|mv| mv.is_macro_rules() && er.definitions().get(mv.def_index as usize).is_some_and(|d| er.get_str(d.name_offset()) == macro_name))
-                {
-                    return Some(mv.body);
-                }
-            }
-        }
+    #[inline]
+    fn macro_rules_with_crate(&self, krate: CrateId, module_path: &str, call_path: &str) -> Option<(&str, &str)> {
+        crate::v5_macro_res::resolve_v5_macro_rules(self, krate, module_path, call_path)
+    }
 
-        if !module_path.is_empty() {
-            let cand = format!("{module_path}::{macro_name}");
-            if let Some(g) = Some(self.find_def_in_reader_by_path(r_idx, &cand)).filter(|g| g.is_some()) {
-                if let Some(mv) = reader.macro_def_for_def(g.index) {
-                    return Some(mv.body);
-                }
-            }
-        }
-        let g = self.find_def_in_reader_by_path(r_idx, macro_name);
-        if g.is_some() {
-            if let Some(mv) = reader.macro_def_for_def(g.index) {
-                return Some(mv.body);
-            }
-        }
-        reader
-            .macro_defs_iter()
-            .find(|mv| mv.is_macro_rules() && reader.definitions().get(mv.def_index as usize).is_some_and(|d| reader.get_str(d.name_offset()) == macro_name))
-            .map(|mv| mv.body)
+    #[inline]
+    fn macro_rules_by_def(&self, from_krate: CrateId, def: GlobalDefId) -> Option<(&str, &str)> {
+        crate::v5_macro_res::body_of_macro_gid(self, from_krate.0 as usize, def)
     }
 
     fn def_kind(&self, def: GlobalDefId) -> Option<ItemKind> {

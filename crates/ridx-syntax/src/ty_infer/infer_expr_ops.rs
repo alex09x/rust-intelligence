@@ -12,8 +12,8 @@
 //! `?` (`Try`), `.await` (`Future`/`IntoFuture`), borrows/derefs, unary/binary operators, casts,
 //! and range constructors (`Range*`) for [`super::body_ctx::Runner`].
 
-use super::autoderef::{autoderef_step, normalize_ty};
-use super::body_ctx::{ResolvedDotRef, Runner};
+use super::autoderef::autoderef_step;
+use super::body_ctx::Runner;
 use super::db::TyLangItem;
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
@@ -70,9 +70,9 @@ impl<'a, 's> Runner<'a, 's> {
         let (_, raw_fty, fdef) = self
             .db
             .field_ty_and_def(owner_def, name, &mut self.ctx.table.arena)
-            .or_else(|| self.local_defs.field_ty_and_def(owner_def, name, self.st, self.file_res, self.db, &mut self.ctx.table))?;
+            .or_else(|| self.local_defs.field_ty_and_def(owner_def, name, self.root_st, self.root_file_res, self.db, &mut self.ctx.table))?;
         let inst = self.ctx.table.instantiate(raw_fty, subst);
-        Some((normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, inst), fdef))
+        Some((self.norm(inst), fdef))
     }
 
     pub(super) fn infer_field_expr(&mut self, expr: NodeId) -> InferTyId {
@@ -87,7 +87,7 @@ impl<'a, 's> Runner<'a, 's> {
         }
         let Some((_, idx_tok)) = self.st.own_tokens(expr).find(|(_, t)| matches!(t.kind, T::Int | T::Float)) else {
             if let Some((_, dtok)) = self.st.own_tokens(expr).filter(|(_, t)| t.kind == T::Dot).last() {
-                self.out.incomplete_dots.push((dtok.end, recv_ty));
+                self.record_incomplete_dot(dtok.end, recv_ty);
             }
             return InferTyId::UNKNOWN;
         };
@@ -105,21 +105,21 @@ impl<'a, 's> Runner<'a, 's> {
             cur = self.resolve_field_with_autoderef(cur, part, part.parse::<usize>().ok(), (p_start, p_end));
         }
         if tok_text.ends_with('.') {
-            self.out.incomplete_dots.push((idx_tok.end, cur));
+            self.record_incomplete_dot(idx_tok.end, cur);
             return InferTyId::UNKNOWN;
         }
         cur
     }
 
     fn resolve_field_with_autoderef(&mut self, start_ty: InferTyId, fname: &str, tuple_idx: Option<usize>, span: (u32, u32)) -> InferTyId {
-        let mut cur = normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, start_ty);
+        let mut cur = self.norm(start_ty);
         for _ in 0..12 {
             match self.ctx.table.arena.kind(cur) {
                 InferTyKind::Tuple(r) => {
                     if let Some(i) = tuple_idx {
                         if i < r.len as usize {
                             let elem = self.ctx.table.arena.slice(r)[i];
-                            return normalize_ty(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, elem);
+                            return self.norm(elem);
                         }
                     }
                 }
@@ -130,14 +130,14 @@ impl<'a, 's> Runner<'a, 's> {
                     }
                     if let Some((fty, fdef)) = self.lookup_instantiated_field_ty_and_def(def, fname, subst.as_slice()) {
                         if fdef.is_some() {
-                            self.out.dot_refs.push(ResolvedDotRef { start: span.0, end: span.1, def: fdef, kind: ItemKind::Field });
+                            self.record_dot_ref(span.0, span.1, fdef, ItemKind::Field);
                         }
                         return fty;
                     }
                 }
                 _ => {}
             }
-            let Some(next) = autoderef_step(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, cur) else {
+            let Some(next) = autoderef_step(&mut self.ctx.table, self.db, self.local_defs, self.root_st, self.root_file_res, cur) else {
                 break;
             };
             if next == cur {
@@ -156,22 +156,19 @@ impl<'a, 's> Runner<'a, 's> {
         let base_ty = self.infer_expr(base, Expectation::None);
         let idx_ty = kids.next().map_or(InferTyId::UNKNOWN, |idx| self.infer_expr(idx, Expectation::None));
         let raw = infer_index_op(&mut self.ctx.table, self.db, base_ty, idx_ty);
-        let owner = self.norm_owner();
-        super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw)
+        self.norm(raw)
     }
 
     pub(super) fn infer_try_expr(&mut self, expr: NodeId) -> InferTyId {
         let op_ty = self.st.children(expr).find(|&c| is_expr_node(self.st.kind(c))).map_or(InferTyId::UNKNOWN, |c| self.infer_expr(c, Expectation::None));
         let raw = unwrap_try_ty(&mut self.ctx.table, self.db, op_ty);
-        let owner = self.norm_owner();
-        super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw)
+        self.norm(raw)
     }
 
     pub(super) fn infer_await_expr(&mut self, expr: NodeId) -> InferTyId {
         let op_ty = self.st.children(expr).find(|&c| is_expr_node(self.st.kind(c))).map_or(InferTyId::UNKNOWN, |c| self.infer_expr(c, Expectation::None));
         let raw = unwrap_await_ty(&mut self.ctx.table, self.db, op_ty);
-        let owner = self.norm_owner();
-        super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, raw)
+        self.norm(raw)
     }
 
     pub(super) fn infer_ref_expr(&mut self, expr: NodeId, expectation: Expectation) -> InferTyId {

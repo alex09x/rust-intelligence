@@ -293,10 +293,10 @@ impl UnionFindTable {
                 let sub = self.resolve_slice_buf(arena, args, fallback, depth + 1);
                 arena.mk_fn_def(def, sub.as_slice())
             }
-            InferTyKind::Closure { id, sig } => {
+            InferTyKind::Closure { def_start, def_end, sig } => {
                 let sub = self.resolve_slice_buf(arena, sig, fallback, depth + 1);
                 let s = sub.as_slice();
-                arena.mk_closure(id, &s[..s.len() - 1], s[s.len() - 1])
+                arena.mk_closure(def_start, def_end, &s[..s.len() - 1], s[s.len() - 1])
             }
             InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
                 let ns = self.deep_resolve_rec(arena, self_ty, fallback, depth + 1);
@@ -327,7 +327,7 @@ impl UnionFindTable {
 }
 
 pub struct InlineTyBuf {
-    inline: [InferTyId; 24],
+    inline: [InferTyId; 32],
     len: usize,
     spill: Vec<InferTyId>,
 }
@@ -342,12 +342,12 @@ impl Default for InlineTyBuf {
 impl InlineTyBuf {
     #[inline]
     pub fn new() -> Self {
-        Self { inline: [InferTyId::UNKNOWN; 24], len: 0, spill: Vec::new() }
+        Self { inline: [InferTyId::UNKNOWN; 32], len: 0, spill: Vec::new() }
     }
 
     #[inline]
     pub fn push(&mut self, ty: InferTyId) {
-        if self.len < 24 {
+        if self.len < 32 {
             self.inline[self.len] = ty;
             self.len += 1;
         } else {

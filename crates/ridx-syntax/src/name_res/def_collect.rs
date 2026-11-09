@@ -58,6 +58,7 @@ pub(super) struct CollectedCrate {
     pub uses: UseArena,
     /// Per-module `#[macro_use]` / local textual macros visible inside that module.
     pub textual_macros: Vec<Vec<(LocalItemId, GlobalDefId)>>,
+    pub macro_bodies: Vec<(LocalItemId, u32, u32)>,
     pub local_impls: LocalImplArena,
     pub scan_all_impls: bool,
     pub next_overlay_seq: u32,
@@ -89,6 +90,7 @@ pub(super) fn collect_crate_items<'t>(
 
     let mut coll = Collector {
         db,
+        sources,
         krate: mod_tree.krate,
         mod_tree,
         dirty_files,
@@ -99,11 +101,13 @@ pub(super) fn collect_crate_items<'t>(
             strings: String::with_capacity(mod_count * 64),
             uses: UseArena::with_capacity(mod_count * 4),
             textual_macros: vec![Vec::new(); mod_count],
+            macro_bodies: Vec::new(),
             local_impls: LocalImplArena::default(),
             scan_all_impls,
             next_overlay_seq: 0,
         },
         macro_defs: Vec::new(),
+        in_flight_includes: Vec::new(),
         scratch_idx_defs: Vec::new(),
         scratch_var_defs: Vec::new(),
         scratch_toks: Vec::with_capacity(64),
@@ -156,12 +160,14 @@ fn match_module_index_defs(db: &dyn ItemDb, tree: &ModuleTree) -> Vec<GlobalDefI
 
 pub(super) struct Collector<'a> {
     pub(super) db: &'a dyn ItemDb,
+    pub(super) sources: &'a dyn SourceDb,
     pub(super) krate: CrateId,
     pub(super) mod_tree: &'a ModuleTree,
     pub(super) dirty_files: &'a [FileId],
     pub(super) scan_all_impls: bool,
     pub(super) out: CollectedCrate,
     pub(super) macro_defs: Vec<(String, String, Option<MacroRulesDef>)>,
+    pub(super) in_flight_includes: Vec<FileId>,
     pub(super) scratch_idx_defs: Vec<IndexedDef<'a>>,
     pub(super) scratch_var_defs: Vec<IndexedDef<'a>>,
     pub(super) scratch_toks: Vec<Token>,
@@ -254,7 +260,7 @@ impl<'a> Collector<'a> {
                 }
                 K::TypeAlias => self.collect_type_alias_item(mod_id, file, st, node),
                 K::Impl if self.should_scan_impls(file) => {
-                    self.out.local_impls.collect_impl_node(st, node, self.mod_tree, mod_id, file, self.db, self.krate, &mut self.macro_defs, macro_env);
+                    self.out.local_impls.collect_impl_node(st, node, self.mod_tree, mod_id, file, self.db, self.sources, self.krate, &mut self.macro_defs, macro_env);
                 }
                 K::Const => {
                     self.collect_named_item(mod_id, file, st, node, ItemKind::Const);

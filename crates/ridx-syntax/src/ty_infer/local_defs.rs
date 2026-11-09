@@ -12,6 +12,7 @@
 //! `impl Self`, type-alias, and `Fn*` generic-bound fallback directly from [`SyntaxTree`] + [`FileNameRes`].
 
 use super::db::{CtorShapeKind, TyDefDb, TyLangItem};
+pub(super) use super::local_defs_macros::{count_cst_generics, PreExpandedMacro};
 use super::lower_ty::LowerTyEnv;
 use super::ty::InferTyId;
 use super::InferenceTable;
@@ -80,6 +81,8 @@ pub struct LocalCstDefs {
     pub(super) traits: Vec<LocalTraitNode>,
     pub(super) by_def: Vec<(u64, u32)>,
     pub(super) by_node: Vec<(u32, u32)>,
+    pub(super) body_macros: Vec<PreExpandedMacro>,
+    pub(super) include_bytes_lens: Vec<(u32, u64)>,
     pub(super) file_krate: CrateId,
     pub(super) clean_indexed: bool,
 }
@@ -108,6 +111,8 @@ impl LocalCstDefs {
         self.traits.clear();
         self.by_def.clear();
         self.by_node.clear();
+        self.body_macros.clear();
+        self.include_bytes_lens.clear();
         self.file_krate = CrateId::NONE;
         self.clean_indexed = false;
     }
@@ -134,7 +139,10 @@ impl LocalCstDefs {
     /// Indexes all items in `st`, resolving clean `.ridx` definitions through `item_db` when provided.
     pub fn index_file_with_item_db(&mut self, st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) {
         self.clear();
-        let clean_db = item_db.is_some() && def_map.is_some_and(|dm| !dm.is_dirty_file(file));
+        let clean_db = match (item_db, def_map) {
+            (Some(idb), Some(dm)) => idb.crate_root_def(dm.krate).is_some() && !dm.is_dirty_file(file),
+            _ => false,
+        };
         self.file_krate = def_map.map_or(CrateId::NONE, |dm| dm.krate);
         self.clean_indexed = clean_db;
         self.scan_container(st, st.root(), None, def_map, item_db, file, clean_db, None);
@@ -145,6 +153,7 @@ impl LocalCstDefs {
         }
         self.by_def.sort_unstable_by_key(|&(k, _)| k);
         self.by_node.sort_unstable_by_key(|&(n, _)| n);
+        self.finalize_macro_tables();
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -201,6 +210,7 @@ impl LocalCstDefs {
                     if overlaps {
                         if let Some(body) = st.child(ch, K::BlockExpr) {
                             self.scan_block_items(st, body, def_map, item_db, file, 0);
+                            self.scan_body_macros(st, body, def_map, item_db, file);
                         }
                     }
                 }
@@ -233,6 +243,9 @@ impl LocalCstDefs {
                     if def.is_some() {
                         let kind = if st.kind(ch) == K::Static { ItemKind::Static } else { ItemKind::Const };
                         self.items.push(LocalItemNode { def, node: ch, impl_node, kind, generic_count: 0, shape: CtorShapeKind::None });
+                    }
+                    if overlaps {
+                        self.scan_body_macros(st, ch, def_map, item_db, file);
                     }
                 }
                 _ => {}
@@ -292,16 +305,9 @@ impl LocalCstDefs {
         let impl_gc = count_cst_generics(st, impl_node);
         let has_for = st.own_tokens(impl_node).any(|(_, t)| t.kind == T::For);
         let mut tys = st.children(impl_node).filter(|&c| st.kind(c).is_type());
-        let self_node = if has_for {
-            let _ = tys.next();
-            tys.next()
-        } else {
-            tys.next()
-        };
-        let Some(sn) = self_node else {
-            return (impl_gc, InferTyId::UNKNOWN);
-        };
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: Some(impl_node), impl_generics: impl_gc, item_owner: None, in_body: false };
+        let Some(sn) = (if has_for { tys.nth(1) } else { tys.next() }) else { return (impl_gc, InferTyId::UNKNOWN) };
+        let env =
+            LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: Some(impl_node), impl_generics: impl_gc, item_owner: None, in_body: false, sub_map: None };
         (impl_gc, env.lower_cst_ty(table, sn))
     }
 
@@ -315,8 +321,9 @@ impl LocalCstDefs {
         inputs_out: &mut Vec<InferTyId>,
     ) -> Option<(u16, InferTyId)> {
         let item = self.find_item_by_def(def).filter(|i| matches!(i.kind, ItemKind::Fn | ItemKind::AssocFn))?;
-        let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
+        let (igc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
+        let env =
+            LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: igc, item_owner: Some(item.node), in_body: false, sub_map: None };
         inputs_out.clear();
         if let Some(pl) = st.child(item.node, K::ParamList) {
             for p in st.children(pl) {
@@ -351,13 +358,6 @@ pub(super) fn lower_self_param_ty(st: &SyntaxTree<'_>, sp: NodeId, env: &LowerTy
     } else {
         base
     }
-}
-
-pub(super) fn count_cst_generics(st: &SyntaxTree<'_>, owner: NodeId) -> u16 {
-    let Some(gpl) = st.child(owner, K::GenericParamList) else {
-        return 0;
-    };
-    st.children(gpl).filter(|&c| matches!(st.kind(c), K::TypeParam | K::ConstParam)).count() as u16
 }
 
 fn resolve_item_node_def(st: &SyntaxTree<'_>, node: NodeId, is_assoc: bool, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) -> GlobalDefId {

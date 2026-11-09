@@ -22,6 +22,7 @@ use ridx_syntax::{parse, SyntaxTree};
 
 use crate::did_change_bench::{bench_did_change, DidChangeReport};
 use crate::fault_bench::{run_file_fault_and_partial_dot, FaultBenchStats};
+use crate::fault_completion::CompletionMethodIndex;
 use crate::meta::{CorpusFile, CorpusSourceDb};
 use crate::site_classify::{classify_dot_site, classify_ref_site, collect_dot_access_spans, collect_unit_alias_pairs, SiteKind};
 use crate::target_match::{describe_our_target, ref_targets_match, MatchKind};
@@ -96,6 +97,7 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
     let mut fn_res = FnInferResult::new();
     let mut body_nodes = Vec::new();
     let mut dot_map: HashMap<(u32, u32), Vec<ResolvedDotRef>> = HashMap::new();
+    let comp_idx = (fault_n > 0).then(|| CompletionMethodIndex::build(db));
 
     for &r_idx in &unit_indices {
         let meta = &db.metas[r_idx];
@@ -179,7 +181,7 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
                 &mut rep.ty_stats,
             );
             compare_file_refs(r_idx, reader, cf, st, &res_buf, &dot_map, &unit_alias_pairs, db, ridx_fid, max_samples, &mut rep);
-            if fault_n > 0 {
+            if let Some(ref cidx) = comp_idx {
                 run_file_fault_and_partial_dot(
                     r_idx,
                     fid,
@@ -187,6 +189,7 @@ pub fn run_corpus(name: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_>, max_s
                     st,
                     &snap,
                     db,
+                    cidx,
                     sidecar.as_ref(),
                     fault_n,
                     max_samples,

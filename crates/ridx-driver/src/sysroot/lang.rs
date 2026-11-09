@@ -18,7 +18,7 @@ use std::path::Path;
 use ridx_format::{IndexWriter, LangItemKind, RawDefinition};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{CrateNum, DefId};
 
 use super::{items, SysrootCollector};
 use crate::map_def_kind;
@@ -101,6 +101,65 @@ pub fn materialize_lang_items<'tcx>(
                 continue;
             }
             emit_missing_sysroot_def(tcx, assoc_did, sysroot_src, writer, visited, collector);
+        }
+    }
+}
+
+/// Returns `true` when `did` is an unstable sysroot type or trait that appears in stable generic
+/// parameter defaults (`alloc::alloc::Global` and `core::alloc::Allocator` on `Vec<T, A = Global>`,
+/// `Box<T, A = Global>`, etc.) and therefore must be materialized in `core.ridx` / `alloc.ridx`.
+#[inline]
+pub fn is_materialized_unstable_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    if !matches!(tcx.crate_name(did.krate).as_str(), "core" | "alloc") {
+        return false;
+    }
+    let Some(sym) = tcx.opt_item_name(did) else {
+        return false;
+    };
+    if !matches!(sym.as_str(), "Global" | "Allocator") {
+        return false;
+    }
+    let path = rustc_middle::ty::print::with_no_visible_paths!(rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did)));
+    matches!(path.as_str(), "alloc::alloc::Global" | "core::alloc::Allocator" | "alloc::alloc::Allocator")
+}
+
+/// Materializes `core::alloc::Allocator` (`core.ridx`) and `alloc::alloc::Global` (`alloc.ridx`),
+/// so stable container types (`Vec<T, Global>`, `Box<T, Global>`, etc.) lower their default
+/// allocator parameter and `A: Allocator` bounds cleanly rather than to `RawTy::Unknown`.
+pub fn materialize_unstable_default_types<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    target_crate: &str,
+    cnum: CrateNum,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    collector: &mut SysrootCollector,
+) {
+    if !matches!(target_crate, "core" | "alloc") {
+        return;
+    }
+    let Some(alloc_mod) = tcx.module_children(cnum.as_def_id()).iter().find_map(|c| (c.ident.as_str() == "alloc").then(|| c.res.opt_def_id()).flatten()) else {
+        return;
+    };
+    for child in tcx.module_children(alloc_mod) {
+        if !matches!(child.ident.as_str(), "Global" | "Allocator") {
+            continue;
+        }
+        let Some(did) = child.res.opt_def_id().filter(|d| d.krate == cnum) else {
+            continue;
+        };
+        let added = emit_missing_sysroot_def(tcx, did, sysroot_src, writer, visited, collector);
+        if added && tcx.def_kind(did) == DefKind::Trait {
+            for &assoc_did in tcx.associated_item_def_ids(did) {
+                let Some(sym) = tcx.opt_item_name(assoc_did) else {
+                    continue;
+                };
+                let s = sym.as_str();
+                if s.starts_with("__rust_") || s.starts_with("__") {
+                    continue;
+                }
+                emit_missing_sysroot_def(tcx, assoc_did, sysroot_src, writer, visited, collector);
+            }
         }
     }
 }

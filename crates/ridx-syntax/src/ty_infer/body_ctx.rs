@@ -14,12 +14,15 @@
 use super::db::{MethodCand, TyDefDb, WhereObligation};
 use super::expectation::{BranchCoercer, Expectation};
 use super::infer_expr::is_expr_node;
+use super::infer_expr_cf::enclosing_local_window;
+use super::infer_macro::{SubInferEnv, SubLocalEntry, MAX_RUNTIME_MACRO_DEPTH};
 use super::infer_pat::BindingMode;
 use super::local_defs::{lower_self_param_ty, LocalCstDefs};
 use super::lower_ty::LowerTyEnv;
 use super::ty::InferTyId;
 use super::InferenceTable;
 use crate::name_res::{FileNameRes, GlobalDefId, ItemKind, LocalBindId};
+use crate::parser::ParseScratch;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
 use crate::tree::{NodeId, SyntaxTree};
@@ -33,6 +36,15 @@ pub struct ResolvedDotRef {
     pub kind: ItemKind,
 }
 
+/// Expression inferred inside a macro expansion or std-macro argument mapped to caller byte offsets (`Checkbox 3.6.2`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MacroExprTy {
+    pub start: u32,
+    pub end: u32,
+    pub kind: K,
+    pub ty: InferTyId,
+}
+
 /// Finalized local type inference output for a single `K::Fn` / `K::Const` / `K::Static` item.
 #[derive(Clone, Debug)]
 pub struct FnInferResult {
@@ -40,44 +52,12 @@ pub struct FnInferResult {
     pub ret_ty: InferTyId,
     pub body_ty: InferTyId,
     pub expr_tys: Vec<(NodeId, InferTyId)>,
+    pub macro_expr_tys: Vec<MacroExprTy>,
     pub pat_tys: Vec<(NodeId, InferTyId)>,
     pub local_tys: Vec<(LocalBindId, InferTyId)>,
     pub dot_refs: Vec<ResolvedDotRef>,
     /// Byte end offset of an incomplete trailing `.` (`x.` or `self.0.`) paired with receiver type.
     pub incomplete_dots: Vec<(u32, InferTyId)>,
-}
-
-impl Default for FnInferResult {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl FnInferResult {
-    pub fn new() -> Self {
-        Self {
-            fn_node: NodeId(0),
-            ret_ty: InferTyId::UNKNOWN,
-            body_ty: InferTyId::UNKNOWN,
-            expr_tys: Vec::new(),
-            pat_tys: Vec::new(),
-            local_tys: Vec::new(),
-            dot_refs: Vec::new(),
-            incomplete_dots: Vec::new(),
-        }
-    }
-
-    #[inline]
-    pub fn clear(&mut self) {
-        self.fn_node = NodeId(0);
-        self.ret_ty = InferTyId::UNKNOWN;
-        self.body_ty = InferTyId::UNKNOWN;
-        self.expr_tys.clear();
-        self.pat_tys.clear();
-        self.local_tys.clear();
-        self.dot_refs.clear();
-        self.incomplete_dots.clear();
-    }
 }
 
 #[derive(Debug)]
@@ -109,7 +89,10 @@ pub struct BodyInferCtx {
     pub(super) where_obls_buf: Vec<WhereObligation>,
     pub(super) fn_has_inner_trait_scopes: bool,
     pub(super) fn_scope_traits_ready: bool,
-    pub(super) closure_seq: u32,
+    pub(super) macro_scratch: Vec<ParseScratch>,
+    pub(super) macro_depth: usize,
+    pub(super) sub_locals_buf: Vec<SubLocalEntry>,
+    pub(super) macro_local_shadows: Vec<(LocalBindId, InferTyId)>,
 }
 
 impl Default for BodyInferCtx {
@@ -120,6 +103,10 @@ impl Default for BodyInferCtx {
 
 impl BodyInferCtx {
     pub fn new() -> Self {
+        let mut macro_scratch = Vec::with_capacity(MAX_RUNTIME_MACRO_DEPTH);
+        for _ in 0..MAX_RUNTIME_MACRO_DEPTH {
+            macro_scratch.push(ParseScratch::with_capacity());
+        }
         Self {
             table: InferenceTable::with_capacity(256, 128),
             local_slot_base: 0,
@@ -137,7 +124,10 @@ impl BodyInferCtx {
             where_obls_buf: Vec::with_capacity(16),
             fn_has_inner_trait_scopes: false,
             fn_scope_traits_ready: false,
-            closure_seq: 0,
+            macro_scratch,
+            macro_depth: 0,
+            sub_locals_buf: Vec::with_capacity(16),
+            macro_local_shadows: Vec::with_capacity(8),
         }
     }
 
@@ -162,10 +152,12 @@ impl BodyInferCtx {
         self.fn_scope_traits_buf.clear();
         self.param_bounds_buf.clear();
         self.where_obls_buf.clear();
+        self.macro_depth = 0;
+        self.sub_locals_buf.clear();
+        self.macro_local_shadows.clear();
         let fn_sub_end = st.node(fn_node).subtree_end;
         self.fn_has_inner_trait_scopes = file_res.has_inner_trait_scopes(fn_node, fn_sub_end);
         self.fn_scope_traits_ready = false;
-        self.closure_seq = 0;
         out.clear();
         out.fn_node = fn_node;
 
@@ -179,7 +171,27 @@ impl BodyInferCtx {
         let fn_def = local_defs.fn_def_for_node(fn_node);
         let is_async_fn = st.own_tokens(fn_node).any(|(_, t)| t.kind == T::Async);
 
-        let mut env = Runner { ctx: self, st, file_res, db, local_defs, fn_node, fn_def, impl_node, impl_gc, self_ty, loc_lo, loc_hi, expr_depth: 0, out };
+        let mut env = Runner {
+            ctx: self,
+            st,
+            file_res,
+            root_st: st,
+            root_file_res: file_res,
+            db,
+            local_defs,
+            fn_node,
+            root_fn_node: fn_node,
+            fn_def,
+            impl_node,
+            root_impl_node: impl_node,
+            impl_gc,
+            self_ty,
+            loc_lo,
+            loc_hi,
+            expr_depth: 0,
+            sub: None,
+            out,
+        };
         if matches!(st.kind(fn_node), K::Const | K::Static) {
             env.infer_const_or_static_body();
         } else {
@@ -193,49 +205,76 @@ pub(super) struct Runner<'a, 's> {
     pub ctx: &'a mut BodyInferCtx,
     pub st: &'a SyntaxTree<'s>,
     pub file_res: &'a FileNameRes,
+    pub root_st: &'a SyntaxTree<'s>,
+    pub root_file_res: &'a FileNameRes,
     pub db: &'a dyn TyDefDb,
     pub local_defs: &'a LocalCstDefs,
     pub fn_node: NodeId,
+    pub root_fn_node: NodeId,
     pub fn_def: GlobalDefId,
     pub impl_node: Option<NodeId>,
+    pub root_impl_node: Option<NodeId>,
     pub impl_gc: u16,
     pub self_ty: Option<InferTyId>,
     pub loc_lo: usize,
     pub loc_hi: usize,
     pub expr_depth: u16,
+    pub sub: Option<SubInferEnv<'a>>,
     pub out: &'a mut FnInferResult,
 }
 
 impl<'a, 's> Runner<'a, 's> {
     #[inline]
     pub fn ty_env(&self, in_body: bool) -> LowerTyEnv<'a, 's> {
+        let sub_map = match self.sub {
+            None => None,
+            Some(SubInferEnv::StdSlice { .. }) => Some((self.root_st, self.root_file_res, None)),
+            Some(SubInferEnv::Expanded { spans, .. }) => Some((self.root_st, self.root_file_res, Some(spans))),
+        };
         LowerTyEnv {
             st: self.st,
             file_res: self.file_res,
             db: self.db,
             local_defs: self.local_defs,
             self_ty: self.self_ty,
-            impl_owner: self.impl_node,
+            impl_owner: self.root_impl_node,
             impl_generics: self.impl_gc,
-            item_owner: Some(self.fn_node),
+            item_owner: Some(self.root_fn_node),
             in_body,
+            sub_map,
         }
     }
 
     #[inline]
     pub fn record_expr(&mut self, node: NodeId, ty: InferTyId) -> InferTyId {
-        self.out.expr_tys.push((node, ty));
+        if self.sub.is_none() {
+            self.out.expr_tys.push((node, ty));
+        } else {
+            let nr = self.st.range(node);
+            if nr.end > nr.start {
+                if let Some((os, oe)) = self.map_span_to_orig(nr.start as u32, nr.end as u32) {
+                    self.out.macro_expr_tys.push(MacroExprTy { start: os, end: oe, kind: self.st.kind(node), ty });
+                }
+            }
+        }
         ty
     }
 
     #[inline]
     pub fn record_pat(&mut self, node: NodeId, ty: InferTyId) -> InferTyId {
-        self.out.pat_tys.push((node, ty));
+        if self.sub.is_none() {
+            self.out.pat_tys.push((node, ty));
+        }
         ty
     }
 
     #[inline]
     pub fn get_local(&self, lid: LocalBindId) -> InferTyId {
+        if !matches!(self.sub, Some(SubInferEnv::Expanded { .. })) {
+            if let Some(&(_, sh_ty)) = self.ctx.macro_local_shadows.iter().rev().find(|&&(id, _)| id == lid) {
+                return sh_ty;
+            }
+        }
         let off = lid.0.wrapping_sub(self.ctx.local_slot_base) as usize;
         self.ctx.local_slots.get(off).copied().filter(|t| t.is_some()).unwrap_or(InferTyId::UNKNOWN)
     }
@@ -340,53 +379,4 @@ impl<'a, 's> Runner<'a, 's> {
             self.out.body_ty = bty;
         }
     }
-
-    #[inline]
-    fn finalize_ty(&mut self, owner: super::autoderef::NormOwner, raw: InferTyId) -> InferTyId {
-        let r1 = self.ctx.table.resolve_with_fallback(raw);
-        let norm = super::autoderef::normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, r1);
-        self.ctx.table.resolve_with_fallback(norm)
-    }
-
-    fn finalize_result(&mut self) {
-        let owner = self.norm_owner();
-        self.out.ret_ty = self.finalize_ty(owner, self.out.ret_ty);
-        self.out.body_ty = self.finalize_ty(owner, self.out.body_ty);
-        for i in 0..self.out.expr_tys.len() {
-            self.out.expr_tys[i].1 = self.finalize_ty(owner, self.out.expr_tys[i].1);
-        }
-        for i in 0..self.out.pat_tys.len() {
-            self.out.pat_tys[i].1 = self.finalize_ty(owner, self.out.pat_tys[i].1);
-        }
-        let fn_end = self.st.node(self.fn_node).subtree_end;
-        for off in 0..self.ctx.local_slots.len() {
-            let raw = self.ctx.local_slots[off];
-            if raw.is_some() {
-                let lid = LocalBindId(self.ctx.local_slot_base + off as u32);
-                let decl = self.file_res.local_data(lid).decl_node;
-                if decl.0 >= self.fn_node.0 && decl.0 < fn_end {
-                    let norm = self.finalize_ty(owner, raw);
-                    self.out.local_tys.push((lid, norm));
-                }
-            }
-        }
-        for i in 0..self.out.incomplete_dots.len() {
-            self.out.incomplete_dots[i].1 = self.finalize_ty(owner, self.out.incomplete_dots[i].1);
-        }
-        self.out.expr_tys.sort_unstable_by_key(|&(n, _)| n);
-        self.out.pat_tys.sort_unstable_by_key(|&(n, _)| n);
-        self.out.local_tys.sort_unstable_by_key(|&(l, _)| l);
-        self.out.dot_refs.sort_unstable_by_key(|a| (a.start, a.end, a.def, a.kind as u8));
-        self.out.dot_refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.def == b.def);
-        self.out.incomplete_dots.sort_unstable_by_key(|&(off, _)| off);
-        self.out.incomplete_dots.dedup_by_key(|p| p.0);
-    }
-}
-
-fn enclosing_local_window(st: &SyntaxTree<'_>, file_res: &FileNameRes, fn_node: NodeId) -> (usize, usize) {
-    let top_item = st.ancestors(fn_node).filter(|&a| matches!(st.kind(a), K::Fn | K::Const | K::Static)).last().unwrap_or(fn_node);
-    let top_end = st.node(top_item).subtree_end;
-    let lo = file_res.locals.partition_point(|l| l.decl_node.0 < top_item.0);
-    let hi = lo + file_res.locals[lo..].partition_point(|l| l.decl_node.0 < top_end);
-    (lo, hi)
 }

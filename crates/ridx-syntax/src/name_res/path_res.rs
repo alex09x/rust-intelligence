@@ -16,7 +16,7 @@ use std::sync::Arc;
 use super::body_ribs::RibStack;
 use super::body_walk::FileResolver;
 use super::crate_snapshot::CrateSnapshot;
-use super::db::{FileId, GlobalDefId, ItemDb, ItemKind, SourceDb};
+use super::db::{FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, SourceDb};
 use super::db_impls::ImplTargetKey;
 use super::def_map::CrateDefMap;
 use super::ext_scope::ExtScopeCache;
@@ -346,6 +346,18 @@ impl CrateDefMap {
         resolver.walk_file();
         let ribs = resolver.ribs;
         out.ribs = ribs;
+        out.finalize();
+    }
+
+    pub(crate) fn resolve_module_snippet_into(&self, db: &dyn ItemDb, module: ModuleId, file: FileId, st: &SyntaxTree<'_>, out: &mut FileNameRes) {
+        out.clear();
+        out.file = file;
+        let mut ext_cache = ExtScopeCache::new();
+        let ribs = std::mem::take(&mut out.ribs);
+        let mut resolver = FileResolver::new(self, db, &self.mod_tree, &mut ext_cache, file, st, out, ribs);
+        resolver.cur_mod = module;
+        resolver.walk_file();
+        out.ribs = resolver.ribs;
         out.finalize();
     }
 }

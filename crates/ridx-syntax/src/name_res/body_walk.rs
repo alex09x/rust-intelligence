@@ -49,8 +49,7 @@ impl<'a, 's> FileResolver<'a, 's> {
         out: &'a mut FileNameRes,
         ribs: RibStack,
     ) -> Self {
-        let cur_mod =
-            mod_tree.modules.iter().find(|m| m.file == file && !m.is_inline()).or_else(|| mod_tree.modules.iter().find(|m| m.file == file)).map_or(ModuleId::ROOT, |m| m.id);
+        let cur_mod = mod_tree.modules_for_file(file).next().unwrap_or(ModuleId::ROOT);
         Self { map, db, mod_tree, ext_cache, file, cur_mod, st, out, ribs, target_range: None }
     }
 

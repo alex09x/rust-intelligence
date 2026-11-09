@@ -40,7 +40,7 @@ pub(crate) fn block_body(p: &mut Parser<'_>) {
     p.expect(T::RBrace);
 }
 
-fn stmt(p: &mut Parser<'_>) {
+pub(crate) fn stmt(p: &mut Parser<'_>) {
     if p.eat(T::Semi) {
         return;
     }

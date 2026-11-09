@@ -118,15 +118,42 @@ impl LocalCstDefs {
         }
         let item = self.find_item_by_def(def).filter(|i| i.kind == ItemKind::TypeAlias)?;
         let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false };
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false, sub_map: None };
         Some((item.generic_count, env.lower_cst_ty_rec(table, ty_node, depth + 1)))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn generic_param_default_ty(
+        &self,
+        def: GlobalDefId,
+        param_idx: u16,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        table: &mut InferenceTable,
+        depth: u8,
+    ) -> Option<InferTyId> {
+        if depth > 16 {
+            return None;
+        }
+        let owner_def = self.variants.iter().find(|v| v.def == def).map_or(def, |v| v.enum_def);
+        let item = self.find_item_by_def(owner_def)?;
+        let gpl = st.child(item.node, K::GenericParamList)?;
+        let tp = st.children(gpl).filter(|&c| matches!(st.kind(c), K::TypeParam | K::ConstParam)).nth(param_idx as usize)?;
+        if st.kind(tp) != K::TypeParam || !st.own_tokens(tp).any(|(_, t)| t.kind == T::Eq) {
+            return None;
+        }
+        let ty_node = st.children(tp).find(|&c| st.kind(c).is_type())?;
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false, sub_map: None };
+        Some(env.lower_cst_ty_rec(table, ty_node, depth + 1))
     }
 
     pub fn const_or_static_ty(&self, def: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, db: &dyn TyDefDb, table: &mut InferenceTable) -> Option<InferTyId> {
         let item = self.find_item_by_def(def).filter(|i| matches!(i.kind, ItemKind::Const | ItemKind::Static))?;
         let self_ty = item.impl_node.map(|im| self.lower_impl_self_ty(im, st, file_res, db, table).1);
         let ty_node = st.children(item.node).find(|&c| st.kind(c).is_type())?;
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: 0, item_owner: Some(item.node), in_body: false };
+        let env =
+            LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: 0, item_owner: Some(item.node), in_body: false, sub_map: None };
         Some(env.lower_cst_ty(table, ty_node))
     }
 
@@ -143,7 +170,18 @@ impl LocalCstDefs {
     ) -> Option<(TyLangItem, InferTyId)> {
         let item = self.find_item_by_def(owner_def)?;
         let (impl_gc, self_ty) = self.owner_generics_and_self_ty(item.impl_node, st, file_res, db, table);
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty, impl_owner: item.impl_node, impl_generics: impl_gc, item_owner: Some(item.node), in_body: false };
+        let env = LowerTyEnv {
+            st,
+            file_res,
+            db,
+            local_defs: self,
+            self_ty,
+            impl_owner: item.impl_node,
+            impl_generics: impl_gc,
+            item_owner: Some(item.node),
+            in_body: false,
+            sub_map: None,
+        };
         extract_cst_fn_bound(st, file_res, db, item.node, impl_gc, param_idx, &env, table, inputs_out)
     }
 
@@ -157,7 +195,7 @@ impl LocalCstDefs {
         fields_out: &mut Vec<InferTyId>,
     ) -> Option<u16> {
         let (owner_node, gc, inner_toks) = self.body_tokens_of(st, def, CtorShapeKind::Tuple)?;
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false };
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false, sub_map: None };
         fields_out.clear();
         for_each_top_comma(inner_toks, |clause| {
             if let Some(ti) = skip_leading_attrs_vis(clause, 0) {
@@ -190,7 +228,8 @@ impl LocalCstDefs {
     ) -> Option<(u16, InferTyId, GlobalDefId)> {
         if let Ok(tuple_idx) = name.parse::<usize>() {
             let (owner_node, gc, inner_toks) = self.body_tokens_of(st, owner_def, CtorShapeKind::Tuple)?;
-            let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false };
+            let env =
+                LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false, sub_map: None };
             let mut cur_i = 0usize;
             let mut found = None;
             for_each_top_comma(inner_toks, |clause| {
@@ -208,7 +247,7 @@ impl LocalCstDefs {
             return found.map(|(t, d)| (gc, t, d));
         }
         let (owner_node, gc, inner_toks) = self.body_tokens_of(st, owner_def, CtorShapeKind::Record)?;
-        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false };
+        let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(owner_node), in_body: false, sub_map: None };
         let mut found = None;
         for_each_top_comma(inner_toks, |clause| {
             if found.is_some() {

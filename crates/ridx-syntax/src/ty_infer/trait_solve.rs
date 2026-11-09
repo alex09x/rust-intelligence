@@ -22,7 +22,7 @@ pub(super) use super::trait_solve_cst::{
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
-use crate::name_res::{FileNameRes, GlobalDefId, ImplTargetKey, ItemKind, LocalItemId, ResTarget};
+use crate::name_res::{FileNameRes, GlobalDefId, ItemKind, ResTarget};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::TokenKind as T;
@@ -40,18 +40,21 @@ pub(super) struct SolveEnv<'a, 's> {
 impl<'a, 's> Runner<'a, 's> {
     #[inline]
     pub(super) fn norm_owner(&self) -> NormOwner {
-        NormOwner { fn_def: self.fn_def, impl_node: self.impl_node, impl_gc: self.impl_gc, fn_node: Some(self.fn_node), self_ty: self.self_ty }
+        NormOwner { fn_def: self.fn_def, impl_node: self.root_impl_node, impl_gc: self.impl_gc, fn_node: Some(self.root_fn_node), self_ty: self.self_ty }
     }
 
     #[inline]
     pub(super) fn norm(&mut self, ty: InferTyId) -> InferTyId {
         let owner = self.norm_owner();
-        normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.st, self.file_res, owner, ty)
+        normalize_ty_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.root_st, self.root_file_res, owner, ty)
     }
 
     /// Resolves and instantiates a value `PathExpr`, lifting trait `AssocFn`s (`String::from`,
     /// `Default::default`, `T::default`, `<Q as Trait<A>>::f`) to canonical `(trait_fn_def, [Self, TraitArgs.., MethodArgs..])`.
     pub(super) fn infer_value_path(&mut self, path_node: NodeId) -> InferTyId {
+        if let Some(sub_ty) = self.lookup_sub_or_expanded_value(path_node) {
+            return sub_ty;
+        }
         let Some(rref) = self.file_res.path_tail_ref_in_st(self.st, path_node) else {
             return InferTyId::UNKNOWN;
         };
@@ -63,7 +66,7 @@ impl<'a, 's> Runner<'a, 's> {
         if let ResTarget::Def { kind: ItemKind::AssocFn, .. } = target {
             let eff_def = effective_target_def(target);
             if eff_def.is_some() {
-                let meta_opt = self.db.trait_of_assoc_fn(eff_def).or_else(|| self.local_defs.trait_of_assoc_fn(eff_def, self.st, self.file_res, self.db));
+                let meta_opt = self.db.trait_of_assoc_fn(eff_def).or_else(|| self.local_defs.trait_of_assoc_fn(eff_def, self.root_st, self.root_file_res, self.db));
                 if let Some(meta) = meta_opt {
                     return self.instantiate_trait_assoc_fn_path(path_node, meta);
                 }
@@ -74,7 +77,7 @@ impl<'a, 's> Runner<'a, 's> {
         self.instantiate_target_value(target, explicit.as_slice())
     }
 
-    fn instantiate_trait_assoc_fn_path(&mut self, path_node: NodeId, meta: TraitAssocFnMeta) -> InferTyId {
+    pub(super) fn instantiate_trait_assoc_fn_path(&mut self, path_node: NodeId, meta: TraitAssocFnMeta) -> InferTyId {
         let mut segs = [NodeId(0); 16];
         let mut slen = 0usize;
         for s in self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment) {
@@ -102,7 +105,12 @@ impl<'a, 's> Runner<'a, 's> {
             sty
         } else if let Some(qseg) = qual_seg {
             let qr = self.st.range(qseg);
-            let q_target = self.file_res.refs_starting_in(qr.start as u32, qr.end as u32).iter().find(|r| r.path_node == path_node && r.end <= qr.end as u32).map(|r| r.target);
+            let q_target = self
+                .file_res
+                .refs_starting_in(qr.start as u32, qr.end as u32)
+                .iter()
+                .find(|r| (r.path_node == path_node || r.path_node == NodeId(u32::MAX)) && r.end <= qr.end as u32)
+                .map(|r| r.target);
             match q_target {
                 Some(ResTarget::Def { kind: ItemKind::Trait, .. }) => {
                     tenv.collect_segment_args(&mut self.ctx.table, qseg, false, &mut q_targs, 0);
@@ -111,7 +119,7 @@ impl<'a, 's> Runner<'a, 's> {
                 Some(qt) => {
                     let mut fargs = InlineTyBuf::new();
                     tenv.collect_segment_args(&mut self.ctx.table, qseg, false, &mut fargs, 0);
-                    tenv.finish_resolved_type(&mut self.ctx.table, qt, fargs.as_slice(), None, GlobalDefId::NONE, "", false, false, 0)
+                    tenv.finish_ufcs_qself_type(&mut self.ctx.table, qt, qseg, fargs.as_slice())
                 }
                 None => {
                     if self.st.own_tokens(qseg).any(|(_, t)| t.kind == T::SelfType) {
@@ -140,61 +148,15 @@ impl<'a, 's> Runner<'a, 's> {
         self.ctx.table.arena.mk_fn_def(meta.trait_fn_def, subst.as_slice())
     }
 
-    fn resolve_unindexed_ufcs_target(&mut self, path_node: NodeId, fallback: ResTarget) -> ResTarget {
-        let mut segs = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment);
-        let (Some(qual_seg), Some(tail_seg)) = (segs.next(), segs.last()) else { return fallback };
-        let fn_name = self.st.own_tokens(tail_seg).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map_or("", |(_, t)| norm_ident(t.text(self.st.src)));
-        if self.st.own_tokens(qual_seg).next().is_some_and(|(_, t)| t.kind == T::Lt) {
-            let tr_def =
-                self.st.child(qual_seg, K::Path).and_then(|tp| self.file_res.path_tail_ref_in_st(self.st, tp)).map_or(GlobalDefId::NONE, |r| effective_target_def(r.target));
-            let d = self.local_defs.resolve_ufcs_assoc_fn(ImplTargetKey::Unknown, tr_def, fn_name, self.st, self.file_res, self.db, &mut self.ctx.table);
-            return if d.is_some() { ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::AssocFn } } else { fallback };
-        }
-        let qr = self.st.range(qual_seg);
-        let q_target = self.file_res.refs_starting_in(qr.start as u32, qr.end as u32).iter().find(|r| r.path_node == path_node && r.end <= qr.end as u32).map(|r| r.target);
-        if let Some(ResTarget::Generic(gid)) = q_target {
-            for &(bgid, btr) in &self.file_res.param_trait_bounds {
-                let d = if bgid == gid && btr.is_some() {
-                    self.local_defs.resolve_ufcs_assoc_fn(ImplTargetKey::Unknown, btr, fn_name, self.st, self.file_res, self.db, &mut self.ctx.table)
-                } else {
-                    GlobalDefId::NONE
-                };
-                if d.is_some() {
-                    return ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::AssocFn };
-                }
-            }
-            return fallback;
-        }
-        let (target_k, tr_def) = match q_target {
-            Some(ResTarget::SelfTy { target, trait_def }) => (target, trait_def),
-            Some(ResTarget::Prim(p)) => (ImplTargetKey::Prim(p), GlobalDefId::NONE),
-            Some(rt @ ResTarget::Def { kind: ItemKind::Trait, .. }) => (ImplTargetKey::Unknown, effective_target_def(rt)),
-            Some(rt @ ResTarget::Def { .. }) => (ImplTargetKey::Adt(effective_target_def(rt)), GlobalDefId::NONE),
-            _ => return fallback,
-        };
-        let d = self.local_defs.resolve_ufcs_assoc_fn(target_k, tr_def, fn_name, self.st, self.file_res, self.db, &mut self.ctx.table);
-        if d.is_some() {
-            ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::AssocFn }
-        } else {
-            fallback
-        }
-    }
-
     #[inline]
     pub(super) fn solve_obligation(&mut self, trait_def: GlobalDefId, self_ty: InferTyId, trait_args: &[InferTyId], allow_ambig_self_var: bool, depth: u8) -> bool {
-        let senv = SolveEnv { local_defs: self.local_defs, st: self.st, file_res: self.file_res, db: self.db, owner: self.norm_owner() };
-        let mut scratch = core::mem::take(&mut self.ctx.param_bounds_buf);
-        let ok = solve_obligation_senv(senv, trait_def, self_ty, trait_args, &mut self.ctx.table, &mut scratch, allow_ambig_self_var, depth);
-        self.ctx.param_bounds_buf = scratch;
-        ok
+        let senv = SolveEnv { local_defs: self.local_defs, st: self.root_st, file_res: self.root_file_res, db: self.db, owner: self.norm_owner() };
+        solve_obligation_senv(senv, trait_def, self_ty, trait_args, &mut self.ctx.table, allow_ambig_self_var, depth)
     }
 
     pub(super) fn check_local_cst_impl_bounds(&mut self, impl_node: NodeId, impl_gc: u16, subst: &[InferTyId]) -> bool {
-        let senv = SolveEnv { local_defs: self.local_defs, st: self.st, file_res: self.file_res, db: self.db, owner: self.norm_owner() };
-        let mut scratch = core::mem::take(&mut self.ctx.param_bounds_buf);
-        let ok = check_cst_impl_bounds_senv(senv, impl_node, impl_gc, subst, &mut self.ctx.table, &mut scratch, true, 0);
-        self.ctx.param_bounds_buf = scratch;
-        ok
+        let senv = SolveEnv { local_defs: self.local_defs, st: self.root_st, file_res: self.root_file_res, db: self.db, owner: self.norm_owner() };
+        check_cst_impl_bounds_senv(senv, impl_node, impl_gc, subst, &mut self.ctx.table, true, 0)
     }
 
     /// Evaluates `ProjectionEq` and `TraitBound` obligations after call argument typechecking (`Checkbox 3.4`).
@@ -206,7 +168,7 @@ impl<'a, 's> Runner<'a, 's> {
         }
         let indexed_owner = self.local_defs.is_clean_indexed() && bound_owner_def.is_some() && !bound_owner_def.is_overlay();
         if obls.is_empty() && cst_fn_node != u32::MAX && !indexed_owner {
-            collect_cst_fn_obligations(self.local_defs, NodeId(cst_fn_node), self.st, self.file_res, self.db, &mut self.ctx.table, &mut obls);
+            collect_cst_fn_obligations(self.local_defs, NodeId(cst_fn_node), self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut obls);
         }
         for obl in obls.iter().copied() {
             if let WhereObligation::ProjectionEq { lhs_ty, trait_def, assoc_def, trait_args, rhs_ty } = obl {
@@ -249,7 +211,6 @@ pub(super) fn solve_obligation_senv(
     raw_self: InferTyId,
     raw_args: &[InferTyId],
     table: &mut InferenceTable,
-    scratch: &mut Vec<GlobalDefId>,
     allow_ambig_self_var: bool,
     depth: u8,
 ) -> bool {
@@ -267,7 +228,7 @@ pub(super) fn solve_obligation_senv(
             if allow_ambig_self_var {
                 return true;
             }
-            let _ = try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, scratch, depth + 1)
+            let _ = try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, depth + 1)
                 || senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars);
             return true;
         }
@@ -296,30 +257,22 @@ pub(super) fn solve_obligation_senv(
         }
     }
     if let InferTyKind::Param { idx, def: pdef } = table.arena.kind(self_ty) {
-        if param_has_active_bound(senv, scratch, idx, pdef, trait_def) {
+        if param_has_active_bound(senv, table, idx, pdef, trait_def) {
             return true;
         }
     }
     if let InferTyKind::Dyn { principal, .. } | InferTyKind::Opaque { def: principal, .. } = table.arena.kind(self_ty) {
-        if principal == trait_def || trait_has_super(senv, scratch, principal, trait_def) {
+        if principal == trait_def || trait_has_super(senv, table, principal, trait_def) {
             return true;
         }
     }
-    if try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, scratch, depth + 1) {
+    if try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, depth + 1) {
         return true;
     }
     senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars)
 }
 
-fn try_solve_local_cst_impls(
-    senv: SolveEnv<'_, '_>,
-    trait_def: GlobalDefId,
-    self_ty: InferTyId,
-    trait_args: &[InferTyId],
-    table: &mut InferenceTable,
-    scratch: &mut Vec<GlobalDefId>,
-    depth: u8,
-) -> bool {
+fn try_solve_local_cst_impls(senv: SolveEnv<'_, '_>, trait_def: GlobalDefId, self_ty: InferTyId, trait_args: &[InferTyId], table: &mut InferenceTable, depth: u8) -> bool {
     let self_head = impl_target_key_of_ty(&table.arena, self_ty);
     let self_is_var = matches!(table.arena.kind(self_ty), InferTyKind::Infer(_));
     let mut match_count = 0u32;
@@ -339,7 +292,7 @@ fn try_solve_local_cst_impls(
             continue;
         }
         let snap = table.start_snapshot();
-        let ok = bind_and_check_cst_impl(senv, (imp.node, imp.impl_generics, imp_self, is_blanket), imp_args.as_slice(), self_ty, trait_args, table, scratch, depth);
+        let ok = bind_and_check_cst_impl(senv, (imp.node, imp.impl_generics, imp_self, is_blanket), imp_args.as_slice(), self_ty, trait_args, table, depth);
         table.rollback_to(snap);
         if ok {
             match_count += 1;
@@ -354,7 +307,7 @@ fn try_solve_local_cst_impls(
             if let Some((_, imp_args, imp_self)) = senv.local_defs.lower_trait_impl_header(node, igc, senv.st, senv.file_res, senv.db, table) {
                 let is_b = matches!(table.arena.kind(imp_self), InferTyKind::Param { .. });
                 let snap = table.start_snapshot();
-                if bind_and_check_cst_impl(senv, (node, igc, imp_self, is_b), imp_args.as_slice(), self_ty, trait_args, table, scratch, depth) {
+                if bind_and_check_cst_impl(senv, (node, igc, imp_self, is_b), imp_args.as_slice(), self_ty, trait_args, table, depth) {
                     table.commit(snap);
                 } else {
                     table.rollback_to(snap);
@@ -373,7 +326,6 @@ fn bind_and_check_cst_impl(
     self_ty: InferTyId,
     trait_args: &[InferTyId],
     table: &mut InferenceTable,
-    scratch: &mut Vec<GlobalDefId>,
     depth: u8,
 ) -> bool {
     let mut subst = InlineTyBuf::new();
@@ -396,5 +348,5 @@ fn bind_and_check_cst_impl(
             return false;
         }
     }
-    !is_blanket || check_cst_impl_bounds_senv(senv, imp_node, imp_gc, subst.as_slice(), table, scratch, false, depth)
+    !is_blanket || check_cst_impl_bounds_senv(senv, imp_node, imp_gc, subst.as_slice(), table, false, depth)
 }

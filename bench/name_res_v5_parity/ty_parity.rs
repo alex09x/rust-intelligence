@@ -15,18 +15,16 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use memmap2::Mmap;
-use ridx_format::{DefKind, IndexReader, RefEntry, TyId, TyKindView};
+use ridx_format::{DefKind, IndexReader, RefEntry};
 use ridx_syntax::name_res::{eval_outer_attrs, CrateDefMap, CrateId, FileId, FileNameRes, GlobalDefId, ItemKind, LocalItemId, ResTarget};
-use ridx_syntax::ty_infer::autoderef::{normalize_ty_with_owner, NormOwner};
-use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, InferTyId, LocalCstDefs, ResolvedDotRef};
+use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, LocalCstDefs, ResolvedDotRef};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree};
 
 use crate::meta::CorpusFile;
 use crate::target_match::ref_targets_match;
-use crate::ty_funnel::{finalize_reached_file_funnel, CLAIM_CLAIMED, CLAIM_NONE, CLAIM_PAREN};
-use crate::ty_report::{ty_contains_unknown, tys_eq_mode, ExprTyRec, ExprTySidecar, DESUGARED_TY_FLAG, EQ_LENIENT_ARRAY_LEN, EQ_LENIENT_DYN_OPAQUE, EQ_STRICT};
+use crate::ty_funnel::{compare_fn_expr_tys, finalize_reached_file_funnel, CLAIM_NONE};
+use crate::ty_report::ExprTySidecar;
 use crate::v5_db::RidxV5ItemDb;
-use crate::v5_ty_lower::{lower_v5_ty, ParamRemap};
 use crate::{reset_alloc_counters, snapshot_alloc_counters};
 
 #[derive(Default)]
@@ -277,121 +275,4 @@ fn sysroot_trait_impl_method_matches(r_idx: usize, reader: &IndexReader<Mmap>, d
     let tr_r = db.resolve_extern_name_to_reader(r_idx, first).or_else(|| db.sysroot_by_name.get(first).copied()).unwrap_or(r_idx);
     let drv_tr = db.canonical_def(db.find_def_in_reader_by_path(tr_r, tr_base));
     drv_tr.is_some() && (drv_tr == our_tr || db.trait_supertraits.get(&drv_tr).is_some_and(|s| s.iter().any(|&x| db.canonical_def(x) == our_tr)))
-}
-
-#[inline]
-fn best_eq_mode(a: Option<u8>, b: Option<u8>) -> Option<u8> {
-    a.zip(b).map(|(x, y)| x.min(y)).or(a).or(b)
-}
-
-#[allow(clippy::too_many_arguments)]
-fn compare_fn_expr_tys(
-    r_idx: usize,
-    cf: &CorpusFile,
-    st: &SyntaxTree<'_>,
-    res_buf: &FileNameRes,
-    db: &RidxV5ItemDb<'_>,
-    local_defs: &LocalCstDefs,
-    infer_ctx: &mut BodyInferCtx,
-    fn_res: &FnInferResult,
-    fn_node: NodeId,
-    file_recs: &[ExprTyRec],
-    group_state: &mut [u8],
-    max_samples: usize,
-    stats: &mut TyParityStats,
-) {
-    let reader = &db.ws.readers()[r_idx];
-    let va = reader.ty_arena();
-    let fn_gid = local_defs.fn_def_for_node(fn_node);
-    let norm_owner = NormOwner { fn_def: fn_gid, impl_node: None, impl_gc: 0, fn_node: Some(fn_node), self_ty: None };
-    let mut cached_owner = u32::MAX - 1;
-    let mut remap = ParamRemap::empty();
-
-    for &(enode, our_raw_ty) in &fn_res.expr_tys {
-        let ek = st.kind(enode);
-        let er = st.range(enode);
-        let (sb, eb) = (er.start as u32, er.end as u32);
-        let lo = file_recs.partition_point(|r| (r.start, r.end) < (sb, eb));
-        if lo >= file_recs.len() || (file_recs[lo].start, file_recs[lo].end) != (sb, eb) {
-            continue;
-        }
-        if ek == K::ParenExpr {
-            if group_state[lo] == CLAIM_NONE {
-                group_state[lo] = CLAIM_PAREN;
-            }
-            continue;
-        }
-        if group_state[lo] == CLAIM_CLAIMED {
-            continue;
-        }
-        group_state[lo] = CLAIM_CLAIMED;
-
-        let hi = lo + file_recs[lo..].partition_point(|r| (r.start, r.end) == (sb, eb));
-        let slice = &file_recs[lo..hi];
-        let is_cst_desugared = matches!(ek, K::TryExpr | K::AwaitExpr | K::ForExpr | K::WhileExpr);
-        let chosen = slice.iter().find(|r| ((r.adj_ty_flagged & DESUGARED_TY_FLAG) != 0) == is_cst_desugared).unwrap_or(&slice[0]);
-
-        let raw_tid = TyId(chosen.raw_ty);
-        if matches!(va.kind(raw_tid), TyKindView::Unknown) {
-            stats.exprty_driver_unknown += 1;
-            continue;
-        }
-        let owner_didx = if chosen.owner_def_idx != u32::MAX {
-            chosen.owner_def_idx
-        } else if fn_gid.krate.0 as usize == r_idx {
-            fn_gid.index
-        } else {
-            u32::MAX
-        };
-        if owner_didx != cached_owner {
-            remap = ParamRemap::for_def(db, r_idx, owner_didx, true, &mut infer_ctx.table.arena);
-            cached_owner = owner_didx;
-        }
-        let comp_raw = lower_v5_ty(db, r_idx, va, raw_tid, &remap, &mut infer_ctx.table.arena);
-        let comp_adj = lower_v5_ty(db, r_idx, va, TyId(chosen.adj_ty_flagged & !DESUGARED_TY_FLAG), &remap, &mut infer_ctx.table.arena);
-        if comp_raw == InferTyId::UNKNOWN && comp_adj == InferTyId::UNKNOWN {
-            stats.exprty_driver_unknown += 1;
-            continue;
-        }
-
-        stats.expr_compared += 1;
-        let norm_our = normalize_ty_with_owner(&mut infer_ctx.table, db, local_defs, st, res_buf, norm_owner, our_raw_ty);
-        let mut best = best_eq_mode(tys_eq_mode(db, &infer_ctx.table.arena, norm_our, comp_raw, 0), tys_eq_mode(db, &infer_ctx.table.arena, norm_our, comp_adj, 0));
-        if best != Some(EQ_STRICT) && slice.len() > 1 {
-            for alt in slice {
-                let cr = lower_v5_ty(db, r_idx, va, TyId(alt.raw_ty), &remap, &mut infer_ctx.table.arena);
-                let ca = lower_v5_ty(db, r_idx, va, TyId(alt.adj_ty_flagged & !DESUGARED_TY_FLAG), &remap, &mut infer_ctx.table.arena);
-                best = best_eq_mode(best, best_eq_mode(tys_eq_mode(db, &infer_ctx.table.arena, norm_our, cr, 0), tys_eq_mode(db, &infer_ctx.table.arena, norm_our, ca, 0)));
-                if best == Some(EQ_STRICT) {
-                    break;
-                }
-            }
-        }
-        if let Some(mode) = best {
-            stats.expr_matched += 1;
-            stats.expr_strict_matched += usize::from(mode == EQ_STRICT);
-            stats.expr_lenient_dyn_opaque += usize::from((mode & EQ_LENIENT_DYN_OPAQUE) != 0);
-            stats.expr_lenient_array_len += usize::from((mode & EQ_LENIENT_ARRAY_LEN) != 0);
-            continue;
-        }
-        let has_unk = ty_contains_unknown(&infer_ctx.table.arena, norm_our, 0);
-        if has_unk {
-            stats.expr_our_unknown += 1;
-        } else {
-            stats.expr_wrong_ty += 1;
-        }
-        let bkey = format!("{}:{ek:?}", if has_unk { "EXPR_UNK" } else { "EXPR_DIFF" });
-        *stats.expr_miss_buckets.entry(bkey.clone()).or_insert(0) += 1;
-        if stats.expr_samples.len() < max_samples {
-            let (ln, col) = cf.lines.to_line_col(&cf.text, sb);
-            let snip: String = cf.text.get(sb as usize..eb as usize).unwrap_or("?").chars().take(48).collect();
-            stats.expr_samples.push(format!(
-                "[{bkey}] {}:{ln}:{col} `{}` -> our {:?} vs rustc {:?}",
-                cf.rel_path,
-                snip.replace('\n', " "),
-                infer_ctx.table.arena.kind(norm_our),
-                va.kind(raw_tid)
-            ));
-        }
-    }
 }

@@ -188,11 +188,12 @@ impl InferTyArena {
         self.intern_with_slice(9, w, 0, args, TyFlags::EMPTY, |r| InferTyKind::FnDef { def, args: r })
     }
 
-    pub fn mk_closure(&mut self, id: u32, inputs: &[InferTyId], output: InferTyId) -> InferTyId {
+    pub fn mk_closure(&mut self, def_start: u32, def_end: u32, inputs: &[InferTyId], output: InferTyId) -> InferTyId {
         let mark = self.ty_lists.len();
         self.ty_lists.extend_from_slice(inputs);
         self.ty_lists.push(output);
-        self.finish_slice_intern(10, id as u64, 0, mark, TyFlags::EMPTY, |r| InferTyKind::Closure { id, sig: r })
+        let w = ((def_start as u64) << 32) | (def_end as u64);
+        self.finish_slice_intern(10, w, 0, mark, TyFlags::EMPTY, |r| InferTyKind::Closure { def_start, def_end, sig: r })
     }
 
     pub fn mk_alias(&mut self, trait_def: GlobalDefId, assoc_def: GlobalDefId, self_ty: InferTyId, args: &[InferTyId]) -> InferTyId {
@@ -260,7 +261,7 @@ impl InferTyArena {
             (InferTyKind::Adt { def: d1, args: r1 }, InferTyKind::Adt { def: d2, .. }) => d1 == d2 && slice_eq(r1),
             (InferTyKind::FnPtr { sig: r1 }, InferTyKind::FnPtr { .. }) => slice_eq(r1),
             (InferTyKind::FnDef { def: d1, args: r1 }, InferTyKind::FnDef { def: d2, .. }) => d1 == d2 && slice_eq(r1),
-            (InferTyKind::Closure { id: i1, sig: r1 }, InferTyKind::Closure { id: i2, .. }) => i1 == i2 && slice_eq(r1),
+            (InferTyKind::Closure { def_start: s1, def_end: e1, sig: r1 }, InferTyKind::Closure { def_start: s2, def_end: e2, .. }) => s1 == s2 && e1 == e2 && slice_eq(r1),
             (InferTyKind::Alias { trait_def: t1, assoc_def: a1, self_ty: s1, args: r1 }, InferTyKind::Alias { trait_def: t2, assoc_def: a2, self_ty: s2, .. }) => {
                 t1 == t2 && a1 == a2 && s1 == s2 && slice_eq(r1)
             }
@@ -356,10 +357,10 @@ fn clone_ty_rec(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena, depth
             let buf = clone_slice(src, args, dst, depth + 1);
             dst.mk_fn_def(def, buf.as_slice())
         }
-        InferTyKind::Closure { id: cid, sig } => {
+        InferTyKind::Closure { def_start, def_end, sig } => {
             let buf = clone_slice(src, sig, dst, depth + 1);
             let s = buf.as_slice();
-            dst.mk_closure(cid, &s[..s.len() - 1], s[s.len() - 1])
+            dst.mk_closure(def_start, def_end, &s[..s.len() - 1], s[s.len() - 1])
         }
         InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
             let ns = clone_ty_rec(src, self_ty, dst, depth + 1);

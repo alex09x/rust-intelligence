@@ -77,7 +77,22 @@ impl<'a> Collector<'a> {
         }
         let a_start = self.out.local_impls.assoc_items.len() as u32;
         if let Some(il) = st.child(node, K::ItemList) {
-            self.out.local_impls.collect_assoc_list(st, il, self.mod_tree, mod_id, file, LocalImplId::NONE, lid, false, self.db, self.krate, &mut self.macro_defs, macro_env, 0);
+            self.out.local_impls.collect_assoc_list(
+                st,
+                il,
+                self.mod_tree,
+                mod_id,
+                file,
+                LocalImplId::NONE,
+                lid,
+                false,
+                self.db,
+                self.sources,
+                self.krate,
+                &mut self.macro_defs,
+                macro_env,
+                0,
+            );
         }
         let a_len = (self.out.local_impls.assoc_items.len() as u32 - a_start).min(u16::MAX as u32) as u16;
         self.out.local_impls.trait_assocs.push((lid, a_start, a_len));
@@ -153,8 +168,11 @@ impl<'a> Collector<'a> {
         let lid = self.push_item(mod_id, file, LocalItemId::NONE, idx_def, name, ItemKind::Macro, vis, vis_mod, false, attrs.macro_export, nr.start as u32, nr.end as u32);
         self.out.textual_macros[mod_id.0 as usize].push((lid, idx_def));
         if let Some(tt_node) = st.child(node, K::TokenTree) {
+            let body_txt = st.text(tt_node);
+            let (bs, be) = self.push_str(body_txt);
+            self.out.macro_bodies.push((lid, bs, be));
             let def_idx = self.macro_defs.len();
-            self.macro_defs.push((name.to_string(), st.text(tt_node).to_string(), None));
+            self.macro_defs.push((name.to_string(), body_txt.to_string(), None));
             macro_env.push((name.to_string(), def_idx, lid, idx_def));
         }
     }
@@ -163,29 +181,80 @@ impl<'a> Collector<'a> {
         let (Some(path_node), Some(tt_node)) = (st.child(call_node, K::Path), st.child(call_node, K::TokenTree)) else {
             return;
         };
+        let raw_call = st.text(path_node).trim();
+        if super::include_eval::is_include_call_path(raw_call) {
+            if !eval_outer_attrs(st, call_node, self.db, self.krate).enabled {
+                return;
+            }
+            let mod_path = self.mod_tree.crate_path(mod_id);
+            let db = self.db;
+            let krate = self.krate;
+            let mdefs = &mut self.macro_defs;
+            let env_ref: &MacroScopeVec = macro_env;
+            let inc_opt = super::include_eval::resolve_include_target(st, call_node, file, db, self.sources, krate, &mut |mpath, margs| {
+                if !mpath.contains("::") {
+                    let short = norm_ident(mpath);
+                    if let Some(&(_, idx, _, _)) = env_ref.iter().rfind(|(n, _, _, _)| n == short) {
+                        let (_, body, cache) = &mut mdefs[idx];
+                        if cache.is_none() {
+                            *cache = MacroRulesDef::parse_body(body);
+                        }
+                        return cache.as_ref()?.expand(margs, "crate");
+                    }
+                }
+                let (b, dc) = db.macro_rules_with_crate(krate, mod_path, mpath)?;
+                MacroRulesDef::parse_body(b)?.expand(margs, dc)
+            });
+            if let Some(inc_file) = inc_opt {
+                if inc_file != file && !self.in_flight_includes.contains(&inc_file) {
+                    let inc_st = parse(self.sources.file_text(inc_file));
+                    self.in_flight_includes.push(inc_file);
+                    self.scan_items(mod_id, inc_file, &inc_st, inc_st.root(), macro_env, 0);
+                    self.in_flight_includes.pop();
+                }
+            }
+            return;
+        }
         let tt_text = st.text(tt_node);
         let inner = if tt_text.len() >= 2 { &tt_text[1..tt_text.len() - 1] } else { tt_text };
-        if !has_scope_item_kw(inner) {
-            return;
-        }
-        let attrs = eval_outer_attrs(st, call_node, self.db, self.krate);
-        if !attrs.enabled {
-            return;
-        }
-        let raw_call = st.text(path_node).trim();
+        let inner_has_kw = has_scope_item_kw(inner);
         let expanded = if !raw_call.contains("::") {
             let short = norm_ident(raw_call);
             if let Some(&(_, idx, _, _)) = macro_env.iter().rfind(|(n, _, _, _)| n == short) {
                 let (_, body, cache) = &mut self.macro_defs[idx];
+                if !inner_has_kw && !has_scope_item_kw(body) && !body.contains('!') {
+                    return;
+                }
+                if !eval_outer_attrs(st, call_node, self.db, self.krate).enabled {
+                    return;
+                }
                 if cache.is_none() {
                     *cache = MacroRulesDef::parse_body(body);
                 }
                 cache.as_ref().and_then(|d| d.expand(inner, "crate"))
             } else {
-                self.db.macro_rules_body(self.krate, self.mod_tree.crate_path(mod_id), raw_call).and_then(MacroRulesDef::parse_body).and_then(|d| d.expand(inner, "crate"))
+                let Some((b, dc)) = self.db.macro_rules_with_crate(self.krate, self.mod_tree.crate_path(mod_id), raw_call) else {
+                    return;
+                };
+                if !inner_has_kw && !has_scope_item_kw(b) && !b.contains('!') {
+                    return;
+                }
+                if !eval_outer_attrs(st, call_node, self.db, self.krate).enabled {
+                    return;
+                }
+                MacroRulesDef::parse_body(b).and_then(|d| d.expand(inner, dc))
             }
         } else {
-            self.db.macro_rules_body(self.krate, self.mod_tree.crate_path(mod_id), raw_call).and_then(MacroRulesDef::parse_body).and_then(|d| d.expand(inner, "crate"))
+            let Some((b, dc)) = self.db.macro_rules_with_crate(self.krate, self.mod_tree.crate_path(mod_id), raw_call) else {
+                return;
+            };
+            if !inner_has_kw && !has_scope_item_kw(b) && !b.contains('!') {
+                return;
+            }
+            if !eval_outer_attrs(st, call_node, self.db, self.krate).enabled {
+                return;
+            }
+            MacroRulesDef::parse_body(b).and_then(|d| d.expand(inner, dc))
         };
         if let Some(exp) = expanded {
             let exp_st = parse(&exp);
@@ -321,12 +390,9 @@ fn push_variant_slice<'s>(src: &'s str, mut slice: &[Token], db: &dyn ItemDb, kr
     if !attrs.enabled {
         return;
     }
-    let Some(&name_tok) = slice.first() else {
+    let Some(&name_tok) = slice.first().filter(|t| matches!(t.kind, T::Ident | T::RawIdent)) else {
         return;
     };
-    if !matches!(name_tok.kind, T::Ident | T::RawIdent) {
-        return;
-    }
     let has_ctor = slice.get(1).map(|t| t.kind) != Some(T::LBrace);
     out.push((norm_ident(name_tok.text(src)), has_ctor, name_tok.start, name_tok.end));
 }

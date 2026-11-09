@@ -90,6 +90,8 @@ pub struct CrateDefMap {
     /// Per-`FlatUse` resolved `PerNs` (`resolved_uses[i]` corresponds to `uses.uses[i]`).
     pub resolved_uses: Vec<PerNs>,
     pub dirty_files: Vec<FileId>,
+    pub mod_tree: Arc<ModuleTree>,
+    pub macro_bodies: Vec<(LocalItemId, u32, u32)>,
     pub local_impls: LocalImplArena,
     pub(super) local_alias_targets: HashMap<GlobalDefId, ImplTargetKey>,
     pub diagnostics: Vec<UseDiag>,
@@ -138,6 +140,14 @@ impl CrateDefMap {
     pub fn item_name(&self, id: LocalItemId) -> &str {
         let it = self.item(id);
         &self.item_strings[it.name_start as usize..it.name_end as usize]
+    }
+
+    /// Returns the raw `{ ... }` body text of a locally defined `macro_rules!` (`ItemKind::Macro`).
+    #[inline]
+    pub fn local_macro_body(&self, id: LocalItemId) -> Option<&str> {
+        let idx = self.macro_bodies.binary_search_by_key(&id, |&(lid, ..)| lid).ok()?;
+        let (_, bs, be) = self.macro_bodies[idx];
+        Some(&self.item_strings[bs as usize..be as usize])
     }
 
     /// Resolves an unqualified single-segment identifier `raw_name` inside `module` across all

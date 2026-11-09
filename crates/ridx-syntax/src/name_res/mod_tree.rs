@@ -90,7 +90,7 @@ pub enum ModDiag {
 }
 
 /// Flat, arena-allocated module hierarchy of one crate.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ModuleTree {
     pub krate: CrateId,
     pub edition: Edition,
@@ -197,7 +197,7 @@ impl ModuleTree {
         let mut best: Option<ModuleId> = None;
         for m_id in self.modules_for_file(file) {
             let m = self.module(m_id);
-            if !m.is_inline() {
+            if !m.is_inline() || m.file != file {
                 if best.is_none() {
                     best = Some(m_id);
                 }
@@ -212,16 +212,24 @@ impl ModuleTree {
 #[inline]
 pub(super) fn parent_dir_str(path: &str) -> &str {
     match path.rfind('/') {
+        Some(0) => "/",
         Some(idx) => &path[..idx],
         None => "",
     }
 }
 
 #[inline]
-fn push_norm_segment(buf: &mut String, part: &str) {
+fn push_norm_segment(buf: &mut String, part: &str, is_abs: bool) {
     match part {
         "" | "." => {}
         ".." => {
+            if is_abs {
+                if buf.len() > 1 {
+                    let slash = buf.rfind('/').unwrap_or(0);
+                    buf.truncate(slash.max(1));
+                }
+                return;
+            }
             if let Some(slash) = buf.rfind('/') {
                 if &buf[slash + 1..] != ".." {
                     buf.truncate(slash);
@@ -237,7 +245,7 @@ fn push_norm_segment(buf: &mut String, part: &str) {
             buf.push_str("..");
         }
         normal => {
-            if !buf.is_empty() {
+            if !buf.is_empty() && buf != "/" {
                 buf.push('/');
             }
             buf.push_str(normal);
@@ -246,25 +254,33 @@ fn push_norm_segment(buf: &mut String, part: &str) {
 }
 
 /// Joins `base_dir`, `rel`, and `suffix` into `out` as a normalized `/` path with zero extra allocs.
+/// When `rel` is an absolute path (`/`-rooted), `base_dir` is ignored and the leading `/` is preserved.
 pub fn join_norm_into(out: &mut String, base_dir: &str, rel: &str, suffix: &str) {
     out.clear();
-    for part in base_dir.split(['/', '\\']) {
-        push_norm_segment(out, part);
+    let rel_is_abs = rel.starts_with('/');
+    let is_abs = rel_is_abs || base_dir.starts_with('/');
+    if is_abs {
+        out.push('/');
+    }
+    if !rel_is_abs {
+        for part in base_dir.split(['/', '\\']) {
+            push_norm_segment(out, part, is_abs);
+        }
     }
     let mut rel_it = rel.split(['/', '\\']).peekable();
     while let Some(part) = rel_it.next() {
         if rel_it.peek().is_none() && !suffix.is_empty() {
             if suffix.starts_with('/') {
-                push_norm_segment(out, part);
+                push_norm_segment(out, part, is_abs);
                 for sp in suffix.split('/') {
-                    push_norm_segment(out, sp);
+                    push_norm_segment(out, sp, is_abs);
                 }
             } else {
-                push_norm_segment(out, part);
+                push_norm_segment(out, part, is_abs);
                 out.push_str(suffix);
             }
         } else {
-            push_norm_segment(out, part);
+            push_norm_segment(out, part, is_abs);
         }
     }
 }

@@ -31,11 +31,14 @@ mod infer_expr_call;
 mod infer_expr_cf;
 mod infer_expr_closure;
 mod infer_expr_ops;
+mod infer_macro;
+mod infer_macro_std;
 pub mod infer_pat;
 pub mod lang_ops;
 pub mod local_defs;
 mod local_defs_adt;
 mod local_defs_impl;
+mod local_defs_macros;
 mod local_defs_proj;
 pub mod lower_ty;
 mod lower_ty_tok;
@@ -52,8 +55,8 @@ pub mod uf_table;
 pub mod unify;
 
 pub use arena::InferTyArena;
-pub use body_ctx::{BodyInferCtx, FnInferResult, ResolvedDotRef};
-pub use db::{clone_ty_into, CtorShapeKind, EmptyTyDefDb, MethodCand, TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
+pub use body_ctx::{BodyInferCtx, FnInferResult, MacroExprTy, ResolvedDotRef};
+pub use db::{clone_ty_into, CtorShapeKind, EmptyTyDefDb, MethodCand, StdMacroTy, TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
 pub use expectation::{BranchCoercer, Expectation};
 pub use infer_pat::BindingMode;
 pub use local_defs::{effective_local_def_id, LocalCstDefs};
@@ -70,6 +73,7 @@ use uf_table::InlineTyBuf;
 pub struct InferenceTable {
     pub arena: InferTyArena,
     pub vars: UnionFindTable,
+    pub(crate) gid_scratch: Vec<crate::name_res::GlobalDefId>,
 }
 
 impl InferenceTable {
@@ -78,7 +82,7 @@ impl InferenceTable {
     }
 
     pub fn with_capacity(arena_cap: usize, var_cap: usize) -> Self {
-        Self { arena: InferTyArena::with_capacity(arena_cap), vars: UnionFindTable::with_capacity(var_cap) }
+        Self { arena: InferTyArena::with_capacity(arena_cap), vars: UnionFindTable::with_capacity(var_cap), gid_scratch: Vec::with_capacity(48) }
     }
 
     /// Resets all dynamic types and inference variables while keeping allocated buffers.
@@ -86,6 +90,7 @@ impl InferenceTable {
     pub fn clear(&mut self) {
         self.arena.clear();
         self.vars.clear();
+        self.gid_scratch.clear();
     }
 
     #[inline]
@@ -218,10 +223,10 @@ impl InferenceTable {
                 let sub = self.instantiate_slice(args, subst, depth + 1);
                 self.arena.mk_fn_def(def, sub.as_slice())
             }
-            InferTyKind::Closure { id, sig } => {
+            InferTyKind::Closure { def_start, def_end, sig } => {
                 let sub = self.instantiate_slice(sig, subst, depth + 1);
                 let s = sub.as_slice();
-                self.arena.mk_closure(id, &s[..s.len() - 1], s[s.len() - 1])
+                self.arena.mk_closure(def_start, def_end, &s[..s.len() - 1], s[s.len() - 1])
             }
             InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
                 let ns = self.instantiate_rec(self_ty, subst, depth + 1);

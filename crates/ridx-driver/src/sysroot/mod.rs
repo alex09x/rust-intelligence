@@ -30,6 +30,7 @@ mod traits;
 pub mod util;
 
 pub use cas::{compute_sysroot_cas_key, compute_sysroot_cas_key_str, ensure_sysroot_indexed};
+pub(crate) use lang::is_materialized_unstable_type;
 pub use primitives::extract_primitive_inherent_impls;
 pub use traits::{collect_sysroot_traits, extract_trait_and_deref_links};
 pub use util::{discover_rust_src_path, format_assoc_fn_sig, is_publicly_visible, is_stable_api, remap_sysroot_path};
@@ -196,7 +197,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
                     continue;
                 }
 
-                if !child.vis.is_public() || !is_publicly_visible(tcx, did) || !is_stable_api(tcx, did) {
+                if !child.vis.is_public() || !is_publicly_visible(tcx, did) || !(is_stable_api(tcx, did) || lang::is_materialized_unstable_type(tcx, did)) {
                     continue;
                 }
 
@@ -299,6 +300,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
     // Collect `#[lang]` items in `cnum` and materialize unstable/private lang items & assoc items
     let crate_lang_items = crate::ty_lower::lang_items::collect_crate_lang_items(tcx, cnum);
     lang::materialize_lang_items(tcx, &crate_lang_items, sysroot_src, &mut writer, &mut visited, &mut collector);
+    lang::materialize_unstable_default_types(tcx, target_crate, cnum, sysroot_src, &mut writer, &mut visited, &mut collector);
 
     if !collector.callables.is_empty()
         || !collector.impl_dids.is_empty()

@@ -152,7 +152,7 @@ fn directional_coercions_and_unknown_recovery() {
     // Closure -> `fn(i32) -> bool` coercion propagates parameter and return types!
     let c_arg = tab.new_ty_var();
     let c_ret = tab.new_ty_var();
-    let clos = tab.arena.mk_closure(0, &[c_arg], c_ret);
+    let clos = tab.arena.mk_closure(10, 16, &[c_arg], c_ret);
     let fn_ptr = tab.arena.mk_fn_ptr(&[InferTyId::I32], InferTyId::BOOL);
     assert!(tab.coerce(clos, fn_ptr).is_ok());
     assert_eq!(tab.shallow_resolve(c_arg), InferTyId::I32);

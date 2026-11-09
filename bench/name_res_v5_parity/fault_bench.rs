@@ -23,6 +23,8 @@ use ridx_syntax::ty_infer::autoderef::{normalize_ty_with_owner, NormOwner};
 use ridx_syntax::ty_infer::{BodyInferCtx, FnInferResult, InferTyId, InferTyKind, LocalCstDefs};
 use ridx_syntax::{parse, NodeId, SyntaxKind as K, SyntaxTree, TokenKind as T};
 
+use crate::fault_completion::CompletionMethodIndex;
+use crate::fault_report::{build_masked_base_for_body, classify_recv_match, RecvMatch};
 use crate::meta::CorpusFile;
 use crate::ty_parity::collect_active_body_nodes;
 use crate::ty_report::{ty_contains_unknown, ExprTyRec, ExprTySidecar, DESUGARED_TY_FLAG};
@@ -36,12 +38,15 @@ pub struct FaultBenchStats {
     pub panics: usize,
     pub leaked_infer_vars: usize,
     pub mut_fn_ns: Vec<u64>,
+    pub tok_del_fn_ns: Vec<u64>,
+    pub trunc_fn_ns: Vec<u64>,
     pub dot_sites_known: usize,
     pub dot_recv_matched: usize,
     pub dot_recv_posthoc_full: usize,
     pub dot_recv_strict: usize,
+    pub dot_recv_prefix_eq_methods: usize,
+    pub dot_recv_prefix_diff_methods: usize,
     pub dot_recv_drv_erased: usize,
-    pub dot_recv_prefix_head: usize,
     pub dot_recv_our_unknown: usize,
     pub dot_recv_wrong_ty: usize,
     pub dot_recv_panics: usize,
@@ -73,6 +78,7 @@ pub fn run_file_fault_and_partial_dot(
     st: &SyntaxTree<'_>,
     snap: &CrateSnapshot,
     db: &RidxV5ItemDb<'_>,
+    comp_idx: &CompletionMethodIndex<'_>,
     sidecar: Option<&ExprTySidecar>,
     fault_n: usize,
     max_samples: usize,
@@ -116,7 +122,8 @@ pub fn run_file_fault_and_partial_dot(
             mut_buf.clear();
             let b_start = body_range.start.min(masked_base.len());
             let b_end = body_range.end.min(masked_base.len());
-            if m % 2 == 0 && !sig_toks.is_empty() {
+            let is_tok_del = m % 2 == 0 && !sig_toks.is_empty();
+            if is_tok_del {
                 let &(ts, te) = &sig_toks[(rng.next_u64() as usize) % sig_toks.len()];
                 let (s, e) = ((ts as usize).min(masked_base.len()), (te as usize).min(masked_base.len()));
                 mut_buf.push_str(&masked_base[..s]);
@@ -149,6 +156,11 @@ pub fn run_file_fault_and_partial_dot(
             match run_res {
                 Ok((ns, leaked)) => {
                     stats.mut_fn_ns.push(ns);
+                    if is_tok_del {
+                        stats.tok_del_fn_ns.push(ns);
+                    } else {
+                        stats.trunc_fn_ns.push(ns);
+                    }
                     stats.leaked_infer_vars += usize::from(leaked);
                 }
                 Err(_) => stats.panics += 1,
@@ -192,122 +204,86 @@ pub fn run_file_fault_and_partial_dot(
             let partial_src = &masked_base[..dot_end as usize];
             let dot_res = catch_unwind(AssertUnwindSafe(|| {
                 let mst = parse(partial_src);
-                let m_fn = find_mutated_body_node(&mst, fn_range.start)?;
+                let Some(m_fn) = find_mutated_body_node(&mst, fn_range.start) else {
+                    let rmap = ParamRemap::for_def(db, r_idx, owner_didx, true, &mut infer_ctx.table.arena);
+                    let cr0 = lower_v5_ty(db, r_idx, va, raw_tid, &rmap, &mut infer_ctx.table.arena);
+                    return (InferTyId::UNKNOWN, cr0, None, false);
+                };
                 snap.resolve_fn_paths_into(db, fid, &mst, m_fn, res_buf);
                 local_defs.index_target_fn_with_item_db(&mst, Some(&snap.clean_def_map), Some(db), fid, m_fn);
                 infer_ctx.infer_fn_into(&mst, res_buf, db, local_defs, m_fn, fn_res);
-                let raw = fn_res.receiver_ty_at_dot(&mst, dot_end)?;
-                let n_own = NormOwner { fn_def: fn_gid, impl_node: None, impl_gc: 0, fn_node: Some(m_fn), self_ty: None };
-                Some(normalize_ty_with_owner(&mut infer_ctx.table, db, local_defs, &mst, res_buf, n_own, raw))
+                let our_ty = match fn_res.receiver_ty_at_dot(&mst, dot_end) {
+                    Some(raw) => {
+                        let n_own = NormOwner { fn_def: fn_gid, impl_node: None, impl_gc: 0, fn_node: Some(m_fn), self_ty: None };
+                        normalize_ty_with_owner(&mut infer_ctx.table, db, local_defs, &mst, res_buf, n_own, raw)
+                    }
+                    None => InferTyId::UNKNOWN,
+                };
+                let rmap = ParamRemap::for_def(db, r_idx, owner_didx, true, &mut infer_ctx.table.arena);
+                let cr0 = lower_v5_ty(db, r_idx, va, raw_tid, &rmap, &mut infer_ctx.table.arena);
+                let ca0 = lower_v5_ty(db, r_idx, va, TyId(chosen.adj_ty_flagged & !DESUGARED_TY_FLAG), &rmap, &mut infer_ctx.table.arena);
+                let mut cands = vec![cr0, ca0];
+                if slice.len() > 1 {
+                    for alt in slice {
+                        cands.push(lower_v5_ty(db, r_idx, va, TyId(alt.raw_ty), &rmap, &mut infer_ctx.table.arena));
+                        cands.push(lower_v5_ty(db, r_idx, va, TyId(alt.adj_ty_flagged & !DESUGARED_TY_FLAG), &rmap, &mut infer_ctx.table.arena));
+                    }
+                }
+                let mut best: Option<RecvMatch> = None;
+                for &ct in &cands {
+                    best = best.max(classify_recv_match(db, &infer_ctx.table.arena, our_ty, ct));
+                    if best == Some(RecvMatch::StrictFull) {
+                        break;
+                    }
+                }
+                let eq_methods = best == Some(RecvMatch::PrefixHead)
+                    && cands.iter().any(|&ct| {
+                        classify_recv_match(db, &infer_ctx.table.arena, our_ty, ct) == Some(RecvMatch::PrefixHead)
+                            && comp_idx.prefix_head_has_identical_methods(db, &mst, res_buf, local_defs, infer_ctx, fn_gid, m_fn, dot_end, our_ty, ct)
+                    });
+                (our_ty, cr0, best, eq_methods)
             }));
-            let our_ty = match dot_res {
-                Ok(Some(t)) => t,
-                Ok(None) => InferTyId::UNKNOWN,
+            let (our_ty, cr0, best, eq_methods) = match dot_res {
+                Ok(v) => v,
                 Err(_) => {
                     stats.dot_recv_panics += 1;
                     continue;
                 }
             };
-            let rmap = ParamRemap::for_def(db, r_idx, owner_didx, true, &mut infer_ctx.table.arena);
-            let cr0 = lower_v5_ty(db, r_idx, va, raw_tid, &rmap, &mut infer_ctx.table.arena);
-            let ca0 = lower_v5_ty(db, r_idx, va, TyId(chosen.adj_ty_flagged & !DESUGARED_TY_FLAG), &rmap, &mut infer_ctx.table.arena);
-            let mut best = crate::fault_report::classify_recv_match(db, &infer_ctx.table.arena, our_ty, cr0).max(crate::fault_report::classify_recv_match(
-                db,
-                &infer_ctx.table.arena,
-                our_ty,
-                ca0,
-            ));
-            if best < Some(crate::fault_report::RecvMatch::StrictFull) && slice.len() > 1 {
-                for alt in slice {
-                    let cr = lower_v5_ty(db, r_idx, va, TyId(alt.raw_ty), &rmap, &mut infer_ctx.table.arena);
-                    let ca = lower_v5_ty(db, r_idx, va, TyId(alt.adj_ty_flagged & !DESUGARED_TY_FLAG), &rmap, &mut infer_ctx.table.arena);
-                    best = best.max(crate::fault_report::classify_recv_match(db, &infer_ctx.table.arena, our_ty, cr)).max(crate::fault_report::classify_recv_match(
-                        db,
-                        &infer_ctx.table.arena,
-                        our_ty,
-                        ca,
-                    ));
-                    if best == Some(crate::fault_report::RecvMatch::StrictFull) {
-                        break;
+            match best {
+                Some(RecvMatch::StrictFull) => {
+                    stats.dot_recv_matched += 1;
+                    stats.dot_recv_posthoc_full += 1;
+                    stats.dot_recv_strict += 1;
+                }
+                Some(RecvMatch::LenientFull) => {
+                    stats.dot_recv_matched += 1;
+                    stats.dot_recv_posthoc_full += 1;
+                }
+                Some(RecvMatch::PrefixHead) if eq_methods => {
+                    stats.dot_recv_matched += 1;
+                    stats.dot_recv_prefix_eq_methods += 1;
+                }
+                Some(RecvMatch::PrefixHead) => stats.dot_recv_prefix_diff_methods += 1,
+                Some(RecvMatch::DriverErasedArg) => stats.dot_recv_drv_erased += 1,
+                None => {
+                    let has_unk = ty_contains_unknown(&infer_ctx.table.arena, our_ty, 0);
+                    stats.dot_recv_our_unknown += usize::from(has_unk);
+                    stats.dot_recv_wrong_ty += usize::from(!has_unk);
+                    if stats.dot_samples.len() < max_samples {
+                        let (ln, col) = cf.lines.to_line_col(&cf.text, rs);
+                        let snip: String = cf.text.get(rs as usize..dot_end as usize).unwrap_or("?").chars().take(48).collect();
+                        stats.dot_samples.push(format!(
+                            "[{}] {}:{ln}:{col} `{}` -> our `{}` vs rustc `{}`",
+                            if has_unk { "DOT_UNK" } else { "DOT_DIFF" },
+                            cf.rel_path,
+                            snip.replace('\n', " "),
+                            infer_ctx.table.arena.format_ty(our_ty),
+                            infer_ctx.table.arena.format_ty(cr0)
+                        ));
                     }
                 }
             }
-            if let Some(rm) = best {
-                stats.dot_recv_matched += 1;
-                match rm {
-                    crate::fault_report::RecvMatch::StrictFull => {
-                        stats.dot_recv_posthoc_full += 1;
-                        stats.dot_recv_strict += 1;
-                    }
-                    crate::fault_report::RecvMatch::LenientFull => stats.dot_recv_posthoc_full += 1,
-                    crate::fault_report::RecvMatch::DriverErasedArg => stats.dot_recv_drv_erased += 1,
-                    crate::fault_report::RecvMatch::PrefixHead => stats.dot_recv_prefix_head += 1,
-                }
-            } else {
-                let has_unk = ty_contains_unknown(&infer_ctx.table.arena, our_ty, 0);
-                stats.dot_recv_our_unknown += usize::from(has_unk);
-                stats.dot_recv_wrong_ty += usize::from(!has_unk);
-                if stats.dot_samples.len() < max_samples {
-                    let (ln, col) = cf.lines.to_line_col(&cf.text, rs);
-                    let snip: String = cf.text.get(rs as usize..dot_end as usize).unwrap_or("?").chars().take(48).collect();
-                    stats.dot_samples.push(format!(
-                        "[{}] {}:{ln}:{col} `{}` -> our `{}` vs rustc `{}`",
-                        if has_unk { "DOT_UNK" } else { "DOT_DIFF" },
-                        cf.rel_path,
-                        snip.replace('\n', " "),
-                        infer_ctx.table.arena.format_ty(our_ty),
-                        infer_ctx.table.arena.format_ty(cr0)
-                    ));
-                }
-            }
-        }
-    }
-}
-
-fn build_masked_base_for_body(st: &SyntaxTree<'_>, src: &str, body_node: NodeId, out: &mut String) {
-    out.clear();
-    if src.len() <= 8_192 {
-        out.push_str(src);
-        return;
-    }
-    let fn_r = st.range(body_node);
-    let mut keep_end = (fn_r.end + 512).min(src.len());
-    while keep_end < src.len() && !src.is_char_boundary(keep_end) {
-        keep_end += 1;
-    }
-    out.push_str(&src[..keep_end]);
-    let bytes = unsafe { out.as_bytes_mut() };
-    mask_disjoint_siblings(st, st.root(), body_node, bytes);
-    for anc in st.ancestors(body_node).filter(|&a| st.kind(a) == K::ItemList && st.range(a).end > keep_end) {
-        let _ = anc;
-        out.push_str("\n}");
-    }
-}
-
-fn mask_disjoint_siblings(st: &SyntaxTree<'_>, container: NodeId, target: NodeId, bytes: &mut [u8]) {
-    let (ts, te, t_byte) = (target.0, st.node(target).subtree_end, st.range(target).start);
-    for ch in st.children(container) {
-        if ch.0 < te && ts < st.node(ch).subtree_end {
-            if let Some(il) = st.child(ch, K::ItemList) {
-                mask_disjoint_siblings(st, il, target, bytes);
-            }
-            continue;
-        }
-        match st.kind(ch) {
-            K::Fn => {
-                if let Some(blk) = st.child(ch, K::BlockExpr) {
-                    let br = st.range(blk);
-                    if br.end <= t_byte && br.end <= bytes.len() && br.start + 1 < br.end.saturating_sub(1) {
-                        bytes[br.start + 1..br.end - 1].fill(b' ');
-                    }
-                }
-            }
-            K::Impl | K::Trait | K::Module => {
-                if let Some(il) = st.child(ch, K::ItemList) {
-                    mask_disjoint_siblings(st, il, target, bytes);
-                }
-            }
-            _ => {}
         }
     }
 }
@@ -386,10 +362,10 @@ fn lookup_compiler_slice(file_recs: &[ExprTyRec], sb: u32, eb: u32) -> &[ExprTyR
 
 fn has_leaked_infer_var(ctx: &BodyInferCtx, res: &FnInferResult) -> bool {
     let a = &ctx.table.arena;
-    let _ = ParamRemap::empty;
     matches!(a.kind(res.ret_ty), InferTyKind::Infer(_))
         || matches!(a.kind(res.body_ty), InferTyKind::Infer(_))
         || res.expr_tys.iter().any(|&(_, t)| matches!(a.kind(t), InferTyKind::Infer(_)))
+        || res.macro_expr_tys.iter().any(|m| matches!(a.kind(m.ty), InferTyKind::Infer(_)))
         || res.pat_tys.iter().any(|&(_, t)| matches!(a.kind(t), InferTyKind::Infer(_)))
         || res.local_tys.iter().any(|&(_, t)| matches!(a.kind(t), InferTyKind::Infer(_)))
         || res.incomplete_dots.iter().any(|&(_, t)| matches!(a.kind(t), InferTyKind::Infer(_)))
