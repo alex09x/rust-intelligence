@@ -345,3 +345,23 @@ fn blanket_impls_over_bounds_local_and_external_and_return_directed() {
     assert_eq!(local_ty(&st, &fres, &res, "bad_ext"), InferTyId::UNKNOWN, "external blanket bound must reject `BadExt`");
     assert_ne!(local_ty(&st, &fres, &res, "conv"), InferTyId::UNKNOWN);
 }
+
+#[test]
+fn trait_assoc_const_generic_self_instantiation_from_expectation() {
+    let fx = TraitFixture::new();
+    let src = r#"
+        trait HasZero {
+            const ZERO: Self;
+        }
+        impl HasZero for u64 {
+            const ZERO: Self = 0;
+        }
+        fn pick_zero() -> u64 {
+            let z: u64 = HasZero::ZERO;
+            z
+        }
+    "#;
+    let (st, fres, _, _, res) = fx.infer(src, "pick_zero");
+    assert_eq!(local_ty(&st, &fres, &res, "z"), InferTyId::U64);
+    assert_eq!(res.body_ty, InferTyId::U64);
+}

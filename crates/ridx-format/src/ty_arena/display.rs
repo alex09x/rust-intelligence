@@ -140,7 +140,33 @@ impl<'a> TyArenaView<'a> {
             TyKindView::Str => out.write_str("str"),
             TyKindView::Never => out.write_str("!"),
             TyKindView::Unknown => out.write_str("{unknown}"),
-            TyKindView::Adt { def, args } | TyKindView::FnDef { def, args } => {
+            TyKindView::Adt { def, args } => {
+                self.write_def_name(def, true, out)?;
+                self.write_generic_args(args, out, depth)
+            }
+            TyKindView::FnDef { def, args } => {
+                if self.def(def).is_some_and(|d| d.path.starts_with("{closure}@")) {
+                    let n = args.len();
+                    let n_in = n.saturating_sub(1);
+                    out.write_str("impl Fn(")?;
+                    let mut out_ty = None;
+                    for (i, arg) in args.enumerate() {
+                        if i < n_in {
+                            if i > 0 {
+                                out.write_str(", ")?;
+                            }
+                            self.write_generic_arg(arg, out, depth)?;
+                        } else if let GenericArgView::Type(t) = arg {
+                            out_ty = Some(t);
+                        }
+                    }
+                    out.write_char(')')?;
+                    if let Some(ret) = out_ty.filter(|&t| !matches!(self.kind(t), TyKindView::Unit)) {
+                        out.write_str(" -> ")?;
+                        self.write_ty_depth(ret, out, depth + 1)?;
+                    }
+                    return Ok(());
+                }
                 self.write_def_name(def, true, out)?;
                 self.write_generic_args(args, out, depth)
             }

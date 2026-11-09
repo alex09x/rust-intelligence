@@ -65,7 +65,8 @@ impl<'tcx, 'a> TcxTypeLowerer<'tcx, 'a> {
             raw_path
         };
         let id = if did.krate == self.local_cnum {
-            let local_def_idx = self.local_def_indices.get(&did).copied().unwrap_or(u32::MAX);
+            let lookup_did = if matches!(self.tcx.def_kind(did), rustc_hir::def::DefKind::Ctor(..)) { self.tcx.parent(did) } else { did };
+            let local_def_idx = self.local_def_indices.get(&lookup_did).copied().unwrap_or(u32::MAX);
             writer.intern_ty_def(RawTyDef::Local { path: &path, local_def_idx })
         } else {
             let cname_sym = self.tcx.crate_name(did.krate);

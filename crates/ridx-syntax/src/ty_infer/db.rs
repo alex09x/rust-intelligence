@@ -173,6 +173,8 @@ pub enum StdMacroTy {
     FmtResult,
     /// `option_env!(...)` -> `core::option::Option<&'static str>`.
     OptionStr,
+    /// `thread_local! { static NAME: T = ...; }` -> `std::thread::LocalKey<T>`.
+    ThreadLocalKey(InferTyId),
 }
 
 /// External/indexed type & signature provider decoupling `ridx-syntax::ty_infer` from `ridx-format`.
@@ -260,6 +262,14 @@ pub trait TyDefDb {
     /// Appends trait bounds `Param(param_idx): BoundTrait` declared on `owner_def` (`Fn` or `AssocFn` or `Impl`).
     fn param_trait_bounds(&self, _owner_def: GlobalDefId, _param_idx: u16, _out: &mut Vec<GlobalDefId>) {}
 
+    /// Returns the parent `Trait` `GlobalDefId` of a trait associated type `assoc_def`.
+    fn assoc_ty_parent_trait(&self, _assoc_def: GlobalDefId) -> Option<GlobalDefId> {
+        None
+    }
+
+    /// Appends trait bounds `type Assoc: BoundTrait` declared on trait associated type `assoc_def`.
+    fn assoc_ty_trait_bounds(&self, _assoc_def: GlobalDefId, _out: &mut Vec<GlobalDefId>) {}
+
     /// Verifies blanket-impl `where` bounds after binding `impl_subst` against a method receiver.
     fn check_blanket_method_bounds(&self, _cand: &MethodCand, _impl_subst: &[InferTyId], _arena: &mut InferTyArena, _vars: &mut UnionFindTable) -> bool {
         true
@@ -268,6 +278,11 @@ pub trait TyDefDb {
     /// Returns canonical trait `AssocFn` metadata if `assoc_fn` is a trait declaration method or a trait-`impl` override.
     fn trait_of_assoc_fn(&self, _assoc_fn: GlobalDefId) -> Option<TraitAssocFnMeta> {
         None
+    }
+
+    /// Refines an inherent `AssocFn` when multiple specialized inherent `impl` blocks exist for `qself_ty` (e.g. `AtomicUsize::new`).
+    fn refine_inherent_assoc_fn(&self, assoc_fn: GlobalDefId, _qself_ty: InferTyId, _arena: &mut InferTyArena, _vars: &mut UnionFindTable) -> GlobalDefId {
+        assoc_fn
     }
 
     /// Looks up canonical trait `AssocFn` metadata by `(trait_def, fn_name)` (including static methods without `self`).

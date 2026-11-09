@@ -23,56 +23,10 @@ use super::expectation::Expectation;
 use super::infer_macro_std::classify_std_macro_path;
 use super::infer_pat::BindingMode;
 use super::tok_ty_scan::next_sig_idx;
+pub(super) use super::tok_ty_scan::{SubInferEnv, SubLocalEntry};
 use super::ty::InferTyId;
-use super::uf_table::InlineTyBuf;
 
 pub(super) const MAX_RUNTIME_MACRO_DEPTH: usize = 6;
-
-#[derive(Clone, Copy, Debug)]
-pub(super) struct SubLocalEntry {
-    len: u8,
-    bytes: [u8; 31],
-    pub ty: InferTyId,
-}
-
-impl SubLocalEntry {
-    pub fn new(name: &str, ty: InferTyId) -> Option<Self> {
-        let b = name.as_bytes();
-        if b.is_empty() || b.len() > 31 {
-            return None;
-        }
-        let mut bytes = [0u8; 31];
-        bytes[..b.len()].copy_from_slice(b);
-        Some(Self { len: b.len() as u8, bytes, ty })
-    }
-
-    #[inline]
-    pub fn matches(&self, name: &str) -> bool {
-        name.len() == self.len as usize && &self.bytes[..self.len as usize] == name.as_bytes()
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub(super) enum SubInferEnv<'a> {
-    StdSlice { callsite_node: NodeId, local_mark: u32 },
-    Expanded { callsite_node: NodeId, callsite_start: u32, callsite_end: u32, spans: &'a [ExpandedSpanMap], root_slot_base: u32, root_slots_len: u32, local_mark: u32 },
-}
-
-impl<'a> SubInferEnv<'a> {
-    #[inline]
-    pub fn callsite_node(self) -> NodeId {
-        match self {
-            Self::StdSlice { callsite_node, .. } | Self::Expanded { callsite_node, .. } => callsite_node,
-        }
-    }
-
-    #[inline]
-    pub fn local_mark(self) -> usize {
-        match self {
-            Self::StdSlice { local_mark, .. } | Self::Expanded { local_mark, .. } => local_mark as usize,
-        }
-    }
-}
 
 impl<'a, 's> Runner<'a, 's> {
     #[inline]
@@ -81,6 +35,14 @@ impl<'a, 's> Runner<'a, 's> {
             None | Some(SubInferEnv::StdSlice { .. }) => Some((start, end)),
             Some(SubInferEnv::Expanded { spans, .. }) => map_span_range(spans, start, end),
         }
+    }
+
+    #[inline]
+    pub(super) fn map_expr_span_to_orig(&self, start: u32, end: u32, kind: K) -> Option<(u32, u32)> {
+        self.map_span_to_orig(start, end).or(match (kind, self.sub) {
+            (K::MacroCall, Some(SubInferEnv::Expanded { callsite_start, callsite_end, .. })) => Some((callsite_start, callsite_end)),
+            _ => None,
+        })
     }
 
     #[inline]
@@ -121,8 +83,7 @@ impl<'a, 's> Runner<'a, 's> {
 
     #[inline]
     pub(super) fn lookup_sub_local(&self, name: &str) -> Option<InferTyId> {
-        let env = self.sub?;
-        self.ctx.sub_locals_buf[env.local_mark()..].iter().rev().find(|e| e.matches(name)).map(|e| e.ty)
+        self.ctx.sub_locals_buf.iter().rev().find(|e| e.matches(name)).map(|e| e.ty)
     }
 
     pub(super) fn lookup_sub_or_expanded_value(&mut self, path_node: NodeId) -> Option<InferTyId> {
@@ -164,20 +125,7 @@ impl<'a, 's> Runner<'a, 's> {
                 let off = root_lid.0.wrapping_sub(root_slot_base) as usize;
                 (off < root_slots_len as usize).then(|| self.ctx.local_slots.get(off).copied().filter(|t| t.is_some())).flatten().or(Some(InferTyId::UNKNOWN))
             }
-            target => {
-                if let ResTarget::Def { kind: ItemKind::AssocFn, .. } = target {
-                    let eff = super::lower_ty::effective_target_def(target);
-                    if eff.is_some() {
-                        let meta_opt = self.db.trait_of_assoc_fn(eff).or_else(|| self.local_defs.trait_of_assoc_fn(eff, self.root_st, self.root_file_res, self.db));
-                        if let Some(meta) = meta_opt {
-                            return Some(self.instantiate_trait_assoc_fn_path(path_node, meta));
-                        }
-                    }
-                }
-                let mut explicit = InlineTyBuf::new();
-                self.collect_path_turbofish(path_node, &mut explicit);
-                Some(self.instantiate_target_value(target, explicit.as_slice()))
-            }
+            target => Some(self.finish_value_path_target(path_node, target)),
         }
     }
 
@@ -197,6 +145,9 @@ impl<'a, 's> Runner<'a, 's> {
     }
 
     fn try_infer_pre_expanded(&mut self, mac_node: NodeId, expectation: Expectation, in_stmt: bool) -> Option<InferTyId> {
+        if self.sub.is_some() {
+            return None;
+        }
         let pre = self.local_defs.find_body_macro(mac_node)?;
         let idx = self.ctx.macro_depth;
         if idx >= self.ctx.macro_scratch.len() {
@@ -225,8 +176,7 @@ impl<'a, 's> Runner<'a, 's> {
                 (mac_node, cr.start as u32, cr.end as u32, prev_slot_base, sub_slot_off as u32)
             }
         };
-        let sub_env =
-            SubInferEnv::Expanded { callsite_node: cs_node, callsite_start: cs_start, callsite_end: cs_end, spans: &pre.spans, root_slot_base, root_slots_len, local_mark };
+        let sub_env = SubInferEnv::Expanded { callsite_node: cs_node, callsite_start: cs_start, callsite_end: cs_end, spans: &pre.spans, root_slot_base, root_slots_len };
 
         let (res_ty, pre_st) = {
             let pre_st = scratch.borrow_prebuilt(&pre.src, &pre.tokens, &pre.nodes);
@@ -253,6 +203,7 @@ impl<'a, 's> Runner<'a, 's> {
                     out: self.out,
                 };
                 let bty = child.infer_expr(pre.block_node, if in_stmt { Expectation::None } else { expectation });
+                child.ctx.sub_locals_buf.truncate(local_mark as usize);
                 if in_stmt {
                     child.export_stmt_macro_shadows(pre.block_node, &pre.spans, sub_slot_off);
                 }
@@ -262,7 +213,6 @@ impl<'a, 's> Runner<'a, 's> {
         };
 
         scratch.reclaim(pre_st);
-        self.ctx.sub_locals_buf.truncate(local_mark as usize);
         self.ctx.local_slots.truncate(sub_slot_off);
         self.ctx.local_slot_base = prev_slot_base;
         self.ctx.macro_depth -= 1;
@@ -271,19 +221,32 @@ impl<'a, 's> Runner<'a, 's> {
     }
 
     fn export_stmt_macro_shadows(&mut self, block_node: NodeId, spans: &[ExpandedSpanMap], sub_slot_off: usize) {
-        for ch in self.st.children(block_node).filter(|&c| self.st.kind(c) == K::LetStmt) {
-            let Some(pat) = self.st.children(ch).find(|&c| self.st.kind(c) == K::IdentPat) else { continue };
-            let (Some(nn), Some(pre_lid)) = (self.st.child(pat, K::Name), self.find_decl_local(pat)) else { continue };
-            let Some(bound_ty) = self.ctx.local_slots.get(sub_slot_off + pre_lid.0 as usize).copied().filter(|t| t.is_some() && *t != InferTyId::UNKNOWN) else {
-                continue;
-            };
-            let nr = self.st.range(nn);
-            let Some((orig_s, orig_e)) = map_span_range(spans, nr.start as u32, nr.end as u32) else { continue };
-            if let Some(ResTarget::Local(root_lid)) = self.root_file_res.refs_at_span(orig_s, orig_e).iter().find_map(|r| match r.target {
-                t @ ResTarget::Local(_) => Some(t),
-                _ => None,
-            }) {
-                self.ctx.macro_local_shadows.push((root_lid, bound_ty));
+        for ch in self.st.children(block_node) {
+            match self.st.kind(ch) {
+                K::LetStmt => {
+                    let Some(pat) = self.st.children(ch).find(|&c| self.st.kind(c) == K::IdentPat) else { continue };
+                    let (Some(nn), Some(pre_lid)) = (self.st.child(pat, K::Name), self.find_decl_local(pat)) else { continue };
+                    let Some(bound_ty) = self.ctx.local_slots.get(sub_slot_off + pre_lid.0 as usize).copied().filter(|t| t.is_some() && *t != InferTyId::UNKNOWN) else {
+                        continue;
+                    };
+                    let nr = self.st.range(nn);
+                    let Some((orig_s, orig_e)) = map_span_range(spans, nr.start as u32, nr.end as u32) else { continue };
+                    if let Some(ResTarget::Local(root_lid)) = self.root_file_res.refs_at_span(orig_s, orig_e).iter().find_map(|r| match r.target {
+                        t @ ResTarget::Local(_) => Some(t),
+                        _ => None,
+                    }) {
+                        self.ctx.macro_local_shadows.push((root_lid, bound_ty));
+                    }
+                }
+                K::Static | K::Const => {
+                    if let (Some(nn), Some(tn)) = (self.st.child(ch, K::Name), self.st.children(ch).find(|&c| self.st.kind(c).is_type())) {
+                        let ty = self.ty_env(true).lower_cst_ty(&mut self.ctx.table, tn);
+                        if ty != InferTyId::UNKNOWN {
+                            self.bind_sub_local(norm_ident(self.st.text(nn)), ty);
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }
@@ -304,15 +267,15 @@ impl<'a, 's> Runner<'a, 's> {
         InferTyId::UNKNOWN
     }
 
-    fn slice_sub_env(&self, local_mark: u32) -> SubInferEnv<'a> {
+    pub(super) fn slice_sub_env(&self) -> SubInferEnv<'a> {
         match self.sub {
             Some(exp @ SubInferEnv::Expanded { .. }) => exp,
-            Some(SubInferEnv::StdSlice { callsite_node, .. }) => SubInferEnv::StdSlice { callsite_node, local_mark },
-            None => SubInferEnv::StdSlice { callsite_node: self.fn_node, local_mark },
+            Some(SubInferEnv::StdSlice { callsite_node }) => SubInferEnv::StdSlice { callsite_node },
+            None => SubInferEnv::StdSlice { callsite_node: self.fn_node },
         }
     }
 
-    fn run_on_slice_st<'b>(&'b mut self, slice_st: &'b SyntaxTree<'s>, sub_env: SubInferEnv<'b>, f: impl FnOnce(&mut Runner<'b, 's>) -> InferTyId) -> InferTyId {
+    pub(super) fn run_on_slice_st<'b>(&'b mut self, slice_st: &'b SyntaxTree<'s>, sub_env: SubInferEnv<'b>, f: impl FnOnce(&mut Runner<'b, 's>) -> InferTyId) -> InferTyId {
         let mut child = Runner {
             ctx: self.ctx,
             st: slice_st,
@@ -344,12 +307,14 @@ impl<'a, 's> Runner<'a, 's> {
         }
         let mut scratch = core::mem::replace(&mut self.ctx.macro_scratch[idx], crate::parser::ParseScratch::new());
         self.ctx.macro_depth += 1;
-        let sub_env = self.slice_sub_env(self.ctx.sub_locals_buf.len() as u32);
+        let mark = self.ctx.sub_locals_buf.len();
+        let sub_env = self.slice_sub_env();
         let (ty, slice_st) = {
             let (slice_st, expr_opt) = scratch.parse_expr_slice(self.st.src, toks);
             let t = expr_opt.map_or(InferTyId::UNKNOWN, |en| self.run_on_slice_st(&slice_st, sub_env, |ch| ch.infer_expr(en, expectation)));
             (t, slice_st)
         };
+        self.ctx.sub_locals_buf.truncate(mark);
         scratch.reclaim(slice_st);
         self.ctx.macro_depth -= 1;
         self.ctx.macro_scratch[idx] = scratch;
@@ -363,7 +328,8 @@ impl<'a, 's> Runner<'a, 's> {
         }
         let mut scratch = core::mem::replace(&mut self.ctx.macro_scratch[idx], crate::parser::ParseScratch::new());
         self.ctx.macro_depth += 1;
-        let sub_env = self.slice_sub_env(self.ctx.sub_locals_buf.len() as u32);
+        let mark = self.ctx.sub_locals_buf.len();
+        let sub_env = self.slice_sub_env();
         let slice_st = {
             let (slice_st, pat_opt) = scratch.parse_pat_slice(self.st.src, toks);
             if let Some(pn) = pat_opt {
@@ -371,8 +337,50 @@ impl<'a, 's> Runner<'a, 's> {
             }
             slice_st
         };
+        self.ctx.sub_locals_buf.truncate(mark);
         scratch.reclaim(slice_st);
         self.ctx.macro_depth -= 1;
         self.ctx.macro_scratch[idx] = scratch;
+    }
+
+    pub(super) fn infer_std_thread_local(&mut self, mac_node: NodeId) -> InferTyId {
+        let Some(tt) = self.st.child(mac_node, K::TokenTree) else { return InferTyId::UNIT };
+        let toks = self.st.tokens_of(tt);
+        let idx = self.ctx.macro_depth;
+        if idx >= self.ctx.macro_scratch.len() || toks.first().is_none_or(|t| t.kind != T::LBrace) {
+            return InferTyId::UNIT;
+        }
+        let mut scratch = core::mem::replace(&mut self.ctx.macro_scratch[idx], crate::parser::ParseScratch::new());
+        self.ctx.macro_depth += 1;
+        let sub_env = self.slice_sub_env();
+        let slice_st = {
+            let (slice_st, expr_opt) = scratch.parse_expr_slice(self.st.src, toks);
+            if let Some(en) = expr_opt {
+                let _ = self.run_on_slice_st(&slice_st, sub_env, |ch| {
+                    for item in slice_st.children(en).filter(|&c| matches!(slice_st.kind(c), K::Static | K::Const)) {
+                        let ann_ty = slice_st.children(item).find(|&c| slice_st.kind(c).is_type()).map(|tn| ch.ty_env(true).lower_cst_ty(&mut ch.ctx.table, tn));
+                        let mark = ch.ctx.sub_locals_buf.len();
+                        if let Some(ie) = slice_st.children(item).find(|&c| super::infer_expr::is_expr_node(slice_st.kind(c))) {
+                            let ity = ch.infer_expr(ie, Expectation::from_option(ann_ty));
+                            if let Some(at) = ann_ty {
+                                let _ = ch.coerce_expr(ity, at);
+                            }
+                        }
+                        ch.ctx.sub_locals_buf.truncate(mark);
+                        if let (Some(nn), Some(at)) = (slice_st.child(item, K::Name), ann_ty) {
+                            if let Some(lk) = ch.db.std_macro_ty(super::db::StdMacroTy::ThreadLocalKey(at), &mut ch.ctx.table.arena) {
+                                ch.bind_sub_local(norm_ident(slice_st.text(nn)), lk);
+                            }
+                        }
+                    }
+                    InferTyId::UNIT
+                });
+            }
+            slice_st
+        };
+        scratch.reclaim(slice_st);
+        self.ctx.macro_depth -= 1;
+        self.ctx.macro_scratch[idx] = scratch;
+        InferTyId::UNIT
     }
 }

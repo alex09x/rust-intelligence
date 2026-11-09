@@ -104,6 +104,9 @@ fn test_ty_arena_all_kinds_roundtrip() {
         RawTyBound { trait_def: send_trait, args: &[], assocs: &[], is_maybe: false },
     ];
     let t_impl = w.intern_ty(RawTy::ImplTrait { bounds: &impl_bounds });
+    let closure_def = w.intern_ty_def(RawTyDef::Local { path: "{closure}@100..150", local_def_idx: u32::MAX });
+    let t_closure_ret = w.intern_ty(RawTy::FnDef { def: closure_def, args: &[RawGenericArg::Type(t_i32), RawGenericArg::Type(t_ref_str), RawGenericArg::Type(t_bool)] });
+    let t_closure_unit = w.intern_ty(RawTy::FnDef { def: closure_def, args: &[RawGenericArg::Type(t_u8), RawGenericArg::Type(t_unit)] });
 
     let raw_bytes = write_and_open(&mut w);
     let aligned = copy_aligned(&raw_bytes);
@@ -148,6 +151,8 @@ fn test_ty_arena_all_kinds_roundtrip() {
     assert_eq!(arena.display_ty(t_assoc_inherent), "T::Assoc");
     assert_eq!(arena.display_ty(t_dyn), "dyn Iterator<Item = u8> + Send + ?Sized + 'static");
     assert_eq!(arena.display_ty(t_impl), "impl Fn<(i32, &'static str), Output = bool> + Send");
+    assert_eq!(arena.display_ty(t_closure_ret), "impl Fn(i32, &'static str) -> bool");
+    assert_eq!(arena.display_ty(t_closure_unit), "impl Fn(u8)");
 
     // Verify local vs external TyDefView provenance
     let w_view = arena.def(widget_def).unwrap();

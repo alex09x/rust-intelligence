@@ -277,7 +277,10 @@ impl FileNameRes {
         let nr = st.range(path_node);
         let lo = self.refs.partition_point(|r| r.start < nr.start as u32);
         let hi = lo + self.refs[lo..].partition_point(|r| r.start <= nr.end as u32);
-        self.refs[lo..hi].iter().find(|r| r.path_node == path_node && r.is_segment_tail)
+        self.refs[lo..hi].iter().find(|r| r.path_node == path_node && r.is_segment_tail).or_else(|| {
+            let te = st.children(path_node).filter(|&c| st.kind(c) == crate::syntax_kind::SyntaxKind::PathSegment).last().map_or(nr.end as u32, |s| st.range(s).end as u32);
+            self.refs[lo..hi].iter().rfind(|r| r.path_node == NodeId(u32::MAX) && r.is_segment_tail && r.end == te)
+        })
     }
 
     /// `O(log N)` slice of references starting inside `[start..=end]`.

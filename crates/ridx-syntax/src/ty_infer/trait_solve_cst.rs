@@ -13,17 +13,17 @@
 
 use super::{
     autoderef::NormOwner,
-    body_ctx::Runner,
     db::{TyDefDb, WhereObligation},
     local_defs::LocalCstDefs,
     lower_ty::{effective_target_def, LowerTyEnv},
     trait_solve::{solve_obligation_senv, SolveEnv},
+    trait_solve_ufcs::trait_has_super,
     ty::{InferTyId, InferTyKind},
     uf_table::InlineTyBuf,
     InferenceTable,
 };
 use crate::{
-    name_res::{FileNameRes, GlobalDefId, ImplTargetKey, ItemKind, LocalItemId, ResTarget},
+    name_res::{FileNameRes, GlobalDefId},
     sema_fn::norm_ident,
     syntax_kind::SyntaxKind as K,
     token::TokenKind as T,
@@ -43,8 +43,7 @@ pub(super) fn check_cst_impl_bounds_in_table(
     allow_ambig_self_var: bool,
     depth: u8,
 ) -> bool {
-    let senv = SolveEnv { local_defs, st, file_res, db, owner: NormOwner::NONE };
-    check_cst_impl_bounds_senv(senv, impl_node, impl_gc, subst, table, allow_ambig_self_var, depth)
+    check_cst_impl_bounds_senv(SolveEnv { local_defs, st, file_res, db, owner: NormOwner::NONE }, impl_node, impl_gc, subst, table, allow_ambig_self_var, depth)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -128,7 +127,7 @@ pub(super) fn collect_cst_fn_obligations(
     table: &mut InferenceTable,
     out: &mut Vec<WhereObligation>,
 ) {
-    let impl_owner = st.ancestors(fn_node).find(|&a| matches!(st.kind(a), K::Impl | K::Trait));
+    let impl_owner = st.ancestors(fn_node).skip(1).take_while(|&a| !matches!(st.kind(a), K::Fn | K::BlockExpr | K::Module)).find(|&a| matches!(st.kind(a), K::Impl | K::Trait));
     let (impl_gc, self_ty) = local_defs.owner_generics_and_self_ty(impl_owner, st, file_res, db, table);
     let env = LowerTyEnv { st, file_res, db, local_defs, self_ty, impl_owner, impl_generics: impl_gc, item_owner: Some(fn_node), in_body: false, sub_map: None };
     if let Some(im) = impl_owner {
@@ -139,6 +138,12 @@ pub(super) fn collect_cst_fn_obligations(
 }
 
 fn scan_owner_cst_obligations(env: &LowerTyEnv<'_, '_>, table: &mut InferenceTable, owner_node: NodeId, base_idx: u16, out: &mut Vec<WhereObligation>) {
+    if env.st.kind(owner_node) == K::Trait {
+        if let Some(tbl) = env.st.child(owner_node, K::TypeBoundList) {
+            let lhs = table.arena.mk_param(0, GlobalDefId::NONE);
+            emit_tbl_obligations(env, table, lhs, tbl, out);
+        }
+    }
     if let Some(gpl) = env.st.child(owner_node, K::GenericParamList) {
         for (local_idx, gp) in env.st.children(gpl).filter(|&c| matches!(env.st.kind(c), K::TypeParam | K::ConstParam)).enumerate() {
             if env.st.kind(gp) == K::TypeParam {
@@ -178,6 +183,13 @@ fn emit_tbl_obligations(env: &LowerTyEnv<'_, '_>, table: &mut InferenceTable, lh
         }
         let args_r = table.arena.intern_slice(targs.as_slice());
         out.push(WhereObligation::TraitBound { lhs_ty, trait_def, trait_args: args_r });
+        if targs.as_slice().is_empty() && out.len() < 32 {
+            if let Some(tr) = env.local_defs.traits.iter().find(|t| t.def == trait_def) {
+                if let Some(stbl) = env.st.child(tr.node, K::TypeBoundList) {
+                    emit_tbl_obligations(env, table, lhs_ty, stbl, out);
+                }
+            }
+        }
         if let Some(gal) = tail.and_then(|s| env.st.child(s, K::GenericArgList)) {
             for ga in env.st.children(gal).filter(|&c| env.st.kind(c) == K::AssocTypeArg) {
                 if !env.st.own_tokens(ga).any(|(_, t)| t.kind == T::Eq) {
@@ -211,8 +223,7 @@ pub(super) fn project_cst_param_assoc(
     }
     let assoc_name = env.local_defs.find_item_by_def(assoc_def).and_then(|i| env.st.child(i.node, K::Name)).map(|nn| norm_ident(env.st.text(nn)));
     if let Some(im) = env.impl_owner {
-        let base = u16::from(env.st.kind(im) == K::Trait);
-        if let Some(t) = scan_owner_param_assoc(env, table, im, base, param_idx, trait_def, assoc_def, assoc_name, depth) {
+        if let Some(t) = scan_owner_param_assoc(env, table, im, u16::from(env.st.kind(im) == K::Trait), param_idx, trait_def, assoc_def, assoc_name, depth) {
             return Some(t);
         }
     }
@@ -237,6 +248,11 @@ fn scan_owner_param_assoc(
     assoc_name: Option<&str>,
     depth: u8,
 ) -> Option<InferTyId> {
+    if env.st.kind(owner_node) == K::Trait && param_idx == 0 {
+        if let Some(t) = env.st.child(owner_node, K::TypeBoundList).and_then(|tbl| match_tbl_assoc_eq(env, table, tbl, trait_def, assoc_def, assoc_name, depth)) {
+            return Some(t);
+        }
+    }
     if let Some(gpl) = env.st.child(owner_node, K::GenericParamList) {
         for (lidx, gp) in env.st.children(gpl).filter(|&c| matches!(env.st.kind(c), K::TypeParam | K::ConstParam)).enumerate() {
             if env.st.kind(gp) == K::TypeParam && base_idx + lidx as u16 == param_idx {
@@ -301,92 +317,4 @@ fn match_tbl_assoc_eq(
         }
     }
     None
-}
-
-pub(super) fn param_has_active_bound(senv: SolveEnv<'_, '_>, table: &mut InferenceTable, idx: u16, pdef: GlobalDefId, target_trait: GlobalDefId) -> bool {
-    let mut scratch = core::mem::take(&mut table.gid_scratch);
-    scratch.clear();
-    let owner = senv.owner;
-    for &(gid, tdef) in &senv.file_res.param_trait_bounds {
-        let g = senv.file_res.generic_data(gid);
-        let same = (pdef.is_some() && g.def == pdef)
-            || (owner.impl_node == Some(g.owner_node) && g.index == idx)
-            || (owner.fn_node == Some(g.owner_node) && owner.impl_gc + g.index == idx);
-        if same && tdef.is_some() && !scratch.contains(&tdef) {
-            scratch.push(tdef);
-        }
-    }
-    if owner.fn_def.is_some() {
-        senv.db.param_trait_bounds(owner.fn_def, idx, &mut scratch);
-    }
-    bfs_supertraits_restore(senv, table, scratch, target_trait, 48)
-}
-
-pub(super) fn trait_has_super(senv: SolveEnv<'_, '_>, table: &mut InferenceTable, sub: GlobalDefId, target: GlobalDefId) -> bool {
-    if !sub.is_some() || !target.is_some() {
-        return false;
-    }
-    let mut scratch = core::mem::take(&mut table.gid_scratch);
-    scratch.clear();
-    scratch.push(sub);
-    bfs_supertraits_restore(senv, table, scratch, target, 32)
-}
-
-fn bfs_supertraits_restore(senv: SolveEnv<'_, '_>, table: &mut InferenceTable, mut scratch: Vec<GlobalDefId>, target: GlobalDefId, limit: usize) -> bool {
-    let mut cursor = 0usize;
-    while cursor < scratch.len() && scratch.len() < limit {
-        let t = scratch[cursor];
-        if t == target {
-            table.gid_scratch = scratch;
-            return true;
-        }
-        cursor += 1;
-        senv.local_defs.collect_supertraits_into(t, senv.st, senv.file_res, senv.db, &mut scratch);
-    }
-    let ok = scratch.contains(&target);
-    table.gid_scratch = scratch;
-    ok
-}
-impl<'a, 's> Runner<'a, 's> {
-    pub(super) fn resolve_unindexed_ufcs_target(&mut self, path_node: NodeId, fallback: ResTarget) -> ResTarget {
-        let mut segs = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment);
-        let (Some(qual_seg), Some(tail_seg)) = (segs.next(), segs.last()) else { return fallback };
-        let fn_name = self.st.own_tokens(tail_seg).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map_or("", |(_, t)| norm_ident(t.text(self.st.src)));
-        if self.st.own_tokens(qual_seg).next().is_some_and(|(_, t)| t.kind == T::Lt) {
-            let tr_def =
-                self.st.child(qual_seg, K::Path).and_then(|tp| self.file_res.path_tail_ref_in_st(self.st, tp)).map_or(GlobalDefId::NONE, |r| effective_target_def(r.target));
-            let d = self.local_defs.resolve_ufcs_assoc_fn(ImplTargetKey::Unknown, tr_def, fn_name, self.root_st, self.root_file_res, self.db, &mut self.ctx.table);
-            return if d.is_some() { ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::AssocFn } } else { fallback };
-        }
-        let qr = self.st.range(qual_seg);
-        let q_refs = self.file_res.refs_starting_in(qr.start as u32, qr.end as u32);
-        let q_target = q_refs.iter().find(|r| (r.path_node == path_node || r.path_node == NodeId(u32::MAX)) && r.end <= qr.end as u32).map(|r| r.target);
-        if let Some(ResTarget::Generic(gid)) = q_target {
-            for &(bgid, btr) in &self.root_file_res.param_trait_bounds {
-                let d = if bgid == gid && btr.is_some() {
-                    self.local_defs.resolve_ufcs_assoc_fn(ImplTargetKey::Unknown, btr, fn_name, self.root_st, self.root_file_res, self.db, &mut self.ctx.table)
-                } else {
-                    GlobalDefId::NONE
-                };
-                if d.is_some() {
-                    return ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::AssocFn };
-                }
-            }
-            return fallback;
-        }
-        let (target_k, tr_def) = match q_target {
-            Some(ResTarget::SelfTy { target, trait_def }) => (target, trait_def),
-            Some(ResTarget::Prim(p)) => (ImplTargetKey::Prim(p), GlobalDefId::NONE),
-            Some(rt @ ResTarget::Def { kind: ItemKind::Trait, .. }) => (ImplTargetKey::Unknown, effective_target_def(rt)),
-            Some(rt @ ResTarget::Def { .. }) => (ImplTargetKey::Adt(effective_target_def(rt)), GlobalDefId::NONE),
-            _ => return fallback,
-        };
-        let d = self.local_defs.resolve_ufcs_assoc_fn(target_k, tr_def, fn_name, self.root_st, self.root_file_res, self.db, &mut self.ctx.table);
-        let assoc_res = ResTarget::Def { def: d, local: LocalItemId::NONE, kind: ItemKind::AssocFn };
-        if d.is_some() {
-            assoc_res
-        } else {
-            fallback
-        }
-    }
 }

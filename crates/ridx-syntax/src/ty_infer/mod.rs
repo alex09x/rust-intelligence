@@ -50,6 +50,7 @@ pub mod partial_code;
 mod tok_ty_scan;
 pub mod trait_solve;
 mod trait_solve_cst;
+mod trait_solve_ufcs;
 pub mod ty;
 pub mod uf_table;
 pub mod unify;
@@ -204,7 +205,8 @@ impl InferenceTable {
             }
             InferTyKind::Array { elem, len } => {
                 let s = self.instantiate_rec(elem, subst, depth + 1);
-                self.arena.mk_array(s, len)
+                let l = self.arena.resolve_array_len(len, subst);
+                self.arena.mk_array(s, l)
             }
             InferTyKind::Tuple(r) => {
                 let sub = self.instantiate_slice(r, subst, depth + 1);

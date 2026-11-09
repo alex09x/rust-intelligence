@@ -263,10 +263,28 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
         let owner = if module_def.index == CRATE_ROOT_DEF_IDX || Some(module_def.index) == shard.root_mod_def_idx { UseOwner::CrateRoot } else { UseOwner::Def(module_def.index) };
         let arena = reader.ty_arena();
         for u in reader.uses_for_owner(owner) {
+            let type_def = u.type_def.map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td));
+            let mut value_def = u.value_def.map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td));
+            if value_def.is_some() && value_def == type_def && u.type_def != u.value_def {
+                let vr = value_def.krate.0 as usize;
+                if let Some(t_rdr) = self.ws.readers().get(vr) {
+                    if let Some(d) = t_rdr.definitions().get(value_def.index as usize) {
+                        let p_off = d.path_offset();
+                        let start = value_def.index.saturating_sub(2) as usize;
+                        let end = (value_def.index as usize + 3).min(t_rdr.definitions().len());
+                        for (cand_idx, cd) in t_rdr.definitions()[start..end].iter().enumerate() {
+                            if cd.path_offset() == p_off && matches!(DefKind::from(cd.kind), DefKind::Fn | DefKind::Const | DefKind::Static) {
+                                value_def = GlobalDefId::new(value_def.krate, (start + cand_idx) as u32);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             out.push(IndexedUse {
                 name: u.name,
-                type_def: u.type_def.map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td)),
-                value_def: u.value_def.map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td)),
+                type_def,
+                value_def,
                 macro_def: u.macro_def.map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td)),
                 vis: map_vis(u.vis as u8),
                 is_glob: (u.flags & USE_FLAG_GLOB) != 0,

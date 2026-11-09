@@ -12,15 +12,61 @@
 //! and [`super::local_defs`] when inspecting `TokenTree`-backed CST fields and `fn(...)` types.
 
 use super::ty::InferTyId;
+use crate::name_res::mbe_expand::ExpandedSpanMap;
 use crate::name_res::PrimTy;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::{Token, TokenKind as T};
 use crate::tree::{NodeId, SyntaxTree};
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct SubLocalEntry {
+    len: u8,
+    bytes: [u8; 31],
+    pub ty: InferTyId,
+}
+
+impl SubLocalEntry {
+    pub fn new(name: &str, ty: InferTyId) -> Option<Self> {
+        let b = name.as_bytes();
+        if b.is_empty() || b.len() > 31 {
+            return None;
+        }
+        let mut bytes = [0u8; 31];
+        bytes[..b.len()].copy_from_slice(b);
+        Some(Self { len: b.len() as u8, bytes, ty })
+    }
+
+    #[inline]
+    pub fn matches(&self, name: &str) -> bool {
+        name.len() == self.len as usize && &self.bytes[..self.len as usize] == name.as_bytes()
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(super) enum SubInferEnv<'a> {
+    StdSlice { callsite_node: NodeId },
+    Expanded { callsite_node: NodeId, callsite_start: u32, callsite_end: u32, spans: &'a [ExpandedSpanMap], root_slot_base: u32, root_slots_len: u32 },
+}
+
+impl<'a> SubInferEnv<'a> {
+    #[inline]
+    pub fn callsite_node(self) -> NodeId {
+        match self {
+            Self::StdSlice { callsite_node } | Self::Expanded { callsite_node, .. } => callsite_node,
+        }
+    }
+}
+
 pub(super) fn eval_const_uint_expr(st: &SyntaxTree<'_>, expr: NodeId) -> Option<u64> {
-    if st.kind(expr) == K::Literal {
-        let (_, tok) = st.own_tokens(expr).next()?;
-        return parse_uint_lit(tok.text(st.src));
+    if matches!(st.kind(expr), K::Literal | K::ConstArg) {
+        for tok in st.tokens_of(expr) {
+            match tok.kind {
+                T::True => return Some(1),
+                T::False => return Some(0),
+                T::Int => return parse_uint_lit(tok.text(st.src)),
+                _ => {}
+            }
+        }
     }
     None
 }

@@ -95,7 +95,7 @@ fn equate_rec(arena: &InferTyArena, vars: &mut UnionFindTable, raw_a: InferTyId,
         }
         (InferTyKind::Slice(e1), InferTyKind::Slice(e2)) => equate_rec(arena, vars, e1, e2, depth + 1),
         (InferTyKind::Array { elem: e1, len: l1 }, InferTyKind::Array { elem: e2, len: l2 }) => {
-            if l1 != l2 && l1 != u64::MAX && l2 != u64::MAX {
+            if l1 != l2 && l1 < super::arena::ARRAY_LEN_VAR_TAG && l2 < super::arena::ARRAY_LEN_VAR_TAG {
                 return Err(TypeError::Mismatch { expected: a, found: b });
             }
             equate_rec(arena, vars, e1, e2, depth + 1)
@@ -108,10 +108,21 @@ fn equate_rec(arena: &InferTyArena, vars: &mut UnionFindTable, raw_a: InferTyId,
             equate_slices(arena, vars, r1, r2, depth + 1)
         }
         (InferTyKind::Alias { trait_def: t1, assoc_def: a1, self_ty: s1, args: r1 }, InferTyKind::Alias { trait_def: t2, assoc_def: a2, self_ty: s2, args: r2 })
-            if t1 == t2 && a1 == a2 =>
+            if a1 == a2 && (t1 == t2 || !t1.is_some() || !t2.is_some()) =>
         {
             equate_rec(arena, vars, s1, s2, depth + 1)?;
-            equate_slices(arena, vars, r1, r2, depth + 1)
+            let snap = vars.start_snapshot();
+            if equate_slices(arena, vars, r1, r2, depth + 1).is_ok() {
+                vars.commit(snap);
+            } else {
+                vars.rollback_to(snap);
+            }
+            Ok(())
+        }
+        (InferTyKind::Alias { self_ty, .. }, _) | (_, InferTyKind::Alias { self_ty, .. })
+            if depth > 0 && matches!(arena.kind(self_ty), InferTyKind::Infer(_)) && !matches!(arena.kind(vars.shallow_resolve(arena, self_ty)), InferTyKind::Infer(_)) =>
+        {
+            Ok(())
         }
         (InferTyKind::Dyn { principal: p1, args: r1 }, InferTyKind::Dyn { principal: p2, args: r2 }) if p1 == p2 => equate_slices(arena, vars, r1, r2, depth + 1),
         (InferTyKind::Opaque { def: d1, args: r1 }, InferTyKind::Opaque { def: d2, args: r2 }) if d1 == d2 => equate_slices(arena, vars, r1, r2, depth + 1),

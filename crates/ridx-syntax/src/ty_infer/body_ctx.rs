@@ -11,21 +11,24 @@
 //! Per-function body inference context ([`BodyInferCtx`]) and queryable output table
 //! ([`FnInferResult`]), engineered for `0` steady-state heap allocations across functions.
 
-use super::db::{MethodCand, TyDefDb, WhereObligation};
-use super::expectation::{BranchCoercer, Expectation};
-use super::infer_expr::is_expr_node;
-use super::infer_expr_cf::enclosing_local_window;
-use super::infer_macro::{SubInferEnv, SubLocalEntry, MAX_RUNTIME_MACRO_DEPTH};
-use super::infer_pat::BindingMode;
-use super::local_defs::{lower_self_param_ty, LocalCstDefs};
-use super::lower_ty::LowerTyEnv;
-use super::ty::InferTyId;
-use super::InferenceTable;
-use crate::name_res::{FileNameRes, GlobalDefId, ItemKind, LocalBindId};
-use crate::parser::ParseScratch;
-use crate::syntax_kind::SyntaxKind as K;
-use crate::token::TokenKind as T;
-use crate::tree::{NodeId, SyntaxTree};
+use super::{
+    db::{MethodCand, TyDefDb, WhereObligation},
+    expectation::{BranchCoercer, Expectation},
+    infer_expr_cf::enclosing_local_window,
+    infer_macro::{SubInferEnv, SubLocalEntry, MAX_RUNTIME_MACRO_DEPTH},
+    infer_pat::BindingMode,
+    local_defs::{lower_self_param_ty, LocalCstDefs},
+    lower_ty::LowerTyEnv,
+    ty::InferTyId,
+    InferenceTable,
+};
+use crate::{
+    name_res::{FileNameRes, GlobalDefId, ItemKind, LocalBindId},
+    parser::ParseScratch,
+    syntax_kind::SyntaxKind as K,
+    token::TokenKind as T,
+    tree::{NodeId, SyntaxTree},
+};
 
 /// Type-dependent `.method()` or `.field` reference resolved during body inference (`Checkbox 3.3`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,6 +96,8 @@ pub struct BodyInferCtx {
     pub(super) macro_depth: usize,
     pub(super) sub_locals_buf: Vec<SubLocalEntry>,
     pub(super) macro_local_shadows: Vec<(LocalBindId, InferTyId)>,
+    pub(super) deferred_proj_eqs: Vec<(InferTyId, InferTyId)>,
+    pub(super) deferred_trait_bounds: Vec<(GlobalDefId, InferTyId, super::ty::TySliceRange)>,
 }
 
 impl Default for BodyInferCtx {
@@ -103,14 +108,12 @@ impl Default for BodyInferCtx {
 
 impl BodyInferCtx {
     pub fn new() -> Self {
-        let mut macro_scratch = Vec::with_capacity(MAX_RUNTIME_MACRO_DEPTH);
-        for _ in 0..MAX_RUNTIME_MACRO_DEPTH {
-            macro_scratch.push(ParseScratch::with_capacity());
-        }
+        let macro_scratch = (0..MAX_RUNTIME_MACRO_DEPTH).map(|_| ParseScratch::with_capacity()).collect();
+        let (table, local_slots) = (InferenceTable::with_capacity(256, 128), Vec::with_capacity(64));
         Self {
-            table: InferenceTable::with_capacity(256, 128),
+            table,
             local_slot_base: 0,
-            local_slots: Vec::with_capacity(64),
+            local_slots,
             break_stack: Vec::with_capacity(8),
             ret_stack: Vec::with_capacity(8),
             or_pat_binds: Vec::with_capacity(16),
@@ -128,6 +131,8 @@ impl BodyInferCtx {
             macro_depth: 0,
             sub_locals_buf: Vec::with_capacity(16),
             macro_local_shadows: Vec::with_capacity(8),
+            deferred_proj_eqs: Vec::with_capacity(4),
+            deferred_trait_bounds: Vec::with_capacity(8),
         }
     }
 
@@ -155,6 +160,8 @@ impl BodyInferCtx {
         self.macro_depth = 0;
         self.sub_locals_buf.clear();
         self.macro_local_shadows.clear();
+        self.deferred_proj_eqs.clear();
+        self.deferred_trait_bounds.clear();
         let fn_sub_end = st.node(fn_node).subtree_end;
         self.fn_has_inner_trait_scopes = file_res.has_inner_trait_scopes(fn_node, fn_sub_end);
         self.fn_scope_traits_ready = false;
@@ -166,7 +173,7 @@ impl BodyInferCtx {
         self.local_slots.clear();
         self.local_slots.resize(loc_hi - loc_lo, InferTyId::NONE);
 
-        let impl_node = st.ancestors(fn_node).find(|&a| matches!(st.kind(a), K::Impl | K::Trait));
+        let impl_node = st.ancestors(fn_node).skip(1).take_while(|&a| !matches!(st.kind(a), K::Fn | K::BlockExpr | K::Module)).find(|&a| matches!(st.kind(a), K::Impl | K::Trait));
         let (impl_gc, self_ty) = local_defs.owner_generics_and_self_ty(impl_node, st, file_res, db, &mut self.table);
         let fn_def = local_defs.fn_def_for_node(fn_node);
         let is_async_fn = st.own_tokens(fn_node).any(|(_, t)| t.kind == T::Async);
@@ -250,11 +257,9 @@ impl<'a, 's> Runner<'a, 's> {
         if self.sub.is_none() {
             self.out.expr_tys.push((node, ty));
         } else {
-            let nr = self.st.range(node);
-            if nr.end > nr.start {
-                if let Some((os, oe)) = self.map_span_to_orig(nr.start as u32, nr.end as u32) {
-                    self.out.macro_expr_tys.push(MacroExprTy { start: os, end: oe, kind: self.st.kind(node), ty });
-                }
+            let (nr, kind) = (self.st.range(node), self.st.kind(node));
+            if let Some((os, oe)) = (nr.end > nr.start).then(|| self.map_expr_span_to_orig(nr.start as u32, nr.end as u32, kind)).flatten() {
+                self.out.macro_expr_tys.push(MacroExprTy { start: os, end: oe, kind, ty });
             }
         }
         ty
@@ -294,10 +299,15 @@ impl<'a, 's> Runner<'a, 's> {
 
     #[inline]
     pub fn find_decl_local(&self, decl_node: NodeId) -> Option<LocalBindId> {
-        self.file_res.locals[self.loc_lo..self.loc_hi].iter().find(|l| l.decl_node == decl_node).map(|l| l.id)
+        (!matches!(self.sub, Some(SubInferEnv::StdSlice { .. })))
+            .then(|| self.file_res.locals[self.loc_lo..self.loc_hi].iter().find(|l| l.decl_node == decl_node).map(|l| l.id))
+            .flatten()
     }
 
     fn bind_fn_params_and_infer_body(&mut self, is_async_fn: bool) {
+        if self.fn_def.is_some() {
+            let _ = self.db.project_param_assoc(self.fn_def, 0, GlobalDefId::NONE, GlobalDefId::NONE, &[], &mut self.ctx.table.arena);
+        }
         let tenv = self.ty_env(false);
         let mut idx_inputs = core::mem::take(&mut self.ctx.sig_inputs_buf);
         idx_inputs.clear();
@@ -305,7 +315,6 @@ impl<'a, 's> Runner<'a, 's> {
         if indexed_sig.is_none() {
             idx_inputs.clear();
         }
-
         let mut param_cursor = 0usize;
         if let Some(pl) = self.st.child(self.fn_node, K::ParamList) {
             for p in self.st.children(pl) {
@@ -339,44 +348,42 @@ impl<'a, 's> Runner<'a, 's> {
         }
         self.ctx.sig_inputs_buf = idx_inputs;
 
+        let cst_ret_tn = self.st.child(self.fn_node, K::RetType).and_then(|rt| self.st.children(rt).find(|&c| self.st.kind(c).is_type()));
+        let cst_has_impl_tr = cst_ret_tn.is_some_and(|tn| self.st.descendants(tn).any(|d| self.st.kind(d) == K::ImplTraitType));
+        let cst_ret_opt = cst_ret_tn.filter(|_| !cst_has_impl_tr).map(|tn| tenv.lower_cst_ty(&mut self.ctx.table, tn));
         let body_ret_ty = if let Some((_, idx_ret)) = indexed_sig {
-            if is_async_fn {
-                super::lang_ops::unwrap_await_ty(&mut self.ctx.table, self.db, idx_ret)
+            let unwr = if is_async_fn {
+                let u = super::lang_ops::unwrap_await_ty(&mut self.ctx.table, self.db, idx_ret);
+                if u != InferTyId::UNKNOWN {
+                    u
+                } else {
+                    idx_ret
+                }
             } else {
                 idx_ret
+            };
+            match cst_ret_opt {
+                Some(cr)
+                    if !self.ctx.table.arena.flags(cr).has_unknown()
+                        && (unwr == InferTyId::UNKNOWN || super::lang_ops::is_deref_attr_ret_mismatch(&self.ctx.table.arena, unwr, cr)) =>
+                {
+                    cr
+                }
+                _ => unwr,
             }
         } else {
-            self.st
-                .child(self.fn_node, K::RetType)
-                .and_then(|rt| self.st.children(rt).find(|&c| self.st.kind(c).is_type()))
-                .map_or(InferTyId::UNIT, |tn| tenv.lower_cst_ty(&mut self.ctx.table, tn))
+            cst_ret_opt.or_else(|| cst_ret_tn.map(|tn| tenv.lower_cst_ty(&mut self.ctx.table, tn))).unwrap_or(InferTyId::UNIT)
         };
-
-        self.out.ret_ty = body_ret_ty;
-        self.ctx.ret_stack.push(body_ret_ty);
+        let exp_body_ret = super::lang_ops::replace_nested_opaque_with_vars(&mut self.ctx.table, body_ret_ty);
+        self.out.ret_ty = exp_body_ret;
+        self.ctx.ret_stack.push(exp_body_ret);
         if let Some(body) = self.st.child(self.fn_node, K::BlockExpr) {
-            let bty = self.infer_expr(body, Expectation::HasType(body_ret_ty));
-            let _ = self.coerce_expr(bty, body_ret_ty);
+            let bty = self.infer_expr(body, Expectation::HasType(exp_body_ret));
+            let _ = self.coerce_expr(bty, exp_body_ret);
             self.out.body_ty = bty;
         } else {
-            self.out.body_ty = body_ret_ty;
+            self.out.body_ty = exp_body_ret;
         }
         self.ctx.ret_stack.pop();
-    }
-
-    fn infer_const_or_static_body(&mut self) {
-        let tenv = self.ty_env(false);
-        let decl_ty = self
-            .fn_def
-            .is_some()
-            .then(|| self.db.def_ty(self.fn_def, &mut self.ctx.table.arena).map(|(_, _, t)| t))
-            .flatten()
-            .unwrap_or_else(|| self.st.children(self.fn_node).find(|&c| self.st.kind(c).is_type()).map_or(InferTyId::UNKNOWN, |tn| tenv.lower_cst_ty(&mut self.ctx.table, tn)));
-        self.out.ret_ty = decl_ty;
-        if let Some(init) = self.st.children(self.fn_node).find(|&c| is_expr_node(self.st.kind(c))) {
-            let bty = self.infer_expr(init, Expectation::HasType(decl_ty));
-            let _ = self.coerce_expr(bty, decl_ty);
-            self.out.body_ty = bty;
-        }
     }
 }

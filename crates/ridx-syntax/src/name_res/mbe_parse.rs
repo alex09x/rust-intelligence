@@ -26,7 +26,7 @@ pub(super) enum PatElem {
     Lit(String, T),
     Group { open: T, inner: Vec<PatElem> },
     Var { name: String, frag: FragKind },
-    Rep { inner: Vec<PatElem>, sep: Option<(String, T)>, op: RepOp },
+    Rep { inner: Vec<PatElem>, sep: Option<(String, T, Option<T>)>, op: RepOp },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -137,8 +137,16 @@ fn parse_pat(src: &str, sig: &[Token]) -> Option<Vec<PatElem>> {
                 let (rep_inner, mut after) = take_delimited(sig, i + 1)?;
                 let mut sep = None;
                 if after < sig.len() && !matches!(sig[after].kind, T::Star | T::Plus | T::Question) {
-                    sep = Some((sig[after].text(src).to_string(), sig[after].kind));
+                    let (stxt, sk1) = (sig[after].text(src).to_string(), sig[after].kind);
+                    let joint1 = sig[after].is_joint();
                     after += 1;
+                    let sk2 = if joint1 && after < sig.len() && !matches!(sig[after].kind, T::Star | T::Plus | T::Question) {
+                        after += 1;
+                        Some(sig[after - 1].kind)
+                    } else {
+                        None
+                    };
+                    sep = Some((stxt, sk1, sk2));
                 }
                 let op = match sig.get(after)?.kind {
                     T::Star => RepOp::ZeroOrMore,
@@ -196,8 +204,14 @@ fn parse_tpl(src: &str, sig: &[Token]) -> Option<Vec<TplElem>> {
                     let (rep_inner, mut after) = take_delimited(sig, i + 1)?;
                     let mut sep = None;
                     if after < sig.len() && !matches!(sig[after].kind, T::Star | T::Plus | T::Question) {
-                        sep = Some(sig[after].text(src).to_string());
+                        let mut stxt = sig[after].text(src).to_string();
+                        let joint1 = sig[after].is_joint();
                         after += 1;
+                        if joint1 && after < sig.len() && !matches!(sig[after].kind, T::Star | T::Plus | T::Question) {
+                            stxt.push_str(sig[after].text(src));
+                            after += 1;
+                        }
+                        sep = Some(stxt);
                     }
                     let op = match sig.get(after)?.kind {
                         T::Star => RepOp::ZeroOrMore,
@@ -238,4 +252,64 @@ fn parse_tpl(src: &str, sig: &[Token]) -> Option<Vec<TplElem>> {
         }
     }
     Some(out)
+}
+
+pub(super) fn pat_head_lit(p: &PatElem) -> Option<(&str, T, Option<T>)> {
+    match p {
+        PatElem::Lit(t, k) => Some((t.as_str(), *k, None)),
+        PatElem::Rep { inner, .. } => inner.first().and_then(pat_head_lit),
+        _ => None,
+    }
+}
+
+pub(super) fn matches_stop(src: &str, sig: &[Token], i: usize, (st, sk, sk2): (&str, T, Option<T>)) -> bool {
+    if sig[i].kind != sk || sig[i].text(src) != st {
+        return false;
+    }
+    if let Some(k2) = sk2 {
+        return sig.get(i + 1).map(|t| t.kind) == Some(k2);
+    }
+    if sk == T::Colon && ((sig[i].is_joint() && sig.get(i + 1).map(|t| t.kind) == Some(T::Colon)) || (i > 0 && sig[i - 1].kind == T::Colon && sig[i - 1].is_joint())) {
+        return false;
+    }
+    if sk == T::Eq
+        && ((sig[i].is_joint() && sig.get(i + 1).map(|t| t.kind) == Some(T::Eq)) || (i > 0 && matches!(sig[i - 1].kind, T::Eq | T::Bang | T::Lt | T::Gt) && sig[i - 1].is_joint()))
+    {
+        return false;
+    }
+    true
+}
+
+pub(super) fn scan_until_next(
+    src: &str,
+    sig: &[Token],
+    pos: usize,
+    next_pat: Option<&PatElem>,
+    rep_sep: Option<(&str, T, Option<T>)>,
+    after_rep: Option<&PatElem>,
+) -> Option<usize> {
+    let (stop1, stop2) = (next_pat.and_then(pat_head_lit), after_rep.and_then(pat_head_lit));
+    let mut i = pos;
+    let mut turbo_angles = 0i32;
+    while i < sig.len() {
+        let tk = sig[i].kind;
+        if i > pos
+            && turbo_angles == 0
+            && (stop1.is_some_and(|s| matches_stop(src, sig, i, s)) || rep_sep.is_some_and(|s| matches_stop(src, sig, i, s)) || stop2.is_some_and(|s| matches_stop(src, sig, i, s)))
+        {
+            return Some(i);
+        }
+        if tk == T::Lt && (turbo_angles > 0 || (i >= 2 && sig[i - 1].kind == T::Colon && sig[i - 2].kind == T::Colon)) {
+            turbo_angles += 1;
+            i += 1;
+        } else if tk == T::Gt && turbo_angles > 0 && !(i > 0 && matches!(sig[i - 1].kind, T::Minus | T::Eq) && sig[i - 1].is_joint()) {
+            turbo_angles -= 1;
+            i += 1;
+        } else if matching_close(tk).is_some() {
+            i = take_delimited(sig, i)?.1;
+        } else {
+            i += 1;
+        }
+    }
+    (i > pos).then_some(i)
 }

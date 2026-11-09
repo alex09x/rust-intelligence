@@ -295,6 +295,9 @@ impl LocalCstDefs {
                     return self.fn_def_for_node(fn_node);
                 }
             }
+            if let Some(meta) = db.trait_assoc_fn_by_name(trait_def, fn_name) {
+                return meta.trait_fn_def;
+            }
         }
         for imp in &self.impls {
             if imp.is_negative {
@@ -309,6 +312,24 @@ impl LocalCstDefs {
             }
         }
         GlobalDefId::NONE
+    }
+
+    pub(super) fn assoc_ty_cst_bounds(&self, assoc_def: GlobalDefId, st: &SyntaxTree<'_>, file_res: &FileNameRes, out: &mut Vec<GlobalDefId>) {
+        let Some(it) = self.find_item_by_def(assoc_def) else { return };
+        for ch in st.children(it.node) {
+            if st.kind(ch) == K::TypeBoundList {
+                for tb in st.children(ch).filter(|&b| st.kind(b) == K::TypeBound) {
+                    if let Some(p) = st.child(tb, K::Path).or_else(|| st.child(tb, K::PathType).and_then(|pt| st.child(pt, K::Path))) {
+                        if let Some(r) = file_res.path_tail_ref_in_st(st, p) {
+                            let td = effective_target_def(r.target);
+                            if td.is_some() && !out.contains(&td) {
+                                out.push(td);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

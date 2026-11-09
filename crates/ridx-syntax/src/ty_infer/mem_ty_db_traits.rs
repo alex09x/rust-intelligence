@@ -257,7 +257,8 @@ fn instantiate_arena_rec(arena: &mut InferTyArena, ty: InferTyId, subst: &[Infer
         }
         InferTyKind::Array { elem, len } => {
             let s = instantiate_arena_rec(arena, elem, subst, depth + 1);
-            arena.mk_array(s, len)
+            let l = arena.resolve_array_len(len, subst);
+            arena.mk_array(s, l)
         }
         InferTyKind::Tuple(r) => {
             let b = inst_slice_arena(arena, r, subst, depth + 1);

@@ -21,7 +21,7 @@ use super::autoderef::{build_autoderef_steps_with_owner, MAX_AUTODEREF_STEPS};
 use super::body_ctx::Runner;
 use super::db::{StdMacroTy, TyLangItem};
 use super::expectation::{BranchCoercer, Expectation};
-use super::tok_ty_scan::{find_top_tok, for_each_top_comma, is_double_colon, next_sig_idx};
+use super::tok_ty_scan::{find_top_tok, for_each_top_comma, is_double_colon, next_sig_idx, rfind_sig_idx};
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 
@@ -43,6 +43,8 @@ pub(super) enum StdMacroKind {
     Cfg,
     U32Const,
     Pin,
+    Ready,
+    ThreadLocal,
 }
 
 pub(super) fn classify_std_macro_path(st: &SyntaxTree<'_>, path_node: NodeId) -> Option<StdMacroKind> {
@@ -59,13 +61,8 @@ pub(super) fn classify_std_macro_path(st: &SyntaxTree<'_>, path_node: NodeId) ->
         return None;
     }
     let tail = segs[len - 1];
-    if len >= 2 {
-        if !matches!(segs[0], "std" | "core" | "alloc") {
-            return None;
-        }
-        if tail == "pin" && (len == 2 || (len == 3 && segs[1] == "pin")) {
-            return Some(StdMacroKind::Pin);
-        }
+    if len >= 2 && !matches!(tail, "pin" | "ready" | "thread_local") && !matches!(segs[0], "std" | "core" | "alloc") {
+        return None;
     }
     match tail {
         "vec" => Some(StdMacroKind::Vec),
@@ -74,7 +71,7 @@ pub(super) fn classify_std_macro_path(st: &SyntaxTree<'_>, path_node: NodeId) ->
         "write" | "writeln" => Some(StdMacroKind::Write),
         "print" | "println" | "eprint" | "eprintln" => Some(StdMacroKind::Print),
         "assert" | "debug_assert" => Some(StdMacroKind::Assert),
-        "assert_eq" | "assert_ne" | "debug_assert_eq" | "debug_assert_ne" => Some(StdMacroKind::AssertEq),
+        t if (t.starts_with("assert_") || t.starts_with("debug_assert_")) && (t.ends_with("_eq") || t.ends_with("_ne")) => Some(StdMacroKind::AssertEq),
         "matches" => Some(StdMacroKind::Matches),
         "dbg" => Some(StdMacroKind::Dbg),
         "panic" | "todo" | "unimplemented" | "unreachable" => Some(StdMacroKind::Panic),
@@ -83,6 +80,9 @@ pub(super) fn classify_std_macro_path(st: &SyntaxTree<'_>, path_node: NodeId) ->
         "include_bytes" => Some(StdMacroKind::IncludeBytes),
         "cfg" => Some(StdMacroKind::Cfg),
         "line" | "column" => Some(StdMacroKind::U32Const),
+        "pin" => Some(StdMacroKind::Pin),
+        "ready" => Some(StdMacroKind::Ready),
+        "thread_local" => Some(StdMacroKind::ThreadLocal),
         _ => None,
     }
 }
@@ -124,16 +124,21 @@ impl<'a, 's> Runner<'a, 's> {
                     if idx == 0 {
                         lty = self.infer_tok_expr_slice(cl, Expectation::None);
                     } else if idx == 1 {
-                        let exp = if lty != InferTyId::UNKNOWN { Expectation::HasType(lty) } else { Expectation::None };
-                        let rty = self.infer_tok_expr_slice(cl, exp);
+                        let rty = self.infer_tok_expr_slice(cl, Expectation::None);
                         if lty != InferTyId::UNKNOWN && rty != InferTyId::UNKNOWN {
-                            let _ = self.coerce_expr(rty, lty);
-                            let lres = self.ctx.table.shallow_resolve(lty);
-                            if self.ctx.table.arena.flags(lres).has_infer() {
-                                let _ = self.coerce_expr(lty, rty);
-                            }
+                            self.unify_assert_eq_pair(lty, rty);
                         }
                     } else {
+                        let sl = self.ctx.table.shallow_resolve(lty);
+                        if matches!(sl, InferTyId::F32 | InferTyId::F64) {
+                            if let Some(i0) = next_sig_idx(cl, 0).filter(|&i| matches!(cl[i].kind, T::Ident | T::RawIdent)) {
+                                if let Some(i1) = next_sig_idx(cl, i0 + 1).filter(|&i| cl[i].kind == T::Eq) {
+                                    let _ = self.infer_tok_expr_slice(&cl[i1 + 1..], Expectation::HasType(sl));
+                                    idx += 1;
+                                    return;
+                                }
+                            }
+                        }
                         self.infer_fmt_clause(cl, idx >= 3);
                     }
                     idx += 1;
@@ -146,44 +151,62 @@ impl<'a, 's> Runner<'a, 's> {
                 self.infer_fmt_args_clauses(inner_toks, 0);
                 InferTyId::NEVER
             }
-            StdMacroKind::StrConst => {
+            StdMacroKind::StrConst | StdMacroKind::OptionEnv | StdMacroKind::IncludeBytes => {
                 for_each_top_comma(inner_toks, |cl| {
                     if next_sig_idx(cl, 0).is_some() {
                         let _ = self.infer_tok_expr_slice(cl, Expectation::None);
                     }
                 });
-                InferTyId::STR_REF
-            }
-            StdMacroKind::OptionEnv => {
-                for_each_top_comma(inner_toks, |cl| {
-                    if next_sig_idx(cl, 0).is_some() {
-                        let _ = self.infer_tok_expr_slice(cl, Expectation::None);
+                match kind {
+                    StdMacroKind::StrConst => InferTyId::STR_REF,
+                    StdMacroKind::OptionEnv => self.db.std_macro_ty(StdMacroTy::OptionStr, &mut self.ctx.table.arena).unwrap_or(InferTyId::UNKNOWN),
+                    _ => {
+                        let arr = self.ctx.table.arena.mk_array(InferTyId::U8, self.local_defs.include_bytes_len(mac_node).unwrap_or(u64::MAX));
+                        self.ctx.table.arena.mk_ref(false, arr)
                     }
-                });
-                self.db.std_macro_ty(StdMacroTy::OptionStr, &mut self.ctx.table.arena).unwrap_or(InferTyId::UNKNOWN)
-            }
-            StdMacroKind::IncludeBytes => {
-                for_each_top_comma(inner_toks, |cl| {
-                    if next_sig_idx(cl, 0).is_some() {
-                        let _ = self.infer_tok_expr_slice(cl, Expectation::None);
-                    }
-                });
-                let len = self.local_defs.include_bytes_len(mac_node).unwrap_or(u64::MAX);
-                let arr = self.ctx.table.arena.mk_array(InferTyId::U8, len);
-                self.ctx.table.arena.mk_ref(false, arr)
+                }
             }
             StdMacroKind::Cfg => InferTyId::BOOL,
             StdMacroKind::U32Const => InferTyId::U32,
+            StdMacroKind::Pin if in_stmt => self.infer_std_pin_stmt(inner_toks),
             StdMacroKind::Pin => {
-                if in_stmt {
-                    return None;
-                }
                 let val_ty = self.infer_tok_expr_slice(inner_toks, Expectation::None);
                 let mref = self.ctx.table.arena.mk_ref(true, val_ty);
                 self.db.lang_item(TyLangItem::Pin).map_or(InferTyId::UNKNOWN, |pd| self.ctx.table.arena.mk_adt(pd, &[mref]))
             }
+            StdMacroKind::Ready => {
+                let pty = self.infer_tok_expr_slice(inner_toks, Expectation::None);
+                let norm_p = self.norm(pty);
+                match self.ctx.table.arena.kind(norm_p) {
+                    InferTyKind::Adt { args, .. } if args.len >= 1 => self.ctx.table.arena.slice(args)[0],
+                    _ => InferTyId::UNKNOWN,
+                }
+            }
+            StdMacroKind::ThreadLocal => self.infer_std_thread_local(mac_node),
         };
         Some(ty)
+    }
+
+    fn infer_std_pin_stmt(&mut self, inner_toks: &[Token]) -> InferTyId {
+        for_each_top_comma(inner_toks, |cl| {
+            let Some(i0) = next_sig_idx(cl, 0) else { return };
+            let cl = rfind_sig_idx(cl).filter(|&i| cl[i].kind == T::Semi).map_or(cl, |semi| &cl[..semi]);
+            let (id_i, expr_cl) = find_top_tok(cl, T::Eq).map_or_else(|| (rfind_sig_idx(cl).unwrap_or(i0), cl), |eq| (rfind_sig_idx(&cl[..eq]).unwrap_or(i0), &cl[eq + 1..]));
+            let val_ty = self.infer_tok_expr_slice(expr_cl, Expectation::None);
+            let mref = self.ctx.table.arena.mk_ref(true, val_ty);
+            let pin_ty = self.db.lang_item(TyLangItem::Pin).map_or(InferTyId::UNKNOWN, |pd| self.ctx.table.arena.mk_adt(pd, &[mref]));
+            let id_tok = cl[id_i];
+            if matches!(id_tok.kind, T::Ident | T::RawIdent) {
+                self.bind_sub_local(norm_ident(id_tok.text(self.st.src)), pin_ty);
+                if let Some(crate::name_res::ResTarget::Local(lid)) = self.root_file_res.refs_at_span(id_tok.start, id_tok.end).iter().find_map(|r| match r.target {
+                    t @ crate::name_res::ResTarget::Local(_) => Some(t),
+                    _ => None,
+                }) {
+                    self.ctx.macro_local_shadows.push((lid, pin_ty));
+                }
+            }
+        });
+        InferTyId::UNIT
     }
 
     fn infer_std_vec_macro(&mut self, inner_toks: &[Token], expectation: Expectation) -> InferTyId {
@@ -296,15 +319,11 @@ impl<'a, 's> Runner<'a, 's> {
     }
 
     fn infer_fmt_clause(&mut self, clause: &[Token], strip_named: bool) {
-        let Some(i0) = next_sig_idx(clause, 0) else {
-            return;
-        };
+        let Some(i0) = next_sig_idx(clause, 0) else { return };
         let mut sub = &clause[i0..];
         if strip_named && matches!(sub[0].kind, T::Ident | T::RawIdent) {
-            if let Some(i1) = next_sig_idx(sub, 1) {
-                if sub[i1].kind == T::Eq && !sub[i1].is_joint() && !is_double_colon(sub, i1) {
-                    sub = &sub[i1 + 1..];
-                }
+            if let Some(i1) = next_sig_idx(sub, 1).filter(|&i| sub[i].kind == T::Eq && !sub[i].is_joint() && !is_double_colon(sub, i)) {
+                sub = &sub[i1 + 1..];
             }
         }
         if next_sig_idx(sub, 0).is_some() {
@@ -348,16 +367,33 @@ impl<'a, 's> Runner<'a, 's> {
             let Some(i1) = next_sig_idx(clause, i0 + 1) else { return };
             i0 = i1;
         }
-        let mut sub = &clause[i0..];
-        if matches!(sub[0].kind, T::Ident | T::RawIdent) {
-            if let Some(ieq) = next_sig_idx(sub, 1) {
-                if sub[ieq].kind == T::Eq && !sub[ieq].is_joint() && !is_double_colon(sub, ieq) {
-                    sub = &sub[ieq + 1..];
-                }
-            }
+        self.infer_fmt_clause(&clause[i0..], true);
+    }
+
+    fn unify_assert_eq_pair(&mut self, lty: InferTyId, rty: InferTyId) {
+        if self.ctx.table.equate(lty, rty).is_ok() {
+            return;
         }
-        if let Some(s) = next_sig_idx(sub, 0) {
-            let _ = self.infer_tok_expr_slice(&sub[s..], Expectation::None);
+        let l_elem = self.peel_slice_or_array_elem(lty);
+        let r_elem = self.peel_slice_or_array_elem(rty);
+        if let (Some(le), Some(re)) = (l_elem, r_elem) {
+            let _ = self.ctx.table.equate(le, re);
+            return;
         }
+        let _ = self.coerce_expr(rty, lty);
+        let lres = self.ctx.table.shallow_resolve(lty);
+        if self.ctx.table.arena.flags(lres).has_infer() {
+            let _ = self.coerce_expr(lty, rty);
+        }
+    }
+
+    fn peel_slice_or_array_elem(&mut self, ty: InferTyId) -> Option<InferTyId> {
+        let mut steps = [InferTyId::UNKNOWN; MAX_AUTODEREF_STEPS];
+        let owner = self.norm_owner();
+        let n = build_autoderef_steps_with_owner(&mut self.ctx.table, self.db, self.local_defs, self.root_st, self.root_file_res, owner, ty, &mut steps);
+        steps[..n].iter().find_map(|&st| match self.ctx.table.arena.kind(st) {
+            InferTyKind::Slice(e) | InferTyKind::Array { elem: e, .. } => Some(e),
+            _ => None,
+        })
     }
 }

@@ -65,6 +65,7 @@ pub struct V5TyTables<'w> {
     pub global_gid: Option<GlobalDefId>,
     pub fmt_args_gid: Option<GlobalDefId>,
     pub fmt_err_gid: Option<GlobalDefId>,
+    pub thread_local_key_gid: Option<GlobalDefId>,
     pub assoc_to_impl: HashMap<GlobalDefId, u32>,
     pub trait_non_lt_gc: HashMap<GlobalDefId, u16>,
     pub trait_methods: HashMap<(GlobalDefId, u64), TraitMethodInfo<'w>>,
@@ -79,8 +80,15 @@ pub struct V5TyTables<'w> {
 
 impl<'w> RidxV5ItemDb<'w> {
     #[inline]
-    pub fn canonical_def(&self, def: GlobalDefId) -> GlobalDefId {
-        self.ty_tables.reexport_canon.get(&def).copied().unwrap_or(def)
+    pub fn canonical_def(&self, mut def: GlobalDefId) -> GlobalDefId {
+        for _ in 0..4 {
+            let Some(&next) = self.ty_tables.reexport_canon.get(&def) else { break };
+            if next == def || !next.is_some() {
+                break;
+            }
+            def = next;
+        }
+        def
     }
 
     #[inline]
@@ -100,14 +108,29 @@ impl<'w> RidxV5ItemDb<'w> {
             return def;
         };
         if d.is_reexport() {
-            let sig = reader.get_str(d.sig_offset());
+            let raw_sig = reader.get_str(d.sig_offset());
+            let sig = raw_sig.strip_prefix("crate::").or_else(|| raw_sig.strip_prefix("self::")).unwrap_or(raw_sig);
             let first = sig.split("::").next().unwrap_or("");
             if !first.is_empty() {
-                if let Some(tr_idx) = self.resolve_extern_name_to_reader(r_idx, first).or_else(|| self.sysroot_by_name.get(first).copied()) {
+                let ext_r = if first == self.metas[r_idx].crate_name {
+                    Some(r_idx)
+                } else {
+                    self.resolve_extern_name_to_reader(r_idx, first).or_else(|| self.sysroot_by_name.get(first).copied())
+                };
+                if let Some(tr_idx) = ext_r {
                     let cg = self.find_def_in_reader_by_path(tr_idx, sig);
-                    if cg.is_some() {
+                    if cg.is_some() && cg != def {
                         return cg;
                     }
+                }
+                let local_cg = self.find_def_in_reader_by_path(r_idx, sig);
+                if local_cg.is_some() && local_cg != def {
+                    return local_cg;
+                }
+            }
+            if let Some(&tdidx) = self.shards[r_idx].def_id_to_idx.get(&d.def_id()) {
+                if tdidx != def.index {
+                    return GlobalDefId::new(def.krate, tdidx);
                 }
             }
         }
@@ -139,10 +162,23 @@ impl<'w> RidxV5ItemDb<'w> {
         for r_idx in 0..n {
             let reader = &self.ws.readers()[r_idx];
             let krate = CrateId(r_idx as u32);
+            let mut uniq_by_kind_name: HashMap<(u8, &str), u32> = HashMap::new();
+            for (didx, d) in reader.definitions().iter().enumerate() {
+                if !d.is_reexport() {
+                    let nm = reader.get_str(d.name_offset()).trim_start_matches("r#");
+                    uniq_by_kind_name.entry((d.kind, nm)).and_modify(|e| *e = u32::MAX).or_insert(didx as u32);
+                }
+            }
             for (didx, d) in reader.definitions().iter().enumerate() {
                 if d.is_reexport() {
                     let g = GlobalDefId::new(krate, didx as u32);
-                    let cg = self.resolve_reexport_canon(g);
+                    let mut cg = self.resolve_reexport_canon(g);
+                    if (cg == g || !cg.is_some()) && reader.get_str(d.sig_offset()).is_empty() {
+                        let nm = reader.get_str(d.name_offset()).trim_start_matches("r#");
+                        if let Some(&u_idx) = uniq_by_kind_name.get(&(d.kind, nm)).filter(|&&u| u != u32::MAX && u != didx as u32) {
+                            cg = GlobalDefId::new(krate, u_idx);
+                        }
+                    }
                     if cg != g && cg.is_some() {
                         self.ty_tables.reexport_canon.insert(g, cg);
                     }
@@ -187,6 +223,10 @@ impl<'w> RidxV5ItemDb<'w> {
             let cg2 = if cg.is_some() { cg } else { self.find_def_in_reader_by_path(core_r, "core::ffi::CStr") };
             if cg2.is_some() {
                 self.ty_tables.cstr_gid = Some(self.canonical_def(cg2));
+            }
+            let send_g = self.find_def_in_reader_by_path(core_r, "core::marker::Send");
+            if send_g.is_some() {
+                self.ty_tables.gid_to_lang.entry(self.canonical_def(send_g)).or_insert(ridx_syntax::ty_infer::TyLangItem::Sync);
             }
         }
 
@@ -277,6 +317,17 @@ impl<'w> RidxV5ItemDb<'w> {
                     if !tgid.is_some() {
                         continue;
                     }
+                    for ab in iv.assoc_tys() {
+                        let aname = ab.name.trim_start_matches("r#");
+                        if !aname.is_empty() {
+                            let nh = fnv1a_str(aname);
+                            self.ty_tables.trait_assoc_tys.entry((tgid, nh)).or_insert_with(|| {
+                                let agid = GlobalDefId::new(tgid.krate, crate::v5_db::TY_DEF_SYNTH_BIT | 0x2000_0000 | ((nh as u32) & 0x1fff_ffff));
+                                self.ty_tables.assoc_ty_names.insert(agid, aname);
+                                (agid, aname, 0)
+                            });
+                        }
+                    }
                     for assoc_didx in iv.assoc_def_indices() {
                         if let Some(ad) = defs.get(assoc_didx as usize).filter(|a| DefKind::from(a.kind) == DefKind::AssocFn) {
                             let mname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
@@ -287,9 +338,11 @@ impl<'w> RidxV5ItemDb<'w> {
                             }
                         }
                     }
-                    let is_blanket = target == ImplTargetKey::Param;
+                    let is_ref_to_param =
+                        matches!(arena.kind(iv.self_ty()), ridx_format::TyKindView::Ref { inner, .. } if matches!(arena.kind(inner), ridx_format::TyKindView::Param { .. }));
+                    let is_blanket = target == ImplTargetKey::Param || is_ref_to_param;
                     let info = TraitImplInfo { r_idx: r_idx as u32, impl_idx, impl_gc, is_blanket };
-                    if is_blanket {
+                    if target == ImplTargetKey::Param {
                         self.ty_tables.blanket_trait_impls.entry(tgid).or_default().push(info);
                     } else {
                         self.ty_tables.concrete_trait_impls.entry((tgid, target)).or_default().push(info);
@@ -309,74 +362,4 @@ pub fn count_impl_non_lt<B: AsRef<[u8]>>(reader: &IndexReader<B>, impl_idx: u32)
     reader.generic_params_for_impl(impl_idx).filter(|p| !matches!(p.kind, GenericParamKind::Lifetime)).count() as u16
 }
 
-pub const fn u16_to_ty_lang(raw: u16) -> Option<TyLangItem> {
-    match raw {
-        0 => Some(TyLangItem::Sized),
-        1 => Some(TyLangItem::Copy),
-        2 => Some(TyLangItem::Clone),
-        3 => Some(TyLangItem::Sync),
-        4 => Some(TyLangItem::Freeze),
-        5 => Some(TyLangItem::Unpin),
-        6 => Some(TyLangItem::Drop),
-        7 => Some(TyLangItem::Tuple),
-        8 => Some(TyLangItem::FnPtrTrait),
-        9 => Some(TyLangItem::Option),
-        10 => Some(TyLangItem::OptionSome),
-        11 => Some(TyLangItem::OptionNone),
-        12 => Some(TyLangItem::Result),
-        13 => Some(TyLangItem::ResultOk),
-        14 => Some(TyLangItem::ResultErr),
-        15 => Some(TyLangItem::ControlFlow),
-        16 => Some(TyLangItem::ControlFlowContinue),
-        17 => Some(TyLangItem::ControlFlowBreak),
-        18 => Some(TyLangItem::Poll),
-        19 => Some(TyLangItem::PollReady),
-        20 => Some(TyLangItem::PollPending),
-        21 => Some(TyLangItem::Pin),
-        22 => Some(TyLangItem::OwnedBox),
-        23 => Some(TyLangItem::String),
-        28 => Some(TyLangItem::RangeFull),
-        29 => Some(TyLangItem::Range),
-        30 => Some(TyLangItem::RangeFrom),
-        31 => Some(TyLangItem::RangeTo),
-        32 => Some(TyLangItem::RangeInclusive),
-        33 => Some(TyLangItem::RangeToInclusive),
-        34 => Some(TyLangItem::Try),
-        35 => Some(TyLangItem::TryOutput),
-        43 => Some(TyLangItem::Fn),
-        45 => Some(TyLangItem::FnMut),
-        47 => Some(TyLangItem::FnOnce),
-        49 => Some(TyLangItem::FnOnceOutput),
-        50 => Some(TyLangItem::AsyncFn),
-        52 => Some(TyLangItem::AsyncFnMut),
-        54 => Some(TyLangItem::AsyncFnOnce),
-        56 => Some(TyLangItem::AsyncFnOnceOutput),
-        59 => Some(TyLangItem::Deref),
-        60 => Some(TyLangItem::DerefTarget),
-        62 => Some(TyLangItem::DerefMut),
-        66 => Some(TyLangItem::Index),
-        67 => Some(TyLangItem::IndexOutput),
-        69 => Some(TyLangItem::IndexMut),
-        71 => Some(TyLangItem::Iterator),
-        72 => Some(TyLangItem::IteratorItem),
-        74 => Some(TyLangItem::IntoIterator),
-        75 => Some(TyLangItem::IntoIteratorItem),
-        78 => Some(TyLangItem::Future),
-        79 => Some(TyLangItem::FutureOutput),
-        81 => Some(TyLangItem::IntoFuture),
-        82 => Some(TyLangItem::IntoFutureOutput),
-        87 => Some(TyLangItem::Add),
-        88 => Some(TyLangItem::Sub),
-        89 => Some(TyLangItem::Mul),
-        90 => Some(TyLangItem::Div),
-        91 => Some(TyLangItem::Rem),
-        92 => Some(TyLangItem::Neg),
-        93 => Some(TyLangItem::Not),
-        94 => Some(TyLangItem::BitXor),
-        95 => Some(TyLangItem::BitAnd),
-        96 => Some(TyLangItem::BitOr),
-        97 => Some(TyLangItem::Shl),
-        98 => Some(TyLangItem::Shr),
-        _ => None,
-    }
-}
+pub use crate::v5_ty_defaults::u16_to_ty_lang;

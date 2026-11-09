@@ -192,11 +192,9 @@ fn lower_v5_ty_rec(db: &RidxV5ItemDb<'_>, r_idx: usize, va: TyArenaView<'_>, ty_
             UintTyWidth::U128 => PrimTy::U128,
             UintTyWidth::Usize => PrimTy::Usize,
         }),
-        TyKindView::Float(w) => match w {
-            FloatTyWidth::F32 => InferTyId::F32,
-            FloatTyWidth::F64 => InferTyId::F64,
-            _ => InferTyId::UNKNOWN,
-        },
+        TyKindView::Float(FloatTyWidth::F32) => InferTyId::F32,
+        TyKindView::Float(FloatTyWidth::F64) => InferTyId::F64,
+        TyKindView::Float(FloatTyWidth::F16 | FloatTyWidth::F128) => InferTyId::UNKNOWN,
         TyKindView::Ref { mutability, inner, .. } => {
             let sub = lower_v5_ty_rec(db, r_idx, va, inner, remap, arena, depth + 1);
             arena.mk_ref(mutability == TyMutability::Mut, sub)
@@ -211,11 +209,15 @@ fn lower_v5_ty_rec(db: &RidxV5ItemDb<'_>, r_idx: usize, va: TyArenaView<'_>, ty_
         }
         TyKindView::Array { elem, len } => {
             let sub = lower_v5_ty_rec(db, r_idx, va, elem, remap, arena, depth + 1);
-            let n = match len {
+            let l = match len {
                 ConstArg::Value(v) => u64::from(v),
+                ConstArg::Param(idx) => match arena.kind(remap.resolve(idx)) {
+                    ridx_syntax::ty_infer::InferTyKind::Param { idx: d_idx, .. } => ridx_syntax::ty_infer::arena::ARRAY_LEN_PARAM_TAG | u64::from(d_idx),
+                    _ => u64::MAX,
+                },
                 _ => u64::MAX,
             };
-            arena.mk_array(sub, n)
+            arena.mk_array(sub, l)
         }
         TyKindView::Tuple(list) => {
             let mut elems = InlineTyBuf::new();
@@ -292,13 +294,12 @@ pub fn lower_generic_args(
     for ga in args {
         match ga {
             GenericArgView::Lifetime(_) => {}
-            GenericArgView::Type(tid) => {
-                out.push(lower_v5_ty_rec(db, r_idx, va, tid, remap, arena, depth));
-            }
+            GenericArgView::Type(tid) => out.push(lower_v5_ty_rec(db, r_idx, va, tid, remap, arena, depth)),
             GenericArgView::Const(c) => {
                 let cty = match c {
                     ConstArg::Param(idx) => remap.resolve(idx),
-                    _ => InferTyId::UNKNOWN,
+                    ConstArg::Value(v) => arena.mk_array(InferTyId::NEVER, u64::from(v)),
+                    _ => arena.mk_array(InferTyId::NEVER, u64::MAX),
                 };
                 out.push(cty);
             }
@@ -338,13 +339,31 @@ fn lower_existential_bounds(
             }
         }
     }
-    let Some((principal, b)) = chosen else {
-        return InferTyId::UNKNOWN;
-    };
+    let Some((principal, b)) = chosen else { return InferTyId::UNKNOWN };
     let mut args = InlineTyBuf::new();
     lower_generic_args(db, r_idx, va, b.args, remap, arena, &mut args, depth);
+    let c_prin = db.canonical_def(principal);
+    let mut s_assocs = [(u16::MAX, InferTyId::UNKNOWN); 8];
+    let mut slen = 0usize;
     for assoc in b.assocs {
-        args.push(lower_v5_ty_rec(db, r_idx, va, assoc.ty, remap, arena, depth));
+        if slen < s_assocs.len() {
+            let nh = crate::v5_ty_tables::fnv1a_str(assoc.name);
+            let ord = db
+                .ty_tables
+                .trait_assoc_tys
+                .get(&(c_prin, nh))
+                .map(|&(_, _, o)| o)
+                .or_else(|| {
+                    db.trait_supertraits.get(&c_prin).and_then(|s| s.iter().find_map(|&sup| db.ty_tables.trait_assoc_tys.get(&(db.canonical_def(sup), nh)).map(|&(_, _, o)| o)))
+                })
+                .unwrap_or(u16::MAX);
+            s_assocs[slen] = (ord, lower_v5_ty_rec(db, r_idx, va, assoc.ty, remap, arena, depth));
+            slen += 1;
+        }
+    }
+    s_assocs[..slen].sort_by_key(|&(o, _)| o);
+    for &(_, aty) in &s_assocs[..slen] {
+        args.push(aty);
     }
     if is_dyn {
         arena.mk_dyn(principal, args.as_slice())

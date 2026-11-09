@@ -148,18 +148,6 @@ pub fn materialize_unstable_default_types<'tcx>(
         let Some(did) = child.res.opt_def_id().filter(|d| d.krate == cnum) else {
             continue;
         };
-        let added = emit_missing_sysroot_def(tcx, did, sysroot_src, writer, visited, collector);
-        if added && tcx.def_kind(did) == DefKind::Trait {
-            for &assoc_did in tcx.associated_item_def_ids(did) {
-                let Some(sym) = tcx.opt_item_name(assoc_did) else {
-                    continue;
-                };
-                let s = sym.as_str();
-                if s.starts_with("__rust_") || s.starts_with("__") {
-                    continue;
-                }
-                emit_missing_sysroot_def(tcx, assoc_did, sysroot_src, writer, visited, collector);
-            }
-        }
+        emit_missing_sysroot_def(tcx, did, sysroot_src, writer, visited, collector);
     }
 }

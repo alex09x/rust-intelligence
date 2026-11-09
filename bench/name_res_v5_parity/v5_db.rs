@@ -31,6 +31,8 @@ pub const CRATE_ROOT_DEF_IDX: u32 = u32::MAX - 1;
 pub const IMPL_SYNTH_BIT: u32 = 0x8000_0000;
 /// Bit flag distinguishing synthetic `#[proc_macro_derive]` / `#[proc_macro]` root exports.
 pub const PROC_MACRO_SYNTH_BIT: u32 = 0x4000_0000;
+/// Bit flag distinguishing unmaterialized `TyDefEntry` items (`local_def_idx == 0x7FFF_FFFF`).
+pub const TY_DEF_SYNTH_BIT: u32 = 0x2000_0000;
 
 pub struct RidxV5ItemDb<'w> {
     pub ws: &'w WorkspaceIndex,
@@ -46,6 +48,7 @@ pub struct RidxV5ItemDb<'w> {
     pub impl_self_target: HashMap<GlobalDefId, ImplTargetKey>,
     pub valid_alias_leaf_pairs: HashSet<(String, String)>,
     pub ty_tables: V5TyTables<'w>,
+    pub active_owner_def: std::cell::Cell<GlobalDefId>,
 }
 
 impl<'w> RidxV5ItemDb<'w> {
@@ -80,6 +83,7 @@ impl<'w> RidxV5ItemDb<'w> {
             impl_self_target: HashMap::new(),
             valid_alias_leaf_pairs,
             ty_tables: V5TyTables::default(),
+            active_owner_def: std::cell::Cell::new(GlobalDefId::NONE),
         };
         db.index_all_impls_and_traits();
         db.index_proc_macro_exports(src);
@@ -235,6 +239,13 @@ impl<'w> RidxV5ItemDb<'w> {
             return GlobalDefId::NONE;
         };
         if let Some(local_idx) = td.local_def_idx {
+            if (local_idx as usize) < self.ws.readers()[from_reader].definitions().len() {
+                return GlobalDefId::new(CrateId(from_reader as u32), local_idx);
+            }
+            let by_path = self.find_def_in_reader_by_path(from_reader, td.path);
+            if by_path.is_some() {
+                return by_path;
+            }
             return GlobalDefId::new(CrateId(from_reader as u32), local_idx);
         }
         if td.extern_unit.is_none() && (td.path == self.metas[from_reader].crate_name || td.path.is_empty()) {
@@ -242,7 +253,7 @@ impl<'w> RidxV5ItemDb<'w> {
         }
         let target_reader = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(from_reader, uk)).or_else(|| {
             let first_seg = td.path.split("::").next().unwrap_or(td.path);
-            self.resolve_extern_name_to_reader(from_reader, first_seg)
+            self.resolve_extern_name_to_reader(from_reader, first_seg).or((first_seg == self.metas[from_reader].crate_name).then_some(from_reader))
         });
         let Some(tr_idx) = target_reader else {
             return GlobalDefId::NONE;
@@ -322,6 +333,9 @@ impl<'w> RidxV5ItemDb<'w> {
         if let Some(&didx) = self.shards[r_idx].synth_macro_by_name.get(rel_cand) {
             return GlobalDefId::new(CrateId(r_idx as u32), didx);
         }
+        if let Some(&didx) = self.shards[r_idx].synth_ty_def_by_path.get(raw_path).or_else(|| self.shards[r_idx].synth_ty_def_by_path.get(&prefixed)) {
+            return GlobalDefId::new(CrateId(r_idx as u32), didx);
+        }
         GlobalDefId::NONE
     }
 
@@ -351,18 +365,11 @@ impl<'w> RidxV5ItemDb<'w> {
                 UintTyWidth::U128 => ImplTargetKey::Prim(PrimTy::U128),
                 UintTyWidth::Usize => ImplTargetKey::Prim(PrimTy::Usize),
             },
-            TyKindView::Float(w) => match w {
-                FloatTyWidth::F32 => ImplTargetKey::Prim(PrimTy::F32),
-                FloatTyWidth::F64 => ImplTargetKey::Prim(PrimTy::F64),
-                _ => ImplTargetKey::Unknown,
-            },
+            TyKindView::Float(FloatTyWidth::F32) => ImplTargetKey::Prim(PrimTy::F32),
+            TyKindView::Float(FloatTyWidth::F64) => ImplTargetKey::Prim(PrimTy::F64),
             TyKindView::Adt { def, .. } => {
                 let g = self.resolve_ty_def(r_idx, arena, def);
-                if g.is_some() {
-                    ImplTargetKey::Adt(g)
-                } else {
-                    ImplTargetKey::Unknown
-                }
+                g.is_some().then_some(ImplTargetKey::Adt(g)).unwrap_or(ImplTargetKey::Unknown)
             }
             TyKindView::Ref { mutability, .. } => ImplTargetKey::Ref { is_mut: mutability == TyMutability::Mut },
             TyKindView::Ptr { mutability, .. } => ImplTargetKey::Ptr { is_mut: mutability == TyMutability::Mut },
@@ -371,15 +378,7 @@ impl<'w> RidxV5ItemDb<'w> {
             TyKindView::Tuple(list) => ImplTargetKey::Tuple(list.count() as u16),
             TyKindView::FnPtr { inputs, .. } => ImplTargetKey::FnPtr { arity: inputs.count() as u16 },
             TyKindView::Dyn { mut bounds, .. } => {
-                let Some(first) = bounds.next() else {
-                    return ImplTargetKey::Unknown;
-                };
-                let tr = self.resolve_ty_def(r_idx, arena, first.trait_def);
-                if tr.is_some() {
-                    ImplTargetKey::Dyn(tr)
-                } else {
-                    ImplTargetKey::Unknown
-                }
+                bounds.next().map(|f| self.resolve_ty_def(r_idx, arena, f.trait_def)).filter(|g| g.is_some()).map_or(ImplTargetKey::Unknown, ImplTargetKey::Dyn)
             }
             TyKindView::Param { .. } => ImplTargetKey::Param,
             _ => ImplTargetKey::Unknown,

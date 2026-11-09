@@ -11,14 +11,13 @@
 //! Checkbox `3.4` minimal trait solver, `where`-obligation evaluator, CST `<Param as Trait>::Assoc`
 //! projection, and canonical trait `AssocFn` UFCS instantiation (`0` steady-state heap allocations).
 
-use super::autoderef::{impl_target_key_of_ty, normalize_ty_with_owner, NormOwner};
+use super::autoderef::{normalize_ty_with_owner, NormOwner};
 use super::body_ctx::Runner;
 use super::db::{TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
 use super::local_defs::LocalCstDefs;
 use super::lower_ty::effective_target_def;
-pub(super) use super::trait_solve_cst::{
-    check_cst_impl_bounds_in_table, check_cst_impl_bounds_senv, collect_cst_fn_obligations, param_has_active_bound, project_cst_param_assoc, trait_has_super,
-};
+pub(super) use super::trait_solve_cst::{check_cst_impl_bounds_in_table, check_cst_impl_bounds_senv, collect_cst_fn_obligations, project_cst_param_assoc};
+pub(super) use super::trait_solve_ufcs::{param_has_active_bound, trait_has_super, try_solve_local_cst_impls};
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
@@ -56,6 +55,19 @@ impl<'a, 's> Runner<'a, 's> {
             return sub_ty;
         }
         let Some(rref) = self.file_res.path_tail_ref_in_st(self.st, path_node) else {
+            let mut segs = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment);
+            let fseg = segs.next();
+            if let Some(fs) = fseg.filter(|_| segs.next().is_none() && !self.st.own_tokens(path_node).any(|(_, t)| t.kind == T::Colon)) {
+                if let Some(sty) = self.lookup_sub_local(norm_ident(self.st.text(fs).trim())) {
+                    return sty;
+                }
+            } else if fseg.is_some() {
+                let fb = ResTarget::Def { def: GlobalDefId::NONE, local: crate::name_res::LocalItemId::NONE, kind: ItemKind::AssocFn };
+                let resolved = self.resolve_unindexed_ufcs_target(path_node, fb);
+                if effective_target_def(resolved).is_some() {
+                    return self.finish_value_path_target(path_node, resolved);
+                }
+            }
             return InferTyId::UNKNOWN;
         };
         let target = if matches!(rref.target, ResTarget::Def { def, local, kind: ItemKind::AssocFn } if !def.is_some() && !local.is_some()) {
@@ -63,18 +75,97 @@ impl<'a, 's> Runner<'a, 's> {
         } else {
             rref.target
         };
+        self.finish_value_path_target(path_node, target)
+    }
+
+    pub(super) fn finish_value_path_target(&mut self, path_node: NodeId, mut target: ResTarget) -> InferTyId {
+        let mut qself_adt: Option<InferTyId> = None;
         if let ResTarget::Def { kind: ItemKind::AssocFn, .. } = target {
             let eff_def = effective_target_def(target);
             if eff_def.is_some() {
-                let meta_opt = self.db.trait_of_assoc_fn(eff_def).or_else(|| self.local_defs.trait_of_assoc_fn(eff_def, self.root_st, self.root_file_res, self.db));
-                if let Some(meta) = meta_opt {
+                if let Some(meta) = self.db.trait_of_assoc_fn(eff_def).or_else(|| self.local_defs.trait_of_assoc_fn(eff_def, self.root_st, self.root_file_res, self.db)) {
                     return self.instantiate_trait_assoc_fn_path(path_node, meta);
+                }
+                qself_adt = self.lower_path_qself_adt_ty(path_node);
+                if let Some(qself_ty) = qself_adt {
+                    let refined = self.db.refine_inherent_assoc_fn(eff_def, qself_ty, &mut self.ctx.table.arena, &mut self.ctx.table.vars);
+                    if refined != eff_def && refined.is_some() {
+                        target = ResTarget::Def { def: refined, local: crate::name_res::LocalItemId::NONE, kind: ItemKind::AssocFn };
+                    }
+                }
+            }
+        } else if matches!(target, ResTarget::Def { kind: ItemKind::Variant, .. }) {
+            qself_adt = self.lower_path_qself_adt_ty(path_node);
+        }
+        let mut explicit = InlineTyBuf::new();
+        if matches!(target, ResTarget::Def { kind: ItemKind::Variant, .. }) && qself_adt.is_some() {
+            if let Some(InferTyKind::Adt { args, .. }) = qself_adt.map(|t| self.ctx.table.arena.kind(t)) {
+                for &a in self.ctx.table.arena.slice(args) {
+                    explicit.push(a);
+                }
+            }
+        } else if matches!(target, ResTarget::Def { kind: ItemKind::AssocFn, .. }) && qself_adt.is_some() {
+            if let Some(tseg) = self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment).last() {
+                self.ty_env(true).collect_segment_args(&mut self.ctx.table, tseg, false, &mut explicit, 0);
+            }
+        } else {
+            self.collect_path_turbofish(path_node, &mut explicit);
+            if explicit.as_slice().is_empty() {
+                if let Some(InferTyKind::Adt { args, .. }) = qself_adt.map(|t| self.ctx.table.arena.kind(t)) {
+                    for &a in self.ctx.table.arena.slice(args) {
+                        explicit.push(a);
+                    }
                 }
             }
         }
-        let mut explicit = InlineTyBuf::new();
-        self.collect_path_turbofish(path_node, &mut explicit);
-        self.instantiate_target_value(target, explicit.as_slice())
+        let val_ty = self.instantiate_target_value(target, explicit.as_slice());
+        if let (Some(qself_ty), InferTyKind::FnDef { def, args }) = (qself_adt, self.ctx.table.arena.kind(val_ty)) {
+            self.unify_inherent_fn_with_qself(def, args, qself_ty);
+        }
+        val_ty
+    }
+
+    pub(super) fn push_param_bound_cands_with_args(&mut self, st_ty: InferTyId, p_idx: u16, method_name: &str, cands: &mut Vec<super::db::MethodCand>) {
+        let mut obls = core::mem::take(&mut self.ctx.where_obls_buf);
+        obls.clear();
+        if self.fn_def.is_some() {
+            self.db.owner_where_obligations(self.fn_def, &mut self.ctx.table.arena, &mut obls);
+        }
+        let has_local_sub_tr = obls
+            .iter()
+            .any(|o| matches!(o, WhereObligation::TraitBound { trait_def, trait_args, .. } if trait_args.len == 0 && self.local_defs.traits.iter().any(|t| t.def == *trait_def)));
+        if obls.is_empty() || has_local_sub_tr {
+            collect_cst_fn_obligations(self.local_defs, self.root_fn_node, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut obls);
+        }
+        for obl in obls.iter().copied() {
+            if let WhereObligation::TraitBound { lhs_ty, trait_def, trait_args } = obl {
+                if trait_args.len > 0 && matches!(self.ctx.table.arena.kind(lhs_ty), InferTyKind::Param { idx, .. } if idx == p_idx) {
+                    let mut tr_args = InlineTyBuf::new();
+                    for &a in self.ctx.table.arena.slice(trait_args) {
+                        tr_args.push(a);
+                    }
+                    if let Some(c) =
+                        self.local_defs.trait_decl_method_cand(trait_def, tr_args.as_slice(), st_ty, method_name, self.root_st, self.root_file_res, self.db, &mut self.ctx.table)
+                    {
+                        cands.push(c);
+                    }
+                }
+            }
+        }
+        self.ctx.where_obls_buf = obls;
+        if p_idx == 0 {
+            if let Some(&tr) = self.root_impl_node.filter(|&n| self.root_st.kind(n) == K::Trait).and_then(|im| self.local_defs.traits.iter().find(|t| t.node == im)) {
+                let mut tr_args = InlineTyBuf::new();
+                for i in 0..tr.trait_generics {
+                    tr_args.push(self.ctx.table.arena.mk_param(1 + i, GlobalDefId::NONE));
+                }
+                if let Some(c) =
+                    self.local_defs.trait_decl_method_cand(tr.def, tr_args.as_slice(), st_ty, method_name, self.root_st, self.root_file_res, self.db, &mut self.ctx.table)
+                {
+                    cands.push(c);
+                }
+            }
+        }
     }
 
     pub(super) fn instantiate_trait_assoc_fn_path(&mut self, path_node: NodeId, meta: TraitAssocFnMeta) -> InferTyId {
@@ -86,53 +177,21 @@ impl<'a, 's> Runner<'a, 's> {
                 slen += 1;
             }
         }
-        let first_seg = (slen > 0).then(|| segs[0]);
-        let tail_seg = (slen > 0).then(|| segs[slen - 1]);
-        let qual_seg = (slen >= 2).then(|| segs[slen - 2]);
-
+        let (first_seg, tail_seg, qual_seg) = ((slen > 0).then(|| segs[0]), (slen > 0).then(|| segs[slen - 1]), (slen >= 2).then(|| segs[slen - 2]));
         let tenv = self.ty_env(true);
         let mut q_targs = InlineTyBuf::new();
         let self_ty = if let Some(fseg) = first_seg.filter(|&fs| self.st.own_tokens(fs).next().is_some_and(|(_, t)| t.kind == T::Lt)) {
-            let sty = match self.st.children(fseg).find(|&c| self.st.kind(c).is_type()) {
-                Some(tn) => tenv.lower_cst_ty(&mut self.ctx.table, tn),
-                None => self.ctx.table.new_ty_var(),
-            };
-            if let Some(tp) = self.st.child(fseg, K::Path) {
-                if let Some(tp_tail) = self.st.children(tp).filter(|&c| self.st.kind(c) == K::PathSegment).last() {
-                    tenv.collect_segment_args(&mut self.ctx.table, tp_tail, false, &mut q_targs, 0);
-                }
+            let sty =
+                if let Some(tn) = self.st.children(fseg).find(|&c| self.st.kind(c).is_type()) { tenv.lower_cst_ty(&mut self.ctx.table, tn) } else { self.ctx.table.new_ty_var() };
+            if let Some(tp_tail) = self.st.child(fseg, K::Path).and_then(|tp| self.st.children(tp).filter(|&c| self.st.kind(c) == K::PathSegment).last()) {
+                tenv.collect_segment_args(&mut self.ctx.table, tp_tail, false, &mut q_targs, 0);
             }
             sty
         } else if let Some(qseg) = qual_seg {
-            let qr = self.st.range(qseg);
-            let q_target = self
-                .file_res
-                .refs_starting_in(qr.start as u32, qr.end as u32)
-                .iter()
-                .find(|r| (r.path_node == path_node || r.path_node == NodeId(u32::MAX)) && r.end <= qr.end as u32)
-                .map(|r| r.target);
-            match q_target {
-                Some(ResTarget::Def { kind: ItemKind::Trait, .. }) => {
-                    tenv.collect_segment_args(&mut self.ctx.table, qseg, false, &mut q_targs, 0);
-                    self.ctx.table.new_ty_var()
-                }
-                Some(qt) => {
-                    let mut fargs = InlineTyBuf::new();
-                    tenv.collect_segment_args(&mut self.ctx.table, qseg, false, &mut fargs, 0);
-                    tenv.finish_ufcs_qself_type(&mut self.ctx.table, qt, qseg, fargs.as_slice())
-                }
-                None => {
-                    if self.st.own_tokens(qseg).any(|(_, t)| t.kind == T::SelfType) {
-                        self.self_ty.unwrap_or_else(|| self.ctx.table.new_ty_var())
-                    } else {
-                        crate::name_res::PrimTy::from_name(norm_ident(self.st.text(qseg))).map_or_else(|| self.ctx.table.new_ty_var(), InferTyId::from_prim)
-                    }
-                }
-            }
+            self.lower_qseg_self_ty(path_node, first_seg, qseg, &mut q_targs)
         } else {
             self.ctx.table.new_ty_var()
         };
-
         let mut m_args = InlineTyBuf::new();
         if let Some(tseg) = tail_seg {
             tenv.collect_segment_args(&mut self.ctx.table, tseg, false, &mut m_args, 0);
@@ -180,10 +239,18 @@ impl<'a, 's> Runner<'a, 's> {
                 }
                 let alias_ty = self.ctx.table.arena.mk_alias(trait_def, assoc_def, inst_lhs, inst_args.as_slice());
                 let proj = self.norm(alias_ty);
+                let inst_rhs = self.ctx.table.instantiate(rhs_ty, subst);
                 if !matches!(self.ctx.table.arena.kind(proj), InferTyKind::Alias { .. } | InferTyKind::Unknown) {
-                    let inst_rhs = self.ctx.table.instantiate(rhs_ty, subst);
                     let norm_rhs = self.norm(inst_rhs);
-                    let _ = self.ctx.table.coerce(proj, norm_rhs);
+                    if matches!(self.ctx.table.arena.kind(norm_rhs), InferTyKind::Alias { .. }) {
+                        if self.ctx.deferred_proj_eqs.len() < 8 {
+                            self.ctx.deferred_proj_eqs.push((norm_rhs, proj));
+                        }
+                    } else {
+                        let _ = self.ctx.table.coerce(proj, norm_rhs);
+                    }
+                } else if matches!(self.ctx.table.arena.kind(proj), InferTyKind::Alias { .. }) && self.ctx.deferred_proj_eqs.len() < 8 {
+                    self.ctx.deferred_proj_eqs.push((alias_ty, inst_rhs));
                 }
             }
         }
@@ -197,10 +264,17 @@ impl<'a, 's> Runner<'a, 's> {
                     let ia = self.ctx.table.instantiate(a, subst);
                     inst_args.push(self.norm(ia));
                 }
+                if matches!(self.ctx.table.arena.kind(norm_lhs), InferTyKind::Infer(_)) && !inst_args.as_slice().is_empty() && self.ctx.deferred_trait_bounds.len() < 16 {
+                    let args_r = self.ctx.table.arena.intern_slice(inst_args.as_slice());
+                    self.ctx.deferred_trait_bounds.push((trait_def, norm_lhs, args_r));
+                }
                 let _ = self.solve_obligation(trait_def, norm_lhs, inst_args.as_slice(), false, 0);
             }
         }
         self.ctx.where_obls_buf = obls;
+        if !self.ctx.deferred_proj_eqs.is_empty() {
+            self.flush_deferred_proj_eqs();
+        }
     }
 }
 
@@ -222,32 +296,44 @@ pub(super) fn solve_obligation_senv(
     for &a in raw_args {
         targs.push(normalize_ty_with_owner(table, senv.db, senv.local_defs, senv.st, senv.file_res, senv.owner, a));
     }
+    match senv.db.lang_item_of_def(trait_def) {
+        Some(TyLangItem::Sized) => return !matches!(table.arena.kind(self_ty), InferTyKind::Prim(crate::name_res::PrimTy::Str) | InferTyKind::Slice(_) | InferTyKind::Dyn { .. }),
+        Some(TyLangItem::Sync | TyLangItem::Freeze | TyLangItem::Unpin) => return true,
+        _ => {}
+    }
     match table.arena.kind(self_ty) {
         InferTyKind::Unknown => return allow_ambig_self_var,
-        InferTyKind::Infer(_) => {
+        InferTyKind::Infer(vid) => {
             if allow_ambig_self_var {
                 return true;
             }
-            let _ = try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, depth + 1)
-                || senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars);
+            let is_local_tr = senv.local_defs.traits.iter().any(|t| t.def == trait_def)
+                || targs.as_slice().iter().any(|&a| matches!(table.arena.kind(a), InferTyKind::Adt { def, .. } if senv.local_defs.adt_generic_count(def).is_some()));
+            if (is_local_tr || !matches!(table.vars.probe_var(vid), Err((_, super::ty::TyVarKind::General, ..))))
+                && try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, depth + 1)
+            {
+                return true;
+            }
+            let _ = senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars);
             return true;
         }
         _ => {}
     }
     if matches!(senv.db.lang_item_of_def(trait_def), Some(TyLangItem::Fn | TyLangItem::FnMut | TyLangItem::FnOnce)) {
-        if let InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } = table.arena.kind(self_ty) {
+        let mut fn_self = self_ty;
+        while let InferTyKind::Ref { inner, .. } = table.arena.kind(fn_self) {
+            fn_self = table.shallow_resolve(inner);
+        }
+        if let InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } = table.arena.kind(fn_self) {
             if sig.len >= 1 {
                 let mut sb = InlineTyBuf::new();
                 for &x in table.arena.slice(sig) {
                     sb.push(x);
                 }
                 let sl = sb.as_slice();
-                let ret_ty = sl[sl.len() - 1];
-                let tup = table.arena.mk_tuple(&sl[..sl.len() - 1]);
+                let (ret_ty, tup) = (sl[sl.len() - 1], table.arena.mk_tuple(&sl[..sl.len() - 1]));
                 let snap = table.start_snapshot();
-                let ok1 = targs.as_slice().first().is_none_or(|&a0| table.equate(a0, tup).is_ok());
-                let ok2 = targs.as_slice().get(1).is_none_or(|&a1| table.coerce(ret_ty, a1).is_ok());
-                if ok1 && ok2 {
+                if targs.as_slice().first().is_none_or(|&a0| table.equate(a0, tup).is_ok()) && targs.as_slice().get(1).is_none_or(|&a1| table.coerce(ret_ty, a1).is_ok()) {
                     table.commit(snap);
                     return true;
                 }
@@ -257,96 +343,25 @@ pub(super) fn solve_obligation_senv(
         }
     }
     if let InferTyKind::Param { idx, def: pdef } = table.arena.kind(self_ty) {
+        if !targs.as_slice().is_empty() {
+            let _ = senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars);
+        }
         if param_has_active_bound(senv, table, idx, pdef, trait_def) {
             return true;
         }
     }
-    if let InferTyKind::Dyn { principal, .. } | InferTyKind::Opaque { def: principal, .. } = table.arena.kind(self_ty) {
-        if principal == trait_def || trait_has_super(senv, table, principal, trait_def) {
+    if let InferTyKind::Dyn { principal, args } | InferTyKind::Opaque { def: principal, args } = table.arena.kind(self_ty) {
+        if principal == trait_def {
+            let mut oa = InlineTyBuf::new();
+            for &x in table.arena.slice(args) {
+                oa.push(x);
+            }
+            return targs.as_slice().iter().zip(oa.as_slice()).all(|(&ta, &o)| table.equate(ta, o).is_ok());
+        }
+        if trait_has_super(senv, table, principal, trait_def) {
             return true;
         }
     }
-    if try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, depth + 1) {
-        return true;
-    }
-    senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars)
-}
-
-fn try_solve_local_cst_impls(senv: SolveEnv<'_, '_>, trait_def: GlobalDefId, self_ty: InferTyId, trait_args: &[InferTyId], table: &mut InferenceTable, depth: u8) -> bool {
-    let self_head = impl_target_key_of_ty(&table.arena, self_ty);
-    let self_is_var = matches!(table.arena.kind(self_ty), InferTyKind::Infer(_));
-    let mut match_count = 0u32;
-    let mut unique_imp: Option<(NodeId, u16)> = None;
-    for imp in &senv.local_defs.impls {
-        if imp.indexed_in_clean_db || !imp.has_for || imp.is_negative {
-            continue;
-        }
-        let Some((imp_tr, imp_args, imp_self)) = senv.local_defs.lower_trait_impl_header(imp.node, imp.impl_generics, senv.st, senv.file_res, senv.db, table) else {
-            continue;
-        };
-        if imp_tr != trait_def {
-            continue;
-        }
-        let is_blanket = matches!(table.arena.kind(imp_self), InferTyKind::Param { .. });
-        if !self_is_var && !is_blanket && impl_target_key_of_ty(&table.arena, imp_self) != self_head {
-            continue;
-        }
-        let snap = table.start_snapshot();
-        let ok = bind_and_check_cst_impl(senv, (imp.node, imp.impl_generics, imp_self, is_blanket), imp_args.as_slice(), self_ty, trait_args, table, depth);
-        table.rollback_to(snap);
-        if ok {
-            match_count += 1;
-            unique_imp = Some((imp.node, imp.impl_generics));
-            if match_count > 1 {
-                break;
-            }
-        }
-    }
-    if match_count == 1 {
-        if let Some((node, igc)) = unique_imp {
-            if let Some((_, imp_args, imp_self)) = senv.local_defs.lower_trait_impl_header(node, igc, senv.st, senv.file_res, senv.db, table) {
-                let is_b = matches!(table.arena.kind(imp_self), InferTyKind::Param { .. });
-                let snap = table.start_snapshot();
-                if bind_and_check_cst_impl(senv, (node, igc, imp_self, is_b), imp_args.as_slice(), self_ty, trait_args, table, depth) {
-                    table.commit(snap);
-                } else {
-                    table.rollback_to(snap);
-                }
-            }
-        }
-    }
-    match_count >= 1
-}
-
-#[allow(clippy::too_many_arguments)]
-fn bind_and_check_cst_impl(
-    senv: SolveEnv<'_, '_>,
-    (imp_node, imp_gc, imp_self, is_blanket): (NodeId, u16, InferTyId, bool),
-    imp_args: &[InferTyId],
-    self_ty: InferTyId,
-    trait_args: &[InferTyId],
-    table: &mut InferenceTable,
-    depth: u8,
-) -> bool {
-    let mut subst = InlineTyBuf::new();
-    for _ in 0..imp_gc {
-        subst.push(table.new_ty_var());
-    }
-    let inst_self = table.instantiate(imp_self, subst.as_slice());
-    if table.equate(self_ty, inst_self).is_err() {
-        return false;
-    }
-    if !trait_args.is_empty() {
-        if imp_args.len() == trait_args.len() {
-            for (i, &ta) in trait_args.iter().enumerate() {
-                let ia = table.instantiate(imp_args[i], subst.as_slice());
-                if table.equate(ta, ia).is_err() {
-                    return false;
-                }
-            }
-        } else if !imp_args.is_empty() || trait_args.len() != 1 || table.equate(trait_args[0], inst_self).is_err() {
-            return false;
-        }
-    }
-    !is_blanket || check_cst_impl_bounds_senv(senv, imp_node, imp_gc, subst.as_slice(), table, false, depth)
+    try_solve_local_cst_impls(senv, trait_def, self_ty, targs.as_slice(), table, depth + 1)
+        || senv.db.solve_trait_obligation(trait_def, self_ty, targs.as_slice(), &mut table.arena, &mut table.vars)
 }

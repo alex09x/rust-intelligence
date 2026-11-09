@@ -24,7 +24,7 @@ use super::local_defs::LocalCstDefs;
 
 const WRAP_PREFIX: &str = "fn __ridx_mac__() {\n";
 const WRAP_SUFFIX: &str = "\n}";
-const MAX_BODY_MBE_DEPTH: u8 = 5;
+const MAX_BODY_MBE_DEPTH: u8 = 8;
 
 #[derive(Clone, Debug)]
 pub(super) struct PreExpandedMacro {
@@ -101,7 +101,7 @@ impl LocalCstDefs {
                 let mut resolve_mac = |mp: &str, ma: &str| expand_include_helper_macro(st, node, def_map, item_db, cur_mod, mp, ma);
                 if let Some(pstr) = eval_include_path_str(st, node, idb_ref, krate, &mut resolve_mac) {
                     if let Some((_, inc_text)) = item_db.and_then(|idb| idb.resolve_include_file(file, &pstr)) {
-                        if let Some(pre) = build_wrapped_pre(node, inc_text, Vec::new(), st, def_map, item_db, file) {
+                        if let Some(pre) = build_wrapped_pre(node, inc_text, Vec::new(), st, def_map, item_db, file, false) {
                             self.body_macros.push(pre);
                         }
                     }
@@ -131,17 +131,20 @@ impl LocalCstDefs {
                 continue;
             };
             expand_nested_macros(&mut exp_src, &mut spans, st, node, def_map, item_db, cur_mod);
+            let in_ty_ctx = st.parent(node).is_some_and(|p| matches!(st.kind(p), K::TypeArg | K::RetType | K::Param | K::TupleType | K::RefType | K::SliceType | K::ArrayType));
+            let pfx_len = if in_ty_ctx { "fn __ridx_m() {\nlet _: ".len() } else { WRAP_PREFIX.len() } as u32;
             for sp in &mut spans {
-                sp.exp_start += WRAP_PREFIX.len() as u32;
-                sp.exp_end += WRAP_PREFIX.len() as u32;
+                sp.exp_start += pfx_len;
+                sp.exp_end += pfx_len;
             }
-            if let Some(pre) = build_wrapped_pre(node, &exp_src, spans, st, def_map, item_db, file) {
+            if let Some(pre) = build_wrapped_pre(node, &exp_src, spans, st, def_map, item_db, file, in_ty_ctx) {
                 self.body_macros.push(pre);
             }
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_wrapped_pre(
     mac_node: NodeId,
     inner_code: &str,
@@ -150,14 +153,16 @@ fn build_wrapped_pre(
     def_map: Option<&CrateDefMap>,
     item_db: Option<&dyn ItemDb>,
     file: FileId,
+    in_ty_ctx: bool,
 ) -> Option<PreExpandedMacro> {
     if inner_code.len() > 65_536 {
         return None;
     }
-    let mut wrapped = String::with_capacity(WRAP_PREFIX.len() + inner_code.len() + WRAP_SUFFIX.len());
-    wrapped.push_str(WRAP_PREFIX);
+    let (pfx, sfx) = if in_ty_ctx { ("fn __ridx_m() {\nlet _: ", ";\n}") } else { (WRAP_PREFIX, WRAP_SUFFIX) };
+    let mut wrapped = String::with_capacity(pfx.len() + inner_code.len() + sfx.len());
+    wrapped.push_str(pfx);
     wrapped.push_str(inner_code);
-    wrapped.push_str(WRAP_SUFFIX);
+    wrapped.push_str(sfx);
     let exp_st = crate::parse(&wrapped);
     let fn_node = exp_st.children(exp_st.root()).find(|&c| exp_st.kind(c) == K::Fn)?;
     let block_node = exp_st.child(fn_node, K::BlockExpr)?;

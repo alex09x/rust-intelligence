@@ -158,15 +158,18 @@ pub fn build_autoderef_steps_with_owner(
     let first = normalize_ty_with_owner(table, db, local_defs, st, file_res, owner, start_ty);
     out[0] = first;
     let mut len = 1usize;
-    if matches!(table.arena.kind(first), InferTyKind::Unknown | InferTyKind::Infer(_)) {
+    if matches!(table.arena.kind(first), InferTyKind::Unknown) {
         return len;
     }
     while len < MAX_AUTODEREF_STEPS {
         let prev = out[len - 1];
+        if matches!(table.arena.kind(prev), InferTyKind::Infer(_)) {
+            break;
+        }
         let Some(next) = autoderef_step_rec(table, db, local_defs, st, file_res, owner, prev, 0) else {
             break;
         };
-        if matches!(table.arena.kind(next), InferTyKind::Unknown | InferTyKind::Infer(_)) || out[..len].contains(&next) {
+        if matches!(table.arena.kind(next), InferTyKind::Unknown) || out[..len].contains(&next) {
             break;
         }
         out[len] = next;
@@ -209,7 +212,7 @@ fn normalize_ty_rec(
         return r;
     }
     let flags = table.arena.flags(r);
-    if !flags.has_alias() && !flags.has_infer() {
+    if !flags.has_alias() {
         return r;
     }
     match table.arena.kind(r) {
@@ -244,20 +247,29 @@ fn normalize_ty_rec(
                     }
                 }
             }
-            if let InferTyKind::Opaque { def, args: oargs } | InferTyKind::Dyn { principal: def, args: oargs } = table.arena.kind(norm_self) {
+            if matches!(table.arena.kind(norm_self), InferTyKind::Alias { .. }) && table.arena.flags(norm_self).has_param() && owner.fn_def.is_some() {
+                let mut ext_args = InlineTyBuf::new();
+                ext_args.push(norm_self);
+                for &a in norm_args.as_slice() {
+                    ext_args.push(a);
+                }
+                if let Some(p) = db.project_param_assoc(owner.fn_def, u16::MAX, trait_def, assoc_def, ext_args.as_slice(), &mut table.arena) {
+                    return normalize_ty_rec(table, db, local_defs, st, file_res, owner, p, depth + 1);
+                }
+            }
+            if let InferTyKind::Opaque { args: oargs, .. } | InferTyKind::Dyn { args: oargs, .. } = table.arena.kind(norm_self) {
                 if oargs.len >= 1
                     && matches!(
-                        (db.lang_item_of_def(def), db.lang_item_of_def(assoc_def)),
-                        (
-                            Some(super::db::TyLangItem::Iterator | super::db::TyLangItem::IntoIterator),
-                            Some(super::db::TyLangItem::IteratorItem | super::db::TyLangItem::IntoIteratorItem)
-                        ) | (
-                            Some(super::db::TyLangItem::Future | super::db::TyLangItem::IntoFuture),
-                            Some(super::db::TyLangItem::FutureOutput | super::db::TyLangItem::IntoFutureOutput)
+                        db.lang_item_of_def(assoc_def),
+                        Some(
+                            super::db::TyLangItem::IteratorItem
+                                | super::db::TyLangItem::IntoIteratorItem
+                                | super::db::TyLangItem::FutureOutput
+                                | super::db::TyLangItem::IntoFutureOutput
                         )
                     )
                 {
-                    let elem = table.arena.slice(oargs)[0];
+                    let elem = table.arena.slice(oargs)[oargs.len as usize - 1];
                     return normalize_ty_rec(table, db, local_defs, st, file_res, owner, elem, depth + 1);
                 }
             }
@@ -272,11 +284,52 @@ fn normalize_ty_rec(
             if let Some(p) = local_defs.project_trait_assoc(trait_def, assoc_def, norm_self, norm_args.as_slice(), st, file_res, db, table) {
                 return normalize_ty_rec(table, db, local_defs, st, file_res, owner, p, depth + 1);
             }
+            if !trait_def.is_some() {
+                if let InferTyKind::Slice(elem) = table.arena.kind(norm_self) {
+                    let peeled = match table.arena.kind(elem) {
+                        InferTyKind::Ref { inner, .. } => inner,
+                        _ => elem,
+                    };
+                    match table.arena.kind(peeled) {
+                        InferTyKind::Prim(crate::name_res::PrimTy::Str) => {
+                            if let Some(s) = db.std_macro_ty(super::db::StdMacroTy::String, &mut table.arena) {
+                                return s;
+                            }
+                        }
+                        InferTyKind::Adt { def, args: eargs } => {
+                            if db.lang_item_of_def(def) == Some(TyLangItem::String) {
+                                if let Some(s) = db.std_macro_ty(super::db::StdMacroTy::String, &mut table.arena) {
+                                    return s;
+                                }
+                            } else if eargs.len >= 1 {
+                                let inner_e = table.arena.slice(eargs)[0];
+                                if let Some(v) = db.std_macro_ty(super::db::StdMacroTy::Vec(inner_e), &mut table.arena) {
+                                    return v;
+                                }
+                            }
+                        }
+                        InferTyKind::Slice(inner_e) | InferTyKind::Array { elem: inner_e, .. } => {
+                            if let Some(v) = db.std_macro_ty(super::db::StdMacroTy::Vec(inner_e), &mut table.arena) {
+                                return v;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
             table.arena.mk_alias(trait_def, assoc_def, norm_self, norm_args.as_slice())
         }
         InferTyKind::Ref { is_mut, inner } if flags.has_alias() => {
             let sub = normalize_ty_rec(table, db, local_defs, st, file_res, owner, inner, depth + 1);
             table.arena.mk_ref(is_mut, sub)
+        }
+        InferTyKind::Ptr { is_mut, inner } if flags.has_alias() => {
+            let sub = normalize_ty_rec(table, db, local_defs, st, file_res, owner, inner, depth + 1);
+            table.arena.mk_ptr(is_mut, sub)
+        }
+        InferTyKind::Array { elem, len } if flags.has_alias() => {
+            let sub = normalize_ty_rec(table, db, local_defs, st, file_res, owner, elem, depth + 1);
+            table.arena.mk_array(sub, len)
         }
         InferTyKind::Adt { def, args } if flags.has_alias() => {
             let mut b = InlineTyBuf::new();
@@ -285,6 +338,32 @@ fn normalize_ty_rec(
                 b.push(normalize_ty_rec(table, db, local_defs, st, file_res, owner, a, depth + 1));
             }
             table.arena.mk_adt(def, b.as_slice())
+        }
+        InferTyKind::FnDef { def, args } if flags.has_alias() => {
+            let mut b = InlineTyBuf::new();
+            for idx in 0..args.len as usize {
+                let a = table.arena.slice(args)[idx];
+                b.push(normalize_ty_rec(table, db, local_defs, st, file_res, owner, a, depth + 1));
+            }
+            table.arena.mk_fn_def(def, b.as_slice())
+        }
+        InferTyKind::FnPtr { sig } if flags.has_alias() && sig.len >= 1 => {
+            let mut b = InlineTyBuf::new();
+            for idx in 0..sig.len as usize {
+                let a = table.arena.slice(sig)[idx];
+                b.push(normalize_ty_rec(table, db, local_defs, st, file_res, owner, a, depth + 1));
+            }
+            let s = b.as_slice();
+            table.arena.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
+        }
+        InferTyKind::Closure { def_start, def_end, sig } if flags.has_alias() && sig.len >= 1 => {
+            let mut b = InlineTyBuf::new();
+            for idx in 0..sig.len as usize {
+                let a = table.arena.slice(sig)[idx];
+                b.push(normalize_ty_rec(table, db, local_defs, st, file_res, owner, a, depth + 1));
+            }
+            let s = b.as_slice();
+            table.arena.mk_closure(def_start, def_end, &s[..s.len() - 1], s[s.len() - 1])
         }
         InferTyKind::Tuple(rng) if flags.has_alias() => {
             let mut b = InlineTyBuf::new();
@@ -297,6 +376,14 @@ fn normalize_ty_rec(
         InferTyKind::Slice(elem) if flags.has_alias() => {
             let sub = normalize_ty_rec(table, db, local_defs, st, file_res, owner, elem, depth + 1);
             table.arena.mk_slice(sub)
+        }
+        InferTyKind::Dyn { principal, args } if flags.has_alias() => {
+            let mut b = InlineTyBuf::new();
+            for idx in 0..args.len as usize {
+                let a = table.arena.slice(args)[idx];
+                b.push(normalize_ty_rec(table, db, local_defs, st, file_res, owner, a, depth + 1));
+            }
+            table.arena.mk_dyn(principal, b.as_slice())
         }
         InferTyKind::Opaque { def, args } if flags.has_alias() => {
             let mut b = InlineTyBuf::new();

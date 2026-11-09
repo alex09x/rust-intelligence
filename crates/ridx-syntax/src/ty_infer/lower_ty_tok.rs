@@ -70,6 +70,15 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
         match toks[i0].kind {
             T::Bang => InferTyId::NEVER,
             T::Underscore => self.placeholder_ty(table),
+            T::Int | T::True | T::False | T::LBrace => {
+                let val = match toks[i0].kind {
+                    T::True => 1,
+                    T::False => 0,
+                    T::Int => parse_uint_lit(toks[i0].text(self.st.src)).unwrap_or(u64::MAX),
+                    _ => u64::MAX,
+                };
+                table.arena.mk_array(InferTyId::NEVER, val)
+            }
             T::Amp => {
                 let mut cur = i0 + 1;
                 if let Some(li) = next_sig_idx(toks, cur).filter(|&i| toks[i].kind == T::Lifetime) {
@@ -238,9 +247,15 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
     }
 
     #[inline]
-    pub(super) fn finish_ufcs_qself_type(&self, table: &mut InferenceTable, target: ResTarget, qseg: NodeId, explicit_args: &[InferTyId]) -> InferTyId {
+    pub(super) fn finish_ufcs_qself_type(&self, table: &mut InferenceTable, target: ResTarget, first_seg: Option<NodeId>, qseg: NodeId, explicit_args: &[InferTyId]) -> InferTyId {
         let use_defaults = self.st.child(qseg, K::GenericArgList).is_some();
-        self.finish_resolved_type_ext(table, target, explicit_args, None, GlobalDefId::NONE, "", false, false, use_defaults, 0)
+        let (qself, aname) = if matches!(target, ResTarget::Def { kind: ItemKind::AssocTy, .. }) {
+            let nm = self.st.own_tokens(qseg).find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent)).map_or("", |(_, t)| crate::sema_fn::norm_ident(t.text(self.st.src)));
+            (Some(self.resolve_unbracketed_assoc_qself(table, first_seg, Some(qseg), 0)), nm)
+        } else {
+            (None, "")
+        };
+        self.finish_resolved_type_ext(table, target, explicit_args, qself, GlobalDefId::NONE, aname, false, false, use_defaults, 0)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -311,6 +326,59 @@ impl<'a, 's> LowerTyEnv<'a, 's> {
                 self.finish_resolved_type(table, fref.target, fargs.as_slice(), None, GlobalDefId::NONE, "", false, false, depth + 1)
             }
             _ => InferTyId::UNKNOWN,
+        }
+    }
+}
+
+impl<'a, 's> super::body_ctx::Runner<'a, 's> {
+    pub(super) fn lower_path_qself_adt_ty(&mut self, path_node: NodeId) -> Option<InferTyId> {
+        let mut segs = [NodeId(0); 16];
+        let mut slen = 0usize;
+        for s in self.st.children(path_node).filter(|&c| self.st.kind(c) == K::PathSegment) {
+            if slen < segs.len() {
+                segs[slen] = s;
+                slen += 1;
+            }
+        }
+        let fseg = (slen > 0).then(|| segs[0])?;
+        let sty = if self.st.own_tokens(fseg).next().is_some_and(|(_, t)| t.kind == T::Lt) {
+            let tn = self.st.children(fseg).find(|&c| self.st.kind(c).is_type())?;
+            self.ty_env(true).lower_cst_ty(&mut self.ctx.table, tn)
+        } else {
+            let qseg = (slen >= 2).then(|| segs[slen - 2])?;
+            self.lower_qseg_self_ty(path_node, Some(fseg), qseg, &mut InlineTyBuf::new())
+        };
+        matches!(self.ctx.table.arena.kind(sty), super::ty::InferTyKind::Adt { args, .. } if args.len > 0).then_some(sty)
+    }
+
+    pub(super) fn lower_qseg_self_ty(&mut self, path_node: NodeId, first_seg: Option<NodeId>, qseg: NodeId, q_targs: &mut InlineTyBuf) -> InferTyId {
+        let qr = self.st.range(qseg);
+        let q_target = self
+            .st
+            .own_tokens(qseg)
+            .find(|(_, t)| matches!(t.kind, T::Ident | T::RawIdent))
+            .and_then(|(_, t)| self.file_res.refs_at_span(t.start, t.end).first().map(|r| r.target))
+            .or_else(|| {
+                self.file_res
+                    .refs_starting_in(qr.start as u32, qr.end as u32)
+                    .iter()
+                    .find(|r| (r.path_node == path_node || r.path_node == NodeId(u32::MAX)) && r.end <= qr.end as u32)
+                    .map(|r| r.target)
+            });
+        let tenv = self.ty_env(true);
+        let q_first = if matches!(q_target, Some(ResTarget::Def { kind: ItemKind::TypeAlias, .. })) { Some(qseg) } else { first_seg };
+        match q_target {
+            Some(ResTarget::Def { kind: ItemKind::Trait, .. }) => {
+                tenv.collect_segment_args(&mut self.ctx.table, qseg, false, q_targs, 0);
+                self.ctx.table.new_ty_var()
+            }
+            Some(qt) => {
+                let mut fargs = InlineTyBuf::new();
+                tenv.collect_segment_args(&mut self.ctx.table, qseg, false, &mut fargs, 0);
+                tenv.finish_ufcs_qself_type(&mut self.ctx.table, qt, q_first, qseg, fargs.as_slice())
+            }
+            None if self.st.own_tokens(qseg).any(|(_, t)| t.kind == T::SelfType) => self.self_ty.unwrap_or_else(|| self.ctx.table.new_ty_var()),
+            None => crate::name_res::PrimTy::from_name(crate::sema_fn::norm_ident(self.st.text(qseg))).map_or_else(|| self.ctx.table.new_ty_var(), InferTyId::from_prim),
         }
     }
 }

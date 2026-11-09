@@ -58,12 +58,68 @@ impl<'a, 's> Runner<'a, 's> {
                 let exp_ret = self.ctx.table.arena.slice(args)[1];
                 let _ = self.ctx.table.equate(act_tup, exp_tup);
                 let _ = self.ctx.table.coerce(out_ty, exp_ret);
-                return self.ctx.table.shallow_resolve(exp);
+                return self.ctx.table.shallow_resolve(act);
             }
             _ => {}
         }
-        let _ = self.ctx.table.coerce(act, exp);
+        if self.ctx.table.coerce(act, exp).is_err() {
+            if let (InferTyKind::Ref { is_mut: ma, inner: ia }, InferTyKind::Ref { is_mut: mb, inner: ib }) = (self.ctx.table.arena.kind(act), self.ctx.table.arena.kind(exp)) {
+                if ma || !mb {
+                    let mut cur = self.ctx.table.shallow_resolve(ia);
+                    for _ in 0..6 {
+                        let Some(next) = super::lang_ops::deref_step(&mut self.ctx.table, self.db, cur) else { break };
+                        cur = self.ctx.table.shallow_resolve(next);
+                        if self.ctx.table.coerce(cur, ib).is_ok() {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         self.ctx.table.shallow_resolve(act)
+    }
+
+    pub(super) fn coerce_block_result(&mut self, actual: InferTyId, expected: InferTyId) -> InferTyId {
+        let coerced = self.coerce_expr(actual, expected);
+        let act = self.ctx.table.shallow_resolve(coerced);
+        let exp = self.ctx.table.shallow_resolve(expected);
+        if act == InferTyId::NEVER && !matches!(self.ctx.table.arena.kind(exp), InferTyKind::Unknown | InferTyKind::Infer(_) | InferTyKind::Never) {
+            return exp;
+        }
+        if act != exp && !self.ctx.table.arena.flags(exp).has_unknown() && !self.ctx.table.arena.flags(exp).has_infer() {
+            match (self.ctx.table.arena.kind(act), self.ctx.table.arena.kind(exp)) {
+                (InferTyKind::Ref { is_mut: ma, inner: ia }, InferTyKind::Ref { is_mut: mb, inner: ib }) if ma || !mb => {
+                    let (ia_r, ib_r) = (self.ctx.table.shallow_resolve(ia), self.ctx.table.shallow_resolve(ib));
+                    if (ma && !mb && ia_r == ib_r) || matches!(self.ctx.table.arena.kind(ib_r), InferTyKind::Dyn { .. } | InferTyKind::Slice(_)) {
+                        return exp;
+                    }
+                    let mut steps = [InferTyId::UNKNOWN; super::autoderef::MAX_AUTODEREF_STEPS];
+                    let owner = self.norm_owner();
+                    let n = super::autoderef::build_autoderef_steps_with_owner(
+                        &mut self.ctx.table,
+                        self.db,
+                        self.local_defs,
+                        self.root_st,
+                        self.root_file_res,
+                        owner,
+                        ia_r,
+                        &mut steps,
+                    );
+                    if steps[..n].contains(&ib_r) {
+                        return exp;
+                    }
+                }
+                (InferTyKind::Adt { def: da, args: aa }, InferTyKind::Adt { def: db, args: ab }) if da == db && aa.len >= 1 && ab.len >= 1 => {
+                    let b0 = self.ctx.table.shallow_resolve(self.ctx.table.arena.slice(ab)[0]);
+                    if matches!(self.ctx.table.arena.kind(b0), InferTyKind::Dyn { .. } | InferTyKind::Slice(_)) {
+                        return exp;
+                    }
+                }
+                (InferTyKind::FnDef { .. } | InferTyKind::Closure { .. }, InferTyKind::FnPtr { .. }) => return exp,
+                _ => {}
+            }
+        }
+        act
     }
 
     pub(super) fn fn_def_as_fn_ptr(&mut self, def: GlobalDefId, args: super::ty::TySliceRange) -> Option<InferTyId> {
@@ -220,7 +276,40 @@ impl<'a, 's> Runner<'a, 's> {
         self.ctx.table.resolve_with_fallback(norm)
     }
 
+    pub(super) fn flush_deferred_trait_bounds(&mut self) {
+        for idx in (0..self.ctx.deferred_trait_bounds.len()).rev() {
+            let (trait_def, lhs_ty, args_r) = self.ctx.deferred_trait_bounds[idx];
+            let norm_lhs = self.norm(lhs_ty);
+            if !matches!(self.ctx.table.arena.kind(norm_lhs), InferTyKind::Infer(_) | InferTyKind::Unknown) {
+                let mut targs = InlineTyBuf::new();
+                for j in 0..args_r.len as usize {
+                    let a = self.ctx.table.arena.slice(args_r)[j];
+                    targs.push(self.norm(a));
+                }
+                if !targs.as_slice().iter().all(|&a| matches!(self.ctx.table.arena.kind(a), InferTyKind::Infer(_))) {
+                    let _ = self.solve_obligation(trait_def, norm_lhs, targs.as_slice(), false, 0);
+                    if !targs.as_slice().iter().any(|&a| {
+                        let r = self.ctx.table.shallow_resolve(a);
+                        matches!(self.ctx.table.arena.kind(r), InferTyKind::Infer(_))
+                    }) {
+                        self.ctx.deferred_trait_bounds.swap_remove(idx);
+                    }
+                }
+            }
+        }
+    }
+
     pub(super) fn finalize_result(&mut self) {
+        if !self.ctx.deferred_proj_eqs.is_empty() {
+            self.flush_deferred_proj_eqs();
+        }
+        if !self.ctx.deferred_trait_bounds.is_empty() {
+            self.flush_deferred_trait_bounds();
+            self.ctx.deferred_trait_bounds.clear();
+        }
+        if !self.ctx.deferred_proj_eqs.is_empty() {
+            self.flush_deferred_proj_eqs();
+        }
         let owner = self.norm_owner();
         self.out.ret_ty = self.finalize_ty(owner, self.out.ret_ty);
         self.out.body_ty = self.finalize_ty(owner, self.out.body_ty);
@@ -249,14 +338,30 @@ impl<'a, 's> Runner<'a, 's> {
             self.out.incomplete_dots[i].1 = self.finalize_ty(owner, self.out.incomplete_dots[i].1);
         }
         self.out.expr_tys.sort_unstable_by_key(|&(n, _)| n);
-        self.out.macro_expr_tys.sort_unstable_by_key(|m| (m.start, m.end, m.kind as u16));
-        self.out.macro_expr_tys.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.kind == b.kind);
+        self.out.macro_expr_tys.sort_unstable_by_key(|m| (m.start, m.end, m.kind as u16, m.ty.0));
+        self.out.macro_expr_tys.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.kind == b.kind && a.ty == b.ty);
         self.out.pat_tys.sort_unstable_by_key(|&(n, _)| n);
         self.out.local_tys.sort_unstable_by_key(|&(l, _)| l);
         self.out.dot_refs.sort_unstable_by_key(|a| (a.start, a.end, a.def, a.kind as u8));
         self.out.dot_refs.dedup_by(|b, a| a.start == b.start && a.end == b.end && a.def == b.def);
         self.out.incomplete_dots.sort_unstable_by_key(|&(off, _)| off);
         self.out.incomplete_dots.dedup_by_key(|p| p.0);
+    }
+
+    pub(super) fn infer_const_or_static_body(&mut self) {
+        let tenv = self.ty_env(false);
+        let decl_ty = self
+            .fn_def
+            .is_some()
+            .then(|| self.db.def_ty(self.fn_def, &mut self.ctx.table.arena).map(|(_, _, t)| t))
+            .flatten()
+            .unwrap_or_else(|| self.st.children(self.fn_node).find(|&c| self.st.kind(c).is_type()).map_or(InferTyId::UNKNOWN, |tn| tenv.lower_cst_ty(&mut self.ctx.table, tn)));
+        self.out.ret_ty = decl_ty;
+        if let Some(init) = self.st.children(self.fn_node).find(|&c| is_expr_node(self.st.kind(c))) {
+            let bty = self.infer_expr(init, Expectation::HasType(decl_ty));
+            let _ = self.coerce_expr(bty, decl_ty);
+            self.out.body_ty = bty;
+        }
     }
 }
 

@@ -11,7 +11,7 @@
 //! Zero-allocation `.ridx` `v5` associated-type projection, adapter `ProjectionEq` evaluation,
 //! `impl` compatibility probing, and parameter index remapping on [`RidxV5ItemDb`].
 
-use ridx_format::{GenericParamKind, WherePredIter, WherePredKind, WherePredView};
+use ridx_format::{GenericParamKind, WherePredIter, WherePredView};
 use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
 use ridx_syntax::ty_infer::autoderef::impl_target_key_of_ty;
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
@@ -31,12 +31,10 @@ impl<'a> Iterator for ChainedWherePreds<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(it) = self.first.as_mut() {
-            if let Some(v) = it.next() {
-                return Some(v);
-            }
-            self.first = None;
+        if let Some(v) = self.first.as_mut().and_then(Iterator::next) {
+            return Some(v);
         }
+        self.first = None;
         self.second.next()
     }
 }
@@ -54,43 +52,29 @@ impl<'w> RidxV5ItemDb<'w> {
     }
 
     pub fn raw_to_dense_param_idx(&self, r_idx: usize, didx: u32, target_raw: u32) -> Option<u16> {
-        let Ok(target16) = u16::try_from(target_raw) else {
-            return None;
-        };
+        let target16 = u16::try_from(target_raw).ok()?;
         let reader = &self.ws.readers()[r_idx];
         let gid = GlobalDefId::new(CrateId(r_idx as u32), didx);
         let mut dense = 0u16;
-        if let Some(&impl_idx) = self.ty_tables.assoc_to_impl.get(&gid) {
-            for p in reader.generic_params_for_impl(impl_idx) {
-                if matches!(p.kind, GenericParamKind::Lifetime) {
-                    continue;
-                }
+        let scan_iter = |it: ridx_format::GenericParamIter<'_>, dense: &mut u16| -> Option<u16> {
+            for p in it.filter(|p| !matches!(p.kind, GenericParamKind::Lifetime)) {
                 if p.param_idx == target16 {
-                    return Some(dense);
+                    return Some(*dense);
                 }
-                dense = dense.saturating_add(1);
+                *dense = dense.saturating_add(1);
+            }
+            None
+        };
+        if let Some(&impl_idx) = self.ty_tables.assoc_to_impl.get(&gid) {
+            if let Some(d) = scan_iter(reader.generic_params_for_impl(impl_idx), &mut dense) {
+                return Some(d);
             }
         } else if let Some(&trait_didx) = self.shards[r_idx].trait_parent_of_assoc.get(&didx) {
-            for p in reader.generic_params_for_def(trait_didx) {
-                if matches!(p.kind, GenericParamKind::Lifetime) {
-                    continue;
-                }
-                if p.param_idx == target16 {
-                    return Some(dense);
-                }
-                dense = dense.saturating_add(1);
+            if let Some(d) = scan_iter(reader.generic_params_for_def(trait_didx), &mut dense) {
+                return Some(d);
             }
         }
-        for p in reader.generic_params_for_def(didx) {
-            if matches!(p.kind, GenericParamKind::Lifetime) {
-                continue;
-            }
-            if p.param_idx == target16 {
-                return Some(dense);
-            }
-            dense = dense.saturating_add(1);
-        }
-        None
+        scan_iter(reader.generic_params_for_def(didx), &mut dense)
     }
 
     pub fn project_by_trait_and_name(
@@ -133,17 +117,80 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
         let self_ty = vars.shallow_resolve(arena, raw_self);
-        if matches!(arena.kind(self_ty), InferTyKind::Unknown | InferTyKind::Infer(_) | InferTyKind::Param { .. } | InferTyKind::Alias { .. }) {
+        if let InferTyKind::Infer(v) = arena.kind(self_ty) {
+            if let Err((_, ridx_syntax::ty_infer::TyVarKind::IntVar | ridx_syntax::ty_infer::TyVarKind::FloatVar, ..)) = vars.probe_var(v) {
+                let _ = self.v5_solve_trait_obligation(trait_gid, self_ty, trait_args, arena, vars);
+            }
+        }
+        let self_ty = vars.shallow_resolve(arena, self_ty);
+        if self.lang_item_of_def(trait_gid).is_some_and(|l| l.is_fn_trait()) && assoc_name == "Output" {
+            let mut fn_self = self_ty;
+            while let InferTyKind::Ref { inner, .. } = arena.kind(fn_self) {
+                fn_self = vars.shallow_resolve(arena, inner);
+            }
+            match arena.kind(fn_self) {
+                InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } if sig.len > 0 => {
+                    let mut sb = InlineTyBuf::new();
+                    for &x in arena.slice(sig) {
+                        sb.push(x);
+                    }
+                    let sl = sb.as_slice();
+                    if let Some(&a0) = trait_args.first() {
+                        let tup = arena.mk_tuple(&sl[..sl.len() - 1]);
+                        let _ = unify::equate(arena, vars, a0, tup);
+                    }
+                    return Some(vars.shallow_resolve(arena, sl[sl.len() - 1]));
+                }
+                InferTyKind::FnDef { def, args } => {
+                    let mut fargs = InlineTyBuf::new();
+                    for &x in arena.slice(args) {
+                        fargs.push(x);
+                    }
+                    if let Some(&a0) = trait_args.first() {
+                        self.unify_fndef_inputs(def, fargs.as_slice(), a0, arena, vars);
+                    }
+                    if let Some(out) = self.fn_output_only(def, arena) {
+                        let inst_out = instantiate_v5(arena, out, fargs.as_slice(), 0);
+                        return Some(vars.shallow_resolve(arena, inst_out));
+                    }
+                }
+                InferTyKind::Dyn { args, .. } | InferTyKind::Opaque { args, .. } if args.len >= 2 => {
+                    return Some(vars.shallow_resolve(arena, arena.slice(args)[1]));
+                }
+                _ => {}
+            }
+        }
+        if let InferTyKind::Alias { assoc_def: inner_assoc, self_ty: inner_self, args: inner_args, .. } = arena.kind(self_ty) {
+            let b = self.project_alias_item_bound(inner_assoc, inner_self, inner_args, trait_gid, assoc_name, arena)?;
+            if let InferTyKind::Alias { trait_def: b_tr, assoc_def: b_ad, self_ty: b_st, .. } = arena.kind(b) {
+                if let Some(&b_name) = self.ty_tables.assoc_ty_names.get(&self.canonical_def(b_ad)) {
+                    if let Some(norm_b) = self.project_by_trait_and_name_depth(b_tr, b_name, b_st, &[], arena, vars, depth + 1) {
+                        return Some(norm_b);
+                    }
+                }
+            }
+            return Some(b);
+        }
+        if let InferTyKind::Param { idx, .. } = arena.kind(self_ty) {
+            if !trait_args.is_empty() {
+                self.try_bind_active_param_trait_args(idx, trait_gid, trait_args, arena, vars);
+            }
+            return None;
+        }
+        if matches!(arena.kind(self_ty), InferTyKind::Unknown | InferTyKind::Infer(_)) {
             return None;
         }
         if let InferTyKind::Opaque { def, args } | InferTyKind::Dyn { principal: def, args } = arena.kind(self_ty) {
             let cdef = self.canonical_def(def);
-            if cdef == trait_gid {
-                let tgc = self.ty_tables.trait_non_lt_gc.get(&trait_gid).copied().unwrap_or(0) as usize;
+            if cdef == trait_gid || self.trait_supertraits.get(&cdef).is_some_and(|s| s.iter().any(|&x| self.canonical_def(x) == trait_gid)) {
+                let tgc = self.ty_tables.trait_non_lt_gc.get(&cdef).copied().unwrap_or(0) as usize;
                 let ord = self.ty_tables.trait_assoc_tys.get(&(trait_gid, nh)).map_or(0, |&(_, _, o)| o as usize);
-                if let Some(&aty) = arena.slice(args).get(tgc + ord) {
-                    return Some(vars.shallow_resolve(arena, aty));
+                if let Some(&t) = arena.slice(args).get(tgc + ord) {
+                    return Some(vars.shallow_resolve(arena, t));
                 }
+            }
+            if matches!(arena.kind(self_ty), InferTyKind::Opaque { .. }) {
+                return None;
             }
         }
 
@@ -155,30 +202,40 @@ impl<'w> RidxV5ItemDb<'w> {
         };
         let concrete = self.ty_tables.concrete_trait_impls.get(&(trait_gid, head)).map_or(&[][..], |v| v.as_slice());
         let blanket = self.ty_tables.blanket_trait_impls.get(&trait_gid).map_or(&[][..], |v| v.as_slice());
-        let args_have_infer = trait_args.iter().any(|&a| {
-            let ra = vars.shallow_resolve(arena, a);
-            matches!(arena.kind(ra), InferTyKind::Infer(_))
-        });
+        let args_have_infer = trait_args.iter().any(|&a| matches!(arena.kind(vars.shallow_resolve(arena, a)), InferTyKind::Infer(_)));
         if args_have_infer && concrete.len() > 1 {
             let mut self_matches = 0u8;
             for imp in concrete {
                 let r_idx = imp.r_idx as usize;
                 let reader = &self.ws.readers()[r_idx];
                 let Some(iv) = reader.impl_view(imp.impl_idx) else { continue };
+                let va = reader.ty_arena();
                 let remap = ParamRemap::for_impl(self, r_idx, imp.impl_idx, arena);
-                let raw_imp_self = lower_v5_ty(self, r_idx, reader.ty_arena(), iv.self_ty(), &remap, arena);
+                let raw_imp_self = lower_v5_ty(self, r_idx, va, iv.self_ty(), &remap, arena);
+                let mut raw_imp_args = InlineTyBuf::new();
+                lower_generic_args(self, r_idx, va, iv.trait_args(), &remap, arena, &mut raw_imp_args, 1);
                 let snap = vars.start_snapshot();
                 let mut subst = InlineTyBuf::new();
                 for _ in 0..imp.impl_gc {
                     subst.push(vars.new_var(arena, ridx_syntax::ty_infer::TyVarKind::General).1);
                 }
                 let inst_self = instantiate_v5(arena, raw_imp_self, subst.as_slice(), 0);
-                if unify::equate(arena, vars, self_ty, inst_self).is_ok() {
-                    self_matches += 1;
+                let mut ok = unify::equate(arena, vars, self_ty, inst_self).is_ok();
+                if ok && raw_imp_args.as_slice().len() >= trait_args.len() {
+                    for (i, &actual_arg) in trait_args.iter().enumerate() {
+                        let cand_arg = instantiate_v5(arena, raw_imp_args.as_slice()[i], subst.as_slice(), 0);
+                        if unify::coerce(arena, vars, actual_arg, cand_arg).is_err() {
+                            ok = false;
+                            break;
+                        }
+                    }
                 }
                 vars.rollback_to(snap);
-                if self_matches > 1 {
-                    return None;
+                if ok {
+                    self_matches += 1;
+                    if self_matches > 1 {
+                        return None;
+                    }
                 }
             }
         }
@@ -197,6 +254,9 @@ impl<'w> RidxV5ItemDb<'w> {
             let mut subst = InlineTyBuf::new();
             for _ in 0..imp.impl_gc {
                 subst.push(vars.new_var(arena, ridx_syntax::ty_infer::TyVarKind::General).1);
+            }
+            if let Some((pi, clen)) = arena.extract_array_const_param(raw_imp_self, self_ty) {
+                subst.set(pi, arena.mk_array(InferTyId::NEVER, clen));
             }
             let inst_self = instantiate_v5(arena, raw_imp_self, subst.as_slice(), 0);
             let mut ok = unify::equate(arena, vars, self_ty, inst_self).is_ok();
@@ -246,66 +306,6 @@ impl<'w> RidxV5ItemDb<'w> {
         None
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn eval_impl_proj_eqs(&self, r_idx: usize, impl_idx: u32, remap: &ParamRemap, subst: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable, depth: u8) {
-        if depth > 4 {
-            return;
-        }
-        let reader = &self.ws.readers()[r_idx];
-        let va = reader.ty_arena();
-        for wp in reader.where_preds_for_impl(impl_idx) {
-            if wp.kind() != WherePredKind::ProjectionEq {
-                continue;
-            }
-            let (Some(td), Some(aname), Some(rhs)) = (wp.trait_def(), wp.assoc_name(), wp.rhs_ty()) else { continue };
-            let b_trait = self.ty_def_gid(r_idx, td);
-            if !b_trait.is_some() {
-                continue;
-            }
-            let raw_lhs = lower_v5_ty(self, r_idx, va, wp.lhs_ty(), remap, arena);
-            let tmp_lhs = instantiate_v5(arena, raw_lhs, subst, 0);
-            let inst_lhs = vars.shallow_resolve(arena, tmp_lhs);
-            let raw_rhs = lower_v5_ty(self, r_idx, va, rhs, remap, arena);
-            let inst_rhs = instantiate_v5(arena, raw_rhs, subst, 0);
-
-            let proj_opt = if self.lang_item_of_def(b_trait).is_some_and(|l| l.is_fn_trait()) && aname == "Output" {
-                match arena.kind(inst_lhs) {
-                    InferTyKind::Closure { sig, .. } | InferTyKind::FnPtr { sig } if sig.len > 0 => Some(arena.slice(sig)[sig.len as usize - 1]),
-                    InferTyKind::FnDef { def, args } => {
-                        let mut fargs = InlineTyBuf::new();
-                        for i in 0..args.len as usize {
-                            fargs.push(arena.slice(args)[i]);
-                        }
-                        self.fn_output_only(def, arena).map(|out| instantiate_v5(arena, out, fargs.as_slice(), 0))
-                    }
-                    InferTyKind::Dyn { args, .. } | InferTyKind::Opaque { args, .. } if args.len >= 2 => Some(arena.slice(args)[1]),
-                    _ => None,
-                }
-            } else {
-                let mut targs = InlineTyBuf::new();
-                lower_generic_args(self, r_idx, va, wp.trait_args(), remap, arena, &mut targs, 1);
-                let mut inst_targs = InlineTyBuf::new();
-                for &ta in targs.as_slice() {
-                    inst_targs.push(instantiate_v5(arena, ta, subst, 0));
-                }
-                self.project_by_trait_and_name_depth(b_trait, aname, inst_lhs, inst_targs.as_slice(), arena, vars, depth + 1)
-            };
-            if let Some(proj_ty) = proj_opt {
-                let _ = unify::equate(arena, vars, proj_ty, inst_rhs);
-            }
-        }
-    }
-
-    fn fn_output_only(&self, raw_def: GlobalDefId, arena: &mut InferTyArena) -> Option<InferTyId> {
-        let def = self.canonical_def(raw_def);
-        let r_idx = def.krate.0 as usize;
-        let reader = self.ws.readers().get(r_idx)?;
-        let sig = reader.fn_sig_for_def(def.index)?;
-        let gen_owner = reader.def_ty_for_def(def.index).and_then(|dt| dt.parent_def_index()).unwrap_or(def.index);
-        let remap = ParamRemap::for_def(self, r_idx, gen_owner, false, arena);
-        Some(lower_v5_ty(self, r_idx, reader.ty_arena(), sig.output(), &remap, arena))
-    }
-
     pub fn probe_impl_compat(&self, imp: &TraitImplInfo, raw_step_ty: InferTyId, arena: &mut InferTyArena, vars: &mut UnionFindTable) -> Option<(InferTyId, InlineTyBuf)> {
         let step_ty = vars.shallow_resolve(arena, raw_step_ty);
         if matches!(arena.kind(step_ty), InferTyKind::Unknown | InferTyKind::Infer(_)) {
@@ -353,7 +353,8 @@ pub fn instantiate_v5(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyI
         }
         InferTyKind::Array { elem, len } => {
             let s = instantiate_v5(arena, elem, subst, depth + 1);
-            arena.mk_array(s, len)
+            let l = arena.resolve_array_len(len, subst);
+            arena.mk_array(s, l)
         }
         InferTyKind::Tuple(r) => {
             let b = inst_slice_v5(arena, r, subst, depth + 1);
@@ -373,17 +374,17 @@ pub fn instantiate_v5(arena: &mut InferTyArena, ty: InferTyId, subst: &[InferTyI
             arena.mk_fn_def(def, b.as_slice())
         }
         InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
-            let ns = instantiate_v5(arena, self_ty, subst, depth + 1);
-            let b = inst_slice_v5(arena, args, subst, depth + 1);
+            let (ns, b) = (instantiate_v5(arena, self_ty, subst, depth + 1), inst_slice_v5(arena, args, subst, depth + 1));
             arena.mk_alias(trait_def, assoc_def, ns, b.as_slice())
         }
-        InferTyKind::Dyn { principal, args } => {
+        InferTyKind::Dyn { principal, args } | InferTyKind::Opaque { def: principal, args } => {
+            let is_dyn = matches!(arena.kind(ty), InferTyKind::Dyn { .. });
             let b = inst_slice_v5(arena, args, subst, depth + 1);
-            arena.mk_dyn(principal, b.as_slice())
-        }
-        InferTyKind::Opaque { def, args } => {
-            let b = inst_slice_v5(arena, args, subst, depth + 1);
-            arena.mk_opaque(def, b.as_slice())
+            if is_dyn {
+                arena.mk_dyn(principal, b.as_slice())
+            } else {
+                arena.mk_opaque(principal, b.as_slice())
+            }
         }
         _ => ty,
     }

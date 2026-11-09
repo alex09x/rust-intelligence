@@ -17,7 +17,7 @@ use super::body_ctx::Runner;
 use super::db::TyLangItem;
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
-use super::lang_ops::{deref_step, infer_index_op, mk_range_adt, unwrap_await_ty, unwrap_try_ty};
+use super::lang_ops::{deref_step, infer_index_op_with_local, mk_range_adt, unwrap_await_ty, unwrap_try_ty};
 use super::tok_ty_scan::{decoded_byte_str_len, parse_float_suffix, parse_int_or_float_suffix};
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
@@ -155,7 +155,8 @@ impl<'a, 's> Runner<'a, 's> {
         };
         let base_ty = self.infer_expr(base, Expectation::None);
         let idx_ty = kids.next().map_or(InferTyId::UNKNOWN, |idx| self.infer_expr(idx, Expectation::None));
-        let raw = infer_index_op(&mut self.ctx.table, self.db, base_ty, idx_ty);
+        let owner = self.norm_owner();
+        let raw = infer_index_op_with_local(&mut self.ctx.table, self.db, Some((self.local_defs, self.root_st, self.root_file_res, owner)), base_ty, idx_ty);
         self.norm(raw)
     }
 
@@ -339,7 +340,17 @@ impl<'a, 's> Runner<'a, 's> {
                     return self.ctx.table.shallow_resolve(l_res);
                 }
                 let rty = self.infer_expr(rhs, Expectation::HasType(l_res));
-                let _ = self.coerce_expr(rty, l_res);
+                let r_res = self.ctx.table.shallow_resolve(rty);
+                if self.ctx.table.coerce(r_res, l_res).is_err() {
+                    if let Some(out) = op_li.and_then(|li| self.db.project_assoc_ty(li, l_res, &[r_res], &mut self.ctx.table.arena, &mut self.ctx.table.vars)) {
+                        return out;
+                    }
+                    if matches!(self.ctx.table.arena.kind(r_res), InferTyKind::Adt { .. } | InferTyKind::Param { .. })
+                        && matches!(self.ctx.table.arena.kind(l_res), InferTyKind::Prim(_) | InferTyKind::Infer(_))
+                    {
+                        return r_res;
+                    }
+                }
                 self.ctx.table.shallow_resolve(l_res)
             }
         }

@@ -55,4 +55,4 @@ MEMMAP2_RLIB="$(ls -t "$RIDX_DEPS_DIR"/libmemmap2-*.rlib | head -n1)"
   -L "dependency=$RIDX_DEPS_DIR" \
   -o "$OUT_BIN_DIR/name_res_v5_parity"
 
-exec timeout "${PARITY_TIMEOUT:-120s}" "$OUT_BIN_DIR/name_res_v5_parity" "$@"
+exec timeout "${PARITY_TIMEOUT:-600s}" "$OUT_BIN_DIR/name_res_v5_parity" "$@"

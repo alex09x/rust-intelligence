@@ -45,6 +45,8 @@ pub struct ShardTables {
     pub synth_macros: Vec<String>,
     /// Synthetic proc-macro name -> `PROC_MACRO_SYNTH_BIT | sym_idx`.
     pub synth_macro_by_name: HashMap<String, u32>,
+    /// Unmaterialized `TyDefEntry` path (`local_def_idx == 0x7FFF_FFFF`, e.g. `core::sync::atomic::Atomic`) -> `TY_DEF_SYNTH_BIT | ty_def_idx`.
+    pub synth_ty_def_by_path: HashMap<String, u32>,
 }
 
 #[inline]
@@ -220,6 +222,16 @@ pub fn build_shard_tables(reader: &IndexReader<Mmap>, meta: &ReaderMeta, src: &C
             impl_def_to_impl_idx.insert(didx, iv.index());
         }
     }
+    let mut synth_ty_def_by_path = HashMap::new();
+    let ty_arena = reader.ty_arena();
+    for i in 0..reader.ty_defs().len() {
+        if let Some(td) = ty_arena.def(ridx_format::TyDefId(i as u32)) {
+            let is_local_synth = td.local_def_idx.map_or(td.extern_unit.is_none(), |idx| idx as usize >= defs.len());
+            if is_local_synth && !td.path.is_empty() {
+                synth_ty_def_by_path.entry(td.path.to_string()).or_insert(crate::v5_db::TY_DEF_SYNTH_BIT | (i as u32));
+            }
+        }
+    }
 
     ShardTables {
         root_mod_def_idx,
@@ -235,6 +247,7 @@ pub fn build_shard_tables(reader: &IndexReader<Mmap>, meta: &ReaderMeta, src: &C
         reexport_sig_to_idx,
         synth_macros: Vec::new(),
         synth_macro_by_name: HashMap::new(),
+        synth_ty_def_by_path,
     }
 }
 

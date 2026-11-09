@@ -140,8 +140,11 @@ impl LocalCstDefs {
         let item = self.find_item_by_def(owner_def)?;
         let gpl = st.child(item.node, K::GenericParamList)?;
         let tp = st.children(gpl).filter(|&c| matches!(st.kind(c), K::TypeParam | K::ConstParam)).nth(param_idx as usize)?;
-        if st.kind(tp) != K::TypeParam || !st.own_tokens(tp).any(|(_, t)| t.kind == T::Eq) {
+        if !st.own_tokens(tp).any(|(_, t)| t.kind == T::Eq) {
             return None;
+        }
+        if st.kind(tp) == K::ConstParam {
+            return Some(table.arena.mk_array(InferTyId::NEVER, u64::MAX));
         }
         let ty_node = st.children(tp).find(|&c| st.kind(c).is_type())?;
         let env = LowerTyEnv { st, file_res, db, local_defs: self, self_ty: None, impl_owner: None, impl_generics: 0, item_owner: Some(item.node), in_body: false, sub_map: None };
@@ -275,7 +278,8 @@ impl LocalCstDefs {
         let tt = st.child(item.node, K::TokenTree)?;
         let toks = st.tokens_of(tt);
         let (open, close) = (next_sig_idx(toks, 0)?, rfind_sig_idx(toks)?);
-        (open < close).then_some((item.node, item.generic_count, &toks[open + 1..close]))
+        let inner = toks.get(open + 1..close)?;
+        Some((item.node, item.generic_count, inner))
     }
 }
 

@@ -212,9 +212,23 @@ impl InferTyArena {
                 write!(out, "fn#{}:{}", def.krate.0, def.index)?;
                 self.write_angle_args(args, out, depth + 1)
             }
-            InferTyKind::Closure { def_start, def_end, sig } => {
-                write!(out, "{{closure@{def_start}..{def_end}}}")?;
-                self.write_angle_args(sig, out, depth + 1)
+            InferTyKind::Closure { sig, .. } => {
+                let s = self.slice(sig);
+                out.write_str("impl Fn(")?;
+                let n_in = s.len().saturating_sub(1);
+                for (i, &inp) in s[..n_in].iter().enumerate() {
+                    if i > 0 {
+                        out.write_str(", ")?;
+                    }
+                    self.write_ty_depth(inp, out, depth + 1)?;
+                }
+                out.write_char(')')?;
+                let ret = *s.last().unwrap_or(&InferTyId::UNKNOWN);
+                if ret != InferTyId::UNIT {
+                    out.write_str(" -> ")?;
+                    self.write_ty_depth(ret, out, depth + 1)?;
+                }
+                Ok(())
             }
             InferTyKind::Param { idx, .. } => write!(out, "Param({idx})"),
             InferTyKind::Alias { assoc_def, self_ty, args, .. } => {

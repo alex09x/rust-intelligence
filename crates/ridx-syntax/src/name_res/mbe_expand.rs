@@ -10,7 +10,7 @@
 
 //! Bounded matcher and transcriber for [`super::mbe_parse::MacroRulesDef`].
 
-use super::mbe_parse::{matching_close, take_delimited, FragKind, MacroRulesDef, PatElem, RepOp, TplElem};
+use super::mbe_parse::{matching_close, scan_until_next, take_delimited, FragKind, MacroRulesDef, PatElem, RepOp, TplElem};
 use crate::lexer::lex;
 use crate::token::{Token, TokenKind as T};
 
@@ -83,7 +83,7 @@ fn match_seq<'s>(
     sig: &[Token],
     mut pos: usize,
     pats: &[PatElem],
-    rep_sep: Option<(&str, T)>,
+    rep_sep: Option<(&str, T, Option<T>)>,
     after_rep: Option<&PatElem>,
     binds: &mut Bindings<'s>,
 ) -> Option<usize> {
@@ -121,7 +121,7 @@ fn match_seq<'s>(
                 collect_pat_vars(inner, &mut vars);
                 let mut per_var: Vec<Vec<BoundVal<'s>>> = vec![Vec::new(); vars.len()];
                 let mut count = 0usize;
-                let sep_ref = sep.as_ref().map(|(s, k)| (s.as_str(), *k));
+                let sep_ref = sep.as_ref().map(|(s, k, k2)| (s.as_str(), *k, *k2));
                 let eff_after = next_p.or(after_rep);
                 loop {
                     if *op == RepOp::ZeroOrOne && count == 1 {
@@ -129,12 +129,12 @@ fn match_seq<'s>(
                     }
                     let mut iter_pos = pos;
                     if count > 0 {
-                        if let Some((stxt, skind)) = sep_ref {
+                        if let Some((stxt, skind, sk2_opt)) = sep_ref {
                             let Some(t) = sig.get(iter_pos) else { break };
-                            if t.kind != skind || t.text(src) != stxt {
+                            if t.kind != skind || t.text(src) != stxt || sk2_opt.is_some_and(|k2| sig.get(iter_pos + 1).map(|t2| t2.kind) != Some(k2)) {
                                 break;
                             }
-                            iter_pos += 1;
+                            iter_pos += 1 + usize::from(sk2_opt.is_some());
                         }
                     }
                     let mut iter_binds = Bindings::new();
@@ -164,7 +164,15 @@ fn match_seq<'s>(
     Some(pos)
 }
 
-fn match_frag(src: &str, sig: &[Token], pos: usize, frag: FragKind, next_pat: Option<&PatElem>, rep_sep: Option<(&str, T)>, after_rep: Option<&PatElem>) -> Option<usize> {
+fn match_frag(
+    src: &str,
+    sig: &[Token],
+    pos: usize,
+    frag: FragKind,
+    next_pat: Option<&PatElem>,
+    rep_sep: Option<(&str, T, Option<T>)>,
+    after_rep: Option<&PatElem>,
+) -> Option<usize> {
     match frag {
         FragKind::Vis => {
             if sig.get(pos).map(|t| t.kind) != Some(T::Pub) {
@@ -271,42 +279,6 @@ fn match_item(src: &str, sig: &[Token], mut i: usize) -> Option<usize> {
         }
     }
     None
-}
-
-fn pat_head_lit(p: &PatElem) -> Option<(&str, T)> {
-    match p {
-        PatElem::Lit(t, k) => Some((t.as_str(), *k)),
-        PatElem::Rep { inner, .. } => inner.first().and_then(pat_head_lit),
-        _ => None,
-    }
-}
-
-fn scan_until_next(src: &str, sig: &[Token], pos: usize, next_pat: Option<&PatElem>, rep_sep: Option<(&str, T)>, after_rep: Option<&PatElem>) -> Option<usize> {
-    let stop1 = next_pat.and_then(pat_head_lit);
-    let stop2 = after_rep.and_then(pat_head_lit);
-    let mut i = pos;
-    let mut turbo_angles = 0i32;
-    while i < sig.len() {
-        let tk = sig[i].kind;
-        if i > pos && turbo_angles == 0 {
-            let txt = sig[i].text(src);
-            if stop1.is_some_and(|(st, sk)| tk == sk && txt == st) || rep_sep.is_some_and(|(st, sk)| tk == sk && txt == st) || stop2.is_some_and(|(st, sk)| tk == sk && txt == st) {
-                return Some(i);
-            }
-        }
-        if tk == T::Lt && (turbo_angles > 0 || (i >= 2 && sig[i - 1].kind == T::Colon && sig[i - 2].kind == T::Colon)) {
-            turbo_angles += 1;
-            i += 1;
-        } else if tk == T::Gt && turbo_angles > 0 && !(i > 0 && matches!(sig[i - 1].kind, T::Minus | T::Eq) && sig[i - 1].is_joint()) {
-            turbo_angles -= 1;
-            i += 1;
-        } else if matching_close(tk).is_some() {
-            i = take_delimited(sig, i)?.1;
-        } else {
-            i += 1;
-        }
-    }
-    (i > pos).then_some(i)
 }
 
 fn transcribe_seq(tpl: &[TplElem], binds: &Bindings<'_>, crate_prefix: &str, out: &mut String, spans: &mut Vec<ExpandedSpanMap>) -> bool {

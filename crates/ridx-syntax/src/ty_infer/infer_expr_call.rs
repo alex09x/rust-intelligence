@@ -12,13 +12,13 @@
 //! checking for [`super::body_ctx::Runner`].
 
 use super::body_ctx::Runner;
-use super::db::{MethodCand, TyLangItem};
+use super::db::TyLangItem;
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
 use super::lang_ops::{extract_expected_callable_sig, unwrap_await_ty};
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
-use crate::name_res::{CrateId, GlobalDefId};
+use crate::name_res::GlobalDefId;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::NodeId;
 
@@ -52,7 +52,7 @@ impl<'a, 's> Runner<'a, 's> {
                     ins.push(p);
                 }
                 let ret = s[s.len() - 1];
-                self.pre_unify_call_return(ret, expectation);
+                self.pre_unify_call_return(ret, expectation, &[]);
                 self.infer_call_args_slice(ins.as_slice(), args);
                 self.ctx.table.shallow_resolve(ret)
             }
@@ -74,7 +74,7 @@ impl<'a, 's> Runner<'a, 's> {
                         ins.push(p);
                     }
                     self.ctx.bound_inputs_buf = bound_ins;
-                    self.pre_unify_call_return(ret, expectation);
+                    self.pre_unify_call_return(ret, expectation, &[]);
                     self.infer_call_args_slice(ins.as_slice(), args);
                     let r = self.ctx.table.shallow_resolve(ret);
                     if is_async {
@@ -128,15 +128,38 @@ impl<'a, 's> Runner<'a, 's> {
         self.ctx.sig_inputs_buf = raw_ins;
 
         let inst_ret = self.ctx.table.instantiate(raw_ret, subst.as_slice());
+        let mut clos_dyn_hint: Option<InferTyId> = None;
         if !matches!(expectation, Expectation::None) {
             let pre_ret = self.norm(inst_ret);
-            self.pre_unify_call_return(pre_ret, expectation);
+            if let Some(raw_exp) = expectation.only_has_type(&mut self.ctx.table) {
+                let exp_ret = self.norm(raw_exp);
+                if let (InferTyKind::Adt { def: d1, args: r1 }, InferTyKind::Adt { def: d2, args: r2 }) = (self.ctx.table.arena.kind(pre_ret), self.ctx.table.arena.kind(exp_ret)) {
+                    if d1 == d2 && r1.len >= 1 && r2.len >= 1 {
+                        let e0 = self.ctx.table.arena.slice(r2)[0];
+                        if matches!(self.ctx.table.arena.kind(e0), InferTyKind::Dyn { .. }) {
+                            clos_dyn_hint = Some(e0);
+                        }
+                    }
+                }
+            }
+            self.pre_unify_call_return(pre_ret, expectation, subst.as_slice());
         }
-        self.check_call_args_with_bounds(def, raw_params.as_slice(), subst.as_slice(), args);
+        self.check_call_args_with_bounds(def, raw_params.as_slice(), subst.as_slice(), args, clos_dyn_hint);
         if let Some(meta) = self.db.trait_of_assoc_fn(def).or_else(|| self.local_defs.trait_of_assoc_fn(def, self.root_st, self.root_file_res, self.db)) {
             let t_end = 1 + meta.trait_generics as usize;
             if subst.as_slice().len() >= t_end {
-                let _ = self.solve_obligation(meta.trait_def, subst.as_slice()[0], &subst.as_slice()[1..t_end], false, 0);
+                let tslice = &subst.as_slice()[1..t_end];
+                if t_end > 1
+                    && self.ctx.deferred_trait_bounds.len() < 16
+                    && tslice.iter().any(|&a| {
+                        let r = self.ctx.table.shallow_resolve(a);
+                        matches!(self.ctx.table.arena.kind(r), InferTyKind::Infer(_))
+                    })
+                {
+                    let ar = self.ctx.table.arena.intern_slice(tslice);
+                    self.ctx.deferred_trait_bounds.push((meta.trait_def, subst.as_slice()[0], ar));
+                }
+                let _ = self.solve_obligation(meta.trait_def, subst.as_slice()[0], tslice, false, 0);
             }
         }
         let cst_fn = self.local_defs.fn_node_for_def(def);
@@ -144,7 +167,14 @@ impl<'a, 's> Runner<'a, 's> {
         self.norm(inst_ret)
     }
 
-    pub(super) fn check_call_args_with_bounds(&mut self, bound_owner_def: GlobalDefId, raw_params: &[InferTyId], subst: &[InferTyId], args: &[NodeId]) {
+    pub(super) fn check_call_args_with_bounds(
+        &mut self,
+        bound_owner_def: GlobalDefId,
+        raw_params: &[InferTyId],
+        subst: &[InferTyId],
+        args: &[NodeId],
+        clos_dyn_hint: Option<InferTyId>,
+    ) {
         for (i, &arg_node) in args.iter().enumerate() {
             if self.st.kind(arg_node) == K::ClosureExpr {
                 continue;
@@ -154,6 +184,13 @@ impl<'a, 's> Runner<'a, 's> {
                 let p_ty = self.norm(raw_p);
                 let a_ty = self.infer_expr(arg_node, Expectation::HasType(p_ty));
                 let _ = self.coerce_expr(a_ty, p_ty);
+                let res_a = self.ctx.table.shallow_resolve(a_ty);
+                if let Some((pi, clen)) = self.ctx.table.arena.extract_array_const_param(rp, res_a) {
+                    if let Some(&sv) = subst.get(pi) {
+                        let c_ty = self.ctx.table.arena.mk_array(InferTyId::NEVER, clen);
+                        let _ = self.ctx.table.equate(sv, c_ty);
+                    }
+                }
                 if let InferTyKind::Param { idx: gp_idx, .. } = self.ctx.table.arena.kind(rp) {
                     self.unify_fn_item_arg_with_bound(bound_owner_def, gp_idx, subst, a_ty);
                 }
@@ -206,7 +243,8 @@ impl<'a, 's> Runner<'a, 's> {
             }
             let raw_p = self.ctx.table.instantiate(rp, subst);
             let p_ty = self.norm(raw_p);
-            let a_ty = self.infer_expr(arg_node, Expectation::HasType(p_ty));
+            let exp_ty = clos_dyn_hint.filter(|_| matches!(self.ctx.table.arena.kind(p_ty), InferTyKind::Infer(_))).unwrap_or(p_ty);
+            let a_ty = self.infer_expr(arg_node, Expectation::HasType(exp_ty));
             let _ = self.coerce_expr(a_ty, p_ty);
         }
     }
@@ -279,11 +317,16 @@ impl<'a, 's> Runner<'a, 's> {
         }
     }
 
-    pub(super) fn pre_unify_call_return(&mut self, ret_ty: InferTyId, expectation: Expectation) {
+    pub(super) fn pre_unify_call_return(&mut self, ret_ty: InferTyId, expectation: Expectation, subst: &[InferTyId]) {
         if let Some(raw_exp) = expectation.only_has_type(&mut self.ctx.table) {
             let exp_ret = self.norm(raw_exp);
             let snap = self.ctx.table.start_snapshot();
-            if self.ctx.table.coerce(ret_ty, exp_ret).is_ok() {
+            let ok = self.ctx.table.coerce(ret_ty, exp_ret).is_ok()
+                && !subst.iter().any(|&v| {
+                    let rv = self.ctx.table.shallow_resolve(v);
+                    matches!(self.ctx.table.arena.kind(rv), InferTyKind::Dyn { .. } | InferTyKind::Slice(_) | InferTyKind::Prim(crate::name_res::PrimTy::Str))
+                });
+            if ok {
                 self.ctx.table.commit(snap);
             } else {
                 self.ctx.table.rollback_to(snap);
@@ -311,11 +354,12 @@ impl<'a, 's> Runner<'a, 's> {
         let tenv = self.ty_env(true);
         for ga in self.st.children(gal) {
             if matches!(self.st.kind(ga), K::TypeArg | K::AssocTypeArg) {
-                if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type()) {
+                if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type() || self.st.kind(c) == K::MacroCall) {
                     out.push(tenv.lower_cst_ty(&mut self.ctx.table, tn));
                 }
             } else if self.st.kind(ga) == K::ConstArg {
-                out.push(InferTyId::UNKNOWN);
+                let val = super::tok_ty_scan::eval_const_uint_expr(self.st, ga).unwrap_or(u64::MAX);
+                out.push(self.ctx.table.arena.mk_array(InferTyId::NEVER, val));
             }
         }
     }
@@ -324,64 +368,5 @@ impl<'a, 's> Runner<'a, 's> {
         for &a in args {
             let _ = self.infer_expr(a, Expectation::None);
         }
-    }
-
-    pub(super) fn cand_matches_completion_rcvr(&mut self, cand: &MethodCand, rcvr: InferTyId) -> bool {
-        let mut raw_ins = core::mem::take(&mut self.ctx.sig_inputs_buf);
-        let has_sig = if cand.cst_fn_node != u32::MAX {
-            self.local_defs.fn_sig(cand.method_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_ins).is_some()
-        } else {
-            self.db.method_sig(cand, &mut self.ctx.table.arena, &mut raw_ins).is_some()
-                || self.local_defs.fn_sig(cand.method_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut raw_ins).is_some()
-        };
-        let Some(&self_param_ty) = raw_ins.first().filter(|_| has_sig) else {
-            self.ctx.sig_inputs_buf = raw_ins;
-            return false;
-        };
-        self.ctx.sig_inputs_buf = raw_ins;
-        let snap = self.ctx.table.start_snapshot();
-        let (mut subst, mut imp_vars) = (InlineTyBuf::new(), InlineTyBuf::new());
-        if cand.has_fixed_trait_subst {
-            for _ in 0..cand.container_generics {
-                imp_vars.push(self.ctx.table.new_ty_var());
-            }
-            subst.push(if cand.container_generics > 0 { self.ctx.table.instantiate(cand.fixed_self_ty, imp_vars.as_slice()) } else { cand.fixed_self_ty });
-            for idx in 0..cand.fixed_trait_args.len as usize {
-                let ta = self.ctx.table.arena.slice(cand.fixed_trait_args)[idx];
-                subst.push(if ta == InferTyId::NONE {
-                    self.ctx.table.new_ty_var()
-                } else if cand.container_generics > 0 {
-                    self.ctx.table.instantiate(ta, imp_vars.as_slice())
-                } else {
-                    ta
-                });
-            }
-        } else {
-            for _ in 0..cand.container_generics {
-                subst.push(self.ctx.table.new_ty_var());
-            }
-        }
-        for _ in 0..cand.method_generics {
-            subst.push(self.ctx.table.new_ty_var());
-        }
-        let norm_xform = {
-            let xf = self.ctx.table.instantiate(self_param_ty, subst.as_slice());
-            self.norm(xf)
-        };
-        let mut ok = self.ctx.table.equate(norm_xform, rcvr).is_ok();
-        if ok {
-            let cgc = (cand.container_generics as usize).min(subst.as_slice().len());
-            let impl_subst = if cand.has_fixed_trait_subst { imp_vars.as_slice() } else { &subst.as_slice()[..cgc] };
-            ok = if cand.impl_owner.krate == CrateId::LOCAL_OVERLAY {
-                self.check_local_cst_impl_bounds(NodeId(cand.impl_owner.index), cand.container_generics, impl_subst)
-            } else {
-                self.db.check_blanket_method_bounds(cand, impl_subst, &mut self.ctx.table.arena, &mut self.ctx.table.vars)
-            };
-        }
-        if ok {
-            ok = self.check_completion_method_obligations(cand, subst.as_slice());
-        }
-        self.ctx.table.rollback_to(snap);
-        ok
     }
 }

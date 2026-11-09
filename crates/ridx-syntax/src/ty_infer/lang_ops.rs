@@ -12,10 +12,12 @@
 //! `*` / autoderef (`Deref`), `base[idx]` (`Index` + slice/range indexing), `for` (`IntoIterator`),
 //! `..` range constructors, and expected `Fn*` / `AsyncFn*` signature extraction for closures.
 
+use super::autoderef::{autoderef_step, normalize_ty_with_owner, NormOwner};
 use super::db::{TyDefDb, TyLangItem};
 use super::expectation::Expectation;
 use super::local_defs::LocalCstDefs;
 use super::ty::{InferTyId, InferTyKind};
+use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
 use crate::name_res::{FileNameRes, GlobalDefId, PrimTy};
 use crate::tree::SyntaxTree;
@@ -127,13 +129,27 @@ pub fn unwrap_await_ty(table: &mut InferenceTable, db: &dyn TyDefDb, operand: In
 
 /// Resolves `base[idx]` across built-in arrays/slices/strings (`usize` and `Range*<usize>`) and `Index::Output` autoderef.
 pub fn infer_index_op(table: &mut InferenceTable, db: &dyn TyDefDb, base_ty: InferTyId, idx_ty: InferTyId) -> InferTyId {
+    infer_index_op_with_local(table, db, None, base_ty, idx_ty)
+}
+
+/// Resolves `base[idx]` using both `db` and optional CST `local_defs` (`Deref::Target` / `Index::Output`).
+pub fn infer_index_op_with_local(
+    table: &mut InferenceTable,
+    db: &dyn TyDefDb,
+    local_ctx: Option<(&LocalCstDefs, &SyntaxTree<'_>, &FileNameRes, NormOwner)>,
+    base_ty: InferTyId,
+    idx_ty: InferTyId,
+) -> InferTyId {
     let idx_res = table.shallow_resolve(idx_ty);
     let range_elem = match table.arena.kind(idx_res) {
         InferTyKind::Adt { def, args } if db.lang_item_of_def(def).is_some_and(|l| l.is_range_adt()) => Some(if args.len >= 1 { Some(table.arena.slice(args)[0]) } else { None }),
         _ => None,
     };
 
-    let mut cur = table.shallow_resolve(base_ty);
+    let mut cur = match local_ctx {
+        Some((ld, st, fr, owner)) => normalize_ty_with_owner(table, db, ld, st, fr, owner, base_ty),
+        None => table.shallow_resolve(base_ty),
+    };
     for _ in 0..12 {
         match table.arena.kind(cur) {
             InferTyKind::Array { elem, .. } | InferTyKind::Slice(elem) => {
@@ -160,7 +176,11 @@ pub fn infer_index_op(table: &mut InferenceTable, db: &dyn TyDefDb, base_ty: Inf
         if let Some(out) = db.project_assoc_ty(TyLangItem::IndexOutput, cur, &[idx_res], &mut table.arena, &mut table.vars) {
             return table.shallow_resolve(out);
         }
-        let Some(next) = deref_step(table, db, cur) else {
+        let next_opt = match local_ctx {
+            Some((ld, st, fr, _)) => autoderef_step(table, db, ld, st, fr, cur),
+            None => deref_step(table, db, cur),
+        };
+        let Some(next) = next_opt else {
             break;
         };
         if next == cur {
@@ -282,5 +302,29 @@ fn extract_callable_from_ty(
             None
         }
         _ => None,
+    }
+}
+
+pub(super) fn replace_nested_opaque_with_vars(table: &mut InferenceTable, ty: InferTyId) -> InferTyId {
+    match table.arena.kind(ty) {
+        InferTyKind::Adt { def, args } if args.len > 0 && table.arena.slice(args).iter().any(|&a| matches!(table.arena.kind(a), InferTyKind::Opaque { .. })) => {
+            let mut na = InlineTyBuf::new();
+            for idx in 0..args.len as usize {
+                let a = table.arena.slice(args)[idx];
+                na.push(if matches!(table.arena.kind(a), InferTyKind::Opaque { .. }) { table.new_ty_var() } else { a });
+            }
+            table.arena.mk_adt(def, na.as_slice())
+        }
+        _ => ty,
+    }
+}
+
+pub(super) fn is_deref_attr_ret_mismatch(arena: &super::InferTyArena, idx_ret: InferTyId, cst_ret: InferTyId) -> bool {
+    match (arena.kind(idx_ret), arena.kind(cst_ret)) {
+        (InferTyKind::Ref { .. }, InferTyKind::Adt { .. }) => true,
+        (InferTyKind::Adt { args: a1, .. }, InferTyKind::Adt { args: a2, .. }) if a1.len >= 1 && a2.len >= 1 => {
+            matches!((arena.kind(arena.slice(a1)[0]), arena.kind(arena.slice(a2)[0])), (InferTyKind::Ref { .. }, InferTyKind::Adt { .. }))
+        }
+        _ => false,
     }
 }

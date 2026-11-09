@@ -116,7 +116,8 @@ pub fn tys_eq_mode(db: &RidxV5ItemDb<'_>, arena: &InferTyArena, a: InferTyId, b:
         return None;
     }
     match (arena.kind(a), arena.kind(b)) {
-        (InferTyKind::Unknown | InferTyKind::Infer(_), _) | (_, InferTyKind::Unknown | InferTyKind::Infer(_)) => None,
+        (InferTyKind::Unknown | InferTyKind::Infer(_), _) | (_, InferTyKind::Infer(_)) => None,
+        (_, InferTyKind::Unknown) => (depth > 0 && !ty_contains_unknown(arena, a, 0)).then_some(EQ_LENIENT_DYN_OPAQUE),
         (InferTyKind::Never, InferTyKind::Never) => Some(EQ_STRICT),
         (InferTyKind::Prim(pa), InferTyKind::Prim(pb)) => (pa == pb).then_some(EQ_STRICT),
         (InferTyKind::Param { idx: ia, .. }, InferTyKind::Param { idx: ib, .. }) => (ia == ib).then_some(EQ_STRICT),
@@ -197,7 +198,12 @@ pub(crate) fn defs_same_item(db: &RidxV5ItemDb<'_>, a: GlobalDefId, b: GlobalDef
     let kind_compat = ka == kb
         || matches!(
             (ka, kb),
-            (DefKind::Struct, DefKind::StructCtor) | (DefKind::StructCtor, DefKind::Struct) | (DefKind::Variant, DefKind::VariantCtor) | (DefKind::VariantCtor, DefKind::Variant)
+            (DefKind::Struct, DefKind::StructCtor)
+                | (DefKind::StructCtor, DefKind::Struct)
+                | (DefKind::Variant, DefKind::VariantCtor)
+                | (DefKind::VariantCtor, DefKind::Variant)
+                | (DefKind::Struct, DefKind::Fn)
+                | (DefKind::Fn, DefKind::Struct)
         );
     if !kind_compat {
         return false;
@@ -329,6 +335,19 @@ pub fn print_ty_parity_tables(all_reports: &[CorpusReport], verbose_samples: usi
     );
 
     print_funnel_strictness_and_latency(all_reports);
+
+    let mut global_ebuck: BTreeMap<String, usize> = BTreeMap::new();
+    for r in all_reports {
+        for (k, &v) in &r.ty_stats.expr_miss_buckets {
+            *global_ebuck.entry(k.clone()).or_insert(0) += v;
+        }
+    }
+    let mut g_sorted: Vec<(&String, &usize)> = global_ebuck.iter().collect();
+    g_sorted.sort_by(|a, b| b.1.cmp(a.1).then_with(|| a.0.cmp(b.0)));
+    println!("\n=== Top-12 Global `EXPR_UNK` / `EXPR_DIFF` Buckets (7 Corpora) ===");
+    for (idx, (k, v)) in g_sorted.iter().take(12).enumerate() {
+        println!("  {:>2}. {:>7}  {}", idx + 1, v, k);
+    }
 
     if verbose_samples > 0 {
         for r in all_reports {

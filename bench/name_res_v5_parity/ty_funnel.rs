@@ -323,6 +323,15 @@ pub fn compare_fn_expr_tys(
                 }
             }
         }
+        if best != Some(EQ_STRICT) && ek == K::MacroCall {
+            for m in fn_res.macro_expr_tys.iter().filter(|m| m.start == sb && m.end == eb) {
+                let nm = normalize_ty_with_owner(&mut infer_ctx.table, db, local_defs, st, res_buf, norm_owner, m.ty);
+                best = best_eq_mode(best, best_eq_mode(tys_eq_mode(db, &infer_ctx.table.arena, nm, comp_raw, 0), tys_eq_mode(db, &infer_ctx.table.arena, nm, comp_adj, 0)));
+                if best == Some(EQ_STRICT) {
+                    break;
+                }
+            }
+        }
         if let Some(mode) = best {
             stats.expr_matched += 1;
             stats.expr_strict_matched += usize::from(mode == EQ_STRICT);
@@ -337,16 +346,19 @@ pub fn compare_fn_expr_tys(
             stats.expr_wrong_ty += 1;
         }
         let bkey = format!("{}:{ek:?}", if has_unk { "EXPR_UNK" } else { "EXPR_DIFF" });
-        *stats.expr_miss_buckets.entry(bkey.clone()).or_insert(0) += 1;
-        if stats.expr_samples.len() < max_samples {
+        let b_cnt = stats.expr_miss_buckets.entry(bkey.clone()).or_insert(0);
+        *b_cnt += 1;
+        let b_limit = if max_samples <= 8 { 3 } else { max_samples };
+        if *b_cnt <= b_limit && stats.expr_samples.len() < max_samples.max(40) {
             let (ln, col) = cf.lines.to_line_col(&cf.text, sb);
-            let snip: String = cf.text.get(sb as usize..eb as usize).unwrap_or("?").chars().take(48).collect();
+            let snip: String = cf.text.get(sb as usize..eb as usize).unwrap_or("?").chars().take(64).collect();
             stats.expr_samples.push(format!(
-                "[{bkey}] {}:{ln}:{col} `{}` -> our {:?} vs rustc {:?}",
+                "[{bkey}] {}:{ln}:{col} `{}` -> our `{}` vs rustc `{}` (`{}`)",
                 cf.rel_path,
                 snip.replace('\n', " "),
-                infer_ctx.table.arena.kind(norm_our),
-                va.kind(raw_tid)
+                infer_ctx.table.arena.format_ty(norm_our),
+                infer_ctx.table.arena.format_ty(comp_raw),
+                va.display_ty(raw_tid),
             ));
         }
     }

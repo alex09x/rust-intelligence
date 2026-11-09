@@ -29,7 +29,7 @@ mod primitives;
 mod traits;
 pub mod util;
 
-pub use cas::{compute_sysroot_cas_key, compute_sysroot_cas_key_str, ensure_sysroot_indexed};
+pub use cas::{compute_sysroot_cas_key, compute_sysroot_cas_key_str, ensure_sysroot_indexed, SYSROOT_SCHEMA_VERSION};
 pub(crate) use lang::is_materialized_unstable_type;
 pub use primitives::extract_primitive_inherent_impls;
 pub use traits::{collect_sysroot_traits, extract_trait_and_deref_links};
@@ -197,7 +197,7 @@ pub fn extract_sysroot_crate<'tcx>(tcx: TyCtxt<'tcx>, target_crate: &str, sysroo
                     continue;
                 }
 
-                if !child.vis.is_public() || !is_publicly_visible(tcx, did) || !(is_stable_api(tcx, did) || lang::is_materialized_unstable_type(tcx, did)) {
+                if !child.vis.is_public() || !is_publicly_visible(tcx, did) || !is_stable_api(tcx, did) {
                     continue;
                 }
 

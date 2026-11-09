@@ -353,6 +353,7 @@ impl TyDefDb for MemTyDefDb {
                 Some(arena.mk_adt(res_d, &[InferTyId::UNIT, err_ty]))
             }
             StdMacroTy::OptionStr => self.lang_item(TyLangItem::Option).map(|d| arena.mk_adt(d, &[InferTyId::STR_REF])),
+            StdMacroTy::ThreadLocalKey(_) => None,
         }
     }
 }

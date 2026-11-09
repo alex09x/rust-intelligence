@@ -11,8 +11,12 @@
 //! Intrusive hash-consed [`InferTyArena`] with pre-interned builtins and zero-allocation reuse.
 
 use super::ty::{InferTyId, InferTyKind, TyFlags, TySliceRange, TyVarId};
-use super::uf_table::InlineTyBuf;
 use crate::name_res::{GlobalDefId, PrimTy};
+
+/// High-32-bit tag on [`InferTyKind::Array::len`] encoding a generic `const N: usize` parameter index (`low 16 bits`).
+pub const ARRAY_LEN_PARAM_TAG: u64 = 0xFFFF_FFFE_0000_0000;
+/// High-32-bit tag on [`InferTyKind::Array::len`] encoding an inference variable `TyVarId` (`low 32 bits`).
+pub const ARRAY_LEN_VAR_TAG: u64 = 0xFFFF_FFFD_0000_0000;
 
 /// Intrusive hash-consed arena of [`InferTyKind`]s with zero per-type heap allocations.
 #[derive(Debug)]
@@ -154,8 +158,39 @@ impl InferTyArena {
 
     #[inline]
     pub fn mk_array(&mut self, elem: InferTyId, len: u64) -> InferTyId {
-        let fl = self.flags(elem);
+        let mut fl = self.flags(elem);
+        let hi = len & 0xFFFF_FFFF_0000_0000;
+        if hi == ARRAY_LEN_PARAM_TAG {
+            fl = fl.union(TyFlags::HAS_PARAM);
+        } else if hi == ARRAY_LEN_VAR_TAG {
+            fl = fl.union(TyFlags::HAS_INFER);
+        }
         self.intern_scalar(4, elem.0 as u64, len, InferTyKind::Array { elem, len }, fl)
+    }
+
+    #[inline]
+    pub fn resolve_array_len(&self, len: u64, subst: &[InferTyId]) -> u64 {
+        if (len & 0xFFFF_FFFF_0000_0000) == ARRAY_LEN_PARAM_TAG {
+            if let Some(&st) = subst.get((len & 0xFFFF) as usize) {
+                match self.kind(st) {
+                    InferTyKind::Array { elem, len: c_len } if elem == InferTyId::NEVER => return c_len,
+                    InferTyKind::Infer(v) => return ARRAY_LEN_VAR_TAG | u64::from(v.0),
+                    _ => {}
+                }
+            }
+            return u64::MAX;
+        }
+        len
+    }
+
+    pub fn extract_array_const_param(&self, pat_ty: InferTyId, act_ty: InferTyId) -> Option<(usize, u64)> {
+        match (self.kind(pat_ty), self.kind(act_ty)) {
+            (InferTyKind::Ref { inner: p, .. }, InferTyKind::Ref { inner: a, .. }) => self.extract_array_const_param(p, a),
+            (InferTyKind::Array { len: plen, .. }, InferTyKind::Array { len: alen, .. }) if (plen & 0xFFFF_FFFF_0000_0000) == ARRAY_LEN_PARAM_TAG && alen < ARRAY_LEN_PARAM_TAG => {
+                Some(((plen & 0xFFFF) as usize, alen))
+            }
+            _ => None,
+        }
     }
 
     #[inline]
@@ -310,79 +345,4 @@ fn mix_hash(tag: u8, a: u64, b: u64, list: &[InferTyId]) -> u64 {
     h ^ (h >> 31)
 }
 
-/// Copies a template [`InferTyId`] from `src` into `dst` with zero heap allocations.
-pub fn clone_ty_into(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena) -> InferTyId {
-    clone_ty_rec(src, id, dst, 0)
-}
-
-fn clone_ty_rec(src: &InferTyArena, id: InferTyId, dst: &mut InferTyArena, depth: u8) -> InferTyId {
-    if !id.is_some() || (id.0 as usize) < InferTyId::BUILTIN_COUNT || depth > 64 {
-        return id;
-    }
-    match src.kind(id) {
-        InferTyKind::Unknown => InferTyId::UNKNOWN,
-        InferTyKind::Never => InferTyId::NEVER,
-        InferTyKind::Prim(p) => InferTyId::from_prim(p),
-        InferTyKind::Ref { is_mut, inner } => {
-            let sub = clone_ty_rec(src, inner, dst, depth + 1);
-            dst.mk_ref(is_mut, sub)
-        }
-        InferTyKind::Ptr { is_mut, inner } => {
-            let sub = clone_ty_rec(src, inner, dst, depth + 1);
-            dst.mk_ptr(is_mut, sub)
-        }
-        InferTyKind::Slice(elem) => {
-            let sub = clone_ty_rec(src, elem, dst, depth + 1);
-            dst.mk_slice(sub)
-        }
-        InferTyKind::Array { elem, len } => {
-            let sub = clone_ty_rec(src, elem, dst, depth + 1);
-            dst.mk_array(sub, len)
-        }
-        InferTyKind::Param { idx, def } => dst.mk_param(idx, def),
-        InferTyKind::Tuple(r) => {
-            let buf = clone_slice(src, r, dst, depth + 1);
-            dst.mk_tuple(buf.as_slice())
-        }
-        InferTyKind::Adt { def, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_adt(def, buf.as_slice())
-        }
-        InferTyKind::FnPtr { sig } => {
-            let buf = clone_slice(src, sig, dst, depth + 1);
-            let s = buf.as_slice();
-            dst.mk_fn_ptr(&s[..s.len() - 1], s[s.len() - 1])
-        }
-        InferTyKind::FnDef { def, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_fn_def(def, buf.as_slice())
-        }
-        InferTyKind::Closure { def_start, def_end, sig } => {
-            let buf = clone_slice(src, sig, dst, depth + 1);
-            let s = buf.as_slice();
-            dst.mk_closure(def_start, def_end, &s[..s.len() - 1], s[s.len() - 1])
-        }
-        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
-            let ns = clone_ty_rec(src, self_ty, dst, depth + 1);
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_alias(trait_def, assoc_def, ns, buf.as_slice())
-        }
-        InferTyKind::Dyn { principal, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_dyn(principal, buf.as_slice())
-        }
-        InferTyKind::Opaque { def, args } => {
-            let buf = clone_slice(src, args, dst, depth + 1);
-            dst.mk_opaque(def, buf.as_slice())
-        }
-        InferTyKind::Infer(_) => InferTyId::UNKNOWN,
-    }
-}
-
-fn clone_slice(src: &InferTyArena, r: TySliceRange, dst: &mut InferTyArena, depth: u8) -> InlineTyBuf {
-    let mut buf = InlineTyBuf::new();
-    for &elem in src.slice(r) {
-        buf.push(clone_ty_rec(src, elem, dst, depth));
-    }
-    buf
-}
+pub use super::ty::clone_ty_into;

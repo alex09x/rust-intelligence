@@ -321,3 +321,30 @@ fn impl_trait_for_loop_partial_dot_receiver_recovery() {
     let exp_opaque = ctx.table.arena.mk_opaque(fx.into_def, &[InferTyId::U64]);
     assert_eq!(res.receiver_ty_at_dot(&st, dot_pos), Some(exp_opaque));
 }
+
+#[test]
+fn closure_user_display_and_slice_pat_const_array_len_inference() {
+    let fx = PartialFixture::new();
+    let src = r#"
+        fn check_closures() {
+            let add_one = |x: u32| -> u32 { x + 1 };
+            let noop = || {};
+            let _ = (add_one, noop);
+        }
+    "#;
+    let (mut ctx, res, st) = fx.infer_fn_named(src, "check_closures");
+    let closures: Vec<_> = st.descendants(st.root()).filter(|&n| st.kind(n) == K::ClosureExpr).collect();
+    assert_eq!(closures.len(), 2);
+    let ty0 = res.expr_tys.iter().find(|&&(n, _)| n == closures[0]).unwrap().1;
+    let ty1 = res.expr_tys.iter().find(|&&(n, _)| n == closures[1]).unwrap().1;
+    assert_eq!(ctx.table.arena.format_ty(ty0), "impl Fn(u32) -> u32");
+    assert_eq!(ctx.table.arena.format_ty(ty1), "impl Fn()");
+
+    let n_var = ctx.table.new_ty_var();
+    let InferTyKind::Infer(v) = ctx.table.arena.kind(n_var) else { panic!() };
+    let arr_ty = ctx.table.arena.mk_array(InferTyId::U32, ridx_syntax::ty_infer::arena::ARRAY_LEN_VAR_TAG | u64::from(v.0));
+    let carrier = ctx.table.arena.mk_array(InferTyId::NEVER, 2);
+    let _ = ctx.table.equate(n_var, carrier);
+    let resolved = ctx.table.deep_resolve(arr_ty);
+    assert_eq!(ctx.table.arena.kind(resolved), InferTyKind::Array { elem: InferTyId::U32, len: 2 });
+}

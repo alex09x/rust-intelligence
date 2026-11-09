@@ -274,7 +274,24 @@ impl UnionFindTable {
             }
             InferTyKind::Array { elem, len } => {
                 let sub = self.deep_resolve_rec(arena, elem, fallback, depth + 1);
-                arena.mk_array(sub, len)
+                let r_len = if (len & 0xFFFF_FFFF_0000_0000) == super::arena::ARRAY_LEN_VAR_TAG {
+                    match self.probe_var(TyVarId((len & 0xFFFF_FFFF) as u32)) {
+                        Ok(b) => match arena.kind(self.shallow_resolve(arena, b)) {
+                            InferTyKind::Array { elem: e, len: c_len } if e == InferTyId::NEVER => c_len,
+                            _ => u64::MAX,
+                        },
+                        Err(_) => {
+                            if fallback {
+                                u64::MAX
+                            } else {
+                                len
+                            }
+                        }
+                    }
+                } else {
+                    len
+                };
+                arena.mk_array(sub, r_len)
             }
             InferTyKind::Tuple(r) => {
                 let sub = self.resolve_slice_buf(arena, r, fallback, depth + 1);
@@ -364,6 +381,17 @@ impl InlineTyBuf {
             &self.inline[..self.len]
         } else {
             &self.spill
+        }
+    }
+
+    #[inline]
+    pub fn set(&mut self, idx: usize, ty: InferTyId) {
+        if self.spill.is_empty() {
+            if idx < self.len {
+                self.inline[idx] = ty;
+            }
+        } else if idx < self.spill.len() {
+            self.spill[idx] = ty;
         }
     }
 }

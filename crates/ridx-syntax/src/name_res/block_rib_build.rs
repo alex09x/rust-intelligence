@@ -76,7 +76,7 @@ impl RibStack {
                     let (ns, ne) = norm_byte_span(st.src, st.range(nn));
                     let mut def = db.def_at_byte_span(map.krate, file, ns, ne);
                     if !def.is_some() {
-                        def = self.alloc_synthetic_def();
+                        def = GlobalDefId::new(super::db::CrateId::LOCAL_OVERLAY, 0x9000_0000 | ch.0);
                     }
                     if ck == K::TypeAlias {
                         if let Some(ty_node) = st.children(ch).find(|&c| st.kind(c).is_type()) {
@@ -101,7 +101,7 @@ impl RibStack {
                     let (ns, ne) = norm_byte_span(st.src, st.range(nn));
                     let mut edef = db.def_at_byte_span(map.krate, file, ns, ne);
                     if !edef.is_some() {
-                        edef = self.alloc_synthetic_def();
+                        edef = GlobalDefId::new(super::db::CrateId::LOCAL_OVERLAY, 0x9000_0000 | ch.0);
                     }
                     let eb = private_block_binding(edef, module, ItemKind::Enum);
                     rib.entries.entry(IdentKey::new(ename)).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(eb, NsMask::TYPE));
@@ -328,7 +328,7 @@ impl FileResolver<'_, '_> {
             let (ns, ne) = norm_byte_span(self.st.src, self.st.range(nn));
             let mut def = self.db.def_at_byte_span(self.map.krate, self.file, ns, ne);
             if !def.is_some() {
-                def = self.ribs.alloc_synthetic_def();
+                def = GlobalDefId::new(super::db::CrateId::LOCAL_OVERLAY, 0x9000_0000 | ch.0);
             }
             entries.push(BlockAssocEntry { target, trait_def, name_start: ns, name_end: ne, def, kind });
         }

@@ -173,17 +173,29 @@ impl<'a, 's> Runner<'a, 's> {
                 let (peeled, sub_mode) = self.peel_ergonomics(exp, mode);
                 let (elem_ty, rest_ty) = match self.ctx.table.arena.kind(peeled) {
                     InferTyKind::Array { elem, len } => {
+                        let has_rest = self.st.children(pat).any(|c| self.st.kind(c).is_pat() && is_rest_like_pat(self.st, c));
                         let non_rest = self.st.children(pat).filter(|&c| self.st.kind(c).is_pat() && !is_rest_like_pat(self.st, c)).count() as u64;
-                        let rem = if len != u64::MAX { len.saturating_sub(non_rest) } else { u64::MAX };
+                        if !has_rest && (len & 0xFFFF_FFFF_0000_0000) == super::arena::ARRAY_LEN_VAR_TAG {
+                            let v_ty = self.ctx.table.arena.mk_infer(super::ty::TyVarId((len & 0xFFFF_FFFF) as u32));
+                            let c_ty = self.ctx.table.arena.mk_array(InferTyId::NEVER, non_rest);
+                            let _ = self.ctx.table.equate(v_ty, c_ty);
+                        }
+                        let rem = if len < super::arena::ARRAY_LEN_VAR_TAG { len.saturating_sub(non_rest) } else { u64::MAX };
                         let sub_arr = if matches!(sub_mode, BindingMode::ByRef(_)) { self.ctx.table.arena.mk_slice(elem) } else { self.ctx.table.arena.mk_array(elem, rem) };
                         (elem, sub_arr)
                     }
                     InferTyKind::Slice(elem) => (elem, peeled),
                     _ => {
                         let ev = self.ctx.table.new_ty_var();
-                        let sl = self.ctx.table.arena.mk_slice(ev);
-                        let _ = self.ctx.table.equate(peeled, sl);
-                        (ev, sl)
+                        let has_rest = self.st.children(pat).any(|c| self.st.kind(c).is_pat() && is_rest_like_pat(self.st, c));
+                        let container = if !has_rest && matches!(sub_mode, BindingMode::ByValue) {
+                            let n = self.st.children(pat).filter(|&c| self.st.kind(c).is_pat()).count() as u64;
+                            self.ctx.table.arena.mk_array(ev, n)
+                        } else {
+                            self.ctx.table.arena.mk_slice(ev)
+                        };
+                        let _ = self.ctx.table.equate(peeled, container);
+                        (ev, container)
                     }
                 };
                 for sp in self.st.children(pat).filter(|&c| self.st.kind(c).is_pat()) {

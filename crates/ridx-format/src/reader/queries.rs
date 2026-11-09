@@ -15,25 +15,26 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// Find a definition by its canonical path (e.g. `stdx::panic_context::enter`).
     pub fn find_definition_by_path(&self, path: &str) -> Option<&DefEntry> {
         let hash = fnv1a_64(path.as_bytes());
-        let defs_hash = self.defs_by_hash();
-        let defs = self.definitions();
-
-        let partition = defs_hash.binary_search_by_key(&hash, |e| e.hash());
-        if let Ok(idx) = partition {
-            // Check matching hash range
-            let mut i = idx;
-            while i > 0 && defs_hash[i - 1].hash() == hash {
-                i -= 1;
-            }
-            while i < defs_hash.len() && defs_hash[i].hash() == hash {
-                let def = &defs[defs_hash[i].index() as usize];
-                if self.get_str(def.path_offset()) == path {
+        let (defs_hash, defs) = (self.defs_by_hash(), self.definitions());
+        let mut i = defs_hash.binary_search_by_key(&hash, |e| e.hash()).ok()?;
+        while i > 0 && defs_hash[i - 1].hash() == hash {
+            i -= 1;
+        }
+        let mut fallback: Option<&DefEntry> = None;
+        while i < defs_hash.len() && defs_hash[i].hash() == hash {
+            let def = &defs[defs_hash[i].index() as usize];
+            if self.get_str(def.path_offset()) == path {
+                let kind = DefKind::from(def.kind);
+                if !def.is_reexport() && !matches!(kind, DefKind::Impl | DefKind::Use | DefKind::StructCtor | DefKind::VariantCtor) {
                     return Some(def);
                 }
-                i += 1;
+                if fallback.is_none() || !matches!(kind, DefKind::Impl | DefKind::Use) {
+                    fallback = Some(def);
+                }
             }
+            i += 1;
         }
-        None
+        fallback
     }
 
     /// Returns true when more than one definition in this shard shares `path` at distinct lines.

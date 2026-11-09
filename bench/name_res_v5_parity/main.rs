@@ -30,6 +30,7 @@ mod v5_db_queries;
 mod v5_macro_res;
 mod v5_shard;
 mod v5_trait_solve;
+mod v5_ty_bounds;
 mod v5_ty_db;
 mod v5_ty_defaults;
 mod v5_ty_lower;

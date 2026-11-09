@@ -108,11 +108,12 @@ impl<'a, 's> Runner<'a, 's> {
             if let Some(gal) = self.st.child(seg, K::GenericArgList) {
                 for ga in self.st.children(gal) {
                     if matches!(self.st.kind(ga), K::TypeArg | K::AssocTypeArg) {
-                        if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type()) {
+                        if let Some(tn) = self.st.children(ga).find(|&c| self.st.kind(c).is_type() || self.st.kind(c) == K::MacroCall) {
                             out.push(tenv.lower_cst_ty(&mut self.ctx.table, tn));
                         }
                     } else if self.st.kind(ga) == K::ConstArg {
-                        out.push(InferTyId::UNKNOWN);
+                        let val = eval_const_uint_expr(self.st, ga).unwrap_or(u64::MAX);
+                        out.push(self.ctx.table.arena.mk_array(InferTyId::NEVER, val));
                     }
                 }
             }
@@ -171,11 +172,11 @@ impl<'a, 's> Runner<'a, 's> {
                         self.ctx.table.arena.mk_fn_def(eff_def, subst.as_slice())
                     }
                     ItemKind::Struct | ItemKind::Variant | ItemKind::TypeAlias => {
-                        let info = self
+                        let Some((gc, shape, tpl_ty)) = self
                             .db
                             .def_ty(eff_def, &mut self.ctx.table.arena)
-                            .or_else(|| self.local_defs.def_ty(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table));
-                        let Some((gc, shape, tpl_ty)) = info else {
+                            .or_else(|| self.local_defs.def_ty(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table))
+                        else {
                             return InferTyId::UNKNOWN;
                         };
                         let mut subst = InlineTyBuf::new();
@@ -190,11 +191,23 @@ impl<'a, 's> Runner<'a, 's> {
                         }
                         inst_ty
                     }
-                    ItemKind::Const | ItemKind::Static | ItemKind::AssocConst => self
-                        .db
-                        .def_ty(eff_def, &mut self.ctx.table.arena)
-                        .or_else(|| self.local_defs.def_ty(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table))
-                        .map_or(InferTyId::UNKNOWN, |(_, _, t)| t),
+                    ItemKind::Const | ItemKind::Static | ItemKind::AssocConst => {
+                        let Some((gc, _, t)) = self
+                            .db
+                            .def_ty(eff_def, &mut self.ctx.table.arena)
+                            .or_else(|| self.local_defs.def_ty(eff_def, self.root_st, self.root_file_res, self.db, &mut self.ctx.table))
+                        else {
+                            return InferTyId::UNKNOWN;
+                        };
+                        if kind == ItemKind::AssocConst && gc > 0 && self.ctx.table.arena.flags(t).has_param() {
+                            let mut subst = InlineTyBuf::new();
+                            for i in 0..gc as usize {
+                                subst.push(explicit_args.get(i).copied().unwrap_or_else(|| self.ctx.table.new_ty_var()));
+                            }
+                            return self.ctx.table.instantiate(t, subst.as_slice());
+                        }
+                        t
+                    }
                     _ => InferTyId::UNKNOWN,
                 }
             }
@@ -291,26 +304,20 @@ impl<'a, 's> Runner<'a, 's> {
         let sub_loc_mark = self.ctx.sub_locals_buf.len();
         let mut diverged = false;
         let mut tail_ty: Option<InferTyId> = None;
+        let last_ch = self.st.children(block).last();
         for ch in self.st.children(block) {
             match self.st.kind(ch) {
-                K::LetStmt => {
-                    if self.infer_let_stmt(ch) == InferTyId::NEVER {
-                        diverged = true;
-                    }
-                }
+                K::LetStmt => diverged |= self.infer_let_stmt(ch) == InferTyId::NEVER,
                 K::ExprStmt => {
                     if let Some(en) = self.st.children(ch).find(|&c| is_expr_node(self.st.kind(c))) {
                         let t = if self.st.kind(en) == K::MacroCall { self.infer_macro_call(en, Expectation::None, true) } else { self.infer_expr(en, Expectation::None) };
-                        if t == InferTyId::NEVER {
-                            diverged = true;
-                        }
+                        diverged |= t == InferTyId::NEVER;
                     }
                 }
+                K::MacroCall if Some(ch) != last_ch => diverged |= self.infer_macro_call(ch, Expectation::None, true) == InferTyId::NEVER,
                 k if is_expr_node(k) => {
                     let t = self.infer_expr(ch, inner_exp);
-                    if t == InferTyId::NEVER {
-                        diverged = true;
-                    }
+                    diverged |= t == InferTyId::NEVER;
                     tail_ty = Some(t);
                 }
                 K::Error => self.infer_error_recovery_node(ch),
@@ -321,7 +328,7 @@ impl<'a, 's> Runner<'a, 's> {
         self.ctx.sub_locals_buf.truncate(sub_loc_mark);
         let mut res_ty = tail_ty.unwrap_or(if diverged { InferTyId::NEVER } else { InferTyId::UNIT });
         if let Some(exp) = inner_exp.coercion_target(&mut self.ctx.table) {
-            res_ty = self.coerce_expr(res_ty, exp);
+            res_ty = self.coerce_block_result(res_ty, exp);
         }
         if let Some(aret) = async_ret_var {
             self.ctx.ret_stack.pop();
@@ -346,10 +353,8 @@ impl<'a, 's> Runner<'a, 's> {
         let tenv = self.ty_env(true);
         let ann_ty = self.st.children(stmt).find(|&c| self.st.kind(c).is_type()).map(|tn| tenv.lower_cst_ty(&mut self.ctx.table, tn));
         let init_ty = self.st.children(stmt).find(|&c| is_expr_node(self.st.kind(c))).map(|en| self.infer_expr(en, Expectation::from_option(ann_ty)));
-        if let Some(le) = self.st.child(stmt, K::LetElse) {
-            if let Some(eb) = self.st.child(le, K::BlockExpr) {
-                let _ = self.infer_expr(eb, Expectation::HasType(InferTyId::NEVER));
-            }
+        if let Some(eb) = self.st.child(stmt, K::LetElse).and_then(|le| self.st.child(le, K::BlockExpr)) {
+            let _ = self.infer_expr(eb, Expectation::HasType(InferTyId::NEVER));
         }
         let pat_ty = match (ann_ty, init_ty) {
             (Some(ann), Some(init)) => {
@@ -362,12 +367,11 @@ impl<'a, 's> Runner<'a, 's> {
         };
         if let Some(pat) = self.st.children(stmt).find(|&c| self.st.kind(c).is_pat()) {
             self.infer_pat(pat, pat_ty, BindingMode::ByValue, None);
+            if !self.ctx.deferred_trait_bounds.is_empty() {
+                self.flush_deferred_trait_bounds();
+            }
         }
-        if init_ty == Some(InferTyId::NEVER) {
-            InferTyId::NEVER
-        } else {
-            InferTyId::UNIT
-        }
+        init_ty.filter(|&t| t == InferTyId::NEVER).unwrap_or(InferTyId::UNIT)
     }
 
     pub(super) fn infer_let_expr(&mut self, expr: NodeId) -> InferTyId {
