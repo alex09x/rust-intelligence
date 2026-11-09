@@ -22,14 +22,24 @@ use crate::token::{Token, TokenKind, HAS_ERROR, JOINT_NEXT};
 /// Every byte of `src` is covered by exactly one non-empty [`Token`], and concatenating
 /// all token slices reproduces `src` identically.
 pub fn lex(src: &str) -> Vec<Token> {
-    assert!(src.len() <= u32::MAX as usize, "ridx-syntax supports source files up to u32::MAX bytes");
     if src.is_empty() {
         return Vec::new();
+    }
+    let mut tokens = Vec::with_capacity(src.len() / 3 + 16);
+    lex_into(src, &mut tokens);
+    tokens
+}
+
+/// Tokenizes `src` into caller-owned `tokens` (`0` allocations after warmup).
+pub(crate) fn lex_into(src: &str, tokens: &mut Vec<Token>) {
+    assert!(src.len() <= u32::MAX as usize, "ridx-syntax supports source files up to u32::MAX bytes");
+    tokens.clear();
+    if src.is_empty() {
+        return;
     }
 
     let bytes = src.as_bytes();
     let len = bytes.len();
-    let mut tokens = Vec::with_capacity(len / 3 + 16);
     let mut pos = 0usize;
 
     // Optional UTF-8 BOM (`\u{FEFF}`) at byte 0 is treated as leading whitespace trivia.
@@ -63,8 +73,6 @@ pub fn lex(src: &str) -> Vec<Token> {
         tokens.push(Token::new(kind, flags, start as u32, end as u32));
         pos = end;
     }
-
-    tokens
 }
 
 #[inline(always)]

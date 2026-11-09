@@ -317,6 +317,30 @@ fn main() {
                 );
             }
         }
+        println!("\n=== Checkbox 4.1 Dirty-Function Tracking on `didChange` (`DirtyFileTracker::on_did_change_with_db`) ===");
+        println!("| Corpus | Crate | Probes | Total Fns | Inferred Fns | 1-Fn Edit p50 (µs) | 1-Fn Edit p95 (µs) | 1-Fn Edit p99 (µs) | 1-Fn Edit max (µs) | 1-Fn Edit mean (µs) | Shift-Reuse p50 (µs) | Shift-Reuse p95 (µs) | Warm Allocs/Edit | Tracker Heap (KiB) |");
+        println!("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+        for rep in &all_reports {
+            if let Some(dc) = &rep.did_change {
+                println!(
+                    "| `{}` | `{}` | {} | {} | {} | {:.1} | {:.1} | {:.1} | {:.1} | {:.1} | {:.1} | {:.1} | {:.2} | {:.1} |",
+                    dc.corpus,
+                    dc.unit_crate,
+                    dc.dirty_fn_probes,
+                    dc.dirty_fn_total_fns,
+                    dc.dirty_fn_inferred_total,
+                    dc.dirty_fn_p50_us,
+                    dc.dirty_fn_p95_us,
+                    dc.dirty_fn_p99_us,
+                    dc.dirty_fn_max_us,
+                    dc.dirty_fn_mean_us,
+                    dc.shift_reuse_p50_us,
+                    dc.shift_reuse_p95_us,
+                    dc.warm_allocs_per_edit,
+                    dc.tracker_heap_kib,
+                );
+            }
+        }
     }
 
     print_ty_parity_tables(&all_reports, verbose_samples);

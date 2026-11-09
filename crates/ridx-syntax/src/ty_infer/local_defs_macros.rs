@@ -29,6 +29,8 @@ const MAX_BODY_MBE_DEPTH: u8 = 8;
 #[derive(Clone, Debug)]
 pub(super) struct PreExpandedMacro {
     pub mac_node: NodeId,
+    pub cache_key: u64,
+    pub base_inner_s: u32,
     pub src: String,
     pub tokens: Vec<Token>,
     pub nodes: Vec<Node>,
@@ -36,6 +38,19 @@ pub(super) struct PreExpandedMacro {
     pub block_node: NodeId,
     pub file_res: FileNameRes,
     pub spans: Vec<ExpandedSpanMap>,
+}
+
+fn macro_cache_key(krate: CrateId, file: FileId, cur_mod: ModuleId, in_ty_ctx: bool, raw_path: &str, inner_src: &str, body_str: &str) -> u64 {
+    let mut h = 0xcbf29ce484222325u64;
+    for b in krate.0.to_le_bytes().into_iter().chain(file.0.to_le_bytes()).chain(cur_mod.0.to_le_bytes()).chain([in_ty_ctx as u8]) {
+        h = (h ^ b as u64).wrapping_mul(0x100000001b3);
+    }
+    for s in [raw_path.as_bytes(), &[0xff], inner_src.as_bytes(), &[0xff], body_str.as_bytes()] {
+        for &b in s {
+            h = (h ^ b as u64).wrapping_mul(0x100000001b3);
+        }
+    }
+    h
 }
 
 struct EmptyItemDb;
@@ -74,12 +89,7 @@ impl LocalCstDefs {
             if st.kind(node) != K::MacroCall {
                 continue;
             }
-            let Some(path_node) = st.child(node, K::Path) else {
-                continue;
-            };
-            let Some(tt_node) = st.child(node, K::TokenTree) else {
-                continue;
-            };
+            let (Some(path_node), Some(tt_node)) = (st.child(node, K::Path), st.child(node, K::TokenTree)) else { continue };
             let raw_path = st.text(path_node).trim();
             let tail = raw_path.rsplit("::").next().map_or("", |s| norm_ident(s.trim()));
             if tail.is_empty() {
@@ -101,7 +111,7 @@ impl LocalCstDefs {
                 let mut resolve_mac = |mp: &str, ma: &str| expand_include_helper_macro(st, node, def_map, item_db, cur_mod, mp, ma);
                 if let Some(pstr) = eval_include_path_str(st, node, idb_ref, krate, &mut resolve_mac) {
                     if let Some((_, inc_text)) = item_db.and_then(|idb| idb.resolve_include_file(file, &pstr)) {
-                        if let Some(pre) = build_wrapped_pre(node, inc_text, Vec::new(), st, def_map, item_db, file, false) {
+                        if let Some(pre) = build_wrapped_pre(node, 0, 0, inc_text, Vec::new(), st, def_map, item_db, file, false) {
                             self.body_macros.push(pre);
                         }
                     }
@@ -112,10 +122,7 @@ impl LocalCstDefs {
             if local_hit.is_none() && super::infer_macro_std::classify_std_macro_path(st, path_node).is_some() {
                 continue;
             }
-            let resolved = local_hit.map(|b| (b, "crate")).or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, raw_path));
-            let Some((body_str, dc)) = resolved else {
-                continue;
-            };
+            let Some((body_str, dc)) = local_hit.map(|b| (b, "crate")).or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, raw_path)) else { continue };
             let tt_r = st.range(tt_node);
             if tt_r.end.saturating_sub(tt_r.start) < 2
                 || !matches!(st.src.as_bytes().get(tt_r.start), Some(b'(' | b'[' | b'{'))
@@ -125,19 +132,29 @@ impl LocalCstDefs {
             }
             let (inner_s, inner_e) = (tt_r.start + 1, tt_r.end - 1);
             let Some(inner_src) = st.src.get(inner_s..inner_e) else { continue };
+            let in_ty_ctx = st.parent(node).is_some_and(|p| matches!(st.kind(p), K::TypeArg | K::RetType | K::Param | K::TupleType | K::RefType | K::SliceType | K::ArrayType));
+            let ckey = macro_cache_key(krate, file, cur_mod, in_ty_ctx, raw_path, inner_src, body_str);
+            if let Some(pos) = self.macro_cache.iter().position(|m| m.cache_key == ckey) {
+                let mut cached = self.macro_cache.swap_remove(pos);
+                let delta = inner_s as i64 - cached.base_inner_s as i64;
+                cached.mac_node = node;
+                cached.base_inner_s = inner_s as u32;
+                for sp in &mut cached.spans {
+                    sp.orig_start = (sp.orig_start as i64 + delta) as u32;
+                }
+                self.body_macros.push(cached);
+                continue;
+            }
             let Some(mdef) = MacroRulesDef::parse_body(body_str) else { continue };
             let mut spans = Vec::new();
-            let Some(mut exp_src) = mdef.expand_with_spans(inner_src, inner_s as u32, dc, &mut spans) else {
-                continue;
-            };
+            let Some(mut exp_src) = mdef.expand_with_spans(inner_src, inner_s as u32, dc, &mut spans) else { continue };
             expand_nested_macros(&mut exp_src, &mut spans, st, node, def_map, item_db, cur_mod);
-            let in_ty_ctx = st.parent(node).is_some_and(|p| matches!(st.kind(p), K::TypeArg | K::RetType | K::Param | K::TupleType | K::RefType | K::SliceType | K::ArrayType));
             let pfx_len = if in_ty_ctx { "fn __ridx_m() {\nlet _: ".len() } else { WRAP_PREFIX.len() } as u32;
             for sp in &mut spans {
                 sp.exp_start += pfx_len;
                 sp.exp_end += pfx_len;
             }
-            if let Some(pre) = build_wrapped_pre(node, &exp_src, spans, st, def_map, item_db, file, in_ty_ctx) {
+            if let Some(pre) = build_wrapped_pre(node, ckey, inner_s as u32, &exp_src, spans, st, def_map, item_db, file, in_ty_ctx) {
                 self.body_macros.push(pre);
             }
         }
@@ -147,6 +164,8 @@ impl LocalCstDefs {
 #[allow(clippy::too_many_arguments)]
 fn build_wrapped_pre(
     mac_node: NodeId,
+    cache_key: u64,
+    base_inner_s: u32,
     inner_code: &str,
     spans: Vec<ExpandedSpanMap>,
     orig_st: &SyntaxTree<'_>,
@@ -173,7 +192,7 @@ fn build_wrapped_pre(
         dm.resolve_module_snippet_into(idb, cur_mod, file, &exp_st, &mut file_res);
     }
     let SyntaxTree { tokens, nodes, .. } = exp_st;
-    Some(PreExpandedMacro { mac_node, src: wrapped, tokens, nodes, fn_node, block_node, file_res, spans })
+    Some(PreExpandedMacro { mac_node, cache_key, base_inner_s, src: wrapped, tokens, nodes, fn_node, block_node, file_res, spans })
 }
 
 fn find_cst_macro_rules_before<'s>(st: &'s SyntaxTree<'s>, at_node: NodeId, target_name: &str) -> Option<&'s str> {

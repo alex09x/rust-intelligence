@@ -21,9 +21,9 @@ pub const ARRAY_LEN_VAR_TAG: u64 = 0xFFFF_FFFD_0000_0000;
 /// Intrusive hash-consed arena of [`InferTyKind`]s with zero per-type heap allocations.
 #[derive(Debug)]
 pub struct InferTyArena {
-    kinds: Vec<InferTyKind>,
-    flags: Vec<TyFlags>,
-    ty_lists: Vec<InferTyId>,
+    pub(crate) kinds: Vec<InferTyKind>,
+    pub(crate) flags: Vec<TyFlags>,
+    pub(crate) ty_lists: Vec<InferTyId>,
     hashes: Vec<u64>,
     next: Vec<u32>,
     buckets: Vec<u32>,

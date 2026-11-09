@@ -336,8 +336,17 @@ impl ParseScratch {
         SyntaxTree { src, tokens: core::mem::take(&mut self.tokens), nodes: core::mem::take(&mut self.nodes) }
     }
 
+    pub(crate) fn parse_source_file<'s>(&mut self, src: &'s str) -> SyntaxTree<'s> {
+        crate::lexer::lex_into(src, &mut self.tokens);
+        self.run_preloaded(src, SyntaxKind::SourceFile, |p| {
+            items::item_list(p, false);
+        })
+    }
+
     pub(crate) fn parse_expr_slice<'s>(&mut self, src: &'s str, tok_slice: &[Token]) -> (SyntaxTree<'s>, Option<crate::tree::NodeId>) {
-        let st = self.run_slice(src, tok_slice, SyntaxKind::SourceFile, |p| {
+        self.tokens.clear();
+        self.tokens.extend_from_slice(tok_slice);
+        let st = self.run_preloaded(src, SyntaxKind::SourceFile, |p| {
             expr::expr(p);
         });
         let en = st.children(st.root()).find(|&c| st.kind(c).is_expr() || st.kind(c) == SyntaxKind::MacroCall);
@@ -345,16 +354,16 @@ impl ParseScratch {
     }
 
     pub(crate) fn parse_pat_slice<'s>(&mut self, src: &'s str, tok_slice: &[Token]) -> (SyntaxTree<'s>, Option<crate::tree::NodeId>) {
-        let st = self.run_slice(src, tok_slice, SyntaxKind::SourceFile, |p| {
+        self.tokens.clear();
+        self.tokens.extend_from_slice(tok_slice);
+        let st = self.run_preloaded(src, SyntaxKind::SourceFile, |p| {
             patterns::pattern(p);
         });
         let pn = st.children(st.root()).find(|&c| st.kind(c).is_pat());
         (st, pn)
     }
 
-    fn run_slice<'s>(&mut self, src: &'s str, tok_slice: &[Token], root_kind: SyntaxKind, f: impl FnOnce(&mut Parser<'_>)) -> SyntaxTree<'s> {
-        self.tokens.clear();
-        self.tokens.extend_from_slice(tok_slice);
+    fn run_preloaded<'s>(&mut self, src: &'s str, root_kind: SyntaxKind, f: impl FnOnce(&mut Parser<'_>)) -> SyntaxTree<'s> {
         self.sig.clear();
         for (i, t) in self.tokens.iter().enumerate() {
             if !t.is_trivia() {

@@ -79,7 +79,7 @@ impl<'a, 's> FileResolver<'a, 's> {
 
     fn walk_container_items(&mut self, container: NodeId, in_body: bool) {
         for ch in self.st.children(container) {
-            if !in_body && !self.overlaps_target(ch) && matches!(self.st.kind(ch), K::Fn | K::Const | K::Static | K::Impl | K::Module | K::ExternBlock) {
+            if !in_body && !self.overlaps_target(ch) && matches!(self.st.kind(ch), K::Fn | K::Const | K::Static | K::Impl | K::Module | K::ExternBlock | K::MacroCall) {
                 continue;
             }
             if self.st.kind(ch).is_item() || self.st.kind(ch) == K::MacroCall {

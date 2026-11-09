@@ -82,6 +82,7 @@ pub struct LocalCstDefs {
     pub(super) by_def: Vec<(u64, u32)>,
     pub(super) by_node: Vec<(u32, u32)>,
     pub(super) body_macros: Vec<PreExpandedMacro>,
+    pub(super) macro_cache: Vec<PreExpandedMacro>,
     pub(super) include_bytes_lens: Vec<(u32, u64)>,
     pub(super) file_krate: CrateId,
     pub(super) clean_indexed: bool,
@@ -111,7 +112,10 @@ impl LocalCstDefs {
         self.traits.clear();
         self.by_def.clear();
         self.by_node.clear();
-        self.body_macros.clear();
+        if self.macro_cache.len() > 256 {
+            self.macro_cache.clear();
+        }
+        self.macro_cache.append(&mut self.body_macros);
         self.include_bytes_lens.clear();
         self.file_krate = CrateId::NONE;
         self.clean_indexed = false;
