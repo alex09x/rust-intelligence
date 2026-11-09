@@ -51,16 +51,7 @@ impl RibStack {
         for ch in st.children(container) {
             let ck = st.kind(ch);
             match ck {
-                K::Use => use_arena.lower_use_into(
-                    st,
-                    ch,
-                    mod_tree,
-                    module,
-                    db,
-                    map.krate,
-                    &mut self.use_toks_scratch,
-                    &mut self.use_prefix_scratch,
-                ),
+                K::Use => use_arena.lower_use_into(st, ch, mod_tree, module, db, map.krate, &mut self.use_toks_scratch, &mut self.use_prefix_scratch),
                 K::ExternCrate => use_arena.lower_extern_crate(st, ch, mod_tree, module, db, map.krate),
                 K::Fn | K::Struct | K::Union | K::Trait | K::TypeAlias | K::Const | K::Static | K::MacroRules => {
                     if !eval_outer_attrs(st, ch, db, map.krate).enabled {
