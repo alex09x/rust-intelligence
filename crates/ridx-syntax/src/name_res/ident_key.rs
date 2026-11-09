@@ -16,7 +16,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-const INLINE_CAP: usize = 22;
+const INLINE_CAP: usize = 62;
 
 /// 24-byte immutable UTF-8 identifier storing identifiers up to 22 bytes inline without heap allocation.
 #[derive(Clone)]

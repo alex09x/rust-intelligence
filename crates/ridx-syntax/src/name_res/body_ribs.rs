@@ -82,6 +82,9 @@ pub(super) struct RibStack {
     pub block_ribs: Vec<BlockItemRib>,
     pub block_rib_pool: Vec<BlockItemRib>,
     pub use_arena_scratch: UseArena,
+    pub use_toks_scratch: Vec<crate::token::Token>,
+    pub use_prefix_scratch: Vec<(u32, u32)>,
+    pub block_aliases_scratch: Vec<(GlobalDefId, crate::tree::NodeId)>,
     pub or_pat_scratch: Vec<(u32, u32, LocalBindId)>,
     pub extra_traits_scratch: Vec<ResolvedBinding>,
     pub next_synthetic_seq: u32,
@@ -105,6 +108,9 @@ impl RibStack {
             block_ribs: Vec::new(),
             block_rib_pool: Vec::new(),
             use_arena_scratch: UseArena::default(),
+            use_toks_scratch: Vec::new(),
+            use_prefix_scratch: Vec::new(),
+            block_aliases_scratch: Vec::new(),
             or_pat_scratch: Vec::new(),
             extra_traits_scratch: Vec::new(),
             next_synthetic_seq: 1 << 24,
@@ -124,6 +130,9 @@ impl RibStack {
             self.block_rib_pool.push(r);
         }
         self.use_arena_scratch.clear();
+        self.use_toks_scratch.clear();
+        self.use_prefix_scratch.clear();
+        self.block_aliases_scratch.clear();
         self.or_pat_scratch.clear();
         self.extra_traits_scratch.clear();
         self.next_synthetic_seq = 1 << 24;

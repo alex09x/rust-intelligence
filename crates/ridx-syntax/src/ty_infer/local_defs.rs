@@ -83,6 +83,7 @@ pub struct LocalCstDefs {
     pub(super) by_node: Vec<(u32, u32)>,
     pub(super) body_macros: Vec<PreExpandedMacro>,
     pub(super) macro_cache: Vec<PreExpandedMacro>,
+    pub(super) failed_macro_keys: Vec<u64>,
     pub(super) include_bytes_lens: Vec<(u32, u64)>,
     pub(super) file_krate: CrateId,
     pub(super) clean_indexed: bool,
@@ -95,7 +96,12 @@ pub(super) fn def_sort_key(def: GlobalDefId) -> u64 {
 
 impl LocalCstDefs {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            body_macros: Vec::with_capacity(64),
+            macro_cache: Vec::with_capacity(64),
+            failed_macro_keys: Vec::with_capacity(64),
+            ..Self::default()
+        }
     }
 
     pub fn from_file(st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, file: FileId) -> Self {
@@ -114,6 +120,9 @@ impl LocalCstDefs {
         self.by_node.clear();
         if self.macro_cache.len() > 256 {
             self.macro_cache.clear();
+        }
+        if self.failed_macro_keys.len() > 256 {
+            self.failed_macro_keys.clear();
         }
         self.macro_cache.append(&mut self.body_macros);
         self.include_bytes_lens.clear();
@@ -366,25 +375,16 @@ pub(super) fn lower_self_param_ty(st: &SyntaxTree<'_>, sp: NodeId, env: &LowerTy
 }
 
 fn resolve_item_node_def(st: &SyntaxTree<'_>, node: NodeId, is_assoc: bool, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) -> GlobalDefId {
-    let Some(nn) = st.child(node, K::Name) else {
-        return GlobalDefId::NONE;
-    };
+    let Some(nn) = st.child(node, K::Name) else { return GlobalDefId::NONE };
     let r = st.range(nn);
     let (s, e) = (r.start as u32, r.end as u32);
     if let Some(dm) = def_map {
-        if let Some(idb) = item_db {
-            if !dm.is_dirty_file(file) {
-                let d = idb.def_at_byte_span(dm.krate, file, s, e);
-                if d.is_some() {
-                    return d;
-                }
-            }
+        if let Some(d) = item_db.filter(|_| !dm.is_dirty_file(file)).map(|idb| idb.def_at_byte_span(dm.krate, file, s, e)).filter(|d| d.is_some()) {
+            return d;
         }
         if is_assoc {
-            if let Some(ai) = dm.local_impls.assoc_items.iter().find(|a| a.file == file && a.span_start == s && a.span_end == e) {
-                if ai.def.is_some() {
-                    return ai.def;
-                }
+            if let Some(ai) = dm.local_impls.assoc_items.iter().find(|a| a.file == file && a.span_start == s && a.span_end == e && a.def.is_some()) {
+                return ai.def;
             }
         }
         if let Some(it) = dm.items.iter().find(|it| it.file == file && it.span_start == s && it.span_end == e) {

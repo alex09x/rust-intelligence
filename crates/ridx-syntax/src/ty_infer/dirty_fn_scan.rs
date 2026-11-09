@@ -38,14 +38,6 @@ fn fnv_u16(h: u64, v: u16) -> u64 {
 }
 
 #[inline]
-fn fnv_u32(mut h: u64, v: u32) -> u64 {
-    for b in v.to_le_bytes() {
-        h = fnv_u8(h, b);
-    }
-    h
-}
-
-#[inline]
 fn fnv_bytes(mut h: u64, bytes: &[u8]) -> u64 {
     for &b in bytes {
         h = fnv_u8(h, b);
@@ -54,15 +46,12 @@ fn fnv_bytes(mut h: u64, bytes: &[u8]) -> u64 {
 }
 
 #[inline]
-fn hash_tok_range(st: &SyntaxTree<'_>, mut h: u64, lo: u32, hi: u32, base_byte: Option<u32>) -> u64 {
+fn hash_tok_range(st: &SyntaxTree<'_>, mut h: u64, lo: u32, hi: u32) -> u64 {
     let end = (hi as usize).min(st.tokens.len());
     let start = (lo as usize).min(end);
     for tok in &st.tokens[start..end] {
         if !tok.is_trivia() {
             h = fnv_u16(h, tok.kind as u16);
-            if let Some(base) = base_byte {
-                h = fnv_u32(h, tok.start.saturating_sub(base));
-            }
             h = fnv_bytes(h, &st.src.as_bytes()[tok.start as usize..tok.end as usize]);
         }
     }
@@ -177,13 +166,12 @@ pub fn extract_file_fn_summaries(st: &SyntaxTree<'_>, out: &mut Vec<FnBodySummar
         let (body_start, body_end) = node_span_u32(st, body_node);
 
         let fn_key = compute_fn_key(st, nid, kind);
-        let sig_h =
-            hash_tok_range(st, hash_tok_range(st, fnv_u16(FNV_OFFSET, kind as u16), fn_data.first, body_data.first, Some(fn_start)), body_data.end, fn_data.end, Some(fn_start));
-        let body_h = hash_fn_body_tokens(st, body_node, body_start);
+        let sig_h = hash_tok_range(st, hash_tok_range(st, fnv_u16(FNV_OFFSET, kind as u16), fn_data.first, body_data.first), body_data.end, fn_data.end);
+        let body_h = hash_fn_body_tokens(st, body_node);
 
         if body_data.first >= max_top_body_hi && body_data.end > body_data.first {
             if max_top_body_hi < body_data.first {
-                env_h = hash_tok_range(st, env_h, max_top_body_hi, body_data.first, None);
+                env_h = hash_tok_range(st, env_h, max_top_body_hi, body_data.first);
             }
             max_top_body_hi = body_data.end;
         }
@@ -192,12 +180,12 @@ pub fn extract_file_fn_summaries(st: &SyntaxTree<'_>, out: &mut Vec<FnBodySummar
     }
 
     if max_top_body_hi < tok_count {
-        env_h = hash_tok_range(st, env_h, max_top_body_hi, tok_count, None);
+        env_h = hash_tok_range(st, env_h, max_top_body_hi, tok_count);
     }
     env_h
 }
 
-fn hash_fn_body_tokens(st: &SyntaxTree<'_>, body_node: NodeId, body_start: u32) -> u64 {
+fn hash_fn_body_tokens(st: &SyntaxTree<'_>, body_node: NodeId) -> u64 {
     let body_data = *st.node(body_node);
     let mut h = FNV_OFFSET;
     let mut cur_tok = body_data.first;
@@ -209,7 +197,7 @@ fn hash_fn_body_tokens(st: &SyntaxTree<'_>, body_node: NodeId, body_start: u32) 
             if let Some(nested_body) = st.child(ch, K::BlockExpr) {
                 let nb = *st.node(nested_body);
                 if cur_tok < nb.first {
-                    h = hash_tok_range(st, h, cur_tok, nb.first, Some(body_start));
+                    h = hash_tok_range(st, h, cur_tok, nb.first);
                 }
                 cur_tok = cur_tok.max(nb.end);
                 raw = nb.subtree_end;
@@ -219,7 +207,7 @@ fn hash_fn_body_tokens(st: &SyntaxTree<'_>, body_node: NodeId, body_start: u32) 
         raw += 1;
     }
     if cur_tok < body_data.end {
-        h = hash_tok_range(st, h, cur_tok, body_data.end, Some(body_start));
+        h = hash_tok_range(st, h, cur_tok, body_data.end);
     }
     h
 }
@@ -232,7 +220,7 @@ fn compute_fn_key(st: &SyntaxTree<'_>, fn_node: NodeId, kind: K) -> u64 {
             h = fnv_u16(h, ak as u16);
             if ak == K::Impl {
                 let stop_lo = st.child(anc, K::ItemList).map(|c| st.node(c).first).unwrap_or(st.node(anc).end);
-                h = hash_tok_range(st, h, st.node(anc).first, stop_lo, None);
+                h = hash_tok_range(st, h, st.node(anc).first, stop_lo);
             } else if let Some(nm) = st.child(anc, K::Name) {
                 h = fnv_bytes(h, st.text(nm).as_bytes());
             } else if let Some((_, nt)) = st.own_tokens(anc).find(|(_, t)| t.kind == T::Ident) {

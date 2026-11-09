@@ -46,11 +46,21 @@ impl RibStack {
         rib.clear();
         let mut use_arena = std::mem::take(&mut self.use_arena_scratch);
         use_arena.clear();
-        let mut block_aliases: Vec<(GlobalDefId, NodeId)> = Vec::new();
+        let mut block_aliases = std::mem::take(&mut self.block_aliases_scratch);
+        block_aliases.clear();
         for ch in st.children(container) {
             let ck = st.kind(ch);
             match ck {
-                K::Use => use_arena.lower_use(st, ch, mod_tree, module, db, map.krate),
+                K::Use => use_arena.lower_use_into(
+                    st,
+                    ch,
+                    mod_tree,
+                    module,
+                    db,
+                    map.krate,
+                    &mut self.use_toks_scratch,
+                    &mut self.use_prefix_scratch,
+                ),
                 K::ExternCrate => use_arena.lower_extern_crate(st, ch, mod_tree, module, db, map.krate),
                 K::Fn | K::Struct | K::Union | K::Trait | K::TypeAlias | K::Const | K::Static | K::MacroRules => {
                     if !eval_outer_attrs(st, ch, db, map.krate).enabled {
@@ -149,6 +159,8 @@ impl RibStack {
             }
         }
         resolve_block_aliases(&mut rib, &block_aliases, map, db, mod_tree, ext_cache, module, st);
+        block_aliases.clear();
+        self.block_aliases_scratch = block_aliases;
         use_arena.clear();
         self.use_arena_scratch = use_arena;
         self.block_ribs.push(rib);
@@ -311,7 +323,6 @@ impl FileResolver<'_, '_> {
         if self.ribs.block_ribs.is_empty() {
             return;
         }
-        let mut entries = Vec::new();
         for ch in self.st.children(il) {
             if !self.node_cfg_enabled(ch) {
                 continue;
@@ -330,10 +341,9 @@ impl FileResolver<'_, '_> {
             if !def.is_some() {
                 def = GlobalDefId::new(super::db::CrateId::LOCAL_OVERLAY, 0x9000_0000 | ch.0);
             }
-            entries.push(BlockAssocEntry { target, trait_def, name_start: ns, name_end: ne, def, kind });
-        }
-        if let Some(rib) = self.ribs.block_ribs.last_mut() {
-            rib.assocs.extend(entries);
+            if let Some(rib) = self.ribs.block_ribs.last_mut() {
+                rib.assocs.push(BlockAssocEntry { target, trait_def, name_start: ns, name_end: ne, def, kind });
+            }
         }
     }
 }

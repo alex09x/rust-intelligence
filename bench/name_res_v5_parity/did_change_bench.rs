@@ -171,6 +171,7 @@ pub fn bench_did_change(corpus: &str, src: &CorpusSourceDb, db: &RidxV5ItemDb<'_
                 // Warm up tracker capacities on this file
                 tracker.set_baseline(orig);
                 let _ = tracker.on_did_change_with_db(&fn_edit, fid, &snap.clean_def_map, db, db);
+                let _ = tracker.on_did_change_with_db(&shifted_edit, fid, &snap.clean_def_map, db, db);
                 let _ = tracker.on_did_change_with_db(orig, fid, &snap.clean_def_map, db, db);
 
                 reset_alloc_counters();

@@ -55,12 +55,8 @@ fn macro_cache_key(krate: CrateId, file: FileId, cur_mod: ModuleId, in_ty_ctx: b
 
 struct EmptyItemDb;
 impl ItemDb for EmptyItemDb {
-    fn cfg_flag(&self, _: CrateId, _: &str) -> bool {
-        false
-    }
-    fn cfg_key_value(&self, _: CrateId, _: &str, _: &str) -> bool {
-        false
-    }
+    fn cfg_flag(&self, _: CrateId, _: &str) -> bool { false }
+    fn cfg_key_value(&self, _: CrateId, _: &str, _: &str) -> bool { false }
 }
 
 impl LocalCstDefs {
@@ -86,15 +82,12 @@ impl LocalCstDefs {
     pub(super) fn scan_body_macros(&mut self, st: &SyntaxTree<'_>, subtree: NodeId, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) {
         let krate = def_map.map_or(CrateId::NONE, |dm| dm.krate);
         for node in st.descendants(subtree) {
-            if st.kind(node) != K::MacroCall {
+            if st.kind(node) != K::MacroCall || self.body_macros.iter().any(|m| m.mac_node == node) {
                 continue;
             }
             let (Some(path_node), Some(tt_node)) = (st.child(node, K::Path), st.child(node, K::TokenTree)) else { continue };
             let raw_path = st.text(path_node).trim();
-            let tail = raw_path.rsplit("::").next().map_or("", |s| norm_ident(s.trim()));
-            if tail.is_empty() {
-                continue;
-            }
+            let Some(tail) = raw_path.rsplit("::").next().map(|s| norm_ident(s.trim())).filter(|s| !s.is_empty()) else { continue };
             let cur_mod = def_map.and_then(|dm| dm.mod_tree.module_at_offset(file, st.range(node).start as u32)).unwrap_or(ModuleId::ROOT);
             if tail == "include_bytes" {
                 let idb_ref: &dyn ItemDb = item_db.unwrap_or(&EmptyItemDb);
@@ -122,7 +115,6 @@ impl LocalCstDefs {
             if local_hit.is_none() && super::infer_macro_std::classify_std_macro_path(st, path_node).is_some() {
                 continue;
             }
-            let Some((body_str, dc)) = local_hit.map(|b| (b, "crate")).or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, raw_path)) else { continue };
             let tt_r = st.range(tt_node);
             if tt_r.end.saturating_sub(tt_r.start) < 2
                 || !matches!(st.src.as_bytes().get(tt_r.start), Some(b'(' | b'[' | b'{'))
@@ -133,7 +125,10 @@ impl LocalCstDefs {
             let (inner_s, inner_e) = (tt_r.start + 1, tt_r.end - 1);
             let Some(inner_src) = st.src.get(inner_s..inner_e) else { continue };
             let in_ty_ctx = st.parent(node).is_some_and(|p| matches!(st.kind(p), K::TypeArg | K::RetType | K::Param | K::TupleType | K::RefType | K::SliceType | K::ArrayType));
-            let ckey = macro_cache_key(krate, file, cur_mod, in_ty_ctx, raw_path, inner_src, body_str);
+            let ckey = macro_cache_key(krate, file, cur_mod, in_ty_ctx, raw_path, inner_src, local_hit.unwrap_or(""));
+            if self.failed_macro_keys.contains(&ckey) {
+                continue;
+            }
             if let Some(pos) = self.macro_cache.iter().position(|m| m.cache_key == ckey) {
                 let mut cached = self.macro_cache.swap_remove(pos);
                 let delta = inner_s as i64 - cached.base_inner_s as i64;
@@ -145,9 +140,15 @@ impl LocalCstDefs {
                 self.body_macros.push(cached);
                 continue;
             }
-            let Some(mdef) = MacroRulesDef::parse_body(body_str) else { continue };
+            let Some((body_str, dc)) = local_hit.map(|b| (b, "crate")).or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, raw_path)) else {
+                self.failed_macro_keys.push(ckey);
+                continue;
+            };
             let mut spans = Vec::new();
-            let Some(mut exp_src) = mdef.expand_with_spans(inner_src, inner_s as u32, dc, &mut spans) else { continue };
+            let Some(mut exp_src) = MacroRulesDef::parse_body(body_str).and_then(|m| m.expand_with_spans(inner_src, inner_s as u32, dc, &mut spans)) else {
+                self.failed_macro_keys.push(ckey);
+                continue;
+            };
             expand_nested_macros(&mut exp_src, &mut spans, st, node, def_map, item_db, cur_mod);
             let pfx_len = if in_ty_ctx { "fn __ridx_m() {\nlet _: ".len() } else { WRAP_PREFIX.len() } as u32;
             for sp in &mut spans {
@@ -156,6 +157,8 @@ impl LocalCstDefs {
             }
             if let Some(pre) = build_wrapped_pre(node, ckey, inner_s as u32, &exp_src, spans, st, def_map, item_db, file, in_ty_ctx) {
                 self.body_macros.push(pre);
+            } else {
+                self.failed_macro_keys.push(ckey);
             }
         }
     }
@@ -375,25 +378,11 @@ fn splice_span_maps(spans: &mut Vec<ExpandedSpanMap>, mc_s: u32, mc_e: u32, new_
 }
 
 pub(super) fn count_cst_generics(st: &SyntaxTree<'_>, owner: NodeId) -> u16 {
-    let Some(gpl) = st.child(owner, K::GenericParamList) else {
-        return 0;
-    };
-    st.children(gpl).filter(|&c| matches!(st.kind(c), K::TypeParam | K::ConstParam)).count() as u16
+    st.child(owner, K::GenericParamList).map_or(0, |gpl| st.children(gpl).filter(|&c| matches!(st.kind(c), K::TypeParam | K::ConstParam)).count() as u16)
 }
 
-fn expand_include_helper_macro(
-    st: &SyntaxTree<'_>,
-    at_node: NodeId,
-    def_map: Option<&CrateDefMap>,
-    item_db: Option<&dyn ItemDb>,
-    cur_mod: ModuleId,
-    mpath: &str,
-    margs: &str,
-) -> Option<String> {
+fn expand_include_helper_macro(st: &SyntaxTree<'_>, at_node: NodeId, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, cur_mod: ModuleId, mpath: &str, margs: &str) -> Option<String> {
     let tail = mpath.rsplit("::").next().map_or("", |s| norm_ident(s.trim()));
-    let (body_str, dc) = (!mpath.contains("::"))
-        .then(|| find_cst_macro_rules_before(st, at_node, tail).map(|b| (b, "crate")))
-        .flatten()
-        .or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, mpath))?;
+    let (body_str, dc) = (!mpath.contains("::")).then(|| find_cst_macro_rules_before(st, at_node, tail).map(|b| (b, "crate"))).flatten().or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, mpath))?;
     MacroRulesDef::parse_body(body_str)?.expand(margs, dc)
 }
