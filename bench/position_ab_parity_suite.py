@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -69,6 +71,7 @@ def run_unshare_cmd(
     inner_cmd: str,
     serde_lockfile: Path | None,
     log_path: Path,
+    ridx_bin: Path | None = None,
     timeout_s: int = 900,
 ) -> int:
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -84,6 +87,10 @@ def run_unshare_cmd(
     cargo_bin = str(Path.home() / ".cargo" / "bin")
     path_val = f"{cargo_bin}:{os.environ.get('PATH', '')}"
     env = {**os.environ, "PATH": path_val, "RIDX_CACHE_DIR": str(cache_dir), "CARGO_BUILD_RUSTC_WRAPPER": "", "RUSTC_WRAPPER": ""}
+    if ridx_bin is not None:
+        sibling_driver = ridx_bin.resolve().parent / "ridx-driver"
+        if sibling_driver.is_file():
+            env["RIDX_DRIVER_BIN"] = str(sibling_driver)
     with log_path.open("w", encoding="utf-8") as log_f:
         proc = subprocess.run(
             ["unshare", "-rm", "bash", "-c", " && ".join(binds)],
@@ -96,13 +103,17 @@ def index_corpora(
     repos_dir: Path, target_root: Path, cache_dir: Path, ridx_bin: Path,
     builder: str, serde_lockfile: Path | None, out_dir: Path,
 ) -> None:
+    shutil.rmtree(target_root, ignore_errors=True)
+    shutil.rmtree(cache_dir, ignore_errors=True)
+    target_root.mkdir(parents=True, exist_ok=True)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     idx_logs = out_dir / "idx_logs"
     idx_logs.mkdir(parents=True, exist_ok=True)
     for corpus in CORPORA:
         tdir = target_root / corpus
         lock = serde_lockfile if corpus == "serde" else None
         cmd = f"{shlex.quote(str(ridx_bin))} index . --builder {shlex.quote(builder)}"
-        rc = run_unshare_cmd(repos_dir / corpus, tdir, cache_dir, cmd, lock, idx_logs / f"{corpus}.log")
+        rc = run_unshare_cmd(repos_dir / corpus, tdir, cache_dir, cmd, lock, idx_logs / f"{corpus}.log", ridx_bin=ridx_bin)
         manifest = tdir / "ridx" / "ridx_manifest.json"
         if not manifest.is_file():
             raise RuntimeError(f"indexing {corpus} failed (rc={rc}); missing {manifest}")
@@ -132,7 +143,7 @@ def run_parity_groups(
                     f"--ra ra=rust-analyzer --methods {shlex.quote(methods)} "
                     f"--ra-cache {shlex.quote(str(pkl))} --out {shlex.quote(str(out_json))}"
                 )
-                fut = pool.submit(run_unshare_cmd, repos_dir / corpus, target_root / corpus, cache_dir, cmd, lock, log_path)
+                fut = pool.submit(run_unshare_cmd, repos_dir / corpus, target_root / corpus, cache_dir, cmd, lock, log_path, ridx_bin)
                 futs[fut] = (corpus, out_json)
             for fut, (corpus, out_json) in futs.items():
                 rc = fut.result()
@@ -143,12 +154,15 @@ def run_parity_groups(
 def aggregate_summary(out_dir: Path) -> dict[str, Any]:
     methods_agg: dict[str, dict[str, Any]] = {}
     per_corpus: dict[str, dict[str, dict[str, int]]] = {c: {} for c in CORPORA}
+    index_shards_by_corpus: dict[str, int] = {}
     for corpus in CORPORA:
         for gid in METHOD_GROUPS:
             p = out_dir / f"{corpus}_g{gid}.json"
             if not p.is_file():
                 continue
             data = json.loads(p.read_text(encoding="utf-8"))
+            if gid == 1 and "index_shards" in data:
+                index_shards_by_corpus[corpus] = int(data["index_shards"])
             for m, st in data.get("summary", {}).get("methods", {}).items():
                 slot = methods_agg.setdefault(
                     m,
@@ -186,6 +200,7 @@ def aggregate_summary(out_dir: Path) -> dict[str, Any]:
         )
     summary = {
         "corpora": CORPORA,
+        "index_shards_by_corpus": index_shards_by_corpus,
         "method_count": len(methods_agg),
         "methods": dict(sorted(methods_agg.items())),
         "per_corpus": per_corpus,
@@ -199,6 +214,12 @@ def aggregate_summary(out_dir: Path) -> dict[str, Any]:
 def compare_dirs(dir_a: Path, dir_b: Path) -> int:
     sum_a = aggregate_summary(dir_a)
     sum_b = aggregate_summary(dir_b)
+    md5_a = hashlib.md5((dir_a / "summary.json").read_bytes()).hexdigest()
+    md5_b = hashlib.md5((dir_b / "summary.json").read_bytes()).hexdigest()
+    print(f"Base summary.json MD5: {md5_a}")
+    print(f"Head summary.json MD5: {md5_b}")
+    print(f"Base index_shards: {sum_a.get('index_shards_by_corpus', {})}")
+    print(f"Head index_shards: {sum_b.get('index_shards_by_corpus', {})}")
     all_methods = sorted(set(sum_a["methods"]) | set(sum_b["methods"]))
     print(f"Comparing {len(all_methods)} methods across {len(CORPORA)} corpora:")
     print(

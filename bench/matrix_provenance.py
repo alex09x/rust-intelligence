@@ -71,11 +71,14 @@ def normalize_repo_identifier(repo_path: Path, repo_id: str = None) -> str:
 
 
 def count_index_shards(repo_dir: Path) -> int:
-    """Counts *.ridx shard files in target/ridx."""
+    """Counts *.ridx shard files in target/ridx plus linked external dependency shards in ridx_manifest.json."""
     root = Path(repo_dir) / "target" / "ridx"
     if not root.is_dir():
         return 0
-    return sum(1 for _ in root.rglob("*.ridx"))
+    ws_shards = sum(1 for _ in root.rglob("*.ridx"))
+    manifest = _read_index_manifest(repo_dir)
+    dep_shards = len(manifest.get("dependency_shards") or []) if manifest else 0
+    return ws_shards + dep_shards
 
 
 def check_ridx_index(repo_dir: Path) -> int:

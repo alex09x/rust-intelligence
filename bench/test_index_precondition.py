@@ -47,6 +47,15 @@ def test_index_precondition():
         shards = count_index_shards(repo_dir)
         assert shards == 1, f"Expected 1 shard, got {shards}"
 
+        manifest_with_deps = {
+            "sysroot_cas_key": "5368ac0ba3a3ce1e",
+            "active_variant_id": "dev-test",
+            "dependency_shards": [{"name": "dep1"}, {"name": "dep2"}],
+        }
+        (ridx_dir / "ridx_manifest.json").write_text(json.dumps(manifest_with_deps), encoding="utf-8")
+        assert count_index_shards(repo_dir) == 3, "Expected ws + dep_shards count (1 + 2 = 3)"
+        (ridx_dir / "ridx_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
         checked = check_ridx_index(repo_dir)
         assert checked == 1, f"Expected checked shard count 1, got {checked}"
         print(f"PASS: valid index directory with shard accepted (shards={checked})")
