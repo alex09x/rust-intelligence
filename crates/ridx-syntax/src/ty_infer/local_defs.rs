@@ -96,12 +96,7 @@ pub(super) fn def_sort_key(def: GlobalDefId) -> u64 {
 
 impl LocalCstDefs {
     pub fn new() -> Self {
-        Self {
-            body_macros: Vec::with_capacity(64),
-            macro_cache: Vec::with_capacity(64),
-            failed_macro_keys: Vec::with_capacity(64),
-            ..Self::default()
-        }
+        Self { body_macros: Vec::with_capacity(64), macro_cache: Vec::with_capacity(64), failed_macro_keys: Vec::with_capacity(64), ..Self::default() }
     }
 
     pub fn from_file(st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, file: FileId) -> Self {

@@ -40,6 +40,7 @@ pub mod lang_ops;
 pub mod local_defs;
 mod local_defs_adt;
 mod local_defs_impl;
+mod local_defs_macro_lookup;
 mod local_defs_macros;
 mod local_defs_proj;
 pub mod lower_ty;
