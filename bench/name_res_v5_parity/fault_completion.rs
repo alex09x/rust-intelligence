@@ -39,10 +39,10 @@ pub struct CompletionMethodIndex<'w> {
 impl<'w> CompletionMethodIndex<'w> {
     pub fn build(db: &RidxV5ItemDb<'w>) -> Self {
         let mut inherent_names_by_head: HashMap<ImplTargetKey, Vec<&'w str>> = HashMap::new();
-        for (&(head, _), list) in &db.ty_tables.inherent_methods {
+        for (&(head, _), &(start, len)) in &db.ty_tables.inherent_methods {
             let entry = inherent_names_by_head.entry(head).or_default();
-            for info in list {
-                entry.push(info.name);
+            for info in &db.ty_tables.inherent_arena[(start as usize)..((start + len) as usize)] {
+                entry.push(info.name.as_str(db.ws));
             }
         }
         for names in inherent_names_by_head.values_mut() {
@@ -50,8 +50,10 @@ impl<'w> CompletionMethodIndex<'w> {
             names.dedup();
         }
         let mut trait_method_names: HashMap<GlobalDefId, Vec<&'w str>> = HashMap::new();
-        for (&(tr, _), info) in &db.ty_tables.trait_methods {
-            trait_method_names.entry(tr).or_default().push(info.name);
+        for (&(tr, _), info) in &db.ty_tables.trait_assoc_fns {
+            if info.has_self {
+                trait_method_names.entry(tr).or_default().push(info.name.as_str(db.ws));
+            }
         }
         for names in trait_method_names.values_mut() {
             names.sort_unstable();

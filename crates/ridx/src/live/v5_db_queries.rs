@@ -200,22 +200,30 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
     fn impls_for_target(&self, target: ImplTargetKey, out: &mut Vec<IndexedImpl>) {
         match target {
             ImplTargetKey::Unknown => {}
-            ImplTargetKey::Adt(adt_def) => {
-                if let Some(list) = self.impls_by_adt.get(&adt_def) {
-                    out.extend_from_slice(list);
-                }
-            }
-            other => {
-                if let Some(list) = self.impls_by_other.get(&other) {
-                    out.extend_from_slice(list);
-                }
-            }
+            ImplTargetKey::Adt(adt_def) => out.extend_from_slice(self.adt_impls(adt_def)),
+            other => out.extend_from_slice(self.other_impls(other)),
         }
     }
 
     fn crate_impls(&self, krate: CrateId, out: &mut Vec<IndexedImpl>) {
-        if let Some(list) = self.impls_by_crate.get(krate.0 as usize) {
-            out.extend_from_slice(list);
+        let r_idx = krate.0 as usize;
+        let Some(reader) = self.ws.readers().get(r_idx) else { return };
+        let Some(shard) = self.shards.get(r_idx) else { return };
+        let arena = reader.ty_arena();
+        for iv in reader.impls_iter() {
+            let target = self.lower_ty_to_target_key(r_idx, arena, iv.self_ty(), 0);
+            if target == ImplTargetKey::Unknown {
+                continue;
+            }
+            let (id_index, impl_file) = match iv.def_index() {
+                Some(didx) => {
+                    let f = reader.definitions().get(didx as usize).and_then(|d| shard.file_map.get(d.span().file_id() as usize).copied()).unwrap_or(FileId::NONE);
+                    (didx, f)
+                }
+                None => (IMPL_SYNTH_BIT | iv.index(), FileId::NONE),
+            };
+            let trait_def = iv.trait_def().map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td));
+            out.push(IndexedImpl { id: GlobalDefId::new(krate, id_index), file: impl_file, target, trait_def, is_negative: (iv.flags() & ridx_format::IMPL_FLAG_NEGATIVE) != 0 });
         }
     }
 
@@ -311,7 +319,7 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
             }
             return;
         }
-        if let Some(&impl_idx) = shard.impl_def_to_impl_idx.get(&owner_def.index) {
+        if let Some(impl_idx) = shard.lookup_impl_idx(owner_def.index) {
             if let Some(iv) = reader.impl_view(impl_idx) {
                 for didx in iv.assoc_def_indices() {
                     self.push_def_idx(r_idx, didx, out);

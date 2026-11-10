@@ -193,3 +193,109 @@ impl super::v5_db::RidxV5ItemDb<'_> {
         u8::MAX
     }
 }
+
+pub(crate) fn extend_flat_groups<K: Eq + std::hash::Hash, T: Copy>(
+    arena: &mut Vec<T>,
+    map: &mut std::collections::HashMap<K, (u32, u32)>,
+    grouped: std::collections::HashMap<K, Vec<T>>,
+) {
+    let add_total: usize = grouped.values().map(Vec::len).sum();
+    arena.reserve(add_total);
+    map.reserve(grouped.len());
+    for (k, items) in grouped {
+        if items.is_empty() {
+            continue;
+        }
+        if let Some(&(old_s, old_l)) = map.get(&k) {
+            let new_s = arena.len() as u32;
+            let new_l = old_l + items.len() as u32;
+            arena.reserve((old_l as usize) + items.len());
+            for idx in (old_s as usize)..((old_s + old_l) as usize) {
+                let v = arena[idx];
+                arena.push(v);
+            }
+            arena.extend_from_slice(&items);
+            map.insert(k, (new_s, new_l));
+        } else {
+            let start = arena.len() as u32;
+            let len = items.len() as u32;
+            arena.extend_from_slice(&items);
+            map.insert(k, (start, len));
+        }
+    }
+}
+
+#[inline]
+pub(crate) fn slice_flat_group<'a, K: Eq + std::hash::Hash, T>(arena: &'a [T], map: &std::collections::HashMap<K, (u32, u32)>, key: &K) -> &'a [T] {
+    map.get(key).and_then(|&(s, l)| arena.get((s as usize)..((s + l) as usize))).unwrap_or(&[])
+}
+
+impl super::v5_db::RidxV5ItemDb<'_> {
+    pub fn lower_ty_to_target_key(&self, r_idx: usize, arena: ridx_format::TyArenaView<'_>, ty_id: ridx_format::TyId, depth: u8) -> ridx_syntax::name_res::ImplTargetKey {
+        use ridx_format::{FloatTyWidth, IntTyWidth, TyKindView, TyMutability, UintTyWidth};
+        use ridx_syntax::name_res::{ImplTargetKey, PrimTy};
+        if depth > 6 {
+            return ImplTargetKey::Unknown;
+        }
+        match arena.kind(ty_id) {
+            TyKindView::Unit => ImplTargetKey::Tuple(0),
+            TyKindView::Bool => ImplTargetKey::Prim(PrimTy::Bool),
+            TyKindView::Char => ImplTargetKey::Prim(PrimTy::Char),
+            TyKindView::Str => ImplTargetKey::Prim(PrimTy::Str),
+            TyKindView::Never => ImplTargetKey::Never,
+            TyKindView::Int(w) => match w {
+                IntTyWidth::I8 => ImplTargetKey::Prim(PrimTy::I8),
+                IntTyWidth::I16 => ImplTargetKey::Prim(PrimTy::I16),
+                IntTyWidth::I32 => ImplTargetKey::Prim(PrimTy::I32),
+                IntTyWidth::I64 => ImplTargetKey::Prim(PrimTy::I64),
+                IntTyWidth::I128 => ImplTargetKey::Prim(PrimTy::I128),
+                IntTyWidth::Isize => ImplTargetKey::Prim(PrimTy::Isize),
+            },
+            TyKindView::Uint(w) => match w {
+                UintTyWidth::U8 => ImplTargetKey::Prim(PrimTy::U8),
+                UintTyWidth::U16 => ImplTargetKey::Prim(PrimTy::U16),
+                UintTyWidth::U32 => ImplTargetKey::Prim(PrimTy::U32),
+                UintTyWidth::U64 => ImplTargetKey::Prim(PrimTy::U64),
+                UintTyWidth::U128 => ImplTargetKey::Prim(PrimTy::U128),
+                UintTyWidth::Usize => ImplTargetKey::Prim(PrimTy::Usize),
+            },
+            TyKindView::Float(FloatTyWidth::F32) => ImplTargetKey::Prim(PrimTy::F32),
+            TyKindView::Float(FloatTyWidth::F64) => ImplTargetKey::Prim(PrimTy::F64),
+            TyKindView::Adt { def, .. } => Some(self.resolve_ty_def(r_idx, arena, def)).filter(|g| g.is_some()).map_or(ImplTargetKey::Unknown, ImplTargetKey::Adt),
+            TyKindView::Ref { mutability, .. } => ImplTargetKey::Ref { is_mut: mutability == TyMutability::Mut },
+            TyKindView::Ptr { mutability, .. } => ImplTargetKey::Ptr { is_mut: mutability == TyMutability::Mut },
+            TyKindView::Slice(_) => ImplTargetKey::Slice,
+            TyKindView::Array { .. } => ImplTargetKey::Array,
+            TyKindView::Tuple(list) => ImplTargetKey::Tuple(list.count() as u16),
+            TyKindView::FnPtr { inputs, .. } => ImplTargetKey::FnPtr { arity: inputs.count() as u16 },
+            TyKindView::Dyn { mut bounds, .. } => {
+                bounds.next().map(|f| self.resolve_ty_def(r_idx, arena, f.trait_def)).filter(|g| g.is_some()).map_or(ImplTargetKey::Unknown, ImplTargetKey::Dyn)
+            }
+            TyKindView::Param { .. } => ImplTargetKey::Param,
+            _ => ImplTargetKey::Unknown,
+        }
+    }
+
+    pub(crate) fn probe_inherent_impl_self(
+        &self,
+        r_idx: usize,
+        impl_idx: u32,
+        cur: InferTyId,
+        arena: &mut InferTyArena,
+        vars: &mut ridx_syntax::ty_infer::uf_table::UnionFindTable,
+    ) -> bool {
+        let reader = &self.ws.readers()[r_idx];
+        let Some(iv) = reader.impl_view(impl_idx) else { return false };
+        let remap = super::v5_ty_lower::ParamRemap::for_impl(self, r_idx, impl_idx, arena);
+        let raw_self = super::v5_ty_lower::lower_v5_ty(self, r_idx, reader.ty_arena(), iv.self_ty(), &remap, arena);
+        let snap = vars.start_snapshot();
+        let mut subst = InlineTyBuf::new();
+        for _ in 0..remap.non_lt_count {
+            subst.push(vars.new_var(arena, ridx_syntax::ty_infer::TyVarKind::General).1);
+        }
+        let inst_self = instantiate_v5(arena, raw_self, subst.as_slice(), 0);
+        let ok = ridx_syntax::ty_infer::unify::equate(arena, vars, cur, inst_self).is_ok();
+        vars.rollback_to(snap);
+        ok
+    }
+}

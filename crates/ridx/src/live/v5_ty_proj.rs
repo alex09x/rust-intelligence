@@ -200,8 +200,8 @@ impl<'w> RidxV5ItemDb<'w> {
             ImplTargetKey::Dyn(d) => ImplTargetKey::Dyn(self.canonical_def(d)),
             other => other,
         };
-        let concrete = self.ty_tables.concrete_trait_impls.get(&(trait_gid, head)).map_or(&[][..], |v| v.as_slice());
-        let blanket = self.ty_tables.blanket_trait_impls.get(&trait_gid).map_or(&[][..], |v| v.as_slice());
+        let concrete = self.ty_tables.concrete_impls(&(trait_gid, head));
+        let blanket = self.ty_tables.blanket_impls(&trait_gid);
         let args_have_infer = trait_args.iter().any(|&a| matches!(arena.kind(vars.shallow_resolve(arena, a)), InferTyKind::Infer(_)));
         if args_have_infer && concrete.len() > 1 {
             let mut self_matches = 0u8;
