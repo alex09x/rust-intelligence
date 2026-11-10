@@ -27,7 +27,7 @@ pub mod tests;
 pub use declaration::handle_declaration;
 pub use references::*;
 pub use type_definition::handle_type_definition;
-pub(crate) use type_definition_live::clear_live_db_cache;
+pub(crate) use type_definition_live::{byte_offset_from_conv_or_overlay, clear_live_db_cache, global_live_db};
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;

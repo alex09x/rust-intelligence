@@ -22,6 +22,7 @@ pub mod hover_enrich;
 pub(crate) mod hover_generics;
 pub(crate) mod hover_render;
 pub mod inlay;
+mod live_completion;
 pub mod owner_completion;
 pub mod scope_cache;
 pub mod self_completion;

@@ -24,8 +24,9 @@ use serde_json::Value;
 
 static LIVE_DB: OnceLock<Mutex<LiveDb>> = OnceLock::new();
 
+/// The process-wide [`LiveDb`] every handler shares, so a file is parsed and a function inferred once.
 #[inline]
-fn global_live_db() -> &'static Mutex<LiveDb> {
+pub(crate) fn global_live_db() -> &'static Mutex<LiveDb> {
     LIVE_DB.get_or_init(|| Mutex::new(LiveDb::new()))
 }
 
@@ -49,7 +50,8 @@ pub(crate) fn byte_offset_at(text: &str, line: u32, col: u32) -> Option<u32> {
     u32::try_from(start + in_line).ok()
 }
 
-fn byte_offset_from_conv_or_overlay(file: &str, line: u32, col: u32, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Option<u32> {
+/// The byte offset of the 1-based `line` and character column `col` of `file`, from its open buffer or from disk.
+pub(crate) fn byte_offset_from_conv_or_overlay(file: &str, line: u32, col: u32, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Option<u32> {
     if let Some(overlay) = overlay_mgr.get(file) {
         return byte_offset_at(&overlay.text, line, col);
     }
