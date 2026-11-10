@@ -96,15 +96,22 @@ pub fn handle_completion(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
                 overlay_text: overlay_opt.map(|o| o.text.as_str()),
                 is_dirty,
             };
+            // After `.` the receiver's inferred type decides which fields and methods the list keeps.
+            let cursor_byte = if is_dot { crate::lsp::navigation::byte_offset_from_conv_or_overlay(&file, line_1based, col_1based, overlay_mgr, conv) } else { None };
+            let refine = |items: Vec<Value>| match cursor_byte {
+                Some(off) => super::live_completion::refine_dot_items(ws, &file, off, overlay_mgr, &prefix, items),
+                None => items,
+            };
             if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx) {
                 return Ok(json!({
                     "isIncomplete": false,
-                    "items": owner_items
+                    "items": refine(owner_items)
                 }));
             }
 
             // Fallback path: streaming symbol traversal with early-stopping and early-exit
             let (fallback_items, is_capped) = super::fallback_completion::try_fallback_completion(ws, &owner_ctx, overlay_opt);
+            let fallback_items = refine(fallback_items);
             return Ok(json!({
                 "isIncomplete": is_capped,
                 "items": fallback_items
