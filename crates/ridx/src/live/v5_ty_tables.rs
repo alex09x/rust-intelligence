@@ -20,16 +20,8 @@ use ridx_syntax::ty_infer::{TraitAssocFnMeta, TyLangItem};
 
 use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
 use super::v5_lazy::PoolStr;
-
-#[inline]
-pub fn fnv1a_str(s: &str) -> u64 {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for &b in s.as_bytes() {
-        h ^= u64::from(b);
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    h
-}
+pub use super::v5_refs::fnv1a_str;
+use super::v5_ty_inst::{extend_flat_groups, slice_flat_group};
 
 #[derive(Clone, Copy)]
 pub struct TraitMethodInfo {
@@ -37,6 +29,7 @@ pub struct TraitMethodInfo {
     pub method_didx: u32,
     pub trait_gc: u16,
     pub method_gc: u16,
+    pub has_self: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -71,14 +64,30 @@ pub struct V5TyTables {
     pub thread_local_key_gid: Option<GlobalDefId>,
     pub assoc_to_impl: HashMap<GlobalDefId, u32>,
     pub trait_non_lt_gc: HashMap<GlobalDefId, u16>,
-    pub trait_methods: HashMap<(GlobalDefId, u64), TraitMethodInfo>,
     pub trait_assoc_fns: HashMap<(GlobalDefId, u64), TraitMethodInfo>,
     pub trait_fn_meta: HashMap<GlobalDefId, TraitAssocFnMeta>,
     pub trait_assoc_tys: HashMap<(GlobalDefId, u64), (GlobalDefId, PoolStr, u16)>,
     pub assoc_ty_names: HashMap<GlobalDefId, PoolStr>,
-    pub inherent_methods: HashMap<(ImplTargetKey, u64), Vec<InherentMethodInfo>>,
-    pub concrete_trait_impls: HashMap<(GlobalDefId, ImplTargetKey), Vec<TraitImplInfo>>,
-    pub blanket_trait_impls: HashMap<GlobalDefId, Vec<TraitImplInfo>>,
+    pub inherent_arena: Vec<InherentMethodInfo>,
+    pub inherent_methods: HashMap<(ImplTargetKey, u64), (u32, u32)>,
+    pub trait_impl_arena: Vec<TraitImplInfo>,
+    pub concrete_trait_impls: HashMap<(GlobalDefId, ImplTargetKey), (u32, u32)>,
+    pub blanket_trait_impls: HashMap<GlobalDefId, (u32, u32)>,
+}
+
+impl V5TyTables {
+    #[inline]
+    pub fn inherent_slice(&self, key: &(ImplTargetKey, u64)) -> &[InherentMethodInfo] {
+        slice_flat_group(&self.inherent_arena, &self.inherent_methods, key)
+    }
+    #[inline]
+    pub fn concrete_impls(&self, key: &(GlobalDefId, ImplTargetKey)) -> &[TraitImplInfo] {
+        slice_flat_group(&self.trait_impl_arena, &self.concrete_trait_impls, key)
+    }
+    #[inline]
+    pub fn blanket_impls(&self, trait_def: &GlobalDefId) -> &[TraitImplInfo] {
+        slice_flat_group(&self.trait_impl_arena, &self.blanket_trait_impls, trait_def)
+    }
 }
 
 impl RidxV5ItemDb<'_> {
@@ -183,6 +192,9 @@ impl RidxV5ItemDb<'_> {
                     }
                 }
             }
+            if !self.bench_mode {
+                self.state.as_mut().shards[r_idx].def_id_to_idx = HashMap::new();
+            }
         }
         for &r_idx in active {
             let reader = &ws.readers()[r_idx];
@@ -259,15 +271,13 @@ impl RidxV5ItemDb<'_> {
                     match DefKind::from(ad.kind) {
                         DefKind::AssocFn => {
                             let method_gc = count_def_non_lt_non_self(reader, adidx);
-                            let info = TraitMethodInfo { name: aname_ps, method_didx: adidx, trait_gc, method_gc };
+                            let has_self = reader.fn_sig_for_def(adidx).is_some_and(|s| s.has_self());
+                            let info = TraitMethodInfo { name: aname_ps, method_didx: adidx, trait_gc, method_gc, has_self };
                             st.ty_tables.trait_assoc_fns.insert((trait_gid, nh), info);
                             let fn_gid = GlobalDefId::new(krate, adidx);
                             st.ty_tables
                                 .trait_fn_meta
                                 .insert(fn_gid, TraitAssocFnMeta { trait_def: trait_gid, trait_fn_def: fn_gid, trait_generics: trait_gc, method_generics: method_gc });
-                            if reader.fn_sig_for_def(adidx).is_some_and(|s| s.has_self()) {
-                                st.ty_tables.trait_methods.insert((trait_gid, nh), info);
-                            }
                         }
                         DefKind::AssocTy => {
                             let agid = GlobalDefId::new(krate, adidx);
@@ -280,6 +290,10 @@ impl RidxV5ItemDb<'_> {
                 }
             }
         }
+
+        let mut inh_groups: HashMap<(ImplTargetKey, u64), Vec<InherentMethodInfo>> = HashMap::new();
+        let mut conc_groups: HashMap<(GlobalDefId, ImplTargetKey), Vec<TraitImplInfo>> = HashMap::new();
+        let mut blank_groups: HashMap<GlobalDefId, Vec<TraitImplInfo>> = HashMap::new();
 
         for &r_idx in active {
             let reader = &ws.readers()[r_idx];
@@ -309,7 +323,6 @@ impl RidxV5ItemDb<'_> {
                 }
                 let impl_gc = count_impl_non_lt(reader, impl_idx);
                 if iv.is_inherent() {
-                    let st = self.state.as_mut();
                     for assoc_didx in iv.assoc_def_indices() {
                         let Some(ad) = defs.get(assoc_didx as usize) else { continue };
                         if DefKind::from(ad.kind) != DefKind::AssocFn || !reader.fn_sig_for_def(assoc_didx).is_some_and(|s| s.has_self()) {
@@ -318,7 +331,7 @@ impl RidxV5ItemDb<'_> {
                         let mname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
                         let mname_ps = PoolStr::from_offset(r_idx, reader, ad.name_offset(), true);
                         let method_gc = count_def_non_lt_non_self(reader, assoc_didx);
-                        st.ty_tables.inherent_methods.entry((target, fnv1a_str(mname))).or_default().push(InherentMethodInfo {
+                        inh_groups.entry((target, fnv1a_str(mname))).or_default().push(InherentMethodInfo {
                             name: mname_ps,
                             r_idx: r_idx as u32,
                             method_didx: assoc_didx,
@@ -360,12 +373,18 @@ impl RidxV5ItemDb<'_> {
                         matches!(arena.kind(iv.self_ty()), ridx_format::TyKindView::Ref { inner, .. } if matches!(arena.kind(inner), ridx_format::TyKindView::Param { .. }));
                     let info = TraitImplInfo { r_idx: r_idx as u32, impl_idx, impl_gc, is_blanket: target == ImplTargetKey::Param || is_ref_to_param, fn_bound_arity };
                     if target == ImplTargetKey::Param {
-                        st.ty_tables.blanket_trait_impls.entry(tgid).or_default().push(info);
+                        blank_groups.entry(tgid).or_default().push(info);
                     } else {
-                        st.ty_tables.concrete_trait_impls.entry((tgid, target)).or_default().push(info);
+                        conc_groups.entry((tgid, target)).or_default().push(info);
                     }
                 }
             }
+        }
+        {
+            let st = self.state.as_mut();
+            extend_flat_groups(&mut st.ty_tables.inherent_arena, &mut st.ty_tables.inherent_methods, inh_groups);
+            extend_flat_groups(&mut st.ty_tables.trait_impl_arena, &mut st.ty_tables.concrete_trait_impls, conc_groups);
+            extend_flat_groups(&mut st.ty_tables.trait_impl_arena, &mut st.ty_tables.blanket_trait_impls, blank_groups);
         }
         self.populate_v5_std_macro_gids();
     }

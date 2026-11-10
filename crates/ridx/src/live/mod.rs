@@ -22,6 +22,7 @@ pub mod v5_db;
 pub mod v5_db_queries;
 pub mod v5_lazy;
 pub mod v5_macro_res;
+pub mod v5_refs;
 pub mod v5_shard;
 pub mod v5_trait_solve;
 pub mod v5_ty_bounds;

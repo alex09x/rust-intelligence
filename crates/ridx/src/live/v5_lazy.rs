@@ -8,140 +8,20 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! On-demand per-crate shard activation, string-pool offsets, and temporary view wrappers for [`RidxV5ItemDb`].
+//! On-demand per-crate shard activation and lazy workspace source loading for [`RidxV5ItemDb`].
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
 
-use memmap2::Mmap;
-use ridx_format::{DefKind, IndexReader, TyDefId, WorkspaceIndex};
-use ridx_syntax::name_res::{join_norm_path, CrateId, FileId, GlobalDefId};
+use ridx_format::{join_resolving_overlap, DefKind, TyDefId, TyKindView, UseOwner, WorkspaceIndex};
+use ridx_syntax::name_res::{join_norm_path, FileId, GlobalDefId};
 
-use super::meta::{collect_rs_files, load_reader_metas, CorpusFile, CorpusSourceDb, LineIndex};
+use super::meta::{collect_rs_files, load_reader_meta_at, CorpusFile, CorpusSourceDb, LineIndex};
 use super::v5_db::{LiveState, RidxV5ItemDb};
-use super::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
+pub use super::v5_refs::{AtomicDefCell, LiveStateRef, PoolStr, SourceStore};
+use super::v5_shard::{build_shard_tables, ShardTables};
 use super::v5_ty_tables::V5TyTables;
-
-/// Lifetime-free `(reader_idx, string_pool_offset)` handle resolved against `&WorkspaceIndex` on demand.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct PoolStr {
-    pub r_idx: u32,
-    pub offset: u32,
-}
-
-impl PoolStr {
-    #[inline]
-    pub fn from_offset(r_idx: usize, reader: &IndexReader<Mmap>, raw_off: u32, strip_raw: bool) -> Self {
-        let off = if strip_raw && reader.get_str(raw_off).starts_with("r#") { raw_off + 2 } else { raw_off };
-        Self { r_idx: r_idx as u32, offset: off }
-    }
-
-    #[inline]
-    pub fn from_pool_slice(r_idx: usize, reader: &IndexReader<Mmap>, s: &str) -> Option<Self> {
-        let pool_len = reader.header().string_pool_len as usize;
-        if pool_len == 0 {
-            return None;
-        }
-        let base = reader.get_str(0).as_ptr() as usize;
-        let off = (s.as_ptr() as usize).checked_sub(base)?;
-        (off < pool_len && std::ptr::eq(reader.get_str(off as u32).as_ptr(), s.as_ptr())).then_some(Self { r_idx: r_idx as u32, offset: off as u32 })
-    }
-
-    #[inline]
-    pub fn as_str(self, ws: &WorkspaceIndex) -> &str {
-        ws.readers().get(self.r_idx as usize).map_or("", |r| r.get_str(self.offset))
-    }
-}
-
-/// Thread-safe (`Send + Sync`) atomic cell storing an active `GlobalDefId` without interior-mutability `!Sync`.
-pub struct AtomicDefCell(AtomicU64);
-
-impl Default for AtomicDefCell {
-    fn default() -> Self {
-        Self::new(GlobalDefId::NONE)
-    }
-}
-
-impl AtomicDefCell {
-    #[inline]
-    pub const fn new(def: GlobalDefId) -> Self {
-        Self(AtomicU64::new(((def.krate.0 as u64) << 32) | (def.index as u64)))
-    }
-
-    #[inline]
-    pub fn get(&self) -> GlobalDefId {
-        let raw = self.0.load(Ordering::Relaxed);
-        GlobalDefId::new(CrateId((raw >> 32) as u32), raw as u32)
-    }
-
-    #[inline]
-    pub fn set(&self, def: GlobalDefId) {
-        let raw = ((def.krate.0 as u64) << 32) | (def.index as u64);
-        self.0.store(raw, Ordering::Relaxed);
-    }
-}
-
-/// Borrowed or mutably-borrowed view of [`CorpusSourceDb`] inside a temporary [`RidxV5ItemDb`].
-pub enum SourceStore<'a> {
-    Borrowed(&'a CorpusSourceDb),
-    BorrowedMut(&'a mut CorpusSourceDb),
-}
-
-impl Deref for SourceStore<'_> {
-    type Target = CorpusSourceDb;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Borrowed(s) => s,
-            Self::BorrowedMut(s) => s,
-        }
-    }
-}
-
-impl SourceStore<'_> {
-    #[inline]
-    pub(crate) fn owned_mut(&mut self) -> Option<&mut CorpusSourceDb> {
-        match self {
-            Self::Borrowed(_) => None,
-            Self::BorrowedMut(s) => Some(s),
-        }
-    }
-}
-
-/// Temporary or owned reference to [`LiveState`] inside [`RidxV5ItemDb`].
-pub enum LiveStateRef<'a> {
-    Borrowed(&'a LiveState),
-    BorrowedMut(&'a mut LiveState),
-    Owned(Box<LiveState>),
-}
-
-impl Deref for LiveStateRef<'_> {
-    type Target = LiveState;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Borrowed(s) => s,
-            Self::BorrowedMut(s) => s,
-            Self::Owned(s) => s,
-        }
-    }
-}
-
-impl LiveStateRef<'_> {
-    #[inline]
-    pub(crate) fn as_mut(&mut self) -> &mut LiveState {
-        match self {
-            Self::Borrowed(_) => unreachable!("immutable LiveStateRef cannot be mutated"),
-            Self::BorrowedMut(s) => s,
-            Self::Owned(s) => s,
-        }
-    }
-}
 
 impl CorpusSourceDb {
     pub fn empty(ws_root: &Path) -> Self {
@@ -197,11 +77,10 @@ impl CorpusSourceDb {
         raw_paths.sort();
         let start_len = self.files.len();
         for abs in raw_paths {
-            if self.by_abs.contains_key(&abs) {
-                continue;
-            }
-            if let Ok(text) = fs::read_to_string(&abs) {
-                let _ = self.upsert_file_text(&abs, text);
+            if !self.by_abs.contains_key(&abs) {
+                if let Ok(text) = fs::read_to_string(&abs) {
+                    let _ = self.upsert_file_text(&abs, text);
+                }
             }
         }
         self.files.len() - start_len
@@ -209,15 +88,16 @@ impl CorpusSourceDb {
 }
 
 impl LiveState {
-    /// Creates an unpopulated `LiveState` + empty `CorpusSourceDb` for `ws` without scanning disk or shards upfront.
+    /// Creates an unpopulated `LiveState` + empty `CorpusSourceDb` without parsing external `.meta.json`s upfront.
     pub fn new_lazy(ws: &WorkspaceIndex) -> (CorpusSourceDb, Self) {
         let ws_root = ws
             .workspace_root()
             .map(Path::to_path_buf)
             .or_else(|| (0..ws.crate_count()).filter(|&i| !ws.is_reader_dependency(i)).find_map(|i| ws.source_root_at(i).map(Path::to_path_buf)))
             .unwrap_or_else(|| PathBuf::from("."));
-        let metas = load_reader_metas(ws);
         let n = ws.crate_count();
+        let has_core = ws.readers().iter().any(|r| r.crate_name() == "core");
+        let metas: Vec<_> = (0..n).map(|idx| load_reader_meta_at(ws, idx, has_core, !ws.is_reader_dependency(idx))).collect();
         let mut sysroot_by_name = HashMap::new();
         for (idx, meta) in metas.iter().enumerate() {
             if matches!(meta.crate_name.as_str(), "core" | "alloc" | "std" | "proc_macro") {
@@ -227,13 +107,14 @@ impl LiveState {
         let mut ty_tables = V5TyTables::default();
         ty_tables.ty_def_gids.resize_with(n, Vec::new);
         let state = Self {
+            bench_mode: false,
             metas,
             shards: (0..n).map(|_| ShardTables::default()).collect(),
             shard_loaded: vec![false; n],
             sysroot_by_name,
+            impls_arena: Vec::new(),
             impls_by_adt: HashMap::new(),
             impls_by_other: HashMap::new(),
-            impls_by_crate: vec![Vec::new(); n],
             trait_supertraits: HashMap::new(),
             impl_assoc_parent: HashMap::new(),
             impl_self_target: HashMap::new(),
@@ -246,31 +127,47 @@ impl LiveState {
 }
 
 impl RidxV5ItemDb<'_> {
+    fn ensure_dep_meta(&mut self, idx: usize) {
+        let m = &self.metas[idx];
+        if m.is_dependency && !m.is_sysroot && m.extern_units.is_empty() && self.ws.meta_path_at(idx).is_some() {
+            let has_core = self.sysroot_by_name.contains_key("core");
+            self.state.as_mut().metas[idx] = load_reader_meta_at(self.ws, idx, has_core, true);
+        }
+    }
+
     pub(crate) fn ensure_crate_sources(&mut self, r_idx: usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) {
         if src_loaded.get(r_idx).copied().unwrap_or(true) || self.metas[r_idx].is_dependency {
             return;
         }
         src_loaded[r_idx] = true;
-        let sr_opt = self.metas[r_idx].source_root.clone().or_else(|| Some(self.src.ws_root.clone()));
+        let ws = self.ws;
+        let sr = self.metas[r_idx].source_root.clone().unwrap_or_else(|| self.src.ws_root.clone());
         let out_dir_opt = self.metas[r_idx].env.get("OUT_DIR").map(PathBuf::from);
         let root_rs = self.metas[r_idx].root_rs_abs.clone();
         if let Some(src_mut) = self.src.owned_mut() {
             let before = src_mut.files.len();
-            if let Some(sr) = &sr_opt {
-                src_mut.load_dir_once(sr, loaded_dirs);
-            }
-            if let Some(rr) = &root_rs {
-                if let Some(parent) = rr.parent() {
-                    src_mut.load_dir_once(parent, loaded_dirs);
+            let rdr = &ws.readers()[r_idx];
+            let fcount = rdr.header().files_count;
+            for fid in 0..fcount {
+                let fstr = rdr.get_file(fid);
+                if !fstr.is_empty() {
+                    let abs = join_resolving_overlap(&sr, Path::new(fstr));
+                    if !src_mut.by_abs.contains_key(&abs) {
+                        if let Ok(text) = fs::read_to_string(&abs) {
+                            let _ = src_mut.upsert_file_text(&abs, text);
+                        }
+                    }
                 }
+            }
+            if fcount <= 1 {
+                let scan_dir = root_rs.as_deref().and_then(Path::parent).unwrap_or(sr.as_path());
+                src_mut.load_dir_once(scan_dir, loaded_dirs);
             }
             if let Some(od) = &out_dir_opt {
                 src_mut.load_dir_once(od, loaded_dirs);
             }
-            let has_parent_escape = src_mut.files[before..].iter().any(|f| f.text.contains(".."));
-            if has_parent_escape {
-                let ws_root = src_mut.ws_root.clone();
-                src_mut.load_dir_once(&ws_root, loaded_dirs);
+            if src_mut.files[before..].iter().any(|f| f.text.contains("../") || f.text.contains("..\\")) {
+                src_mut.load_dir_once(&sr, loaded_dirs);
             }
         }
         if self.shard_loaded[r_idx] {
@@ -312,14 +209,16 @@ impl RidxV5ItemDb<'_> {
         st.shards[r_idx].span_to_def_idx = span_to_def_idx;
     }
 
-    /// Activates `root_r_idx`, sysroot crates, and all transitively reachable dependency shards,
-    /// returning the slice of newly materialized shard indices.
+    /// Activates `root_r_idx`, sysroot crates (`core`/`alloc`/`std`), `root_r_idx`'s direct/type-referenced
+    /// crates, and transitive re-export/alias targets (excluding proc-macro host deps and sysroot OS internals).
     pub(crate) fn activate_reachable_shards(&mut self, root_r_idx: usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) -> Vec<usize> {
+        self.ensure_dep_meta(root_r_idx);
         self.ensure_crate_sources(root_r_idx, loaded_dirs, src_loaded);
         let n = self.ws.crate_count();
         let mut visited = vec![false; n];
         let mut q = VecDeque::new();
-        for start in std::iter::once(root_r_idx).chain(self.sysroot_by_name.values().copied()) {
+        let want_pm = self.metas[root_r_idx].target_kind.contains("proc-macro") || self.metas[root_r_idx].extern_units.contains_key("proc_macro");
+        for start in std::iter::once(root_r_idx).chain(self.sysroot_by_name.iter().filter(|(k, _)| want_pm || k.as_str() != "proc_macro").map(|(_, &i)| i)) {
             if start < n && !visited[start] {
                 visited[start] = true;
                 q.push_back(start);
@@ -327,30 +226,76 @@ impl RidxV5ItemDb<'_> {
         }
         let mut newly = Vec::new();
         while let Some(u) = q.pop_front() {
+            self.ensure_dep_meta(u);
             if !self.shard_loaded[u] {
                 newly.push(u);
             }
-            let uks: Vec<String> = self.metas[u].extern_units.values().cloned().collect();
-            for uk in uks {
-                if let Some(v) = self.resolve_unit_to_reader(u, &uk) {
-                    if !visited[v] {
-                        visited[v] = true;
-                        q.push_back(v);
-                    }
-                }
+            if self.metas[u].is_sysroot || self.metas[u].target_kind.contains("proc-macro") {
+                continue;
             }
-            let reader = &self.ws.readers()[u];
-            let arena = reader.ty_arena();
-            for i in 0..reader.ty_defs().len() {
-                if let Some(td) = arena.def(TyDefId(i as u32)) {
-                    let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
-                        let first = td.path.split("::").next().unwrap_or(td.path);
-                        self.resolve_extern_name_to_reader(u, first)
-                    });
-                    if let Some(v) = target {
+            if u == root_r_idx {
+                let uks: Vec<String> = self.metas[u].extern_units.values().cloned().collect();
+                for uk in uks {
+                    if let Some(v) = self.resolve_unit_to_reader(u, &uk) {
                         if !visited[v] {
                             visited[v] = true;
                             q.push_back(v);
+                        }
+                    }
+                }
+                let reader = &self.ws.readers()[u];
+                let arena = reader.ty_arena();
+                for i in 0..reader.ty_defs().len() {
+                    if let Some(td) = arena.def(TyDefId(i as u32)) {
+                        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
+                            let first = td.path.split("::").next().unwrap_or(td.path);
+                            self.resolve_extern_name_to_reader(u, first)
+                        });
+                        if let Some(v) = target.filter(|&v| !visited[v]) {
+                            visited[v] = true;
+                            q.push_back(v);
+                        }
+                    }
+                }
+            } else {
+                let reader = &self.ws.readers()[u];
+                let arena = reader.ty_arena();
+                for (didx, d) in reader.definitions().iter().enumerate() {
+                    if d.is_reexport() {
+                        let sig = reader.get_str(d.sig_offset());
+                        let first = sig.split("::").next().unwrap_or("");
+                        if let Some(v) = (!first.is_empty()).then(|| self.resolve_extern_name_to_reader(u, first)).flatten().filter(|&v| !visited[v]) {
+                            visited[v] = true;
+                            q.push_back(v);
+                        }
+                    } else if DefKind::from(d.kind) == DefKind::TyAlias {
+                        if let Some(dt) = reader.def_ty_for_def(didx as u32) {
+                            if let TyKindView::Adt { def, .. } = arena.kind(dt.ty()) {
+                                if let Some(td) = arena.def(def) {
+                                    let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
+                                        let first = td.path.split("::").next().unwrap_or(td.path);
+                                        self.resolve_extern_name_to_reader(u, first)
+                                    });
+                                    if let Some(v) = target.filter(|&v| !visited[v]) {
+                                        visited[v] = true;
+                                        q.push_back(v);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                for ue in reader.uses_for_owner(UseOwner::CrateRoot) {
+                    for td_id in [ue.type_def, ue.value_def, ue.macro_def].into_iter().flatten() {
+                        if let Some(td) = arena.def(td_id) {
+                            let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
+                                let first = td.path.split("::").next().unwrap_or(td.path);
+                                self.resolve_extern_name_to_reader(u, first)
+                            });
+                            if let Some(v) = target.filter(|&v| !visited[v]) {
+                                visited[v] = true;
+                                q.push_back(v);
+                            }
                         }
                     }
                 }
@@ -368,10 +313,9 @@ impl RidxV5ItemDb<'_> {
         let ws = self.ws;
         for &idx in &newly {
             let rdr = &ws.readers()[idx];
-            let built = build_shard_tables(rdr, &self.state.metas[idx], &self.src);
+            let built = build_shard_tables(idx, rdr, &self.state.metas[idx], &self.src, false);
             let st = self.state.as_mut();
             st.shards[idx] = built;
-            collect_shard_alias_pairs(rdr, &mut st.valid_alias_leaf_pairs);
             st.shard_loaded[idx] = true;
         }
         self.index_impls_and_traits_for(&newly);
