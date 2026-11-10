@@ -16,7 +16,7 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use ridx_format::{DefKind, ItemVis};
+use ridx_format::{DefKind, ItemVis, WorkspaceIndex};
 use ridx_syntax::name_res::{CrateDefMap, CrateId, FileId, GlobalDefId, ImplTargetKey, ModuleId};
 use ridx_syntax::ty_infer::autoderef::{build_autoderef_steps_with_owner, impl_target_key_of_ty, NormOwner, MAX_AUTODEREF_STEPS};
 use ridx_syntax::ty_infer::{InferTyArena, InferTyId, InferTyKind, LocalCstDefs, TyDefDb};
@@ -28,11 +28,11 @@ use super::query_state::{CachedParsed, LiveEngine};
 use super::v5_db::RidxV5ItemDb;
 use super::v5_ty_inst::clone_reader_ty;
 
-pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Vec<Cand> {
+pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Vec<Cand> {
     let Some(parsed_ref) = engine.parsed.as_ref() else { return Vec::new() };
     let Some(dot_end) = locate_dot_end(&parsed_ref.src, byte_offset) else { return Vec::new() };
     let probe_off = dot_end.saturating_sub(1);
-    let Some(fn_key) = engine.ensure_fn_inferred(r_idx, fid, env_salt, probe_off) else { return Vec::new() };
+    let Some(fn_key) = engine.ensure_fn_inferred(ws, r_idx, fid, env_salt, probe_off) else { return Vec::new() };
 
     engine.infer_ctx.table.clear();
     let (fn_node, recv_ty) = {
@@ -47,7 +47,7 @@ pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fi
 
     let recv_ty = match recv_ty {
         Some(t) => t,
-        None => match recover_masked_dot_receiver(engine, fn_key, fn_node, dot_end) {
+        None => match recover_masked_dot_receiver(ws, engine, fn_key, fn_node, dot_end) {
             Some(t) => t,
             None => return Vec::new(),
         },
@@ -67,13 +67,14 @@ pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fi
         let parsed = engine.parsed.as_ref().unwrap();
         let st = parsed.tree();
         let entry = engine.fn_cache.get(&fn_key).unwrap();
+        let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
         let at_node = deepest_node_at(&st, entry.fn_node, probe_off);
         let fn_gid = entry.local_defs.fn_def_for_node(entry.fn_node);
 
         let snap = engine.infer_ctx.table.start_snapshot();
         let owner = NormOwner { fn_def: fn_gid, impl_node: None, impl_gc: 0, fn_node: Some(entry.fn_node), self_ty: None };
         let mut preview = [InferTyId::UNKNOWN; MAX_AUTODEREF_STEPS];
-        let plen = build_autoderef_steps_with_owner(&mut engine.infer_ctx.table, &engine.db, &entry.local_defs, &st, &entry.file_res, owner, recv_ty, &mut preview);
+        let plen = build_autoderef_steps_with_owner(&mut engine.infer_ctx.table, &db, &entry.local_defs, &st, &entry.file_res, owner, recv_ty, &mut preview);
         engine.infer_ctx.table.rollback_to(snap);
 
         entry.local_defs.collect_cst_method_names(&st, &mut cand_names);
@@ -91,7 +92,7 @@ pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fi
         push_head(ImplTargetKey::Ref { is_mut: true });
         let mut extra_traits: Vec<GlobalDefId> = Vec::new();
         for &st_ty in &preview[..plen] {
-            let head = canon_head(&engine.db, impl_target_key_of_ty(&engine.infer_ctx.table.arena, st_ty));
+            let head = canon_head(&db, impl_target_key_of_ty(&engine.infer_ctx.table.arena, st_ty));
             push_head(head);
             if matches!(engine.infer_ctx.table.arena.kind(st_ty), InferTyKind::Array { .. }) {
                 push_head(ImplTargetKey::Slice);
@@ -101,13 +102,13 @@ pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fi
                     if !traits.contains(&principal) {
                         traits.push(principal);
                     }
-                    extra_traits.push(engine.db.canonical_def(principal));
+                    extra_traits.push(db.canonical_def(principal));
                 }
                 InferTyKind::Param { idx, .. } if fn_gid.is_some() => {
                     let before = traits.len();
-                    engine.db.param_trait_bounds(fn_gid, idx, &mut traits);
+                    db.param_trait_bounds(fn_gid, idx, &mut traits);
                     for &bt in &traits[before..] {
-                        extra_traits.push(engine.db.canonical_def(bt));
+                        extra_traits.push(db.canonical_def(bt));
                     }
                 }
                 _ => {}
@@ -115,62 +116,52 @@ pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fi
         }
         for &h in &step_heads[..sh_len] {
             if let Some(ns) = engine.inherent_names_by_head.get(&h) {
-                cand_names.extend_from_slice(ns);
+                cand_names.extend(ns.iter().map(|p| p.as_str(ws)));
             }
         }
         let mut cursor = 0usize;
         while cursor < traits.len() && traits.len() < 128 {
             let tdef = traits[cursor];
             cursor += 1;
-            entry.local_defs.collect_supertraits_into(tdef, &st, &entry.file_res, &engine.db, &mut traits);
+            entry.local_defs.collect_supertraits_into(tdef, &st, &entry.file_res, &db, &mut traits);
         }
         let has_local_impls = !entry.local_defs.is_clean_indexed();
         for tdef in traits {
-            let ct = engine.db.canonical_def(tdef);
+            let ct = db.canonical_def(tdef);
             let applicable = has_local_impls
                 || extra_traits.contains(&ct)
-                || engine.db.ty_tables.blanket_trait_impls.contains_key(&ct)
-                || step_heads[..sh_len].iter().any(|&h| engine.db.ty_tables.concrete_trait_impls.contains_key(&(ct, h)));
+                || db.ty_tables.blanket_trait_impls.contains_key(&ct)
+                || step_heads[..sh_len].iter().any(|&h| db.ty_tables.concrete_trait_impls.contains_key(&(ct, h)));
             if applicable {
                 if let Some(ns) = engine.trait_method_names.get(&ct) {
-                    cand_names.extend_from_slice(ns);
+                    cand_names.extend(ns.iter().map(|p| p.as_str(ws)));
                 }
             }
         }
         cand_names.sort_unstable();
         cand_names.dedup();
 
-        engine.infer_ctx.collect_ordered_completion_methods(
-            &st,
-            &entry.file_res,
-            &engine.db,
-            &entry.local_defs,
-            entry.fn_node,
-            at_node,
-            recv_ty,
-            &cand_names,
-            &mut steps_out,
-            &mut hits,
-        );
+        engine.infer_ctx.collect_ordered_completion_methods(&st, &entry.file_res, &db, &entry.local_defs, entry.fn_node, at_node, recv_ty, &cand_names, &mut steps_out, &mut hits);
     }
 
     let parsed = engine.parsed.as_ref().unwrap();
     let entry = engine.fn_cache.get(&fn_key).unwrap();
     let (_, _, dm) = engine.active_def_map(r_idx).unwrap();
+    let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
     let mut out = Vec::with_capacity(hits.len() + 8);
     let mut seen_fields = HashSet::new();
     let mut seen_methods: HashSet<(String, Option<String>)> = HashSet::new();
 
     for (step_idx, &st_ty) in steps_out.iter().enumerate() {
-        emit_step_fields(&engine.db, dm, cur_krate, cur_mod, canon, parsed, &entry.local_defs, &engine.infer_ctx.table.arena, st_ty, &mut seen_fields, &mut out);
+        emit_step_fields(&db, dm, cur_krate, cur_mod, canon, parsed, &entry.local_defs, &engine.infer_ctx.table.arena, st_ty, &mut seen_fields, &mut out);
         for h in hits.iter().filter(|h| usize::from(h.step_idx) == step_idx) {
-            if h.tier == 0 && !is_def_visible_from(&engine.db, cur_krate, cur_mod, dm, h.method_def) {
+            if h.tier == 0 && !is_def_visible_from(&db, cur_krate, cur_mod, dm, h.method_def) {
                 continue;
             }
             let label = cand_names[h.name_idx as usize].to_string();
             let from_trait = h.trait_def.is_some().then(|| {
                 let mut tn = String::new();
-                let _ = write_def_name(&engine.db, dm, parsed, Some(&entry.local_defs), h.trait_def, false, &mut tn);
+                let _ = write_def_name(&db, dm, parsed, Some(&entry.local_defs), h.trait_def, false, &mut tn);
                 tn
             });
             if h.tier == 0 {
@@ -180,8 +171,8 @@ pub(crate) fn query_dot_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fi
             } else if seen_methods.contains(&(label.clone(), None)) || !seen_methods.insert((label.clone(), from_trait.clone())) {
                 continue;
             }
-            let detail = def_signature_detail(&engine.db, parsed, Some(&entry.local_defs), h.method_def);
-            let def_location = resolve_def_location(&engine.db, dm, canon, parsed, Some(&entry.local_defs), h.method_def);
+            let detail = def_signature_detail(&db, parsed, Some(&entry.local_defs), h.method_def);
+            let def_location = resolve_def_location(&db, dm, canon, parsed, Some(&entry.local_defs), h.method_def);
             out.push(Cand { label, kind: DefKind::AssocFn, detail, def_location, from_trait });
         }
     }
@@ -290,7 +281,7 @@ fn macro_recv_at_dot(src: &str, res: &ridx_syntax::ty_infer::FnInferResult, dot_
     res.macro_expr_tys.iter().filter(|m| m.end == recv_end as u32 && m.ty.is_some()).max_by_key(|m| m.end.saturating_sub(m.start)).map(|m| m.ty)
 }
 
-fn recover_masked_dot_receiver(engine: &mut LiveEngine<'_>, fn_key: (FileId, u64, u64), fn_node: NodeId, dot_end: u32) -> Option<InferTyId> {
+fn recover_masked_dot_receiver(ws: &WorkspaceIndex, engine: &mut LiveEngine, fn_key: (FileId, u64, u64), fn_node: NodeId, dot_end: u32) -> Option<InferTyId> {
     let parsed = engine.parsed.as_ref()?;
     let st = parsed.tree();
     let fn_r = st.range(fn_node);
@@ -313,8 +304,9 @@ fn recover_masked_dot_receiver(engine: &mut LiveEngine<'_>, fn_key: (FileId, u64
     let mst = parse(&masked_str);
     let mfn = mst.children(mst.root()).chain(mst.descendants(mst.root())).find(|&n| mst.kind(n) == ridx_syntax::SyntaxKind::Fn && mst.range(n).start == fn_r.start)?;
     let entry = engine.fn_cache.get(&fn_key)?;
+    let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
     let mut tmp_res = ridx_syntax::ty_infer::FnInferResult::new();
-    engine.infer_ctx.infer_fn_into(&mst, &entry.file_res, &engine.db, &entry.local_defs, mfn, &mut tmp_res);
+    engine.infer_ctx.infer_fn_into(&mst, &entry.file_res, &db, &entry.local_defs, mfn, &mut tmp_res);
     tmp_res.receiver_ty_at_dot(&mst, dot_end)
 }
 

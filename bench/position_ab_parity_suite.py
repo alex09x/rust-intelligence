@@ -113,7 +113,8 @@ def index_corpora(
         tdir = target_root / corpus
         lock = serde_lockfile if corpus == "serde" else None
         cmd = f"{shlex.quote(str(ridx_bin))} index . --builder {shlex.quote(builder)}"
-        rc = run_unshare_cmd(repos_dir / corpus, tdir, cache_dir, cmd, lock, idx_logs / f"{corpus}.log", ridx_bin=ridx_bin)
+        # bevy with its 80 required-feature examples takes about a quarter of an hour cold.
+        rc = run_unshare_cmd(repos_dir / corpus, tdir, cache_dir, cmd, lock, idx_logs / f"{corpus}.log", ridx_bin=ridx_bin, timeout_s=3600)
         manifest = tdir / "ridx" / "ridx_manifest.json"
         if not manifest.is_file():
             raise RuntimeError(f"indexing {corpus} failed (rc={rc}); missing {manifest}")

@@ -142,7 +142,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
             }
             return None;
         }
-        let aname = *self.ty_tables.assoc_ty_names.get(&agid)?;
+        let aname = self.ty_tables.assoc_ty_names.get(&agid)?.as_str(self.ws);
         self.project_by_trait_and_name(tgid, aname, self_ty, trait_args, arena, vars)
     }
 
@@ -203,7 +203,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     fn inherent_method_cands(&self, target: ImplTargetKey, method_name: &str, _arena: &mut InferTyArena, out: &mut Vec<MethodCand>) {
         let key = (norm_target_key(self, target), fnv1a_str(method_name));
         let Some(list) = self.ty_tables.inherent_methods.get(&key) else { return };
-        for info in list.iter().filter(|i| i.name == method_name) {
+        for info in list.iter().filter(|i| i.name.as_str(self.ws) == method_name) {
             let mdef = GlobalDefId::new(CrateId(info.r_idx), info.method_didx);
             if !out.iter().any(|c| c.method_def == mdef) {
                 out.push(MethodCand {
@@ -235,7 +235,7 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     ) {
         let trait_def = self.canonical_def(raw_trait);
         let target = norm_target_key(self, raw_target);
-        let Some(&tm_info) = self.ty_tables.trait_methods.get(&(trait_def, fnv1a_str(method_name))).filter(|i| i.name == method_name) else { return };
+        let Some(&tm_info) = self.ty_tables.trait_methods.get(&(trait_def, fnv1a_str(method_name))).filter(|i| i.name.as_str(self.ws) == method_name) else { return };
         let impls = if target == ImplTargetKey::Param { self.ty_tables.blanket_trait_impls.get(&trait_def) } else { self.ty_tables.concrete_trait_impls.get(&(trait_def, target)) };
         let Some(impls) = impls else { return };
         let trait_mdef = GlobalDefId::new(trait_def.krate, tm_info.method_didx);
@@ -299,13 +299,13 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     fn trait_decl_method_cand(&self, raw_trait: GlobalDefId, trait_args: &[InferTyId], self_ty: InferTyId, method_name: &str, arena: &mut InferTyArena) -> Option<MethodCand> {
         let mut trait_def = self.canonical_def(raw_trait);
         let nh = fnv1a_str(method_name);
-        let tm = match self.ty_tables.trait_methods.get(&(trait_def, nh)).filter(|i| i.name == method_name) {
+        let tm = match self.ty_tables.trait_methods.get(&(trait_def, nh)).filter(|i| i.name.as_str(self.ws) == method_name) {
             Some(tm) => tm,
             None => {
                 let supers = self.trait_supertraits.get(&trait_def)?;
                 let (cs, hit) = supers.iter().find_map(|&s| {
                     let cs = self.canonical_def(s);
-                    self.ty_tables.trait_methods.get(&(cs, nh)).filter(|i| i.name == method_name).map(|h| (cs, h))
+                    self.ty_tables.trait_methods.get(&(cs, nh)).filter(|i| i.name.as_str(self.ws) == method_name).map(|h| (cs, h))
                 })?;
                 trait_def = cs;
                 hit

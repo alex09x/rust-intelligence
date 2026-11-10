@@ -157,7 +157,7 @@ impl<'w> RidxV5ItemDb<'w> {
         }
         let tgid = self.canonical_def(raw_trait);
         let agid = self.canonical_def(raw_assoc);
-        let aname = *self.ty_tables.assoc_ty_names.get(&agid)?;
+        let aname = self.ty_tables.assoc_ty_names.get(&agid)?.as_str(self.ws);
         let r_idx = owner.krate.0 as usize;
         let reader = self.ws.readers().get(r_idx)?;
         let remap = ParamRemap::for_def(self, r_idx, owner.index, false, arena);

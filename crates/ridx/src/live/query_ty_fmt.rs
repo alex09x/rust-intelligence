@@ -13,6 +13,7 @@
 use std::fmt::Write;
 use std::path::Path;
 
+use ridx_format::WorkspaceIndex;
 use ridx_syntax::name_res::{CrateDefMap, FileId, FileNameRes, LocalBindId, ResTarget};
 use ridx_syntax::ty_infer::{FrozenTyArena, InferTyArena, InferTyId, InferTyKind, LocalCstDefs, LowerTyEnv, TySliceRange};
 use ridx_syntax::{NodeId, SyntaxTree};
@@ -49,8 +50,8 @@ impl TyReader for InferTyArena {
     }
 }
 
-pub(crate) fn query_type_at(engine: &mut LiveEngine<'_>, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Option<LiveTy> {
-    if let Some(fn_key) = engine.ensure_fn_inferred(r_idx, fid, env_salt, byte_offset) {
+pub(crate) fn query_type_at(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Option<LiveTy> {
+    if let Some(fn_key) = engine.ensure_fn_inferred(ws, r_idx, fid, env_salt, byte_offset) {
         let ty_opt = {
             let parsed = engine.parsed.as_ref()?;
             let st = parsed.tree();
@@ -62,7 +63,8 @@ pub(crate) fn query_type_at(engine: &mut LiveEngine<'_>, r_idx: usize, fid: File
             let entry = engine.fn_cache.get(&fn_key)?;
             if ty.is_some() && !matches!(entry.arena.kind(ty), InferTyKind::Unknown) {
                 let (_, _, dm) = engine.active_def_map(r_idx)?;
-                return Some(build_live_ty(&engine.db, dm, canon, parsed, Some(&entry.local_defs), Some(entry.fn_node), &entry.arena, ty));
+                let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
+                return Some(build_live_ty(&db, dm, canon, parsed, Some(&entry.local_defs), Some(entry.fn_node), &entry.arena, ty));
             }
         }
         let ty_node = {
@@ -73,10 +75,11 @@ pub(crate) fn query_type_at(engine: &mut LiveEngine<'_>, r_idx: usize, fid: File
         let ty = {
             let st = engine.parsed.as_ref()?.tree();
             let entry = engine.fn_cache.get(&fn_key)?;
+            let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
             let env = LowerTyEnv {
                 st: &st,
                 file_res: &entry.file_res,
-                db: &engine.db,
+                db: &db,
                 local_defs: &entry.local_defs,
                 self_ty: None,
                 impl_owner: None,
@@ -93,7 +96,8 @@ pub(crate) fn query_type_at(engine: &mut LiveEngine<'_>, r_idx: usize, fid: File
         let (_, _, dm) = engine.active_def_map(r_idx)?;
         let parsed = engine.parsed.as_ref()?;
         let entry = engine.fn_cache.get(&fn_key)?;
-        return Some(build_live_ty(&engine.db, dm, canon, parsed, Some(&entry.local_defs), Some(entry.fn_node), &engine.infer_ctx.table.arena, ty));
+        let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
+        return Some(build_live_ty(&db, dm, canon, parsed, Some(&entry.local_defs), Some(entry.fn_node), &engine.infer_ctx.table.arena, ty));
     }
     let ty_node = {
         let st = engine.parsed.as_ref()?.tree();
@@ -101,18 +105,19 @@ pub(crate) fn query_type_at(engine: &mut LiveEngine<'_>, r_idx: usize, fid: File
     };
     let mut file_res = FileNameRes::new();
     let mut local_defs = LocalCstDefs::new();
+    let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
     {
         let (snap, mt_opt, dm) = engine.active_def_map(r_idx)?;
         let st = engine.parsed.as_ref()?.tree();
-        snap.resolve_dirty_file_paths_into(&engine.db, mt_opt, dm, fid, &st, &mut file_res);
-        local_defs.index_file_with_item_db(&st, Some(dm), Some(&engine.db), fid);
+        snap.resolve_dirty_file_paths_into(&db, mt_opt, dm, fid, &st, &mut file_res);
+        local_defs.index_file_with_item_db(&st, Some(dm), Some(&db), fid);
     }
     engine.infer_ctx.table.clear();
     let st = engine.parsed.as_ref()?.tree();
     let env = LowerTyEnv {
         st: &st,
         file_res: &file_res,
-        db: &engine.db,
+        db: &db,
         local_defs: &local_defs,
         self_ty: None,
         impl_owner: None,
@@ -127,7 +132,7 @@ pub(crate) fn query_type_at(engine: &mut LiveEngine<'_>, r_idx: usize, fid: File
     }
     let (_, _, dm) = engine.active_def_map(r_idx)?;
     let parsed = engine.parsed.as_ref()?;
-    Some(build_live_ty(&engine.db, dm, canon, parsed, Some(&local_defs), None, &engine.infer_ctx.table.arena, ty))
+    Some(build_live_ty(&db, dm, canon, parsed, Some(&local_defs), None, &engine.infer_ctx.table.arena, ty))
 }
 
 fn pick_ty_in_fn(st: &SyntaxTree<'_>, file_res: &FileNameRes, res: &ridx_syntax::ty_infer::FnInferResult, off: u32) -> Option<InferTyId> {
