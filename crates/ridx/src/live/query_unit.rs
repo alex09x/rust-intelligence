@@ -17,7 +17,7 @@ use ridx_format::{join_resolving_overlap, WorkspaceIndex};
 use super::v5_db::LiveState;
 
 /// Whether the reader at `idx` stores `path`, answered from the reader's own file table without touching the disk.
-fn reader_stores(ws: &WorkspaceIndex, idx: usize, path: &Path) -> bool {
+pub(super) fn reader_stores(ws: &WorkspaceIndex, idx: usize, path: &Path) -> bool {
     path.to_str().and_then(|s| ws.target_file_for_reader(idx, s)).is_some_and(|tf| ws.readers()[idx].find_file_id(tf.as_ref()).is_some())
 }
 

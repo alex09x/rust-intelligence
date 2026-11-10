@@ -182,3 +182,62 @@ fn live_ty_defs_exclude_impls_assocs_and_non_typeable_tokens() {
     let self_lines: Vec<u32> = self_ty.defs.iter().map(|d| d.line).collect();
     assert_eq!(self_lines, vec![4], "Self::Empty defs should contain only enum RegErr: {self_lines:?}");
 }
+
+#[test]
+fn live_type_at_evaluates_indexed_cfg_features_not_any_and_cfg_attr() {
+    let dir = TempDir::new().unwrap();
+    let src_dir = dir.path().join("src");
+    fs::create_dir_all(&src_dir).unwrap();
+    let lib_rs = src_dir.join("lib.rs");
+    let src = concat!(
+        "pub struct ActiveVal;\n",
+        "#[cfg(feature = \"alpha\")]\n",
+        "pub fn enabled_by_feature(v_ok: ActiveVal) -> ActiveVal { v_ok }\n",
+        "#[cfg(feature = \"beta\")]\n",
+        "pub fn disabled_by_feature(v_dead: ActiveVal) -> ActiveVal { v_dead }\n",
+        "#[cfg(not(feature = \"beta\"))]\n",
+        "pub fn enabled_by_not(v_not: ActiveVal) -> ActiveVal { v_not }\n",
+        "#[cfg(any(feature = \"beta\", custom_flag))]\n",
+        "pub fn enabled_by_any(v_any: ActiveVal) -> ActiveVal { v_any }\n",
+        "#[cfg_attr(custom_flag, cfg(feature = \"beta\"))]\n",
+        "pub fn disabled_by_cfg_attr(v_attr: ActiveVal) -> ActiveVal { v_attr }\n",
+        "pub fn block_tail_cfg(v_tail: ActiveVal) {\n",
+        "    #[cfg(feature = \"beta\")]\n",
+        "    { let _ = v_tail; }\n",
+        "}\n",
+    );
+    fs::write(&lib_rs, src).unwrap();
+
+    let ridx_dir = dir.path().join("target/ridx");
+    fs::create_dir_all(&ridx_dir).unwrap();
+    let mut writer = IndexWriter::new("cfg_demo", "0.1.0");
+    writer.add_cfg_flag("custom_flag");
+    writer.add_cfg_key_value("feature", "alpha");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "ActiveVal".to_string(),
+        path: "ActiveVal".to_string(),
+        signature: Some("pub struct ActiveVal".to_string()),
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 12,
+        end_line: 1,
+        end_col: 21,
+    });
+    writer.write_to(&mut fs::File::create(ridx_dir.join("cfg_demo.ridx")).unwrap()).unwrap();
+    let mut ws = WorkspaceIndex::open(&ridx_dir).unwrap();
+    ws.set_workspace_root(Some(dir.path().to_path_buf()));
+
+    let mut live = LiveDb::new();
+    for needle in ["v_ok:", "v_not:", "v_any:"] {
+        let off = src.find(needle).unwrap() as u32 + 1;
+        assert!(live.type_at(&ws, &lib_rs, off, None).is_some(), "expected active cfg at {needle}");
+    }
+    for needle in ["v_dead:", "v_attr:", "let _ = v_tail"] {
+        let off = src.find(needle).unwrap() as u32 + if needle.starts_with("let") { 8 } else { 1 };
+        assert!(live.type_at(&ws, &lib_rs, off, None).is_none(), "expected inactive cfg at {needle}");
+    }
+}

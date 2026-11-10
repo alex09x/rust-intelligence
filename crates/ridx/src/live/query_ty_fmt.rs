@@ -56,8 +56,9 @@ impl TyReader for InferTyArena {
 
 pub(crate) fn query_type_at(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Option<LiveTy> {
     let macro_tt = {
+        let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
         let st = engine.parsed.as_ref()?.tree();
-        if !is_cursor_on_typeable_token(&st, byte_offset) || is_inside_inactive_target_cfg(&st, byte_offset) {
+        if !is_cursor_on_typeable_token(&st, byte_offset) || is_inside_inactive_target_cfg(&st, byte_offset, &db, r_idx, canon) {
             return None;
         }
         enclosing_macro_tt_span(&st, byte_offset)
