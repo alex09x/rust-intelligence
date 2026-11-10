@@ -22,7 +22,7 @@ use super::v5_ty_proj::instantiate_v5;
 
 impl<'w> RidxV5ItemDb<'w> {
     pub(crate) fn populate_v5_std_macro_gids(&mut self) {
-        if let Some(&alloc_r) = self.sysroot_by_name.get("alloc") {
+        if let Some(&alloc_r) = self.sysroot_by_name.get("alloc").filter(|&&r| self.shard_loaded[r]) {
             let vg = self.find_def_in_reader_by_path(alloc_r, "alloc::vec::Vec");
             if vg.is_some() {
                 self.ty_tables.vec_gid = Some(self.canonical_def(vg));
@@ -32,7 +32,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 self.ty_tables.global_gid = Some(self.canonical_def(gg));
             }
         }
-        if let Some(&core_r) = self.sysroot_by_name.get("core") {
+        if let Some(&core_r) = self.sysroot_by_name.get("core").filter(|&&r| self.shard_loaded[r]) {
             let ag = self.find_def_in_reader_by_path(core_r, "core::fmt::Arguments");
             let ag2 = if ag.is_some() { ag } else { self.find_def_in_reader_by_path(core_r, "core::fmt::rt::Arguments") };
             if ag2.is_some() {
@@ -43,7 +43,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 self.ty_tables.fmt_err_gid = Some(self.canonical_def(eg));
             }
         }
-        if let Some(&std_r) = self.sysroot_by_name.get("std") {
+        if let Some(&std_r) = self.sysroot_by_name.get("std").filter(|&&r| self.shard_loaded[r]) {
             let tg = self.find_def_in_reader_by_path(std_r, "std::thread::local::LocalKey");
             let tg2 = if tg.is_some() { tg } else { self.find_def_in_reader_by_path(std_r, "std::thread::LocalKey") };
             if tg2.is_some() {

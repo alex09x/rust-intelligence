@@ -19,6 +19,7 @@ use ridx_syntax::name_res::{FileId, ItemKind, PrimTy, VisKind};
 use super::meta::{CorpusSourceDb, ReaderMeta};
 use super::v5_db::CRATE_ROOT_DEF_IDX;
 
+#[derive(Default)]
 pub struct ShardTables {
     pub root_mod_def_idx: Option<u32>,
     /// `rustc` `LocalDefIndex` (`DefEntry::def_id()`) -> `def_idx` (`0..definitions().len()`).

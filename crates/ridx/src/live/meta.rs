@@ -83,8 +83,8 @@ pub struct CorpusSourceDb {
     pub ws_root: PathBuf,
     pub canon_root: PathBuf,
     pub files: Vec<CorpusFile>,
-    by_rel: HashMap<String, FileId>,
-    by_abs: HashMap<PathBuf, FileId>,
+    pub(crate) by_rel: HashMap<String, FileId>,
+    pub(crate) by_abs: HashMap<PathBuf, FileId>,
 }
 
 impl CorpusSourceDb {
@@ -211,7 +211,7 @@ impl SourceDb for CorpusSourceDb {
     }
 }
 
-fn collect_rs_files(dir: &Path, ancestors: &mut Vec<PathBuf>, out: &mut Vec<PathBuf>) {
+pub(crate) fn collect_rs_files(dir: &Path, ancestors: &mut Vec<PathBuf>, out: &mut Vec<PathBuf>) {
     if dir == Path::new("/") || ancestors.len() >= 32 {
         return;
     }
@@ -258,13 +258,14 @@ pub struct ReaderMeta {
 }
 
 pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
+    let has_core_sysroot = ws.readers().iter().any(|r| r.crate_name() == "core");
     let mut out = Vec::with_capacity(ws.crate_count());
     for idx in 0..ws.crate_count() {
         let reader = &ws.readers()[idx];
         let mut crate_name = reader.crate_name().replace('-', "_");
         let mut edition = Edition::Edition2021;
         let mut is_dependency = ws.is_reader_dependency(idx);
-        let is_sysroot = ws.meta_path_at(idx).is_none();
+        let is_sysroot = has_core_sysroot && ws.meta_path_at(idx).is_none();
         let mut target_kind = String::new();
         let mut is_test_harness = false;
         let mut source_root = ws.source_root_at(idx).map(Path::to_path_buf);

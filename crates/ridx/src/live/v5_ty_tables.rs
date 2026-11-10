@@ -158,9 +158,8 @@ impl<'w> RidxV5ItemDb<'w> {
         GlobalDefId::NONE
     }
 
-    pub fn build_ty_tables(&mut self) {
-        let n = self.ws.crate_count();
-        for r_idx in 0..n {
+    pub fn build_ty_tables_for(&mut self, active: &[usize]) {
+        for &r_idx in active {
             let reader = &self.ws.readers()[r_idx];
             let krate = CrateId(r_idx as u32);
             let mut uniq_by_kind_name: HashMap<(u8, &str), u32> = HashMap::new();
@@ -186,8 +185,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 }
             }
         }
-        self.ty_tables.ty_def_gids = Vec::with_capacity(n);
-        for r_idx in 0..n {
+        for &r_idx in active {
             let reader = &self.ws.readers()[r_idx];
             let arena = reader.ty_arena();
             let td_len = reader.ty_defs().len();
@@ -195,10 +193,10 @@ impl<'w> RidxV5ItemDb<'w> {
             for i in 0..td_len {
                 vec.push(self.canonical_def(self.resolve_ty_def(r_idx, arena, TyDefId(i as u32))));
             }
-            self.ty_tables.ty_def_gids.push(vec);
+            self.ty_tables.ty_def_gids[r_idx] = vec;
         }
 
-        let mut order: Vec<usize> = (0..n).collect();
+        let mut order: Vec<usize> = active.to_vec();
         order.sort_by_key(|&idx| (!self.metas[idx].is_sysroot, self.metas[idx].is_test_harness, idx));
 
         for &r_idx in &order {
@@ -219,7 +217,7 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
 
-        if let Some(&core_r) = self.sysroot_by_name.get("core") {
+        if let Some(&core_r) = self.sysroot_by_name.get("core").filter(|&&r| self.shard_loaded[r]) {
             let cg = self.find_def_in_reader_by_path(core_r, "core::ffi::c_str::CStr");
             let cg2 = if cg.is_some() { cg } else { self.find_def_in_reader_by_path(core_r, "core::ffi::CStr") };
             if cg2.is_some() {
@@ -231,7 +229,7 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
 
-        for r_idx in 0..n {
+        for &r_idx in active {
             let reader = &self.ws.readers()[r_idx];
             let krate = CrateId(r_idx as u32);
             let defs = reader.definitions();
@@ -273,7 +271,7 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
 
-        for r_idx in 0..n {
+        for &r_idx in active {
             let reader = &self.ws.readers()[r_idx];
             let arena = reader.ty_arena();
             let krate = CrateId(r_idx as u32);
