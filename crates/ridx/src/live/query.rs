@@ -8,19 +8,12 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Production LSP query API (`LiveDb`) over an already-open `WorkspaceIndex` and optional
-//! `OverlayManager` buffers (`Checkbox 4.2` / `4.3`):
-//! - [`LiveDb::open`]: zero-cost lazy handle; builds `CrateSnapshot` and reachable `.ridx` shard
-//!   tables on first query per crate.
-//! - [`LiveDb::type_at`]: resolves expression, local variable, pattern, or type-annotation under
-//!   `byte_offset` into rustc/RA display text plus definition locations (`file`, `line`, `col`)
-//!   of all participating ADTs, traits, and type aliases (`textDocument/typeDefinition` & `hover`).
-//! - [`LiveDb::dot_candidates`]: resolves receiver type before `.` and returns accessible fields,
-//!   inherent methods, and in-scope trait methods in exact `method_res` autoderef order.
-//! - [`LiveDb::path_candidates`]: resolves `Type::`, `Self::`, `<T as Trait>::`, `Enum::`, and
-//!   `module::` qualifiers to associated items, enum variants, and module items.
+//! Production LSP query API (`LiveDb`) owning only derived snapshots/tables/caches (`'static`, no
+//! `&WorkspaceIndex` borrow retained across requests) and taking `&WorkspaceIndex` + optional
+//! `&OverlayManager` per query (`Checkbox 4.2` / `4.3`).
 
 use std::collections::HashMap;
+use std::fmt;
 use std::path::{Path, PathBuf};
 
 use ridx_format::{DefKind, WorkspaceIndex};
@@ -63,18 +56,50 @@ pub struct Cand {
     pub from_trait: Option<String>,
 }
 
-/// Lazy live type-inference and completion database over an open [`WorkspaceIndex`].
-pub struct LiveDb<'w> {
-    ws: &'w WorkspaceIndex,
-    engine: Option<LiveEngine<'w>>,
+/// Lifetime-free live type-inference and completion database owning only derived snapshots and caches.
+///
+/// Safe to store alongside `WorkspaceIndex` inside `MultiRootWorkspace` across `sync_reloaded_index(&mut ws, ..)`
+/// mutations; automatically invalidates derived state if `ws` changes `instance_id`, `generation`, or shard count.
+#[derive(Default)]
+pub struct LiveDb {
+    ws_stamp: Option<(u64, u64, usize)>,
+    engine: Option<LiveEngine>,
     manual_overlays: HashMap<PathBuf, String>,
 }
 
-impl<'w> LiveDb<'w> {
-    /// Opens a lazy `LiveDb` view over `ws` without reading files or materializing shard tables upfront.
+impl fmt::Debug for LiveDb {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LiveDb").field("ws_stamp", &self.ws_stamp).field("initialized", &self.engine.is_some()).field("cached_fns", &self.cached_fn_count()).finish()
+    }
+}
+
+impl LiveDb {
+    /// Creates an empty lazy `LiveDb` without retaining any borrow of a `WorkspaceIndex`.
     #[inline]
-    pub fn open(ws: &'w WorkspaceIndex) -> Self {
-        Self { ws, engine: None, manual_overlays: HashMap::new() }
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Lazy constructor matching `LiveDb::new()` (does not retain `ws` or materialize tables upfront).
+    #[inline]
+    pub fn open(_ws: &WorkspaceIndex) -> Self {
+        Self::new()
+    }
+
+    /// Drops all derived snapshots, shard tables, file caches, and function inference caches.
+    #[inline]
+    pub fn invalidate(&mut self) {
+        self.ws_stamp = None;
+        self.engine = None;
+    }
+
+    fn sync_engine(&mut self, ws: &WorkspaceIndex) -> &mut LiveEngine {
+        let stamp = (ws.instance_id(), ws.generation(), ws.crate_count());
+        if self.ws_stamp != Some(stamp) {
+            self.invalidate();
+            self.ws_stamp = Some(stamp);
+        }
+        self.engine.get_or_insert_with(|| LiveEngine::new(ws))
     }
 
     /// Overrides the live buffer text of `file` in memory (used alongside or instead of [`OverlayManager`]).
@@ -94,51 +119,39 @@ impl<'w> LiveDb<'w> {
     }
 
     /// Returns the inferred type of the expression, local variable, pattern, or type annotation at `byte_offset`.
-    pub fn type_at(&mut self, file: impl AsRef<Path>, byte_offset: u32) -> Option<LiveTy> {
-        self.type_at_with_overlay(file, byte_offset, None)
-    }
-
-    /// Same as [`Self::type_at`], reading dirty/open file buffers from `overlays` when present.
-    pub fn type_at_with_overlay(&mut self, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Option<LiveTy> {
-        let engine = self.engine.get_or_insert_with(|| LiveEngine::new(self.ws));
-        let (r_idx, fid, canon) = engine.resolve_unit_and_file(file.as_ref(), &self.manual_overlays, overlays)?;
-        let env_salt = engine.prepare_file_and_def_map(r_idx, fid, &canon, &self.manual_overlays, overlays)?;
-        query_type_at(engine, r_idx, fid, &canon, env_salt, byte_offset)
+    pub fn type_at(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Option<LiveTy> {
+        self.sync_engine(ws);
+        let engine = self.engine.as_mut()?;
+        let (r_idx, fid, canon) = engine.resolve_unit_and_file(ws, file.as_ref(), &self.manual_overlays, overlays)?;
+        let env_salt = engine.prepare_file_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays)?;
+        query_type_at(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
     }
 
     /// Returns accessible fields and callable methods (inherent + traits in scope across autoderef)
     /// for the receiver expression before `.` at `byte_offset`, ordered as in `method_res`.
-    pub fn dot_candidates(&mut self, file: impl AsRef<Path>, byte_offset: u32) -> Vec<Cand> {
-        self.dot_candidates_with_overlay(file, byte_offset, None)
-    }
-
-    /// Same as [`Self::dot_candidates`], reading dirty/open file buffers from `overlays` when present.
-    pub fn dot_candidates_with_overlay(&mut self, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
-        let engine = self.engine.get_or_insert_with(|| LiveEngine::new(self.ws));
-        let Some((r_idx, fid, canon)) = engine.resolve_unit_and_file(file.as_ref(), &self.manual_overlays, overlays) else {
+    pub fn dot_candidates(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
+        self.sync_engine(ws);
+        let Some(engine) = self.engine.as_mut() else { return Vec::new() };
+        let Some((r_idx, fid, canon)) = engine.resolve_unit_and_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
             return Vec::new();
         };
-        let Some(env_salt) = engine.prepare_file_and_def_map(r_idx, fid, &canon, &self.manual_overlays, overlays) else {
+        let Some(env_salt) = engine.prepare_file_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
             return Vec::new();
         };
-        query_dot_candidates(engine, r_idx, fid, &canon, env_salt, byte_offset)
+        query_dot_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
     }
 
     /// Returns associated items, enum variants, or module items for a `Type::` or `module::` path at `byte_offset`.
-    pub fn path_candidates(&mut self, file: impl AsRef<Path>, byte_offset: u32) -> Vec<Cand> {
-        self.path_candidates_with_overlay(file, byte_offset, None)
-    }
-
-    /// Same as [`Self::path_candidates`], reading dirty/open file buffers from `overlays` when present.
-    pub fn path_candidates_with_overlay(&mut self, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
-        let engine = self.engine.get_or_insert_with(|| LiveEngine::new(self.ws));
-        let Some((r_idx, fid, canon)) = engine.resolve_unit_and_file(file.as_ref(), &self.manual_overlays, overlays) else {
+    pub fn path_candidates(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
+        self.sync_engine(ws);
+        let Some(engine) = self.engine.as_mut() else { return Vec::new() };
+        let Some((r_idx, fid, canon)) = engine.resolve_unit_and_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
             return Vec::new();
         };
-        let Some(env_salt) = engine.prepare_file_and_def_map(r_idx, fid, &canon, &self.manual_overlays, overlays) else {
+        let Some(env_salt) = engine.prepare_file_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
             return Vec::new();
         };
-        query_path_candidates(engine, r_idx, fid, &canon, env_salt, byte_offset)
+        query_path_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
     }
 
     /// Number of currently cached per-function inference entries (for diagnostics and tests).

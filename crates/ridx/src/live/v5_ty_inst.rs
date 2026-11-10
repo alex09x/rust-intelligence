@@ -150,3 +150,46 @@ fn clone_reader_ty_rec<A: super::query_ty_fmt::TyReader>(src: &A, id: InferTyId,
         }
     }
 }
+
+pub fn count_def_non_lt_non_self<B: AsRef<[u8]>>(reader: &ridx_format::IndexReader<B>, didx: u32) -> u16 {
+    reader.generic_params_for_def(didx).filter(|p| !matches!(p.kind, ridx_format::GenericParamKind::Lifetime) && !p.is_self()).count() as u16
+}
+
+pub fn count_impl_non_lt<B: AsRef<[u8]>>(reader: &ridx_format::IndexReader<B>, impl_idx: u32) -> u16 {
+    reader.generic_params_for_impl(impl_idx).filter(|p| !matches!(p.kind, ridx_format::GenericParamKind::Lifetime)).count() as u16
+}
+
+impl super::v5_db::RidxV5ItemDb<'_> {
+    pub(crate) fn detect_impl_self_fn_bound_arity<B: AsRef<[u8]>>(
+        &self,
+        r_idx: usize,
+        reader: &ridx_format::IndexReader<B>,
+        arena: ridx_format::TyArenaView<'_>,
+        impl_idx: u32,
+        self_ty: ridx_format::TyId,
+    ) -> u8 {
+        let ridx_format::TyKindView::Param { index: self_pidx, .. } = arena.kind(self_ty) else { return u8::MAX };
+        for wp in reader.where_preds_for_impl(impl_idx) {
+            if wp.kind() != ridx_format::WherePredKind::TraitBound || wp.is_negative() {
+                continue;
+            }
+            let lhs_ok = match arena.kind(wp.lhs_ty()) {
+                ridx_format::TyKindView::Param { index, .. } => index == self_pidx,
+                ridx_format::TyKindView::Ref { inner, .. } => matches!(arena.kind(inner), ridx_format::TyKindView::Param { index, .. } if index == self_pidx),
+                _ => false,
+            };
+            let Some(td) = wp.trait_def().filter(|_| lhs_ok) else { continue };
+            if !self.ty_tables.gid_to_lang.get(&self.canonical_def(self.ty_def_gid(r_idx, td))).is_some_and(|l| l.is_fn_trait()) {
+                continue;
+            }
+            if let Some(tid) = wp.trait_args().find_map(|ga| if let ridx_format::GenericArgView::Type(t) = ga { Some(t) } else { None }) {
+                match arena.kind(tid) {
+                    ridx_format::TyKindView::Unit => return 0,
+                    ridx_format::TyKindView::Tuple(elems) => return elems.len() as u8,
+                    _ => {}
+                }
+            }
+        }
+        u8::MAX
+    }
+}

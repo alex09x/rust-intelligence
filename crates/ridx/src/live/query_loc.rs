@@ -33,12 +33,12 @@ pub(crate) struct CachedParsed {
     pub text_hash: u64,
     pub src: String,
     pub lines: LineIndex,
-    pub(crate) bufs: std::cell::Cell<(Vec<ridx_syntax::Token>, Vec<ridx_syntax::tree::Node>)>,
+    pub(crate) bufs: std::sync::Mutex<(Vec<ridx_syntax::Token>, Vec<ridx_syntax::tree::Node>)>,
     pub fn_summaries: Vec<FnBodySummary>,
 }
 
 pub(crate) struct TreeLease<'a> {
-    owner: Option<&'a std::cell::Cell<(Vec<ridx_syntax::Token>, Vec<ridx_syntax::tree::Node>)>>,
+    owner: Option<&'a std::sync::Mutex<(Vec<ridx_syntax::Token>, Vec<ridx_syntax::tree::Node>)>>,
     st: SyntaxTree<'a>,
 }
 
@@ -53,8 +53,8 @@ impl<'a> std::ops::Deref for TreeLease<'a> {
 impl Drop for TreeLease<'_> {
     #[inline]
     fn drop(&mut self) {
-        if let Some(cell) = self.owner.take() {
-            cell.set((std::mem::take(&mut self.st.tokens), std::mem::take(&mut self.st.nodes)));
+        if let Some(m) = self.owner.take() {
+            *m.lock().unwrap_or_else(|e| e.into_inner()) = (std::mem::take(&mut self.st.tokens), std::mem::take(&mut self.st.nodes));
         }
     }
 }
@@ -62,7 +62,7 @@ impl Drop for TreeLease<'_> {
 impl CachedParsed {
     #[inline]
     pub fn tree(&self) -> TreeLease<'_> {
-        let (tokens, nodes) = self.bufs.take();
+        let (tokens, nodes) = std::mem::take(&mut *self.bufs.lock().unwrap_or_else(|e| e.into_inner()));
         if !nodes.is_empty() || self.src.is_empty() {
             TreeLease { owner: Some(&self.bufs), st: SyntaxTree { src: &self.src, tokens, nodes } }
         } else {
@@ -118,7 +118,7 @@ pub(crate) fn write_def_name(
         }
     }
     if let Some(&anm) = db.ty_tables.assoc_ty_names.get(&def) {
-        return out.write_str(anm);
+        return out.write_str(anm.as_str(db.ws));
     }
     out.write_str("{unknown}")
 }
