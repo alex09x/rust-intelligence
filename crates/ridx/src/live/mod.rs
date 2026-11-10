@@ -12,6 +12,8 @@
 
 pub mod meta;
 pub mod query;
+mod query_cursor;
+mod query_defs;
 mod query_dot;
 mod query_loc;
 mod query_path;

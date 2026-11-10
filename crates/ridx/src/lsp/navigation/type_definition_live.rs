@@ -9,7 +9,10 @@
  */
 
 //! `textDocument/typeDefinition` from the type inferred at the cursor: every type the inferred type names
-//! (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator), on saved and on edited buffers alike.
+//! (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator), on saved and on edited buffers alike, backed by a
+//! single process-wide [`LiveDb`].
+
+use std::sync::{Mutex, OnceLock};
 
 use super::type_definition_lookup::format_location;
 use super::type_definition_walk::finalize_locations;
@@ -18,6 +21,22 @@ use crate::lsp::protocol::PositionConverter;
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
+
+static LIVE_DB: OnceLock<Mutex<LiveDb>> = OnceLock::new();
+
+#[inline]
+fn global_live_db() -> &'static Mutex<LiveDb> {
+    LIVE_DB.get_or_init(|| Mutex::new(LiveDb::new()))
+}
+
+/// Drops all derived snapshots, shard tables, and inference caches in the process-wide [`LiveDb`].
+pub(crate) fn clear_live_db_cache() {
+    if let Some(lock) = LIVE_DB.get() {
+        if let Ok(mut db) = lock.lock() {
+            db.invalidate();
+        }
+    }
+}
 
 /// The byte offset of the 1-based `line` and character column `col` in `text`.
 pub(crate) fn byte_offset_at(text: &str, line: u32, col: u32) -> Option<u32> {
@@ -30,20 +49,36 @@ pub(crate) fn byte_offset_at(text: &str, line: u32, col: u32) -> Option<u32> {
     u32::try_from(start + in_line).ok()
 }
 
-/// The definitions of the types in the type inferred at the cursor, or `None` when nothing is inferred there.
-pub(super) fn resolve_inferred_type(ws: &WorkspaceIndex, file: &str, (line, col): (u32, u32), overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Option<Value> {
-    let disk;
-    let text = match overlay_mgr.get(file) {
-        Some(overlay) => overlay.text.as_str(),
-        None => {
-            disk = std::fs::read_to_string(file).ok()?;
-            disk.as_str()
-        }
+fn byte_offset_from_conv_or_overlay(file: &str, line: u32, col: u32, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Option<u32> {
+    if let Some(overlay) = overlay_mgr.get(file) {
+        return byte_offset_at(&overlay.text, line, col);
+    }
+    let line_text = conv.get_line(file, line)?;
+    let in_line = line_text.char_indices().nth(col.saturating_sub(1) as usize).map_or(line_text.len(), |(i, _)| i);
+    let (_, starts) = conv.cache.get(file)?;
+    let start = *starts.get(line.saturating_sub(1) as usize)?;
+    u32::try_from(start + in_line).ok()
+}
+
+fn is_file_compiled_in_ws(ws: &WorkspaceIndex, file: &str) -> bool {
+    let check = |idx: usize| ws.target_file_for_reader(idx, file).and_then(|tf| ws.readers()[idx].find_file_id(tf.as_ref())).is_some();
+    ws.reader_indices_for_file(file).into_iter().any(check) || ws.candidate_reader_indices_for_file(file).into_iter().any(check)
+}
+
+/// The definitions of the types in the type inferred at the cursor (plus whether inference was complete without `{unknown}`), or `None`.
+pub(super) fn resolve_inferred_type(ws: &WorkspaceIndex, file: &str, (line, col): (u32, u32), overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Option<(Value, bool)> {
+    let is_dirty = overlay_mgr.get(file).is_some_and(|o| o.is_dirty());
+    if !is_dirty && !is_file_compiled_in_ws(ws, file) {
+        return None;
+    }
+    let offset = byte_offset_from_conv_or_overlay(file, line, col, overlay_mgr, conv)?;
+    let ty = {
+        let mut db = global_live_db().lock().unwrap_or_else(|e| e.into_inner());
+        db.type_at(ws, file, offset, Some(overlay_mgr))?
     };
-    let offset = byte_offset_at(text, line, col)?;
-    let ty = LiveDb::open(ws).type_at_with_overlay(file, offset, Some(overlay_mgr))?;
+    let complete = is_dirty || !ty.display.contains("{unknown}");
     let locs = ty.defs.iter().map(|d| format_location(&d.file, &d.file.to_string_lossy(), (d.line, d.col, d.end_line, d.end_col), conv)).collect();
-    finalize_locations(locs)
+    finalize_locations(locs).map(|v| (v, complete))
 }
 
 #[cfg(test)]

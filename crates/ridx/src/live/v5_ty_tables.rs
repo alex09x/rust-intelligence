@@ -73,6 +73,7 @@ pub struct V5TyTables {
     pub trait_impl_arena: Vec<TraitImplInfo>,
     pub concrete_trait_impls: HashMap<(GlobalDefId, ImplTargetKey), (u32, u32)>,
     pub blanket_trait_impls: HashMap<GlobalDefId, (u32, u32)>,
+    pub synth_def_locs: std::sync::Mutex<HashMap<GlobalDefId, Option<super::query::LiveLocation>>>,
 }
 
 impl V5TyTables {
