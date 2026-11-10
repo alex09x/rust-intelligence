@@ -16,7 +16,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use ridx_format::{join_resolving_overlap, WorkspaceIndex};
+use ridx_format::WorkspaceIndex;
 use ridx_syntax::name_res::{CrateDefMap, CrateId, CrateSnapshot, FileId, FileNameRes, GlobalDefId, ImplTargetKey, ModuleTree, OverlaySourceDb};
 use ridx_syntax::ty_infer::{extract_file_fn_summaries, BodyInferCtx, FnInferResult, FrozenTyArena, LocalCstDefs};
 use ridx_syntax::{parse, NodeId};
@@ -104,7 +104,7 @@ impl LiveEngine {
         let r_idx = if let Some(&cached) = self.file_to_unit.get(&canon) {
             cached
         } else {
-            let found = self.find_best_unit(ws, &abs, &canon)?;
+            let found = super::query_unit::find_best_unit(ws, &self.state, &abs, &canon)?;
             self.file_to_unit.insert(canon.clone(), found);
             found
         };
@@ -130,54 +130,6 @@ impl LiveEngine {
         }
         let text = lookup_live_text(abs, canon, manual, overlays).or_else(|| fs::read_to_string(canon).ok()).or_else(|| fs::read_to_string(abs).ok())?;
         Some(self.src.upsert_file_text(canon, text))
-    }
-
-    fn find_best_unit(&self, ws: &WorkspaceIndex, abs: &Path, canon: &Path) -> Option<usize> {
-        let mut best: Option<((u8, u8, u32), usize)> = None;
-        for idx in 0..ws.crate_count() {
-            let meta = &self.state.metas[idx];
-            if meta.is_dependency || meta.target_kind == "custom-build" {
-                continue;
-            }
-            let rdr = &ws.readers()[idx];
-            let root = meta.source_root.as_deref().or_else(|| ws.workspace_root());
-            let has_file = (0..rdr.header().files_count).any(|fid| {
-                let fstr = rdr.get_file(fid);
-                !fstr.is_empty() && {
-                    let joined = root.map_or_else(|| PathBuf::from(fstr), |r| join_resolving_overlap(r, Path::new(fstr)));
-                    joined == abs || joined == canon || joined.canonicalize().is_ok_and(|c| c == canon)
-                }
-            });
-            if has_file {
-                let kind_rank = match meta.target_kind.as_str() {
-                    "lib" | "rlib" | "proc-macro" | "" if !meta.is_test_harness => 0,
-                    _ if !meta.is_test_harness => 1,
-                    _ => 2,
-                };
-                let key = (kind_rank, u8::from(meta.is_test_harness), u32::MAX - rdr.header().refs_count);
-                if best.is_none_or(|(bk, _)| key < bk) {
-                    best = Some((key, idx));
-                }
-            }
-        }
-        if let Some((_, idx)) = best {
-            return Some(idx);
-        }
-        let mut best_anc: Option<((usize, u8), usize)> = None;
-        for (idx, meta) in self.state.metas.iter().enumerate() {
-            if meta.is_dependency || meta.target_kind == "custom-build" {
-                continue;
-            }
-            let Some(sr) = meta.source_root.as_deref() else { continue };
-            let sr_canon = sr.canonicalize().unwrap_or_else(|_| sr.to_path_buf());
-            if canon.starts_with(&sr_canon) || abs.starts_with(sr) {
-                let score = (sr_canon.as_os_str().len(), u8::from(!meta.is_test_harness));
-                if best_anc.is_none_or(|(bs, _)| score > bs) {
-                    best_anc = Some((score, idx));
-                }
-            }
-        }
-        best_anc.map(|(_, i)| i)
     }
 
     fn extend_method_index(&mut self, ws: &WorkspaceIndex, newly: &[usize]) {

@@ -20,6 +20,7 @@ mod query_path;
 mod query_path_qual;
 mod query_state;
 mod query_ty_fmt;
+mod query_unit;
 pub mod v5_db;
 pub mod v5_db_queries;
 pub mod v5_lazy;
