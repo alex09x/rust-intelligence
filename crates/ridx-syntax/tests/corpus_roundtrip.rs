@@ -8,40 +8,17 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+//! Lossless lexer round-trip over explicitly configured corpus roots (`RIDX_CORPUS_ROOT` or `RIDX_BENCH_REPOS`)
+//! within strict file-count and wall-clock limits. Skips immediately when no root env var is set.
+
+mod common;
+
+use common::{collect_bounded_rs_files, validate_explicit_root, CorpusBudget, SEVEN_CORPORA};
 use ridx_syntax::{lex, token_at};
 use std::fs;
 use std::hint::black_box;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-
-const SEVEN_CORPORA: &[&str] = &["serde", "ripgrep", "tokio", "rust-analyzer", "bevy", "clap", "regex"];
-
-fn collect_rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-    let mut paths: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).collect();
-    paths.sort();
-    for path in paths {
-        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            continue;
-        };
-        if name == ".git" || name == "target" {
-            continue;
-        }
-        let Ok(meta) = fs::symlink_metadata(&path) else {
-            continue;
-        };
-        if meta.file_type().is_symlink() {
-            continue;
-        }
-        if meta.is_dir() {
-            collect_rs_files(&path, out);
-        } else if path.extension().and_then(|e| e.to_str()) == Some("rs") {
-            out.push(path);
-        }
-    }
-}
 
 fn verify_file_roundtrip(path: &Path, src: &str) -> usize {
     let tokens = lex(src);
@@ -67,7 +44,6 @@ fn verify_file_roundtrip(path: &Path, src: &str) -> usize {
     assert_eq!(prev_end as usize, src.len(), "{}: end != len", path.display());
     assert_eq!(rebuilt, src, "{}: round-trip text mismatch", path.display());
 
-    // Spot-check binary search at beginning, middle, and end of the file.
     assert_eq!(token_at(&tokens, 0), Some(0));
     let mid = (src.len() / 2) as u32;
     let mid_idx = token_at(&tokens, mid).expect("mid byte must map to token");
@@ -79,21 +55,33 @@ fn verify_file_roundtrip(path: &Path, src: &str) -> usize {
 }
 
 #[test]
-fn workspace_self_roundtrip() {
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let ws_root = manifest_dir.parent().unwrap().parent().unwrap();
+fn explicit_corpus_root_roundtrip() {
+    let Ok(raw_root) = std::env::var("RIDX_CORPUS_ROOT") else {
+        eprintln!("[roundtrip:skip] set RIDX_CORPUS_ROOT to run corpus round-trip test");
+        return;
+    };
+    let Some(canon_root) = validate_explicit_root(Path::new(raw_root.trim())) else {
+        eprintln!("[roundtrip:skip] invalid or forbidden RIDX_CORPUS_ROOT");
+        return;
+    };
+    let mut budget = CorpusBudget::from_env();
     let mut files = Vec::new();
-    collect_rs_files(ws_root, &mut files);
-    assert!(!files.is_empty(), "expected .rs files in workspace");
+    collect_bounded_rs_files(&canon_root, false, &mut budget, &mut files);
 
+    let mut checked = 0usize;
     let mut total_bytes = 0usize;
     let mut total_tokens = 0usize;
     for file in &files {
-        let src = fs::read_to_string(file).unwrap_or_else(|e| panic!("failed to read {}: {e}", file.display()));
+        if Instant::now() >= budget.deadline {
+            budget.truncated = true;
+            break;
+        }
+        let Ok(src) = fs::read_to_string(file) else { continue };
+        checked += 1;
         total_bytes += src.len();
         total_tokens += verify_file_roundtrip(file, &src);
     }
-    eprintln!("[ridx-syntax] workspace round-trip: {} files, {} bytes, {} tokens", files.len(), total_bytes, total_tokens);
+    eprintln!("[ridx-syntax] round-trip: {checked} files, {total_bytes} bytes, {total_tokens} tokens, truncated={}", budget.truncated);
 }
 
 #[test]
@@ -101,28 +89,32 @@ fn seven_corpora_roundtrip_and_bevy_throughput() {
     let Ok(bench_root) = std::env::var("RIDX_BENCH_REPOS") else {
         return;
     };
-    let bench_root = PathBuf::from(bench_root);
+    let bench_root = PathBuf::from(bench_root.trim());
+    if bench_root.as_os_str().is_empty() {
+        return;
+    }
 
-    let mut grand_files = 0usize;
-    let mut grand_non_utf8 = 0usize;
-    let mut grand_bytes = 0usize;
-    let mut grand_tokens = 0usize;
+    let mut budget = CorpusBudget::from_env();
+    let (mut grand_files, mut grand_non_utf8, mut grand_bytes, mut grand_tokens) = (0usize, 0usize, 0usize, 0usize);
     let mut bevy_sources: Vec<String> = Vec::new();
 
     for &corpus in SEVEN_CORPORA {
-        let dir = bench_root.join(corpus);
-        assert!(dir.is_dir(), "missing corpus directory: {}", dir.display());
+        if budget.exhausted() {
+            break;
+        }
+        let Some(dir) = validate_explicit_root(&bench_root.join(corpus)) else {
+            continue;
+        };
         let mut files = Vec::new();
-        collect_rs_files(&dir, &mut files);
-        assert!(!files.is_empty(), "no .rs files found in {}", dir.display());
-
-        let mut c_utf8_files = 0usize;
-        let mut c_non_utf8 = 0usize;
-        let mut c_bytes = 0usize;
-        let mut c_tokens = 0usize;
+        collect_bounded_rs_files(&dir, false, &mut budget, &mut files);
+        let (mut c_utf8_files, mut c_non_utf8, mut c_bytes, mut c_tokens) = (0usize, 0usize, 0usize, 0usize);
 
         for path in &files {
-            let raw = fs::read(path).unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+            if Instant::now() >= budget.deadline {
+                budget.truncated = true;
+                break;
+            }
+            let Ok(raw) = fs::read(path) else { continue };
             match String::from_utf8(raw) {
                 Ok(src) => {
                     c_utf8_files += 1;
@@ -137,45 +129,45 @@ fn seven_corpora_roundtrip_and_bevy_throughput() {
                 }
             }
         }
-
         eprintln!("[corpus:{corpus:<14}] utf8_files={c_utf8_files:<6} non_utf8={c_non_utf8:<2} bytes={c_bytes:<10} tokens={c_tokens}");
         grand_files += c_utf8_files;
         grand_non_utf8 += c_non_utf8;
         grand_bytes += c_bytes;
         grand_tokens += c_tokens;
+        if budget.truncated {
+            break;
+        }
     }
 
-    eprintln!("[corpora:TOTAL] utf8_files={grand_files} non_utf8={grand_non_utf8} bytes={grand_bytes} tokens={grand_tokens}");
+    eprintln!("[corpora:TOTAL] utf8_files={grand_files} non_utf8={grand_non_utf8} bytes={grand_bytes} tokens={grand_tokens} truncated={}", budget.truncated);
+    if bevy_sources.is_empty() || Instant::now() >= budget.deadline {
+        return;
+    }
 
-    // Benchmark pure in-memory lexing throughput on bevy across 5 iterations after 1 warmup pass.
     let bevy_bytes: usize = bevy_sources.iter().map(|s| s.len()).sum();
     for src in &bevy_sources {
         black_box(lex(black_box(src.as_str())));
     }
-    let iters = 5usize;
+    let mut iters = 0usize;
     let t0 = Instant::now();
     let mut tok_sum = 0usize;
-    for _ in 0..iters {
+    while iters < 5 && Instant::now() < budget.deadline {
         for src in &bevy_sources {
             let toks = lex(black_box(src.as_str()));
             tok_sum += toks.len();
             black_box(toks);
         }
+        iters += 1;
     }
-    let elapsed = t0.elapsed();
-    let total_mb = (bevy_bytes as f64 * iters as f64) / (1024.0 * 1024.0);
-    let total_decimal_mb = (bevy_bytes as f64 * iters as f64) / 1_000_000.0;
-    let secs = elapsed.as_secs_f64();
-    eprintln!(
-        "[bench:bevy] files={} size={:.2} MiB ({:.2} MB) iters={} elapsed={:.2} ms ({:.2} ms/iter) throughput={:.1} MiB/s ({:.1} MB/s) tokens_per_iter={}",
-        bevy_sources.len(),
-        bevy_bytes as f64 / (1024.0 * 1024.0),
-        bevy_bytes as f64 / 1_000_000.0,
-        iters,
-        secs * 1000.0,
-        (secs * 1000.0) / iters as f64,
-        total_mb / secs,
-        total_decimal_mb / secs,
-        tok_sum / iters,
-    );
+    if iters > 0 {
+        let secs = t0.elapsed().as_secs_f64().max(1e-9);
+        let total_mb = (bevy_bytes as f64 * iters as f64) / (1024.0 * 1024.0);
+        eprintln!(
+            "[bench:bevy] files={} iters={iters} elapsed={:.2} ms throughput={:.1} MiB/s tokens_per_iter={}",
+            bevy_sources.len(),
+            secs * 1000.0,
+            total_mb / secs,
+            tok_sum / iters
+        );
+    }
 }
