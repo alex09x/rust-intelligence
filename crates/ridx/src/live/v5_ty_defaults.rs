@@ -20,34 +20,39 @@ use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_
 use super::v5_ty_lower::{lower_generic_args, lower_v5_ty, ParamRemap};
 use super::v5_ty_proj::instantiate_v5;
 
-impl<'w> RidxV5ItemDb<'w> {
+impl RidxV5ItemDb<'_> {
     pub(crate) fn populate_v5_std_macro_gids(&mut self) {
         if let Some(&alloc_r) = self.sysroot_by_name.get("alloc").filter(|&&r| self.shard_loaded[r]) {
             let vg = self.find_def_in_reader_by_path(alloc_r, "alloc::vec::Vec");
             if vg.is_some() {
-                self.ty_tables.vec_gid = Some(self.canonical_def(vg));
+                let c = self.canonical_def(vg);
+                self.state.as_mut().ty_tables.vec_gid = Some(c);
             }
             let gg = self.find_def_in_reader_by_path(alloc_r, "alloc::alloc::Global");
             if gg.is_some() {
-                self.ty_tables.global_gid = Some(self.canonical_def(gg));
+                let c = self.canonical_def(gg);
+                self.state.as_mut().ty_tables.global_gid = Some(c);
             }
         }
         if let Some(&core_r) = self.sysroot_by_name.get("core").filter(|&&r| self.shard_loaded[r]) {
             let ag = self.find_def_in_reader_by_path(core_r, "core::fmt::Arguments");
             let ag2 = if ag.is_some() { ag } else { self.find_def_in_reader_by_path(core_r, "core::fmt::rt::Arguments") };
             if ag2.is_some() {
-                self.ty_tables.fmt_args_gid = Some(self.canonical_def(ag2));
+                let c = self.canonical_def(ag2);
+                self.state.as_mut().ty_tables.fmt_args_gid = Some(c);
             }
             let eg = self.find_def_in_reader_by_path(core_r, "core::fmt::Error");
             if eg.is_some() {
-                self.ty_tables.fmt_err_gid = Some(self.canonical_def(eg));
+                let c = self.canonical_def(eg);
+                self.state.as_mut().ty_tables.fmt_err_gid = Some(c);
             }
         }
         if let Some(&std_r) = self.sysroot_by_name.get("std").filter(|&&r| self.shard_loaded[r]) {
             let tg = self.find_def_in_reader_by_path(std_r, "std::thread::local::LocalKey");
             let tg2 = if tg.is_some() { tg } else { self.find_def_in_reader_by_path(std_r, "std::thread::LocalKey") };
             if tg2.is_some() {
-                self.ty_tables.thread_local_key_gid = Some(self.canonical_def(tg2));
+                let c = self.canonical_def(tg2);
+                self.state.as_mut().ty_tables.thread_local_key_gid = Some(c);
             }
         }
     }
@@ -260,7 +265,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 targs.push(vars.shallow_resolve(arena, x));
             }
             if let Some(&aname) = self.ty_tables.assoc_ty_names.get(&self.canonical_def(assoc_def)) {
-                if let Some(p) = self.project_by_trait_and_name_depth(trait_def, aname, self_ty, targs.as_slice(), arena, vars, depth) {
+                if let Some(p) = self.project_by_trait_and_name_depth(trait_def, aname.as_str(self.ws), self_ty, targs.as_slice(), arena, vars, depth) {
                     return p;
                 }
             }

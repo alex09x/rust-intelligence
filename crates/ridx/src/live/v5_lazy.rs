@@ -8,25 +8,86 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! On-demand per-crate shard activation and lazy workspace source loading for [`RidxV5ItemDb`].
+//! On-demand per-crate shard activation, string-pool offsets, and temporary view wrappers for [`RidxV5ItemDb`].
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use ridx_format::{DefKind, TyDefId, WorkspaceIndex};
-use ridx_syntax::name_res::{join_norm_path, FileId};
+use memmap2::Mmap;
+use ridx_format::{DefKind, IndexReader, TyDefId, WorkspaceIndex};
+use ridx_syntax::name_res::{join_norm_path, CrateId, FileId, GlobalDefId};
 
 use super::meta::{collect_rs_files, load_reader_metas, CorpusFile, CorpusSourceDb, LineIndex};
-use super::v5_db::RidxV5ItemDb;
+use super::v5_db::{LiveState, RidxV5ItemDb};
 use super::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
 use super::v5_ty_tables::V5TyTables;
 
-/// Either a borrowed benchmark [`CorpusSourceDb`] or an owned lazy store inside [`super::query::LiveDb`].
-pub enum SourceStore<'w> {
-    Borrowed(&'w CorpusSourceDb),
-    Owned(CorpusSourceDb),
+/// Lifetime-free `(reader_idx, string_pool_offset)` handle resolved against `&WorkspaceIndex` on demand.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct PoolStr {
+    pub r_idx: u32,
+    pub offset: u32,
+}
+
+impl PoolStr {
+    #[inline]
+    pub fn from_offset(r_idx: usize, reader: &IndexReader<Mmap>, raw_off: u32, strip_raw: bool) -> Self {
+        let off = if strip_raw && reader.get_str(raw_off).starts_with("r#") { raw_off + 2 } else { raw_off };
+        Self { r_idx: r_idx as u32, offset: off }
+    }
+
+    #[inline]
+    pub fn from_pool_slice(r_idx: usize, reader: &IndexReader<Mmap>, s: &str) -> Option<Self> {
+        let pool_len = reader.header().string_pool_len as usize;
+        if pool_len == 0 {
+            return None;
+        }
+        let base = reader.get_str(0).as_ptr() as usize;
+        let off = (s.as_ptr() as usize).checked_sub(base)?;
+        (off < pool_len && std::ptr::eq(reader.get_str(off as u32).as_ptr(), s.as_ptr())).then_some(Self { r_idx: r_idx as u32, offset: off as u32 })
+    }
+
+    #[inline]
+    pub fn as_str(self, ws: &WorkspaceIndex) -> &str {
+        ws.readers().get(self.r_idx as usize).map_or("", |r| r.get_str(self.offset))
+    }
+}
+
+/// Thread-safe (`Send + Sync`) atomic cell storing an active `GlobalDefId` without interior-mutability `!Sync`.
+pub struct AtomicDefCell(AtomicU64);
+
+impl Default for AtomicDefCell {
+    fn default() -> Self {
+        Self::new(GlobalDefId::NONE)
+    }
+}
+
+impl AtomicDefCell {
+    #[inline]
+    pub const fn new(def: GlobalDefId) -> Self {
+        Self(AtomicU64::new(((def.krate.0 as u64) << 32) | (def.index as u64)))
+    }
+
+    #[inline]
+    pub fn get(&self) -> GlobalDefId {
+        let raw = self.0.load(Ordering::Relaxed);
+        GlobalDefId::new(CrateId((raw >> 32) as u32), raw as u32)
+    }
+
+    #[inline]
+    pub fn set(&self, def: GlobalDefId) {
+        let raw = ((def.krate.0 as u64) << 32) | (def.index as u64);
+        self.0.store(raw, Ordering::Relaxed);
+    }
+}
+
+/// Borrowed or mutably-borrowed view of [`CorpusSourceDb`] inside a temporary [`RidxV5ItemDb`].
+pub enum SourceStore<'a> {
+    Borrowed(&'a CorpusSourceDb),
+    BorrowedMut(&'a mut CorpusSourceDb),
 }
 
 impl Deref for SourceStore<'_> {
@@ -36,7 +97,7 @@ impl Deref for SourceStore<'_> {
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Borrowed(s) => s,
-            Self::Owned(s) => s,
+            Self::BorrowedMut(s) => s,
         }
     }
 }
@@ -46,7 +107,38 @@ impl SourceStore<'_> {
     pub(crate) fn owned_mut(&mut self) -> Option<&mut CorpusSourceDb> {
         match self {
             Self::Borrowed(_) => None,
-            Self::Owned(s) => Some(s),
+            Self::BorrowedMut(s) => Some(s),
+        }
+    }
+}
+
+/// Temporary or owned reference to [`LiveState`] inside [`RidxV5ItemDb`].
+pub enum LiveStateRef<'a> {
+    Borrowed(&'a LiveState),
+    BorrowedMut(&'a mut LiveState),
+    Owned(Box<LiveState>),
+}
+
+impl Deref for LiveStateRef<'_> {
+    type Target = LiveState;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Borrowed(s) => s,
+            Self::BorrowedMut(s) => s,
+            Self::Owned(s) => s,
+        }
+    }
+}
+
+impl LiveStateRef<'_> {
+    #[inline]
+    pub(crate) fn as_mut(&mut self) -> &mut LiveState {
+        match self {
+            Self::Borrowed(_) => unreachable!("immutable LiveStateRef cannot be mutated"),
+            Self::BorrowedMut(s) => s,
+            Self::Owned(s) => s,
         }
     }
 }
@@ -116,9 +208,9 @@ impl CorpusSourceDb {
     }
 }
 
-impl<'w> RidxV5ItemDb<'w> {
-    /// Creates an unpopulated `RidxV5ItemDb` over `ws` without scanning disk or `.ridx` shards upfront.
-    pub fn new_lazy(ws: &'w WorkspaceIndex) -> Self {
+impl LiveState {
+    /// Creates an unpopulated `LiveState` + empty `CorpusSourceDb` for `ws` without scanning disk or shards upfront.
+    pub fn new_lazy(ws: &WorkspaceIndex) -> (CorpusSourceDb, Self) {
         let ws_root = ws
             .workspace_root()
             .map(Path::to_path_buf)
@@ -134,9 +226,7 @@ impl<'w> RidxV5ItemDb<'w> {
         }
         let mut ty_tables = V5TyTables::default();
         ty_tables.ty_def_gids.resize_with(n, Vec::new);
-        Self {
-            ws,
-            src: SourceStore::Owned(CorpusSourceDb::empty(&ws_root)),
+        let state = Self {
             metas,
             shards: (0..n).map(|_| ShardTables::default()).collect(),
             shard_loaded: vec![false; n],
@@ -149,10 +239,13 @@ impl<'w> RidxV5ItemDb<'w> {
             impl_self_target: HashMap::new(),
             valid_alias_leaf_pairs: HashSet::new(),
             ty_tables,
-            active_owner_def: std::cell::Cell::new(ridx_syntax::name_res::GlobalDefId::NONE),
-        }
+            active_owner_def: AtomicDefCell::new(GlobalDefId::NONE),
+        };
+        (CorpusSourceDb::empty(&ws_root), state)
     }
+}
 
+impl RidxV5ItemDb<'_> {
     pub(crate) fn ensure_crate_sources(&mut self, r_idx: usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) {
         if src_loaded.get(r_idx).copied().unwrap_or(true) || self.metas[r_idx].is_dependency {
             return;
@@ -214,8 +307,9 @@ impl<'w> RidxV5ItemDb<'w> {
                 }
             }
         }
-        self.shards[r_idx].file_map = file_map;
-        self.shards[r_idx].span_to_def_idx = span_to_def_idx;
+        let st = self.state.as_mut();
+        st.shards[r_idx].file_map = file_map;
+        st.shards[r_idx].span_to_def_idx = span_to_def_idx;
     }
 
     /// Activates `root_r_idx`, sysroot crates, and all transitively reachable dependency shards,
@@ -271,11 +365,14 @@ impl<'w> RidxV5ItemDb<'w> {
                 self.ensure_crate_sources(idx, loaded_dirs, src_loaded);
             }
         }
+        let ws = self.ws;
         for &idx in &newly {
-            let rdr = &self.ws.readers()[idx];
-            self.shards[idx] = build_shard_tables(rdr, &self.metas[idx], &self.src);
-            collect_shard_alias_pairs(rdr, &mut self.valid_alias_leaf_pairs);
-            self.shard_loaded[idx] = true;
+            let rdr = &ws.readers()[idx];
+            let built = build_shard_tables(rdr, &self.state.metas[idx], &self.src);
+            let st = self.state.as_mut();
+            st.shards[idx] = built;
+            collect_shard_alias_pairs(rdr, &mut st.valid_alias_leaf_pairs);
+            st.shard_loaded[idx] = true;
         }
         self.index_impls_and_traits_for(&newly);
         self.index_proc_macro_exports_for(&newly);

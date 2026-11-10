@@ -105,11 +105,11 @@ impl<'w> RidxV5ItemDb<'w> {
         }
         let mut trait_gid = self.canonical_def(raw_trait_gid);
         let nh = fnv1a_str(assoc_name);
-        if !self.ty_tables.trait_assoc_tys.get(&(trait_gid, nh)).is_some_and(|&(_, s, _)| s == assoc_name) && trait_args.is_empty() {
+        if !self.ty_tables.trait_assoc_tys.get(&(trait_gid, nh)).is_some_and(|&(_, s, _)| s.as_str(self.ws) == assoc_name) && trait_args.is_empty() {
             if let Some(supers) = self.trait_supertraits.get(&trait_gid) {
                 for &sup in supers {
                     let csup = self.canonical_def(sup);
-                    if self.ty_tables.trait_assoc_tys.get(&(csup, nh)).is_some_and(|&(_, s, _)| s == assoc_name) {
+                    if self.ty_tables.trait_assoc_tys.get(&(csup, nh)).is_some_and(|&(_, s, _)| s.as_str(self.ws) == assoc_name) {
                         trait_gid = csup;
                         break;
                     }
@@ -164,7 +164,7 @@ impl<'w> RidxV5ItemDb<'w> {
             let b = self.project_alias_item_bound(inner_assoc, inner_self, inner_args, trait_gid, assoc_name, arena)?;
             if let InferTyKind::Alias { trait_def: b_tr, assoc_def: b_ad, self_ty: b_st, .. } = arena.kind(b) {
                 if let Some(&b_name) = self.ty_tables.assoc_ty_names.get(&self.canonical_def(b_ad)) {
-                    if let Some(norm_b) = self.project_by_trait_and_name_depth(b_tr, b_name, b_st, &[], arena, vars, depth + 1) {
+                    if let Some(norm_b) = self.project_by_trait_and_name_depth(b_tr, b_name.as_str(self.ws), b_st, &[], arena, vars, depth + 1) {
                         return Some(norm_b);
                     }
                 }
@@ -288,7 +288,7 @@ impl<'w> RidxV5ItemDb<'w> {
                     vars.commit(snap);
                     return Some(vars.shallow_resolve(arena, resolved_rhs));
                 }
-                if let Some(&(agid, _, _)) = self.ty_tables.trait_assoc_tys.get(&(trait_gid, nh)).filter(|&&(_, s, _)| s == assoc_name) {
+                if let Some(&(agid, _, _)) = self.ty_tables.trait_assoc_tys.get(&(trait_gid, nh)).filter(|&&(_, s, _)| s.as_str(self.ws) == assoc_name) {
                     let tr_r = agid.krate.0 as usize;
                     let tr_rdr = &self.ws.readers()[tr_r];
                     if let Some(dt) = tr_rdr.def_ty_for_def(agid.index).filter(|dt| dt.is_default_assoc_ty()) {

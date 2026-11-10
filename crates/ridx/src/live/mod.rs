@@ -37,5 +37,6 @@ mod query_tests;
 
 pub use meta::{load_reader_metas, CorpusFile, CorpusSourceDb, LineIndex, ReaderMeta};
 pub use query::{Cand, LiveDb, LiveLocation, LiveTy};
-pub use v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT, TY_DEF_SYNTH_BIT};
+pub use v5_db::{LiveState, RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT, TY_DEF_SYNTH_BIT};
+pub use v5_lazy::PoolStr;
 pub use v5_ty_lower::{lower_v5_ty, ParamRemap};

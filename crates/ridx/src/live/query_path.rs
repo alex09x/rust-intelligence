@@ -15,7 +15,7 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use ridx_format::DefKind;
+use ridx_format::{DefKind, WorkspaceIndex};
 use ridx_syntax::name_res::{
     CrateDefMap, CrateId, ExtScopeCache, FileId, GlobalDefId, ImplTargetKey, ItemDb, ItemKind as IK, ModuleId, ModuleTree, PerNs, PrimTy, ResolvedBinding, VisKind,
 };
@@ -32,15 +32,16 @@ use super::query_path_qual::{
 use super::query_state::{CachedParsed, LiveEngine};
 use super::v5_db::RidxV5ItemDb;
 
-pub(crate) fn query_path_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Vec<Cand> {
+pub(crate) fn query_path_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Vec<Cand> {
     let Some(parsed_ref) = engine.parsed.as_ref() else { return Vec::new() };
     let Some((qual_str, colon2_start)) = extract_colon2_qualifier(&parsed_ref.src, byte_offset) else { return Vec::new() };
     let qual = qual_str.clone();
-    let fn_key_opt = engine.ensure_fn_inferred(r_idx, fid, env_salt, colon2_start);
+    let fn_key_opt = engine.ensure_fn_inferred(ws, r_idx, fid, env_salt, colon2_start);
 
     let Some(parsed) = engine.parsed.as_ref() else { return Vec::new() };
     let st = parsed.tree();
     let Some((_, mt_opt, dm)) = engine.active_def_map(r_idx) else { return Vec::new() };
+    let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
     let mod_tree: &ModuleTree = mt_opt.unwrap_or(&dm.mod_tree);
     let cur_mod = mod_tree.module_at_offset(fid, colon2_start).unwrap_or(ModuleId::ROOT);
     let cur_krate = dm.krate;
@@ -63,9 +64,9 @@ pub(crate) fn query_path_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, f
     let mut seen: HashSet<(String, DefKind)> = HashSet::new();
 
     if let Some(ufcs_trait) = parse_ufcs_trait(&qual) {
-        if let Some(pns) = resolve_qual_pns(&engine.db, dm, mod_tree, cur_mod, ufcs_trait) {
+        if let Some(pns) = resolve_qual_pns(&db, dm, mod_tree, cur_mod, ufcs_trait) {
             if let Some(tb) = pns.types.filter(|b| b.kind == IK::Trait && b.def.is_some()) {
-                emit_trait_assocs(&engine.db, dm, canon, parsed, local_defs_opt, tb.def, &mut seen, &mut out);
+                emit_trait_assocs(&db, dm, canon, parsed, local_defs_opt, tb.def, &mut seen, &mut out);
                 return out;
             }
         }
@@ -77,12 +78,12 @@ pub(crate) fn query_path_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, f
                 if let Some(nn) = st.child(owner, K::Name) {
                     let tname = st.text(nn).trim_start_matches("r#");
                     if let Some(tb) = dm.resolve_name_in_module(mod_tree, cur_mod, tname).types.filter(|b| b.def.is_some()) {
-                        emit_trait_assocs(&engine.db, dm, canon, parsed, local_defs_opt, tb.def, &mut seen, &mut out);
+                        emit_trait_assocs(&db, dm, canon, parsed, local_defs_opt, tb.def, &mut seen, &mut out);
                         return out;
                     }
                 }
-            } else if let Some(head) = resolve_enclosing_impl_head(&engine.db, dm, mod_tree, cur_mod, &st, owner) {
-                emit_type_head_cands(&engine.db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, head, &scope_traits, &mut seen, &mut out);
+            } else if let Some(head) = resolve_enclosing_impl_head(&db, dm, mod_tree, cur_mod, &st, owner) {
+                emit_type_head_cands(&db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, head, &scope_traits, &mut seen, &mut out);
                 return out;
             }
         }
@@ -95,10 +96,10 @@ pub(crate) fn query_path_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, f
                 if let Some(pidx) = match_enclosing_type_param(&st, entry.fn_node, &qual) {
                     let mut ptraits = Vec::new();
                     if fn_gid.is_some() {
-                        engine.db.param_trait_bounds(fn_gid, pidx, &mut ptraits);
+                        db.param_trait_bounds(fn_gid, pidx, &mut ptraits);
                     }
                     for tdef in ptraits {
-                        emit_trait_assocs(&engine.db, dm, canon, parsed, Some(&entry.local_defs), tdef, &mut seen, &mut out);
+                        emit_trait_assocs(&db, dm, canon, parsed, Some(&entry.local_defs), tdef, &mut seen, &mut out);
                     }
                     if !out.is_empty() {
                         return out;
@@ -108,29 +109,29 @@ pub(crate) fn query_path_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, f
         }
     }
 
-    if let Some(pns) = resolve_qual_pns(&engine.db, dm, mod_tree, cur_mod, &qual) {
+    if let Some(pns) = resolve_qual_pns(&db, dm, mod_tree, cur_mod, &qual) {
         if let Some(tb) = pns.types {
             if tb.prim_ty != 0 && !tb.def.is_some() && !tb.local.is_some() {
                 if let Some(p) = PrimTy::from_code(tb.prim_ty) {
-                    emit_type_head_cands(&engine.db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, ImplTargetKey::Prim(p), &scope_traits, &mut seen, &mut out);
+                    emit_type_head_cands(&db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, ImplTargetKey::Prim(p), &scope_traits, &mut seen, &mut out);
                     return out;
                 }
             }
             match tb.kind {
                 IK::Mod | IK::ExternCrate => {
-                    emit_mod_cands(&engine.db, dm, mod_tree, cur_krate, cur_mod, canon, parsed, local_defs_opt, tb, &mut seen, &mut out);
+                    emit_mod_cands(&db, dm, mod_tree, cur_krate, cur_mod, canon, parsed, local_defs_opt, tb, &mut seen, &mut out);
                     return out;
                 }
                 IK::Trait if tb.def.is_some() => {
-                    emit_trait_assocs(&engine.db, dm, canon, parsed, local_defs_opt, tb.def, &mut seen, &mut out);
+                    emit_trait_assocs(&db, dm, canon, parsed, local_defs_opt, tb.def, &mut seen, &mut out);
                     return out;
                 }
                 IK::Struct | IK::Enum | IK::Union | IK::TypeAlias => {
-                    let head = unwrap_binding_to_head(&engine.db, dm, tb);
-                    emit_type_head_cands(&engine.db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, head, &scope_traits, &mut seen, &mut out);
+                    let head = unwrap_binding_to_head(&db, dm, tb);
+                    emit_type_head_cands(&db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, head, &scope_traits, &mut seen, &mut out);
                     if !qual.contains("::") {
                         if let Some(p) = PrimTy::from_name(&qual) {
-                            emit_type_head_cands(&engine.db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, ImplTargetKey::Prim(p), &scope_traits, &mut seen, &mut out);
+                            emit_type_head_cands(&db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, ImplTargetKey::Prim(p), &scope_traits, &mut seen, &mut out);
                         }
                     }
                     return out;
@@ -141,7 +142,7 @@ pub(crate) fn query_path_candidates(engine: &mut LiveEngine<'_>, r_idx: usize, f
     }
     if !qual.contains("::") {
         if let Some(p) = PrimTy::from_name(&qual) {
-            emit_type_head_cands(&engine.db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, ImplTargetKey::Prim(p), &scope_traits, &mut seen, &mut out);
+            emit_type_head_cands(&db, dm, cur_krate, cur_mod, canon, parsed, local_defs_opt, ImplTargetKey::Prim(p), &scope_traits, &mut seen, &mut out);
         }
     }
     out

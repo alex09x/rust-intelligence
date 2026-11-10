@@ -33,7 +33,7 @@ impl<'w> RidxV5ItemDb<'w> {
     pub fn v5_trait_assoc_fn_by_name(&self, raw_trait: GlobalDefId, fn_name: &str) -> Option<TraitAssocFnMeta> {
         let tgid = self.canonical_def(raw_trait);
         let nh = fnv1a_str(fn_name);
-        if let Some(&tm) = self.ty_tables.trait_assoc_fns.get(&(tgid, nh)).filter(|i| i.name == fn_name) {
+        if let Some(&tm) = self.ty_tables.trait_assoc_fns.get(&(tgid, nh)).filter(|i| i.name.as_str(self.ws) == fn_name) {
             return Some(TraitAssocFnMeta {
                 trait_def: tgid,
                 trait_fn_def: GlobalDefId::new(tgid.krate, tm.method_didx),
@@ -44,7 +44,7 @@ impl<'w> RidxV5ItemDb<'w> {
         if let Some(supers) = self.trait_supertraits.get(&tgid) {
             for &sup in supers {
                 let csup = self.canonical_def(sup);
-                if let Some(&tm) = self.ty_tables.trait_assoc_fns.get(&(csup, nh)).filter(|i| i.name == fn_name) {
+                if let Some(&tm) = self.ty_tables.trait_assoc_fns.get(&(csup, nh)).filter(|i| i.name.as_str(self.ws) == fn_name) {
                     return Some(TraitAssocFnMeta {
                         trait_def: csup,
                         trait_fn_def: GlobalDefId::new(csup.krate, tm.method_didx),
