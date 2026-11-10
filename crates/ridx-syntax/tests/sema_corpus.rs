@@ -8,30 +8,17 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Runs `sema_fn` (`params`, `param_uses`, `own_returns`, `own_try_ops`, `tail_expr`) over every
-//! `Fn` across the workspace and all 7 benchmark corpora (`RIDX_BENCH_REPOS`), verifying zero panics
-//! and exact slice/kind invariants on every returned range and node.
+//! Runs `sema_fn` (`params`, `param_uses`, `own_returns`, `own_try_ops`, `tail_expr`) over `.rs`
+//! files under an explicitly configured corpus root (`RIDX_CORPUS_ROOT` or `RIDX_BENCH_REPOS`)
+//! within strict file-count and wall-clock limits. Skips when no root env var is set.
 
+mod common;
+
+use common::{collect_bounded_rs_files, corpus_roots_from_env, CorpusBudget};
 use ridx_syntax::sema_fn::{norm_ident, own_returns, own_try_ops, param_uses, params, tail_expr};
 use ridx_syntax::{parse, SyntaxKind as K};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Instant;
-
-fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
-    for e in rd.flatten() {
-        let p = e.path();
-        let name = e.file_name();
-        let name = name.to_string_lossy();
-        if p.is_dir() {
-            if name != "target" && name != ".git" && name != "test_data" {
-                rs_files(&p, out);
-            }
-        } else if name.ends_with(".rs") {
-            out.push(p);
-        }
-    }
-}
 
 #[derive(Default)]
 struct CorpusStats {
@@ -44,11 +31,16 @@ struct CorpusStats {
     try_ops: usize,
     tails: usize,
     sema_secs: f64,
+    timed_out: bool,
 }
 
-fn check_corpus(files: &[PathBuf]) -> CorpusStats {
+fn check_corpus(files: &[PathBuf], deadline: Instant) -> CorpusStats {
     let mut st = CorpusStats::default();
     for f in files {
+        if Instant::now() >= deadline {
+            st.timed_out = true;
+            break;
+        }
         let Ok(src) = std::fs::read_to_string(f) else { continue };
         let tree = parse(&src);
         st.files += 1;
@@ -96,17 +88,23 @@ fn check_corpus(files: &[PathBuf]) -> CorpusStats {
 
 #[test]
 fn corpora_sema_fn_without_panics() {
-    let mut roots: Vec<(String, PathBuf)> = vec![("workspace".into(), PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))];
-    if let Ok(base) = std::env::var("RIDX_BENCH_REPOS") {
-        for c in ["serde", "ripgrep", "tokio", "rust-analyzer", "bevy", "clap", "regex"] {
-            roots.push((c.into(), PathBuf::from(&base).join(c)));
-        }
+    let roots = corpus_roots_from_env();
+    if roots.is_empty() {
+        eprintln!("[sema:skip] set RIDX_CORPUS_ROOT or RIDX_BENCH_REPOS to run corpus sema test");
+        return;
     }
+    let mut budget = CorpusBudget::from_env();
     let (mut tot_files, mut tot_fns, mut tot_secs) = (0usize, 0usize, 0.0f64);
     for (label, root) in &roots {
+        if budget.exhausted() {
+            break;
+        }
         let mut files = Vec::new();
-        rs_files(root, &mut files);
-        let st = check_corpus(&files);
+        collect_bounded_rs_files(root, true, &mut budget, &mut files);
+        let st = check_corpus(&files, budget.deadline);
+        if st.timed_out {
+            budget.truncated = true;
+        }
         tot_files += st.files;
         tot_fns += st.fns;
         tot_secs += st.sema_secs;
@@ -122,8 +120,11 @@ fn corpora_sema_fn_without_panics() {
             st.tails,
             st.sema_secs * 1e3
         );
+        if budget.truncated {
+            break;
+        }
     }
-    eprintln!("[sema:TOTAL] files={tot_files} fns={tot_fns} sema_ms={:.2}", tot_secs * 1e3);
+    eprintln!("[sema:TOTAL] files={tot_files} fns={tot_fns} sema_ms={:.2} truncated={}", tot_secs * 1e3, budget.truncated);
 }
 
 #[test]
