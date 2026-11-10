@@ -14,11 +14,11 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-use ridx_format::{DefKind, TyDefId};
-use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
-use ridx_syntax::ty_infer::{TraitAssocFnMeta, TyLangItem};
+use ridx_format::{DefKind, TyDefId, IMPL_FLAG_NEGATIVE};
+use ridx_syntax::name_res::{CrateId, FileId, GlobalDefId, ImplTargetKey, IndexedImpl};
+use ridx_syntax::ty_infer::TyLangItem;
 
-use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT};
+use super::v5_db::RidxV5ItemDb;
 use super::v5_lazy::PoolStr;
 pub use super::v5_refs::fnv1a_str;
 use super::v5_ty_inst::{extend_flat_groups, slice_flat_group};
@@ -53,6 +53,7 @@ pub struct TraitImplInfo {
 #[derive(Default)]
 pub struct V5TyTables {
     pub reexport_canon: HashMap<GlobalDefId, GlobalDefId>,
+    pub raw_ty_def_gids: Vec<Vec<GlobalDefId>>,
     pub ty_def_gids: Vec<Vec<GlobalDefId>>,
     pub lang_to_gid: HashMap<u16, GlobalDefId>,
     pub gid_to_lang: HashMap<GlobalDefId, TyLangItem>,
@@ -62,10 +63,8 @@ pub struct V5TyTables {
     pub fmt_args_gid: Option<GlobalDefId>,
     pub fmt_err_gid: Option<GlobalDefId>,
     pub thread_local_key_gid: Option<GlobalDefId>,
-    pub assoc_to_impl: HashMap<GlobalDefId, u32>,
     pub trait_non_lt_gc: HashMap<GlobalDefId, u16>,
     pub trait_assoc_fns: HashMap<(GlobalDefId, u64), TraitMethodInfo>,
-    pub trait_fn_meta: HashMap<GlobalDefId, TraitAssocFnMeta>,
     pub trait_assoc_tys: HashMap<(GlobalDefId, u64), (GlobalDefId, PoolStr, u16)>,
     pub assoc_ty_names: HashMap<GlobalDefId, PoolStr>,
     pub inherent_arena: Vec<InherentMethodInfo>,
@@ -109,47 +108,6 @@ impl RidxV5ItemDb<'_> {
         self.ty_tables.ty_def_gids.get(r_idx).and_then(|v| v.get(td.0 as usize)).copied().unwrap_or(GlobalDefId::NONE)
     }
 
-    fn resolve_reexport_canon(&self, def: GlobalDefId) -> GlobalDefId {
-        if !def.is_some() || def.index == CRATE_ROOT_DEF_IDX || (def.index & (IMPL_SYNTH_BIT | PROC_MACRO_SYNTH_BIT)) != 0 {
-            return def;
-        }
-        let r_idx = def.krate.0 as usize;
-        let Some(reader) = self.ws.readers().get(r_idx) else {
-            return def;
-        };
-        let Some(d) = reader.definitions().get(def.index as usize) else {
-            return def;
-        };
-        if d.is_reexport() {
-            let raw_sig = reader.get_str(d.sig_offset());
-            let sig = raw_sig.strip_prefix("crate::").or_else(|| raw_sig.strip_prefix("self::")).unwrap_or(raw_sig);
-            let first = sig.split("::").next().unwrap_or("");
-            if !first.is_empty() {
-                let ext_r = if first == self.metas[r_idx].crate_name {
-                    Some(r_idx)
-                } else {
-                    self.resolve_extern_name_to_reader(r_idx, first).or_else(|| self.sysroot_by_name.get(first).copied())
-                };
-                if let Some(tr_idx) = ext_r {
-                    let cg = self.find_def_in_reader_by_path(tr_idx, sig);
-                    if cg.is_some() && cg != def {
-                        return cg;
-                    }
-                }
-                let local_cg = self.find_def_in_reader_by_path(r_idx, sig);
-                if local_cg.is_some() && local_cg != def {
-                    return local_cg;
-                }
-            }
-            if let Some(&tdidx) = self.shards[r_idx].def_id_to_idx.get(&d.def_id()) {
-                if tdidx != def.index {
-                    return GlobalDefId::new(def.krate, tdidx);
-                }
-            }
-        }
-        def
-    }
-
     #[inline]
     pub fn lookup_trait_assoc_ty_def(&self, trait_gid: GlobalDefId, name: &str) -> GlobalDefId {
         let h = fnv1a_str(name);
@@ -166,19 +124,36 @@ impl RidxV5ItemDb<'_> {
         GlobalDefId::NONE
     }
 
+    pub fn populate_raw_ty_def_gids_for(&mut self, active: &[usize]) {
+        let ws = self.ws;
+        for &r_idx in active {
+            let reader = &ws.readers()[r_idx];
+            let arena = reader.ty_arena();
+            let td_len = reader.ty_defs().len();
+            let mut vec = Vec::with_capacity(td_len);
+            for i in 0..td_len {
+                vec.push(self.resolve_ty_def_uncached(r_idx, arena, TyDefId(i as u32)));
+            }
+            self.state.as_mut().ty_tables.raw_ty_def_gids[r_idx] = vec;
+        }
+    }
+
     pub fn build_ty_tables_for(&mut self, active: &[usize]) {
         let ws = self.ws;
         for &r_idx in active {
             let reader = &ws.readers()[r_idx];
             let krate = CrateId(r_idx as u32);
+            let defs = reader.definitions();
             let mut uniq_by_kind_name: HashMap<(u8, &str), u32> = HashMap::new();
-            for (didx, d) in reader.definitions().iter().enumerate() {
-                if !d.is_reexport() {
-                    let nm = reader.get_str(d.name_offset()).trim_start_matches("r#");
-                    uniq_by_kind_name.entry((d.kind, nm)).and_modify(|e| *e = u32::MAX).or_insert(didx as u32);
+            if defs.iter().any(|d| d.is_reexport() && reader.get_str(d.sig_offset()).is_empty()) {
+                for (didx, d) in defs.iter().enumerate() {
+                    if !d.is_reexport() {
+                        let nm = reader.get_str(d.name_offset()).trim_start_matches("r#");
+                        uniq_by_kind_name.entry((d.kind, nm)).and_modify(|e| *e = u32::MAX).or_insert(didx as u32);
+                    }
                 }
             }
-            for (didx, d) in reader.definitions().iter().enumerate() {
+            for (didx, d) in defs.iter().enumerate() {
                 if d.is_reexport() {
                     let g = GlobalDefId::new(krate, didx as u32);
                     let mut cg = self.resolve_reexport_canon(g);
@@ -230,17 +205,19 @@ impl RidxV5ItemDb<'_> {
             }
         }
 
-        if let Some(&core_r) = self.sysroot_by_name.get("core").filter(|&&r| self.shard_loaded[r]) {
-            let cg = self.find_def_in_reader_by_path(core_r, "core::ffi::c_str::CStr");
-            let cg2 = if cg.is_some() { cg } else { self.find_def_in_reader_by_path(core_r, "core::ffi::CStr") };
-            if cg2.is_some() {
-                let cgid = self.canonical_def(cg2);
-                self.state.as_mut().ty_tables.cstr_gid = Some(cgid);
-            }
-            let send_g = self.find_def_in_reader_by_path(core_r, "core::marker::Send");
-            if send_g.is_some() {
-                let sgid = self.canonical_def(send_g);
-                self.state.as_mut().ty_tables.gid_to_lang.entry(sgid).or_insert(ridx_syntax::ty_infer::TyLangItem::Sync);
+        if self.ty_tables.cstr_gid.is_none() {
+            if let Some(&core_r) = self.sysroot_by_name.get("core").filter(|&&r| self.shard_loaded[r]) {
+                let cg = self.find_def_in_reader_by_path(core_r, "core::ffi::c_str::CStr");
+                let cg2 = if cg.is_some() { cg } else { self.find_def_in_reader_by_path(core_r, "core::ffi::CStr") };
+                if cg2.is_some() {
+                    let cgid = self.canonical_def(cg2);
+                    self.state.as_mut().ty_tables.cstr_gid = Some(cgid);
+                }
+                let send_g = self.find_def_in_reader_by_path(core_r, "core::marker::Send");
+                if send_g.is_some() {
+                    let sgid = self.canonical_def(send_g);
+                    self.state.as_mut().ty_tables.gid_to_lang.entry(sgid).or_insert(ridx_syntax::ty_infer::TyLangItem::Sync);
+                }
             }
         }
 
@@ -275,10 +252,6 @@ impl RidxV5ItemDb<'_> {
                             let has_self = reader.fn_sig_for_def(adidx).is_some_and(|s| s.has_self());
                             let info = TraitMethodInfo { name: aname_ps, method_didx: adidx, trait_gc, method_gc, has_self };
                             st.ty_tables.trait_assoc_fns.insert((trait_gid, nh), info);
-                            let fn_gid = GlobalDefId::new(krate, adidx);
-                            st.ty_tables
-                                .trait_fn_meta
-                                .insert(fn_gid, TraitAssocFnMeta { trait_def: trait_gid, trait_fn_def: fn_gid, trait_generics: trait_gc, method_generics: method_gc });
                         }
                         DefKind::AssocTy => {
                             let agid = GlobalDefId::new(krate, adidx);
@@ -292,6 +265,9 @@ impl RidxV5ItemDb<'_> {
             }
         }
 
+        let bench = self.bench_mode;
+        let mut by_adt: HashMap<GlobalDefId, Vec<IndexedImpl>> = HashMap::new();
+        let mut by_other: HashMap<ImplTargetKey, Vec<IndexedImpl>> = HashMap::new();
         let mut inh_groups: HashMap<(ImplTargetKey, u64), Vec<InherentMethodInfo>> = HashMap::new();
         let mut conc_groups: HashMap<(GlobalDefId, ImplTargetKey), Vec<TraitImplInfo>> = HashMap::new();
         let mut blank_groups: HashMap<GlobalDefId, Vec<TraitImplInfo>> = HashMap::new();
@@ -301,34 +277,60 @@ impl RidxV5ItemDb<'_> {
             let arena = reader.ty_arena();
             let krate = CrateId(r_idx as u32);
             let defs = reader.definitions();
+            let is_dep = self.metas[r_idx].is_dependency;
 
             for iv in reader.impls_iter() {
                 let impl_idx = iv.index();
-                {
-                    let st = self.state.as_mut();
-                    for assoc_didx in iv.assoc_def_indices() {
-                        st.ty_tables.assoc_to_impl.insert(GlobalDefId::new(krate, assoc_didx), impl_idx);
+                let raw_target = self.lower_ty_to_target_key(r_idx, arena, iv.self_ty(), 0);
+                let raw_trait = iv.trait_def().map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td));
+                let (id_index, impl_file) = match iv.def_index() {
+                    Some(didx) => {
+                        let f = if is_dep {
+                            FileId::NONE
+                        } else {
+                            defs.get(didx as usize).and_then(|d| self.shards[r_idx].file_map.get(d.span().file_id() as usize).copied()).unwrap_or(FileId::NONE)
+                        };
+                        (didx, f)
                     }
+                    None => (super::v5_db::IMPL_SYNTH_BIT | impl_idx, FileId::NONE),
+                };
+                let impl_gid = GlobalDefId::new(krate, id_index);
+                if bench {
+                    let st = self.state.as_mut();
+                    if raw_target != ImplTargetKey::Unknown {
+                        st.impl_self_target.insert(impl_gid, raw_target);
+                    }
+                    for assoc_didx in iv.assoc_def_indices() {
+                        st.impl_assoc_parent.insert(GlobalDefId::new(krate, assoc_didx), (raw_trait, raw_target));
+                    }
+                }
+                if raw_target == ImplTargetKey::Unknown {
+                    continue;
+                }
+                let entry = IndexedImpl { id: impl_gid, file: impl_file, target: raw_target, trait_def: raw_trait, is_negative: (iv.flags() & IMPL_FLAG_NEGATIVE) != 0 };
+                match raw_target {
+                    ImplTargetKey::Adt(adt_def) => by_adt.entry(adt_def).or_default().push(entry),
+                    other => by_other.entry(other).or_default().push(entry),
                 }
                 if iv.is_negative() || iv.is_reservation() {
                     continue;
                 }
-                let raw_target = self.lower_ty_to_target_key(r_idx, arena, iv.self_ty(), 0);
                 let target = match raw_target {
                     ImplTargetKey::Adt(d) => ImplTargetKey::Adt(self.canonical_def(d)),
                     ImplTargetKey::Dyn(d) => ImplTargetKey::Dyn(self.canonical_def(d)),
                     other => other,
                 };
-                if target == ImplTargetKey::Unknown {
-                    continue;
-                }
-                let impl_gc = count_impl_non_lt(reader, impl_idx);
                 if iv.is_inherent() {
+                    let mut impl_gc_opt: Option<u16> = None;
                     for assoc_didx in iv.assoc_def_indices() {
                         let Some(ad) = defs.get(assoc_didx as usize) else { continue };
-                        if DefKind::from(ad.kind) != DefKind::AssocFn || !reader.fn_sig_for_def(assoc_didx).is_some_and(|s| s.has_self()) {
+                        if (is_dep && ad.visibility != ridx_format::ItemVis::Public as u8)
+                            || DefKind::from(ad.kind) != DefKind::AssocFn
+                            || !reader.fn_sig_for_def(assoc_didx).is_some_and(|s| s.has_self())
+                        {
                             continue;
                         }
+                        let impl_gc = *impl_gc_opt.get_or_insert_with(|| count_impl_non_lt(reader, impl_idx));
                         let mname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
                         let mname_ps = PoolStr::from_offset(r_idx, reader, ad.name_offset(), true);
                         let method_gc = count_def_non_lt_non_self(reader, assoc_didx);
@@ -345,6 +347,7 @@ impl RidxV5ItemDb<'_> {
                     if !tgid.is_some() {
                         continue;
                     }
+                    let impl_gc = count_impl_non_lt(reader, impl_idx);
                     let fn_bound_arity = self.detect_impl_self_fn_bound_arity(r_idx, reader, arena, impl_idx, iv.self_ty());
                     let st = self.state.as_mut();
                     for ab in iv.assoc_tys() {
@@ -357,16 +360,6 @@ impl RidxV5ItemDb<'_> {
                                     vac.insert((agid, aname_ps, 0));
                                     st.ty_tables.assoc_ty_names.insert(agid, aname_ps);
                                 }
-                            }
-                        }
-                    }
-                    for assoc_didx in iv.assoc_def_indices() {
-                        if let Some(ad) = defs.get(assoc_didx as usize).filter(|a| DefKind::from(a.kind) == DefKind::AssocFn) {
-                            let mname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
-                            if let Some(&tm) = st.ty_tables.trait_assoc_fns.get(&(tgid, fnv1a_str(mname))).filter(|t| t.name.as_str(ws) == mname) {
-                                let tfn = GlobalDefId::new(tgid.krate, tm.method_didx);
-                                let meta = TraitAssocFnMeta { trait_def: tgid, trait_fn_def: tfn, trait_generics: tm.trait_gc, method_generics: tm.method_gc };
-                                st.ty_tables.trait_fn_meta.insert(GlobalDefId::new(krate, assoc_didx), meta);
                             }
                         }
                     }
@@ -383,6 +376,8 @@ impl RidxV5ItemDb<'_> {
         }
         {
             let st = self.state.as_mut();
+            extend_flat_groups(&mut st.impls_arena, &mut st.impls_by_adt, by_adt);
+            extend_flat_groups(&mut st.impls_arena, &mut st.impls_by_other, by_other);
             extend_flat_groups(&mut st.ty_tables.inherent_arena, &mut st.ty_tables.inherent_methods, inh_groups);
             extend_flat_groups(&mut st.ty_tables.trait_impl_arena, &mut st.ty_tables.concrete_trait_impls, conc_groups);
             extend_flat_groups(&mut st.ty_tables.trait_impl_arena, &mut st.ty_tables.blanket_trait_impls, blank_groups);

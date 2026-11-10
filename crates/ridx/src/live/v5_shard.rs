@@ -10,11 +10,11 @@
 
 //! Per-shard pre-indexing (`ShardTables`) and `.ridx` `v5` enum mappers for [`super::v5_db::RidxV5ItemDb`].
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use memmap2::Mmap;
-use ridx_format::{CtorShape, DefKind, IndexReader, ItemVis, UsePrimTy, WorkspaceIndex};
-use ridx_syntax::name_res::{FileId, ItemKind, PrimTy, VisKind};
+use ridx_format::{DefKind, IndexReader, ItemVis, WorkspaceIndex};
+use ridx_syntax::name_res::FileId;
 
 use super::meta::{CorpusSourceDb, ReaderMeta};
 use super::v5_db::CRATE_ROOT_DEF_IDX;
@@ -36,6 +36,8 @@ pub struct ShardTables {
     pub trait_parent_of_assoc: HashMap<u32, u32>,
     /// Sorted `(def_idx, impl_idx)` pairs for `Impl` `DefEntry` items.
     pub impl_def_to_impl_idx: Box<[(u32, u32)]>,
+    /// Sorted `(assoc_didx, impl_idx)` pairs for `Impl`-owned associated items.
+    pub assoc_to_impl: Box<[(u32, u32)]>,
     /// `(start_line, start_col)` -> candidate `def_idx`s (populated only in `bench` mode).
     pub line_col_defs: HashMap<(u32, u32), Vec<u32>>,
     /// Shard `ridx_file_id` -> workspace `CorpusSourceDb` `FileId`.
@@ -48,16 +50,21 @@ pub struct ShardTables {
     pub synth_macros: Vec<String>,
     /// Synthetic proc-macro name -> `PROC_MACRO_SYNTH_BIT | sym_idx`.
     pub synth_macro_by_name: HashMap<String, u32>,
+    /// `fnv1a_str(mac_name)` -> `def_index` (`u32::MAX` on hash/name collision) for `macro_rules!`.
+    pub macro_rules_by_name: HashMap<u64, u32>,
     /// Unmaterialized `TyDefEntry` string-pool ref -> `TY_DEF_SYNTH_BIT | ty_def_idx` (zero `String` copies).
     pub synth_ty_def_by_path: HashMap<u64, (PoolStr, u32)>,
-    /// Collision-only overrides where `reader.find_definition_by_path` differs from primary `didx`.
-    pub path_overrides: HashMap<u64, u32>,
 }
 
 impl ShardTables {
     #[inline]
     pub fn lookup_impl_idx(&self, def_idx: u32) -> Option<u32> {
         self.impl_def_to_impl_idx.binary_search_by_key(&def_idx, |&(k, _)| k).ok().map(|i| self.impl_def_to_impl_idx[i].1)
+    }
+
+    #[inline]
+    pub fn lookup_assoc_impl(&self, assoc_didx: u32) -> Option<u32> {
+        self.assoc_to_impl.binary_search_by_key(&assoc_didx, |&(k, _)| k).ok().map(|i| self.assoc_to_impl[i].1)
     }
 
     #[inline]
@@ -68,6 +75,22 @@ impl ShardTables {
     #[inline]
     pub fn lookup_synth_ty_def(&self, ws: &WorkspaceIndex, s: &str) -> Option<u32> {
         self.synth_ty_def_by_path.get(&fnv1a_str(s)).filter(|&&(ps, _)| ps.as_str(ws) == s).map(|&(_, idx)| idx)
+    }
+
+    #[inline]
+    pub fn lookup_macro_rules<'r>(&self, reader: &'r IndexReader<Mmap>, mac_name: &str) -> Option<&'r str> {
+        let &didx = self.macro_rules_by_name.get(&fnv1a_str(mac_name))?;
+        if didx != u32::MAX {
+            let d = reader.definitions().get(didx as usize)?;
+            if reader.get_str(d.name_offset()).trim_start_matches("r#") == mac_name {
+                return reader.macro_def_for_def(didx).filter(|mv| mv.is_macro_rules()).map(|mv| mv.body);
+            }
+            return None;
+        }
+        reader
+            .macro_defs_iter()
+            .find(|mv| mv.is_macro_rules() && reader.definitions().get(mv.def_index as usize).is_some_and(|d| reader.get_str(d.name_offset()).trim_start_matches("r#") == mac_name))
+            .map(|mv| mv.body)
     }
 }
 
@@ -90,43 +113,39 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
     let defs = reader.definitions();
     let files_count = reader.header().files_count as usize;
     let mut file_map = vec![FileId::NONE; files_count];
+    let mut has_mapped_files = false;
     if !meta.is_dependency {
         for (fid, slot) in file_map.iter_mut().enumerate() {
             let fstr = reader.get_file(fid as u32);
             if !fstr.is_empty() {
                 if let Some(cfid) = src.lookup_abs_or_rel(meta.source_root.as_deref(), fstr) {
                     *slot = cfid;
+                    has_mapped_files = true;
                 }
             }
         }
     }
 
+    let mut reexport_def_ids: HashSet<u32> = HashSet::new();
+    for d in defs {
+        if d.is_reexport() {
+            reexport_def_ids.insert(d.def_id());
+        }
+    }
+
     let mut root_mod_def_idx = None;
-    let mut def_id_to_idx = HashMap::with_capacity(defs.len() / 2);
+    let mut def_id_to_idx = HashMap::with_capacity(if include_bench_tables { defs.len() / 2 } else { reexport_def_ids.len() });
     let mut mod_path_to_idx: HashMap<&str, u32> = HashMap::new();
     let mut enum_path_to_idx: HashMap<&str, u32> = HashMap::new();
     let mut trait_path_to_idx: HashMap<&str, u32> = HashMap::new();
     let mut line_col_defs: HashMap<(u32, u32), Vec<u32>> = HashMap::new();
     let mut span_to_def_idx: HashMap<(FileId, u32, u32), u32> = HashMap::new();
     let mut reexport_sig_to_idx: HashMap<u64, (PoolStr, u32)> = HashMap::new();
-    let mut canon_path_hash: HashMap<u64, (u32, bool)> = HashMap::with_capacity(defs.len() / 2);
 
     let cname_prefix = format!("{}::", meta.crate_name);
     for (i, d) in defs.iter().enumerate() {
         let didx = i as u32;
         let dk = DefKind::from(d.kind);
-        let raw_p = reader.get_str(d.path_offset());
-        if !raw_p.is_empty() && !matches!(dk, DefKind::Impl | DefKind::Use) {
-            let is_pri = !d.is_reexport() && !matches!(dk, DefKind::StructCtor | DefKind::VariantCtor);
-            canon_path_hash
-                .entry(fnv1a_str(raw_p))
-                .and_modify(|e| {
-                    if is_pri && !e.1 {
-                        *e = (didx, true);
-                    }
-                })
-                .or_insert((didx, is_pri));
-        }
         if d.is_reexport() {
             if meta.is_sysroot {
                 let sig = reader.get_str(d.sig_offset());
@@ -149,7 +168,9 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
             continue;
         }
         if !matches!(dk, DefKind::StructCtor | DefKind::VariantCtor) {
-            def_id_to_idx.entry(d.def_id()).or_insert(didx);
+            if include_bench_tables || reexport_def_ids.contains(&d.def_id()) {
+                def_id_to_idx.entry(d.def_id()).or_insert(didx);
+            }
             if include_bench_tables {
                 let sp = d.span();
                 if sp.start_line() > 0 {
@@ -157,27 +178,30 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
                 }
             }
         }
-        let (rel_p, is_root) = shard_rel_path(raw_p, meta, &cname_prefix, d.def_id());
-        match dk {
-            DefKind::Mod => {
-                if is_root {
-                    if root_mod_def_idx.is_none() {
-                        root_mod_def_idx = Some(didx);
+        if matches!(dk, DefKind::Mod | DefKind::Enum | DefKind::Trait) {
+            let raw_p = reader.get_str(d.path_offset());
+            let (rel_p, is_root) = shard_rel_path(raw_p, meta, &cname_prefix, d.def_id());
+            match dk {
+                DefKind::Mod => {
+                    if is_root {
+                        if root_mod_def_idx.is_none() {
+                            root_mod_def_idx = Some(didx);
+                        }
+                    } else {
+                        mod_path_to_idx.insert(rel_p, didx);
                     }
-                } else {
-                    mod_path_to_idx.insert(rel_p, didx);
                 }
+                DefKind::Enum if !is_root => {
+                    enum_path_to_idx.insert(rel_p, didx);
+                }
+                DefKind::Trait if !is_root => {
+                    trait_path_to_idx.insert(rel_p, didx);
+                }
+                _ => {}
             }
-            DefKind::Enum if !is_root => {
-                enum_path_to_idx.insert(rel_p, didx);
-            }
-            DefKind::Trait if !is_root => {
-                trait_path_to_idx.insert(rel_p, didx);
-            }
-            _ => {}
         }
 
-        if !meta.is_dependency && !d.is_macro_expansion() && !matches!(dk, DefKind::Use | DefKind::Impl) {
+        if has_mapped_files && !d.is_macro_expansion() && !matches!(dk, DefKind::Use | DefKind::Impl) {
             let sp = d.span();
             if let Some(&cfid) = file_map.get(sp.file_id() as usize).filter(|f| f.is_some()) {
                 let cf = &src.files[cfid.0 as usize];
@@ -190,20 +214,6 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
         }
     }
 
-    let base_ptr = defs.as_ptr() as usize;
-    let mut path_overrides: HashMap<u64, u32> = HashMap::new();
-    for (&h, &(didx, _)) in &canon_path_hash {
-        let raw_p = reader.get_str(defs[didx as usize].path_offset());
-        let mmap_hit = reader.find_definition_by_path(raw_p).and_then(|found| {
-            (!matches!(DefKind::from(found.kind), DefKind::Impl | DefKind::Use))
-                .then(|| ((found as *const ridx_format::DefEntry as usize - base_ptr) / std::mem::size_of::<ridx_format::DefEntry>()) as u32)
-        });
-        if mmap_hit != Some(didx) {
-            path_overrides.insert(h, didx);
-        }
-    }
-    drop(canon_path_hash);
-
     let root_key = root_mod_def_idx.unwrap_or(CRATE_ROOT_DEF_IDX);
     let mut mod_children: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut enum_variants: HashMap<u32, Vec<u32>> = HashMap::new();
@@ -214,8 +224,20 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
         if d.is_reexport() {
             continue;
         }
-        let didx = i as u32;
         let dk = DefKind::from(d.kind);
+        if matches!(dk, DefKind::Field | DefKind::Impl | DefKind::Use | DefKind::StructCtor | DefKind::VariantCtor | DefKind::ExternCrate) {
+            continue;
+        }
+        if meta.is_dependency
+            && d.visibility != ItemVis::Public as u8
+            && !matches!(dk, DefKind::Mod | DefKind::Variant | DefKind::AssocFn | DefKind::AssocConst | DefKind::AssocTy | DefKind::Macro)
+        {
+            continue;
+        }
+        if matches!(dk, DefKind::AssocFn | DefKind::AssocConst | DefKind::AssocTy) && trait_path_to_idx.is_empty() {
+            continue;
+        }
+        let didx = i as u32;
         let raw_p = reader.get_str(d.path_offset());
         let (rel_p, is_root) = shard_rel_path(raw_p, meta, &cname_prefix, d.def_id());
         if is_root {
@@ -265,14 +287,33 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
         }
     }
 
+    let mut macro_rules_by_name: HashMap<u64, u32> = HashMap::new();
+    for mv in reader.macro_defs_iter() {
+        if mv.is_macro_rules() {
+            if let Some(d) = defs.get(mv.def_index as usize) {
+                let nm = reader.get_str(d.name_offset()).trim_start_matches("r#");
+                if !nm.is_empty() {
+                    macro_rules_by_name.entry(fnv1a_str(nm)).and_modify(|e| *e = u32::MAX).or_insert(mv.def_index);
+                }
+            }
+        }
+    }
+
     let mut impl_pairs: Vec<(u32, u32)> = Vec::new();
+    let mut assoc_pairs: Vec<(u32, u32)> = Vec::new();
     for iv in reader.impls_iter() {
+        let impl_idx = iv.index();
         if let Some(didx) = iv.def_index() {
-            impl_pairs.push((didx, iv.index()));
+            impl_pairs.push((didx, impl_idx));
+        }
+        for adidx in iv.assoc_def_indices() {
+            assoc_pairs.push((adidx, impl_idx));
         }
     }
     impl_pairs.sort_unstable_by_key(|&(k, _)| k);
     impl_pairs.dedup_by_key(|p| p.0);
+    assoc_pairs.sort_unstable_by_key(|&(k, _)| k);
+    assoc_pairs.dedup_by_key(|p| p.0);
 
     let mut synth_ty_def_by_path = HashMap::new();
     let ty_arena = reader.ty_arena();
@@ -295,101 +336,16 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
         trait_assocs,
         trait_parent_of_assoc,
         impl_def_to_impl_idx: impl_pairs.into_boxed_slice(),
+        assoc_to_impl: assoc_pairs.into_boxed_slice(),
         line_col_defs,
         file_map,
         span_to_def_idx,
         reexport_sig_to_idx,
         synth_macros: Vec::new(),
         synth_macro_by_name: HashMap::new(),
+        macro_rules_by_name,
         synth_ty_def_by_path,
-        path_overrides,
     }
 }
 
-#[inline]
-pub fn map_vis(v: u8) -> VisKind {
-    match v {
-        x if x == ItemVis::Public as u8 => VisKind::Public,
-        x if x == ItemVis::Crate as u8 => VisKind::Crate,
-        x if x == ItemVis::Restricted as u8 => VisKind::Restricted,
-        _ => VisKind::Private,
-    }
-}
-
-#[inline]
-pub fn map_use_prim(p: UsePrimTy) -> u8 {
-    match p {
-        UsePrimTy::None => 0,
-        UsePrimTy::Bool => PrimTy::Bool as u8,
-        UsePrimTy::Char => PrimTy::Char as u8,
-        UsePrimTy::Str => PrimTy::Str as u8,
-        UsePrimTy::I8 => PrimTy::I8 as u8,
-        UsePrimTy::I16 => PrimTy::I16 as u8,
-        UsePrimTy::I32 => PrimTy::I32 as u8,
-        UsePrimTy::I64 => PrimTy::I64 as u8,
-        UsePrimTy::I128 => PrimTy::I128 as u8,
-        UsePrimTy::Isize => PrimTy::Isize as u8,
-        UsePrimTy::U8 => PrimTy::U8 as u8,
-        UsePrimTy::U16 => PrimTy::U16 as u8,
-        UsePrimTy::U32 => PrimTy::U32 as u8,
-        UsePrimTy::U64 => PrimTy::U64 as u8,
-        UsePrimTy::U128 => PrimTy::U128 as u8,
-        UsePrimTy::Usize => PrimTy::Usize as u8,
-        UsePrimTy::F32 => PrimTy::F32 as u8,
-        UsePrimTy::F64 => PrimTy::F64 as u8,
-        UsePrimTy::F16 | UsePrimTy::F128 => 0,
-    }
-}
-
-#[inline]
-pub fn map_ridx_kind(dk: DefKind) -> Option<ItemKind> {
-    match dk {
-        DefKind::Mod => Some(ItemKind::Mod),
-        DefKind::Struct | DefKind::StructCtor => Some(ItemKind::Struct),
-        DefKind::Enum => Some(ItemKind::Enum),
-        DefKind::Union => Some(ItemKind::Union),
-        DefKind::Trait | DefKind::TraitAlias => Some(ItemKind::Trait),
-        DefKind::Fn => Some(ItemKind::Fn),
-        DefKind::TyAlias | DefKind::ForeignTy => Some(ItemKind::TypeAlias),
-        DefKind::Const => Some(ItemKind::Const),
-        DefKind::Static => Some(ItemKind::Static),
-        DefKind::Variant | DefKind::VariantCtor => Some(ItemKind::Variant),
-        DefKind::Field => Some(ItemKind::Field),
-        DefKind::AssocFn => Some(ItemKind::AssocFn),
-        DefKind::AssocTy => Some(ItemKind::AssocTy),
-        DefKind::AssocConst => Some(ItemKind::AssocConst),
-        DefKind::Macro => Some(ItemKind::Macro),
-        DefKind::Impl => Some(ItemKind::Impl),
-        DefKind::Use => Some(ItemKind::Use),
-        DefKind::ExternCrate => Some(ItemKind::ExternCrate),
-        _ => None,
-    }
-}
-
-#[inline]
-pub fn def_has_value_ctor(reader: &IndexReader<Mmap>, def_idx: u32, kind: ItemKind) -> bool {
-    if !matches!(kind, ItemKind::Struct | ItemKind::Variant) {
-        return false;
-    }
-    if let Some(dt) = reader.def_ty_for_def(def_idx) {
-        return matches!(dt.ctor_shape(), CtorShape::Tuple | CtorShape::Unit);
-    }
-    reader.fn_sig_for_def(def_idx).is_some() || reader.fields_for_owner(def_idx).next().is_none()
-}
-
-pub use super::v5_refs::collect_shard_alias_pairs;
-
-pub fn lookup_def_idx_by_exact_path(reader: &IndexReader<Mmap>, shard: &ShardTables, path: &str) -> Option<u32> {
-    if let Some(&didx) = shard.path_overrides.get(&fnv1a_str(path)) {
-        if reader.definitions().get(didx as usize).is_some_and(|d| reader.get_str(d.path_offset()) == path) {
-            return Some(didx);
-        }
-    }
-    let def = reader.find_definition_by_path(path)?;
-    if matches!(DefKind::from(def.kind), DefKind::Impl | DefKind::Use) {
-        return None;
-    }
-    let base = reader.definitions().as_ptr() as usize;
-    let ptr = def as *const ridx_format::DefEntry as usize;
-    Some(((ptr - base) / std::mem::size_of::<ridx_format::DefEntry>()) as u32)
-}
+pub use super::v5_refs::{collect_shard_alias_pairs, def_has_value_ctor, lookup_def_idx_by_exact_path, map_ridx_kind, map_use_prim, map_vis};

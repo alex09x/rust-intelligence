@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use ridx_format::{join_resolving_overlap, DefKind, TyDefId, TyKindView, UseOwner, WorkspaceIndex};
+use ridx_format::{join_resolving_overlap, DefKind, ItemVis, TyDefId, TyKindView, UseOwner, WorkspaceIndex, USE_FLAG_REEXPORT};
 use ridx_syntax::name_res::{join_norm_path, FileId, GlobalDefId};
 
 use super::meta::{collect_rs_files, load_reader_meta_at, CorpusFile, CorpusSourceDb, LineIndex};
@@ -38,8 +38,9 @@ impl CorpusSourceDb {
             }
             return fid;
         }
-        if let Ok(ca) = abs_path.canonicalize() {
-            if let Some(&fid) = self.by_abs.get(&ca) {
+        let canon_opt = abs_path.canonicalize().ok();
+        if let Some(ca) = &canon_opt {
+            if let Some(&fid) = self.by_abs.get(ca) {
                 self.by_abs.insert(abs_path.to_path_buf(), fid);
                 let cf = &mut self.files[fid.0 as usize];
                 if cf.text != text {
@@ -55,7 +56,7 @@ impl CorpusSourceDb {
         let lines = LineIndex::new(&text);
         self.by_rel.entry(rel_path.clone()).or_insert(id);
         self.by_abs.insert(abs_path.to_path_buf(), id);
-        if let Ok(ca) = abs_path.canonicalize() {
+        if let Some(ca) = canon_opt {
             if let Ok(crel) = ca.strip_prefix(&self.canon_root) {
                 self.by_rel.entry(join_norm_path("", &crel.to_string_lossy())).or_insert(id);
             }
@@ -97,7 +98,8 @@ impl LiveState {
             .unwrap_or_else(|| PathBuf::from("."));
         let n = ws.crate_count();
         let has_core = ws.readers().iter().any(|r| r.crate_name() == "core");
-        let metas: Vec<_> = (0..n).map(|idx| load_reader_meta_at(ws, idx, has_core, !ws.is_reader_dependency(idx))).collect();
+        let metas: Vec<_> = (0..n).map(|idx| load_reader_meta_at(ws, idx, has_core, false)).collect();
+        let meta_loaded: Vec<bool> = (0..n).map(|idx| ws.meta_path_at(idx).is_none()).collect();
         let mut sysroot_by_name = HashMap::new();
         for (idx, meta) in metas.iter().enumerate() {
             if matches!(meta.crate_name.as_str(), "core" | "alloc" | "std" | "proc_macro") {
@@ -105,10 +107,12 @@ impl LiveState {
             }
         }
         let mut ty_tables = V5TyTables::default();
+        ty_tables.raw_ty_def_gids.resize_with(n, Vec::new);
         ty_tables.ty_def_gids.resize_with(n, Vec::new);
         let state = Self {
             bench_mode: false,
             metas,
+            meta_loaded,
             shards: (0..n).map(|_| ShardTables::default()).collect(),
             shard_loaded: vec![false; n],
             sysroot_by_name,
@@ -127,16 +131,17 @@ impl LiveState {
 }
 
 impl RidxV5ItemDb<'_> {
-    fn ensure_dep_meta(&mut self, idx: usize) {
-        let m = &self.metas[idx];
-        if m.is_dependency && !m.is_sysroot && m.extern_units.is_empty() && self.ws.meta_path_at(idx).is_some() {
-            let has_core = self.sysroot_by_name.contains_key("core");
-            self.state.as_mut().metas[idx] = load_reader_meta_at(self.ws, idx, has_core, true);
-        }
+    #[inline]
+    fn ensure_meta_at(&mut self, idx: usize) {
+        self.state.as_mut().ensure_meta(self.ws, idx);
     }
 
     pub(crate) fn ensure_crate_sources(&mut self, r_idx: usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) {
-        if src_loaded.get(r_idx).copied().unwrap_or(true) || self.metas[r_idx].is_dependency {
+        if src_loaded.get(r_idx).copied().unwrap_or(true) {
+            return;
+        }
+        self.ensure_meta_at(r_idx);
+        if self.metas[r_idx].is_dependency {
             return;
         }
         src_loaded[r_idx] = true;
@@ -159,7 +164,10 @@ impl RidxV5ItemDb<'_> {
                     }
                 }
             }
-            if fcount <= 1 {
+            if fcount == 0
+                || (fcount == 1
+                    && src_mut.files[before..].iter().any(|f| f.text.contains("mod ") || f.text.contains("mod\n") || f.text.contains("mod\t") || f.text.contains("include")))
+            {
                 let scan_dir = root_rs.as_deref().and_then(Path::parent).unwrap_or(sr.as_path());
                 src_mut.load_dir_once(scan_dir, loaded_dirs);
             }
@@ -212,113 +220,131 @@ impl RidxV5ItemDb<'_> {
     /// Activates `root_r_idx`, sysroot crates (`core`/`alloc`/`std`), `root_r_idx`'s direct/type-referenced
     /// crates, and transitive re-export/alias targets (excluding proc-macro host deps and sysroot OS internals).
     pub(crate) fn activate_reachable_shards(&mut self, root_r_idx: usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) -> Vec<usize> {
-        self.ensure_dep_meta(root_r_idx);
-        self.ensure_crate_sources(root_r_idx, loaded_dirs, src_loaded);
+        self.ensure_meta_at(root_r_idx);
+        let root_needs_cst = self.ws.readers()[root_r_idx].fn_sigs().is_empty()
+            || self.metas[root_r_idx].target_kind.contains("proc-macro")
+            || (self.metas[root_r_idx].target_kind.is_empty() && self.ws.meta_path_at(root_r_idx).is_none() && !self.metas[root_r_idx].is_sysroot);
+        if root_needs_cst {
+            self.ensure_crate_sources(root_r_idx, loaded_dirs, src_loaded);
+        }
+        let newly = self.collect_reachable_unloaded(root_r_idx, false);
+        self.materialize_shard_batch(newly, loaded_dirs, src_loaded)
+    }
+
+    pub(crate) fn prewarm_umbrella_step(&mut self, queue: &mut Option<Vec<usize>>, cursor: &mut usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) -> Vec<usize> {
+        if queue.is_none() {
+            let ws_root = self.ws.workspace_root();
+            let best = (self.ws.crate_count() > 500)
+                .then(|| {
+                    (0..self.ws.crate_count())
+                        .find(|&i| !self.metas[i].is_dependency && self.ws.target_kind_at(i).is_some_and(|k| k.is_lib()) && self.metas[i].source_root.as_deref() == ws_root)
+                })
+                .flatten();
+            *queue = Some(best.map_or_else(Vec::new, |u| self.collect_reachable_unloaded(u, true)));
+        }
+        let Some(q) = queue.as_ref() else { return Vec::new() };
+        let mut batch = Vec::new();
+        while *cursor < q.len() && batch.len() < 16 {
+            let idx = q[*cursor];
+            *cursor += 1;
+            if !self.shard_loaded[idx] {
+                batch.push(idx);
+            }
+        }
+        self.materialize_shard_batch(batch, loaded_dirs, src_loaded)
+    }
+
+    fn collect_reachable_unloaded(&mut self, root_r_idx: usize, expand_umbrella: bool) -> Vec<usize> {
         let n = self.ws.crate_count();
         let mut visited = vec![false; n];
-        let mut q = VecDeque::new();
+        let mut q: VecDeque<(usize, u8)> = VecDeque::new();
         let want_pm = self.metas[root_r_idx].target_kind.contains("proc-macro") || self.metas[root_r_idx].extern_units.contains_key("proc_macro");
         for start in std::iter::once(root_r_idx).chain(self.sysroot_by_name.iter().filter(|(k, _)| want_pm || k.as_str() != "proc_macro").map(|(_, &i)| i)) {
             if start < n && !visited[start] {
                 visited[start] = true;
-                q.push_back(start);
+                q.push_back((start, 0));
             }
         }
         let mut newly = Vec::new();
-        while let Some(u) = q.pop_front() {
-            self.ensure_dep_meta(u);
+        while let Some((u, depth)) = q.pop_front() {
+            self.ensure_meta_at(u);
             if !self.shard_loaded[u] {
                 newly.push(u);
             }
-            if self.metas[u].is_sysroot || (u != root_r_idx && self.metas[u].target_kind.contains("proc-macro")) {
+            if self.metas[u].is_sysroot || (u != root_r_idx && self.metas[u].target_kind.contains("proc-macro")) || depth >= 6 {
                 continue;
             }
-            if u == root_r_idx {
+            let next_d = depth + 1;
+            let ws = self.ws;
+            if u == root_r_idx || (expand_umbrella && !self.metas[u].is_dependency && depth <= 2) {
                 let uks: Vec<String> = self.metas[u].extern_units.values().cloned().collect();
                 for uk in uks {
-                    if let Some(v) = self.resolve_unit_to_reader(u, &uk) {
-                        if !visited[v] {
-                            visited[v] = true;
-                            q.push_back(v);
-                        }
+                    if let Some(v) = self.resolve_unit_to_reader(u, &uk).filter(|&v| !visited[v]) {
+                        visited[v] = true;
+                        q.push_back((v, next_d));
                     }
                 }
-                let reader = &self.ws.readers()[u];
+            }
+            if u == root_r_idx {
+                let reader = &ws.readers()[u];
                 let arena = reader.ty_arena();
                 for i in 0..reader.ty_defs().len() {
                     if let Some(td) = arena.def(TyDefId(i as u32)) {
-                        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
-                            let first = td.path.split("::").next().unwrap_or(td.path);
-                            self.resolve_extern_name_to_reader(u, first)
-                        });
-                        if let Some(v) = target.filter(|&v| !visited[v]) {
-                            visited[v] = true;
-                            q.push_back(v);
-                        }
+                        self.enqueue_td(u, td, next_d, &mut visited, &mut q);
                     }
                 }
             } else {
-                let reader = &self.ws.readers()[u];
+                let reader = &ws.readers()[u];
                 let arena = reader.ty_arena();
                 for (didx, d) in reader.definitions().iter().enumerate() {
+                    if d.visibility != ItemVis::Public as u8 {
+                        continue;
+                    }
                     if d.is_reexport() {
-                        let sig = reader.get_str(d.sig_offset());
-                        let first = sig.split("::").next().unwrap_or("");
+                        if depth >= 3 {
+                            continue;
+                        }
+                        let first = reader.get_str(d.sig_offset()).split("::").next().unwrap_or("");
                         if let Some(v) = (!first.is_empty()).then(|| self.resolve_extern_name_to_reader(u, first)).flatten().filter(|&v| !visited[v]) {
                             visited[v] = true;
-                            q.push_back(v);
+                            q.push_back((v, next_d));
                         }
                     } else if matches!(DefKind::from(d.kind), DefKind::TyAlias | DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait) {
                         if DefKind::from(d.kind) == DefKind::TyAlias {
-                            if let Some(dt) = reader.def_ty_for_def(didx as u32) {
-                                if let TyKindView::Adt { def, .. } = arena.kind(dt.ty()) {
-                                    if let Some(td) = arena.def(def) {
-                                        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
-                                            let first = td.path.split("::").next().unwrap_or(td.path);
-                                            self.resolve_extern_name_to_reader(u, first)
-                                        });
-                                        if let Some(v) = target.filter(|&v| !visited[v]) {
-                                            visited[v] = true;
-                                            q.push_back(v);
-                                        }
-                                    }
+                            if let Some(TyKindView::Adt { def, .. }) = reader.def_ty_for_def(didx as u32).map(|dt| arena.kind(dt.ty())) {
+                                if let Some(td) = arena.def(def) {
+                                    self.enqueue_td(u, td, next_d, &mut visited, &mut q);
                                 }
                             }
                         }
-                        for gp in reader.generic_params_for_def(didx as u32) {
-                            if let Some(def_ty) = gp.default_ty() {
-                                if let TyKindView::Adt { def, .. } = arena.kind(def_ty) {
+                        if depth < 3 {
+                            for gp in reader.generic_params_for_def(didx as u32) {
+                                if let Some(TyKindView::Adt { def, .. }) = gp.default_ty().map(|dt| arena.kind(dt)) {
                                     if let Some(td) = arena.def(def) {
-                                        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
-                                            let first = td.path.split("::").next().unwrap_or(td.path);
-                                            self.resolve_extern_name_to_reader(u, first)
-                                        });
-                                        if let Some(v) = target.filter(|&v| !visited[v]) {
-                                            visited[v] = true;
-                                            q.push_back(v);
-                                        }
+                                        self.enqueue_td(u, td, next_d, &mut visited, &mut q);
                                     }
                                 }
                             }
                         }
                     }
                 }
-                for ue in reader.uses_for_owner(UseOwner::CrateRoot) {
-                    for td_id in [ue.type_def, ue.value_def, ue.macro_def].into_iter().flatten() {
-                        if let Some(td) = arena.def(td_id) {
-                            let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
-                                let first = td.path.split("::").next().unwrap_or(td.path);
-                                self.resolve_extern_name_to_reader(u, first)
-                            });
-                            if let Some(v) = target.filter(|&v| !visited[v]) {
-                                visited[v] = true;
-                                q.push_back(v);
+                if depth < 3 {
+                    for ue in reader.uses_for_owner(UseOwner::CrateRoot) {
+                        if (ue.flags & USE_FLAG_REEXPORT) != 0 && ue.vis == ItemVis::Public {
+                            for td_id in [ue.type_def, ue.value_def, ue.macro_def].into_iter().flatten() {
+                                if let Some(td) = arena.def(td_id) {
+                                    self.enqueue_td(u, td, next_d, &mut visited, &mut q);
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        newly
+    }
+
+    fn materialize_shard_batch(&mut self, mut newly: Vec<usize>, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) -> Vec<usize> {
         if newly.is_empty() {
             return newly;
         }
@@ -336,9 +362,22 @@ impl RidxV5ItemDb<'_> {
             st.shards[idx] = built;
             st.shard_loaded[idx] = true;
         }
-        self.index_impls_and_traits_for(&newly);
         self.index_proc_macro_exports_for(&newly);
+        self.populate_raw_ty_def_gids_for(&newly);
+        self.index_impls_and_traits_for(&newly);
         self.build_ty_tables_for(&newly);
         newly
+    }
+
+    #[inline]
+    fn enqueue_td(&mut self, u: usize, td: ridx_format::TyDefView<'_>, next_d: u8, visited: &mut [bool], q: &mut VecDeque<(usize, u8)>) {
+        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
+            let first = td.path.split("::").next().unwrap_or(td.path);
+            self.resolve_extern_name_to_reader(u, first)
+        });
+        if let Some(v) = target.filter(|&v| !visited[v]) {
+            visited[v] = true;
+            q.push_back((v, next_d));
+        }
     }
 }

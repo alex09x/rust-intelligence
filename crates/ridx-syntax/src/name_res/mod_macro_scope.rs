@@ -111,17 +111,19 @@ impl<'a, 't> Builder<'a, 't> {
                 self.tree.file_to_modules.push((inc_file, mod_id));
             }
             let inc_src = self.sources.file_text(inc_file);
-            let owned_inc;
-            let inc_st: &SyntaxTree<'_> = match (self.borrow_cached)(inc_file) {
+            let mut owned_inc = None;
+            let inc_st: &SyntaxTree<'_> = match self.borrow_cached.as_deref_mut().and_then(|cb| cb(inc_file)) {
                 Some(borrowed) => borrowed,
-                None => {
-                    owned_inc = parse(inc_src);
-                    &owned_inc
-                }
+                None => owned_inc.insert(parse(inc_src)),
             };
             self.in_flight_files.push(inc_file);
             self.scan_container(mod_id, inc_file, inc_st, inc_st.root(), macro_env, 0);
             self.in_flight_files.pop();
+            if self.capture_trees {
+                if let Some(t) = owned_inc {
+                    self.captured_trees.entry(inc_file).or_insert(t);
+                }
+            }
             return;
         }
 

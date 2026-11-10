@@ -112,7 +112,16 @@ impl ModuleTree {
 
     /// Builds the module tree reusing caller-supplied pre-parsed [`SyntaxTree`]s when available.
     pub fn build_cached<'t>(db: &dyn ItemDb, sources: &dyn SourceDb, krate: CrateId, root_file: FileId, mut get_tree: impl FnMut(FileId) -> Option<&'t SyntaxTree<'t>>) -> Self {
-        Builder::new(db, sources, krate, &mut get_tree).run(root_file)
+        Builder::new(db, sources, krate, Some(&mut get_tree)).run(root_file)
+    }
+
+    pub(super) fn build_capturing_trees<'s>(
+        db: &'s dyn ItemDb,
+        sources: &'s dyn SourceDb,
+        krate: CrateId,
+        root_file: FileId,
+    ) -> (Self, std::collections::HashMap<FileId, SyntaxTree<'s>>) {
+        Builder::<'s, 's>::new(db, sources, krate, None).run_capturing(root_file)
     }
 
     #[inline]

@@ -54,8 +54,7 @@ impl ParamRemap {
             return out;
         }
         let reader = &db.ws.readers()[r_idx];
-        let gid = GlobalDefId::new(CrateId(r_idx as u32), didx);
-        if let Some(&impl_idx) = db.ty_tables.assoc_to_impl.get(&gid) {
+        if let Some(impl_idx) = db.shards[r_idx].lookup_assoc_impl(didx) {
             out.append_params(db, r_idx, reader.generic_params_for_impl(impl_idx), None, false, arena);
         } else if let Some(&trait_didx) = db.shards[r_idx].trait_parent_of_assoc.get(&didx) {
             out.append_params(db, r_idx, reader.generic_params_for_def(trait_didx), None, false, arena);

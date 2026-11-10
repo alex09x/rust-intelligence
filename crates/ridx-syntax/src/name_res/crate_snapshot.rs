@@ -25,21 +25,78 @@ use super::snapshot_incremental::CleanSolverBase;
 use crate::parser::parse;
 use crate::tree::SyntaxTree;
 
+struct DirtySnapshotBase {
+    clean_collected: CollectedCrate,
+    clean_file_mod_hashes: HashMap<FileId, u64>,
+    clean_solver_base: CleanSolverBase,
+}
+
 /// Pre-built clean crate snapshot accelerating single-file / dirty-files overlay updates
 /// without re-parsing or re-walking unchanged `.rs` files in the crate.
 pub struct CrateSnapshot {
     pub mod_tree: ModuleTree,
     pub clean_def_map: CrateDefMap,
-    clean_collected: CollectedCrate,
-    clean_file_mod_hashes: HashMap<FileId, u64>,
-    clean_solver_base: CleanSolverBase,
+    pub(super) indexed_only: bool,
+    dirty_base: Option<DirtySnapshotBase>,
     pub(super) ext_cache: RefCell<ExtScopeCache>,
 }
 
 impl CrateSnapshot {
-    /// Builds a reusable clean snapshot of `krate` rooted at `root_file`.
+    #[inline]
+    pub(super) fn from_parts(mod_tree: ModuleTree, clean_def_map: CrateDefMap, ext_cache: ExtScopeCache) -> Self {
+        Self { mod_tree, clean_def_map, indexed_only: true, dirty_base: None, ext_cache: RefCell::new(ext_cache) }
+    }
+
+    #[inline]
+    pub const fn is_indexed_only(&self) -> bool {
+        self.indexed_only
+    }
+
+    /// Builds a reusable clean snapshot of `krate` rooted at `root_file`, parsing each reached `.rs` file once.
     pub fn build_clean(db: &dyn ItemDb, sources: &dyn SourceDb, krate: CrateId, root_file: FileId) -> Self {
-        Self::build_clean_cached(db, sources, krate, root_file, |_| None)
+        let (mod_tree, trees) = ModuleTree::build_capturing_trees(db, sources, krate, root_file);
+        let mut ext_cache = ExtScopeCache::new();
+        let clean_collected = collect_crate_items(db, sources, &mod_tree, &[], |fid| trees.get(&fid));
+        let clean_def_map = CrateDefMap::from_collected(db, &mod_tree, clean_collected.clone(), &[], &mut ext_cache);
+        let clean_file_mod_hashes = compute_mod_hashes(&mod_tree, db, sources, |fid| trees.get(&fid));
+        drop(trees);
+        let clean_solver_base = CleanSolverBase::build(db, &mod_tree, &clean_collected, &clean_def_map);
+        Self {
+            mod_tree,
+            clean_def_map,
+            indexed_only: false,
+            dirty_base: Some(DirtySnapshotBase { clean_collected, clean_file_mod_hashes, clean_solver_base }),
+            ext_cache: RefCell::new(ext_cache),
+        }
+    }
+
+    /// Builds a clean snapshot (`mod_tree` + `clean_def_map`) parsing each reached `.rs` file once,
+    /// deferring `DirtySnapshotBase` allocation until an unsaved buffer actually modifies `krate`.
+    pub fn build_clean_for_query(db: &dyn ItemDb, sources: &dyn SourceDb, krate: CrateId, root_file: FileId) -> Self {
+        let (mod_tree, trees) = ModuleTree::build_capturing_trees(db, sources, krate, root_file);
+        let mut ext_cache = ExtScopeCache::new();
+        let clean_collected = collect_crate_items(db, sources, &mod_tree, &[], |fid| trees.get(&fid));
+        drop(trees);
+        let clean_def_map = CrateDefMap::from_collected(db, &mod_tree, clean_collected, &[], &mut ext_cache);
+        Self { mod_tree, clean_def_map, indexed_only: false, dirty_base: None, ext_cache: RefCell::new(ext_cache) }
+    }
+
+    /// Ensures the incremental dirty-overlay base tables are populated before calling [`Self::with_dirty_files`].
+    pub fn ensure_dirty_base(&mut self, db: &dyn ItemDb, clean_sources: &dyn SourceDb) {
+        if self.dirty_base.is_some() {
+            return;
+        }
+        let mut trees: HashMap<FileId, SyntaxTree<'_>> = HashMap::with_capacity(self.mod_tree.modules.len());
+        for m in &self.mod_tree.modules {
+            if m.file.is_some() && !trees.contains_key(&m.file) {
+                trees.insert(m.file, parse(clean_sources.file_text(m.file)));
+            }
+        }
+        let clean_collected = collect_crate_items(db, clean_sources, &self.mod_tree, &[], |fid| trees.get(&fid));
+        let clean_file_mod_hashes = compute_mod_hashes(&self.mod_tree, db, clean_sources, |fid| trees.get(&fid));
+        drop(trees);
+        let clean_solver_base = CleanSolverBase::build(db, &self.mod_tree, &clean_collected, &self.clean_def_map);
+        self.dirty_base = Some(DirtySnapshotBase { clean_collected, clean_file_mod_hashes, clean_solver_base });
     }
 
     /// Same as [`Self::build_clean`], borrowing caller-cached [`SyntaxTree`]s when available.
@@ -54,25 +111,15 @@ impl CrateSnapshot {
         let mut ext_cache = ExtScopeCache::new();
         let clean_collected = collect_crate_items(db, sources, &mod_tree, &[], &mut get_tree);
         let clean_def_map = CrateDefMap::from_collected(db, &mod_tree, clean_collected.clone(), &[], &mut ext_cache);
-
-        let mut clean_file_mod_hashes = HashMap::with_capacity(mod_tree.modules.len());
-        for m in &mod_tree.modules {
-            if !m.file.is_some() || clean_file_mod_hashes.contains_key(&m.file) {
-                continue;
-            }
-            let owned;
-            let st: &SyntaxTree<'_> = match get_tree(m.file) {
-                Some(t) => t,
-                None => {
-                    owned = parse(sources.file_text(m.file));
-                    &owned
-                }
-            };
-            clean_file_mod_hashes.insert(m.file, file_mod_fingerprint(st, db, krate));
-        }
+        let clean_file_mod_hashes = compute_mod_hashes(&mod_tree, db, sources, &mut get_tree);
         let clean_solver_base = CleanSolverBase::build(db, &mod_tree, &clean_collected, &clean_def_map);
-
-        Self { mod_tree, clean_def_map, clean_collected, clean_file_mod_hashes, clean_solver_base, ext_cache: RefCell::new(ext_cache) }
+        Self {
+            mod_tree,
+            clean_def_map,
+            indexed_only: false,
+            dirty_base: Some(DirtySnapshotBase { clean_collected, clean_file_mod_hashes, clean_solver_base }),
+            ext_cache: RefCell::new(ext_cache),
+        }
     }
 
     /// Incrementally merges `dirty_files` from `overlay_sources` over the cached clean crate state.
@@ -87,10 +134,22 @@ impl CrateSnapshot {
     ) -> (Option<ModuleTree>, CrateDefMap) {
         if dirty_files.is_empty() {
             let mut ext_c = self.ext_cache.borrow_mut();
-            let dm = CrateDefMap::from_collected(db, &self.mod_tree, self.clean_collected.clone(), &[], &mut ext_c);
-            return (None, dm);
+            if let Some(base) = &self.dirty_base {
+                return (None, CrateDefMap::from_collected(db, &self.mod_tree, base.clean_collected.clone(), &[], &mut ext_c));
+            }
+            let coll = collect_crate_items(db, overlay_sources, &self.mod_tree, &[], &mut get_tree);
+            return (None, CrateDefMap::from_collected(db, &self.mod_tree, coll, &[], &mut ext_c));
         }
-        if self.mod_structure_maybe_changed(db, overlay_sources, dirty_files, &mut get_tree) {
+        let Some(base) = &self.dirty_base else {
+            let root_file = self.mod_tree.module(ModuleId::ROOT).file;
+            let new_mt = ModuleTree::build_cached(db, overlay_sources, self.mod_tree.krate, root_file, &mut get_tree);
+            let coll = collect_crate_items(db, overlay_sources, &new_mt, dirty_files, &mut get_tree);
+            let mut ext_c = self.ext_cache.borrow_mut();
+            let dm = CrateDefMap::from_collected(db, &new_mt, coll, dirty_files, &mut ext_c);
+            let changed = !mod_trees_structurally_equal(&self.mod_tree, &new_mt);
+            return (changed.then_some(new_mt), dm);
+        };
+        if Self::mod_structure_maybe_changed(&self.mod_tree, &base.clean_file_mod_hashes, db, overlay_sources, dirty_files, &mut get_tree) {
             let root_file = self.mod_tree.module(ModuleId::ROOT).file;
             let new_mt = ModuleTree::build_cached(db, overlay_sources, self.mod_tree.krate, root_file, &mut get_tree);
             if !mod_trees_structurally_equal(&self.mod_tree, &new_mt) {
@@ -101,24 +160,25 @@ impl CrateSnapshot {
             }
         }
 
-        let spliced = self.clean_collected.splice_dirty_files(db, overlay_sources, &self.mod_tree, dirty_files, &mut get_tree);
+        let spliced = base.clean_collected.splice_dirty_files(db, overlay_sources, &self.mod_tree, dirty_files, &mut get_tree);
         let next_seq = spliced.next_overlay_seq;
         let mut ext_c = self.ext_cache.borrow_mut();
-        let mut map = self.clean_solver_base.solve_dirty(db, &self.mod_tree, &self.clean_collected, &self.clean_def_map, spliced, dirty_files, &mut ext_c);
+        let mut map = base.clean_solver_base.solve_dirty(db, &self.mod_tree, &base.clean_collected, &self.clean_def_map, spliced, dirty_files, &mut ext_c);
         resolve_local_impls_and_assocs(&mut map, db, &self.mod_tree, &mut ext_c, next_seq);
         (None, map)
     }
 
     fn mod_structure_maybe_changed<'t>(
-        &self,
+        mod_tree: &ModuleTree,
+        clean_file_mod_hashes: &HashMap<FileId, u64>,
         db: &dyn ItemDb,
         overlay_sources: &dyn SourceDb,
         dirty_files: &[FileId],
         get_tree: &mut impl FnMut(FileId) -> Option<&'t SyntaxTree<'t>>,
     ) -> bool {
-        let krate = self.mod_tree.krate;
+        let krate = mod_tree.krate;
         for &df in dirty_files {
-            let Some(&expected_hash) = self.clean_file_mod_hashes.get(&df) else {
+            let Some(&expected_hash) = clean_file_mod_hashes.get(&df) else {
                 return true;
             };
             let owned;
@@ -135,4 +195,23 @@ impl CrateSnapshot {
         }
         false
     }
+}
+
+fn compute_mod_hashes<'t>(mod_tree: &ModuleTree, db: &dyn ItemDb, sources: &dyn SourceDb, mut get_tree: impl FnMut(FileId) -> Option<&'t SyntaxTree<'t>>) -> HashMap<FileId, u64> {
+    let mut out = HashMap::with_capacity(mod_tree.modules.len());
+    for m in &mod_tree.modules {
+        if !m.file.is_some() || out.contains_key(&m.file) {
+            continue;
+        }
+        let owned;
+        let st: &SyntaxTree<'_> = match get_tree(m.file) {
+            Some(t) => t,
+            None => {
+                owned = parse(sources.file_text(m.file));
+                &owned
+            }
+        };
+        out.insert(m.file, file_mod_fingerprint(st, db, mod_tree.krate));
+    }
+    out
 }

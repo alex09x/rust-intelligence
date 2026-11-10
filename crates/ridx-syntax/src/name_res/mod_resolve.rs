@@ -82,13 +82,10 @@ impl<'a, 't> Builder<'a, 't> {
         }
 
         let child_src = self.sources.file_text(target_file);
-        let owned_child;
-        let child_st: &SyntaxTree<'_> = match (self.borrow_cached)(target_file) {
+        let mut owned_child = None;
+        let child_st: &SyntaxTree<'_> = match self.borrow_cached.as_deref_mut().and_then(|cb| cb(target_file)) {
             Some(borrowed) => borrowed,
-            None => {
-                owned_child = parse(child_src);
-                &owned_child
-            }
+            None => owned_child.insert(parse(child_src)),
         };
         let mut inner = EffectiveAttrs::default();
         eval_inner_attrs(child_st, child_st.root(), self.db, self.krate, &mut inner);
@@ -108,6 +105,11 @@ impl<'a, 't> Builder<'a, 't> {
         self.scan_container(child_id, target_file, child_st, child_st.root(), macro_env, 0);
         self.in_flight_files.pop();
         finish_macro_scope(&outer, env_mark, macro_env, &self.macro_defs);
+        if self.capture_trees {
+            if let Some(t) = owned_child {
+                self.captured_trees.entry(target_file).or_insert(t);
+            }
+        }
     }
 
     fn resolve_out_of_line_file(
@@ -211,13 +213,10 @@ impl<'a, 't> Builder<'a, 't> {
                                 continue;
                             }
                             let child_src = self.sources.file_text(target_file);
-                            let owned_child;
-                            let child_st: &SyntaxTree<'_> = match (self.borrow_cached)(target_file) {
+                            let mut owned_child = None;
+                            let child_st: &SyntaxTree<'_> = match self.borrow_cached.as_deref_mut().and_then(|cb| cb(target_file)) {
                                 Some(borrowed) => borrowed,
-                                None => {
-                                    owned_child = parse(child_src);
-                                    &owned_child
-                                }
+                                None => owned_child.insert(parse(child_src)),
                             };
                             let mut inner = EffectiveAttrs::default();
                             eval_inner_attrs(child_st, child_st.root(), self.db, self.krate, &mut inner);
@@ -238,6 +237,11 @@ impl<'a, 't> Builder<'a, 't> {
                             self.in_flight_files.push(target_file);
                             self.scan_container(child_id, target_file, child_st, child_st.root(), &mut env, 0);
                             self.in_flight_files.pop();
+                            if self.capture_trees {
+                                if let Some(t) = owned_child {
+                                    self.captured_trees.entry(target_file).or_insert(t);
+                                }
+                            }
                         }
                     }
                 }

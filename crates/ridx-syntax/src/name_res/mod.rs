@@ -66,6 +66,7 @@ pub mod path_res;
 mod path_step_resolve;
 pub mod per_ns;
 mod snapshot_incremental;
+mod snapshot_indexed;
 mod snapshot_seed;
 mod tok_delim;
 mod tok_slice_scan;

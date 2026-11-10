@@ -10,6 +10,7 @@
 
 //! Stack-only type parameter substitution (`instantiate_v5`) for `.ridx` `v5` lowered types.
 
+use ridx_syntax::name_res::GlobalDefId;
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{InferTyArena, InferTyId, InferTyKind, TySliceRange};
 
@@ -297,5 +298,46 @@ impl super::v5_db::RidxV5ItemDb<'_> {
         let ok = ridx_syntax::ty_infer::unify::equate(arena, vars, cur, inst_self).is_ok();
         vars.rollback_to(snap);
         ok
+    }
+
+    pub(crate) fn resolve_reexport_canon(&self, def: GlobalDefId) -> GlobalDefId {
+        if !def.is_some() || def.index == super::v5_db::CRATE_ROOT_DEF_IDX || (def.index & (super::v5_db::IMPL_SYNTH_BIT | super::v5_db::PROC_MACRO_SYNTH_BIT)) != 0 {
+            return def;
+        }
+        let r_idx = def.krate.0 as usize;
+        let Some(reader) = self.ws.readers().get(r_idx) else {
+            return def;
+        };
+        let Some(d) = reader.definitions().get(def.index as usize) else {
+            return def;
+        };
+        if d.is_reexport() {
+            let raw_sig = reader.get_str(d.sig_offset());
+            let sig = raw_sig.strip_prefix("crate::").or_else(|| raw_sig.strip_prefix("self::")).unwrap_or(raw_sig);
+            let first = sig.split("::").next().unwrap_or("");
+            if !first.is_empty() {
+                let ext_r = if first == self.metas[r_idx].crate_name {
+                    Some(r_idx)
+                } else {
+                    self.resolve_extern_name_to_reader(r_idx, first).or_else(|| self.sysroot_by_name.get(first).copied())
+                };
+                if let Some(tr_idx) = ext_r {
+                    let cg = self.find_def_in_reader_by_path(tr_idx, sig);
+                    if cg.is_some() && cg != def {
+                        return cg;
+                    }
+                }
+                let local_cg = self.find_def_in_reader_by_path(r_idx, sig);
+                if local_cg.is_some() && local_cg != def {
+                    return local_cg;
+                }
+            }
+            if let Some(&tdidx) = self.shards[r_idx].def_id_to_idx.get(&d.def_id()) {
+                if tdidx != def.index {
+                    return GlobalDefId::new(def.krate, tdidx);
+                }
+            }
+        }
+        def
     }
 }

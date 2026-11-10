@@ -122,8 +122,16 @@ impl LiveDb {
     pub fn type_at(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Option<LiveTy> {
         self.sync_engine(ws);
         let engine = self.engine.as_mut()?;
-        let (r_idx, fid, canon) = engine.resolve_unit_and_file(ws, file.as_ref(), &self.manual_overlays, overlays)?;
-        let env_salt = engine.prepare_file_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays)?;
+        let (r_idx, fid, canon) = engine.locate_and_parse_file(ws, file.as_ref(), &self.manual_overlays, overlays)?;
+        let on_typeable = {
+            let st = engine.parsed.as_ref()?.tree();
+            super::query_cursor::is_cursor_on_typeable_token(&st, byte_offset)
+        };
+        if !on_typeable {
+            engine.ensure_unit_shards(ws, r_idx);
+            return None;
+        }
+        let env_salt = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays)?;
         query_type_at(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
     }
 
@@ -132,10 +140,10 @@ impl LiveDb {
     pub fn dot_candidates(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
         self.sync_engine(ws);
         let Some(engine) = self.engine.as_mut() else { return Vec::new() };
-        let Some((r_idx, fid, canon)) = engine.resolve_unit_and_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
+        let Some((r_idx, fid, canon)) = engine.locate_and_parse_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
             return Vec::new();
         };
-        let Some(env_salt) = engine.prepare_file_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
+        let Some(env_salt) = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
             return Vec::new();
         };
         query_dot_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
@@ -145,10 +153,10 @@ impl LiveDb {
     pub fn path_candidates(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
         self.sync_engine(ws);
         let Some(engine) = self.engine.as_mut() else { return Vec::new() };
-        let Some((r_idx, fid, canon)) = engine.resolve_unit_and_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
+        let Some((r_idx, fid, canon)) = engine.locate_and_parse_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
             return Vec::new();
         };
-        let Some(env_salt) = engine.prepare_file_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
+        let Some(env_salt) = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
             return Vec::new();
         };
         query_path_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)

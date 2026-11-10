@@ -10,6 +10,8 @@
 
 //! Arena builder for [`super::mod_tree::ModuleTree`].
 
+use std::collections::HashMap;
+
 use super::attr::{eval_inner_attrs, EffectiveAttrs};
 use super::db::{CrateId, FileId, ItemDb, ModuleId, SourceDb, VisKind};
 use super::mbe_expand::MAX_MBE_DEPTH;
@@ -23,7 +25,9 @@ pub(super) struct Builder<'a, 't> {
     pub(super) db: &'a dyn ItemDb,
     pub(super) sources: &'a dyn SourceDb,
     pub(super) krate: CrateId,
-    pub(super) borrow_cached: &'a mut dyn FnMut(FileId) -> Option<&'t SyntaxTree<'t>>,
+    pub(super) borrow_cached: Option<&'a mut dyn FnMut(FileId) -> Option<&'t SyntaxTree<'t>>>,
+    pub(super) capture_trees: bool,
+    pub(super) captured_trees: HashMap<FileId, SyntaxTree<'a>>,
     pub(super) tree: ModuleTree,
     pub(super) root_file: FileId,
     pub(super) raw_edges: Vec<(ModuleId, ModChild)>,
@@ -38,12 +42,14 @@ pub(super) struct Builder<'a, 't> {
 }
 
 impl<'a, 't> Builder<'a, 't> {
-    pub(super) fn new(db: &'a dyn ItemDb, sources: &'a dyn SourceDb, krate: CrateId, borrow_cached: &'a mut dyn FnMut(FileId) -> Option<&'t SyntaxTree<'t>>) -> Self {
+    pub(super) fn new(db: &'a dyn ItemDb, sources: &'a dyn SourceDb, krate: CrateId, borrow_cached: Option<&'a mut dyn FnMut(FileId) -> Option<&'t SyntaxTree<'t>>>) -> Self {
         Self {
             db,
             sources,
             krate,
             borrow_cached,
+            capture_trees: false,
+            captured_trees: HashMap::new(),
             tree: ModuleTree {
                 krate,
                 edition: db.crate_edition(krate),
@@ -71,6 +77,13 @@ impl<'a, 't> Builder<'a, 't> {
     pub(super) fn run(mut self, root_file: FileId) -> ModuleTree {
         self.build_root(root_file);
         self.supplement_indexed_submodules();
+        self.finalize().0
+    }
+
+    pub(super) fn run_capturing(mut self, root_file: FileId) -> (ModuleTree, HashMap<FileId, SyntaxTree<'a>>) {
+        self.capture_trees = true;
+        self.build_root(root_file);
+        self.supplement_indexed_submodules();
         self.finalize()
     }
 
@@ -86,13 +99,10 @@ impl<'a, 't> Builder<'a, 't> {
         let root_path = self.sources.file_path(root_file);
         let root_dir = parent_dir_str(root_path);
         let src = self.sources.file_text(root_file);
-        let owned;
-        let st: &SyntaxTree<'_> = match (self.borrow_cached)(root_file) {
+        let mut owned = None;
+        let st: &SyntaxTree<'_> = match self.borrow_cached.as_deref_mut().and_then(|cb| cb(root_file)) {
             Some(borrowed) => borrowed,
-            None => {
-                owned = parse(src);
-                &owned
-            }
+            None => owned.insert(parse(src)),
         };
 
         let mut inner = EffectiveAttrs::default();
@@ -129,6 +139,11 @@ impl<'a, 't> Builder<'a, 't> {
         }
         let mut env = MacroEnv::new();
         self.scan_container(ModuleId::ROOT, root_file, st, st.root(), &mut env, 0);
+        if self.capture_trees {
+            if let Some(t) = owned {
+                self.captured_trees.entry(root_file).or_insert(t);
+            }
+        }
     }
 
     pub(super) fn scan_container(&mut self, mod_id: ModuleId, file: FileId, st: &SyntaxTree<'_>, container: NodeId, macro_env: &mut MacroEnv, mbe_depth: u32) {
@@ -205,7 +220,7 @@ impl<'a, 't> Builder<'a, 't> {
         (start, self.tree.strings.len() as u32)
     }
 
-    fn finalize(mut self) -> ModuleTree {
+    fn finalize(mut self) -> (ModuleTree, HashMap<FileId, SyntaxTree<'a>>) {
         let mod_count = self.tree.modules.len();
         if !self.raw_edges.is_empty() {
             let mut offsets = vec![0u32; mod_count];
@@ -235,6 +250,6 @@ impl<'a, 't> Builder<'a, 't> {
                 (f.0, md.is_inline() as u8, md.decl_start)
             });
         }
-        self.tree
+        (self.tree, self.captured_trees)
     }
 }

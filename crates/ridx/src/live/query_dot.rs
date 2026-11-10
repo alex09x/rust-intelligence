@@ -29,6 +29,7 @@ use super::v5_db::RidxV5ItemDb;
 use super::v5_ty_inst::clone_reader_ty;
 
 pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Vec<Cand> {
+    engine.ensure_method_index(ws);
     let Some(parsed_ref) = engine.parsed.as_ref() else { return Vec::new() };
     let Some(dot_end) = locate_dot_end(&parsed_ref.src, byte_offset) else { return Vec::new() };
     let probe_off = dot_end.saturating_sub(1);

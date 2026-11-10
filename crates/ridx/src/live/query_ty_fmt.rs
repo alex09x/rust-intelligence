@@ -145,8 +145,14 @@ pub(crate) fn query_type_at(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx:
         let db = RidxV5ItemDb::view(ws, &engine.src, &engine.state);
         let (snap, mt_opt, dm) = engine.active_def_map(r_idx)?;
         let st = engine.parsed.as_ref()?.tree();
-        snap.resolve_dirty_file_paths_into(&db, mt_opt, dm, fid, &st, &mut file_res);
-        local_defs.index_file_with_item_db(&st, Some(dm), Some(&db), fid);
+        let has_v5_sigs = ws.readers().get(r_idx).is_some_and(|r| !r.fn_sigs().is_empty());
+        if has_v5_sigs && mt_opt.is_none() && !dm.is_dirty_file(fid) {
+            snap.resolve_fn_paths_into(&db, fid, &st, ty_node, &mut file_res);
+            local_defs.index_target_fn_with_item_db(&st, Some(dm), Some(&db), fid, ty_node);
+        } else {
+            snap.resolve_dirty_file_paths_into(&db, mt_opt, dm, fid, &st, &mut file_res);
+            local_defs.index_file_with_item_db(&st, Some(dm), Some(&db), fid);
+        }
         find_enclosing_trait_def(&st, dm, fid, ty_node)
     };
     let ty = {

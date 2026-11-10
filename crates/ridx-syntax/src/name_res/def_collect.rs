@@ -73,10 +73,12 @@ pub(super) fn collect_crate_items<'t>(
 ) -> CollectedCrate {
     let mod_count = mod_tree.modules.len();
     let mod_index_defs = match_module_index_defs(db, mod_tree);
-    let scan_all_impls = {
+    let scan_all_impls = if db.crate_root_def(mod_tree.krate).is_some() {
+        false
+    } else {
         let mut ci = Vec::new();
         db.crate_impls(mod_tree.krate, &mut ci);
-        ci.is_empty() && db.crate_root_def(mod_tree.krate).is_none()
+        ci.is_empty()
     };
 
     let mut coll = Collector {

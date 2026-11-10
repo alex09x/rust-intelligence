@@ -10,9 +10,10 @@
 
 //! Module-qualified, `use`-re-exported, and cross-crate `macro_rules!` resolver for [`RidxV5ItemDb`].
 
-use ridx_syntax::name_res::{CrateId, GlobalDefId, IndexedDef, IndexedUse, ItemDb, ItemKind};
+use ridx_format::{DefKind, UseOwner, USE_FLAG_GLOB};
+use ridx_syntax::name_res::{CrateId, GlobalDefId, ItemDb};
 
-use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX};
+use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, PROC_MACRO_SYNTH_BIT};
 
 #[inline]
 fn norm_ident(s: &str) -> &str {
@@ -52,10 +53,7 @@ pub fn resolve_v5_macro_rules<'w>(db: &'w RidxV5ItemDb<'w>, krate: CrateId, modu
                 }
             }
         }
-        return reader
-            .macro_defs_iter()
-            .find(|mv| mv.is_macro_rules() && reader.definitions().get(mv.def_index as usize).is_some_and(|d| reader.get_str(d.name_offset()) == mac_name))
-            .map(|mv| (mv.body, "crate"));
+        return db.shards.get(r_idx).and_then(|s| s.lookup_macro_rules(reader, mac_name)).map(|b| (b, "crate"));
     }
 
     let prefix = &segs[..segs.len() - 1];
@@ -130,24 +128,46 @@ fn step_mod_in_mod(db: &RidxV5ItemDb<'_>, mod_gid: GlobalDefId, seg: &str, depth
     if !mod_gid.is_some() || depth > 5 {
         return None;
     }
-    let mut defs: Vec<IndexedDef<'_>> = Vec::new();
-    db.module_defs(mod_gid, &mut defs);
-    if let Some(d) = defs.iter().find(|d| d.kind == ItemKind::Mod && d.name == seg) {
-        return Some(db.canonical_def(d.id));
-    }
-    let mut uses: Vec<IndexedUse<'_>> = Vec::new();
-    db.module_uses(mod_gid, &mut uses);
-    for u in &uses {
-        if !u.is_glob && u.name == seg && u.type_def.is_some() {
-            return Some(db.canonical_def(u.type_def));
+    let r_idx = mod_gid.krate.0 as usize;
+    let reader = db.ws.readers().get(r_idx)?;
+    let shard = db.shards.get(r_idx)?;
+    let is_root = mod_gid.index == CRATE_ROOT_DEF_IDX || Some(mod_gid.index) == shard.root_mod_def_idx;
+    let key = if is_root { shard.root_mod_def_idx.unwrap_or(CRATE_ROOT_DEF_IDX) } else { mod_gid.index };
+    let defs = reader.definitions();
+    if let Some(children) = shard.mod_children.get(&key) {
+        for &didx in children {
+            if didx < PROC_MACRO_SYNTH_BIT {
+                if let Some(d) = defs.get(didx as usize) {
+                    if DefKind::from(d.kind) == DefKind::Mod && norm_ident(reader.get_str(d.name_offset())) == seg {
+                        return Some(db.canonical_def(GlobalDefId::new(mod_gid.krate, didx)));
+                    }
+                }
+            }
         }
     }
-    for u in &uses {
-        if u.is_glob && u.type_def.is_some() {
-            let tgt = db.canonical_def(u.type_def);
-            if tgt != mod_gid {
-                if let Some(hit) = step_mod_in_mod(db, tgt, seg, depth + 1) {
-                    return Some(hit);
+    let owner = if is_root { UseOwner::CrateRoot } else { UseOwner::Def(mod_gid.index) };
+    let arena = reader.ty_arena();
+    for u in reader.uses_for_owner(owner) {
+        if (u.flags & USE_FLAG_GLOB) == 0 && norm_ident(u.name) == seg {
+            if let Some(td) = u.type_def {
+                let g = db.resolve_ty_def(r_idx, arena, td);
+                if g.is_some() {
+                    return Some(db.canonical_def(g));
+                }
+            }
+        }
+    }
+    for u in reader.uses_for_owner(owner) {
+        if (u.flags & USE_FLAG_GLOB) != 0 {
+            if let Some(td) = u.type_def {
+                let g = db.resolve_ty_def(r_idx, arena, td);
+                if g.is_some() {
+                    let tgt = db.canonical_def(g);
+                    if tgt != mod_gid {
+                        if let Some(hit) = step_mod_in_mod(db, tgt, seg, depth + 1) {
+                            return Some(hit);
+                        }
+                    }
                 }
             }
         }
@@ -159,42 +179,57 @@ fn find_macro_in_mod<'w>(db: &'w RidxV5ItemDb<'w>, caller_r_idx: usize, mod_gid:
     if !mod_gid.is_some() || depth > 5 {
         return None;
     }
-    let mut defs: Vec<IndexedDef<'_>> = Vec::new();
-    db.module_defs(mod_gid, &mut defs);
-    for d in &defs {
-        if d.kind == ItemKind::Macro && d.name == mac_name {
-            if let Some(hit) = body_of_macro_gid(db, caller_r_idx, d.id) {
-                return Some(hit);
-            }
-        }
-    }
-    let mut uses: Vec<IndexedUse<'_>> = Vec::new();
-    db.module_uses(mod_gid, &mut uses);
-    for u in &uses {
-        if !u.is_glob && u.name == mac_name && u.macro_def.is_some() {
-            if let Some(hit) = body_of_macro_gid(db, caller_r_idx, u.macro_def) {
-                return Some(hit);
-            }
-        }
-    }
-    for u in &uses {
-        if u.is_glob && u.type_def.is_some() {
-            let tgt = db.canonical_def(u.type_def);
-            if tgt != mod_gid {
-                if let Some(hit) = find_macro_in_mod(db, caller_r_idx, tgt, mac_name, depth + 1) {
-                    return Some(hit);
+    let tr = mod_gid.krate.0 as usize;
+    let reader = db.ws.readers().get(tr)?;
+    let shard = db.shards.get(tr)?;
+    let is_root = mod_gid.index == CRATE_ROOT_DEF_IDX || Some(mod_gid.index) == shard.root_mod_def_idx;
+    let key = if is_root { shard.root_mod_def_idx.unwrap_or(CRATE_ROOT_DEF_IDX) } else { mod_gid.index };
+    let defs = reader.definitions();
+    if let Some(children) = shard.mod_children.get(&key) {
+        for &didx in children {
+            if didx < PROC_MACRO_SYNTH_BIT {
+                if let Some(d) = defs.get(didx as usize) {
+                    if DefKind::from(d.kind) == DefKind::Macro && norm_ident(reader.get_str(d.name_offset())) == mac_name {
+                        if let Some(hit) = body_of_macro_gid(db, caller_r_idx, GlobalDefId::new(mod_gid.krate, didx)) {
+                            return Some(hit);
+                        }
+                    }
                 }
             }
         }
     }
-    let tr = mod_gid.krate.0 as usize;
-    let shard = db.shards.get(tr)?;
-    if mod_gid.index == CRATE_ROOT_DEF_IDX || Some(mod_gid.index) == shard.root_mod_def_idx {
-        let er = &db.ws.readers()[tr];
-        if let Some(mv) =
-            er.macro_defs_iter().find(|mv| mv.is_macro_rules() && er.definitions().get(mv.def_index as usize).is_some_and(|d| er.get_str(d.name_offset()) == mac_name))
-        {
-            return Some((mv.body, dollar_crate_for_target(db, caller_r_idx, tr)));
+    let owner = if is_root { UseOwner::CrateRoot } else { UseOwner::Def(mod_gid.index) };
+    let arena = reader.ty_arena();
+    for u in reader.uses_for_owner(owner) {
+        if (u.flags & USE_FLAG_GLOB) == 0 && norm_ident(u.name) == mac_name {
+            if let Some(md) = u.macro_def {
+                let g = db.resolve_ty_def(tr, arena, md);
+                if g.is_some() {
+                    if let Some(hit) = body_of_macro_gid(db, caller_r_idx, g) {
+                        return Some(hit);
+                    }
+                }
+            }
+        }
+    }
+    for u in reader.uses_for_owner(owner) {
+        if (u.flags & USE_FLAG_GLOB) != 0 {
+            if let Some(td) = u.type_def {
+                let g = db.resolve_ty_def(tr, arena, td);
+                if g.is_some() {
+                    let tgt = db.canonical_def(g);
+                    if tgt != mod_gid {
+                        if let Some(hit) = find_macro_in_mod(db, caller_r_idx, tgt, mac_name, depth + 1) {
+                            return Some(hit);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if is_root {
+        if let Some(body) = shard.lookup_macro_rules(reader, mac_name) {
+            return Some((body, dollar_crate_for_target(db, caller_r_idx, tr)));
         }
     }
     None

@@ -12,7 +12,7 @@
 //! `impl` compatibility probing, and parameter index remapping on [`RidxV5ItemDb`].
 
 use ridx_format::{GenericParamKind, WherePredIter, WherePredView};
-use ridx_syntax::name_res::{CrateId, GlobalDefId, ImplTargetKey};
+use ridx_syntax::name_res::{GlobalDefId, ImplTargetKey};
 use ridx_syntax::ty_infer::autoderef::impl_target_key_of_ty;
 use ridx_syntax::ty_infer::uf_table::InlineTyBuf;
 use ridx_syntax::ty_infer::{unify, InferTyArena, InferTyId, InferTyKind, TyDefDb, UnionFindTable};
@@ -42,8 +42,7 @@ impl<'a> Iterator for ChainedWherePreds<'a> {
 impl<'w> RidxV5ItemDb<'w> {
     pub fn iter_owner_where_preds(&self, r_idx: usize, didx: u32) -> ChainedWherePreds<'_> {
         let reader = &self.ws.readers()[r_idx];
-        let gid = GlobalDefId::new(CrateId(r_idx as u32), didx);
-        let first = if let Some(&impl_idx) = self.ty_tables.assoc_to_impl.get(&gid) {
+        let first = if let Some(impl_idx) = self.shards[r_idx].lookup_assoc_impl(didx) {
             Some(reader.where_preds_for_impl(impl_idx))
         } else {
             self.shards[r_idx].trait_parent_of_assoc.get(&didx).map(|&tdidx| reader.where_preds_for_def(tdidx))
@@ -54,7 +53,6 @@ impl<'w> RidxV5ItemDb<'w> {
     pub fn raw_to_dense_param_idx(&self, r_idx: usize, didx: u32, target_raw: u32) -> Option<u16> {
         let target16 = u16::try_from(target_raw).ok()?;
         let reader = &self.ws.readers()[r_idx];
-        let gid = GlobalDefId::new(CrateId(r_idx as u32), didx);
         let mut dense = 0u16;
         let scan_iter = |it: ridx_format::GenericParamIter<'_>, dense: &mut u16| -> Option<u16> {
             for p in it.filter(|p| !matches!(p.kind, GenericParamKind::Lifetime)) {
@@ -65,7 +63,7 @@ impl<'w> RidxV5ItemDb<'w> {
             }
             None
         };
-        if let Some(&impl_idx) = self.ty_tables.assoc_to_impl.get(&gid) {
+        if let Some(impl_idx) = self.shards[r_idx].lookup_assoc_impl(didx) {
             if let Some(d) = scan_iter(reader.generic_params_for_impl(impl_idx), &mut dense) {
                 return Some(d);
             }

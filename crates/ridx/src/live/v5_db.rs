@@ -13,14 +13,14 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ridx_format::{DefKind, TyArenaView, TyDefId, TyKindView, UseOwner, WherePredKind, WorkspaceIndex, IMPL_FLAG_NEGATIVE};
+use ridx_format::{DefKind, TyArenaView, TyDefId, TyKindView, UseOwner, WherePredKind, WorkspaceIndex};
 use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, ImplTargetKey, IndexedImpl};
 use ridx_syntax::{parse, SyntaxKind as K};
 
 use super::meta::{CorpusSourceDb, ReaderMeta};
 use super::v5_lazy::{AtomicDefCell, LiveStateRef, SourceStore};
 use super::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
-use super::v5_ty_inst::{extend_flat_groups, slice_flat_group};
+use super::v5_ty_inst::slice_flat_group;
 use super::v5_ty_tables::V5TyTables;
 
 /// Sentinel `def_idx` representing a shard's crate-root module (`UseOwner::CrateRoot`).
@@ -36,6 +36,7 @@ pub const TY_DEF_SYNTH_BIT: u32 = 0x2000_0000;
 pub struct LiveState {
     pub bench_mode: bool,
     pub metas: Vec<ReaderMeta>,
+    pub meta_loaded: Vec<bool>,
     pub shards: Vec<ShardTables>,
     pub shard_loaded: Vec<bool>,
     pub sysroot_by_name: HashMap<String, usize>,
@@ -51,6 +52,15 @@ pub struct LiveState {
 }
 
 impl LiveState {
+    #[inline]
+    pub fn ensure_meta(&mut self, ws: &WorkspaceIndex, idx: usize) {
+        if !self.meta_loaded[idx] {
+            self.meta_loaded[idx] = true;
+            let has_core = self.sysroot_by_name.contains_key("core");
+            self.metas[idx] = super::meta::load_reader_meta_at(ws, idx, has_core, true);
+        }
+    }
+
     #[inline]
     pub fn adt_impls(&self, adt: GlobalDefId) -> &[IndexedImpl] {
         slice_flat_group(&self.impls_arena, &self.impls_by_adt, &adt)
@@ -103,10 +113,12 @@ impl<'a> RidxV5ItemDb<'a> {
             collect_shard_alias_pairs(rdr, &mut valid_alias_leaf_pairs);
         }
         let mut ty_tables = V5TyTables::default();
+        ty_tables.raw_ty_def_gids.resize_with(n, Vec::new);
         ty_tables.ty_def_gids.resize_with(n, Vec::new);
         let state = LiveState {
             bench_mode: true,
             metas,
+            meta_loaded: vec![true; n],
             shards,
             shard_loaded: vec![true; n],
             sysroot_by_name,
@@ -122,8 +134,9 @@ impl<'a> RidxV5ItemDb<'a> {
         };
         let all: Vec<usize> = (0..n).collect();
         let mut db = Self { ws, src: SourceStore::Borrowed(src), state: LiveStateRef::Owned(Box::new(state)) };
-        db.index_impls_and_traits_for(&all);
         db.index_proc_macro_exports_for(&all);
+        db.populate_raw_ty_def_gids_for(&all);
+        db.index_impls_and_traits_for(&all);
         db.build_ty_tables_for(&all);
         db
     }
@@ -148,7 +161,10 @@ impl<'a> RidxV5ItemDb<'a> {
     pub(crate) fn index_proc_macro_exports_for(&mut self, active: &[usize]) {
         let mut pending: Vec<(usize, String)> = Vec::new();
         for &r_idx in active {
-            if !self.metas[r_idx].is_dependency {
+            let meta = &self.metas[r_idx];
+            let may_define_proc_macros =
+                !meta.is_dependency && (meta.target_kind.contains("proc-macro") || (meta.target_kind.is_empty() && self.ws.meta_path_at(r_idx).is_none() && !meta.is_sysroot));
+            if may_define_proc_macros {
                 let krate = CrateId(r_idx as u32);
                 let mut fids: Vec<FileId> = self.shards[r_idx].file_map.iter().copied().filter(|f| f.is_some()).collect();
                 fids.sort_unstable_by_key(|f| f.0);
@@ -174,14 +190,20 @@ impl<'a> RidxV5ItemDb<'a> {
             }
             let reader = &self.ws.readers()[r_idx];
             let arena = reader.ty_arena();
+            let is_dep = self.metas[r_idx].is_dependency;
             let mut owners = vec![UseOwner::CrateRoot];
-            for (didx, d) in reader.definitions().iter().enumerate() {
-                if !d.is_reexport() && DefKind::from(d.kind) == DefKind::Mod {
-                    owners.push(UseOwner::Def(didx as u32));
+            if !is_dep {
+                for (didx, d) in reader.definitions().iter().enumerate() {
+                    if !d.is_reexport() && DefKind::from(d.kind) == DefKind::Mod {
+                        owners.push(UseOwner::Def(didx as u32));
+                    }
                 }
             }
             for owner in owners {
                 for u in reader.uses_for_owner(owner) {
+                    if is_dep && (u.flags & ridx_format::USE_FLAG_REEXPORT) == 0 {
+                        continue;
+                    }
                     let Some(td_id) = u.macro_def.filter(|&id| !self.resolve_ty_def(r_idx, arena, id).is_some()) else { continue };
                     let Some(td) = arena.def(td_id) else { continue };
                     let tr_opt = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(r_idx, uk)).or_else(|| {
@@ -204,42 +226,10 @@ impl<'a> RidxV5ItemDb<'a> {
 
     pub(crate) fn index_impls_and_traits_for(&mut self, active: &[usize]) {
         let ws = self.ws;
-        let bench = self.bench_mode;
-        let mut by_adt: HashMap<GlobalDefId, Vec<IndexedImpl>> = HashMap::new();
-        let mut by_other: HashMap<ImplTargetKey, Vec<IndexedImpl>> = HashMap::new();
         for &r_idx in active {
             let reader = &ws.readers()[r_idx];
             let arena = reader.ty_arena();
             let krate = CrateId(r_idx as u32);
-            for iv in reader.impls_iter() {
-                let (id_index, impl_file) = match iv.def_index() {
-                    Some(didx) => {
-                        let f = reader.definitions().get(didx as usize).and_then(|d| self.shards[r_idx].file_map.get(d.span().file_id() as usize).copied()).unwrap_or(FileId::NONE);
-                        (didx, f)
-                    }
-                    None => (IMPL_SYNTH_BIT | iv.index(), FileId::NONE),
-                };
-                let target = self.lower_ty_to_target_key(r_idx, arena, iv.self_ty(), 0);
-                let trait_def = iv.trait_def().map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td));
-                let impl_gid = GlobalDefId::new(krate, id_index);
-                if bench {
-                    let st = self.state.as_mut();
-                    if target != ImplTargetKey::Unknown {
-                        st.impl_self_target.insert(impl_gid, target);
-                    }
-                    for assoc_didx in iv.assoc_def_indices() {
-                        st.impl_assoc_parent.insert(GlobalDefId::new(krate, assoc_didx), (trait_def, target));
-                    }
-                }
-                if target == ImplTargetKey::Unknown {
-                    continue;
-                }
-                let entry = IndexedImpl { id: impl_gid, file: impl_file, target, trait_def, is_negative: (iv.flags() & IMPL_FLAG_NEGATIVE) != 0 };
-                match target {
-                    ImplTargetKey::Adt(adt_def) => by_adt.entry(adt_def).or_default().push(entry),
-                    other => by_other.entry(other).or_default().push(entry),
-                }
-            }
             for (didx, d) in reader.definitions().iter().enumerate() {
                 if d.is_reexport() || DefKind::from(d.kind) != DefKind::Trait {
                     continue;
@@ -261,13 +251,15 @@ impl<'a> RidxV5ItemDb<'a> {
                 }
             }
         }
-        let st = self.state.as_mut();
-        extend_flat_groups(&mut st.impls_arena, &mut st.impls_by_adt, by_adt);
-        extend_flat_groups(&mut st.impls_arena, &mut st.impls_by_other, by_other);
     }
 
     /// Resolves a shard-local or cross-crate `TyDefId` into a `GlobalDefId`.
+    #[inline]
     pub fn resolve_ty_def(&self, from_reader: usize, arena: TyArenaView<'_>, td_id: TyDefId) -> GlobalDefId {
+        self.ty_tables.raw_ty_def_gids.get(from_reader).and_then(|v| v.get(td_id.0 as usize)).copied().unwrap_or_else(|| self.resolve_ty_def_uncached(from_reader, arena, td_id))
+    }
+
+    pub(crate) fn resolve_ty_def_uncached(&self, from_reader: usize, arena: TyArenaView<'_>, td_id: TyDefId) -> GlobalDefId {
         let Some(td) = arena.def(td_id) else { return GlobalDefId::NONE };
         if let Some(local_idx) = td.local_def_idx {
             if (local_idx as usize) < self.ws.readers()[from_reader].definitions().len() {

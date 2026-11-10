@@ -354,7 +354,7 @@ impl<'w> RidxV5ItemDb<'w> {
             return assoc_fn;
         }
         let fn_gid = self.canonical_def(assoc_fn);
-        let Some(&impl_idx) = self.ty_tables.assoc_to_impl.get(&fn_gid) else { return assoc_fn };
+        let Some(impl_idx) = self.shards.get(fn_gid.krate.0 as usize).and_then(|s| s.lookup_assoc_impl(fn_gid.index)) else { return assoc_fn };
         if self.probe_inherent_impl_self(fn_gid.krate.0 as usize, impl_idx, cur, arena, vars) {
             return assoc_fn;
         }

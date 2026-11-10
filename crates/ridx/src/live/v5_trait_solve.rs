@@ -25,9 +25,28 @@ use super::v5_ty_proj::instantiate_v5;
 use super::v5_ty_tables::{fnv1a_str, TraitImplInfo};
 
 impl<'w> RidxV5ItemDb<'w> {
-    #[inline]
     pub fn v5_trait_of_assoc_fn(&self, raw_def: GlobalDefId) -> Option<TraitAssocFnMeta> {
-        self.ty_tables.trait_fn_meta.get(&self.canonical_def(raw_def)).copied()
+        let def = self.canonical_def(raw_def);
+        let r_idx = def.krate.0 as usize;
+        let shard = self.shards.get(r_idx)?;
+        let reader = self.ws.readers().get(r_idx)?;
+        let ad = reader.definitions().get(def.index as usize)?;
+        if ridx_format::DefKind::from(ad.kind) != ridx_format::DefKind::AssocFn {
+            return None;
+        }
+        let mname = reader.get_str(ad.name_offset()).trim_start_matches("r#");
+        let tgid = if let Some(&tr_didx) = shard.trait_parent_of_assoc.get(&def.index) {
+            self.canonical_def(GlobalDefId::new(def.krate, tr_didx))
+        } else {
+            let impl_idx = shard.lookup_assoc_impl(def.index)?;
+            let iv = reader.impl_view(impl_idx)?;
+            self.ty_def_gid(r_idx, iv.trait_def()?)
+        };
+        if !tgid.is_some() {
+            return None;
+        }
+        let tm = self.ty_tables.trait_assoc_fns.get(&(tgid, fnv1a_str(mname))).filter(|t| t.name.as_str(self.ws) == mname)?;
+        Some(TraitAssocFnMeta { trait_def: tgid, trait_fn_def: GlobalDefId::new(tgid.krate, tm.method_didx), trait_generics: tm.trait_gc, method_generics: tm.method_gc })
     }
 
     pub fn v5_trait_assoc_fn_by_name(&self, raw_trait: GlobalDefId, fn_name: &str) -> Option<TraitAssocFnMeta> {
@@ -103,7 +122,7 @@ impl<'w> RidxV5ItemDb<'w> {
             (cand.impl_owner.krate.0 as usize, cand.impl_owner.index)
         } else {
             let mdef = self.canonical_def(cand.method_def);
-            let Some(&idx) = self.ty_tables.assoc_to_impl.get(&mdef) else { return true };
+            let Some(idx) = self.shards.get(mdef.krate.0 as usize).and_then(|s| s.lookup_assoc_impl(mdef.index)) else { return true };
             (mdef.krate.0 as usize, idx)
         };
         if r_idx >= self.ws.crate_count() {
