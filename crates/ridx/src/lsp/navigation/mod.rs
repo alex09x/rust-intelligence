@@ -15,6 +15,7 @@ mod highlight_ext;
 mod impl_line;
 pub mod references;
 pub mod type_definition;
+mod type_definition_live;
 mod type_definition_lookup;
 pub(crate) mod type_definition_parse;
 mod type_definition_qual;

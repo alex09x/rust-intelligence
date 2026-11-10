@@ -53,6 +53,10 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
         Some(overlay) => overlay.utf16_col_to_char_col(line_1based, utf16_col),
         None => conv.utf16_col_to_char_col(&file, line_1based, utf16_col),
     };
+    // The inferred type answers on edited buffers too; the indexed tables below describe the saved file only.
+    if let Some(loc) = workspace.and_then(|ws| super::type_definition_live::resolve_inferred_type(ws, &file, (line_1based, col_1based), overlay_mgr, conv)) {
+        return loc;
+    }
     let Some(ws) = workspace.filter(|_| !overlay_opt.is_some_and(|o| o.is_dirty())) else {
         return Value::Null;
     };
