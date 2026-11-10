@@ -20,6 +20,7 @@ use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, Impl
 use ridx_syntax::{parse, SyntaxKind as K};
 
 use super::meta::{CorpusSourceDb, ReaderMeta};
+use super::v5_lazy::SourceStore;
 use super::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
 use super::v5_ty_tables::V5TyTables;
 
@@ -34,9 +35,10 @@ pub const TY_DEF_SYNTH_BIT: u32 = 0x2000_0000;
 
 pub struct RidxV5ItemDb<'w> {
     pub ws: &'w WorkspaceIndex,
-    pub src: &'w CorpusSourceDb,
+    pub src: SourceStore<'w>,
     pub metas: Vec<ReaderMeta>,
     pub shards: Vec<ShardTables>,
+    pub shard_loaded: Vec<bool>,
     pub sysroot_by_name: HashMap<String, usize>,
     pub impls_by_adt: HashMap<GlobalDefId, Vec<IndexedImpl>>,
     pub impls_by_other: HashMap<ImplTargetKey, Vec<IndexedImpl>>,
@@ -66,11 +68,13 @@ impl<'w> RidxV5ItemDb<'w> {
             collect_shard_alias_pairs(rdr, &mut valid_alias_leaf_pairs);
         }
 
+        let all: Vec<usize> = (0..n).collect();
         let mut db = Self {
             ws,
-            src,
+            src: SourceStore::Borrowed(src),
             metas,
             shards,
+            shard_loaded: vec![true; n],
             sysroot_by_name,
             impls_by_adt: HashMap::new(),
             impls_by_other: HashMap::new(),
@@ -82,9 +86,10 @@ impl<'w> RidxV5ItemDb<'w> {
             ty_tables: V5TyTables::default(),
             active_owner_def: std::cell::Cell::new(GlobalDefId::NONE),
         };
-        db.index_all_impls_and_traits();
-        db.index_proc_macro_exports(src);
-        db.build_ty_tables();
+        db.ty_tables.ty_def_gids.resize_with(n, Vec::new);
+        db.index_impls_and_traits_for(&all);
+        db.index_proc_macro_exports_for(&all);
+        db.build_ty_tables_for(&all);
         db
     }
 
@@ -105,17 +110,16 @@ impl<'w> RidxV5ItemDb<'w> {
         shard.mod_children.entry(root_key).or_default().push(didx);
     }
 
-    fn index_proc_macro_exports(&mut self, src: &CorpusSourceDb) {
-        let n = self.ws.crate_count();
+    pub(crate) fn index_proc_macro_exports_for(&mut self, active: &[usize]) {
         let mut pending: Vec<(usize, String)> = Vec::new();
-        for r_idx in 0..n {
+        for &r_idx in active {
             if !self.metas[r_idx].is_dependency {
                 let krate = CrateId(r_idx as u32);
                 let mut fids: Vec<FileId> = self.shards[r_idx].file_map.iter().copied().filter(|f| f.is_some()).collect();
                 fids.sort_unstable_by_key(|f| f.0);
                 fids.dedup();
                 for fid in fids {
-                    let st = parse(&src.files[fid.0 as usize].text);
+                    let st = parse(&self.src.files[fid.0 as usize].text);
                     for nid in (0..st.nodes.len() as u32).map(ridx_syntax::NodeId) {
                         if st.kind(nid) != K::Fn {
                             continue;
@@ -170,9 +174,8 @@ impl<'w> RidxV5ItemDb<'w> {
         }
     }
 
-    fn index_all_impls_and_traits(&mut self) {
-        let n = self.ws.crate_count();
-        for r_idx in 0..n {
+    pub(crate) fn index_impls_and_traits_for(&mut self, active: &[usize]) {
+        for &r_idx in active {
             let reader = &self.ws.readers()[r_idx];
             let arena = reader.ty_arena();
             let krate = CrateId(r_idx as u32);

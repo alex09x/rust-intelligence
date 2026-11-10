@@ -83,12 +83,12 @@ impl<'w> ItemDb for RidxV5ItemDb<'w> {
 
     #[inline]
     fn resolve_include_file(&self, from_file: FileId, rel_or_abs: &str) -> Option<(FileId, &str)> {
-        super::meta::resolve_include_in_corpus(self.src, from_file, rel_or_abs)
+        super::meta::resolve_include_in_corpus(&self.src, from_file, rel_or_abs)
     }
 
     #[inline]
     fn include_bytes_len(&self, from_file: FileId, rel_or_abs: &str) -> Option<u64> {
-        super::meta::include_bytes_len_in_corpus(self.src, from_file, rel_or_abs)
+        super::meta::include_bytes_len_in_corpus(&self.src, from_file, rel_or_abs)
     }
 
     fn extern_crate(&self, from_krate: CrateId, extern_name: &str) -> Option<CrateId> {
