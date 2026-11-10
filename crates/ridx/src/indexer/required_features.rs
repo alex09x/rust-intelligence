@@ -17,6 +17,9 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
+/// Lets Mitts cache units compiled through a rustc wrapper (off by default: it cannot know the wrapper is deterministic).
+const MITTS_WRAPPER_CACHE_ENV: &str = "MITTS_RUSTC_WRAPPER_CACHE";
+
 /// A target `cargo check` skips under the variant's features.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SkippedTarget {
@@ -92,6 +95,16 @@ pub fn check_args(targets: &[SkippedTarget], manifest_path: &Path, features: &[S
         .collect()
 }
 
+/// Whether `dir` holds a shard of the target `name`.
+fn has_shard(dir: &Path, name: &str) -> bool {
+    let prefix = format!("{}-", name.replace('-', "_"));
+    fs::read_dir(dir).into_iter().flatten().flatten().any(|e| {
+        let f = e.file_name();
+        let f = f.to_string_lossy();
+        f.starts_with(&prefix) && f.ends_with(".ridx")
+    })
+}
+
 /// Indexes the skipped targets into `scratch` and moves their own shards into `variant_out_dir`. Failures are
 /// reported and leave the variant as the main check produced it.
 pub fn index_skipped_targets(
@@ -114,18 +127,33 @@ pub fn index_skipped_targets(
         return;
     };
     let _ = fs::create_dir_all(&scratch);
-    for args in check_args(&targets, manifest_path, features) {
+    let run = |args: &[String], cached: bool| {
         let mut cmd = Command::new(program);
-        cmd.current_dir(work_dir).args(&args);
+        cmd.current_dir(work_dir).args(args);
         for (k, v) in envs {
             let v = if k == "RIDX_OUT_DIR" { scratch.display().to_string() } else { v.clone() };
             cmd.env(k, v);
         }
+        if cached {
+            cmd.env(MITTS_WRAPPER_CACHE_ENV, "1");
+        }
         match cmd.output() {
-            Ok(o) if o.status.success() => {}
+            Ok(o) if o.status.success() || cached => {}
             Ok(o) => eprintln!("  warning: check of required-feature targets failed ({}): {}", o.status, args.join(" ")),
             Err(e) => eprintln!("  warning: could not run check of required-feature targets: {e}"),
         }
+    };
+    // The feature sets share nearly all their dependencies, and only the targets' own shards are kept: Mitts may
+    // serve the rest from its cache. A cached unit does not run the driver, so a target whose own unit was cached
+    // (the variant was removed, the cache kept) gets no shard; it is checked again without the cache.
+    if program == super::builder::IndexBuilder::Mitts.as_str() {
+        for args in check_args(&targets, manifest_path, features) {
+            run(&args, true);
+        }
+    }
+    let left: Vec<SkippedTarget> = targets.iter().filter(|t| !has_shard(&scratch, &t.name)).cloned().collect();
+    for args in check_args(&left, manifest_path, features) {
+        run(&args, false);
     }
     // Only the targets' own shards join the variant: the workspace libraries rebuilt with the extra features would
     // duplicate every library per feature set.
