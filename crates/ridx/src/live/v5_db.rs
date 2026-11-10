@@ -13,15 +13,14 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ridx_format::{
-    DefKind, FloatTyWidth, IntTyWidth, TyArenaView, TyDefId, TyId, TyKindView, TyMutability, UintTyWidth, UseOwner, WherePredKind, WorkspaceIndex, IMPL_FLAG_NEGATIVE,
-};
-use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, ImplTargetKey, IndexedImpl, PrimTy};
+use ridx_format::{DefKind, TyArenaView, TyDefId, TyKindView, UseOwner, WherePredKind, WorkspaceIndex, IMPL_FLAG_NEGATIVE};
+use ridx_syntax::name_res::{eval_outer_attrs, CrateId, FileId, GlobalDefId, ImplTargetKey, IndexedImpl};
 use ridx_syntax::{parse, SyntaxKind as K};
 
 use super::meta::{CorpusSourceDb, ReaderMeta};
 use super::v5_lazy::{AtomicDefCell, LiveStateRef, SourceStore};
 use super::v5_shard::{build_shard_tables, collect_shard_alias_pairs, ShardTables};
+use super::v5_ty_inst::{extend_flat_groups, slice_flat_group};
 use super::v5_ty_tables::V5TyTables;
 
 /// Sentinel `def_idx` representing a shard's crate-root module (`UseOwner::CrateRoot`).
@@ -35,19 +34,32 @@ pub const TY_DEF_SYNTH_BIT: u32 = 0x2000_0000;
 
 /// Owned, lifetime-free derived shard and type tables retained across LSP requests by [`super::query::LiveDb`].
 pub struct LiveState {
+    pub bench_mode: bool,
     pub metas: Vec<ReaderMeta>,
     pub shards: Vec<ShardTables>,
     pub shard_loaded: Vec<bool>,
     pub sysroot_by_name: HashMap<String, usize>,
-    pub impls_by_adt: HashMap<GlobalDefId, Vec<IndexedImpl>>,
-    pub impls_by_other: HashMap<ImplTargetKey, Vec<IndexedImpl>>,
-    pub impls_by_crate: Vec<Vec<IndexedImpl>>,
+    pub impls_arena: Vec<IndexedImpl>,
+    pub impls_by_adt: HashMap<GlobalDefId, (u32, u32)>,
+    pub impls_by_other: HashMap<ImplTargetKey, (u32, u32)>,
     pub trait_supertraits: HashMap<GlobalDefId, Vec<GlobalDefId>>,
     pub impl_assoc_parent: HashMap<GlobalDefId, (GlobalDefId, ImplTargetKey)>,
     pub impl_self_target: HashMap<GlobalDefId, ImplTargetKey>,
     pub valid_alias_leaf_pairs: HashSet<(String, String)>,
     pub ty_tables: V5TyTables,
     pub active_owner_def: AtomicDefCell,
+}
+
+impl LiveState {
+    #[inline]
+    pub fn adt_impls(&self, adt: GlobalDefId) -> &[IndexedImpl] {
+        slice_flat_group(&self.impls_arena, &self.impls_by_adt, &adt)
+    }
+
+    #[inline]
+    pub fn other_impls(&self, key: ImplTargetKey) -> &[IndexedImpl] {
+        slice_flat_group(&self.impls_arena, &self.impls_by_other, &key)
+    }
 }
 
 /// Temporary query view pairing `&'a WorkspaceIndex` with [`LiveState`] and [`CorpusSourceDb`].
@@ -86,20 +98,21 @@ impl<'a> RidxV5ItemDb<'a> {
         }
         let mut shards = Vec::with_capacity(n);
         let mut valid_alias_leaf_pairs = HashSet::new();
-        for (rdr, meta) in ws.readers().iter().zip(metas.iter()).take(n) {
-            shards.push(build_shard_tables(rdr, meta, src));
+        for (idx, (rdr, meta)) in ws.readers().iter().zip(metas.iter()).enumerate().take(n) {
+            shards.push(build_shard_tables(idx, rdr, meta, src, true));
             collect_shard_alias_pairs(rdr, &mut valid_alias_leaf_pairs);
         }
         let mut ty_tables = V5TyTables::default();
         ty_tables.ty_def_gids.resize_with(n, Vec::new);
         let state = LiveState {
+            bench_mode: true,
             metas,
             shards,
             shard_loaded: vec![true; n],
             sysroot_by_name,
+            impls_arena: Vec::new(),
             impls_by_adt: HashMap::new(),
             impls_by_other: HashMap::new(),
-            impls_by_crate: vec![Vec::new(); n],
             trait_supertraits: HashMap::new(),
             impl_assoc_parent: HashMap::new(),
             impl_self_target: HashMap::new(),
@@ -191,6 +204,9 @@ impl<'a> RidxV5ItemDb<'a> {
 
     pub(crate) fn index_impls_and_traits_for(&mut self, active: &[usize]) {
         let ws = self.ws;
+        let bench = self.bench_mode;
+        let mut by_adt: HashMap<GlobalDefId, Vec<IndexedImpl>> = HashMap::new();
+        let mut by_other: HashMap<ImplTargetKey, Vec<IndexedImpl>> = HashMap::new();
         for &r_idx in active {
             let reader = &ws.readers()[r_idx];
             let arena = reader.ty_arena();
@@ -206,21 +222,22 @@ impl<'a> RidxV5ItemDb<'a> {
                 let target = self.lower_ty_to_target_key(r_idx, arena, iv.self_ty(), 0);
                 let trait_def = iv.trait_def().map_or(GlobalDefId::NONE, |td| self.resolve_ty_def(r_idx, arena, td));
                 let impl_gid = GlobalDefId::new(krate, id_index);
-                let st = self.state.as_mut();
-                if target != ImplTargetKey::Unknown {
-                    st.impl_self_target.insert(impl_gid, target);
-                }
-                for assoc_didx in iv.assoc_def_indices() {
-                    st.impl_assoc_parent.insert(GlobalDefId::new(krate, assoc_didx), (trait_def, target));
+                if bench {
+                    let st = self.state.as_mut();
+                    if target != ImplTargetKey::Unknown {
+                        st.impl_self_target.insert(impl_gid, target);
+                    }
+                    for assoc_didx in iv.assoc_def_indices() {
+                        st.impl_assoc_parent.insert(GlobalDefId::new(krate, assoc_didx), (trait_def, target));
+                    }
                 }
                 if target == ImplTargetKey::Unknown {
                     continue;
                 }
                 let entry = IndexedImpl { id: impl_gid, file: impl_file, target, trait_def, is_negative: (iv.flags() & IMPL_FLAG_NEGATIVE) != 0 };
-                st.impls_by_crate[r_idx].push(entry);
                 match target {
-                    ImplTargetKey::Adt(adt_def) => st.impls_by_adt.entry(adt_def).or_default().push(entry),
-                    other => st.impls_by_other.entry(other).or_default().push(entry),
+                    ImplTargetKey::Adt(adt_def) => by_adt.entry(adt_def).or_default().push(entry),
+                    other => by_other.entry(other).or_default().push(entry),
                 }
             }
             for (didx, d) in reader.definitions().iter().enumerate() {
@@ -244,6 +261,9 @@ impl<'a> RidxV5ItemDb<'a> {
                 }
             }
         }
+        let st = self.state.as_mut();
+        extend_flat_groups(&mut st.impls_arena, &mut st.impls_by_adt, by_adt);
+        extend_flat_groups(&mut st.impls_arena, &mut st.impls_by_other, by_other);
     }
 
     /// Resolves a shard-local or cross-crate `TyDefId` into a `GlobalDefId`.
@@ -333,60 +353,17 @@ impl<'a> RidxV5ItemDb<'a> {
         if let Some(didx) = lookup_def_idx_by_exact_path(reader, shard, &prefixed) {
             return follow_reexport(didx);
         }
-        if let Some(&didx) = self.shards[r_idx].reexport_sig_to_idx.get(raw_path).or_else(|| self.shards[r_idx].reexport_sig_to_idx.get(&prefixed)) {
+        if let Some(didx) = shard.lookup_reexport_sig(self.ws, raw_path).or_else(|| shard.lookup_reexport_sig(self.ws, &prefixed)) {
             return follow_reexport(didx);
         }
         let rel_cand = raw_path.strip_prefix(cname).and_then(|s| s.strip_prefix("::")).unwrap_or(raw_path);
-        if let Some(&didx) = self.shards[r_idx].synth_macro_by_name.get(rel_cand) {
+        if let Some(&didx) = shard.synth_macro_by_name.get(rel_cand) {
             return GlobalDefId::new(CrateId(r_idx as u32), didx);
         }
-        if let Some(&didx) = self.shards[r_idx].synth_ty_def_by_path.get(raw_path).or_else(|| self.shards[r_idx].synth_ty_def_by_path.get(&prefixed)) {
+        if let Some(didx) = shard.lookup_synth_ty_def(self.ws, raw_path).or_else(|| shard.lookup_synth_ty_def(self.ws, &prefixed)) {
             return GlobalDefId::new(CrateId(r_idx as u32), didx);
         }
         GlobalDefId::NONE
-    }
-
-    pub fn lower_ty_to_target_key(&self, r_idx: usize, arena: TyArenaView<'_>, ty_id: TyId, depth: u8) -> ImplTargetKey {
-        if depth > 6 {
-            return ImplTargetKey::Unknown;
-        }
-        match arena.kind(ty_id) {
-            TyKindView::Unit => ImplTargetKey::Tuple(0),
-            TyKindView::Bool => ImplTargetKey::Prim(PrimTy::Bool),
-            TyKindView::Char => ImplTargetKey::Prim(PrimTy::Char),
-            TyKindView::Str => ImplTargetKey::Prim(PrimTy::Str),
-            TyKindView::Never => ImplTargetKey::Never,
-            TyKindView::Int(w) => match w {
-                IntTyWidth::I8 => ImplTargetKey::Prim(PrimTy::I8),
-                IntTyWidth::I16 => ImplTargetKey::Prim(PrimTy::I16),
-                IntTyWidth::I32 => ImplTargetKey::Prim(PrimTy::I32),
-                IntTyWidth::I64 => ImplTargetKey::Prim(PrimTy::I64),
-                IntTyWidth::I128 => ImplTargetKey::Prim(PrimTy::I128),
-                IntTyWidth::Isize => ImplTargetKey::Prim(PrimTy::Isize),
-            },
-            TyKindView::Uint(w) => match w {
-                UintTyWidth::U8 => ImplTargetKey::Prim(PrimTy::U8),
-                UintTyWidth::U16 => ImplTargetKey::Prim(PrimTy::U16),
-                UintTyWidth::U32 => ImplTargetKey::Prim(PrimTy::U32),
-                UintTyWidth::U64 => ImplTargetKey::Prim(PrimTy::U64),
-                UintTyWidth::U128 => ImplTargetKey::Prim(PrimTy::U128),
-                UintTyWidth::Usize => ImplTargetKey::Prim(PrimTy::Usize),
-            },
-            TyKindView::Float(FloatTyWidth::F32) => ImplTargetKey::Prim(PrimTy::F32),
-            TyKindView::Float(FloatTyWidth::F64) => ImplTargetKey::Prim(PrimTy::F64),
-            TyKindView::Adt { def, .. } => Some(self.resolve_ty_def(r_idx, arena, def)).filter(|g| g.is_some()).map_or(ImplTargetKey::Unknown, ImplTargetKey::Adt),
-            TyKindView::Ref { mutability, .. } => ImplTargetKey::Ref { is_mut: mutability == TyMutability::Mut },
-            TyKindView::Ptr { mutability, .. } => ImplTargetKey::Ptr { is_mut: mutability == TyMutability::Mut },
-            TyKindView::Slice(_) => ImplTargetKey::Slice,
-            TyKindView::Array { .. } => ImplTargetKey::Array,
-            TyKindView::Tuple(list) => ImplTargetKey::Tuple(list.count() as u16),
-            TyKindView::FnPtr { inputs, .. } => ImplTargetKey::FnPtr { arity: inputs.count() as u16 },
-            TyKindView::Dyn { mut bounds, .. } => {
-                bounds.next().map(|f| self.resolve_ty_def(r_idx, arena, f.trait_def)).filter(|g| g.is_some()).map_or(ImplTargetKey::Unknown, ImplTargetKey::Dyn)
-            }
-            TyKindView::Param { .. } => ImplTargetKey::Param,
-            _ => ImplTargetKey::Unknown,
-        }
     }
 }
 

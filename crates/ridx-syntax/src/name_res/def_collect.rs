@@ -11,8 +11,6 @@
 //! Module-tree CST walker for [`super::def_map::CrateDefMap`] (per-item extraction helpers live in
 //! [`super::def_collect_items`]).
 
-use std::collections::HashMap;
-
 use super::attr::eval_outer_attrs;
 use super::db::{CrateId, FileId, GlobalDefId, IndexedDef, ItemDb, ItemKind, ModuleId, SourceDb, VisKind};
 use super::impl_collect::LocalImplArena;
@@ -81,13 +79,6 @@ pub(super) fn collect_crate_items<'t>(
         ci.is_empty() && db.crate_root_def(mod_tree.krate).is_none()
     };
 
-    let mut owned_trees: HashMap<FileId, SyntaxTree<'_>> = HashMap::new();
-    for m in &mod_tree.modules {
-        if m.file.is_some() && !m.is_unresolved() && get_tree(m.file).is_none() {
-            owned_trees.entry(m.file).or_insert_with(|| parse(sources.file_text(m.file)));
-        }
-    }
-
     let mut coll = Collector {
         db,
         sources,
@@ -115,7 +106,7 @@ pub(super) fn collect_crate_items<'t>(
     };
 
     let mut macro_env = MacroScopeVec::new();
-    coll.walk_module(ModuleId::ROOT, &mut get_tree, &owned_trees, &mut macro_env);
+    coll.walk_module(ModuleId::ROOT, &mut get_tree, None, &mut macro_env);
     assign_overlay_item_ids(&mut coll.out);
     coll.out
 }
@@ -191,7 +182,7 @@ impl<'a> Collector<'a> {
         &mut self,
         mod_id: ModuleId,
         get_tree: &mut impl FnMut(FileId) -> Option<&'t SyntaxTree<'t>>,
-        owned_trees: &HashMap<FileId, SyntaxTree<'_>>,
+        parent_file_tree: Option<(FileId, &SyntaxTree<'_>)>,
         macro_env: &mut MacroScopeVec,
     ) {
         let m = *self.mod_tree.module(mod_id);
@@ -202,9 +193,15 @@ impl<'a> Collector<'a> {
         for &(_, _, lid, gdef) in macro_env.iter() {
             self.out.textual_macros[mod_id.0 as usize].push((lid, gdef));
         }
-        let st: &SyntaxTree<'_> = match get_tree(m.file) {
-            Some(t) => t,
-            None => &owned_trees[&m.file],
+        let local_tree;
+        let st: &SyntaxTree<'_> = if let Some(t) = get_tree(m.file) {
+            t
+        } else if let Some((pf, pt)) = parent_file_tree.filter(|&(pf, _)| pf == m.file) {
+            let _ = pf;
+            pt
+        } else {
+            local_tree = parse(self.sources.file_text(m.file));
+            &local_tree
         };
         let mod_def = self.out.mod_index_defs[mod_id.0 as usize];
         self.scratch_idx_defs.clear();
@@ -231,7 +228,7 @@ impl<'a> Collector<'a> {
         for cidx in 0..child_len {
             let child_id = self.mod_tree.children(mod_id)[cidx].child;
             let env_mark = macro_env.len();
-            self.walk_module(child_id, get_tree, owned_trees, macro_env);
+            self.walk_module(child_id, get_tree, Some((m.file, st)), macro_env);
             if (self.mod_tree.module(child_id).flags & MOD_FLAG_MACRO_USE) != 0 {
                 for &(_, _, lid, gdef) in &macro_env[env_mark..] {
                     self.out.textual_macros[mod_id.0 as usize].push((lid, gdef));

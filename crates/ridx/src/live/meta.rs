@@ -258,69 +258,66 @@ pub struct ReaderMeta {
 }
 
 pub fn load_reader_metas(ws: &WorkspaceIndex) -> Vec<ReaderMeta> {
-    let has_core_sysroot = ws.readers().iter().any(|r| r.crate_name() == "core");
-    let mut out = Vec::with_capacity(ws.crate_count());
-    for idx in 0..ws.crate_count() {
-        let reader = &ws.readers()[idx];
-        let mut crate_name = reader.crate_name().replace('-', "_");
-        let mut edition = Edition::Edition2021;
-        let mut is_dependency = ws.is_reader_dependency(idx);
-        let is_sysroot = has_core_sysroot && ws.meta_path_at(idx).is_none();
-        let mut target_kind = String::new();
-        let mut is_test_harness = false;
-        let mut source_root = ws.source_root_at(idx).map(Path::to_path_buf);
-        let mut root_rs_abs: Option<PathBuf> = None;
-        let mut extern_units: BTreeMap<String, String> = BTreeMap::new();
-        let mut env: BTreeMap<String, String> = BTreeMap::new();
+    let has_core = ws.readers().iter().any(|r| r.crate_name() == "core");
+    (0..ws.crate_count()).map(|idx| load_reader_meta_at(ws, idx, has_core, true)).collect()
+}
 
-        if let Some(meta_path) = ws.meta_path_at(idx) {
-            if let Ok(raw) = fs::read_to_string(meta_path) {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&raw) {
-                    if let Some(n) = val.get("name").and_then(|v| v.as_str()) {
-                        crate_name = n.replace('-', "_");
-                    }
-                    if let Some(dep) = val.get("is_dependency").and_then(|v| v.as_bool()) {
-                        is_dependency = dep;
-                    }
-                    if let Some(tk) = val.get("target_kind").and_then(|v| v.as_str()) {
-                        target_kind = tk.to_string();
-                    }
-                    if let Some(sr) = val.get("source_root").and_then(|v| v.as_str()) {
-                        source_root = Some(PathBuf::from(sr));
-                    }
-                    if let Some(obj) = val.get("extern_units").and_then(|v| v.as_object()) {
-                        for (k, v) in obj {
-                            if !k.contains('-') {
-                                if let Some(uk) = v.as_str() {
-                                    extern_units.insert(k.clone(), uk.to_string());
-                                }
-                            }
-                        }
-                        for (k, v) in obj {
-                            let norm_k = k.split('-').next().unwrap_or(k).replace('-', "_");
-                            if let Some(uk) = v.as_str() {
-                                extern_units.entry(norm_k).or_insert_with(|| uk.to_string());
-                            }
-                        }
-                    }
-                    if let Some(obj) = val.get("env").and_then(|v| v.as_object()) {
-                        for (k, v) in obj {
-                            if let Some(ev) = v.as_str() {
-                                env.insert(k.clone(), ev.to_string());
-                            }
+pub(crate) fn load_reader_meta_at(ws: &WorkspaceIndex, idx: usize, has_core_sysroot: bool, parse_sidecar: bool) -> ReaderMeta {
+    let reader = &ws.readers()[idx];
+    let mut crate_name = reader.crate_name().replace('-', "_");
+    let mut edition = Edition::Edition2021;
+    let mut is_dependency = ws.is_reader_dependency(idx);
+    let is_sysroot = has_core_sysroot && ws.meta_path_at(idx).is_none();
+    let mut target_kind = String::new();
+    let mut is_test_harness = false;
+    let mut source_root = ws.source_root_at(idx).map(Path::to_path_buf);
+    let mut root_rs_abs: Option<PathBuf> = None;
+    let mut extern_units: BTreeMap<String, String> = BTreeMap::new();
+    let mut env: BTreeMap<String, String> = BTreeMap::new();
+
+    if parse_sidecar {
+        if let Some(raw) = ws.meta_path_at(idx).and_then(|mp| fs::read_to_string(mp).ok()) {
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&raw) {
+                if let Some(n) = val.get("name").and_then(|v| v.as_str()) {
+                    crate_name = n.replace('-', "_");
+                }
+                if let Some(dep) = val.get("is_dependency").and_then(|v| v.as_bool()) {
+                    is_dependency = dep;
+                }
+                if let Some(tk) = val.get("target_kind").and_then(|v| v.as_str()) {
+                    target_kind = tk.to_string();
+                }
+                if let Some(sr) = val.get("source_root").and_then(|v| v.as_str()) {
+                    source_root = Some(PathBuf::from(sr));
+                }
+                if let Some(obj) = val.get("extern_units").and_then(|v| v.as_object()) {
+                    for (k, v) in obj.iter().filter(|(k, _)| !k.contains('-')) {
+                        if let Some(uk) = v.as_str() {
+                            extern_units.insert(k.clone(), uk.to_string());
                         }
                     }
-                    if let Some(args) = val.get("compiler_args").and_then(|v| v.as_array()) {
-                        let strs: Vec<&str> = args.iter().filter_map(|x| x.as_str()).collect();
-                        parse_compiler_args(&strs, source_root.as_deref(), &mut edition, &mut is_test_harness, &mut root_rs_abs);
+                    for (k, v) in obj {
+                        let norm_k = k.split('-').next().unwrap_or(k).replace('-', "_");
+                        if let Some(uk) = v.as_str() {
+                            extern_units.entry(norm_k).or_insert_with(|| uk.to_string());
+                        }
                     }
+                }
+                if let Some(obj) = val.get("env").and_then(|v| v.as_object()) {
+                    for (k, v) in obj {
+                        if let Some(ev) = v.as_str() {
+                            env.insert(k.clone(), ev.to_string());
+                        }
+                    }
+                }
+                if let Some(args) = val.get("compiler_args").and_then(|v| v.as_array()) {
+                    let strs: Vec<&str> = args.iter().filter_map(|x| x.as_str()).collect();
+                    parse_compiler_args(&strs, source_root.as_deref(), &mut edition, &mut is_test_harness, &mut root_rs_abs);
                 }
             }
         }
-
-        out.push(ReaderMeta { crate_name, edition, is_dependency, is_sysroot, target_kind, is_test_harness, source_root, root_rs_abs, extern_units, env });
     }
-    out
+    ReaderMeta { crate_name, edition, is_dependency, is_sysroot, target_kind, is_test_harness, source_root, root_rs_abs, extern_units, env }
 }
 
 #[inline]

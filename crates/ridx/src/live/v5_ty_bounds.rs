@@ -300,7 +300,7 @@ impl<'w> RidxV5ItemDb<'w> {
         let mut match_count = 0usize;
         let mut unique_imp: Option<(PrimTy, TraitImplInfo)> = None;
         for &prim in prims {
-            let Some(impls) = self.ty_tables.concrete_trait_impls.get(&(trait_gid, ImplTargetKey::Prim(prim))) else { continue };
+            let impls = self.ty_tables.concrete_impls(&(trait_gid, ImplTargetKey::Prim(prim)));
             for &imp in impls {
                 let snap = vars.start_snapshot();
                 let ok = self.try_bind_v5_trait_impl(&imp, InferTyId::from_prim(prim), trait_args, arena, vars, depth);
@@ -316,7 +316,8 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
         if match_count == 0 && !trait_args.is_empty() && prims.len() <= 12 {
-            if let Some(blankets) = self.ty_tables.blanket_trait_impls.get(&trait_gid).filter(|b| b.len() <= 4) {
+            let blankets = self.ty_tables.blanket_impls(&trait_gid);
+            if !blankets.is_empty() && blankets.len() <= 4 {
                 for &prim in prims {
                     for &imp in blankets {
                         let snap = vars.start_snapshot();
@@ -360,13 +361,14 @@ impl<'w> RidxV5ItemDb<'w> {
         let reader = &self.ws.readers()[fn_gid.krate.0 as usize];
         let Some(ad) = reader.definitions().get(fn_gid.index as usize) else { return assoc_fn };
         let fn_name = reader.get_str(ad.name_offset()).trim_start_matches("r#");
-        let Some(impls) = self.impls_by_adt.get(&self.canonical_def(adt_def)) else { return assoc_fn };
+        let impls = self.adt_impls(self.canonical_def(adt_def));
+        if impls.is_empty() {
+            return assoc_fn;
+        }
         for imp in impls.iter().filter(|i| !i.trait_def.is_some()) {
             let r_idx = imp.id.krate.0 as usize;
             let rdr = &self.ws.readers()[r_idx];
-            let Some(iv_idx) =
-                (if (imp.id.index & IMPL_SYNTH_BIT) != 0 { Some(imp.id.index & !IMPL_SYNTH_BIT) } else { self.shards[r_idx].impl_def_to_impl_idx.get(&imp.id.index).copied() })
-            else {
+            let Some(iv_idx) = (if (imp.id.index & IMPL_SYNTH_BIT) != 0 { Some(imp.id.index & !IMPL_SYNTH_BIT) } else { self.shards[r_idx].lookup_impl_idx(imp.id.index) }) else {
                 continue;
             };
             let Some(iv) = rdr.impl_view(iv_idx) else { continue };
@@ -379,21 +381,5 @@ impl<'w> RidxV5ItemDb<'w> {
             }
         }
         assoc_fn
-    }
-
-    fn probe_inherent_impl_self(&self, r_idx: usize, impl_idx: u32, cur: InferTyId, arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
-        let reader = &self.ws.readers()[r_idx];
-        let Some(iv) = reader.impl_view(impl_idx) else { return false };
-        let remap = ParamRemap::for_impl(self, r_idx, impl_idx, arena);
-        let raw_self = lower_v5_ty(self, r_idx, reader.ty_arena(), iv.self_ty(), &remap, arena);
-        let snap = vars.start_snapshot();
-        let mut subst = InlineTyBuf::new();
-        for _ in 0..remap.non_lt_count {
-            subst.push(vars.new_var(arena, TyVarKind::General).1);
-        }
-        let inst_self = instantiate_v5(arena, raw_self, subst.as_slice(), 0);
-        let ok = unify::equate(arena, vars, cur, inst_self).is_ok();
-        vars.rollback_to(snap);
-        ok
     }
 }

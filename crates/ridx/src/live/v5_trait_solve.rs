@@ -329,8 +329,8 @@ impl<'w> RidxV5ItemDb<'w> {
             ImplTargetKey::Dyn(d) => ImplTargetKey::Dyn(self.canonical_def(d)),
             other => other,
         };
-        let concrete = self.ty_tables.concrete_trait_impls.get(&(trait_gid, head)).map_or(&[][..], |v| v.as_slice());
-        let blanket = self.ty_tables.blanket_trait_impls.get(&trait_gid).map_or(&[][..], |v| v.as_slice());
+        let concrete = self.ty_tables.concrete_impls(&(trait_gid, head));
+        let blanket = self.ty_tables.blanket_impls(&trait_gid);
 
         let concrete_fn =
             matches!(arena.kind(cur), InferTyKind::FnDef { .. } | InferTyKind::Closure { .. } | InferTyKind::FnPtr { .. }) && !vars_has_unresolved_infer(arena, vars, cur);
