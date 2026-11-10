@@ -53,8 +53,14 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
         Some(overlay) => overlay.utf16_col_to_char_col(line_1based, utf16_col),
         None => conv.utf16_col_to_char_col(&file, line_1based, utf16_col),
     };
+    // The inferred type answers on edited buffers too; the indexed tables below describe the saved file only.
+    let live_partial = match workspace.and_then(|ws| super::type_definition_live::resolve_inferred_type(ws, &file, (line_1based, col_1based), overlay_mgr, conv)) {
+        Some((loc, true)) => return loc,
+        Some((loc, false)) => Some(loc),
+        None => None,
+    };
     let Some(ws) = workspace.filter(|_| !overlay_opt.is_some_and(|o| o.is_dirty())) else {
-        return Value::Null;
+        return live_partial.unwrap_or(Value::Null);
     };
 
     let (file_readers, ctx) = build_file_reader_contexts(ws, &file, line_1based, col_1based);
@@ -80,9 +86,9 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
     }
 
     if tried_def_at {
-        return Value::Null;
+        return live_partial.unwrap_or(Value::Null);
     }
-    resolve_from_definition_at(ws, &file_readers, &ctx, (&file, pos, &line_str), type_entry, conv).unwrap_or(Value::Null)
+    resolve_from_definition_at(ws, &file_readers, &ctx, (&file, pos, &line_str), type_entry, conv).or(live_partial).unwrap_or(Value::Null)
 }
 
 fn build_file_reader_contexts<'a>(ws: &'a WorkspaceIndex, file: &str, line: u32, col: u32) -> (Vec<usize>, Vec<FileReaderCtx<'a>>) {

@@ -254,6 +254,7 @@ impl LifecycleManager {
         self.flycheck.shutdown();
         self.apply_registry.clear();
         super::hierarchy::clear_impl_table_cache();
+        super::navigation::clear_live_db_cache();
         Ok(Value::Null)
     }
 

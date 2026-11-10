@@ -15,6 +15,7 @@ mod highlight_ext;
 mod impl_line;
 pub mod references;
 pub mod type_definition;
+mod type_definition_live;
 mod type_definition_lookup;
 pub(crate) mod type_definition_parse;
 mod type_definition_qual;
@@ -26,6 +27,7 @@ pub mod tests;
 pub use declaration::handle_declaration;
 pub use references::*;
 pub use type_definition::handle_type_definition;
+pub(crate) use type_definition_live::clear_live_db_cache;
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;

@@ -17,14 +17,13 @@ use std::path::{Path, PathBuf};
 
 use ridx_format::{join_resolving_overlap, DefKind, ItemVis};
 use ridx_syntax::name_res::{CrateDefMap, CrateId, GlobalDefId, ItemKind as IK, ModuleId};
-use ridx_syntax::ty_infer::{FnBodySummary, InferTyId, InferTyKind, LocalCstDefs};
+use ridx_syntax::ty_infer::{FnBodySummary, LocalCstDefs};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree};
 
 use crate::overlay::OverlayManager;
 
 use super::meta::LineIndex;
 use super::query::LiveLocation;
-use super::query_ty_fmt::TyReader;
 use super::v5_db::{RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT, TY_DEF_SYNTH_BIT};
 use super::v5_ty_tables::fnv1a_str;
 
@@ -174,64 +173,7 @@ pub(crate) fn lookup_cst_param_name(parsed: &CachedParsed, fn_node: Option<NodeI
     None
 }
 
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn collect_ty_def_locs<A: TyReader>(
-    db: &RidxV5ItemDb<'_>,
-    dm: &CrateDefMap,
-    active_canon: &Path,
-    parsed: &CachedParsed,
-    local_defs: Option<&LocalCstDefs>,
-    arena: &A,
-    ty: InferTyId,
-    depth: u8,
-    out: &mut Vec<LiveLocation>,
-) {
-    if !ty.is_some() || depth > 24 {
-        return;
-    }
-    let mut push_gid = |g: GlobalDefId| {
-        if !g.is_some() || db.ty_tables.global_gid.is_some_and(|gg| db.canonical_def(g) == gg) {
-            return;
-        }
-        if let Some(loc) = resolve_def_location(db, dm, active_canon, parsed, local_defs, g) {
-            if !out.contains(&loc) {
-                out.push(loc);
-            }
-        }
-    };
-    match arena.kind(ty) {
-        InferTyKind::Adt { def, args } => {
-            push_gid(def);
-            for &a in arena.slice(args) {
-                collect_ty_def_locs(db, dm, active_canon, parsed, local_defs, arena, a, depth + 1, out);
-            }
-        }
-        InferTyKind::Dyn { principal, args } | InferTyKind::Opaque { def: principal, args } => {
-            push_gid(principal);
-            for &a in arena.slice(args) {
-                collect_ty_def_locs(db, dm, active_canon, parsed, local_defs, arena, a, depth + 1, out);
-            }
-        }
-        InferTyKind::Alias { trait_def, assoc_def, self_ty, args } => {
-            push_gid(assoc_def);
-            push_gid(trait_def);
-            collect_ty_def_locs(db, dm, active_canon, parsed, local_defs, arena, self_ty, depth + 1, out);
-            for &a in arena.slice(args) {
-                collect_ty_def_locs(db, dm, active_canon, parsed, local_defs, arena, a, depth + 1, out);
-            }
-        }
-        InferTyKind::Ref { inner, .. } | InferTyKind::Ptr { inner, .. } | InferTyKind::Slice(inner) | InferTyKind::Array { elem: inner, .. } => {
-            collect_ty_def_locs(db, dm, active_canon, parsed, local_defs, arena, inner, depth + 1, out);
-        }
-        InferTyKind::Tuple(r) | InferTyKind::FnPtr { sig: r } | InferTyKind::Closure { sig: r, .. } | InferTyKind::FnDef { args: r, .. } => {
-            for &el in arena.slice(r) {
-                collect_ty_def_locs(db, dm, active_canon, parsed, local_defs, arena, el, depth + 1, out);
-            }
-        }
-        InferTyKind::Param { def, .. } => push_gid(def),
-        _ => {}
-    }
-}
+pub(crate) use super::query_defs::collect_ty_def_locs;
 
 pub(crate) fn resolve_def_location(
     db: &RidxV5ItemDb<'_>,
@@ -261,8 +203,11 @@ pub(crate) fn resolve_def_location(
         return Some(LiveLocation { file: fpath, line: sl, col: sc, end_line: el, end_col: ec });
     }
     let def = db.canonical_def(raw_def);
-    if !def.is_some() || matches!(def.index, CRATE_ROOT_DEF_IDX) || (def.index & (IMPL_SYNTH_BIT | PROC_MACRO_SYNTH_BIT | TY_DEF_SYNTH_BIT)) != 0 {
+    if !def.is_some() || matches!(def.index, CRATE_ROOT_DEF_IDX) || (def.index & (IMPL_SYNTH_BIT | PROC_MACRO_SYNTH_BIT)) != 0 {
         return None;
+    }
+    if (def.index & TY_DEF_SYNTH_BIT) != 0 {
+        return resolve_synth_ty_def_location(db, def);
     }
     let r_idx = def.krate.0 as usize;
     let rdr = db.ws.readers().get(r_idx)?;
@@ -283,6 +228,84 @@ pub(crate) fn resolve_def_location(
         root.map_or_else(|| rel.to_path_buf(), |r| join_resolving_overlap(r, rel))
     };
     Some(LiveLocation { file, line: sp.start_line(), col: sp.start_col(), end_line: sp.end_line(), end_col: sp.end_col() })
+}
+
+fn resolve_synth_ty_def_location(db: &RidxV5ItemDb<'_>, def: GlobalDefId) -> Option<LiveLocation> {
+    if (def.index & 0x4000_0000) != 0 {
+        return None;
+    }
+    if let Ok(cache) = db.ty_tables.synth_def_locs.lock() {
+        if let Some(cached) = cache.get(&def) {
+            return cached.clone();
+        }
+    }
+    let found = find_synth_ty_def_on_disk(db, def);
+    if let Ok(mut cache) = db.ty_tables.synth_def_locs.lock() {
+        cache.insert(def, found.clone());
+    }
+    found
+}
+
+fn find_synth_ty_def_on_disk(db: &RidxV5ItemDb<'_>, def: GlobalDefId) -> Option<LiveLocation> {
+    let r_idx = def.krate.0 as usize;
+    let rdr = db.ws.readers().get(r_idx)?;
+    let td = rdr.ty_arena().def(ridx_format::TyDefId(def.index & !TY_DEF_SYNTH_BIT))?;
+    let root = if db.metas[r_idx].is_dependency { db.metas[r_idx].source_root.as_deref()? } else { db.metas[r_idx].source_root.as_deref().unwrap_or(db.src.ws_root.as_path()) };
+    let cname = db.metas[r_idx].crate_name.as_str();
+    let rel_path = td.path.strip_prefix(cname).and_then(|s| s.strip_prefix("::")).unwrap_or(td.path);
+    let (mod_rel, raw_item) = rel_path.rsplit_once("::").unwrap_or(("", rel_path));
+    let item = raw_item.trim_start_matches("r#");
+    if item.is_empty() {
+        return None;
+    }
+    let src_dir = (0..rdr.header().files_count)
+        .map(|fid| rdr.get_file(fid))
+        .find(|f| f.ends_with("/lib.rs") || f.ends_with("\\lib.rs") || *f == "src/lib.rs" || *f == "lib.rs")
+        .and_then(|f| Path::new(f).parent())
+        .map(|p| join_resolving_overlap(root, p))
+        .unwrap_or_else(|| root.join("src"));
+    let mod_slash = mod_rel.replace("::", "/");
+    let mut cands = Vec::with_capacity(5);
+    if mod_slash.is_empty() {
+        cands.push(src_dir.join("lib.rs"));
+    } else {
+        cands.push(src_dir.join(format!("{mod_slash}.rs")));
+        cands.push(src_dir.join(&mod_slash).join("mod.rs"));
+        if let Some((parent_mod, _)) = mod_slash.rsplit_once('/') {
+            cands.push(src_dir.join(format!("{parent_mod}.rs")));
+            cands.push(src_dir.join(parent_mod).join("mod.rs"));
+        } else {
+            cands.push(src_dir.join("lib.rs"));
+        }
+    }
+    for cand in cands {
+        let Ok(text) = std::fs::read_to_string(&cand) else { continue };
+        for (idx, line) in text.lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") {
+                continue;
+            }
+            for kw in ["struct ", "enum ", "union ", "trait ", "type "] {
+                if let Some(pos) = line.find(kw) {
+                    if pos > 0 && line.as_bytes()[pos - 1].is_ascii_alphanumeric() {
+                        continue;
+                    }
+                    let after = &line[pos + kw.len()..];
+                    let ident_str = after.strip_prefix("r#").unwrap_or(after);
+                    if let Some(rest) = ident_str.strip_prefix(item) {
+                        if rest.chars().next().is_none_or(|c| !c.is_alphanumeric() && c != '_') {
+                            let name_byte = line.len() - after.len();
+                            let start_col = line[..name_byte].chars().count() as u32 + 1;
+                            let end_col = start_col + (after.len() - rest.len()) as u32;
+                            let ln = (idx + 1) as u32;
+                            return Some(LiveLocation { file: cand, line: ln, col: start_col, end_line: ln, end_col });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 #[inline]

@@ -71,6 +71,7 @@ pub fn dispatch_lsp_message<W: Write>(
     if any_reloaded {
         lifecycle.conv.clear();
         super::hierarchy::clear_impl_table_cache();
+        super::navigation::clear_live_db_cache();
     }
 
     let ra_commands = lifecycle.ra_client_commands();

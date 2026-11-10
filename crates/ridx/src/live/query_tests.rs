@@ -131,3 +131,54 @@ fn live_db_clean_and_dirty_overlay_queries() {
     let sub_cands = live.path_candidates(&ws, &lib_rs, sub_colon, Some(&ov));
     assert!(sub_cands.iter().any(|c| c.label == "helper" && c.kind == DefKind::Fn));
 }
+
+#[test]
+fn live_ty_defs_exclude_impls_assocs_and_non_typeable_tokens() {
+    let (_dir, lib_rs, ws) = setup_tiny_workspace();
+    let mut live = LiveDb::new();
+    let mut ov = OverlayManager::new();
+    let src = concat!(
+        "pub trait SlabItem {\n",
+        "    type Key;\n",
+        "}\n",
+        "pub enum RegErr<T> {\n",
+        "    Missing(T),\n",
+        "    Empty,\n",
+        "}\n",
+        "impl<T> RegErr<T> {\n",
+        "    pub fn check(&self) -> bool {\n",
+        "        match self {\n",
+        "            Self::Empty => true,\n",
+        "            _ => false,\n",
+        "        }\n",
+        "    }\n",
+        "}\n",
+        "pub fn take_key<I: SlabItem>(key: &I::Key) {\n",
+        "    let x = 42;\n",
+        "    let _ = (key, x);\n",
+        "}\n",
+    );
+    let path_str = lib_rs.to_str().unwrap();
+    ov.open_with_provenance(&format!("file://{path_str}"), path_str, 1, String::new(), true);
+    ov.update(path_str, 2, src.to_string());
+
+    // Keyword `let`, integer literal `42`, and punctuation `;` must return None.
+    let let_off = src.find("let x = 42;").unwrap() as u32;
+    assert!(live.type_at(&ws, &lib_rs, let_off, Some(&ov)).is_none(), "keyword `let` must return None");
+    let lit_off = src.find("42;").unwrap() as u32;
+    assert!(live.type_at(&ws, &lib_rs, lit_off, Some(&ov)).is_none(), "literal `42` must return None");
+    let semi_off = src.find("42;").unwrap() as u32 + 2;
+    assert!(live.type_at(&ws, &lib_rs, semi_off, Some(&ov)).is_none(), "punctuation `;` must return None");
+
+    // Unnormalized projection `&I::Key` must resolve only to trait `SlabItem` (line 1), not `type Key` (line 2) or `fn take_key`.
+    let key_ty_off = src.find("I::Key").unwrap() as u32 + 3;
+    let key_ty = live.type_at(&ws, &lib_rs, key_ty_off, Some(&ov)).expect("expected type at `I::Key`");
+    let key_lines: Vec<u32> = key_ty.defs.iter().map(|d| d.line).collect();
+    assert_eq!(key_lines, vec![1], "projection defs should contain only trait SlabItem: {key_lines:?}");
+
+    // `Self::Empty` inside `impl<T> RegErr<T>` must resolve only to enum `RegErr` (line 4), not the `impl` block (line 8).
+    let self_pat_off = src.find("Self::Empty").unwrap() as u32 + 6;
+    let self_ty = live.type_at(&ws, &lib_rs, self_pat_off, Some(&ov)).expect("expected type at `Self::Empty`");
+    let self_lines: Vec<u32> = self_ty.defs.iter().map(|d| d.line).collect();
+    assert_eq!(self_lines, vec![4], "Self::Empty defs should contain only enum RegErr: {self_lines:?}");
+}

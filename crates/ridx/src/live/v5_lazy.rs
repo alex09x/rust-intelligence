@@ -230,7 +230,7 @@ impl RidxV5ItemDb<'_> {
             if !self.shard_loaded[u] {
                 newly.push(u);
             }
-            if self.metas[u].is_sysroot || self.metas[u].target_kind.contains("proc-macro") {
+            if self.metas[u].is_sysroot || (u != root_r_idx && self.metas[u].target_kind.contains("proc-macro")) {
                 continue;
             }
             if u == root_r_idx {
@@ -268,17 +268,35 @@ impl RidxV5ItemDb<'_> {
                             visited[v] = true;
                             q.push_back(v);
                         }
-                    } else if DefKind::from(d.kind) == DefKind::TyAlias {
-                        if let Some(dt) = reader.def_ty_for_def(didx as u32) {
-                            if let TyKindView::Adt { def, .. } = arena.kind(dt.ty()) {
-                                if let Some(td) = arena.def(def) {
-                                    let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
-                                        let first = td.path.split("::").next().unwrap_or(td.path);
-                                        self.resolve_extern_name_to_reader(u, first)
-                                    });
-                                    if let Some(v) = target.filter(|&v| !visited[v]) {
-                                        visited[v] = true;
-                                        q.push_back(v);
+                    } else if matches!(DefKind::from(d.kind), DefKind::TyAlias | DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait) {
+                        if DefKind::from(d.kind) == DefKind::TyAlias {
+                            if let Some(dt) = reader.def_ty_for_def(didx as u32) {
+                                if let TyKindView::Adt { def, .. } = arena.kind(dt.ty()) {
+                                    if let Some(td) = arena.def(def) {
+                                        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
+                                            let first = td.path.split("::").next().unwrap_or(td.path);
+                                            self.resolve_extern_name_to_reader(u, first)
+                                        });
+                                        if let Some(v) = target.filter(|&v| !visited[v]) {
+                                            visited[v] = true;
+                                            q.push_back(v);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        for gp in reader.generic_params_for_def(didx as u32) {
+                            if let Some(def_ty) = gp.default_ty() {
+                                if let TyKindView::Adt { def, .. } = arena.kind(def_ty) {
+                                    if let Some(td) = arena.def(def) {
+                                        let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
+                                            let first = td.path.split("::").next().unwrap_or(td.path);
+                                            self.resolve_extern_name_to_reader(u, first)
+                                        });
+                                        if let Some(v) = target.filter(|&v| !visited[v]) {
+                                            visited[v] = true;
+                                            q.push_back(v);
+                                        }
                                     }
                                 }
                             }
