@@ -20,6 +20,7 @@ mod type_definition_live;
 mod type_definition_lookup;
 pub(crate) mod type_definition_parse;
 mod type_definition_qual;
+mod type_definition_self;
 mod type_definition_walk;
 
 #[cfg(test)]

@@ -10,13 +10,15 @@
 
 //! Qualified-path, `Self::Assoc`, and macro/raw-string filters for `textDocument/typeDefinition`.
 
-use super::type_definition::{is_primitive_or_builtin, is_type_def_kind, peel_type_modifiers, strip_generics, FileReaderCtx};
-use super::type_definition_lookup::{collect_type_refs_in_range, lookup_type_by_path};
+use super::type_definition::{is_type_def_kind, peel_type_modifiers, strip_generics, FileReaderCtx};
+use super::type_definition_lookup::collect_type_refs_in_range;
 use super::type_definition_parse::{is_fn_type, strip_leading_for_binder};
-use super::type_definition_walk::{collect_following_generic_args, collect_type_components, finalize_locations, push_unique_locs, resolve_path_with_alias_expansion};
+use super::type_definition_walk::{collect_following_generic_args, collect_type_components, finalize_locations, resolve_path_with_alias_expansion};
 use crate::lsp::protocol::PositionConverter;
 use ridx_format::{DefKind, DefKind::*, IndexReader, RefEntry, WorkspaceIndex};
 use serde_json::Value;
+
+pub(super) use super::type_definition_self::{resolve_self_into_locs, resolve_self_only_in_impl};
 
 /// Single-line lexical check for `use` declarations (`use ...`, `pub use ...`, `pub(...) use ...`).
 ///
@@ -261,74 +263,6 @@ pub(super) fn extract_qualifier_ident(line_str: &str, col_1based: u32) -> Option
     let (qual_path, _, _) = extract_qualified_path(line_str, col_1based)?;
     let (head, _) = qual_path.rsplit_once("::")?;
     Some(head.rsplit("::").next().unwrap_or(head))
-}
-
-pub(super) fn resolve_self_only_in_impl(
-    ws: &WorkspaceIndex,
-    file_readers: &[usize],
-    ctx: &[FileReaderCtx<'_>],
-    file: &str,
-    line: u32,
-    locs: &mut Vec<Value>,
-    conv: &mut PositionConverter,
-) {
-    resolve_self_into_locs(ws, file_readers, ctx, file, line, false, locs, conv);
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(super) fn resolve_self_into_locs(
-    ws: &WorkspaceIndex,
-    file_readers: &[usize],
-    ctx: &[FileReaderCtx<'_>],
-    file: &str,
-    line: u32,
-    include_trait: bool,
-    locs: &mut Vec<Value>,
-    conv: &mut PositionConverter,
-) {
-    for c in ctx {
-        // The nearest preceding impl item may be a derive's (on the struct itself) or close before `line`.
-        let Some(def) = ws
-            .find_enclosing_impl_or_trait_def(c.idx, c.file_id, line)
-            .filter(|d| !d.is_macro_expansion() && super::type_definition_parse::still_open_at(conv, file, d.span().start_line(), line))
-        else {
-            continue;
-        };
-        let def_path = c.reader.get_str(def.path_offset());
-        let def_kind = DefKind::from(def.kind);
-        if def_kind == Trait {
-            if let Some(loc) = lookup_type_by_path(ws, file_readers, file, def_path, true, conv) {
-                push_unique_locs(locs, loc);
-                return;
-            }
-            continue;
-        }
-        let owner_part = match def_kind {
-            AssocFn | AssocTy | AssocConst => def_path.rsplit_once("::").map_or(def_path, |(p, _)| p),
-            _ => def_path,
-        };
-        let cands: Vec<&str> = owner_part.strip_prefix('<').and_then(|s| s.strip_suffix('>')).map_or_else(
-            || vec![owner_part],
-            |inner| {
-                let parts: Vec<&str> = inner.split(" as ").collect();
-                if include_trait {
-                    parts
-                } else {
-                    parts.into_iter().take(1).collect()
-                }
-            },
-        );
-        let before = locs.len();
-        for cand_ty in cands {
-            let base = strip_generics(peel_type_modifiers(cand_ty));
-            if !base.is_empty() && !is_primitive_or_builtin(base) {
-                resolve_path_with_alias_expansion(ws, file_readers, file, base, true, 0, locs, conv);
-            }
-        }
-        if locs.len() > before {
-            return;
-        }
-    }
 }
 
 fn extract_qualified_path(line_str: &str, col_1based: u32) -> Option<(&str, u32, u32)> {
