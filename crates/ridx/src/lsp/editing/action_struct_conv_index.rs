@@ -31,14 +31,27 @@ pub(crate) struct FieldRefs {
 pub(crate) struct OtherFile {
     pub shown: String,
     pub src: String,
+    pub starts: Vec<usize>,
     pub accesses: Vec<RawEdit>,
     pub labels: Vec<usize>,
 }
 
 impl OtherFile {
-    /// Line start offsets of the text.
-    pub fn starts(&self) -> Vec<usize> {
-        std::iter::once(0).chain(self.src.match_indices('\n').map(|(i, _)| i + 1)).collect()
+    /// Reads `path`, shown to the client as `shown`.
+    pub fn read(path: &std::path::Path, shown: String) -> Option<Self> {
+        let src = std::fs::read_to_string(path).ok()?;
+        let starts = std::iter::once(0).chain(src.match_indices('\n').map(|(i, _)| i + 1)).collect();
+        Some(OtherFile { shown, src, starts, accesses: Vec::new(), labels: Vec::new() })
+    }
+}
+
+/// Canonical paths, resolved once per path within one conversion.
+#[derive(Default)]
+pub(crate) struct Canon(std::collections::HashMap<PathBuf, Option<PathBuf>>);
+
+impl Canon {
+    pub fn get(&mut self, path: &std::path::Path) -> Option<PathBuf> {
+        self.0.entry(path.to_path_buf()).or_insert_with(|| std::fs::canonicalize(path).ok()).clone()
     }
 }
 
@@ -84,18 +97,32 @@ pub(crate) fn line_col_to_byte(doc: &str, starts: &[usize], line_1b: u32, col_1b
 pub(crate) fn indexed_field_refs(ws: &WorkspaceIndex, file: &str, doc: &str, starts: &[usize], field_bytes: &[usize]) -> Option<FieldRefs> {
     let mut sites = HashSet::new();
     let mut other: BTreeMap<PathBuf, OtherFile> = BTreeMap::new();
-    let canonical = std::fs::canonicalize(file).ok();
-    for (idx, &fb) in field_bytes.iter().enumerate() {
-        let (line, col) = byte_to_line_col(doc, starts, fb);
-        let refs = ws.find_direct_references_at(file, line, col)?;
-        if refs.target_line != line {
-            return None;
-        }
+    let mut canon_of = Canon::default();
+    let canonical = canon_of.get(std::path::Path::new(file));
+    // Each field's search walks the index on its own; they run side by side.
+    let lookups: Vec<Option<ridx_format::LocationReferences>> = std::thread::scope(|s| {
+        let handles: Vec<_> = field_bytes
+            .iter()
+            .map(|&fb| {
+                s.spawn(move || {
+                    let (line, col) = byte_to_line_col(doc, starts, fb);
+                    ws.find_direct_references_at(file, line, col).filter(|r| r.target_line == line)
+                })
+            })
+            .collect();
+        handles.into_iter().map(|h| h.join().ok().flatten()).collect()
+    });
+    for (idx, (&fb, refs)) in field_bytes.iter().zip(lookups).enumerate() {
+        let refs = refs?;
         let name_len = doc[fb..].find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(doc.len() - fb);
         let name = &doc[fb..fb + name_len];
         for r in &refs.references {
-            let canon = std::fs::canonicalize(r.resolved_path()).ok();
-            if r.file == file || (canon.is_some() && canon == canonical) {
+            if r.file == file {
+                sites.insert(line_col_to_byte(doc, starts, r.span.start_line(), r.span.start_col())?);
+                continue;
+            }
+            let canon = canon_of.get(&r.resolved_path());
+            if canon.is_some() && canon == canonical {
                 sites.insert(line_col_to_byte(doc, starts, r.span.start_line(), r.span.start_col())?);
                 continue;
             }
@@ -105,12 +132,11 @@ pub(crate) fn indexed_field_refs(ws: &WorkspaceIndex, file: &str, doc: &str, sta
             let of = match other.entry(path) {
                 std::collections::btree_map::Entry::Occupied(e) => e.into_mut(),
                 std::collections::btree_map::Entry::Vacant(e) => {
-                    let src = std::fs::read_to_string(e.key()).ok()?;
-                    e.insert(OtherFile { shown: r.resolved_path().to_string_lossy().into_owned(), src, accesses: Vec::new(), labels: Vec::new() })
+                    let f = OtherFile::read(e.key(), r.resolved_path().to_string_lossy().into_owned())?;
+                    e.insert(f)
                 }
             };
-            let s = of.starts();
-            let at = line_col_to_byte(&of.src, &s, r.span.start_line(), r.span.start_col())?;
+            let at = line_col_to_byte(&of.src, &of.starts, r.span.start_line(), r.span.start_col())?;
             let src = &of.src;
             let before = src[..at].trim_end();
             if !src[at..].starts_with(name) {
@@ -132,18 +158,15 @@ pub(crate) fn indexed_field_refs(ws: &WorkspaceIndex, file: &str, doc: &str, sta
     Some(FieldRefs { sites, other_files: other })
 }
 
-/// Byte offsets, in this document, of the index's references to the struct (its name at `name_byte`).
-pub(crate) fn struct_ref_sites(ws: &WorkspaceIndex, file: &str, doc: &str, starts: &[usize], name_byte: usize) -> Option<HashSet<usize>> {
-    let (line, col) = byte_to_line_col(doc, starts, name_byte);
-    let refs = ws.find_direct_references_at(file, line, col)?;
-    let canonical = std::fs::canonicalize(file).ok();
-    Some(
-        refs.references
-            .iter()
-            .filter(|r| r.file == file || std::fs::canonicalize(r.resolved_path()).ok().is_some_and(|p| Some(&p) == canonical.as_ref()))
-            .filter_map(|r| line_col_to_byte(doc, starts, r.span.start_line(), r.span.start_col()))
-            .collect(),
-    )
+/// Byte offsets, in this document, of the index's references `refs` to the struct.
+pub(crate) fn struct_ref_sites(refs: &ridx_format::LocationReferences, file: &str, doc: &str, starts: &[usize]) -> HashSet<usize> {
+    let mut canon_of = Canon::default();
+    let canonical = canon_of.get(std::path::Path::new(file));
+    refs.references
+        .iter()
+        .filter(|r| r.file == file || canon_of.get(&r.resolved_path()).is_some_and(|p| Some(&p) == canonical.as_ref()))
+        .filter_map(|r| line_col_to_byte(doc, starts, r.span.start_line(), r.span.start_col()))
+        .collect()
 }
 
 /// Byte offset of the struct's name in its declaration `[decl_start, open_delim)`.

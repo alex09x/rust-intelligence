@@ -19,42 +19,33 @@ use super::action_parse_decl::find_header_terminator;
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_struct_conv_fields::{splice, RawEdit};
 use super::action_struct_conv_helpers::{convert_brace_init_to_tuple, is_brace_struct_literal_or_pat, skip_optional_turbofish};
-use super::action_struct_conv_index::{byte_to_line_col, line_col_to_byte, lsp_edits, skip_generic_args, OtherFile};
-use ridx_format::WorkspaceIndex;
+use super::action_struct_conv_index::{line_col_to_byte, lsp_edits, skip_generic_args, Canon, OtherFile};
+use ridx_format::LocationReferences;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 
-/// The struct: where its name is, and the module text `[mod_lo, mod_hi)` the in-module conversion rewrites.
+/// The struct: its document, the index's references to it, and the module text `[mod_lo, mod_hi)` the in-module
+/// conversion rewrites.
 pub(crate) struct StructAt<'a> {
     pub file: &'a str,
     pub doc: &'a str,
     pub starts: &'a [usize],
-    pub name_byte: usize,
+    pub refs: &'a LocationReferences<'a>,
     pub module: (usize, usize),
 }
 
 /// Edits for the other files, as LSP edits keyed by URI; `None` when a site cannot be rewritten safely.
-pub(crate) fn convert_outside(
-    ws: &WorkspaceIndex,
-    at: &StructAt,
-    mut files: BTreeMap<PathBuf, OtherFile>,
-    field_index: &HashMap<&str, usize>,
-    n_fields: usize,
-) -> Option<BTreeMap<String, Vec<Value>>> {
-    let (line, col) = byte_to_line_col(at.doc, at.starts, at.name_byte);
-    let refs = ws.find_direct_references_at(at.file, line, col)?;
-    if refs.target_line != line {
-        return None;
-    }
-    let canonical = std::fs::canonicalize(at.file).ok();
+pub(crate) fn convert_outside(at: &StructAt, mut files: BTreeMap<PathBuf, OtherFile>, field_index: &HashMap<&str, usize>, n_fields: usize) -> Option<BTreeMap<String, Vec<Value>>> {
+    let mut canon_of = Canon::default();
+    let canonical = canon_of.get(std::path::Path::new(at.file));
     let doc_masked = mask_comments_and_strings(at.doc);
     let mut masked: HashMap<PathBuf, String> = HashMap::new();
     // Per file, the literals to rewrite as `(edit start, opening brace)`.
     let mut literals: BTreeMap<PathBuf, Vec<(usize, usize)>> = BTreeMap::new();
-    for r in &refs.references {
+    for r in &at.refs.references {
         let path = r.resolved_path();
-        let canon = std::fs::canonicalize(&path).ok();
+        let canon = if r.file == at.file { canonical.clone() } else { canon_of.get(&path) };
         if r.file == at.file || (canon.is_some() && canon == canonical) {
             let b = line_col_to_byte(at.doc, at.starts, r.span.start_line(), r.span.start_col())?;
             if (at.module.0..at.module.1).contains(&b) {
@@ -70,13 +61,11 @@ pub(crate) fn convert_outside(
         }
         let canon = canon?;
         if !files.contains_key(&canon) {
-            let src = std::fs::read_to_string(&canon).ok()?;
-            files.insert(canon.clone(), OtherFile { shown: path.to_string_lossy().into_owned(), src, accesses: Vec::new(), labels: Vec::new() });
+            files.insert(canon.clone(), OtherFile::read(&canon, path.to_string_lossy().into_owned())?);
         }
         let of = &files[&canon];
         let m = masked.entry(canon.clone()).or_insert_with(|| mask_comments_and_strings(&of.src));
-        let s = of.starts();
-        let b = line_col_to_byte(&of.src, &s, r.span.start_line(), r.span.start_col())?;
+        let b = line_col_to_byte(&of.src, &of.starts, r.span.start_line(), r.span.start_col())?;
         if aliases(m, b) {
             return None;
         }

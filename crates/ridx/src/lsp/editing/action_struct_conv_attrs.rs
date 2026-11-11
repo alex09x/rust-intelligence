@@ -63,6 +63,10 @@ pub(crate) fn outer_attrs_allow_shape_change(doc: &str, lo: usize, hi: usize, ct
     let Some(attrs) = parse_attrs(doc, lo, hi) else { return false };
     let mut seen: HashSet<HelperKey> = HashSet::new();
     let mut helpers = Vec::new();
+    // The helper keys to vouch for; a derive's search ends once they are all seen (at once without helpers).
+    let needed: HashSet<HelperKey> =
+        attrs.iter().filter(|a| a.name != "derive" && !INERT_ATTRS.contains(&a.name) && a.name != "cfg_attr").flat_map(|a| helper_keys(a.name, a.args)).collect();
+    let has_helpers = !needed.is_empty();
     for a in &attrs {
         if a.name == "derive" {
             let Some(list) = a.args.strip_prefix('(').and_then(|x| x.strip_suffix(')')) else { return false };
@@ -72,10 +76,10 @@ pub(crate) fn outer_attrs_allow_shape_change(doc: &str, lo: usize, hi: usize, ct
                 at += d.len() + 1;
                 let d = d.trim();
                 let short = d.rsplit("::").next().unwrap_or(d).trim();
-                if short.is_empty() || STD_DERIVES.contains(&short) {
+                if short.is_empty() || STD_DERIVES.contains(&short) || (!has_helpers && KNOWN_DERIVES.contains(&short)) {
                     continue;
                 }
-                match ctx.and_then(|c| derive_evidence(c, d_lo + d.len() - short.len(), shape)) {
+                match ctx.and_then(|c| derive_evidence(c, d_lo + d.len() - short.len(), shape, &needed)) {
                     Some(keys) => seen.extend(keys),
                     None if KNOWN_DERIVES.contains(&short) => {}
                     None => return false,
@@ -157,8 +161,9 @@ fn resolves_to_macro(c: &AttrCtx, at: usize) -> bool {
 }
 
 /// The helper keys seen on structs of `shape` that compiled with the derive macro named at `at`, or `None` when the
-/// index has no such struct.
-fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape) -> Option<HashSet<HelperKey>> {
+/// index has no such struct. The search ends once every key in `needed` was seen (at the first such struct when none
+/// is needed).
+fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<HelperKey>) -> Option<HashSet<HelperKey>> {
     let (line, col) = byte_to_line_col(c.doc, c.starts, at);
     let refs = c.ws.find_direct_references_at(c.file, line, col)?;
     if refs.target_kind != DefKind::Macro {
@@ -187,6 +192,9 @@ fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape) -> Option<HashSet<Helpe
             if a.name != "derive" {
                 keys.extend(helper_keys(a.name, a.args));
             }
+        }
+        if needed.is_subset(&keys) {
+            break;
         }
     }
     found.then_some(keys)

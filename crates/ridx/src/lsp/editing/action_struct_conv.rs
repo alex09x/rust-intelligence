@@ -70,23 +70,33 @@ pub fn build_convert_to_tuple_struct(
     let mut struct_sites = std::collections::HashSet::new();
     if let Some(ws) = ws {
         let names: Vec<&str> = fields.iter().map(|(_, n, _, _)| n.as_str()).collect();
-        let field_refs = field_name_bytes(&masked_doc[*open_delim_byte..*end_byte], *open_delim_byte, &names).and_then(|nb| indexed_field_refs(ws, file, doc_text, starts, &nb));
-        if let Some(name_byte) = struct_name_byte(masked_doc, item.decl_start_byte, *open_delim_byte, &item.name) {
-            let at = StructAt { file, doc: doc_text, starts, name_byte, module: (mod_lo, mod_hi) };
-            let (line, col) = byte_to_line_col(doc_text, starts, name_byte);
-            let known = ws.find_direct_references_at(file, line, col).is_some_and(|r| r.target_line == line);
-            match field_refs {
-                // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
-                Some(refs) => {
-                    let FieldRefs { sites, other_files: files } = refs;
-                    other_files = convert_outside(ws, &at, files, &field_index, fields.len())?;
-                    struct_sites = struct_ref_sites(ws, file, doc_text, starts, name_byte).unwrap_or_default();
-                    indexed = Some(sites);
-                }
-                // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
-                None if known && !convert_outside(ws, &at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|o| o.is_empty()) => return None,
-                None => {}
+        let name_byte = struct_name_byte(masked_doc, item.decl_start_byte, *open_delim_byte, &item.name);
+        // The struct's references are looked up while the fields' are.
+        let (field_refs, struct_refs) = std::thread::scope(|s| {
+            let struct_refs = s.spawn(|| {
+                let (line, col) = byte_to_line_col(doc_text, starts, name_byte?);
+                ws.find_direct_references_at(file, line, col).filter(|r| r.target_line == line)
+            });
+            let field_refs =
+                field_name_bytes(&masked_doc[*open_delim_byte..*end_byte], *open_delim_byte, &names).and_then(|nb| indexed_field_refs(ws, file, doc_text, starts, &nb));
+            (field_refs, struct_refs.join().ok().flatten())
+        });
+        match (field_refs, struct_refs) {
+            // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
+            (Some(FieldRefs { sites, other_files: files }), Some(refs)) => {
+                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi) };
+                other_files = convert_outside(&at, files, &field_index, fields.len())?;
+                struct_sites = struct_ref_sites(&refs, file, doc_text, starts);
+                indexed = Some(sites);
             }
+            // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
+            (None, Some(refs)) => {
+                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi) };
+                if !convert_outside(&at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|o| o.is_empty()) {
+                    return None;
+                }
+            }
+            _ => {}
         }
     }
     // With the index every field reference is known, so child modules, macros and wider visibility are checked by
