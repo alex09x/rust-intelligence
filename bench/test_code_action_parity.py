@@ -76,6 +76,23 @@ class TestCodeActionParityAndCompile(unittest.TestCase):
         r_empty = {"outcome": "b", "res": None}
         self.assertEqual(evaluate_row(row, r_empty, a_res, REPO, lambda _: ["", "", "", "pub fn foo() {}"])[:2], ("mismatch", "p_b_to_a_code_action_resolve_ra_only"))
 
+    def test_code_action_resolve_compares_the_text_the_edits_leave(self):
+        with tempfile.TemporaryDirectory() as repo:
+            (Path(repo) / "src").mkdir()
+            (Path(repo) / "src/lib.rs").write_text("fn f() {\n    g(\"x\");\n}\n", encoding="utf-8")
+            uri = f"file://{repo}/src/lib.rs"
+            row = {"method": "code_action_resolve", "file": "src/lib.rs", "line": 1, "character": 6, "symbol": "x", "cursor_kind": "expr", "target_kind": "lib"}
+
+            def te(sl, sc, el, ec, text):
+                return {"range": {"start": {"line": sl, "character": sc}, "end": {"line": el, "character": ec}}, "newText": text}
+
+            # One inserted line and a replaced literal, against the whole statement written anew: same text.
+            r = {"outcome": "a", "res": [{"title": "Extract into variable", "edit": {"changes": {uri: [te(1, 0, 1, 0, "    let v = \"x\";\n"), te(1, 6, 1, 9, "v")]}}}]}
+            a = {"outcome": "a", "res": [{"title": "Extract into variable", "edit": {"changes": {uri: [te(1, 4, 1, 11, "let v = \"x\";\n    g(v);")]}}}]}
+            self.assertEqual(evaluate_row(row, r, a, repo)[:2], ("exact_match", None))
+            b = {"outcome": "a", "res": [{"title": "Extract into variable", "edit": {"changes": {uri: [te(1, 4, 1, 11, "let w = \"x\";\n    g(w);")]}}}]}
+            self.assertEqual(evaluate_row(row, r, b, repo)[:2], ("partial", "p_code_action_resolve_diff_edits"))
+
     def test_compute_ra_compiling_coverage(self):
         cov = compute_ra_compiling_coverage([
             ({"Add #", "Remove #"}, {"Add #", "Remove #"}),

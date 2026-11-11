@@ -69,34 +69,47 @@ fn build_summary_line(fn_name: &str, params_src: &str, ret_src: Option<&str>, en
         return format!("Creates a new [`{self_doc}`].");
     }
 
-    let first_recv = clean_params.first().and_then(|p| classify_self_param(p));
-    let words = fn_name.trim_matches('_').replace('_', " ");
-    if words.is_empty() {
-        return ".".to_string();
+    // rust-analyzer's introduction: a getter is any method taking `&self` or `&mut self` and nothing else (but
+    // `as_…`, `to_…` and `get`), whatever it returns; a setter is any `set_…` method.
+    let by_ref_self = clean_params.first().is_some_and(|p| is_ref_self_param(p));
+    if by_ref_self && clean_params.len() == 1 && !fn_name.starts_with("as_") && !fn_name.starts_with("to_") && fn_name != "get" {
+        let what = property_words(fn_name.trim_end_matches("_mut"));
+        let ret = ret_src.map(str::trim).unwrap_or("");
+        let reference = if ret.starts_with("&mut ") || (ret.starts_with("&'") && ret.split_whitespace().nth(1) == Some("mut")) {
+            " a mutable reference to"
+        } else if ret.starts_with('&') {
+            " a reference to"
+        } else {
+            ""
+        };
+        return format!("Returns{reference} the {what} of this [`{self_doc}`].");
     }
-
-    if clean_params.len() == 1 && first_recv.is_some() {
-        if let Some(ret) = ret_src.map(str::trim).filter(|r| !r.is_empty() && *r != "()") {
-            if ret.starts_with("&mut ") || (ret.starts_with("&'") && ret.contains(" mut ")) {
-                return format!("Returns a mutable reference to the {words} of this [`{self_doc}`].");
-            }
-            if ret.starts_with('&') {
-                return format!("Returns a reference to the {words} of this [`{self_doc}`].");
-            }
-            return format!("Returns the {words} of this [`{self_doc}`].");
-        }
-    }
-
-    if clean_params.len() == 2 && first_recv == Some(true) && ret_src.map(str::trim).unwrap_or("()") == "()" {
-        if let Some(prop) = fn_name.strip_prefix("set_").filter(|s| !s.is_empty()) {
-            let prop_words = prop.trim_matches('_').replace('_', " ");
-            if !prop_words.is_empty() {
-                return format!("Sets the {prop_words} of this [`{self_doc}`].");
-            }
-        }
+    if let Some(prop) = fn_name.strip_prefix("set_") {
+        return format!("Sets the {} of this [`{self_doc}`].", property_words(prop));
     }
 
     ".".to_string()
+}
+
+/// A method name as the words of its property (`max_len` → `max len`, `len` → `length`).
+fn property_words(name: &str) -> String {
+    let what = name.replace('_', " ");
+    if what == "len" {
+        "length".to_string()
+    } else {
+        what
+    }
+}
+
+/// Whether the parameter is `&self`, `&mut self` or `&'a self`, or typed `self: &…`.
+fn is_ref_self_param(param: &str) -> bool {
+    match classify_self_param(param) {
+        Some(_) => {
+            let t = param.trim();
+            t.starts_with('&') || split_top_level_colon(t).1.is_some_and(|ty| ty.trim().starts_with('&'))
+        }
+        None => false,
+    }
 }
 
 fn classify_self_param(param: &str) -> Option<bool> {

@@ -7,7 +7,9 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 """Normalization and parity rules for `textDocument/codeAction` and `codeAction/resolve`."""
 
+import hashlib
 import re
+from pathlib import Path
 
 _ITEM_DECL_RE = re.compile(
     r"(?:^|\n)\s*(?:pub(?:\s*\([^)]*\))?\s+)?"
@@ -85,6 +87,41 @@ def _extract_edits_by_uri(edit, clean_uri_fn, repo):
     return norm_by_uri, sorted(set(ops))
 
 
+def _applied_text(repo, cu, dedup):
+    """The workspace file `cu` (`ws:` + repo-relative path) after the edits `dedup` (`(sl, sc, el, ec, text)`, UTF-16 columns), or None
+    when the file cannot be read or an edit falls outside it. Two answers that leave the same text are the same
+    change, however their edits are cut (one replaced statement or an inserted line)."""
+    if not str(cu).startswith("ws:"):
+        return None
+    try:
+        src = (Path(repo) / str(cu)[3:]).read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        return None
+    lines = src.split("\n")
+    starts = [0]
+    for ln in lines[:-1]:
+        starts.append(starts[-1] + len(ln) + 1)
+
+    def off(line, ch):
+        if line >= len(lines):
+            return None
+        units = lines[line].encode("utf-16-le")[: 2 * ch]
+        return starts[line] + len(units.decode("utf-16-le", errors="ignore"))
+
+    spans = []
+    for sl, sc, el, ec, text in dedup:
+        a, b = off(sl, sc), off(el, ec)
+        if a is None or b is None or b < a:
+            return None
+        spans.append((a, b, text))
+    spans.sort(key=lambda s: (s[0], s[1]))
+    if any(spans[i + 1][0] < spans[i][1] for i in range(len(spans) - 1)):
+        return None
+    for a, b, text in reversed(spans):
+        src = src[:a] + text + src[b:]
+    return src
+
+
 def _extract_item_headers(raw_texts):
     headers = set()
     joined = "\n".join(raw_texts)
@@ -148,6 +185,11 @@ def normalize_code_action_resolve(res, clean_uri_fn, repo):
         for cu, dedup in edits_by_uri.items():
             raws = [t[4] for t in dedup]
             raw_chunks.extend(raws)
+            applied = _applied_text(repo, cu, dedup) if repo else None
+            if applied is not None:
+                # Whitespace is collapsed as in the edit-text comparison it replaces.
+                per_uri_norm[cu] = "<text:" + hashlib.sha1(_collapse_ws(applied).encode("utf-8")).hexdigest() + ">"
+                continue
             collapsed = [_collapse_ws(x) for x in raws if _collapse_ws(x)]
             per_uri_norm[cu] = " ".join(collapsed) if collapsed else f"<delete:{len(dedup)}>"
         for op in ops:

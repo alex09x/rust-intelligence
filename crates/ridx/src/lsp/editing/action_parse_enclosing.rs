@@ -71,6 +71,7 @@ pub fn find_enclosing_fn_at_cursor(src: &str, masked: &str, starts: &[usize], cu
     if kw_start >= fn_open_byte {
         return None;
     }
+    let attr_start_line0 = super::action_parse::item_first_line0(src, starts, attr_start_line0);
 
     let (_, pos_after_mods, _, _) = parse_decl_modifiers(src, masked, kw_start);
     let (kw, kw_end) = next_ident_token(masked, pos_after_mods)?;

@@ -10,11 +10,12 @@
 
 //! Cursor-in-string-literal `Extract into variable / constant / static` assists (`refactor.extract`).
 
-use super::action_extract_lit_name::infer_callee_param_name;
+use super::action_extract_lit_name::suggest_literal_var_name;
 use super::action_generics_helpers::unique_ident;
 use super::action_parse::byte_to_utf16_pos;
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_raw_string::{build_multi_edits_workspace_edit, find_string_lit_at_cursor, is_inside_attr_or_extern_abi, ScannedStringLit};
+use crate::lsp::protocol::uri_to_path;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 
@@ -45,7 +46,7 @@ where
     if !matches_kind("refactor.extract") {
         return Vec::new();
     }
-    let Some(plan) = plan_extract_literal(doc_text, masked_doc, cursor_byte, ws) else {
+    let Some(plan) = plan_extract_literal(doc_text, masked_doc, cursor_byte, &uri_to_path(uri), ws) else {
         return Vec::new();
     };
     let mut out = Vec::with_capacity(3);
@@ -77,7 +78,7 @@ pub fn resolve_extract_literal_assist(
     doc_version: Option<i32>,
     ws: &WorkspaceIndex,
 ) -> Option<Value> {
-    let plan = plan_extract_literal(doc_text, masked_doc, cursor_byte, ws)?;
+    let plan = plan_extract_literal(doc_text, masked_doc, cursor_byte, &uri_to_path(uri), ws)?;
     Some(render_extract_plan(&plan, data_kind, doc_text, starts, uri, doc_version))
 }
 
@@ -117,7 +118,7 @@ fn render_extract_plan(plan: &ExtractLitPlan, dkind: &str, doc_text: &str, start
     )
 }
 
-fn plan_extract_literal(doc_text: &str, masked_doc: &str, cursor_byte: usize, ws: &WorkspaceIndex) -> Option<ExtractLitPlan> {
+fn plan_extract_literal(doc_text: &str, masked_doc: &str, cursor_byte: usize, file: &str, ws: &WorkspaceIndex) -> Option<ExtractLitPlan> {
     let lit: ScannedStringLit = find_string_lit_at_cursor(doc_text, cursor_byte)?;
     if is_inside_attr_or_extern_abi(masked_doc, lit.start_byte) {
         return None;
@@ -157,7 +158,8 @@ fn plan_extract_literal(doc_text: &str, masked_doc: &str, cursor_byte: usize, ws
     let fn_hdr_len = stmt_header_before_brace(masked_doc, fn_open).len();
     let fn_lo = fn_open.saturating_sub(fn_hdr_len);
     let fn_hi = skip_balanced(mb, fn_open, b'{', b'}').unwrap_or(doc_text.len());
-    let base_snake = infer_callee_param_name(doc_text, masked_doc, &stack, lit.start_byte, ws).unwrap_or_else(|| "var_name".to_string());
+    let lit_src = &doc_text[lit.start_byte..lit.end_byte];
+    let base_snake = suggest_literal_var_name(doc_text, masked_doc, &stack, lit.start_byte, lit_src, file, ws).unwrap_or_else(|| "var_name".to_string());
     let var_ident = unique_ident(&base_snake, &doc_text[fn_lo..fn_hi]);
     let base_upper = base_snake.to_ascii_uppercase();
     let upper_ident = unique_ident(if base_upper.is_empty() { "VAR_NAME" } else { &base_upper }, doc_text);

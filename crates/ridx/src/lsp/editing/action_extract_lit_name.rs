@@ -16,7 +16,33 @@ use super::action_parse_decl::{extract_angle_generics, next_ident_token};
 use super::action_parse_items::skip_balanced;
 use ridx_format::{DefKind, WorkspaceIndex};
 
-pub(crate) fn infer_callee_param_name(doc_text: &str, masked_doc: &str, stack: &[(u8, usize)], lit_start: usize, ws: &WorkspaceIndex) -> Option<String> {
+/// The name rust-analyzer gives a variable holding the string literal `lit` passed at `lit_start`: the literal's own
+/// text when it is an identifier of at most 32 bytes, else the name of the parameter it is passed to.
+pub(crate) fn suggest_literal_var_name(
+    doc_text: &str,
+    masked_doc: &str,
+    stack: &[(u8, usize)],
+    lit_start: usize,
+    lit_src: &str,
+    file: &str,
+    ws: &WorkspaceIndex,
+) -> Option<String> {
+    if let Some(inner) = lit_src.strip_prefix(['b', 'c']).unwrap_or(lit_src).strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+        let is_ident = inner.starts_with(|c: char| c.is_alphabetic() || c == '_') && inner.chars().all(|c| c.is_alphanumeric() || c == '_') && inner != "_";
+        if is_ident && inner.len() <= 32 && !is_rust_keyword(inner) {
+            return Some(inner.to_string());
+        }
+    }
+    infer_callee_param_name(doc_text, masked_doc, stack, lit_start, file, ws).filter(|n| is_informative_name(n))
+}
+
+/// rust-analyzer's filter of names that say nothing (`new`, `str`, `from_…`).
+fn is_informative_name(name: &str) -> bool {
+    const USELESS: &[&str] = &["new", "default", "option", "some", "none", "ok", "err", "str", "string", "from", "into"];
+    !USELESS.contains(&name) && !["from_", "with_", "into_"].iter().any(|p| name.starts_with(p))
+}
+
+pub(crate) fn infer_callee_param_name(doc_text: &str, masked_doc: &str, stack: &[(u8, usize)], lit_start: usize, file: &str, ws: &WorkspaceIndex) -> Option<String> {
     let &(_, open_paren) = stack.iter().rev().find(|&&(ch, _)| ch == b'(')?;
     let before = masked_doc[..open_paren].trim_end();
     let callee_end = if before.ends_with('>') { before.rfind("::<")? } else { before.len() };
@@ -31,6 +57,23 @@ pub(crate) fn infer_callee_param_name(doc_text: &str, masked_doc: &str, stack: &
     }
     let is_method = head[..id_start].trim_end().ends_with('.');
     let arg_idx = count_top_level_commas(&masked_doc[open_paren + 1..lit_start]);
+
+    // The function the compiler resolved the call to, when the index knows it.
+    let line_start = doc_text[..id_start].rfind('\n').map_or(0, |p| p + 1);
+    let (line, col) = (doc_text[..line_start].matches('\n').count() as u32 + 1, doc_text[line_start..id_start].chars().count() as u32 + 1);
+    if let Some(Some(def)) = ws.resolve_definitions_at(file, &[(line, col)]).pop() {
+        if matches!(def.kind, DefKind::Fn | DefKind::AssocFn) && def.name.strip_prefix("r#").unwrap_or(def.name) == raw_callee {
+            // The index's signature is the function's type, without parameter names: they are read from its source.
+            let def_file = std::path::Path::new(def.file);
+            let path = match def.source_root {
+                Some(root) if !def_file.is_absolute() => ridx_format::join_resolving_overlap(root, def_file),
+                _ => def_file.to_path_buf(),
+            };
+            if let Some(name) = std::fs::read_to_string(&path).ok().and_then(|src| param_name_at_def(&src, def.start_line, raw_callee, arg_idx, is_method)) {
+                return Some(name);
+            }
+        }
+    }
 
     if let Some(pname) = find_fn_param_in_doc(doc_text, masked_doc, raw_callee, arg_idx, is_method) {
         return Some(pname);
@@ -54,6 +97,18 @@ pub(crate) fn infer_callee_param_name(doc_text: &str, masked_doc: &str, stack: &
         }
     }
     found_param
+}
+
+/// The name of the `arg_idx`-th argument's parameter of the function `name` declared on line `line` (1-based) of `src`.
+fn param_name_at_def(src: &str, line: u32, name: &str, arg_idx: usize, is_method: bool) -> Option<String> {
+    let line_start = src.split_inclusive('\n').take(line.checked_sub(1)? as usize).map(str::len).sum::<usize>();
+    let masked = super::action_parse::mask_comments_and_strings(src);
+    let mb = masked.as_bytes();
+    let at = line_start + masked[line_start..].find(name)?;
+    let (_, after_g) = extract_angle_generics(src, &masked, at + name.len());
+    let p = after_g + (masked[after_g..].len() - masked[after_g..].trim_start().len());
+    let rp = skip_balanced(mb, p, b'(', b')')?;
+    extract_nth_param_from_params(&src[p + 1..rp - 1], arg_idx, is_method)
 }
 
 fn count_top_level_commas(slice: &str) -> usize {
@@ -113,7 +168,13 @@ fn extract_nth_param_from_params(params_src: &str, arg_idx: usize, is_method: bo
     let parts = split_top_level_commas(params_src);
     let mut non_self = Vec::with_capacity(parts.len());
     for (idx, raw) in parts.into_iter().enumerate() {
-        let t = raw.trim();
+        // A parameter's attributes (`#[rust_analyzer::rust_fixture] ra_fixture: &str`) are not part of its name.
+        let mut t = raw.trim();
+        while let Some(rest) = t.strip_prefix('#') {
+            let rest = rest.trim_start();
+            let Some(end) = skip_balanced(rest.as_bytes(), 0, b'[', b']') else { break };
+            t = rest[end..].trim_start();
+        }
         if t.is_empty() {
             continue;
         }

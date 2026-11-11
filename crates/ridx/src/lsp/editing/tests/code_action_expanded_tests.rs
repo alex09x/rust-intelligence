@@ -103,6 +103,79 @@ fn test_raw_string_and_extract_literal_assists_compile() {
 }
 
 #[test]
+fn test_tuple_new_params_and_regular_string_follow_rust_analyzer() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/tuple_new.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "use std::sync::Arc;\n",
+        "pub struct Notify;\n",
+        "pub struct Pair(Arc<Notify>, [usize; 4], Vec<Notify>, Arc<Notify>);\n",
+        "pub fn s() -> &'static str { r\"it's \\ é\" }\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+
+    let acts = query_deferred_and_resolve(&uri, 2, 12, &ws, &ov);
+    let (_, edits) = acts.iter().find(|(t, _)| t == "Generate `new`").expect("Generate `new` offered");
+    let updated = apply_text_edits(code, edits.as_array().unwrap());
+    assert!(updated.contains("fn new(notify: Arc<Notify>, _1: [usize; 4], items: Vec<Notify>, notify1: Arc<Notify>) -> Self"), "{updated}");
+    assert_rustc_compiles(&updated, "tuple struct new");
+
+    let acts = query_deferred_and_resolve(&uri, 3, 32, &ws, &ov);
+    let (_, edits) = acts.iter().find(|(t, _)| t == "Rewrite as regular string").expect("regular string offered");
+    let updated = apply_text_edits(code, edits.as_array().unwrap());
+    assert!(updated.contains(r#"{ "it\'s \\ \u{e9}" }"#), "{updated}");
+    assert_rustc_compiles(&updated, "regular string");
+}
+
+#[test]
+fn test_item_insertions_go_above_the_comment_attached_to_the_function() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/commented.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!("pub fn a() {}\n", "\n", "// Prints the dump.\n", "// Twice.\n", "pub fn dump(n: u32) -> u32 { n }\n",);
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+    let acts = query_deferred_and_resolve(&uri, 4, 8, &ws, &ov);
+    for title in ["Generate a documentation template", "Generate a type alias for function with named params"] {
+        let (_, edits) = acts.iter().find(|(t, _)| t == title).unwrap_or_else(|| panic!("{title} offered"));
+        let updated = apply_text_edits(code, edits.as_array().unwrap());
+        let ins = updated.find("// Prints").unwrap();
+        let added = updated.find(if title.starts_with("Generate a doc") { "/// " } else { "type DumpFn" }).unwrap();
+        assert!(added < ins, "{title} goes above the attached comment: {updated}");
+        assert!(updated.starts_with("pub fn a() {}\n\n"), "{updated}");
+        assert_rustc_compiles(&updated, title);
+    }
+}
+
+#[test]
+fn test_extracted_literal_is_named_like_rust_analyzer() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/str_name.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "#[allow(unused_attributes)]\n",
+        "fn check(#[allow(unused)] ra_fixture: &str, new: &str) -> usize { ra_fixture.len() + new.len() }\n",
+        "pub fn run() -> usize {\n",
+        "    check(\"some text\", \"x y\") + check(\"widget\", \"a b\")\n",
+        "}\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+    let var_name_at = |line: u32, col: u32| {
+        let acts = query_deferred_and_resolve(&uri, line, col, &ws, &ov);
+        let (_, edits) = acts.iter().find(|(t, _)| t == "Extract into variable").expect("extract offered");
+        let updated = apply_text_edits(code, edits.as_array().unwrap());
+        assert_rustc_compiles(&updated, "extract into variable");
+        updated.split("let ").nth(1).and_then(|s| s.split(' ').next()).unwrap_or_default().to_string()
+    };
+    // A parameter's attribute is not part of its name.
+    assert_eq!(var_name_at(3, 12), "ra_fixture");
+    // `new` says nothing: the fallback name.
+    assert_eq!(var_name_at(3, 25), "var_name");
+    // A literal that is an identifier names itself.
+    assert_eq!(var_name_at(3, 42), "widget");
+}
+
+#[test]
 fn test_struct_conversions_single_from_default_and_enum_discriminants() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/adt_expanded.rs");

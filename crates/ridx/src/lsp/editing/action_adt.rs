@@ -11,11 +11,12 @@
 //! Compile-safe `Generate impl` and `Generate new` builders for nominal ADTs.
 
 use super::action_crate_checks::crate_denies_missing_docs;
-use super::action_generics_helpers::{clean_param_ident, contains_inferred_underscore, unique_ident};
+use super::action_generics_helpers::{clean_param_ident, contains_inferred_underscore};
 use super::action_generics_sub::{collect_tokens_and_lifetimes, parse_generics_list, split_top_level_colon, split_top_level_commas, strip_leading_attrs_keep_cfg, GenKind};
 use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings, AdtFieldsKind, EnclosingContext, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_decl::{collapse_ws, extract_angle_generics, next_ident_token, split_top_level_where};
 use super::action_parse_items::{contains_word, skip_balanced};
+use super::action_suggest_name::{name_of_type, NameGenerator};
 use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
 use std::path::Path;
@@ -83,7 +84,8 @@ pub fn build_generate_new(doc_text: &str, masked_doc: &str, starts: &[usize], fi
 
     let (impl_gens, type_args, where_clause) = format_adt_impl_parts(generics_src, where_src)?;
     let unsized_params = collect_unsized_type_params(generics_src, where_src);
-    let (params_joined, ctor_expr) = build_struct_new_signature_and_body(doc_text, fields_kind, &unsized_params)?;
+    let type_params: HashSet<String> = parse_generics_list(generics_src).into_iter().map(|g| g.name).collect();
+    let (params_joined, ctor_expr) = build_struct_new_signature_and_body(fields_kind, &unsized_params, &type_params)?;
 
     let indent = &item.indent;
     let vis = &item.vis_prefix;
@@ -135,7 +137,7 @@ pub(crate) fn format_adt_impl_parts(generics_src: &str, where_src: &str) -> Opti
     Some((impl_gens, type_args, where_clause))
 }
 
-fn build_struct_new_signature_and_body(doc_text: &str, fields_kind: &AdtFieldsKind, unsized_params: &HashSet<String>) -> Option<(String, String)> {
+fn build_struct_new_signature_and_body(fields_kind: &AdtFieldsKind, unsized_params: &HashSet<String>, type_params: &HashSet<String>) -> Option<(String, String)> {
     match fields_kind {
         AdtFieldsKind::Named(raw_fields) => {
             let masked_f = mask_comments_and_strings(raw_fields);
@@ -171,13 +173,18 @@ fn build_struct_new_signature_and_body(doc_text: &str, fields_kind: &AdtFieldsKi
             }
             let mut params = Vec::new();
             let mut args = Vec::new();
+            // Parameters are named after their types (`Arc<Notify>` → `notify`), else `_0`, `_1`, as rust-analyzer does.
+            let mut names = NameGenerator::default();
             for (idx, entry) in split_top_level_commas(raw_fields).into_iter().enumerate() {
                 let (_, rest) = strip_leading_attrs_keep_cfg(&entry);
                 let fty = collapse_ws(strip_field_vis(&rest));
                 if fty.is_empty() || contains_inferred_underscore(&fty) || is_potentially_unsized(&fty, unsized_params) {
                     return None;
                 }
-                let pname = unique_ident(&format!("field{idx}"), doc_text);
+                let pname = match name_of_type(&fty, type_params) {
+                    Some(n) => names.suggest_name(&n),
+                    None => names.suggest_name(&format!("_{idx}")),
+                };
                 params.push(format!("{pname}: {fty}"));
                 args.push(pname);
             }

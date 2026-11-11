@@ -145,19 +145,10 @@ fn build_str_replacement(doc_text: &str, lit: &ScannedStringLit, data_kind: &str
             Some(format!("{}r{h}\"{body}\"{h}", lit.prefix))
         }
         KIND_STR_TO_REGULAR if lit.is_raw => {
-            let mut esc = String::with_capacity(body.len() + 8);
-            for ch in body.chars() {
-                match ch {
-                    '\\' => esc.push_str("\\\\"),
-                    '"' => esc.push_str("\\\""),
-                    '\n' => esc.push_str("\\n"),
-                    '\r' => esc.push_str("\\r"),
-                    '\t' => esc.push_str("\\t"),
-                    '\0' => esc.push_str("\\0"),
-                    _ => esc.push(ch),
-                }
-            }
-            Some(format!("{}\"{esc}\"", lit.prefix))
+            // `str::escape_default`, as rust-analyzer writes it: quotes and backslashes escaped, `\n`/`\r`/`\t`, and
+            // everything outside printable ASCII as `\u{…}`. A raw string holds no `\r` of a CRLF line ending.
+            let value = body.replace("\r\n", "\n");
+            Some(format!("{}\"{}\"", lit.prefix, value.escape_default()))
         }
         KIND_STR_TO_RAW if !lit.is_raw => {
             let unescaped = unescape_regular_string(body, lit.prefix == "c")?;

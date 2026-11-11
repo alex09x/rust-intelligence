@@ -263,6 +263,21 @@ pub fn utf16_pos_to_byte(src: &str, starts: &[usize], line0: u32, col_u16: u32) 
     Some(start + line_str.len())
 }
 
+/// The first line of an item whose attributes start on `line0`: line comments right above it (`// …`, no blank
+/// line between) belong to the item, as rust-analyzer's syntax tree attaches them.
+pub fn item_first_line0(src: &str, starts: &[usize], line0: u32) -> u32 {
+    let mut l = line0 as usize;
+    while l > 0 {
+        let (lo, hi) = (starts[l - 1], starts.get(l).copied().unwrap_or(src.len()));
+        let t = src[lo..hi].trim();
+        if !(t.starts_with("//") && !t.starts_with("//!")) {
+            break;
+        }
+        l -= 1;
+    }
+    l as u32
+}
+
 pub fn byte_to_line0(starts: &[usize], byte_off: usize) -> u32 {
     match starts.binary_search(&byte_off) {
         Ok(idx) => idx as u32,

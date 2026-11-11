@@ -88,6 +88,7 @@ pub fn parse_item_with_masked(src: &str, masked: &str, starts: &[usize], cursor_
     if kw_start >= src.len() {
         return None;
     }
+    let attr_start_line0 = super::action_parse::item_first_line0(src, starts, attr_start_line0);
 
     parse_declaration_at(src, masked, kw_start, first_attr_byte, cursor_byte, has_doc, cfg_attrs, attr_start_line0, indent, in_fn_body, enclosing_block, enclosing)
 }
