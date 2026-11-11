@@ -2,6 +2,13 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.3] - 2026-11-11
+
+Figures: the suite on the `0.3.3` and `0.3.2` release builds on one index (the driver is unchanged; no re-index needed).
+
+### Fixed
+- **`textDocument/typeDefinition`**: `Self` resolves through an impl only when one written in the source encloses the cursor. The nearest impl item before the line was taken, enclosing it or not, so `Box<Self>` in a field of a derived struct listed std's `MetadataExt` from the derive's impl. Parity `1224` → `1225` of `1308`, no row lost; median latency unchanged at `0.55 ms`.
+
 ## [0.3.2] - 2026-11-11
 
 Figures: the suite on the `0.3.2` and `0.3.1` release builds, each on an index its own driver built afresh with the same Mitts build. Indexes built by `0.3.1` should be rebuilt (`ridx index .`): the driver now records the names of attribute and derive macros.
