@@ -121,9 +121,10 @@ pub fn build_inline_into_all_callers_workspace(
         None
     };
 
-    // A `const fn` body is const-evaluable wherever it is called; a const generic parameter is not written at the call.
-    let hdr_m = &masked_doc[item.decl_start_byte..*bo];
-    if contains_word(hdr_m, "async") || contains_word(generics_src, "const") {
+    // A `const fn` body is const-evaluable wherever it is called; an `async fn` call becomes `async move { body }` after
+    // its arguments are bound, as eager and as lazy as the call. A const generic parameter is not written at the call.
+    let is_async = contains_word(&masked_doc[item.decl_start_byte..*bo], "async");
+    if contains_word(generics_src, "const") {
         return None;
     }
     let body_inner_m = &masked_doc[*bo + 1..*bc - 1];
@@ -147,6 +148,8 @@ pub fn build_inline_into_all_callers_workspace(
             return None;
         }
     }
+    // In an `async move` block a `?` returns from the block, as from the `async fn`: the caller's type is no matter.
+    let body_has_question_mark = body_has_question_mark && !is_async;
 
     if contains_word(&raw_masked_body, "super")
         || raw_masked_body.contains('$')
@@ -170,14 +173,9 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
 
-    let body_with_self_ty = if let Some(ty_name) = &self_type_name {
-        if contains_word(&raw_masked_body, "Self") {
-            rewrite_self_type_to_name(&raw_body, &raw_masked_body, ty_name)
-        } else {
-            raw_body
-        }
-    } else {
-        raw_body
+    let body_with_self_ty = match &self_type_name {
+        Some(ty_name) if contains_word(&raw_masked_body, "Self") => rewrite_self_type_to_name(&raw_body, &raw_masked_body, ty_name),
+        _ => raw_body,
     };
     let masked_with_self_ty = if contains_word(&raw_masked_body, "Self") { mask_comments_and_strings(&body_with_self_ty) } else { raw_masked_body };
     let body_transformed = if self_param.is_some() {
@@ -192,6 +190,7 @@ pub fn build_inline_into_all_callers_workspace(
         Some(ret_ty) if !ret_ty.contains("Self") => format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret"),
         _ => body_transformed,
     };
+    let body_transformed = if is_async { format!("async move {{ {body_transformed} }}") } else { body_transformed };
 
     let ws = ws?;
     let (decl_line, decl_col) = byte_to_line_col(doc_text, starts, item.name_byte);

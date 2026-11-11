@@ -21,16 +21,23 @@ use super::action_parse_items::contains_word;
 use ridx_format::{DefKind, ItemVis, WorkspaceIndex};
 use std::collections::{HashMap, HashSet};
 
-/// A name in `masked` at `[i, end)` that is written as a path when moved: a type (`Name`), a path head (`m::`), or a
-/// called function (`f(`), not after `.`/`::` and not a macro.
+/// A name in `masked` at `[i, end)` that is written as a path when moved: a type (`Name`), a path head (`m::`), a
+/// called function (`f(`), or a bare value (`poll_fn(trace_leaf)`, `x = limit;`: a function item, const or static;
+/// locals are left out by the caller), not after `.`/`::` and not a macro.
 fn is_candidate(masked: &str, i: usize, end: usize, tok: &str) -> bool {
     let before = masked[..i].trim_end();
     let after = masked[end..].trim_start();
-    !before.ends_with("::")
+    // The prefix of a masked literal (`b'\n'`, `br"…"`) is no name.
+    let literal_prefix = matches!(tok, "b" | "br" | "r" | "c" | "cr") && !masked[end..].starts_with(|c: char| c.is_alphanumeric() || c == '_' || c == '(');
+    !literal_prefix
+        && !before.ends_with("::")
         && !before.ends_with('.')
         && !after.starts_with('!')
         && !(after.starts_with(':') && !after.starts_with("::"))
-        && (after.starts_with("::") || after.starts_with('(') || tok.starts_with(|c: char| c.is_ascii_uppercase()))
+        && (after.starts_with("::")
+            || after.starts_with('(')
+            || tok.starts_with(|c: char| c.is_ascii_uppercase())
+            || (before.ends_with(['(', ',', '=', '{', ';']) && after.starts_with([',', ')', ';', ']', '}'])))
 }
 
 /// Identifier tokens of `masked`, as `(start, end)`.
@@ -238,18 +245,24 @@ impl CrossFileBody {
         let Some(dest_crate) = dest_crate.filter(|_| same_crate != self.external) else { return false };
         // The destination's crate-relative module, against which private and restricted members are judged.
         let dest_module = ws.module_path_for_file(dest_file).map(|m| m.split_once("::").map_or(String::new(), |(_, r)| r.to_string()));
-        // Another crate's unit must be known to link every crate the paths start with (an example linking `clap`
-        // does not see `clap_builder`); within the crate an unrecorded list is the function's own, which has them.
+        let Ok(text) = std::fs::read_to_string(dest) else { return false };
+        // Another crate's unit must link every crate the paths start with (an example linking `clap` does not see
+        // `clap_builder`): by the index's extern list, or, where the index records none, by the destination naming
+        // the crate itself (`use clap::…`, `clap::Arg`). Within the crate an unrecorded list is the function's own.
+        let names_crate = |r: &str| {
+            let masked = mask_comments_and_strings(&text);
+            masked
+                .match_indices(&format!("{r}::"))
+                .any(|(p, _)| p == 0 || !(masked.as_bytes()[p - 1].is_ascii_alphanumeric() || masked.as_bytes()[p - 1] == b'_' || masked.as_bytes()[p - 1] == b':'))
+        };
         let linked = match ws.extern_crate_names_for_file(dest_file) {
             Some(l) => self.roots.iter().all(|r| l.contains(&r.as_str())),
-            None => !self.external,
+            None => !self.external || self.roots.iter().all(|r| names_crate(r)),
         };
         linked
             && self.within.as_deref().is_none_or(|w| self.dest_inside(ws, dest_file, w))
-            && std::fs::read_to_string(dest).is_ok_and(|t| {
-                super::action_inline_callers_macros::macros_in_scope(raw_body, &t)
-                    && members_reachable(raw_body, fn_src, fn_file, start, ws, &dest_crate, &t, dest_module.as_deref())
-            })
+            && super::action_inline_callers_macros::macros_in_scope(raw_body, &text)
+            && members_reachable(raw_body, fn_src, fn_file, start, ws, &dest_crate, &text, dest_module.as_deref())
     }
 
     /// Whether the module of `dest_file` is the crate-relative module `w` or lies inside it.
