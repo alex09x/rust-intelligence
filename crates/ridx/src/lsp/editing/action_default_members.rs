@@ -11,6 +11,7 @@
 //! Index-backed, compile-safe `Implement default members` code action builder.
 
 use super::action_default_extract::{extract_default_fn_members, DefaultFnMember};
+use super::action_default_methods::resolvable_method_calls;
 use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, MemberOrigin};
 use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args, trait_generic_defaults};
 use super::action_default_safety::is_rust_kw_or_prelude;
@@ -127,7 +128,7 @@ pub fn build_implement_default_members(
 
     for m in missing {
         // Names the impl's module does not see are written as the paths the index resolved them to.
-        let (fn_src, fn_masked, params_masked) = match (&resolved_trait.file, resolved_trait.same_module) {
+        let (fn_src, fn_masked, params_masked, member_methods) = match (&resolved_trait.file, resolved_trait.same_module) {
             (Some(trait_file), false) => {
                 let origin = MemberOrigin { trait_src: &resolved_trait.src, trait_file, file_ids: &trait_file_ids, start: resolved_trait.body_open + 1 + m.start };
                 // A standard library name the impl's module also defines (clap's own `FlatMap`) means another item
@@ -140,6 +141,9 @@ pub fn build_implement_default_members(
                         || trait_gen_names.contains(t)
                 };
                 let (src, roots) = qualify_member_paths(&m.fn_src, &origin, ws, &dest_crate, &visible);
+                // Methods the body calls that the index resolves to something reachable from the impl.
+                let trait_in_scope = |t: &str| is_rust_kw_or_prelude(t) || (!std_trait && (doc_scope.contains(t) || hdr_heads.contains(t)));
+                let methods = resolvable_method_calls(&m.fn_src, &origin, ws, &dest_crate, &trait_in_scope);
                 // A standard library body names only the standard library; a name the index placed elsewhere (another
                 // crate's `Map`) is a different item.
                 if std_trait && roots.iter().any(|r| !matches!(r.as_str(), "core" | "alloc" | "std")) {
@@ -148,10 +152,11 @@ pub fn build_implement_default_members(
                 allowed_idents.extend(roots);
                 let masked = mask_comments_and_strings(&src);
                 let params = extract_first_paren_masked(&masked).unwrap_or_else(|| m.params_masked.clone());
-                (src, masked, params)
+                (src, masked, params, methods)
             }
-            _ => (m.fn_src.clone(), m.fn_masked.clone(), m.params_masked.clone()),
+            _ => (m.fn_src.clone(), m.fn_masked.clone(), m.params_masked.clone(), HashSet::new()),
         };
+        let member_method = |name: &str| std_method(name) || member_methods.contains(name);
         let (sub_src, _, sub_params) = substitute_trait_generics(&fn_src, &fn_masked, &params_masked, &resolved_trait.generics, &trait_args, &m.fn_gen_names);
         // A standard library trait has members whose bodies use the library's internals: those are left out and the
         // others implemented; any other trait's members are implemented all or not at all.
@@ -181,7 +186,7 @@ pub fn build_implement_default_members(
             // The impl's module names nothing a standard library body means (it may define a different `FlatMap`).
             if std_trait { &no_scope } else { &doc_scope },
             &allowed_idents,
-            &std_method,
+            &member_method,
         ) {
             if std_trait {
                 continue;

@@ -72,6 +72,10 @@ pub fn is_default_fn_compile_safe(
                 if !same_module && after_trim.starts_with('(') && !trait_fn_names.contains(tok) && !is_safe_std_method(tok) && !std_method(tok) {
                     return false;
                 }
+                // A field of another crate's type is reachable only when the index found it public.
+                if !same_crate && !after_trim.starts_with('(') && !after_trim.starts_with("::") && tok != "await" && !std_method(tok) {
+                    return false;
+                }
                 i = end_tok;
                 continue;
             }
