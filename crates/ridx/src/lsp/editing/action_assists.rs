@@ -23,7 +23,8 @@ use super::action_parse::{line_starts_of, mask_comments_and_strings, utf16_pos_t
 use super::action_parse_enclosing::find_enclosing_fn_at_cursor;
 use super::action_parse_items::parse_item_with_masked;
 use super::action_raw_string::{build_multi_edits_workspace_edit, collect_string_literal_assists, is_string_assist_data_kind, resolve_string_assist};
-use super::action_struct_conv::{build_convert_to_named_struct, build_convert_to_tuple_struct};
+use super::action_struct_conv::build_convert_to_tuple_struct;
+use super::action_struct_conv_named::convert_to_named;
 use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
@@ -273,8 +274,10 @@ where
                     add_other_file_edits(&mut action["edit"], other_files);
                     out.push(action);
                 }
-                if let Some(edits) = build_convert_to_named_struct(doc_text, &masked_doc, &starts, &item) {
-                    out.push(make_multi_edit_assist(uri, "Convert to named struct", "refactor.rewrite", KIND_CONV_NAMED_STRUCT, line0, col_u16, edits, doc_version));
+                if let Some((edits, other_files)) = convert_to_named(doc_text, &masked_doc, &starts, &item, ws, &file_path) {
+                    let mut action = make_multi_edit_assist(uri, "Convert to named struct", "refactor.rewrite", KIND_CONV_NAMED_STRUCT, line0, col_u16, edits, doc_version);
+                    add_other_file_edits(&mut action["edit"], other_files);
+                    out.push(action);
                 }
                 if let Some(edits) = build_enum_discriminants(doc_text, &masked_doc, &starts, &item) {
                     out.push(make_multi_edit_assist(uri, "Add explicit enum discriminants", "refactor.rewrite", KIND_ENUM_DISCRIMINANTS, line0, col_u16, edits, doc_version));
@@ -369,8 +372,11 @@ pub fn resolve_decl_assist(
             Ok(edit)
         }
         KIND_CONV_NAMED_STRUCT => {
-            let edits = build_convert_to_named_struct(doc_text, &masked_doc, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot convert to named struct"))?;
-            Ok(build_multi_edits_workspace_edit(uri, edits, doc_version))
+            let (edits, other_files) =
+                convert_to_named(doc_text, &masked_doc, &starts, &item, ws, &file_path).ok_or_else(|| LspError::request_failed("Cannot convert to named struct"))?;
+            let mut edit = build_multi_edits_workspace_edit(uri, edits, doc_version);
+            add_other_file_edits(&mut edit, other_files);
+            Ok(edit)
         }
         KIND_NESTED_FN_CLOSURE => {
             let edits = build_nested_fn_to_closure(doc_text, &masked_doc, &starts, &item).ok_or_else(|| LspError::request_failed("Cannot convert nested function to closure"))?;

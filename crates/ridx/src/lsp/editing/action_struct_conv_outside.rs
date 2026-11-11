@@ -110,7 +110,7 @@ pub(crate) fn convert_outside(at: &StructAt, mut files: BTreeMap<PathBuf, OtherF
 /// (`type A<T> = Name<T>;`, whose literals refer to the alias), or a bare path handed to a macro
 /// (`from_id![(Id, crate::Name)]`, which may build it out of sight). An associated type in an impl
 /// (`type Map = Name<E>;`) is not an alias here: literals through it (`Self::Map { .. }`) refer to the struct.
-fn aliases(masked: &str, b: usize) -> bool {
+pub(crate) fn aliases(masked: &str, b: usize) -> bool {
     let name_end = b + masked[b..].len() - masked[b..].trim_start_matches(|c: char| c.is_alphanumeric() || c == '_').len();
     let after = skip_generic_args(&masked[name_end..]).trim_start();
     if after.starts_with([',', ')', ']']) && in_macro_call(masked, b) {
@@ -163,7 +163,7 @@ fn in_macro_call(masked: &str, b: usize) -> bool {
 }
 
 /// Whether the reference at `b` names the self type of an impl header (`impl Trait for Name<T> where … {`).
-fn is_impl_header(masked: &str, b: usize) -> bool {
+pub(crate) fn is_impl_header(masked: &str, b: usize) -> bool {
     let stmt_lo = masked[..b].rfind([';', '{', '}']).map_or(0, |p| p + 1);
     let head = &masked[stmt_lo..b];
     // The self type is the last type of the header: `{` or `where` follows it (not `>` of `impl From<Name> for X`).
