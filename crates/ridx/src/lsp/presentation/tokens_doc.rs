@@ -12,6 +12,7 @@
 //! intra-doc links (`` [`Foo`] ``, `[text][path]`, `[text](path)`) that resolve to an item.
 
 use super::tokens::{defkind_to_token, RawToken, TOKEN_TYPE_MACRO};
+use super::tokens_doc_macro::MacroArgs;
 use super::tokens_scan::{byte_to_utf16_col, scan_code_line};
 use ridx_format::{DefKind, WorkspaceIndex};
 
@@ -56,6 +57,7 @@ fn doc_content(line: &str, in_block: &mut bool) -> Option<(usize, usize)> {
 pub(super) fn scan_doc_comments(text: &str, ws: Option<&WorkspaceIndex>, tokens: &mut Vec<RawToken>) {
     let mut fence: Option<(&str, bool)> = None;
     let (mut in_block_comment, mut in_doc_block) = (false, false);
+    let mut macro_args = MacroArgs::default();
     for (line_idx, full_line) in text.lines().enumerate() {
         let Some((start, end)) = doc_content(full_line, &mut in_doc_block) else {
             fence = None;
@@ -75,13 +77,16 @@ pub(super) fn scan_doc_comments(text: &str, ws: Option<&WorkspaceIndex>, tokens:
             (None, Some(m)) => {
                 fence = Some((m, is_rust_fence(trimmed.trim_start_matches(m.as_bytes()[0] as char))));
                 in_block_comment = false;
+                macro_args = MacroArgs::default();
             }
             (Some((open, _)), Some(m)) if m == open => fence = None,
             (Some((_, true)), _) => {
                 // A hidden doctest line (`# use x;`) is code too.
                 let lead = content.len() - trimmed.len();
                 let skip = if trimmed == "#" || trimmed.starts_with("# ") { 1 } else { 0 };
+                let first = tokens.len();
                 scan_code_line(line, line, start + lead + skip, line_idx as u32, &mut in_block_comment, true, tokens);
+                macro_args.retype_line(line, start + lead + skip, &mut tokens[first..]);
             }
             (Some(_), _) => {}
             (None, None) => {

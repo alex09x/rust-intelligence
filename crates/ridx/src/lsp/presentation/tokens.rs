@@ -36,6 +36,10 @@ pub const TOKEN_TYPE_KEYWORD: u32 = 14;
 pub const TOKEN_TYPE_COMMENT: u32 = 15;
 pub const TOKEN_TYPE_STRING: u32 = 16;
 pub const TOKEN_TYPE_NUMBER: u32 = 17;
+/// rust-analyzer's `unresolvedReference`: a name that resolves to nothing.
+pub const TOKEN_TYPE_UNRESOLVED: u32 = 18;
+/// rust-analyzer's `generic`: a token of an attribute it does not analyze.
+pub const TOKEN_TYPE_GENERIC: u32 = 19;
 
 pub const MOD_DECLARATION: u32 = 1 << 0;
 pub const MOD_DEFINITION: u32 = 1 << 1;
@@ -217,9 +221,21 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
     };
     if let Some(text) = text {
         let unindexed = workspace.is_some() && !indexed && overlay_opt.is_none();
-        if unindexed && (super::tokens_detached::outside_every_crate(file) || super::tokens_detached::gated_off_by_inner_cfg(text)) {
-            // A file no indexed crate includes, or one its own `#![cfg(…)]` switched off: rust-analyzer types only its
-            // definition sites, by syntax.
+        // A target root its own `#![cfg(…)]` switches off compiles to an empty crate: indexed, with nothing in it.
+        let compiled_empty = indexed && overlay_opt.is_none() && tokens.is_empty();
+        let gated_off = (unindexed || compiled_empty) && super::tokens_detached::gated_off_by_inner_cfg(text);
+        if gated_off {
+            // rust-analyzer resolves what the crate root reaches and leaves the file's own names unresolved.
+            let mut defs = Vec::new();
+            super::tokens_detached::detached_definition_tokens(text, &mut defs);
+            super::tokens_scan::scan_source_tokens(text, true, false, &mut tokens);
+            super::tokens_attr::apply_attribute_rules(text, &mut tokens);
+            super::tokens_gated::retype_gated_tokens(text, &defs, &mut tokens);
+            super::tokens_doc::scan_doc_comments(text, None, &mut tokens);
+            return filter_non_overlapping(tokens);
+        }
+        if unindexed && super::tokens_detached::outside_every_crate(file) {
+            // A file no indexed crate includes: rust-analyzer types only its definition sites, by syntax.
             super::tokens_detached::detached_definition_tokens(text, &mut tokens);
             super::tokens_doc::scan_doc_comments(text, None, &mut tokens);
             return filter_non_overlapping(tokens);

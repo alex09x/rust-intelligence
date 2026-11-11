@@ -222,7 +222,8 @@ impl LifecycleManager {
                     "namespace", "type", "class", "enum", "interface",
                     "struct", "typeParameter", "parameter", "variable",
                     "property", "enumMember", "function", "method",
-                    "macro", "keyword", "comment", "string", "number"
+                    "macro", "keyword", "comment", "string", "number",
+                    "unresolvedReference", "generic"
                 ],
                 "tokenModifiers": ["declaration", "definition", "readonly", "static"]
             },
