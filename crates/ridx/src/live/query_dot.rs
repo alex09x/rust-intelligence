@@ -24,22 +24,31 @@ use ridx_syntax::{parse, NodeId, SyntaxTree};
 
 use super::query::Cand;
 use super::query_loc::{def_signature_detail, is_def_visible_from, resolve_def_location, write_def_name};
+use super::query_postfix::PostfixFacts;
 use super::query_state::{CachedParsed, LiveEngine};
 use super::v5_db::RidxV5ItemDb;
 use super::v5_ty_inst::clone_reader_ty;
 
-pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine, r_idx: usize, fid: FileId, canon: &Path, env_salt: u64, byte_offset: u32) -> Vec<Cand> {
+pub(crate) fn query_dot_candidates(
+    ws: &WorkspaceIndex,
+    engine: &mut LiveEngine,
+    r_idx: usize,
+    fid: FileId,
+    canon: &Path,
+    env_salt: u64,
+    byte_offset: u32,
+) -> (Vec<Cand>, Option<PostfixFacts>) {
     engine.ensure_method_index(ws);
-    let Some(parsed_ref) = engine.parsed.as_ref() else { return Vec::new() };
-    let Some(dot_end) = locate_dot_end(&parsed_ref.src, byte_offset) else { return Vec::new() };
+    let Some(parsed_ref) = engine.parsed.as_ref() else { return (Vec::new(), None) };
+    let Some(dot_end) = locate_dot_end(&parsed_ref.src, byte_offset) else { return (Vec::new(), None) };
     let probe_off = dot_end.saturating_sub(1);
-    let Some(fn_key) = engine.ensure_fn_inferred(ws, r_idx, fid, env_salt, probe_off) else { return Vec::new() };
+    let Some(fn_key) = engine.ensure_fn_inferred(ws, r_idx, fid, env_salt, probe_off) else { return (Vec::new(), None) };
 
     engine.infer_ctx.table.clear();
     let (fn_node, recv_ty) = {
-        let Some(parsed) = engine.parsed.as_ref() else { return Vec::new() };
+        let Some(parsed) = engine.parsed.as_ref() else { return (Vec::new(), None) };
         let st = parsed.tree();
-        let Some(entry) = engine.fn_cache.get(&fn_key) else { return Vec::new() };
+        let Some(entry) = engine.fn_cache.get(&fn_key) else { return (Vec::new(), None) };
         let raw_ty = entry.result.receiver_ty_at_dot(&st, dot_end).or_else(|| macro_recv_at_dot(&parsed.src, &entry.result, dot_end));
         let cloned =
             raw_ty.filter(|t| t.is_some() && !matches!(entry.arena.kind(*t), InferTyKind::Unknown)).map(|t| clone_reader_ty(&entry.arena, t, &mut engine.infer_ctx.table.arena));
@@ -50,14 +59,14 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
         Some(t) => t,
         None => match recover_masked_dot_receiver(ws, engine, fn_key, fn_node, dot_end) {
             Some(t) => t,
-            None => return Vec::new(),
+            None => return (Vec::new(), None),
         },
     };
     if !recv_ty.is_some() || matches!(engine.infer_ctx.table.arena.kind(recv_ty), InferTyKind::Unknown) {
-        return Vec::new();
+        return (Vec::new(), None);
     }
 
-    let Some((_, _, dm_ptr_check)) = engine.active_def_map(r_idx) else { return Vec::new() };
+    let Some((_, _, dm_ptr_check)) = engine.active_def_map(r_idx) else { return (Vec::new(), None) };
     let cur_krate = dm_ptr_check.krate;
     let cur_mod = dm_ptr_check.mod_tree.module_at_offset(fid, probe_off).unwrap_or(ModuleId::ROOT);
 
@@ -217,7 +226,8 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
             out.push(Cand { label, kind: DefKind::AssocFn, detail, def_location, from_trait });
         }
     }
-    out
+    let facts = super::query_postfix::postfix_facts(&parsed.tree(), dot_end, &db, &engine.infer_ctx.table.arena, recv_ty, &out);
+    (out, facts)
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -20,6 +20,7 @@ mod query_dot;
 mod query_loc;
 mod query_path;
 mod query_path_qual;
+mod query_postfix;
 mod query_state;
 mod query_ty_fmt;
 mod query_unit;
@@ -43,7 +44,8 @@ pub mod v5_ty_tables;
 mod query_tests;
 
 pub use meta::{load_reader_metas, CorpusFile, CorpusSourceDb, LineIndex, ReaderMeta};
-pub use query::{Cand, LiveDb, LiveLocation, LiveTy};
+pub use query::{Cand, DotCompletion, LiveDb, LiveLocation, LiveTy};
+pub use query_postfix::{PostfixFacts, TryEnum};
 pub use v5_db::{LiveState, RidxV5ItemDb, CRATE_ROOT_DEF_IDX, IMPL_SYNTH_BIT, PROC_MACRO_SYNTH_BIT, TY_DEF_SYNTH_BIT};
 pub use v5_lazy::PoolStr;
 pub use v5_ty_lower::{lower_v5_ty, ParamRemap};

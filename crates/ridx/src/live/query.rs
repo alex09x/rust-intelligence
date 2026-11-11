@@ -46,6 +46,13 @@ pub struct LiveTy {
     pub defs: Vec<LiveLocation>,
 }
 
+/// The members offered after `receiver.` and, when the receiver's expression was found, its postfix facts.
+#[derive(Clone, Debug, Default)]
+pub struct DotCompletion {
+    pub cands: Vec<Cand>,
+    pub postfix: Option<super::query_postfix::PostfixFacts>,
+}
+
 /// Completion candidate returned by [`LiveDb::dot_candidates`] and [`LiveDb::path_candidates`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Cand {
@@ -139,16 +146,22 @@ impl LiveDb {
     /// Returns accessible fields and callable methods (inherent + traits in scope across autoderef)
     /// for the receiver expression before `.` at `byte_offset`, ordered as in `method_res`.
     pub fn dot_candidates(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Vec<Cand> {
+        self.dot_completion(ws, file, byte_offset, overlays).cands
+    }
+
+    /// [`Self::dot_candidates`] together with what decides the postfix snippets at the same dot.
+    pub fn dot_completion(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> DotCompletion {
         self.sync_engine(ws);
-        let Some(engine) = self.engine.as_mut() else { return Vec::new() };
+        let Some(engine) = self.engine.as_mut() else { return DotCompletion::default() };
         let Some((file_unit, fid, canon)) = engine.locate_and_parse_file(ws, file.as_ref(), &self.manual_overlays, overlays) else {
-            return Vec::new();
+            return DotCompletion::default();
         };
         let r_idx = engine.unit_for_cursor(ws, file_unit, &canon, byte_offset);
         let Some(env_salt) = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
-            return Vec::new();
+            return DotCompletion::default();
         };
-        query_dot_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
+        let (cands, postfix) = query_dot_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset);
+        DotCompletion { cands, postfix }
     }
 
     /// Returns associated items, enum variants, or module items for a `Type::` or `module::` path at `byte_offset`.
