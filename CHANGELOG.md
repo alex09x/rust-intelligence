@@ -2,10 +2,15 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
-## [Unreleased]
+## [0.3.2] - 2026-11-11
+
+Figures: the suite on the `0.3.2` and `0.3.1` release builds, each on an index its own driver built afresh with the same Mitts build. Indexes built by `0.3.1` should be rebuilt (`ridx index .`): the driver now records the names of attribute and derive macros.
 
 ### Changed
-- **`textDocument/references`**: an attribute or derive macro's name where it is written (`#[tokio::test]`, `#[derive(Deserialize)]`) is a reference to the macro (`tokio::test` from a test: `14` → `881` references, rust-analyzer `1015`); module paths a macro wrote are not references to the module (bevy's `resource` module: `1078` → `180`, rust-analyzer `183`); in a target root its own `#![cfg(…)]` switches off, paths that start at another crate resolve through the index (`tokio::test`: `881` → `979` of rust-analyzer's `988`). Suite against `0.3.1`, same fresh index: `definition` `1836` → `1838`, `documentHighlight` `1747` → `1755`, `references` `1593` → `1594`, no row lost; references p50 `0.63 ms` → `0.65 ms`, p95 `15.2 ms` → `15.5 ms` (the commit message of `bcc1a901` gives `0.67` / `14.6 ms`, measured before its last change).
+- **`textDocument/references`**: an attribute or derive macro's name where it is written (`#[tokio::test]`, `#[derive(Deserialize)]`) is a reference to the macro (`tokio::test` from a test: `14` → `881` references, rust-analyzer `1015`); module paths a macro wrote are not references to the module (bevy's `resource` module: `1078` → `180`, rust-analyzer `183`); in a target root its own `#![cfg(…)]` switches off, paths that start at another crate resolve through the index (`tokio::test`: `881` → `979` of rust-analyzer's `988`). Suite against `0.3.1`: `definition` `1836` → `1838`, `documentHighlight` `1747` → `1755`, `references` `1593` → `1594`, no row lost; references p50 `0.66 ms` → `0.66 ms`, p95 `14.6 ms` → `15.2 ms` on the release builds (the commit message of `bcc1a901` gives `0.67` / `14.6 ms`, measured before its last change).
+
+### Fixed
+- **`textDocument/typeDefinition`**: a bare name the file declares as a type parameter (`impl<I, O> … for E<I, O>`) is no longer looked up by name across the workspace; parity `1223` → `1224` of `1308`, median latency `0.54 ms` → `0.55 ms`.
 
 ## [0.3.1] - 2026-11-11
 
