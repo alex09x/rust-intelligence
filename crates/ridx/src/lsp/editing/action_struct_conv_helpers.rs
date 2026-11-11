@@ -136,14 +136,25 @@ pub(crate) fn parse_tuple_fields_clean(raw: &str) -> Option<Vec<(String, String)
     Some(out)
 }
 
-pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, inner_masked: &str, expected: usize, field_idx: &HashMap<&str, usize>) -> Option<String> {
-    if inner_masked.contains("..") {
-        return None;
-    }
+/// `{ a: x, b }` → `(x, b)` in field order. A rest pattern (`{ a, .. }`) fills the other fields with `_`; a struct
+/// update from a plain path (`{ a: x, ..base }`) fills them with `base.N`, which moves the same fields in the same
+/// order. Any other base would be evaluated once per field, so it is refused.
+pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, _inner_masked: &str, expected: usize, field_idx: &HashMap<&str, usize>) -> Option<String> {
+    let entries = split_top_level_commas(inner_src);
+    let mut rest: Option<String> = None;
     let mut slots: Vec<Option<String>> = vec![None; expected];
-    for entry in split_top_level_commas(inner_src) {
+    for (n, entry) in entries.iter().enumerate() {
         let t = entry.trim();
         if t.is_empty() {
+            continue;
+        }
+        if let Some(base) = t.strip_prefix("..") {
+            let base = base.trim();
+            let plain = base.split('.').all(|s| !s.is_empty() && s.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_'));
+            if entries[n + 1..].iter().any(|e| !e.trim().is_empty()) || !(base.is_empty() || plain) {
+                return None;
+            }
+            rest = Some(if base.is_empty() { "_".to_string() } else { format!("{base}.") });
             continue;
         }
         let (lhs, rhs_opt) = split_top_level_colon(t);
@@ -161,7 +172,16 @@ pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, inner_masked: &str, e
         }
         slots[idx] = Some(val_str);
     }
-    let ordered: Option<Vec<String>> = slots.into_iter().collect();
+    let ordered: Option<Vec<String>> = slots
+        .into_iter()
+        .enumerate()
+        .map(|(i, s)| match (s, &rest) {
+            (Some(v), _) => Some(v),
+            (None, Some(r)) if r == "_" => Some("_".to_string()),
+            (None, Some(base)) => Some(format!("{base}{i}")),
+            (None, None) => None,
+        })
+        .collect();
     Some(format!("({})", ordered?.join(", ")))
 }
 
