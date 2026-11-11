@@ -51,12 +51,12 @@ pub(crate) fn super_means_the_same(ws: &WorkspaceIndex, file: &str, fn_in_inline
 }
 
 /// Whether an item enclosing byte `at` of `masked` (a module, an impl) carries a `#[cfg(…)]` other than
-/// `#[cfg(test)]`, and whether such an item has a twin: another item of the same header in the file
-/// (`#[cfg(not(feature = "string"))] pub(crate) mod inner` beside `#[cfg(feature = "string")] pub(crate) mod inner`),
-/// which another configuration compiles instead.
-pub(crate) fn enclosed_by_cfg(masked: &str, at: usize, fn_name: &str) -> (bool, bool) {
+/// `#[cfg(test)]`, and the body span `(open, close)` of the outermost such item with a twin: another item of the same
+/// header in the file declaring the function too (`#[cfg(not(feature = "string"))] pub(crate) mod inner` beside
+/// `#[cfg(feature = "string")] pub(crate) mod inner`), which another configuration compiles instead.
+pub(crate) fn enclosed_by_cfg(masked: &str, at: usize, fn_name: &str) -> (bool, Option<(usize, usize)>) {
     let mut b = at;
-    let (mut gated, mut twin) = (false, false);
+    let (mut gated, mut twin) = (false, None);
     let mb = masked.as_bytes();
     let declares_fn = |lo: usize| {
         let Some(open) = masked[lo..].find('{').map(|o| lo + o) else { return false };
@@ -76,8 +76,12 @@ pub(crate) fn enclosed_by_cfg(masked: &str, at: usize, fn_name: &str) -> (bool, 
             // The item's own header, after its attributes; another item of that header declaring the function too.
             let own_lo = header_lo + header.rfind(']').map_or(0, |p| p + 1);
             let own = masked[own_lo..open].trim();
-            twin |=
+            let has_twin =
                 !own.is_empty() && masked.match_indices(own).any(|(p, _)| (p < header_lo || p >= open) && masked[p + own.len()..].trim_start().starts_with('{') && declares_fn(p));
+            // The outermost such item: calls inside it compile only with its configuration.
+            if has_twin {
+                twin = Some((open, super::action_parse_items::skip_balanced(mb, open, b'{', b'}').unwrap_or(masked.len())));
+            }
         }
         b = open;
     }
@@ -143,12 +147,13 @@ mod tests {
         assert_eq!(member_owner("query::state::QueryState::<D, F>::iter_mut"), "query::state");
         assert_eq!(member_owner("runtime::task::harness::<impl runtime::task::raw::RawTask>::drop_reference"), "runtime::task::harness");
         let two = "#[cfg(feature = \"s\")]\nmod inner { impl I { fn f() {} } }\n#[cfg(not(feature = \"s\"))]\nmod inner { impl I { fn f() {} } }";
-        assert_eq!(super::enclosed_by_cfg(two, two.rfind("fn f").unwrap(), "f"), (true, true));
+        let (gated, span) = super::enclosed_by_cfg(two, two.rfind("fn f").unwrap(), "f");
+        assert!(gated && span.is_some_and(|(lo, hi)| two[lo..hi].starts_with('{') && two[lo..hi].contains("fn f")));
         let one = "#[cfg(feature = \"s\")]\nmod content { fn new() {} }\nfn new() {}";
-        assert_eq!(super::enclosed_by_cfg(one, one.find("fn new").unwrap(), "new"), (true, false));
+        assert_eq!(super::enclosed_by_cfg(one, one.find("fn new").unwrap(), "new"), (true, None));
         let impls = "impl E { fn a() {} }\n#[cfg(feature = \"b\")]\nimpl E { fn b() {} }";
-        assert_eq!(super::enclosed_by_cfg(impls, impls.find("fn b").unwrap(), "b"), (true, false));
+        assert_eq!(super::enclosed_by_cfg(impls, impls.find("fn b").unwrap(), "b"), (true, None));
         let test = "#[cfg(test)]\nmod tests { fn f() {} }";
-        assert_eq!(super::enclosed_by_cfg(test, test.find("fn f").unwrap(), "f"), (false, false));
+        assert_eq!(super::enclosed_by_cfg(test, test.find("fn f").unwrap(), "f"), (false, None));
     }
 }

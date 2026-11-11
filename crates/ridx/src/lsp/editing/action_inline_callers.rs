@@ -74,12 +74,10 @@ pub fn build_inline_into_all_callers_workspace(
         _ => return None,
     }
     // Another configuration may declare the same function otherwise (`#[cfg(feature = "string")] mod inner { .. }`
-    // beside `#[cfg(not(feature = "string"))] mod inner { .. }`): a call both share would get one configuration's body.
+    // beside `#[cfg(not(feature = "string"))] mod inner { .. }`): a call both share would get one configuration's
+    // body, so every call must lie inside the item only this configuration compiles (checked below).
     let (in_cfg_item, cfg_twin) = super::action_inline_callers_vis::enclosed_by_cfg(masked_doc, item.decl_start_byte, &item.name);
     cfg_gated |= in_cfg_item;
-    if cfg_twin {
-        return None;
-    }
     let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src: _, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
         return None;
     };
@@ -254,6 +252,15 @@ pub fn build_inline_into_all_callers_workspace(
     let fn_in_inline_mod = find_enclosing_mod_range(masked_doc, item.decl_start_byte).is_some();
     if uses_super && !super::action_inline_callers_vis::super_means_the_same(ws, file, fn_in_inline_mod, &refs_by_file) {
         return None;
+    }
+
+    if let Some((t_lo, t_hi)) = cfg_twin {
+        let all_inside = refs_by_file.iter().all(|(p, spans)| {
+            is_same_doc(p, file, canonical_file.as_deref()) && spans.iter().all(|&(l, c)| line_col_to_byte(doc_text, starts, l, c).is_some_and(|b| b > t_lo && b < t_hi))
+        });
+        if !all_inside {
+            return None;
+        }
     }
 
     if is_fully_pub || vis == "pub(super)" {
