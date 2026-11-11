@@ -286,11 +286,10 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         self.add_ref_from_res(segment.ident.span, typeck.qpath_res(qpath, expr.hir_id));
                     }
                     if let Some(variant) = typeck.expr_ty_opt(expr).and_then(|t| t.ty_adt_def()).and_then(|adt| literal_variant(adt, typeck.qpath_res(qpath, expr.hir_id))) {
+                        // A shorthand (`S { x }`) names the field too, at the span its local shares.
                         for f in fields {
-                            if !f.is_shorthand {
-                                if let Some(def) = variant.fields.iter().find(|it| it.name == f.ident.name) {
-                                    self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
-                                }
+                            if let Some(def) = variant.fields.iter().find(|it| it.name == f.ident.name) {
+                                self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
                             }
                         }
                     }
@@ -343,10 +342,8 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         }
                         if let Some(variant) = typeck.pat_ty(pat).ty_adt_def().and_then(|adt| literal_variant(adt, typeck.qpath_res(qpath, pat.hir_id))) {
                             for f in fields {
-                                if !f.is_shorthand {
-                                    if let Some(def) = variant.fields.iter().find(|it| it.name == f.ident.name) {
-                                        self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
-                                    }
+                                if let Some(def) = variant.fields.iter().find(|it| it.name == f.ident.name) {
+                                    self.add_ref_from_res(f.ident.span, Res::Def(self.tcx.def_kind(def.did), def.did));
                                 }
                             }
                         }

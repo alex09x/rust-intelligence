@@ -56,6 +56,14 @@ pub fn fmt_error(_: core::fmt::Error) {}\n\
     assert!(variant_ref_lines("Pair").contains(&10), "Self::Pair(..) pattern: {:?}", variant_ref_lines("Pair"));
     let cornered = variant_ref_lines("Cornered");
     assert!(cornered.contains(&11) && cornered.contains(&15), "Self::Cornered pattern and literal: {cornered:?}");
+    // The shorthand `Self::Cornered { corners }` names the field as well as binding the local.
+    let field_lines: Vec<u32> = reader
+        .references()
+        .iter()
+        .filter(|r| reader.get_str(r.target_path_offset()).ends_with("corners") && ridx_format::DefKind::from(r.kind) == ridx_format::DefKind::Field)
+        .map(|r| r.span().start_line())
+        .collect();
+    assert!(field_lines.contains(&11), "a shorthand field pattern refers to the field: {field_lines:?}");
     // `Self` (in `-> Self` and `Self::Cornered`) refers to `Kind` itself.
     let kind_refs: Vec<u32> = reader
         .references()
