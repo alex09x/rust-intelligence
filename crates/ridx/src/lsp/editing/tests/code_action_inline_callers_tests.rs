@@ -55,7 +55,7 @@ fn query_actions_with_multi_file_resolve(uri: &str, line: u32, character: u32, w
 }
 
 #[test]
-fn test_inline_rejected_on_cross_file_workspace_caller() {
+fn test_inline_private_method_into_child_module_caller() {
     let id = INLINE_TEST_ID.fetch_add(1, Ordering::Relaxed);
     let temp_dir = std::env::temp_dir().join(format!("ridx_test_inline_multi_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
@@ -110,8 +110,13 @@ fn test_inline_rejected_on_cross_file_workspace_caller() {
     ov.open_document(&caller_uri, &caller_file_str, 1, caller_code.to_string());
 
     let actions = query_actions_with_multi_file_resolve(&lib_uri, 5, 8, &ws, &ov);
-    let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
-    assert!(inline_action.is_none(), "Expected 'Inline into all callers' assist to be safely rejected on cross-file callers");
+    // A private method is visible in the modules inside its own (`crate::caller`), so the action is offered. The
+    // fixture records no field table, so the remote caller's `.val` cannot be proven visible: that call is left as it
+    // is and the method is kept (one edit in lib.rs, the local call).
+    let (_, edits) = actions.iter().find(|(t, _)| t == "Inline into all callers").expect("offered for the local caller");
+    assert!(edits.keys().all(|uri| !uri.ends_with("caller.rs")), "{edits:?}");
+    let lib = edits.iter().find(|(uri, _)| uri.ends_with("lib.rs")).map(|(_, e)| e.len());
+    assert_eq!(lib, Some(1), "{edits:?}");
 }
 
 #[test]

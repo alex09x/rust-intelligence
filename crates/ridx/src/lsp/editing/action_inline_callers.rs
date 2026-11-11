@@ -48,7 +48,9 @@ pub fn build_inline_into_all_callers_workspace(
     ws: Option<&WorkspaceIndex>,
 ) -> Option<InlineEdits> {
     let vis = item.vis_prefix.trim();
-    if !item.cfg_attrs.is_empty() || (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
+    // A `#[cfg]` on the function changes nothing here: the index holds the callers compiled with it, as for any
+    // function.
+    if (!vis.is_empty() && !vis.starts_with("pub")) || is_primitive_scalar(&item.name) {
         return None;
     }
     let is_pub = vis.starts_with("pub");
@@ -118,8 +120,9 @@ pub fn build_inline_into_all_callers_workspace(
         None
     };
 
+    // A `const fn` body is const-evaluable wherever it is called; a const generic parameter is not written at the call.
     let hdr_m = &masked_doc[item.decl_start_byte..*bo];
-    if contains_word(hdr_m, "async") || contains_word(hdr_m, "const") {
+    if contains_word(hdr_m, "async") || contains_word(generics_src, "const") {
         return None;
     }
     let body_inner_m = &masked_doc[*bo + 1..*bc - 1];
@@ -211,9 +214,8 @@ pub fn build_inline_into_all_callers_workspace(
             let block_hdr = &hdr[start..];
             (block_hdr.contains("impl ") && block_hdr.contains(" for ")) || block_hdr.contains("trait ")
         });
-    if !is_pub && !is_trait_member && has_cross_file {
-        return None;
-    }
+    // A private function called from other files is called from modules inside its own, which see what its body
+    // names; those files are rewritten as for a `pub` one.
 
     let (del_lo, del_hi) = line_deletion_span(doc_text, item.first_attr_byte, *bc);
     let mut local_edits = Vec::new();
@@ -239,9 +241,9 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    let cross_file_safe = is_pub && is_safe_for_cross_file_inline(&body_transformed, masked_doc);
+    let cross_file_safe = is_safe_for_cross_file_inline(&body_transformed, masked_doc);
     // Otherwise, for other files of the crate: names written as the paths the index resolved, members checked per file.
-    let cross = (is_pub && has_cross_file && !cross_file_safe)
+    let cross = (has_cross_file && !cross_file_safe)
         .then(|| super::action_inline_callers_qualify::cross_file_body(doc_text, file, &item.name, item.name_byte, *bc, params_src, ws, &body_transformed, &parsed_params))
         .flatten();
     for (abs_path, spans) in &refs_by_file {
@@ -267,7 +269,7 @@ pub fn build_inline_into_all_callers_workspace(
             if skipped {
                 any_skipped = true;
             }
-        } else if cross_file_safe {
+        } else if cross_file_safe && std::fs::read_to_string(abs_path).is_ok_and(|t| super::action_inline_callers_macros::macros_in_scope(raw_body_slice, &t)) {
             let skipped = process_other_document_call_sites(
                 abs_path,
                 spans,
