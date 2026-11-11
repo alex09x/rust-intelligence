@@ -68,6 +68,7 @@ pub fn build_convert_to_tuple_struct(
     // Fields under `#[cfg(…)]` keep their indices only at the end, each carrying the predicates of those before it.
     let first_cfg = super::action_struct_conv_fields::first_cfg_field(&fields.iter().map(|f| f.3.as_str()).collect::<Vec<_>>())?;
     let shape = (fields.len(), first_cfg);
+    let private_fields = fields.iter().all(|f| f.0.is_empty());
     let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
     let mut indexed = None;
     let mut other_files = BTreeMap::new();
@@ -89,14 +90,14 @@ pub fn build_convert_to_tuple_struct(
         match (field_refs, struct_refs) {
             // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
             (Some(FieldRefs { sites, other_files: files }), Some(refs)) => {
-                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws) };
+                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws), private_fields };
                 (other_files, doc_literals) = convert_outside(&at, files, &field_index, shape)?;
                 struct_sites = struct_ref_sites(&refs, file, doc_text, starts);
                 indexed = Some(sites);
             }
             // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
             (None, Some(refs)) => {
-                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws) };
+                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws), private_fields };
                 if !convert_outside(&at, BTreeMap::new(), &field_index, shape).is_some_and(|(o, dl)| o.is_empty() && dl.is_empty()) {
                     return None;
                 }

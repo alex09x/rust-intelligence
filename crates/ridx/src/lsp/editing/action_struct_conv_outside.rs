@@ -35,6 +35,8 @@ pub(crate) struct StructAt<'a> {
     pub module: (usize, usize),
     /// The index, to read the `macro_rules!` a reference is handed to.
     pub ws: Option<&'a ridx_format::WorkspaceIndex>,
+    /// Whether every field is private to the struct's module.
+    pub private_fields: bool,
 }
 
 /// The literals and patterns of the struct to rewrite in the converted document outside its module, as
@@ -86,7 +88,7 @@ pub(crate) fn convert_outside(
         let of = &files[&canon];
         let m = masked.entry(canon.clone()).or_insert_with(|| mask_comments_and_strings(&of.src));
         let b = line_col_to_byte(&of.src, &of.starts, r.span.start_line(), r.span.start_col())?;
-        if aliases(m, b) {
+        if aliases(m, b) && !harmless_alias(at, &doc_masked, m, b) {
             return None;
         }
         literals.entry(canon).or_default().extend(shape_sites(&of.src, m, b));
@@ -186,6 +188,30 @@ pub(crate) fn macro_arg(masked: &str, b: usize) -> bool {
     after.starts_with([',', ')', ']']) && in_macro_call(masked, b)
 }
 
+/// The name of the free type alias whose target holds the reference at `b` (`type SQuery<D> = Query<..>` → `SQuery`).
+fn alias_name(masked: &str, b: usize) -> Option<&str> {
+    let head = &masked[..b];
+    let stmt_lo = head.rfind([';', '{', '}']).map_or(0, |p| p + 1);
+    let stmt = &masked[stmt_lo..b];
+    let at = stmt.match_indices("type").map(|(p, _)| p).find(|&p| contains_word(&stmt[p..p + 4], "type") && stmt[p + 4..].starts_with(char::is_whitespace))?;
+    let rest = stmt[at + 4..].trim_start();
+    let name = &rest[..rest.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(rest.len())];
+    (!name.is_empty()).then_some(name)
+}
+
+/// Whether an alias or macro use of a struct with private fields, in another file, may be passed over: only the
+/// struct's module sees those fields (a macro's expansion is checked where it expands), so a literal or pattern
+/// through it would have to be written in the struct's file or in a child module declared there in another file.
+/// A type alias must also go unnamed in the struct's file.
+fn harmless_alias(at: &StructAt, doc_masked: &str, masked: &str, b: usize) -> bool {
+    let out_of_line_child = doc_masked.match_indices("mod ").any(|(p, _)| {
+        let rest = doc_masked[p + 4..].trim_start();
+        let name_end = rest.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(rest.len());
+        name_end > 0 && rest[name_end..].trim_start().starts_with(';') && (p == 0 || !doc_masked.as_bytes()[p - 1].is_ascii_alphanumeric())
+    });
+    at.private_fields && !out_of_line_child && (!type_alias(masked, b) || alias_name(masked, b).is_some_and(|n| !contains_word(doc_masked, n)))
+}
+
 /// Whether the reference at `b` is the target of a free type alias (`type A<T> = Name<T>;`).
 fn type_alias(masked: &str, b: usize) -> bool {
     let before = masked[..b].trim_end();
@@ -282,7 +308,13 @@ fn self_literals(src: &str, masked: &str, lo: usize, hi: usize) -> Vec<(usize, u
 
 #[cfg(test)]
 mod tests {
-    use super::{aliases, is_impl_header, shape_sites};
+    use super::{alias_name, aliases, is_impl_header, shape_sites};
+
+    #[test]
+    fn the_alias_holding_a_reference_is_named() {
+        let s = "pub mod l { pub type SQuery<D, F = ()> = super::Query<'static, 'static, D, F>; }";
+        assert_eq!(alias_name(s, s.find("Query<'").unwrap()), Some("SQuery"));
+    }
 
     #[test]
     fn test_finds_literals_patterns_and_self_literals_of_impls() {
