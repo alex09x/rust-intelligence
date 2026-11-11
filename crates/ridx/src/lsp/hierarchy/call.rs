@@ -22,7 +22,7 @@ use std::collections::{BTreeMap, HashMap};
 #[cfg(test)]
 pub(crate) use super::scan::is_call_site;
 #[allow(unused_imports)]
-use super::scan::{find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line, is_call_site_in_lines};
+use super::scan::{find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line, is_call_site_in_lines, is_fn_declaration_name};
 use super::value_use::is_function_value_use_in_lines;
 
 fn make_call_item(name: &str, kind: DefKind, sig: Option<&str>, uri: &str, coords: (u32, u32, u32, u32)) -> Value {
@@ -123,6 +123,10 @@ pub fn handle_call_hierarchy_incoming_calls(msg: &Value, workspace: Option<&Work
 
         let file_lines: Vec<&str> = content.lines().collect();
 
+        // A trait method's references include its implementations' declarations (`fn get_aabb(&self)`): no call.
+        if is_fn_declaration_name(&file_lines, span.start_line(), span.start_col()) {
+            continue;
+        }
         let is_call = is_call_site_in_lines(&file_lines, span.end_line(), span.end_col());
         if !is_call
             && !(matches!(r.kind, DefKind::Fn | DefKind::AssocFn)

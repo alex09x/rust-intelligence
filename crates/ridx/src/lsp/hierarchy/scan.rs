@@ -13,6 +13,14 @@
 use ridx_format::{DefEntry, DefKind, WorkspaceIndex, WorkspaceSymbol};
 use std::path::Path;
 
+/// Whether the name at 1-based `(line, col)` is the one a `fn` declares (`fn get_aabb(&self)`).
+pub(crate) fn is_fn_declaration_name(lines: &[&str], line: u32, col: u32) -> bool {
+    let Some(text) = lines.get(line.saturating_sub(1) as usize) else { return false };
+    let before: String = text.chars().take(col.saturating_sub(1) as usize).collect();
+    let before = before.trim_end();
+    before.strip_suffix("fn").is_some_and(|rest| rest.is_empty() || rest.ends_with(|c: char| !(c.is_alphanumeric() || c == '_')))
+}
+
 pub(crate) fn is_call_site_in_lines(lines: &[&str], span_end_line: u32, span_end_col: u32) -> bool {
     let l_idx = span_end_line.saturating_sub(1) as usize;
     if l_idx >= lines.len() {

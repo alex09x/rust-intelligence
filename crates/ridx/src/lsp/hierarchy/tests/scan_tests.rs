@@ -52,3 +52,13 @@ fn a_declaration_without_a_body_still_ends_at_its_semicolon() {
     let lines = ["fn declared<'a>(x: &'a str) -> &'a str;", "fn other() {}"];
     assert_eq!(find_function_body_end_line(&lines, 1), 1);
 }
+
+#[test]
+fn a_declared_name_is_no_call_site() {
+    use crate::lsp::hierarchy::scan::is_fn_declaration_name;
+    let lines = ["    fn get_aabb(&self) -> Option<Aabb> {", "    pub(crate) fn get(&self) {}", "        let b = self.get_aabb();", "    defn(x)"];
+    assert!(is_fn_declaration_name(&lines, 1, 8));
+    assert!(is_fn_declaration_name(&lines, 2, 19));
+    assert!(!is_fn_declaration_name(&lines, 3, 22));
+    assert!(!is_fn_declaration_name(&lines, 4, 5));
+}
