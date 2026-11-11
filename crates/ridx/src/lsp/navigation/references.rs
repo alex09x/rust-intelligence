@@ -73,7 +73,7 @@ pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
             if let Some(loc_refs) = ws.find_references_at(&file, query_line, query_col) {
                 let mut seen_out = std::collections::HashSet::new();
                 if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
-                    let decl_path = loc_refs.target_resolved_path();
+                    let decl_path = super::type_definition_parse::on_disk(loc_refs.target_resolved_path());
                     let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
                     let decl_uri = path_to_uri(decl_str);
                     let (sl, el, sc, ec) = if let Some(target_ov) = overlay_mgr.get(decl_str).filter(|o| o.is_dirty()) {
@@ -124,7 +124,7 @@ pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
                     }
                 }
                 for r in loc_refs.references {
-                    let r_path = r.resolved_path();
+                    let r_path = super::type_definition_parse::on_disk(r.resolved_path());
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     let r_uri = path_to_uri(r_str);
                     let span = r.span;
@@ -223,7 +223,7 @@ pub fn handle_document_highlight(msg: &Value, workspace: Option<&WorkspaceIndex>
                 }
 
                 for r in loc_refs.references {
-                    let r_path = r.resolved_path();
+                    let r_path = super::type_definition_parse::on_disk(r.resolved_path());
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     if r_str == file || r_str.ends_with(&file) || file.ends_with(r_str) {
                         let span = r.span;

@@ -23,13 +23,7 @@ const STD_CRATES: [&str; 5] = ["std", "core", "alloc", "proc_macro", "test"];
 
 /// The file defining `d` on disk; a standard library file (`library/…`) is found in the toolchain's `rust-src`.
 pub(crate) fn def_file(d: &ResolvedDefinition<'_>) -> std::path::PathBuf {
-    let path = d.resolved_path();
-    if !path.exists() && path.starts_with("library/") {
-        if let Some(root) = crate::lsp::navigation::type_definition_parse::sysroot_rust_src() {
-            return root.join(&path);
-        }
-    }
-    path
+    crate::lsp::navigation::type_definition_parse::on_disk(d.resolved_path())
 }
 
 /// Source text of the file that defines `d`: the editor buffer when open, the file on disk otherwise.

@@ -218,6 +218,16 @@ pub(crate) fn sysroot_rust_src() -> Option<&'static Path> {
         .as_deref()
 }
 
+/// `path` as found on disk: a standard library file (`library/…`, stored relative by the sysroot shards) lives in the toolchain's `rust-src`.
+pub(crate) fn on_disk(path: PathBuf) -> PathBuf {
+    if !path.exists() && path.starts_with("library/") {
+        if let Some(root) = sysroot_rust_src() {
+            return root.join(&path);
+        }
+    }
+    path
+}
+
 pub(super) fn lookup_unstable_sysroot_type(ws: &WorkspaceIndex, target_path: &str, conv: &mut PositionConverter) -> Option<Value> {
     if !ws.has_sysroot() || !matches!(target_path, "alloc::alloc::Global" | "std::alloc::Global") {
         return None;

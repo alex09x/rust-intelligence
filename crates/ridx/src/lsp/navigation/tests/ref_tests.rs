@@ -83,3 +83,15 @@ fn test_references_and_highlights() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_a_standard_library_declaration_is_located_in_rust_src() {
+    use crate::lsp::navigation::type_definition_parse::{on_disk, sysroot_rust_src};
+    use std::path::PathBuf;
+    assert_eq!(on_disk(PathBuf::from("src/not_a_library_file.rs")), PathBuf::from("src/not_a_library_file.rs"));
+    let Some(root) = sysroot_rust_src() else { return };
+    let rel = "library/core/src/option.rs";
+    let p = on_disk(PathBuf::from(rel));
+    assert_eq!(p, root.join(rel), "a sysroot shard stores `library/…` relative to rust-src");
+    assert!(p.is_file(), "{} must exist", p.display());
+}
