@@ -44,17 +44,20 @@ pub fn build_single_field_from(doc_text: &str, masked_doc: &str, starts: &[usize
                 return None;
             }
             let entries: Vec<String> = split_top_level_commas(raw).into_iter().filter(|e| !e.trim().is_empty()).collect();
-            if entries.len() != 1 {
-                return None;
+            let mut fields = Vec::new();
+            for e in &entries {
+                let (_, rest) = strip_leading_attrs_keep_cfg(e);
+                let clean = strip_field_vis(&rest);
+                let (fn_raw, Some(ft_raw)) = split_top_level_colon(clean) else {
+                    return None;
+                };
+                fields.push((clean_param_ident(fn_raw.trim())?, collapse_ws(ft_raw)));
             }
-            let (_, rest) = strip_leading_attrs_keep_cfg(&entries[0]);
-            let clean = strip_field_vis(&rest);
-            let (fn_raw, Some(ft_raw)) = split_top_level_colon(clean) else {
-                return None;
-            };
-            let fname = clean_param_ident(fn_raw.trim())?;
-            let fty = collapse_ws(ft_raw);
-            let ctor = format!("Self {{ {fname} }}");
+            // One field takes the value; any other must be a `PhantomData`, built as such.
+            let (data, phantoms): (Vec<_>, Vec<_>) = fields.into_iter().partition(|(_, ty)| phantom_value(ty).is_none());
+            let [(fname, fty)] = <[_; 1]>::try_from(data).ok()?;
+            let rest: Vec<String> = phantoms.iter().map(|(n, ty)| format!("{n}: {}", phantom_value(ty).unwrap_or_default())).collect();
+            let ctor = if rest.is_empty() { format!("Self {{ {fname} }}") } else { format!("Self {{ {fname}, {} }}", rest.join(", ")) };
             (fname, fty, ctor)
         }
         AdtFieldsKind::Tuple(raw) => {
@@ -63,12 +66,11 @@ pub fn build_single_field_from(doc_text: &str, masked_doc: &str, starts: &[usize
                 return None;
             }
             let entries: Vec<String> = split_top_level_commas(raw).into_iter().filter(|e| !e.trim().is_empty()).collect();
-            if entries.len() != 1 {
-                return None;
-            }
-            let (_, rest) = strip_leading_attrs_keep_cfg(&entries[0]);
-            let fty = collapse_ws(strip_field_vis(&rest));
-            ("value".to_string(), fty, "Self(value)".to_string())
+            let tys: Vec<String> = entries.iter().map(|e| collapse_ws(strip_field_vis(&strip_leading_attrs_keep_cfg(e).1))).collect();
+            let data: Vec<usize> = (0..tys.len()).filter(|&i| phantom_value(&tys[i]).is_none()).collect();
+            let [at] = <[usize; 1]>::try_from(data).ok()?;
+            let args: Vec<String> = tys.iter().enumerate().map(|(i, ty)| if i == at { "value".to_string() } else { phantom_value(ty).unwrap_or_default() }).collect();
+            ("value".to_string(), tys[at].clone(), format!("Self({})", args.join(", ")))
         }
         _ => return None,
     };
@@ -84,7 +86,8 @@ pub fn build_single_field_from(doc_text: &str, masked_doc: &str, starts: &[usize
     }
     // Coherence guard (`E0119` against `impl<T> From<T> for T` or unnormalized `<T as Trait>::Assoc` projections):
     let decls = parse_generics_list(generics_src);
-    if decls.iter().any(|g| g.kind == GenKind::Type && (g.name == fty.trim() || fty.contains(&format!("{}::", g.name)) || fty.contains(&format!("<{} as", g.name)))) {
+    // A bare parameter (`struct W<C>(C)`) is fine: `W<C>` is never `C`, so `From<C> for W<C>` meets no blanket impl.
+    if decls.iter().any(|g| g.kind == GenKind::Type && (fty.contains(&format!("{}::", g.name)) || fty.contains(&format!("<{} as", g.name)))) {
         return None;
     }
     if crate_already_implements_conversion_for(masked_doc, file_path, &item.name, &fty) {
@@ -286,4 +289,23 @@ fn doc_already_implements_or_derives_default(doc_text: &str, masked_doc: &str, b
     let sfx = format!("::{base_name}::default");
     let exact = format!("{base_name}::default");
     ws.exact_symbols_by_name("default").into_iter().any(|s| s.path == exact || s.path.ends_with(&sfx))
+}
+
+/// The value of a `PhantomData` field's type (`PhantomData<&'a ()>` → `PhantomData`, `core::marker::PhantomData<T>` →
+/// `core::marker::PhantomData`); `None` for any other type.
+fn phantom_value(ty: &str) -> Option<String> {
+    let base = ty.split('<').next().unwrap_or(ty).trim();
+    (base.rsplit("::").next() == Some("PhantomData")).then(|| base.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::phantom_value;
+
+    #[test]
+    fn a_phantom_field_is_built_by_its_path() {
+        assert_eq!(phantom_value("PhantomData<&'a ()>").as_deref(), Some("PhantomData"));
+        assert_eq!(phantom_value("core::marker::PhantomData<fn() -> T>").as_deref(), Some("core::marker::PhantomData"));
+        assert_eq!(phantom_value("Vec<PhantomData<u8>>"), None);
+    }
 }

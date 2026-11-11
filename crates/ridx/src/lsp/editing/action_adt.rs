@@ -287,24 +287,20 @@ fn struct_already_has_new(doc_text: &str, masked_doc: &str, file_path: &str, str
         return true;
     }
     let req_path = Path::new(file_path);
-    let mut crate_names = HashSet::new();
+    // This struct's own `new` (its path, with or without the crate's name), not that of a same-named struct elsewhere.
+    let mut news = HashSet::new();
     for s in ws.exact_local_symbols_by_name(struct_name) {
         if s.kind == DefKind::Struct && s.name.strip_prefix("r#").unwrap_or(s.name) == struct_name && s.resolved_path() == req_path {
-            crate_names.insert(s.crate_name.to_string());
             if ws.find_definition_by_path(&format!("{}::new", s.path)).is_some() {
                 return true;
             }
-        }
-    }
-    if !crate_names.is_empty() {
-        let suffix = format!("::{struct_name}::new");
-        for sym in ws.exact_local_symbols_by_name("new") {
-            if crate_names.contains(sym.crate_name) && sym.name == "new" && (sym.path.ends_with(&suffix) || sym.path == format!("{struct_name}::new")) {
-                return true;
+            news.insert((s.crate_name.to_string(), format!("{}::new", s.path)));
+            if let Some(rel) = s.path.strip_prefix(&format!("{}::", s.crate_name)) {
+                news.insert((s.crate_name.to_string(), format!("{rel}::new")));
             }
         }
     }
-    false
+    !news.is_empty() && ws.exact_local_symbols_by_name("new").iter().any(|sym| sym.name == "new" && news.contains(&(sym.crate_name.to_string(), sym.path.to_string())))
 }
 
 fn doc_defines_inherent_new_or_macro(doc_text: &str, masked_doc: &str, struct_name: &str) -> bool {

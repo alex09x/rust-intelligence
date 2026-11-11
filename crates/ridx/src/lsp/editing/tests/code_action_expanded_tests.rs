@@ -232,9 +232,10 @@ fn test_struct_conversions_single_from_default_and_enum_discriminants() {
         assert_rustc_compiles(&apply_text_edits(code, edits.as_array().unwrap()), title);
     }
 
-    // 4. GenericWrap<T>(T): bare `T` must NOT offer conflicting `From<T>` (`E0119`).
+    // 4. GenericWrap<T>(T): `From<T> for GenericWrap<T>` meets no blanket impl (`GenericWrap<T>` is never `T`).
     let gen_acts = query_deferred_and_resolve(&uri, 10, 12, &ws, &ov);
-    assert!(!gen_acts.iter().any(|(t, _)| t == "Generate single field `From`"), "Bare T must reject E0119 conflicting From<T>");
+    let (_, gen_ed) = gen_acts.iter().find(|(t, _)| t == "Generate single field `From`").expect("From<T> for a generic wrapper");
+    assert_rustc_compiles(&apply_text_edits(code, gen_ed.as_array().unwrap()), "Generate single field `From`");
 
     // 5. Mode: Add explicit enum discriminants.
     let enum_acts = query_deferred_and_resolve(&uri, 11, 10, &ws, &ov);
