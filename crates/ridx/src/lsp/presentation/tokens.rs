@@ -249,9 +249,7 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
         }
         super::tokens_attr::apply_attribute_rules(text, &mut tokens);
         if !compiled.is_empty() {
-            let mut defs = Vec::new();
-            super::tokens_detached::detached_definition_tokens(text, &mut defs);
-            super::tokens_inactive::retype_inactive_items(text, &compiled, &defs, &mut tokens);
+            super::tokens_inactive::retype_inactive_items(text, &compiled, &mut tokens);
         }
         if let Some(ws) = workspace {
             super::tokens_fixture::scan_fixtures(file, text, ws, &mut tokens);

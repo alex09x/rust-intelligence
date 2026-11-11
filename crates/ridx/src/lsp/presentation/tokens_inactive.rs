@@ -154,8 +154,9 @@ fn names(scans: &[&str], mask: &[bool], inside: bool) -> (HashSet<String>, HashS
     (defined, imported)
 }
 
-/// Retypes `tokens` inside the inactive items of `text`; `defs` are the file's syntactic definition and binding sites.
-pub(super) fn retype_inactive_items(text: &str, compiled: &HashSet<u32>, defs: &[RawToken], tokens: &mut Vec<RawToken>) {
+/// Retypes `tokens` inside the inactive items of `text`. The file is parsed for its definition sites only when it has
+/// such items.
+pub(super) fn retype_inactive_items(text: &str, compiled: &HashSet<u32>, tokens: &mut Vec<RawToken>) {
     let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
     let scans: Vec<&str> = masked.lines().collect();
     let regions = inactive_items(&scans, compiled);
@@ -177,6 +178,8 @@ pub(super) fn retype_inactive_items(text: &str, compiled: &HashSet<u32>, defs: &
     let active = |n: &String| out_def.contains(n) || out_imp.contains(n);
     let defined: HashSet<String> = in_def.into_iter().filter(|n| !active(n)).collect();
     let all: HashSet<String> = defined.iter().cloned().chain(in_imp.into_iter().filter(|n| !active(n))).collect();
+    let mut defs = Vec::new();
+    super::tokens_detached::detached_definition_tokens(text, &mut defs);
     let region_defs: Vec<RawToken> = defs.iter().filter(|d| mask.get(d.line as usize).copied().unwrap_or(false)).copied().collect();
     retype_unresolved(text, &masked, &region_defs, tokens, &UnresolvedScope { names: all, use_line_names: Some(defined), lines: Some(&mask) });
 }
