@@ -61,6 +61,21 @@ fn receiver_link_start(_src: &str, masked: &str, dot_byte: usize) -> Option<usiz
     if p == 0 {
         return None;
     }
+    // A turbofish ending a path (`add::<i32>`, `f::<T>(x)`): the path before its `::<`.
+    let before_turbofish = |q: usize| -> usize {
+        if q > 0 && mb[q - 1] == b'>' {
+            if let Some(open) = skip_balanced_backwards(mb, q - 1, b'>', b'<') {
+                if open >= 2 && &mb[open - 2..open] == b"::" {
+                    return open - 2;
+                }
+            }
+        }
+        q
+    };
+    let p = before_turbofish(p);
+    if p == 0 {
+        return None;
+    }
     let last = mb[p - 1];
     if last == b')' {
         let open = skip_balanced_backwards(mb, p - 1, b')', b'(')?;
@@ -72,9 +87,15 @@ fn receiver_link_start(_src: &str, masked: &str, dot_byte: usize) -> Option<usiz
         if q > 0 && mb[q - 1] == b'!' {
             q -= 1;
         }
-        if q > 0 && (mb[q - 1].is_ascii_alphanumeric() || mb[q - 1] == b'_') {
+        // The called path, through its turbofishes (`Vec::<u8>::new`, `f::<T>`).
+        loop {
+            q = before_turbofish(q);
+            let seg_end = q;
             while q > 0 && (mb[q - 1].is_ascii_alphanumeric() || mb[q - 1] == b'_' || mb[q - 1] == b':') {
                 q -= 1;
+            }
+            if q == seg_end || !(q > 0 && mb[q - 1] == b'>' && masked[q..].starts_with("::")) {
+                break;
             }
         }
         return Some(q);
@@ -266,6 +287,10 @@ mod tests {
         assert_eq!(receiver_chain_start(plain, plain, plain.find(").is").unwrap() + 1), Some((4, true)));
         let tried = "let y = self.cfg.get(k)?.value().is_match(1);";
         assert_eq!(receiver_chain_start(tried, tried, tried.find(".is_match").unwrap()), Some((8, true)));
+        let fished = "let f = add::<i32>.into_function_mut().with_overload(g);";
+        assert_eq!(receiver_chain_start(fished, fished, fished.find(".with_overload").unwrap()), fished.find("add::").map(|p| (p, true)));
+        let built = "x = Vec::<u8>::new().is_empty();";
+        assert_eq!(receiver_chain_start(built, built, built.find(".is_empty").unwrap()), built.find("Vec").map(|p| (p, false)));
         let range = "for i in 0..n.len() {}";
         assert_eq!(receiver_chain_start(range, range, range.find(".len").unwrap()), range.find("n.len").map(|p| (p, false)));
         let body = "for i in 0..self.n { x.self_y(self) }";
