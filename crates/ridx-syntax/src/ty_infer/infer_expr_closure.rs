@@ -315,7 +315,8 @@ impl<'a, 's> Runner<'a, 's> {
     /// from an indexed type's own generics, such as an unsubstituted default).
     fn is_own_generic_param(&self, idx: u16, def: GlobalDefId) -> bool {
         let owner = self.norm_owner();
-        let is_trait_self = idx == 0 && !def.is_some() && self.root_impl_node.is_some_and(|n| self.root_st.kind(n) == K::Trait);
+        // Inside a trait, parameter 0 is its `Self` (an indexed file names the trait as the parameter's definition).
+        let is_trait_self = idx == 0 && self.root_impl_node.is_some_and(|n| self.root_st.kind(n) == K::Trait);
         is_trait_self
             || self.root_file_res.generics.iter().any(|g| {
                 (def.is_some() && g.def == def)
