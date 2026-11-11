@@ -89,7 +89,9 @@ pub(crate) fn process_call_site(
         // A receiver that is a call or an index (`Foo::new().m()`, `v[i].m()`) is bound once by `let this`, a chain
         // with a later call (`a.b().c().m()`) by a `match`.
         let (recv_start, chained) = receiver_chain_start(src, masked, dot_byte)?;
-        recv_in_match = chained;
+        // Any temporary of the receiver (`LocalSet::new().run_until(f).await`) lived as long as the call's statement;
+        // a `match` keeps it so, where `let this = &…;` would end it with the block a returned `async` value outlives.
+        recv_in_match = chained || masked[recv_start..dot_byte].contains('(');
         if recv_start > 0 && (mb[recv_start - 1] == b'.' || is_ident_byte(mb[recv_start - 1])) {
             return None;
         }
@@ -169,11 +171,14 @@ pub(crate) fn process_call_site(
         // (E0282); next to a receiver binding a `self` in it would borrow twice (E0502). For a reference parameter
         // `let x: &T = &f();` extends only the outermost temporary, so a chain through another call (`a.to_string()
         // .as_bytes()`) would drop the inner one at the `;` (E0716).
+        // Without a written type (a generic parameter `it: I`) the argument's own type stands, unless the argument
+        // takes it from where it goes (`x.into()`, `iter.collect()`, `Default::default()`).
         if arg.contains('(') {
             let ty = plain.get(i).and_then(|p| p.decl_ty.as_deref()).map(normalize_param_type_for_binding);
             let typed = ty.as_deref().is_some_and(is_writable_binding_type);
+            let self_typed = ty.is_none() && !INFERRED_FROM_USE.iter().any(|w| contains_word(arg, w));
             let chained_temp = ty.as_deref().is_some_and(|t| t.starts_with('&')) && arg.matches('(').count() > 1;
-            if !typed || chained_temp || (self_kind.is_some() && contains_word(arg, "self")) {
+            if !(typed || self_typed) || chained_temp || (self_kind.is_some() && contains_word(arg, "self")) {
                 return None;
             }
         }
@@ -186,6 +191,9 @@ pub(crate) fn process_call_site(
     let inlined = format_inlined_call(recv_expr, self_kind, recv_ty, params, &raw_args, body_src, standalone, recv_in_match);
     Some((call_start, call_end, inlined))
 }
+
+/// Calls whose result type is chosen by where the value goes: an argument making one cannot be bound untyped.
+const INFERRED_FROM_USE: &[&str] = &["into", "try_into", "collect", "parse", "default", "from", "try_from", "sum", "product", "unwrap_or_default", "new", "with_capacity"];
 
 pub(crate) fn rewrite_self_to_this(body_src: &str, masked_body: &str) -> String {
     let mb = masked_body.as_bytes();
