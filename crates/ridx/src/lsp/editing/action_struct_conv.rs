@@ -142,8 +142,9 @@ pub fn build_convert_to_tuple_struct(
     };
     raw_edits.push((name_end, *end_byte, decl));
 
+    let reaches_struct = |at: usize| ws.is_some_and(|ws| super::action_struct_conv_deref::tuple_field_reaches_struct(ws, file, doc_text, starts, at, &item.name));
     let mut field_edits =
-        field_access_edits(doc_text, masked_doc, (mod_lo, mod_hi), (item.decl_start_byte, *end_byte), &field_index, indexed.as_ref(), &impl_spans, &known_locals)?;
+        field_access_edits(doc_text, masked_doc, (mod_lo, mod_hi), (item.decl_start_byte, *end_byte), &field_index, indexed.as_ref(), &impl_spans, &known_locals, &reaches_struct)?;
 
     let mb = masked_doc.as_bytes();
     let mut i = mod_lo;

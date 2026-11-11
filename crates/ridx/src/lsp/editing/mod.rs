@@ -55,6 +55,7 @@ pub mod action_parse_lex;
 pub mod action_raw_string;
 pub mod action_struct_conv;
 mod action_struct_conv_attrs;
+mod action_struct_conv_deref;
 mod action_struct_conv_fields;
 pub mod action_struct_conv_helpers;
 mod action_struct_conv_index;

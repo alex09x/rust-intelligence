@@ -11,8 +11,8 @@
 //! The `.name` → `.N` field access edits of `Convert to tuple struct`, including those inside the struct's own literals.
 
 use super::action_parse_decl::next_ident_token;
+use super::action_struct_conv_deref::tuple_index_start;
 use super::action_struct_conv_helpers::receiver_is_proven_owner;
-use super::action_struct_conv_index::receiver_ends_in_tuple_index;
 use std::collections::{HashMap, HashSet};
 
 /// A document-addressed replacement of `[lo, hi)`.
@@ -42,6 +42,7 @@ pub(crate) fn field_access_edits(
     indexed: Option<&HashSet<usize>>,
     impl_spans: &[(usize, usize)],
     known_locals: &HashSet<String>,
+    reaches_struct: &dyn Fn(usize) -> bool,
 ) -> Option<Vec<RawEdit>> {
     let mb = masked_doc.as_bytes();
     let mut out = Vec::new();
@@ -69,7 +70,7 @@ pub(crate) fn field_access_edits(
                             }
                             // `w.0.name` reaches the field through `Deref` on the tuple struct `w.0`: `w.0.0` would name
                             // the wrapper's own field instead.
-                            Some(_) if receiver_ends_in_tuple_index(&masked_doc[mod_lo..d]) => return None,
+                            Some(_) if tuple_index_start(&masked_doc[mod_lo..d]).is_some_and(|t| !reaches_struct(mod_lo + t)) => return None,
                             Some(_) => {}
                             None => {
                                 let in_impl = impl_spans.iter().any(|&(bo, bc)| d > bo && d < bc);
