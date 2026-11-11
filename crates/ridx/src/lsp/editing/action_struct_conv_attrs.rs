@@ -164,17 +164,22 @@ fn resolves_to_macro(c: &AttrCtx, at: usize) -> bool {
 /// index has no such struct. The search ends once every key in `needed` was seen (at the first such struct when none
 /// is needed).
 fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<HelperKey>) -> Option<HashSet<HelperKey>> {
-    let (line, col) = byte_to_line_col(c.doc, c.starts, at);
-    let refs = c.ws.find_direct_references_at(c.file, line, col)?;
     // A derive named like its trait (`#[derive(Component)]`) resolves to the trait; its references hold the derive
     // sites too, which `struct_shape_after` picks out of the rest.
-    if !matches!(refs.target_kind, DefKind::Macro | DefKind::Trait) {
-        return None;
-    }
+    let derive_refs = |at: usize| {
+        let (line, col) = byte_to_line_col(c.doc, c.starts, at);
+        c.ws.find_direct_references_at(c.file, line, col).filter(|r| matches!(r.target_kind, DefKind::Macro | DefKind::Trait))
+    };
+    // A struct inside a function body may be one the index resolved nothing for (or the wrong item): the file's other
+    // derives of the same name stand for it.
+    let refs = derive_refs(at).or_else(|| same_name_derives(c.doc, at).into_iter().take(64).find_map(derive_refs))?;
     let mut sources: HashMap<std::path::PathBuf, Option<(String, Vec<usize>)>> = HashMap::new();
     let mut keys = HashSet::new();
     let mut found = false;
-    for r in refs.references.iter().take(EVIDENCE_REFS) {
+    // Only files spelling a needed helper attribute can vouch for it: the others are passed over without counting.
+    let helper_names: Vec<String> = needed.iter().map(|(n, _)| format!("#[{n}")).collect();
+    let mut considered = 0;
+    for r in &refs.references {
         let path = r.resolved_path();
         let entry = sources.entry(path.clone()).or_insert_with(|| {
             let s = std::fs::read_to_string(&path).ok()?;
@@ -182,6 +187,13 @@ fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<Helper
             Some((s, st))
         });
         let Some((src, starts)) = entry.as_ref() else { continue };
+        if !helper_names.is_empty() && !helper_names.iter().any(|h| src.contains(h.as_str())) {
+            continue;
+        }
+        considered += 1;
+        if considered > EVIDENCE_REFS {
+            break;
+        }
         let Some(&ls) = starts.get((r.span.start_line() as usize).wrapping_sub(1)) else { continue };
         let ref_at = src[ls..].char_indices().nth(r.span.start_col().saturating_sub(1) as usize).map_or(src.len(), |(b, _)| ls + b);
         let Some((s, attrs_end)) = struct_shape_after(src, ref_at) else { continue };
@@ -200,6 +212,25 @@ fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<Helper
         }
     }
     found.then_some(keys)
+}
+
+/// The other places of `doc` naming the derive named at `at`: the `use` that imports it and other paths first (the
+/// index may resolve a whole file's derive names to another item of that name), then the other derives.
+fn same_name_derives(doc: &str, at: usize) -> Vec<usize> {
+    let masked = mask_comments_and_strings(doc);
+    let name_len = masked[at..].find(|ch: char| !(ch.is_alphanumeric() || ch == '_')).unwrap_or(masked.len() - at);
+    let name = &masked[at..at + name_len];
+    let b = masked.as_bytes();
+    let word =
+        |p: usize| (p == 0 || !(b[p - 1].is_ascii_alphanumeric() || b[p - 1] == b'_')) && b.get(p + name.len()).is_none_or(|ch| !(ch.is_ascii_alphanumeric() || *ch == b'_'));
+    let in_derive = |p: usize| {
+        matches!(masked[..p].trim_end().as_bytes().last(), Some(b'(' | b','))
+            && masked[..p].rfind("#[").is_some_and(|a| !masked[a..p].contains(']') && masked[a..p].contains("derive("))
+    };
+    let (derives, mut others): (Vec<usize>, Vec<usize>) =
+        masked.match_indices(name).map(|(p, _)| p).filter(|&p| p != at && !name.is_empty() && word(p)).partition(|&p| in_derive(p));
+    others.extend(derives);
+    others
 }
 
 /// The shape of the struct whose attributes contain `at`, and where those attributes end: the item after them must be
@@ -252,7 +283,14 @@ pub(crate) fn struct_shape_after(src: &str, at: usize) -> Option<(Shape, usize)>
 
 #[cfg(test)]
 mod tests {
-    use super::{helper_keys, outer_attrs_allow_shape_change, struct_shape_after, Shape};
+    use super::{helper_keys, outer_attrs_allow_shape_change, same_name_derives, struct_shape_after, Shape};
+
+    #[test]
+    fn the_file_s_other_derives_of_a_name_are_found() {
+        let s = "#[derive(Component)]\nstruct A;\nfn t() { #[derive(Clone, Component)] struct B { x: u8 } }\n#[reflect(Component)] struct C; // Component";
+        let at = s.rfind("Clone, Component").unwrap() + 7;
+        assert_eq!(same_name_derives(s, at), vec![s.find("reflect(Component").unwrap() + 8, 9]);
+    }
 
     #[test]
     fn test_reads_the_shape_of_the_struct_after_its_attributes() {
