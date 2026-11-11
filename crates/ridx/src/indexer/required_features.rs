@@ -19,6 +19,8 @@ use std::process::Command;
 
 /// Lets Mitts cache units compiled through a rustc wrapper (off by default: it cannot know the wrapper is deterministic).
 const MITTS_WRAPPER_CACHE_ENV: &str = "MITTS_RUSTC_WRAPPER_CACHE";
+/// Namespaces Mitts's wrapper cache.
+const MITTS_WRAPPER_SALT_ENV: &str = "MITTS_RUSTC_WRAPPER_SALT";
 
 /// A target `cargo check` skips under the variant's features.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -127,6 +129,11 @@ pub fn index_skipped_targets(
         return;
     };
     let _ = fs::create_dir_all(&scratch);
+    // The cache is scoped to this run: units cached by an earlier run (the variant was removed, the cache kept)
+    // would be served without running the driver and leave the targets without shards, and the uncached retry
+    // below would find them fresh and not compile them either.
+    let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let salt = format!("{}ridx-{}-{nonce}", std::env::var(MITTS_WRAPPER_SALT_ENV).unwrap_or_default(), std::process::id());
     let run = |args: &[String], cached: bool| {
         let mut cmd = Command::new(program);
         cmd.current_dir(work_dir).args(args);
@@ -136,6 +143,7 @@ pub fn index_skipped_targets(
         }
         if cached {
             cmd.env(MITTS_WRAPPER_CACHE_ENV, "1");
+            cmd.env(MITTS_WRAPPER_SALT_ENV, &salt);
         }
         match cmd.output() {
             Ok(o) if o.status.success() || cached => {}
@@ -145,7 +153,7 @@ pub fn index_skipped_targets(
     };
     // The feature sets share nearly all their dependencies, and only the targets' own shards are kept: Mitts may
     // serve the rest from its cache. A cached unit does not run the driver, so a target whose own unit was cached
-    // (the variant was removed, the cache kept) gets no shard; it is checked again without the cache.
+    // gets no shard; it is checked again without the cache.
     if program == super::builder::IndexBuilder::Mitts.as_str() {
         for args in check_args(&targets, manifest_path, features) {
             run(&args, true);
@@ -161,7 +169,10 @@ pub fn index_skipped_targets(
     let mut moved = Vec::new();
     for entry in fs::read_dir(&scratch).into_iter().flatten().flatten() {
         let name = entry.file_name().to_string_lossy().to_string();
-        if name.ends_with(".ridx") && own.iter().any(|p| name.starts_with(&format!("{p}-"))) && fs::rename(entry.path(), variant_out_dir.join(&name)).is_ok() {
+        // A target the main check built after all (another package enabled its features) keeps that shard: its
+        // sidecar stays in the variant, and a shard of the same name from here would no longer match it.
+        let dest = variant_out_dir.join(&name);
+        if name.ends_with(".ridx") && own.iter().any(|p| name.starts_with(&format!("{p}-"))) && !dest.exists() && fs::rename(entry.path(), &dest).is_ok() {
             moved.push(name);
         }
     }
