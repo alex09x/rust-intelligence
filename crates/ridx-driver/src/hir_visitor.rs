@@ -151,6 +151,16 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                 self.add_ref_from_res(seg.ident.span, seg.res);
             }
         }
+        // `Trait<Assoc = T>`: the constraint's name refers to the trait's associated type.
+        if let Res::Def(hir::def::DefKind::Trait, trait_did) = path.res {
+            if let Some(args) = path.segments.last().and_then(|seg| seg.args) {
+                for c in args.constraints {
+                    if let Some(d) = crate::assoc_res::trait_assoc_ty(self.tcx, trait_did, c.ident.name) {
+                        self.add_ref_from_res(c.ident.span, Res::Def(hir::def::DefKind::AssocTy, d));
+                    }
+                }
+            }
+        }
         // `Self` in an impl names the implementing type; rust-analyzer lists it among the type's references.
         if let Res::SelfTyAlias { alias_to, .. } | Res::SelfCtor(alias_to) = path.res {
             if let Some(adt) = self.tcx.type_of(alias_to).skip_binder().ty_adt_def() {
@@ -196,11 +206,13 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     }
 
     fn visit_ty(&mut self, ty: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
-        if let Some(typeck) = self.typeck {
-            if let hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) = ty.kind {
-                let res = typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
-                self.add_ref_from_res(segment.ident.span, res);
-            }
+        if let hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) = ty.kind {
+            // Inside a body typeck resolves the path; in a signature the trait is found from `Self` or the parameter.
+            let res = match self.typeck {
+                Some(typeck) => typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id),
+                None => crate::assoc_res::type_relative_assoc_res(self.tcx, qself, segment.ident.name),
+            };
+            self.add_ref_from_res(segment.ident.span, res);
         }
         intravisit::walk_ty(self, ty);
     }
