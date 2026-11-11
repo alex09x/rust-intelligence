@@ -137,6 +137,17 @@ fn lookup_short_name_fallback<'a>(
         return;
     };
     let first_seg = if all_segs.len() > 1 { all_segs[0] } else { "" };
+    // A bare name the query file declares as a type parameter (`impl<I, O> … for E<I, O>`) is that parameter, which
+    // has no type definition; it is not looked up by name across the workspace.
+    if all_segs.len() == 1
+        && file_readers.iter().filter_map(|&i| ws.readers().get(i).map(|r| (i, r))).any(|(i, r)| {
+            r.definitions()
+                .iter()
+                .any(|d| d.kind == DefKind::TyParam as u8 && r.get_str(d.name_offset()) == short_name && resolve_reader_file(ws, i, r.get_file(d.span().file_id())) == query_path)
+        })
+    {
+        return;
+    }
     let is_sysroot_query = matches!(first_seg, "std" | "core" | "alloc");
     let mod_segs: &[&str] = if is_sysroot_query {
         &all_segs[1..all_segs.len() - 1]
