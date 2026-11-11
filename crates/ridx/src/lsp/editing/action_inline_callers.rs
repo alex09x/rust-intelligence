@@ -350,7 +350,7 @@ fn without_nested_items(masked: &str) -> String {
     let b = masked.as_bytes();
     let mut out = masked.to_string().into_bytes();
     let mut i = 0;
-    while let Some(p) = masked[i..].find(|c: char| c == 'i' || c == 'f').map(|p| p + i) {
+    while let Some(p) = masked[i..].find(['i', 'f']).map(|p| p + i) {
         let kw = ["impl", "fn"].into_iter().find(|k| masked[p..].starts_with(k) && b.get(p + k.len()).is_some_and(|c| !is_ident_byte(*c)));
         let starts_word = p == 0 || !is_ident_byte(b[p - 1]);
         match (kw, starts_word, masked[p..].find('{').map(|o| p + o)) {
