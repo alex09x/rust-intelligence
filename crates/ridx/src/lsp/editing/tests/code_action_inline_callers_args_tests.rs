@@ -119,3 +119,10 @@ fn test_reference_argument_through_a_temporary_chain_is_refused() {
     // Binding `make().as_str()` to `s` would drop the `String` at the `;` (E0716).
     assert_eq!(inline_greet(code).1, None);
 }
+
+#[test]
+fn test_impl_trait_parameter_takes_only_a_variable_argument() {
+    let code = concat!("pub struct W(u32);\n", "\n", "fn «greet»(n: impl Into<u64>) -> u64 {\n", "    n.into()\n", "}\n", "pub fn caller() -> u64 {\n", "    greet(1)\n", "}\n",);
+    // `let n = 1;` leaves the integer type to infer and `n.into()` cannot pick it (E0283/E0689).
+    assert_eq!(inline_greet(code).1, None);
+}

@@ -72,12 +72,15 @@ pub(crate) fn process_call_site(
             return None;
         }
         let dot_byte = before_dot.len() - 1;
+        // A receiver that is a call or an index (`Foo::new().m()`, `v[i].m()`) is bound once by `let this`.
         let recv_start = find_receiver_start(src, masked, dot_byte)?;
         if recv_start > 0 && (mb[recv_start - 1] == b'.' || is_ident_byte(mb[recv_start - 1])) {
             return None;
         }
         let recv = src[recv_start..dot_byte].trim();
-        if recv.is_empty() || recv.starts_with('.') || recv.ends_with('.') || recv.contains('(') || recv.contains('[') {
+        // A `self` taken by value cannot be moved out of an index (`v[i]`).
+        let moves_out_of_index = self_kind == Some(SelfKind::Value) && masked[recv_start..dot_byte].contains('[');
+        if recv.is_empty() || recv.starts_with('.') || recv.ends_with('.') || moves_out_of_index {
             return None;
         }
         let rty = match (file_opt, ws_opt) {
@@ -122,6 +125,16 @@ pub(crate) fn process_call_site(
         let earlier_bound = plain.iter().take(i).filter_map(|p| p.ident.as_deref()).map(|id| id.trim_start_matches("mut ")).any(|id| contains_word(arg, id))
             || (self_kind.is_some() && contains_word(arg, "this"));
         if arg.contains('|') || earlier_bound {
+            return None;
+        }
+        // An `impl Trait` parameter takes only a variable or a reference to one: a literal bound by `let` has no type
+        // to infer (`let idx = 1;` then `idx.into_resettable()`), and an expression's type is unknown here.
+        let impl_param = plain.get(i).is_some_and(|p| p.decl_ty.as_deref().or(p.ty.as_deref()).is_some_and(|t| contains_word(t, "impl")));
+        let a = arg.trim();
+        let a = a.strip_prefix("&mut ").or_else(|| a.strip_prefix('&')).unwrap_or(a).trim();
+        let is_variable =
+            a.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_') && a.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_') && !matches!(a, "true" | "false");
+        if impl_param && !is_variable {
             return None;
         }
         // A call argument is bound with the parameter's type written out, else its generic return stays uninferred
