@@ -42,9 +42,19 @@ pub fn build_convert_to_tuple_struct(
     let ItemKindInfo::Adt { adt_kw: "struct", where_src, fields_kind: AdtFieldsKind::Named(raw_fields), open_delim_byte, end_byte, .. } = &item.kind else {
         return None;
     };
-    if !where_src.trim().is_empty() || !outer_attrs_allow_shape_change(&doc_text[item.first_attr_byte..item.decl_start_byte]) {
+    if !outer_attrs_allow_shape_change(&doc_text[item.first_attr_byte..item.decl_start_byte]) {
         return None;
     }
+    // A tuple struct takes its `where` clause after the fields: `struct S<T>(T) where T: Copy;`.
+    let where_at = if where_src.trim().is_empty() {
+        None
+    } else {
+        let head = &masked_doc[item.decl_start_byte..*open_delim_byte];
+        let b = masked_doc.as_bytes();
+        let is_id = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
+        let at = head.match_indices("where").map(|(p, _)| item.decl_start_byte + p).filter(|&p| (p == 0 || !is_id(b[p - 1])) && b.get(p + 5).is_none_or(|&c| !is_id(c))).last()?;
+        Some((at, doc_text[at..*open_delim_byte].trim_end().trim_end_matches(',').to_string()))
+    };
     let fields = parse_named_fields_clean(raw_fields)?;
     if fields.is_empty() || fields.len() > 16 {
         return None;
@@ -86,7 +96,7 @@ pub fn build_convert_to_tuple_struct(
     let mut raw_edits: Vec<(usize, usize, String)> = Vec::new();
 
     let tuple_defs: Vec<String> = fields.iter().map(|(vis, _, ty, _)| if vis.is_empty() { ty.clone() } else { format!("{vis} {ty}") }).collect();
-    let name_end = doc_text[..*open_delim_byte].trim_end().len();
+    let name_end = where_at.as_ref().map_or_else(|| doc_text[..*open_delim_byte].trim_end().len(), |(at, _)| doc_text[..*at].trim_end().len());
     let decl = if fields.iter().all(|f| f.3.is_empty()) {
         format!("({});", tuple_defs.join(", "))
     } else {
@@ -102,6 +112,10 @@ pub fn build_convert_to_tuple_struct(
         }
         s.push_str(&format!("{indent});"));
         s
+    };
+    let decl = match &where_at {
+        Some((_, clause)) => format!("{} {clause};", decl.trim_end_matches(';')),
+        None => decl,
     };
     raw_edits.push((name_end, *end_byte, decl));
 

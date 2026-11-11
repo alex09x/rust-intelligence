@@ -16,6 +16,7 @@ pub mod code_action_inline_callers_self_tests;
 pub mod code_action_inline_callers_tests;
 pub mod code_action_inline_callers_try_tests;
 pub mod code_action_resolve_tests;
+pub mod code_action_struct_where_tests;
 pub mod code_action_tests;
 pub mod format_tests;
 pub mod formatting_unit_tests;
