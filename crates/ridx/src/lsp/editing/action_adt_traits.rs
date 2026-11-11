@@ -87,7 +87,7 @@ pub fn build_single_field_from(doc_text: &str, masked_doc: &str, starts: &[usize
     if decls.iter().any(|g| g.kind == GenKind::Type && (g.name == fty.trim() || fty.contains(&format!("{}::", g.name)) || fty.contains(&format!("<{} as", g.name)))) {
         return None;
     }
-    if crate_already_implements_conversion_for(masked_doc, file_path, &item.name) {
+    if crate_already_implements_conversion_for(masked_doc, file_path, &item.name, &fty) {
         return None;
     }
 

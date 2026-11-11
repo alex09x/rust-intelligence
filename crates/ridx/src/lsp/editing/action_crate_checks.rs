@@ -136,8 +136,8 @@ fn masked_denies_missing_docs(masked: &str) -> bool {
     warns_md && denies_warn
 }
 
-pub(crate) fn crate_already_implements_conversion_for(masked_doc: &str, file_path: &str, type_name: &str) -> bool {
-    if doc_has_conversion_for(masked_doc, type_name) {
+pub(crate) fn crate_already_implements_conversion_for(masked_doc: &str, file_path: &str, type_name: &str, field_ty: &str) -> bool {
+    if doc_has_conversion_for(masked_doc, type_name, field_ty) {
         return true;
     }
     if file_path.is_empty() {
@@ -165,7 +165,7 @@ pub(crate) fn crate_already_implements_conversion_for(masked_doc: &str, file_pat
                     continue;
                 }
                 let m = mask_comments_and_strings(&raw);
-                if contains_word(&m, type_name) && doc_has_conversion_for(&m, type_name) {
+                if contains_word(&m, type_name) && doc_has_conversion_for(&m, type_name, field_ty) {
                     return true;
                 }
             }
@@ -185,8 +185,8 @@ fn find_enclosing_crate_dir(start: &Path) -> Option<PathBuf> {
     None
 }
 
-fn doc_has_conversion_for(masked: &str, type_name: &str) -> bool {
-    if doc_already_implements_trait_for(masked, "From", type_name) || doc_already_implements_trait_for(masked, "TryFrom", type_name) {
+fn doc_has_conversion_for(masked: &str, type_name: &str, field_ty: &str) -> bool {
+    if super::action_conversion_conflict::doc_has_conflicting_conversion(masked, type_name, field_ty) {
         return true;
     }
     let file_defines_from_macro = masked.contains("macro_rules!") && (contains_word(masked, "From") || contains_word(masked, "TryFrom"));

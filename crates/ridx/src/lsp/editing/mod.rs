@@ -14,6 +14,7 @@ pub mod action_adt;
 pub mod action_adt_traits;
 pub mod action_assists;
 pub mod action_assists_edit;
+mod action_conversion_conflict;
 pub mod action_crate_checks;
 mod action_default_extract;
 pub mod action_default_members;
