@@ -14,6 +14,7 @@ pub mod declaration;
 mod highlight_ext;
 mod impl_line;
 pub mod references;
+mod references_gated;
 pub mod type_definition;
 mod type_definition_live;
 mod type_definition_lookup;

@@ -117,6 +117,12 @@ pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
                     }
                 }
 
+                for (path, line, sc, ec) in super::references_gated::gated_file_refs(ws, &loc_refs) {
+                    let r_uri = path_to_uri(path.to_str().unwrap_or_default());
+                    if seen_out.insert((r_uri.clone(), line, sc, line, ec)) {
+                        results.push(json!({ "uri": r_uri, "range": { "start": { "line": line, "character": sc }, "end": { "line": line, "character": ec } } }));
+                    }
+                }
                 for r in loc_refs.references {
                     let r_path = r.resolved_path();
                     let r_str = r_path.to_str().unwrap_or(r.file);
