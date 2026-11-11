@@ -47,6 +47,55 @@ impl BodyInferCtx {
     /// Collects all callable methods in `candidate_names` for `recv_ty` at `at_node` inside `fn_node`,
     /// also writing the computed autoderef `steps` into `steps_out` (`0` = direct receiver, `1..` = derefs).
     #[allow(clippy::too_many_arguments)]
+    /// The traits bounding the type parameter `ty` inside `fn_node` (the enclosing trait for its `Self`, the bounds
+    /// written in the source and the indexed ones, with supertraits), appended to `out`.
+    pub fn param_bounds_for_completion(
+        &mut self,
+        st: &SyntaxTree<'_>,
+        file_res: &FileNameRes,
+        db: &dyn TyDefDb,
+        local_defs: &LocalCstDefs,
+        fn_node: NodeId,
+        ty: InferTyId,
+        out: &mut Vec<GlobalDefId>,
+    ) {
+        let snap = self.table.start_snapshot();
+        let impl_node = st.ancestors(fn_node).find(|&a| matches!(st.kind(a), K::Impl | K::Trait));
+        let (impl_gc, self_ty) = local_defs.owner_generics_and_self_ty(impl_node, st, file_res, db, &mut self.table);
+        let fn_def = local_defs.fn_def_for_node(fn_node);
+        let mut dummy_out = FnInferResult::new();
+        let env = Runner {
+            ctx: self,
+            st,
+            file_res,
+            root_st: st,
+            root_file_res: file_res,
+            db,
+            local_defs,
+            fn_node,
+            root_fn_node: fn_node,
+            fn_def,
+            impl_node,
+            root_impl_node: impl_node,
+            impl_gc,
+            self_ty,
+            loc_lo: 0,
+            loc_hi: 0,
+            expr_depth: 0,
+            sub: None,
+            out: &mut dummy_out,
+        };
+        let mut found = Vec::new();
+        env.collect_ty_direct_bounds(ty, &mut found);
+        for t in found {
+            if !out.contains(&t) {
+                out.push(t);
+            }
+        }
+        self.table.rollback_to(snap);
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub fn collect_ordered_completion_methods(
         &mut self,
         st: &SyntaxTree<'_>,

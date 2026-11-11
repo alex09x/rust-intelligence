@@ -296,8 +296,12 @@ impl<'a, 's> Runner<'a, 's> {
                 if !self.is_own_generic_param(idx, def) {
                     continue;
                 }
+                let mut bounds = core::mem::take(&mut self.ctx.param_bounds_buf);
+                self.collect_ty_direct_bounds(lhs, &mut bounds);
+                let declared = bounds.contains(&trait_def);
+                self.ctx.param_bounds_buf = bounds;
                 let senv = SolveEnv { local_defs: self.local_defs, st: self.root_st, file_res: self.root_file_res, db: self.db, owner: self.norm_owner() };
-                if !param_has_active_bound(senv, &mut self.ctx.table, idx, def, trait_def) {
+                if !declared && !param_has_active_bound(senv, &mut self.ctx.table, idx, def, trait_def) {
                     ok = false;
                     break;
                 }
@@ -311,9 +315,13 @@ impl<'a, 's> Runner<'a, 's> {
     /// from an indexed type's own generics, such as an unsubstituted default).
     fn is_own_generic_param(&self, idx: u16, def: GlobalDefId) -> bool {
         let owner = self.norm_owner();
-        self.root_file_res.generics.iter().any(|g| {
-            (def.is_some() && g.def == def) || (owner.impl_node == Some(g.owner_node) && g.index == idx) || (owner.fn_node == Some(g.owner_node) && owner.impl_gc + g.index == idx)
-        })
+        let is_trait_self = idx == 0 && !def.is_some() && self.root_impl_node.is_some_and(|n| self.root_st.kind(n) == K::Trait);
+        is_trait_self
+            || self.root_file_res.generics.iter().any(|g| {
+                (def.is_some() && g.def == def)
+                    || (owner.impl_node == Some(g.owner_node) && g.index == idx)
+                    || (owner.fn_node == Some(g.owner_node) && owner.impl_gc + g.index == idx)
+            })
     }
 
     pub(super) fn cand_matches_completion_rcvr(&mut self, cand: &MethodCand, rcvr: InferTyId) -> bool {

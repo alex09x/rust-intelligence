@@ -19,7 +19,7 @@ use std::path::Path;
 use ridx_format::{DefKind, ItemVis, WorkspaceIndex};
 use ridx_syntax::name_res::{CrateDefMap, CrateId, FileId, GlobalDefId, ImplTargetKey, ModuleId};
 use ridx_syntax::ty_infer::autoderef::{build_autoderef_steps_with_owner, impl_target_key_of_ty, NormOwner, MAX_AUTODEREF_STEPS};
-use ridx_syntax::ty_infer::{CompletionTraitHints, InferTyArena, InferTyId, InferTyKind, LocalCstDefs, TyDefDb};
+use ridx_syntax::ty_infer::{CompletionTraitHints, InferTyArena, InferTyId, InferTyKind, LocalCstDefs};
 use ridx_syntax::{parse, NodeId, SyntaxTree};
 
 use super::query::Cand;
@@ -116,9 +116,9 @@ pub(crate) fn query_dot_candidates(
                     }
                     extra_traits.push(db.canonical_def(principal));
                 }
-                InferTyKind::Param { idx, .. } if fn_gid.is_some() => {
+                InferTyKind::Param { .. } => {
                     let before = traits.len();
-                    db.param_trait_bounds(fn_gid, idx, &mut traits);
+                    engine.infer_ctx.param_bounds_for_completion(&st, &entry.file_res, &db, &entry.local_defs, entry.fn_node, st_ty, &mut traits);
                     for &bt in &traits[before..] {
                         extra_traits.push(db.canonical_def(bt));
                     }

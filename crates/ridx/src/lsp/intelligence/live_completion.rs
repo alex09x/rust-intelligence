@@ -84,7 +84,9 @@ pub(super) fn live_dot_items(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'
     let prefix = ctx.prefix;
     let mut items: Vec<Value> = Vec::with_capacity(cands.len() + 32);
     let mut seen: HashSet<&str> = HashSet::with_capacity(cands.len());
-    for c in cands.iter().filter(|c| !is_drop_method(c)) {
+    // In `receiver.name(...)` only methods complete; a field is not callable there.
+    let only_methods = postfix.as_ref().is_some_and(|f| f.is_method_call);
+    for c in cands.iter().filter(|c| !is_drop_method(c) && !(only_methods && c.kind == ridx_format::DefKind::Field)) {
         if c.label.starts_with(prefix) && seen.insert(c.label.as_str()) {
             let note = c.from_trait.as_deref().map(item::trait_note);
             items.push(item::item(&c.label, note.as_deref(), lsp_completion_kind(c.kind), c.detail.as_deref().unwrap_or_default()));
