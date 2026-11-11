@@ -31,6 +31,18 @@ pub struct CompletionMethodHit {
     pub trait_def: GlobalDefId,
 }
 
+/// Which scope traits declare each candidate name, so a name is probed only against the traits that have it.
+///
+/// `known` lists the scope traits whose full method-name set the caller has, sorted by `(krate, index)`;
+/// `declaring[ranges[i].0..ranges[i].1]` are the ones among them that declare `candidate_names[i]`. A scope trait
+/// outside `known` is probed for every name.
+#[derive(Clone, Copy, Default)]
+pub struct CompletionTraitHints<'a> {
+    pub known: &'a [GlobalDefId],
+    pub ranges: &'a [(u32, u32)],
+    pub declaring: &'a [GlobalDefId],
+}
+
 impl BodyInferCtx {
     /// Collects all callable methods in `candidate_names` for `recv_ty` at `at_node` inside `fn_node`,
     /// also writing the computed autoderef `steps` into `steps_out` (`0` = direct receiver, `1..` = derefs).
@@ -45,6 +57,7 @@ impl BodyInferCtx {
         at_node: NodeId,
         recv_ty: InferTyId,
         candidate_names: &[&str],
+        hints: &CompletionTraitHints<'_>,
         steps_out: &mut Vec<InferTyId>,
         out: &mut Vec<CompletionMethodHit>,
     ) {
@@ -84,9 +97,15 @@ impl BodyInferCtx {
         steps_out.extend_from_slice(&steps[..step_len]);
         let mut cands = core::mem::take(&mut env.ctx.method_cands_buf);
         let mut scope_traits = core::mem::take(&mut env.ctx.scope_traits_buf);
+        env.ctx.compl_known_traits.clear();
+        env.ctx.compl_known_traits.extend_from_slice(hints.known);
         for (n_idx, &mname) in candidate_names.iter().enumerate() {
             cands.clear();
             scope_traits.clear();
+            env.ctx.compl_name_traits.clear();
+            if let Some(&(lo, hi)) = hints.ranges.get(n_idx) {
+                env.ctx.compl_name_traits.extend_from_slice(&hints.declaring[lo as usize..hi as usize]);
+            }
             let inh_end = env.gather_inherent_cands(mname, &steps[..step_len], &mut cands);
             env.gather_trait_and_bound_cands(at_node, mname, &steps[..step_len], &mut scope_traits, &mut cands);
             for (step_idx, &st_ty) in steps[..step_len].iter().enumerate() {
@@ -125,6 +144,8 @@ impl BodyInferCtx {
                 }
             }
         }
+        env.ctx.compl_known_traits.clear();
+        env.ctx.compl_name_traits.clear();
         env.ctx.method_cands_buf = cands;
         env.ctx.scope_traits_buf = scope_traits;
         self.table.rollback_to(top_snap);

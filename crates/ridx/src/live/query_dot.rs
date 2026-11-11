@@ -19,7 +19,7 @@ use std::path::Path;
 use ridx_format::{DefKind, ItemVis, WorkspaceIndex};
 use ridx_syntax::name_res::{CrateDefMap, CrateId, FileId, GlobalDefId, ImplTargetKey, ModuleId};
 use ridx_syntax::ty_infer::autoderef::{build_autoderef_steps_with_owner, impl_target_key_of_ty, NormOwner, MAX_AUTODEREF_STEPS};
-use ridx_syntax::ty_infer::{InferTyArena, InferTyId, InferTyKind, LocalCstDefs, TyDefDb};
+use ridx_syntax::ty_infer::{CompletionTraitHints, InferTyArena, InferTyId, InferTyKind, LocalCstDefs, TyDefDb};
 use ridx_syntax::{parse, NodeId, SyntaxTree};
 
 use super::query::Cand;
@@ -127,6 +127,14 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
             entry.local_defs.collect_supertraits_into(tdef, &st, &entry.file_res, &db, &mut traits);
         }
         let has_local_impls = !entry.local_defs.is_clean_indexed();
+        let mut known: Vec<GlobalDefId> = Vec::with_capacity(traits.len());
+        let mut declared: Vec<(&str, GlobalDefId)> = Vec::with_capacity(512);
+        for &tdef in &traits {
+            if let Some(ns) = engine.trait_method_names.get(&db.canonical_def(tdef)) {
+                known.push(tdef);
+                declared.extend(ns.iter().map(|p| (p.as_str(ws), tdef)));
+            }
+        }
         for tdef in traits {
             let ct = db.canonical_def(tdef);
             let applicable = has_local_impls
@@ -141,8 +149,38 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
         }
         cand_names.sort_unstable();
         cand_names.dedup();
+        known.sort_unstable_by_key(|d| (d.krate.0, d.index));
+        known.dedup();
+        declared.sort_unstable_by_key(|&(n, d)| (n, d.krate.0, d.index));
+        declared.dedup();
+        let declaring: Vec<GlobalDefId> = declared.iter().map(|&(_, d)| d).collect();
+        let mut ranges: Vec<(u32, u32)> = Vec::with_capacity(cand_names.len());
+        let mut at = 0usize;
+        for &nm in &cand_names {
+            while at < declared.len() && declared[at].0 < nm {
+                at += 1;
+            }
+            let lo = at;
+            while at < declared.len() && declared[at].0 == nm {
+                at += 1;
+            }
+            ranges.push((lo as u32, at as u32));
+        }
+        let hints = CompletionTraitHints { known: &known, ranges: &ranges, declaring: &declaring };
 
-        engine.infer_ctx.collect_ordered_completion_methods(&st, &entry.file_res, &db, &entry.local_defs, entry.fn_node, at_node, recv_ty, &cand_names, &mut steps_out, &mut hits);
+        engine.infer_ctx.collect_ordered_completion_methods(
+            &st,
+            &entry.file_res,
+            &db,
+            &entry.local_defs,
+            entry.fn_node,
+            at_node,
+            recv_ty,
+            &cand_names,
+            &hints,
+            &mut steps_out,
+            &mut hits,
+        );
     }
 
     let parsed = engine.parsed.as_ref().unwrap();

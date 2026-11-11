@@ -61,7 +61,7 @@ pub mod unify;
 
 pub use arena::InferTyArena;
 pub use body_ctx::{BodyInferCtx, FnInferResult, MacroExprTy, ResolvedDotRef};
-pub use completion_cands::CompletionMethodHit;
+pub use completion_cands::{CompletionMethodHit, CompletionTraitHints};
 pub use db::{clone_ty_into, CtorShapeKind, EmptyTyDefDb, MethodCand, StdMacroTy, TraitAssocFnMeta, TyDefDb, TyLangItem, WhereObligation};
 pub use dirty_fn::{DirtyFileTracker, DirtyFnUpdateStats};
 pub use dirty_fn_scan::{extract_file_fn_summaries, CachedDirtyFn, FnBodySummary, FrozenTyArena};

@@ -92,6 +92,10 @@ pub struct BodyInferCtx {
     pub(super) where_obls_buf: Vec<WhereObligation>,
     pub(super) fn_has_inner_trait_scopes: bool,
     pub(super) fn_scope_traits_ready: bool,
+    /// Completion only: scope traits whose method names are known up front (sorted by crate, index), and those of
+    /// them that declare the name being probed. Empty outside a completion query.
+    pub(super) compl_known_traits: Vec<GlobalDefId>,
+    pub(super) compl_name_traits: Vec<GlobalDefId>,
     pub(super) macro_scratch: Vec<ParseScratch>,
     pub(super) macro_depth: usize,
     pub(super) sub_locals_buf: Vec<SubLocalEntry>,
@@ -127,6 +131,8 @@ impl BodyInferCtx {
             where_obls_buf: Vec::with_capacity(16),
             fn_has_inner_trait_scopes: false,
             fn_scope_traits_ready: false,
+            compl_known_traits: Vec::new(),
+            compl_name_traits: Vec::new(),
             macro_scratch,
             macro_depth: 0,
             sub_locals_buf: Vec::with_capacity(16),

@@ -228,6 +228,12 @@ impl<'a, 's> Runner<'a, 's> {
         };
 
         for &tdef in active_traits.iter() {
+            if !self.ctx.compl_known_traits.is_empty()
+                && self.ctx.compl_known_traits.binary_search_by_key(&(tdef.krate.0, tdef.index), |d| (d.krate.0, d.index)).is_ok()
+                && !self.ctx.compl_name_traits.contains(&tdef)
+            {
+                continue;
+            }
             let declares = self.local_defs.trait_decl_method_cand_direct(tdef, &[], InferTyId::UNKNOWN, method_name, self.root_st, &mut self.ctx.table).is_some()
                 || self.db.trait_decl_method_cand(tdef, &[], InferTyId::UNKNOWN, method_name, &mut self.ctx.table.arena).is_some();
             if !declares {
