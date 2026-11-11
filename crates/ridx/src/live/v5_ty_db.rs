@@ -372,6 +372,9 @@ impl<'w> TyDefDb for RidxV5ItemDb<'w> {
     fn owner_where_obligations(&self, owner_def: GlobalDefId, arena: &mut InferTyArena, out: &mut Vec<WhereObligation>) {
         self.v5_owner_where_obligations(owner_def, arena, out);
     }
+    fn impl_trait_bounds(&self, cand: &MethodCand, arena: &mut InferTyArena, out: &mut Vec<WhereObligation>) {
+        self.v5_impl_trait_bounds(cand, arena, out);
+    }
     fn solve_trait_obligation(&self, trait_def: GlobalDefId, self_ty: InferTyId, trait_args: &[InferTyId], arena: &mut InferTyArena, vars: &mut UnionFindTable) -> bool {
         self.v5_solve_trait_obligation(trait_def, self_ty, trait_args, arena, vars)
     }

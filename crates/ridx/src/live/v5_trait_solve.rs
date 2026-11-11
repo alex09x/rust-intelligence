@@ -146,7 +146,7 @@ impl<'w> RidxV5ItemDb<'w> {
         allow_ambig_self_var: bool,
         depth: u8,
     ) -> bool {
-        if depth > if allow_ambig_self_var { 3 } else { 4 } {
+        if depth > if allow_ambig_self_var { 9 } else { 10 } {
             return true;
         }
         let reader = &self.ws.readers()[r_idx];
@@ -232,7 +232,7 @@ impl<'w> RidxV5ItemDb<'w> {
         allow_ambig_self_var: bool,
         depth: u8,
     ) -> bool {
-        if depth > if allow_ambig_self_var { 4 } else { 5 } {
+        if depth > if allow_ambig_self_var { 10 } else { 11 } {
             return true;
         }
         let trait_gid = self.canonical_def(raw_trait);

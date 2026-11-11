@@ -11,12 +11,14 @@
 //! Struct literal (`RecordExpr`) and closure (`ClosureExpr`) inference for [`super::body_ctx::Runner`].
 
 use super::body_ctx::Runner;
-use super::db::{MethodCand, TyLangItem};
+use super::db::{MethodCand, TyLangItem, WhereObligation};
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
 use super::infer_pat::BindingMode;
 use super::lang_ops::{extract_expected_callable_sig, unwrap_await_ty};
 use super::lower_ty::effective_target_def;
+use super::trait_solve::SolveEnv;
+use super::trait_solve_ufcs::param_has_active_bound;
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use crate::name_res::{CrateId, GlobalDefId, ItemKind, ResTarget};
@@ -276,6 +278,32 @@ impl<'a, 's> Runner<'a, 's> {
         }
     }
 
+    /// The index-side bound check accepts any type parameter for any trait. Where an impl bound lands on a type
+    /// parameter of the code being completed, that parameter must carry the bound itself (directly or through a supertrait).
+    fn impl_bounds_hold_on_params(&mut self, cand: &MethodCand, impl_subst: &[InferTyId]) -> bool {
+        let mut obls = core::mem::take(&mut self.ctx.where_obls_buf);
+        obls.clear();
+        self.db.impl_trait_bounds(cand, &mut self.ctx.table.arena, &mut obls);
+        let mut ok = true;
+        for obl in obls.iter().copied() {
+            let WhereObligation::TraitBound { lhs_ty, trait_def, .. } = obl else { continue };
+            let inst = self.ctx.table.instantiate(lhs_ty, impl_subst);
+            let mut lhs = self.ctx.table.shallow_resolve(inst);
+            while let InferTyKind::Ref { inner, .. } = self.ctx.table.arena.kind(lhs) {
+                lhs = self.ctx.table.shallow_resolve(inner);
+            }
+            if let InferTyKind::Param { idx, def } = self.ctx.table.arena.kind(lhs) {
+                let senv = SolveEnv { local_defs: self.local_defs, st: self.root_st, file_res: self.root_file_res, db: self.db, owner: self.norm_owner() };
+                if !param_has_active_bound(senv, &mut self.ctx.table, idx, def, trait_def) {
+                    ok = false;
+                    break;
+                }
+            }
+        }
+        self.ctx.where_obls_buf = obls;
+        ok
+    }
+
     pub(super) fn cand_matches_completion_rcvr(&mut self, cand: &MethodCand, rcvr: InferTyId) -> bool {
         let mut raw_ins = core::mem::take(&mut self.ctx.sig_inputs_buf);
         let has_sig = if cand.cst_fn_node != u32::MAX {
@@ -323,7 +351,7 @@ impl<'a, 's> Runner<'a, 's> {
             ok = if cand.impl_owner.krate == CrateId::LOCAL_OVERLAY {
                 self.check_local_cst_impl_bounds(NodeId(cand.impl_owner.index), cand.container_generics, impl_subst)
             } else {
-                self.db.check_blanket_method_bounds(cand, impl_subst, &mut self.ctx.table.arena, &mut self.ctx.table.vars)
+                self.db.check_blanket_method_bounds(cand, impl_subst, &mut self.ctx.table.arena, &mut self.ctx.table.vars) && self.impl_bounds_hold_on_params(cand, impl_subst)
             };
         }
         self.ctx.table.rollback_to(snap);

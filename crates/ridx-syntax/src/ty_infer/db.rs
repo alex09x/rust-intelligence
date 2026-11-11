@@ -292,6 +292,9 @@ pub trait TyDefDb {
 
     /// Appends parameterized `TraitBound` and `ProjectionEq` `where` obligations declared on `owner_def` (and enclosing `impl`/`trait`).
     fn owner_where_obligations(&self, _owner_def: GlobalDefId, _arena: &mut InferTyArena, _out: &mut Vec<WhereObligation>) {}
+    /// The trait bounds of the indexed `impl` that `cand` belongs to, with the impl's generic parameters as
+    /// `Param { idx }` in the order `check_blanket_method_bounds` substitutes them.
+    fn impl_trait_bounds(&self, _cand: &MethodCand, _arena: &mut InferTyArena, _out: &mut Vec<WhereObligation>) {}
 
     /// Solves `<self_ty as trait_def<trait_args>>` against concrete and bound-checked blanket impls (`Checkbox 3.4`),
     /// committing variable bindings into `vars` when a unique candidate impl matches.

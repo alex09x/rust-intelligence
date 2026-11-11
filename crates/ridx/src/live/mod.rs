@@ -24,6 +24,7 @@ mod query_ty_fmt;
 mod query_unit;
 pub mod v5_db;
 pub mod v5_db_queries;
+pub mod v5_impl_bounds;
 pub mod v5_lazy;
 pub mod v5_macro_res;
 pub mod v5_refs;
