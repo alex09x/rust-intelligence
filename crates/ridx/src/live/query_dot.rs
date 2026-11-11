@@ -117,10 +117,13 @@ pub(crate) fn query_dot_candidates(
                     extra_traits.push(db.canonical_def(principal));
                 }
                 InferTyKind::Param { .. } => {
-                    let before = traits.len();
-                    engine.infer_ctx.param_bounds_for_completion(&st, &entry.file_res, &db, &entry.local_defs, entry.fn_node, st_ty, &mut traits);
-                    for &bt in &traits[before..] {
+                    let mut bounds = Vec::new();
+                    engine.infer_ctx.param_bounds_for_completion(&st, &entry.file_res, &db, &entry.local_defs, entry.fn_node, st_ty, &mut bounds);
+                    for bt in bounds {
                         extra_traits.push(db.canonical_def(bt));
+                        if !traits.contains(&bt) {
+                            traits.push(bt);
+                        }
                     }
                 }
                 _ => {}

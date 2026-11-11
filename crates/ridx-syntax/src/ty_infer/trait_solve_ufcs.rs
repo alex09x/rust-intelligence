@@ -170,13 +170,15 @@ impl<'a, 's> Runner<'a, 's> {
         match self.ctx.table.arena.kind(st_ty) {
             InferTyKind::Param { idx, def: pdef } => {
                 if idx == 0 {
-                    if let Some(tdef) = self
-                        .root_impl_node
-                        .filter(|&n| self.root_st.kind(n) == K::Trait)
+                    // Inside a trait, parameter 0 is its `Self`, bounded by the trait itself; an indexed file names the
+                    // trait in the parameter's own definition when the local item table does not list it.
+                    let trait_node = self.root_impl_node.filter(|&n| self.root_st.kind(n) == K::Trait);
+                    let tdef = trait_node
                         .and_then(|im| self.local_defs.traits.iter().find(|t| t.node == im))
                         .map(|t| t.def)
                         .filter(|d| d.is_some())
-                    {
+                        .or_else(|| trait_node.and(Some(pdef)).filter(|d| d.is_some()));
+                    if let Some(tdef) = tdef {
                         if !out.contains(&tdef) {
                             out.push(tdef);
                         }

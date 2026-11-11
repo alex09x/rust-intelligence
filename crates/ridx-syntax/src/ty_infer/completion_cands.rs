@@ -48,7 +48,7 @@ impl BodyInferCtx {
     /// also writing the computed autoderef `steps` into `steps_out` (`0` = direct receiver, `1..` = derefs).
     #[allow(clippy::too_many_arguments)]
     /// The traits bounding the type parameter `ty` inside `fn_node` (the enclosing trait for its `Self`, the bounds
-    /// written in the source and the indexed ones, with supertraits), appended to `out`.
+    /// written in the source and the indexed ones, with supertraits), written to `out` (cleared first).
     pub fn param_bounds_for_completion(
         &mut self,
         st: &SyntaxTree<'_>,
@@ -85,13 +85,7 @@ impl BodyInferCtx {
             sub: None,
             out: &mut dummy_out,
         };
-        let mut found = Vec::new();
-        env.collect_ty_direct_bounds(ty, &mut found);
-        for t in found {
-            if !out.contains(&t) {
-                out.push(t);
-            }
-        }
+        env.collect_ty_direct_bounds(ty, out);
         self.table.rollback_to(snap);
     }
 
