@@ -123,9 +123,30 @@ fn public_path(root_file: &Path, full: &str) -> Option<String> {
     Some(full.to_string())
 }
 
+/// A standard library item the index places in a private module (`core::io::io_slice::IoSlice`) or in `alloc`
+/// (`alloc::fmt`): a public path the index records for the same name one module down, `std::m::Item` first when the
+/// destination links `std` (a `core` re-export may be unstable), else `core::m::Item`.
+fn public_std_path(ws: &WorkspaceIndex, path: &str, dest_std: bool) -> Option<String> {
+    let segs: Vec<&str> = path.split("::").collect();
+    if !matches!(segs.first(), Some(&("core" | "alloc" | "std"))) || segs.len() < 2 {
+        return None;
+    }
+    let tail = if segs.len() == 2 { segs[1].to_string() } else { format!("{}::{}", segs[1], segs[segs.len() - 1]) };
+    let roots: &[&str] = if dest_std { &["std", "core"] } else { &["core"] };
+    roots.iter().map(|r| format!("{r}::{tail}")).find(|c| ws.find_definition_by_path(c).is_some_and(|d| d.path == c))
+}
+
 /// Rewrites `src` (a member taken from `origin`) so names outside `visible` resolve as they did in the trait's file.
 /// Returns the new text and the crate roots it introduced (`core`, other crates), which the safety check must accept.
-pub(crate) fn qualify_member_paths(src: &str, origin: &MemberOrigin<'_>, ws: &WorkspaceIndex, dest_crate: &str, visible: &dyn Fn(&str) -> bool) -> (String, HashSet<String>) {
+/// `dest_std` tells whether the impl's crate links `std`.
+pub(crate) fn qualify_member_paths(
+    src: &str,
+    origin: &MemberOrigin<'_>,
+    ws: &WorkspaceIndex,
+    dest_crate: &str,
+    dest_std: bool,
+    visible: &dyn Fn(&str) -> bool,
+) -> (String, HashSet<String>) {
     let masked = mask_comments_and_strings(src);
     let b = masked.as_bytes();
     let mut edits: Vec<(usize, usize, String)> = Vec::new();
@@ -177,7 +198,7 @@ pub(crate) fn qualify_member_paths(src: &str, origin: &MemberOrigin<'_>, ws: &Wo
         let def_reader = def.reader_idx.and_then(|i| ws.readers().get(i));
         let def_crate = def_reader.map(|r| r.crate_name().replace('-', "_")).unwrap_or_default();
         // Another crate's item must be reached through public modules or a root re-export.
-        let path = path_from(dest_crate, &def_crate, def.path).and_then(|p| {
+        let path = path_from(dest_crate, &def_crate, def.path).or_else(|| public_std_path(ws, def.path, dest_std)).and_then(|p| {
             let root = p.split("::").next().unwrap_or_default();
             if matches!(root, "crate" | "core" | "std") {
                 return Some(p);

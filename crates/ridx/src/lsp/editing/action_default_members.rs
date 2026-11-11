@@ -115,6 +115,11 @@ pub fn build_implement_default_members(
 
     // The crate the impl lives in: names from it are written `crate::…`.
     let dest_crate = ws.reader_indices_for_file(current_file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_")).unwrap_or_default();
+    // The crate links `std` unless its root says `no_std` (also under `cfg_attr`).
+    let dest_std = ws.reader_indices_for_file(current_file).first().is_some_and(|&i| {
+        let root = ws.resolve_path_for_crate(ws.readers()[i].crate_name(), ws.readers()[i].get_file(0));
+        std::fs::read_to_string(root).is_ok_and(|t| !super::action_parse_items::contains_word(&mask_comments_and_strings(&t), "no_std"))
+    });
     let trait_gen_names: HashSet<&str> = resolved_trait.generics.iter().map(|g| g.name.as_str()).collect();
     // Only names that start a path in the impl header are in scope there (`E: de::Error` does not bring `Error`).
     let mut allowed_idents = path_heads(&format!("{generics_src} {self_ty} {trait_ty} {where_src}"));
@@ -146,7 +151,7 @@ pub fn build_implement_default_members(
                         || m.fn_gen_names.contains(t)
                         || trait_gen_names.contains(t)
                 };
-                let (src, roots) = qualify_member_paths(&m.fn_src, &origin, ws, &dest_crate, &visible);
+                let (src, roots) = qualify_member_paths(&m.fn_src, &origin, ws, &dest_crate, dest_std, &visible);
                 // Methods the body calls that the index resolves to something reachable from the impl.
                 let trait_in_scope = |t: &str| is_rust_kw_or_prelude(t) || (!std_trait && (doc_scope.contains(t) || hdr_heads.contains(t)));
                 let methods = resolvable_method_calls(&m.fn_src, &origin, ws, &dest_crate, &trait_in_scope);

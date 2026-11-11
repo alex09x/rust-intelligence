@@ -67,6 +67,8 @@ pub(crate) fn resolvable_method_calls(src: &str, origin: &MemberOrigin<'_>, ws: 
                 Some(DefKind::Trait) => trait_in_scope(parent.rsplit("::").next().unwrap_or(parent)),
                 // An inherent method of a named type: public, or of the destination crate.
                 Some(DefKind::Struct | DefKind::Enum | DefKind::Union) => same_crate || reader.find_definition_by_path(def.path).is_some_and(|d| d.item_vis() == ItemVis::Public),
+                // A primitive's inherent method (`char::encode_utf8`): its impl names no type definition.
+                None => matches!(reader.crate_name(), "core" | "alloc" | "std") && reader.find_definition_by_path(def.path).is_some_and(|d| d.item_vis() == ItemVis::Public),
                 _ => false,
             }
         });
