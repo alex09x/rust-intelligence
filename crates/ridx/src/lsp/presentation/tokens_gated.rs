@@ -21,7 +21,7 @@ fn is_id(c: u8) -> bool {
 }
 
 /// Whether masked line `scan` starts a `use` item.
-fn starts_use(scan: &str) -> bool {
+pub(super) fn starts_use(scan: &str) -> bool {
     let t = scan.trim_start();
     let t = t.strip_prefix("pub").map_or(t, |r| if r.starts_with('(') { r.split_once(')').map_or(r, |(_, a)| a) } else { r }).trim_start();
     t.starts_with("use ")
@@ -83,6 +83,25 @@ fn path_root(scan: &str, at: usize) -> Option<&str> {
 pub(super) fn retype_gated_tokens(text: &str, defs: &[RawToken], tokens: &mut Vec<RawToken>) {
     let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
     let names = own_names(text, &masked);
+    retype_unresolved(text, &masked, defs, tokens, &UnresolvedScope { names, use_line_names: None, lines: None });
+}
+
+/// Where code goes unanalyzed and which of its names resolve to nothing.
+pub(super) struct UnresolvedScope<'a> {
+    /// Names whose uses resolve to nothing.
+    pub names: HashSet<String>,
+    /// Names that resolve to nothing inside `use` items too; `None` keeps the scanner's `use` tokens.
+    pub use_line_names: Option<HashSet<String>>,
+    /// The lines the scope covers (every line when `None`).
+    pub lines: Option<&'a [bool]>,
+}
+
+/// Retypes the scanner's `tokens` on the lines of `scope`: definition sites and bindings come from `defs` (which hold
+/// only those lines), derive names are `generic`, and uses of `scope.names`, method calls, fields and uses of local
+/// bindings are `unresolvedReference`.
+pub(super) fn retype_unresolved(text: &str, masked: &str, defs: &[RawToken], tokens: &mut Vec<RawToken>, scope: &UnresolvedScope<'_>) {
+    let names = &scope.names;
+    let covered = |l: u32| scope.lines.is_none_or(|m| m.get(l as usize).copied().unwrap_or(false));
     let def_at: HashSet<(u32, u32)> = defs.iter().map(|d| (d.line, d.col)).collect();
     let lines: Vec<&str> = text.lines().collect();
     let scans: Vec<&str> = masked.lines().collect();
@@ -97,7 +116,7 @@ pub(super) fn retype_gated_tokens(text: &str, defs: &[RawToken], tokens: &mut Ve
     tokens.retain(|t| !defs.iter().any(|d| d.line == t.line && t.col < d.col + d.length && d.col < t.col + t.length));
     for t in tokens.iter_mut() {
         let (Some(line), Some(scan)) = (lines.get(t.line as usize), scans.get(t.line as usize)) else { continue };
-        if !line.is_ascii() || line.len() != scan.len() || use_lines[t.line as usize] || def_at.contains(&(t.line, t.col)) {
+        if !covered(t.line) || !line.is_ascii() || line.len() != scan.len() || def_at.contains(&(t.line, t.col)) {
             continue;
         }
         let (s, e) = (t.col as usize, (t.col + t.length) as usize);
@@ -105,6 +124,13 @@ pub(super) fn retype_gated_tokens(text: &str, defs: &[RawToken], tokens: &mut Ve
             continue;
         }
         let name = &scan[s..e];
+        if use_lines[t.line as usize] {
+            if scope.use_line_names.as_ref().is_some_and(|n| n.contains(name)) {
+                t.token_type = TOKEN_TYPE_UNRESOLVED;
+                t.token_modifiers = 0;
+            }
+            continue;
+        }
         // The derives of a switched-off item expand to nothing: their names are left as plain attribute tokens.
         if scan[..s].rfind("#[derive(").is_some_and(|d| !scan[d..s].contains(")]")) {
             t.token_type = TOKEN_TYPE_GENERIC;

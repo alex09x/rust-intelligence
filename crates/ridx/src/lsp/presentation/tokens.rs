@@ -240,11 +240,19 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
             super::tokens_doc::scan_doc_comments(text, None, &mut tokens);
             return filter_non_overlapping(tokens);
         }
+        // Lines the index has tokens on: an item behind `#[cfg(…)]` without any was left out of the build.
+        let compiled: std::collections::HashSet<u32> =
+            if indexed && overlay_opt.is_none() && text.contains("#[cfg(") { tokens.iter().map(|t| t.line).collect() } else { Default::default() };
         if workspace.is_some_and(|ws| ws.readers().len() > 2) {
             let has_compiled = !tokens.is_empty();
             super::tokens_scan::scan_source_tokens(text, overlay_opt.is_none(), has_compiled, &mut tokens);
         }
         super::tokens_attr::apply_attribute_rules(text, &mut tokens);
+        if !compiled.is_empty() {
+            let mut defs = Vec::new();
+            super::tokens_detached::detached_definition_tokens(text, &mut defs);
+            super::tokens_inactive::retype_inactive_items(text, &compiled, &defs, &mut tokens);
+        }
         if let Some(ws) = workspace {
             super::tokens_fixture::scan_fixtures(file, text, ws, &mut tokens);
         }
