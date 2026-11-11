@@ -2,6 +2,11 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **`textDocument/references`**: an attribute or derive macro's name where it is written (`#[tokio::test]`, `#[derive(Deserialize)]`) is a reference to the macro (`tokio::test` from a test: `14` → `881` references, rust-analyzer `1015`); module paths a macro wrote are not references to the module (bevy's `resource` module: `1078` → `180`, rust-analyzer `183`); in a target root its own `#![cfg(…)]` switches off, paths that start at another crate resolve through the index (`tokio::test`: `881` → `979` of rust-analyzer's `988`). Suite against `0.3.1`, same fresh index: `definition` `1836` → `1838`, `documentHighlight` `1747` → `1755`, `references` `1593` → `1594`, no row lost; references p50 `0.63 ms` → `0.65 ms`, p95 `15.2 ms` → `15.5 ms` (the commit message of `bcc1a901` gives `0.67` / `14.6 ms`, measured before its last change).
+
 ## [0.3.1] - 2026-11-11
 
 Figures: the 38-method, 7-corpus suite, before (`0.3.0` with its driver) and after (the `0.3.1` release build), both indexed afresh with the same Mitts build. Indexes built by `0.3.0` should be rebuilt (`ridx index .`): the driver now records build scripts and trait functions named by paths.
