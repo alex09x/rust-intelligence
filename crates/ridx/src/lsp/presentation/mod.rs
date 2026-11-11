@@ -29,6 +29,7 @@ mod tokens_doc_macro;
 mod tokens_fixture;
 mod tokens_gated;
 mod tokens_inactive;
+mod tokens_keywords;
 #[cfg(test)]
 mod tokens_rules_tests;
 pub mod tokens_scan;

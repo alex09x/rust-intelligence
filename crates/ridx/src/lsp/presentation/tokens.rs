@@ -68,7 +68,7 @@ pub fn defkind_to_token(kind: DefKind) -> (u32, u32) {
         DefKind::TyAlias | DefKind::AssocTy | DefKind::OpaqueTy => (TOKEN_TYPE_TYPE, 0),
         DefKind::Enum => (TOKEN_TYPE_ENUM, 0),
         DefKind::Trait | DefKind::TraitAlias => (TOKEN_TYPE_INTERFACE, 0),
-        DefKind::Struct | DefKind::Union => (TOKEN_TYPE_STRUCT, 0),
+        DefKind::Struct | DefKind::Union | DefKind::StructCtor => (TOKEN_TYPE_STRUCT, 0),
         DefKind::TyParam => (TOKEN_TYPE_TYPE_PARAMETER, 0),
         DefKind::Field => (TOKEN_TYPE_PROPERTY, 0),
         DefKind::Variant | DefKind::VariantCtor => (TOKEN_TYPE_ENUM_MEMBER, 0),
@@ -83,8 +83,10 @@ pub fn defkind_to_token(kind: DefKind) -> (u32, u32) {
     }
 }
 
-fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
-    tokens.sort_by(|a, b| a.line.cmp(&b.line).then_with(|| a.length.cmp(&b.length)).then_with(|| a.col.cmp(&b.col)));
+pub(super) fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
+    // On one span a field outranks a local: a shorthand (`Self { gate }`) names both, and reads as the field.
+    let rank = |t: &RawToken| u8::from(t.token_type != TOKEN_TYPE_PROPERTY);
+    tokens.sort_by(|a, b| a.line.cmp(&b.line).then_with(|| a.length.cmp(&b.length)).then_with(|| a.col.cmp(&b.col)).then_with(|| rank(a).cmp(&rank(b))));
 
     let mut by_line: std::collections::BTreeMap<u32, Vec<RawToken>> = std::collections::BTreeMap::new();
     for tok in tokens {
@@ -116,6 +118,11 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
     let mut tokens = Vec::new();
     let overlay_opt = overlay_mgr.get(file);
     let mut indexed = false;
+    let disk_text = if overlay_opt.is_none() { std::fs::read_to_string(file).ok() } else { None };
+    let text: Option<&str> = overlay_opt.map(|ov| ov.text.as_str()).or(disk_text.as_deref());
+    let src_lines: Vec<&str> = text.map(|t| t.lines().collect()).unwrap_or_default();
+    // A `use` item's token yields to the reference the index holds on the same name, which knows what it imports.
+    let mut use_tokens = Vec::new();
 
     // 1. Overlay symbols (live buffers)
     if let Some(overlay) = overlay_opt {
@@ -170,12 +177,12 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                         };
 
                         if length > 0 {
-                            let tok_pair = if dk == DefKind::Use {
-                                super::tokens_scan::resolve_use_token(reader.get_str(def.name_offset()), length, reader)
+                            if dk == DefKind::Use {
+                                if let Some((tt, tm)) = super::tokens_scan::resolve_use_token(reader.get_str(def.name_offset()), length, reader) {
+                                    use_tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: tm });
+                                }
                             } else {
-                                Some(defkind_to_token(dk))
-                            };
-                            if let Some((tt, tm)) = tok_pair {
+                                let (tt, tm) = defkind_to_token(dk);
                                 tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: tm });
                             }
                         }
@@ -202,7 +209,7 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                         };
 
                         if length > 0 {
-                            let (tt, _) = defkind_to_token(DefKind::from(rf.kind));
+                            let tt = super::tokens_keywords::reference_token(src_lines.get(sl as usize).copied(), sc, length, DefKind::from(rf.kind));
                             tokens.push(RawToken { line: sl, col: sc, length, token_type: tt, token_modifiers: 0 });
                         }
                     }
@@ -210,15 +217,9 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
             }
         }
     }
+    // Pushed after the references: the stable sort keeps the reference's token when both cover the same span.
+    tokens.extend(use_tokens);
 
-    let disk_text;
-    let text = match overlay_opt {
-        Some(ov) => Some(ov.text.as_str()),
-        None => {
-            disk_text = std::fs::read_to_string(file).ok();
-            disk_text.as_deref()
-        }
-    };
     if let Some(text) = text {
         let unindexed = workspace.is_some() && !indexed && overlay_opt.is_none();
         // A target root its own `#![cfg(…)]` switches off compiles to an empty crate: indexed, with nothing in it.
