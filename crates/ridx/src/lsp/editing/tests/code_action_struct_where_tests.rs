@@ -41,3 +41,31 @@ fn test_tuple_struct_conversion_moves_the_where_clause_after_the_fields() {
     assert!(updated.contains("(self.0, self.1)") && updated.contains("Slot(v, 0)"), "{updated}");
     assert_rustc_compiles(&updated, "tuple struct conversion with a where clause");
 }
+
+#[test]
+fn test_tuple_struct_conversion_rewrites_accesses_inside_literals_next_to_a_same_named_method() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/node_struct.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!(
+        "pub struct Node {\n",
+        "    syntax: String,\n",
+        "}\n",
+        "impl Node {\n",
+        "    pub fn syntax(&self) -> &String { &self.syntax }\n",
+        "}\n",
+        "impl Clone for Node {\n",
+        "    fn clone(&self) -> Self { Self { syntax: self.syntax.clone() } }\n",
+        "}\n",
+        "impl PartialEq for Node {\n",
+        "    fn eq(&self, other: &Self) -> bool { self.syntax == *other.syntax() }\n",
+        "}\n",
+    );
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+
+    let acts = query_deferred_and_resolve(&uri, 0, 12, &ws, &ov);
+    let (_, edits) = acts.iter().find(|(t, _)| t == "Convert to tuple struct").expect("a method named like the field must not block the conversion");
+    let updated = apply_text_edits(code, edits.as_array().unwrap());
+    assert!(updated.contains("Self(self.0.clone())") && updated.contains("self.0 == *other.syntax()") && updated.contains("&self.0 }"), "{updated}");
+    assert_rustc_compiles(&updated, "tuple struct conversion beside a method named like the field");
+}

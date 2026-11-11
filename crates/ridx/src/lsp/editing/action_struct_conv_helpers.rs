@@ -19,49 +19,6 @@ use super::action_parse_items::{contains_word, skip_balanced};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
-pub(crate) fn outer_attrs_allow_shape_change(attrs_src: &str) -> bool {
-    // Derives that accept named and tuple structs alike (clap's `Parser`/`Args` do not, so they are absent).
-    const SAFE_DERIVES: &[&str] =
-        &["Debug", "Clone", "Copy", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Default", "Serialize", "Deserialize", "Component", "Resource", "Reflect", "Arbitrary"];
-    let masked = mask_comments_and_strings(attrs_src);
-    let mb = masked.as_bytes();
-    let mut i = 0usize;
-    while i < mb.len() {
-        if mb[i] == b'#' {
-            let mut k = i + 1;
-            while k < mb.len() && mb[k].is_ascii_whitespace() {
-                k += 1;
-            }
-            let Some(after_b) = skip_balanced(mb, k, b'[', b']') else { return false };
-            let inner = attrs_src[k + 1..after_b - 1].trim();
-            // `derive(…)` of shape-agnostic macros (by last path segment), `allow`, `doc`, and those under
-            // `cfg_attr(predicate, …)`.
-            fn allowed(inner: &str) -> bool {
-                let inner = inner.trim();
-                if let Some(rest) = inner.strip_prefix("cfg_attr") {
-                    let r = rest.trim();
-                    let Some(args) = r.strip_prefix('(').and_then(|a| a.strip_suffix(')')) else { return false };
-                    let parts = split_top_level_commas(args);
-                    return parts.len() >= 2 && parts[1..].iter().all(|p| allowed(p));
-                }
-                if let Some(rest) = inner.strip_prefix("derive") {
-                    let r = rest.trim();
-                    let Some(list) = r.strip_prefix('(').and_then(|a| a.strip_suffix(')')) else { return false };
-                    return list.split(',').map(str::trim).all(|d| d.is_empty() || SAFE_DERIVES.contains(&d.rsplit("::").next().unwrap_or(d).trim()));
-                }
-                inner.starts_with("allow(") || inner.starts_with("doc")
-            }
-            if !allowed(inner) {
-                return false;
-            }
-            i = after_b;
-            continue;
-        }
-        i += 1;
-    }
-    true
-}
-
 pub(crate) fn is_isolated_leaf_module(mod_masked: &str, struct_name: &str) -> bool {
     if contains_word(mod_masked, "include") {
         return false;
@@ -374,8 +331,9 @@ pub(crate) fn receiver_is_proven_owner(masked: &str, floor: usize, dot_byte: usi
         s -= 1;
     }
     let recv = before[s..].strip_prefix("r#").unwrap_or(&before[s..]);
-    let prev_ch = before[..s].trim_end().as_bytes().last().copied().unwrap_or(0);
-    if prev_ch == b'.' || prev_ch == b':' {
+    // `a.self`/`m::x` are not the receiver itself; a field label (`Self { f: self.f }`) is.
+    let lead = before[..s].trim_end();
+    if lead.ends_with('.') || lead.ends_with("::") {
         return false;
     }
     (in_impl && recv == "self") || known_locals.contains(recv)

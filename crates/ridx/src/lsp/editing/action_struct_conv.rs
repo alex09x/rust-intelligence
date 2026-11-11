@@ -14,11 +14,13 @@ use super::action_default_scope::enclosing_module_span;
 use super::action_parse::{is_ident_byte, AdtFieldsKind, EnclosingContext, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_decl::next_ident_token;
 use super::action_parse_items::skip_balanced;
+use super::action_struct_conv_attrs::{outer_attrs_allow_shape_change, AttrCtx, Shape};
+use super::action_struct_conv_fields::{field_access_edits, splice};
 use super::action_struct_conv_helpers::{
     collect_typed_locals, convert_brace_init_to_tuple, convert_tuple_init_to_brace, find_impl_body_spans_for, is_bare_value_ctor_fn_ref, is_brace_struct_literal_or_pat,
-    is_isolated_leaf_module, outer_attrs_allow_shape_change, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
+    is_isolated_leaf_module, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
 };
-use super::action_struct_conv_index::{field_name_bytes, indexed_field_refs, receiver_ends_in_tuple_index, struct_name_byte, struct_ref_sites, struct_shape_used_outside};
+use super::action_struct_conv_index::{field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, struct_shape_used_outside};
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -42,7 +44,8 @@ pub fn build_convert_to_tuple_struct(
     let ItemKindInfo::Adt { adt_kw: "struct", where_src, fields_kind: AdtFieldsKind::Named(raw_fields), open_delim_byte, end_byte, .. } = &item.kind else {
         return None;
     };
-    if !outer_attrs_allow_shape_change(&doc_text[item.first_attr_byte..item.decl_start_byte]) {
+    let attr_ctx = ws.map(|ws| AttrCtx { ws, file, doc: doc_text, starts });
+    if !outer_attrs_allow_shape_change(doc_text, item.first_attr_byte, item.decl_start_byte, attr_ctx.as_ref(), Shape::Tuple) {
         return None;
     }
     // A tuple struct takes its `where` clause after the fields: `struct S<T>(T) where T: Copy;`.
@@ -57,11 +60,6 @@ pub fn build_convert_to_tuple_struct(
     };
     let fields = parse_named_fields_clean(raw_fields)?;
     if fields.is_empty() || fields.len() > 16 {
-        return None;
-    }
-    // A method named like a field (`syntax` and `fn syntax(&self)`) makes the index mistake field accesses for the
-    // method, so some `.syntax` would stay unconverted: refuse rather than break the build.
-    if fields.iter().any(|(_, name, _, _)| declares_method_named(masked_doc, name)) {
         return None;
     }
     let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
@@ -120,6 +118,8 @@ pub fn build_convert_to_tuple_struct(
     raw_edits.push((name_end, *end_byte, decl));
 
     let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
+    let mut field_edits =
+        field_access_edits(doc_text, masked_doc, (mod_lo, mod_hi), (item.decl_start_byte, *end_byte), &field_index, indexed.as_ref(), &impl_spans, &known_locals)?;
 
     let mb = masked_doc.as_bytes();
     let mut i = mod_lo;
@@ -153,7 +153,13 @@ pub fn build_convert_to_tuple_struct(
                             }
                         }
                         let brace_end = skip_balanced(mb, k, b'{', b'}')?;
-                        let tup_text = convert_brace_init_to_tuple(&doc_text[k + 1..brace_end - 1], &masked_doc[k + 1..brace_end - 1], fields.len(), &field_index)?;
+                        // `Self { syntax: self.syntax.clone() }`: the accesses inside the literal are rewritten with it.
+                        let (inner_lo, inner_hi) = (k + 1, brace_end - 1);
+                        let nested: Vec<(usize, usize, String)> = field_edits.iter().filter(|e| e.0 >= inner_lo && e.1 <= inner_hi).cloned().collect();
+                        field_edits.retain(|e| !(e.0 >= inner_lo && e.1 <= inner_hi));
+                        let inner = splice(&doc_text[inner_lo..inner_hi], inner_lo, &nested);
+                        let inner_masked = splice(&masked_doc[inner_lo..inner_hi], inner_lo, &nested);
+                        let tup_text = convert_brace_init_to_tuple(&inner, &inner_masked, fields.len(), &field_index)?;
                         raw_edits.push((after_tf, brace_end, tup_text));
                         i = brace_end;
                         continue;
@@ -166,52 +172,7 @@ pub fn build_convert_to_tuple_struct(
         i += 1;
     }
 
-    let mut d = mod_lo;
-    while d + 1 < mod_hi {
-        if d >= item.decl_start_byte && d < *end_byte {
-            d = *end_byte;
-            continue;
-        }
-        if raw_edits.iter().any(|&(lo, hi, _)| d >= lo && d < hi) {
-            d += 1;
-            continue;
-        }
-        if mb[d] == b'.' && mb.get(d + 1).copied() != Some(b'.') && (d == 0 || mb[d - 1] != b'.') {
-            let mut k = d + 1;
-            while k < mod_hi && mb[k].is_ascii_whitespace() {
-                k += 1;
-            }
-            if let Some((raw_f, f_end)) = next_ident_token(doc_text, k) {
-                let fname = raw_f.strip_prefix("r#").unwrap_or(raw_f);
-                if let Some(&idx) = field_index.get(fname) {
-                    let after_trim = masked_doc[f_end..mod_hi].trim_start();
-                    if !after_trim.starts_with('(') && !after_trim.starts_with("::<") {
-                        match &indexed {
-                            // Another type's field of the same name: not ours to rewrite.
-                            Some(refs) if !refs.sites.contains(&k) => {
-                                d = f_end;
-                                continue;
-                            }
-                            // `w.0.name` reaches the field through `Deref` on the tuple struct `w.0`: `w.0.0` would name
-                            // the wrapper's own field instead.
-                            Some(_) if receiver_ends_in_tuple_index(&masked_doc[mod_lo..d]) => return None,
-                            Some(_) => {}
-                            None => {
-                                let in_impl = impl_spans.iter().any(|&(bo, bc)| d > bo && d < bc);
-                                if !receiver_is_proven_owner(masked_doc, mod_lo, d, in_impl, &known_locals) {
-                                    return None;
-                                }
-                            }
-                        }
-                        raw_edits.push((k, f_end, idx.to_string()));
-                        d = f_end;
-                        continue;
-                    }
-                }
-            }
-        }
-        d += 1;
-    }
+    raw_edits.extend(field_edits);
 
     // Every place the compiler resolved to a field must be rewritten by one of the edits.
     if let Some(refs) = &indexed {
@@ -230,7 +191,7 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
     let ItemKindInfo::Adt { adt_kw: "struct", where_src, fields_kind: AdtFieldsKind::Tuple(raw_fields), open_delim_byte, end_byte, .. } = &item.kind else {
         return None;
     };
-    if !where_src.trim().is_empty() || !outer_attrs_allow_shape_change(&doc_text[item.first_attr_byte..item.decl_start_byte]) {
+    if !where_src.trim().is_empty() || !outer_attrs_allow_shape_change(doc_text, item.first_attr_byte, item.decl_start_byte, None, Shape::Named) {
         return None;
     }
     let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
@@ -336,16 +297,6 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
 
 /// Whether `Type::Name` appears in the module: a variant (or associated item) shares the struct's name, and without
 /// the index its declaration and uses cannot be told from the struct's literals.
-/// Whether the (comment- and string-masked) file declares a method `fn name(` taking `self`.
-fn declares_method_named(masked: &str, name: &str) -> bool {
-    let needle = format!("fn {name}(");
-    masked.match_indices(&needle).any(|(at, _)| {
-        let before_ok = at == 0 || !masked.as_bytes()[at - 1].is_ascii_alphanumeric();
-        let params = masked[at + needle.len()..].trim_start();
-        before_ok && (params.starts_with("&self") || params.starts_with("self") || params.starts_with("&mut self") || params.starts_with("mut self"))
-    })
-}
-
 fn names_a_variant_too(mod_masked: &str, name: &str) -> bool {
     let b = mod_masked.as_bytes();
     mod_masked.match_indices(name).any(|(p, _)| {

@@ -223,7 +223,7 @@ fn test_tuple_struct_conversion_keeps_comments_between_fields() {
 }
 
 #[test]
-fn test_tuple_struct_conversion_refuses_field_named_like_a_method() {
+fn test_tuple_struct_conversion_beside_a_trait_method_named_like_the_field() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/method_named_field.rs");
     let uri = format!("file://{}", path.to_str().unwrap());
@@ -238,10 +238,12 @@ fn test_tuple_struct_conversion_refuses_field_named_like_a_method() {
     );
     ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
 
-    // rust-analyzer's `ast::Rename`: the index mistakes `self.syntax` for the method, so a converted struct would keep
-    // a `.syntax` field access and stop compiling (E0615).
+    // rust-analyzer's `ast::Rename`: `.syntax` is the field, `.syntax()` the method; only the field is rewritten.
     let acts = query_deferred_and_resolve(&uri, 0, 12, &ws, &ov);
-    assert!(!acts.iter().any(|(t, _)| t == "Convert to tuple struct"), "{:?}", acts.iter().map(|(t, _)| t).collect::<Vec<_>>());
+    let (_, edits) = acts.iter().find(|(t, _)| t == "Convert to tuple struct").expect("the method does not block the conversion");
+    let updated = apply_text_edits(code, edits.as_array().unwrap());
+    assert!(updated.contains("pub struct Rename(u32);") && updated.contains("&self.0 }"), "{updated}");
+    assert_rustc_compiles(&updated, "tuple struct conversion beside a same-named trait method");
 }
 
 #[test]
