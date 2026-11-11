@@ -11,13 +11,12 @@
 //! Struct literal (`RecordExpr`) and closure (`ClosureExpr`) inference for [`super::body_ctx::Runner`].
 
 use super::body_ctx::Runner;
-use super::db::{MethodCand, TyLangItem, WhereObligation};
+use super::db::{MethodCand, TyLangItem};
 use super::expectation::Expectation;
 use super::infer_expr::is_expr_node;
 use super::infer_pat::BindingMode;
 use super::lang_ops::{extract_expected_callable_sig, unwrap_await_ty};
 use super::lower_ty::effective_target_def;
-use super::trait_solve_cst::collect_cst_fn_obligations;
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use crate::name_res::{CrateId, GlobalDefId, ItemKind, ResTarget};
@@ -227,57 +226,6 @@ impl<'a, 's> Runner<'a, 's> {
         (raw_def, subst)
     }
 
-    pub(super) fn check_completion_method_obligations(&mut self, cand: &MethodCand, subst: &[InferTyId]) -> bool {
-        let mut obls = core::mem::take(&mut self.ctx.where_obls_buf);
-        obls.clear();
-        if cand.bound_owner_def.is_some() {
-            self.db.owner_where_obligations(cand.bound_owner_def, &mut self.ctx.table.arena, &mut obls);
-        }
-        let indexed_owner = self.local_defs.is_clean_indexed() && cand.bound_owner_def.is_some() && !cand.bound_owner_def.is_overlay();
-        if obls.is_empty() && cand.cst_fn_node != u32::MAX && !indexed_owner {
-            collect_cst_fn_obligations(self.local_defs, crate::tree::NodeId(cand.cst_fn_node), self.root_st, self.root_file_res, self.db, &mut self.ctx.table, &mut obls);
-        }
-        let mut ok = true;
-        for obl in obls.iter().copied() {
-            if let WhereObligation::ProjectionEq { lhs_ty, trait_def, assoc_def, trait_args, rhs_ty } = obl {
-                let inst_lhs = self.ctx.table.instantiate(lhs_ty, subst);
-                let mut inst_args = InlineTyBuf::new();
-                for idx in 0..trait_args.len as usize {
-                    inst_args.push(self.ctx.table.instantiate(self.ctx.table.arena.slice(trait_args)[idx], subst));
-                }
-                let alias_ty = self.ctx.table.arena.mk_alias(trait_def, assoc_def, inst_lhs, inst_args.as_slice());
-                let proj = self.norm(alias_ty);
-                if !matches!(self.ctx.table.arena.kind(proj), InferTyKind::Alias { .. } | InferTyKind::Unknown) {
-                    let inst_rhs = self.ctx.table.instantiate(rhs_ty, subst);
-                    let norm_rhs = self.norm(inst_rhs);
-                    if self.ctx.table.equate(proj, norm_rhs).is_err() {
-                        ok = false;
-                        break;
-                    }
-                }
-            }
-        }
-        if ok {
-            for obl in obls.iter().copied() {
-                if let WhereObligation::TraitBound { lhs_ty, trait_def, trait_args } = obl {
-                    let inst_lhs = self.ctx.table.instantiate(lhs_ty, subst);
-                    let norm_lhs = self.norm(inst_lhs);
-                    let mut inst_args = InlineTyBuf::new();
-                    for idx in 0..trait_args.len as usize {
-                        let ia = self.ctx.table.instantiate(self.ctx.table.arena.slice(trait_args)[idx], subst);
-                        inst_args.push(self.norm(ia));
-                    }
-                    if !self.solve_obligation(trait_def, norm_lhs, inst_args.as_slice(), true, 0) {
-                        ok = false;
-                        break;
-                    }
-                }
-            }
-        }
-        self.ctx.where_obls_buf = obls;
-        ok
-    }
-
     pub(super) fn unify_inherent_fn_with_qself(&mut self, fn_def: GlobalDefId, subst_r: super::ty::TySliceRange, qself_ty: InferTyId) {
         let InferTyKind::Adt { def: q_def, args: q_args } = self.ctx.table.arena.kind(qself_ty) else { return };
         let mut subst = InlineTyBuf::new();
@@ -377,9 +325,6 @@ impl<'a, 's> Runner<'a, 's> {
             } else {
                 self.db.check_blanket_method_bounds(cand, impl_subst, &mut self.ctx.table.arena, &mut self.ctx.table.vars)
             };
-        }
-        if ok {
-            ok = self.check_completion_method_obligations(cand, subst.as_slice());
         }
         self.ctx.table.rollback_to(snap);
         ok

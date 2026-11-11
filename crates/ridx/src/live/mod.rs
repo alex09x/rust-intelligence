@@ -10,6 +10,7 @@
 
 //! Live compiler-free name resolution and type inference adapter over `WorkspaceIndex` (`v5` `.ridx` mmap shards).
 
+mod assoc_path;
 pub mod meta;
 pub mod query;
 mod query_cursor;

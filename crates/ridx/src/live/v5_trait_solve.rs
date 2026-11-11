@@ -87,7 +87,9 @@ impl<'w> RidxV5ItemDb<'w> {
                 WherePredKind::TraitBound if !wp.is_negative() => {
                     let Some(td) = wp.trait_def() else { continue };
                     let tgid = self.ty_def_gid(r_idx, td);
+                    // A trait the index holds no definition for (compiler-implemented or unexported) cannot be solved here: not a reason to reject.
                     if !tgid.is_some()
+                        || (tgid.index & super::v5_db::TY_DEF_SYNTH_BIT) != 0
                         || matches!(self.ty_tables.gid_to_lang.get(&tgid).copied(), Some(TyLangItem::Sized | TyLangItem::Sync | TyLangItem::Freeze | TyLangItem::Unpin))
                     {
                         continue;

@@ -267,7 +267,7 @@ pub fn def_has_value_ctor(reader: &IndexReader<Mmap>, def_idx: u32, kind: ItemKi
 }
 
 #[inline]
-fn def_idx_of_ref(defs: &[ridx_format::DefEntry], def: &ridx_format::DefEntry) -> u32 {
+pub(super) fn def_idx_of_ref(defs: &[ridx_format::DefEntry], def: &ridx_format::DefEntry) -> u32 {
     ((def as *const ridx_format::DefEntry as usize - defs.as_ptr() as usize) / std::mem::size_of::<ridx_format::DefEntry>()) as u32
 }
 

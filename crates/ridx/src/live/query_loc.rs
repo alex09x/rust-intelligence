@@ -329,7 +329,7 @@ pub(crate) fn is_def_visible_from(db: &RidxV5ItemDb<'_>, cur_krate: CrateId, cur
     let mod_path = dm.mod_tree.crate_path(cur_mod);
     let cur_rel = mod_path.strip_prefix("crate::").unwrap_or(if mod_path == "crate" { "" } else { mod_path });
     let dp = rdr.get_str(d.path_offset());
-    let owner_mod = dp.rsplit_once("::").map_or("", |(p, _)| p).rsplit_once("::").map_or("", |(mp, _)| mp);
+    let owner_mod = super::assoc_path::assoc_owner_module(dp);
     owner_mod.is_empty() || cur_rel == owner_mod || cur_rel.starts_with(&format!("{owner_mod}::"))
 }
 

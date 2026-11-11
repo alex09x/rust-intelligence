@@ -265,7 +265,7 @@ impl<'a> RidxV5ItemDb<'a> {
             if (local_idx as usize) < self.ws.readers()[from_reader].definitions().len() {
                 return GlobalDefId::new(CrateId(from_reader as u32), local_idx);
             }
-            let by_path = self.find_def_in_reader_by_path(from_reader, td.path);
+            let by_path = self.type_ns_def(self.find_def_in_reader_by_path(from_reader, td.path));
             return if by_path.is_some() { by_path } else { GlobalDefId::new(CrateId(from_reader as u32), local_idx) };
         }
         if td.extern_unit.is_none() && (td.path == self.metas[from_reader].crate_name || td.path.is_empty()) {
@@ -276,7 +276,26 @@ impl<'a> RidxV5ItemDb<'a> {
             self.resolve_extern_name_to_reader(from_reader, first_seg).or((first_seg == self.metas[from_reader].crate_name).then_some(from_reader))
         });
         let Some(tr_idx) = target_reader else { return GlobalDefId::NONE };
-        self.find_def_in_reader_by_path(tr_idx, td.path)
+        self.type_ns_def(self.find_def_in_reader_by_path(tr_idx, td.path))
+    }
+
+    /// A type reference that the path lookup resolved to a macro (a derive macro shares the path of its trait): the
+    /// same-path definition from the type namespace instead, when the owner has one.
+    fn type_ns_def(&self, gid: GlobalDefId) -> GlobalDefId {
+        let Some(reader) = self.ws.readers().get(gid.krate.0 as usize).filter(|_| gid.is_some()) else { return gid };
+        let defs = reader.definitions();
+        let Some(d) = defs.get(gid.index as usize).filter(|d| DefKind::from(d.kind) == DefKind::Macro) else { return gid };
+        let path = reader.get_str(d.path_offset());
+        let Some((parent, _)) = path.rsplit_once("::") else { return gid };
+        reader
+            .find_definitions_by_owner(parent)
+            .into_iter()
+            .find(|cd| {
+                !cd.is_reexport()
+                    && matches!(DefKind::from(cd.kind), DefKind::Trait | DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias)
+                    && reader.get_str(cd.path_offset()) == path
+            })
+            .map_or(gid, |cd| GlobalDefId::new(gid.krate, super::v5_refs::def_idx_of_ref(defs, cd)))
     }
 
     #[inline]
