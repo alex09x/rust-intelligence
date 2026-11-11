@@ -12,7 +12,7 @@
 
 use super::action_inline_callers_cross::{is_safe_for_cross_file_inline, is_same_doc, process_other_document_call_sites, resolve_ref_to_absolute};
 use super::action_inline_callers_early_return::transform_early_returns;
-use super::action_inline_callers_helpers::{contains_recursive_call, is_primitive_scalar, parse_fn_params, FnParamInfo};
+use super::action_inline_callers_helpers::{contains_recursive_call, is_primitive_scalar, parse_fn_params};
 pub(crate) use super::action_inline_callers_sites::process_call_sites_for_document;
 use super::action_inline_callers_transform::{
     extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
@@ -185,10 +185,6 @@ pub fn build_inline_into_all_callers_workspace(
     let self_param = parsed_params.iter().find(|p| p.is_self);
     let self_kind = self_param.and_then(|p| p.self_kind);
 
-    if is_fully_pub && item.name == "new" && !has_safe_pub_new_params(&parsed_params) {
-        return None;
-    }
-
     let body_with_self_ty = match &self_type_name {
         Some(ty_name) if contains_word(&raw_masked_body, "Self") => rewrite_self_type_to_name(&raw_body, &raw_masked_body, ty_name),
         _ => raw_body,
@@ -349,14 +345,4 @@ pub fn build_inline_into_all_callers_workspace(
     let local_lsp_edits = if local_edits.is_empty() { Vec::new() } else { to_lsp_edits(doc_text, starts, local_edits)? };
 
     Some((local_lsp_edits, other_file_edits))
-}
-
-fn has_safe_pub_new_params(params: &[FnParamInfo]) -> bool {
-    params.is_empty()
-        || params.iter().all(|p| {
-            p.ty.as_deref().is_some_and(|ty| {
-                let n = super::action_inline_callers_helpers::normalize_param_type_for_binding(ty);
-                !n.contains('\'') && !n.contains("impl ") && !n.contains("dyn ") && !n.contains('<')
-            })
-        })
 }
