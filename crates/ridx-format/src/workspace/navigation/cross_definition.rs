@@ -18,6 +18,12 @@ fn is_on_line_of(res: &ResolvedDefinition<'_>, line: u32) -> bool {
     !matches!(res.kind, DefKind::Variant | DefKind::VariantCtor) || res.start_line == 0 || res.start_line == line
 }
 
+/// Whether a definition of `kind` can stand for `res` when found by name: macros live in a namespace of their own
+/// (`#[proc_macro_derive(Component)]` is no `BundleFieldKind::Component` of the same file).
+fn same_namespace(res: &ResolvedDefinition<'_>, kind: DefKind) -> bool {
+    (res.kind == DefKind::Macro) == (kind == DefKind::Macro)
+}
+
 impl WorkspaceIndex {
     /// Resolves a cross-crate definition target with compilation-unit and path/signature awareness.
     pub(super) fn find_cross_definition<'a>(&'a self, referrer_idx: usize, res: &ResolvedDefinition<'a>) -> Option<ResolvedDefinition<'a>> {
@@ -64,9 +70,20 @@ impl WorkspaceIndex {
                         cand_def = r
                             .definitions()
                             .iter()
-                            .find(|d| d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name && res.start_line != 0 && d.span().start_line() == res.start_line)
+                            .find(|d| {
+                                d.span().file_id() == fid
+                                    && r.get_str(d.name_offset()) == res.name
+                                    && res.start_line != 0
+                                    && d.span().start_line() == res.start_line
+                                    && same_namespace(res, DefKind::from(d.kind))
+                            })
                             .or_else(|| {
-                                r.definitions().iter().find(|d| d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name && is_on_line_of(res, d.span().start_line()))
+                                r.definitions().iter().find(|d| {
+                                    d.span().file_id() == fid
+                                        && r.get_str(d.name_offset()) == res.name
+                                        && is_on_line_of(res, d.span().start_line())
+                                        && same_namespace(res, DefKind::from(d.kind))
+                                })
                             });
                     }
                 }
@@ -196,7 +213,7 @@ impl WorkspaceIndex {
                         let d_span = def.span();
                         if d_span.file_id() == fid {
                             let d_name = r.get_str(def.name_offset());
-                            if d_name == res.name && is_on_line_of(res, d_span.start_line()) {
+                            if d_name == res.name && is_on_line_of(res, d_span.start_line()) && same_namespace(res, DefKind::from(def.kind)) {
                                 candidates.push(ResolvedDefinition {
                                     name: d_name,
                                     path: r.get_str(def.path_offset()),
