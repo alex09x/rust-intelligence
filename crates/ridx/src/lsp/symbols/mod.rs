@@ -42,7 +42,7 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
             let end_char = if need_utf16_conv { conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col()) } else { s.span.end_col().saturating_sub(1) };
             results.push(json!({
                 "name": s.name,
-                "kind": lsp_symbol_kind(s.kind),
+                "kind": workspace_symbol_kind(s.kind, s.path == s.crate_name && s.name == s.crate_name),
                 "location": {
                     "uri": uri,
                     "range": {
@@ -66,6 +66,19 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
 }
 
 const WORKSPACE_SYMBOL_LIMIT: usize = 128;
+
+/// The LSP kind rust-analyzer's symbol index gives an item: associated functions are functions, associated types
+/// are type aliases (`TypeParameter`), statics are constants, and a crate's root module is a package.
+fn workspace_symbol_kind(kind: ridx_format::DefKind, crate_root: bool) -> u32 {
+    use ridx_format::DefKind;
+    match kind {
+        DefKind::AssocFn => 12,
+        DefKind::AssocTy => 26,
+        DefKind::Static => 14,
+        DefKind::Mod if crate_root => 4,
+        k => lsp_symbol_kind(k),
+    }
+}
 
 pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {
     let mut item = msg.get("params").cloned().unwrap_or(Value::Null);
