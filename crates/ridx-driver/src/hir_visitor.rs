@@ -19,6 +19,7 @@ impl<'tcx> HirVisitor<'tcx> {
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(self.tcx, span, self.package_root.as_deref()) else {
             return;
         };
+        let is_macro = is_macro || self.in_derived_impl;
 
         match res {
             Res::Def(kind, def_id) => {
@@ -133,6 +134,22 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
     fn maybe_tcx(&mut self) -> Self::MaybeTyCtxt {
         self.tcx
+    }
+
+    // A derive's impl (`impl Debug for Kind`) may carry spans of the source tokens (`Debug` in `#[derive(Debug)]`)
+    // without an expansion context: its references are the macro's, not uses written there.
+    fn visit_item(&mut self, item: &'tcx hir::Item<'tcx>) {
+        let derived = matches!(item.kind, hir::ItemKind::Impl(..)) && self.tcx.is_automatically_derived(item.owner_id.to_def_id());
+        let prev = std::mem::replace(&mut self.in_derived_impl, derived);
+        intravisit::walk_item(self, item);
+        self.in_derived_impl = prev;
+    }
+
+    fn visit_impl_item(&mut self, item: &'tcx hir::ImplItem<'tcx>) {
+        let derived = self.tcx.is_automatically_derived(self.tcx.parent(item.owner_id.to_def_id()));
+        let prev = std::mem::replace(&mut self.in_derived_impl, derived);
+        intravisit::walk_impl_item(self, item);
+        self.in_derived_impl = prev;
     }
 
     fn visit_nested_body(&mut self, id: hir::BodyId) {

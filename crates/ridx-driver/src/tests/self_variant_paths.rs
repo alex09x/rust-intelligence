@@ -22,7 +22,8 @@ fn test_driver_self_variant_paths_in_patterns_are_references() {
     let code = "pub enum Kind {\n    Round,\n    Pair(u8, u8),\n    Cornered { corners: u32 },\n}\n\
 impl Kind {\n    pub fn corners(&self) -> u32 {\n        match self {\n            Self::Round => 0,\n            Self::Pair(_, _) => 2,\n            Self::Cornered { corners } => *corners,\n        }\n    }\n\
     pub fn square() -> Self {\n        Self::Cornered { corners: 4 }\n    }\n}\n\
-pub fn fmt_error(_: core::fmt::Error) {}\n";
+pub fn fmt_error(_: core::fmt::Error) {}\n\
+#[derive(Debug, PartialEq)]\npub enum Mode { Fast, Slow }\npub fn is_fast(m: Mode) -> bool { m == Mode::Fast }\n";
     fs::write(&src_file, code).unwrap();
     let out_dir = temp_dir.join("out");
     fs::create_dir_all(out_dir.join(".deps")).unwrap();
@@ -79,5 +80,10 @@ pub fn fmt_error(_: core::fmt::Error) {}\n";
         .map(|r| (r.span().start_col(), reader.get_str(r.target_path_offset()).to_string()))
         .collect();
     assert!(line18.iter().any(|(c, p)| *c == 21 && p == "core"), "crate root segment: {line18:?}");
+    // The derives' code (`Mode::Fast => "Fast"` in `impl Debug for Mode`) points at `#[derive(…)]`: it is the macro's.
+    let fast: Vec<(u32, bool)> =
+        reader.references().iter().filter(|r| reader.get_str(r.target_path_offset()).ends_with("Mode::Fast")).map(|r| (r.span().start_line(), r.is_macro_expansion())).collect();
+    assert!(fast.iter().filter(|(l, _)| *l == 19).all(|(_, m)| *m), "derive references are macro references: {fast:?}");
+    assert!(fast.contains(&(21, false)), "the written `Mode::Fast`: {fast:?}");
     let _ = fs::remove_dir_all(&temp_dir);
 }

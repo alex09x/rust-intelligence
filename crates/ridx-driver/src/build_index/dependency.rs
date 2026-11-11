@@ -100,6 +100,7 @@ pub(super) fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexB
         writer: IndexWriter::new(&crate_name, &crate_version),
         krate_to_unit: krate_to_unit.clone(),
         seen_refs: std::collections::HashSet::new(),
+        in_derived_impl: false,
     };
     visitor.writer.set_unit_key(&unit_key);
     let (target_triple, enabled_features) = crate::cfg_extract::populate_crate_cfgs(tcx, crate_cfg, compiler_args, &mut visitor.writer, true);

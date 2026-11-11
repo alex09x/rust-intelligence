@@ -129,6 +129,8 @@ struct HirVisitor<'tcx> {
     writer: IndexWriter,
     krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
     seen_refs: std::collections::HashSet<(String, u32, u32, String)>,
+    /// Inside an `#[automatically_derived]` impl: everything in it is the derive's code, wherever its spans point.
+    in_derived_impl: bool,
 }
 
 struct NoopCallbacks;
