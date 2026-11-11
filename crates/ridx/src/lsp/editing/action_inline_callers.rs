@@ -73,6 +73,13 @@ pub fn build_inline_into_all_callers_workspace(
         super::action_parse::EnclosingContext::None => {}
         _ => return None,
     }
+    // Another configuration may declare the same function otherwise (`#[cfg(feature = "string")] mod inner { .. }`
+    // beside `#[cfg(not(feature = "string"))] mod inner { .. }`): a call both share would get one configuration's body.
+    let (in_cfg_item, cfg_twin) = super::action_inline_callers_vis::enclosed_by_cfg(masked_doc, item.decl_start_byte, &item.name);
+    cfg_gated |= in_cfg_item;
+    if cfg_twin {
+        return None;
+    }
     let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src: _, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
         return None;
     };

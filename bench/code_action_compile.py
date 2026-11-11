@@ -279,6 +279,9 @@ def run_corpus_pkl(
         except (OSError, ValueError, KeyError):
             reset()
             usable_names = {c[0] for c in candidates if check(config=c)[0]}
+            for c in candidates:
+                if c[0] not in usable_names:
+                    shutil.rmtree(tgt + f"_{c[0].replace(':', '_')}", ignore_errors=True)
             with open(configs_path, "w", encoding="utf-8") as fh:
                 json.dump({"head": head0, "mode": mode, "usable": sorted(usable_names)}, fh)
         usable_configs = [c for c in candidates if c[0] in usable_names]
@@ -387,6 +390,17 @@ def run_corpus_pkl(
                                 break
                     verified_failures.add(sig)
                     config_verified.add(sig)
+                # A RIDX success must hold in those configurations too.
+                if who == "ridx" and cache[sig][0] and sig not in config_verified:
+                    for config in other_configs():
+                        reset()
+                        if not apply_action_in_worktree(creates, eds, src, wt):
+                            break
+                        ok_k, err_k = check(config=config)
+                        if not ok_k:
+                            cache[sig] = (False, [f"under {config[0]}"] + err_k)
+                            break
+                    config_verified.add(sig)
                 ok_c, err_c = cache[sig]
                 if ok_c:
                     s["actions_compiled"] += 1
@@ -401,6 +415,9 @@ def run_corpus_pkl(
             uncovered.append({"pos": r.get("name"), "file": r.get("file"), "line": r.get("line"), "character": r.get("character"), "titles": sorted(pos_ok["ra"] - pos_ok["ridx"])})
 
     reset()
+    # Each other configuration's target directory takes as much disk as the default one: it goes with the run.
+    for config in usable_configs if configs_known else []:
+        shutil.rmtree(tgt + f"_{config[0].replace(':', '_')}", ignore_errors=True)
     try:
         with open(cache_path, encoding="utf-8") as fh:
             stored = json.load(fh)
