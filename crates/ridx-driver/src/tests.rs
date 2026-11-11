@@ -226,3 +226,13 @@ fn test_is_immutable_package() {
     assert!(is_immutable_package_with_home(Path::new("/custom/cargo/git/foo"), Some(custom_cargo)));
     assert!(!is_immutable_package_with_home(Path::new("/custom/cargo/other/foo"), Some(custom_cargo)));
 }
+
+#[test]
+fn test_a_capped_non_primary_compilation_is_a_dependency_wherever_its_sources_live() {
+    use crate::metadata::built_as_non_local_package;
+    let args = |extra: &[&str]| ["--crate-name", "zstd", "src/lib.rs"].iter().chain(extra).map(|s| s.to_string()).collect::<Vec<_>>();
+    assert!(built_as_non_local_package(args(&["--cap-lints", "allow"]), false), "a source-cache dependency");
+    assert!(built_as_non_local_package(args(&["--cap-lints=warn"]), false));
+    assert!(!built_as_non_local_package(args(&["--cap-lints", "allow"]), true), "a workspace member selected for the build");
+    assert!(!built_as_non_local_package(args(&[]), false), "a local path package keeps its lints");
+}

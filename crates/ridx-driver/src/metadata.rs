@@ -12,6 +12,14 @@ use super::*;
 
 pub(crate) fn is_immutable_package(manifest_dir: &Path) -> bool {
     is_immutable_package_with_home(manifest_dir, std::env::var("CARGO_HOME").ok().as_deref().map(Path::new))
+        || built_as_non_local_package(std::env::args(), std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some())
+}
+
+/// Cargo caps lints only for packages that are not local (registry, git, or a source cache a build tool
+/// unpacked them into), and marks the packages selected for the build as primary: a capped, non-primary
+/// compilation is a dependency's, wherever its sources were unpacked.
+pub(crate) fn built_as_non_local_package(compiler_args: impl IntoIterator<Item = String>, primary_package: bool) -> bool {
+    !primary_package && compiler_args.into_iter().any(|a| a == "--cap-lints" || a.starts_with("--cap-lints="))
 }
 
 pub(crate) fn is_immutable_package_with_home(manifest_dir: &Path, cargo_home: Option<&Path>) -> bool {
