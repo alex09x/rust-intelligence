@@ -33,6 +33,8 @@ pub(crate) struct StructAt<'a> {
     pub starts: &'a [usize],
     pub refs: &'a LocationReferences<'a>,
     pub module: (usize, usize),
+    /// The index, to read the `macro_rules!` a reference is handed to.
+    pub ws: Option<&'a ridx_format::WorkspaceIndex>,
 }
 
 /// The literals and patterns of the struct to rewrite in the converted document outside its module, as
@@ -54,6 +56,10 @@ pub(crate) fn convert_outside(
     // Per file, the literals to rewrite as `(edit start, opening brace)`.
     let mut literals: BTreeMap<PathBuf, Vec<(usize, usize)>> = BTreeMap::new();
     let mut doc_literals: DocLiterals = Vec::new();
+    // A bare path handed to a macro blocks the conversion unless the macro's `macro_rules!` body names no field: only
+    // a field's name builds or destructures the struct (`$t { .. }` matches a tuple struct as well).
+    let fields: Vec<&str> = field_index.keys().copied().collect();
+    let aliases = |m: &str, b: usize| type_alias(m, b) || (macro_arg(m, b) && at.ws.is_none_or(|ws| super::action_struct_conv_macro::macro_may_use_fields(ws, m, b, &fields)));
     for r in &at.refs.references {
         let path = r.resolved_path();
         let canon = if r.file == at.file { canonical.clone() } else { canon_of.get(&path) };
@@ -163,11 +169,18 @@ pub(crate) fn doc_outside_edits(
 /// (`from_id![(Id, crate::Name)]`, which may build it out of sight). An associated type in an impl
 /// (`type Map = Name<E>;`) is not an alias here: literals through it (`Self::Map { .. }`) refer to the struct.
 pub(crate) fn aliases(masked: &str, b: usize) -> bool {
+    macro_arg(masked, b) || type_alias(masked, b)
+}
+
+/// Whether the reference at `b` is a bare path handed to a macro (`from_id![(Id, crate::Name)]`).
+pub(crate) fn macro_arg(masked: &str, b: usize) -> bool {
     let name_end = b + masked[b..].len() - masked[b..].trim_start_matches(|c: char| c.is_alphanumeric() || c == '_').len();
     let after = skip_generic_args(&masked[name_end..]).trim_start();
-    if after.starts_with([',', ')', ']']) && in_macro_call(masked, b) {
-        return true;
-    }
+    after.starts_with([',', ')', ']']) && in_macro_call(masked, b)
+}
+
+/// Whether the reference at `b` is the target of a free type alias (`type A<T> = Name<T>;`).
+fn type_alias(masked: &str, b: usize) -> bool {
     let before = masked[..b].trim_end();
     let before = before.strip_suffix("::").map_or(before, |p| p.trim_end_matches(|c: char| c.is_alphanumeric() || c == '_' || c == ':'));
     let Some(head) = before.trim_end().strip_suffix('=') else { return false };
@@ -186,7 +199,7 @@ pub(crate) fn aliases(masked: &str, b: usize) -> bool {
 }
 
 /// The unmatched `{` (or `(`/`[`) that encloses byte `b`, if any.
-fn enclosing_open(masked: &str, b: usize) -> Option<usize> {
+pub(crate) fn enclosing_open(masked: &str, b: usize) -> Option<usize> {
     let mb = masked.as_bytes();
     let mut depth = 0i32;
     let mut i = b;

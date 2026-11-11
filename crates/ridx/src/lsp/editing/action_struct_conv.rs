@@ -86,14 +86,14 @@ pub fn build_convert_to_tuple_struct(
         match (field_refs, struct_refs) {
             // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
             (Some(FieldRefs { sites, other_files: files }), Some(refs)) => {
-                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi) };
+                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws) };
                 (other_files, doc_literals) = convert_outside(&at, files, &field_index, fields.len())?;
                 struct_sites = struct_ref_sites(&refs, file, doc_text, starts);
                 indexed = Some(sites);
             }
             // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
             (None, Some(refs)) => {
-                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi) };
+                let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws) };
                 if !convert_outside(&at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|(o, dl)| o.is_empty() && dl.is_empty()) {
                     return None;
                 }

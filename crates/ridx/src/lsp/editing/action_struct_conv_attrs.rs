@@ -166,7 +166,9 @@ fn resolves_to_macro(c: &AttrCtx, at: usize) -> bool {
 fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<HelperKey>) -> Option<HashSet<HelperKey>> {
     let (line, col) = byte_to_line_col(c.doc, c.starts, at);
     let refs = c.ws.find_direct_references_at(c.file, line, col)?;
-    if refs.target_kind != DefKind::Macro {
+    // A derive named like its trait (`#[derive(Component)]`) resolves to the trait; its references hold the derive
+    // sites too, which `struct_shape_after` picks out of the rest.
+    if !matches!(refs.target_kind, DefKind::Macro | DefKind::Trait) {
         return None;
     }
     let mut sources: HashMap<std::path::PathBuf, Option<(String, Vec<usize>)>> = HashMap::new();

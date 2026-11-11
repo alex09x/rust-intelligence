@@ -57,6 +57,7 @@ mod action_struct_conv_attrs;
 mod action_struct_conv_fields;
 pub mod action_struct_conv_helpers;
 mod action_struct_conv_index;
+mod action_struct_conv_macro;
 mod action_struct_conv_named;
 mod action_struct_conv_outside;
 mod action_suggest_name;
