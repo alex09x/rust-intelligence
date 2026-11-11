@@ -14,7 +14,7 @@
 use super::action_default_safety::is_rust_kw_or_prelude;
 use super::action_inline_callers_qualify::{line_col, reachable, tokens};
 use super::action_inline_callers_vis::{inside, member_owner, restricted_scope};
-use super::action_parse::mask_comments_and_strings;
+use super::action_parse::{is_ident_byte, mask_comments_and_strings};
 use super::action_parse_items::contains_word;
 use ridx_format::{DefKind, ItemVis, WorkspaceIndex};
 
@@ -28,15 +28,37 @@ fn field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>, path: &str) -> Op
 }
 
 /// The names of the items a function body declares (`const`, `static`, `fn`, `struct`, `enum`, `union`, `type`,
-/// `trait`, `mod`), which are local to it and have no path outside.
+/// `trait`, `mod`), which are local to it and have no path outside, and those its `use` declarations import: the
+/// `use` moves with the body.
 pub(crate) fn body_item_names(masked: &str) -> Vec<String> {
     const KW: &[&str] = &["const", "static", "fn", "struct", "enum", "union", "type", "trait", "mod"];
     let toks = tokens(masked);
-    toks.windows(2)
+    let mut names: Vec<String> = toks
+        .windows(2)
         .filter(|w| KW.contains(&&masked[w[0].0..w[0].1]) && masked[w[0].1..w[1].0].trim().is_empty())
         .map(|w| masked[w[1].0..w[1].1].to_string())
         .filter(|n| n != "mut")
-        .collect()
+        .collect();
+    for (p, _) in masked.match_indices("use ").filter(|&(p, _)| p == 0 || !is_ident_byte(masked.as_bytes()[p - 1])) {
+        let Some(stmt) = masked[p + 4..].split(';').next() else { continue };
+        // A `super::` path is checked against the call sites, a standard one is public; another (`crate::a::B`) may
+        // be private to the destination and is left to be resolved.
+        let head = stmt.trim_start();
+        if !["super::", "std::", "core::", "alloc::"].iter().any(|h| head.starts_with(h)) {
+            continue;
+        }
+        for leaf in stmt.split([',', '{', '}']) {
+            let leaf = leaf.trim();
+            let name = match leaf.split_once(" as ") {
+                Some((_, alias)) => alias.trim(),
+                None => leaf.rsplit("::").next().unwrap_or("").trim(),
+            };
+            if !name.is_empty() && name != "*" && name != "self" && name.bytes().all(is_ident_byte) {
+                names.push(name.to_string());
+            }
+        }
+    }
+    names
 }
 
 /// Whether the module that declares the private module `module` (on the way to `def`) re-exports `def`'s item to the

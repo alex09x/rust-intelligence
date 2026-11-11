@@ -166,7 +166,10 @@ pub fn build_inline_into_all_callers_workspace(
     // In an `async move` block a `?` returns from the block, as from the `async fn`: the caller's type is no matter.
     let body_has_question_mark = body_has_question_mark && !is_async;
 
-    if contains_word(&raw_masked_body, "super")
+    // `super::…` is checked against the call sites below; a bare `super` (`pub(super)` of a nested item) is not.
+    let uses_super = contains_word(&raw_masked_body, "super");
+    let super_paths_only = raw_masked_body.match_indices("super").all(|(p, _)| raw_masked_body[p + 5..].trim_start().starts_with("::"));
+    if (uses_super && !super_paths_only)
         || raw_masked_body.contains('$')
         // A free function names `Self` only inside a macro's tokens (`quote! { Self }`), which are output, not its own.
         || (self_type_name.is_none() && contains_word(&super::action_inline_callers_params::mask_macro_tokens(&raw_masked_body), "Self"))
@@ -239,6 +242,11 @@ pub fn build_inline_into_all_callers_workspace(
     for r in &refs_obj.references {
         let abs = resolve_ref_to_absolute(ws, file, r);
         refs_by_file.entry(abs).or_default().push((r.span.start_line(), r.span.start_col()));
+    }
+
+    let fn_in_inline_mod = find_enclosing_mod_range(masked_doc, item.decl_start_byte).is_some();
+    if uses_super && !super::action_inline_callers_vis::super_means_the_same(ws, file, fn_in_inline_mod, &refs_by_file) {
+        return None;
     }
 
     if is_fully_pub || vis == "pub(super)" {
