@@ -9,6 +9,7 @@
  */
 
 pub mod code_action_assists_tests;
+mod code_action_default_const_tests;
 pub mod code_action_expanded_tests;
 pub mod code_action_inline_callers_args_tests;
 pub mod code_action_inline_callers_generic_tests;

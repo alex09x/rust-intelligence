@@ -76,6 +76,37 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
             }
         }
         let item_start = i;
+        // `const NAME: Ty = value;`: an associated const with a default is a member to implement as well.
+        if let Some((name, name_end)) = next_ident_token(body_masked, i).filter(|(kw, _)| *kw == "const").and_then(|(_, e)| next_ident_token(body_masked, e)) {
+            if !matches!(name, "fn" | "unsafe" | "async" | "extern") {
+                // The item ends at its `;` outside any group (a value may be a block: `= { … };`).
+                let mut depth = 0i32;
+                let term = (name_end..mb.len()).find(|&k| {
+                    match mb[k] {
+                        b'(' | b'[' | b'{' => depth += 1,
+                        b')' | b']' | b'}' => depth -= 1,
+                        _ => {}
+                    }
+                    depth == 0 && mb[k] == b';'
+                })?;
+                let has_default = body_masked[name_end..term].contains('=');
+                let name = name.strip_prefix("r#").unwrap_or(name).to_string();
+                if has_default && !hidden && (cfg_attrs.is_empty() || (!same_crate && compiled(&name) == Some(true))) {
+                    out.push(DefaultFnMember {
+                        name,
+                        cfg_attrs: Vec::new(),
+                        start: item_start,
+                        fn_src: body_src[item_start..=term].to_string(),
+                        fn_masked: body_masked[item_start..=term].to_string(),
+                        params_masked: String::new(),
+                        fn_gens: Vec::new(),
+                        fn_gen_names: HashSet::new(),
+                    });
+                }
+                i = term + 1;
+                continue;
+            }
+        }
         let mut pos = i;
         while let Some((tok, next_p)) = next_ident_token(body_masked, pos) {
             if matches!(tok, "async" | "const" | "unsafe" | "extern") {
@@ -149,4 +180,39 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
         skipped.extend(drop.into_iter().map(|m| m.name));
     }
     Some(out)
+}
+
+/// Names of the members a trait or impl body declares at its top level: `fn name` and `const NAME` (not `const fn`).
+pub(crate) fn collect_top_level_member_names(masked_body: &str) -> HashSet<String> {
+    let mut out = HashSet::new();
+    let b = masked_body.as_bytes();
+    let is_id = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
+    let (mut brace, mut paren, mut bracket) = (0i32, 0i32, 0i32);
+    let mut i = 0usize;
+    while i < b.len() {
+        match b[i] {
+            b'{' => brace += 1,
+            b'}' => brace = (brace - 1).max(0),
+            b'(' => paren += 1,
+            b')' => paren = (paren - 1).max(0),
+            b'[' => bracket += 1,
+            b']' => bracket = (bracket - 1).max(0),
+            c if brace == 0 && paren == 0 && bracket == 0 && is_id(c) && (i == 0 || !is_id(b[i - 1])) => {
+                if let Some((kw, after_kw)) = next_ident_token(masked_body, i) {
+                    if matches!(kw, "fn" | "const") {
+                        if let Some((n, after_n)) = next_ident_token(masked_body, after_kw).filter(|(n, _)| kw == "fn" || *n != "fn") {
+                            out.insert(n.strip_prefix("r#").unwrap_or(n).to_string());
+                            i = after_n;
+                            continue;
+                        }
+                    }
+                    i = after_kw;
+                    continue;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    out
 }

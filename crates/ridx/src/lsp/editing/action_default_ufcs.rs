@@ -201,7 +201,8 @@ pub fn qualify_trait_self_calls(
     }
     let masked = mask_comments_and_strings(fn_src);
     let mb = masked.as_bytes();
-    let kw_pos = find_fn_kw(&masked)?;
+    // An associated const has no body calling methods: nothing to qualify.
+    let Some(kw_pos) = find_fn_kw(&masked) else { return Some(fn_src.to_string()) };
     let (_, name_end) = next_ident_token(fn_src, kw_pos + 2)?;
     let (_, after_g) = extract_angle_generics(fn_src, &masked, name_end);
     let mut p = after_g;

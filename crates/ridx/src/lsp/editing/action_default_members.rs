@@ -10,7 +10,7 @@
 
 //! Index-backed, compile-safe `Implement default members` code action builder.
 
-use super::action_default_extract::{extract_default_fn_members, DefaultFnMember};
+use super::action_default_extract::{collect_top_level_member_names, extract_default_fn_members, DefaultFnMember};
 use super::action_default_methods::resolvable_method_calls;
 use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, MemberOrigin};
 use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args, trait_generic_defaults};
@@ -46,7 +46,7 @@ pub fn build_implement_default_members(
     if has_top_level_macro_call(impl_body_masked) {
         return None;
     }
-    let implemented_fns = collect_top_level_fn_names(impl_body_masked);
+    let implemented_fns = collect_top_level_member_names(impl_body_masked);
 
     let (trait_path, mut trait_args) = split_trait_path_and_args(trait_ty)?;
     let simple_trait = trait_path.rsplit("::").next()?.trim();
@@ -76,7 +76,7 @@ pub fn build_implement_default_members(
         return None;
     }
 
-    let all_trait_fns = collect_top_level_fn_names(trait_body_masked);
+    let all_trait_fns = collect_top_level_member_names(trait_body_masked);
     let trait_receivers = collect_trait_fn_receivers(trait_body_src, trait_body_masked);
     let compiled = |name: &str| resolved_trait.def_path.as_ref().map(|p| ws.find_definition_by_path(&format!("{p}::{name}")).is_some());
     let default_fns = extract_default_fn_members(trait_body_src, trait_body_masked, resolved_trait.same_crate, &compiled)?;
@@ -234,37 +234,6 @@ pub fn build_implement_default_members(
     };
     let (line0, col_u16) = byte_to_utf16_pos(doc_text, starts, ins_byte);
     Some((line0, col_u16, new_text))
-}
-
-fn collect_top_level_fn_names(masked_body: &str) -> HashSet<String> {
-    let mut out = HashSet::new();
-    let b = masked_body.as_bytes();
-    let (mut brace, mut paren, mut bracket) = (0i32, 0i32, 0i32);
-    let mut i = 0usize;
-    while i < b.len() {
-        match b[i] {
-            b'{' => brace += 1,
-            b'}' => brace = (brace - 1).max(0),
-            b'(' => paren += 1,
-            b')' => paren = (paren - 1).max(0),
-            b'[' => bracket += 1,
-            b']' => bracket = (bracket - 1).max(0),
-            _ if brace == 0 && paren == 0 && bracket == 0 && i + 2 <= b.len() && &b[i..i + 2] == b"fn" => {
-                let prev_ok = i == 0 || !is_ident_byte(b[i - 1]);
-                let next_ok = i + 2 == b.len() || !is_ident_byte(b[i + 2]);
-                if prev_ok && next_ok {
-                    if let Some((n, after_n)) = next_ident_token(masked_body, i + 2) {
-                        out.insert(n.strip_prefix("r#").unwrap_or(n).to_string());
-                        i = after_n;
-                        continue;
-                    }
-                }
-            }
-            _ => {}
-        }
-        i += 1;
-    }
-    out
 }
 
 fn collect_colliding_self_methods(masked_doc: &str, impl_open: usize, impl_close: usize, self_ty: &str, all_trait_fns: &HashSet<String>, ws: &WorkspaceIndex) -> HashSet<String> {
