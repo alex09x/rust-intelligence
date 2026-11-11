@@ -2,7 +2,7 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
-## [Unreleased]
+## [0.3.0] - 2026-11-11
 
 Live type inference behind the LSP: dependencies and the standard library come from the rustc-built index, while the workspace's own code is parsed, name-resolved and type-inferred by `ridx` itself, on saved and on edited buffers alike. Figures below are from the 38-method, 7-corpus content-parity suite against rust-analyzer (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `clap`, `regex`), before (the last state without live inference in the LSP) and after (`602f4a19`), on the same index.
 
