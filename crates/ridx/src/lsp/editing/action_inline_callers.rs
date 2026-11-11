@@ -57,13 +57,18 @@ pub fn build_inline_into_all_callers_workspace(
     }
     let is_pub = vis.starts_with("pub");
     let is_fully_pub = vis == "pub";
+    // A `#[cfg(..)]` impl holds the function only where its calls compile: the body compiles there too. The index
+    // sees the calls of one configuration (and none in macro bodies), so such a function is kept.
+    let mut cfg_gated = false;
     match &item.enclosing {
         super::action_parse::EnclosingContext::InherentImpl { cfg_attrs, .. }
         | super::action_parse::EnclosingContext::TraitImpl { cfg_attrs, .. }
         | super::action_parse::EnclosingContext::TraitDecl { cfg_attrs, .. } => {
-            if cfg_attrs.iter().any(|a| !a.contains("doc(") && !a.contains("diagnostic::")) {
+            let is_cfg = |a: &String| a.trim_start_matches("#[").trim_start().starts_with("cfg(");
+            if cfg_attrs.iter().any(|a| !a.contains("doc(") && !a.contains("diagnostic::") && !is_cfg(a)) {
                 return None;
             }
+            cfg_gated = cfg_attrs.iter().any(is_cfg);
         }
         super::action_parse::EnclosingContext::None => {}
         _ => return None,
@@ -330,7 +335,7 @@ pub fn build_inline_into_all_callers_workspace(
         return None;
     }
 
-    if !any_skipped && !is_pub && !is_trait_member {
+    if !any_skipped && !is_pub && !is_trait_member && !cfg_gated {
         local_edits.push((del_lo, del_hi, String::new()));
     }
     let local_lsp_edits = if local_edits.is_empty() { Vec::new() } else { to_lsp_edits(doc_text, starts, local_edits)? };

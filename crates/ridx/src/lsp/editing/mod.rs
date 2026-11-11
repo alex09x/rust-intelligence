@@ -37,6 +37,7 @@ pub mod action_inline_callers;
 mod action_inline_callers_body;
 pub mod action_inline_callers_cross;
 pub mod action_inline_callers_early_return;
+mod action_inline_callers_format;
 pub mod action_inline_callers_helpers;
 mod action_inline_callers_macros;
 mod action_inline_callers_members;

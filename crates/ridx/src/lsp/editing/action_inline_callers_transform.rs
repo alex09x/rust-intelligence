@@ -146,15 +146,16 @@ pub(crate) fn process_call_site(
         return None;
     }
     // Every argument is bound by a `let` before the body, in order, so a call argument evaluates once and in place.
-    // Refused: a closure (its `|a, b|` would split on the comma) and an argument naming a parameter bound before it,
-    // which would read that binding instead of the caller's variable.
+    // An argument naming a parameter bound before it would read that binding instead of the caller's variable: then
+    // all are bound at once by a tuple `let`. Refused: a closure (its `|a, b|` would split on the comma) and an
+    // argument naming the receiver's binding `this`.
     // Each argument masked on its own: a string literal masked in place is blank, and would be lost as an argument.
     let masked_args: Vec<String> = raw_args.iter().map(|a| mask_comments_and_strings(a)).collect();
     let plain: Vec<&FnParamInfo> = params.iter().filter(|p| !p.is_self).collect();
+    let mut args_at_once = false;
     for (i, arg) in masked_args.iter().enumerate() {
-        let earlier_bound = plain.iter().take(i).filter_map(|p| p.ident.as_deref()).map(|id| id.trim_start_matches("mut ")).any(|id| contains_word(arg, id))
-            || (self_kind.is_some() && contains_word(arg, "this"));
-        if arg.contains('|') || earlier_bound {
+        args_at_once |= plain.iter().take(i).filter_map(|p| p.ident.as_deref()).map(|id| id.trim_start_matches("mut ")).any(|id| contains_word(arg, id));
+        if arg.contains('|') || (self_kind.is_some() && contains_word(arg, "this")) {
             return None;
         }
         // An `impl Trait` parameter takes only a variable or a reference to one: a literal bound by `let` has no type
@@ -188,7 +189,7 @@ pub(crate) fn process_call_site(
     let next_ch = masked[call_end..].trim_start().as_bytes().first().copied().unwrap_or(b'}');
     let standalone = matches!(prev_ch, b'{' | b';') && matches!(next_ch, b';' | b'}');
 
-    let inlined = format_inlined_call(recv_expr, self_kind, recv_ty, params, &raw_args, body_src, standalone, recv_in_match);
+    let inlined = format_inlined_call(recv_expr, self_kind, recv_ty, params, &raw_args, body_src, standalone, recv_in_match, args_at_once);
     Some((call_start, call_end, inlined))
 }
 
