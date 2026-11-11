@@ -27,6 +27,18 @@ fn field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>, path: &str) -> Op
     reader.find_field(idx as u32, name).map(|f| f.vis)
 }
 
+/// The names of the items a function body declares (`const`, `static`, `fn`, `struct`, `enum`, `union`, `type`,
+/// `trait`, `mod`), which are local to it and have no path outside.
+pub(crate) fn body_item_names(masked: &str) -> Vec<String> {
+    const KW: &[&str] = &["const", "static", "fn", "struct", "enum", "union", "type", "trait", "mod"];
+    let toks = tokens(masked);
+    toks.windows(2)
+        .filter(|w| KW.contains(&&masked[w[0].0..w[0].1]) && masked[w[0].1..w[1].0].trim().is_empty())
+        .map(|w| masked[w[1].0..w[1].1].to_string())
+        .filter(|n| n != "mut")
+        .collect()
+}
+
 /// The visibility of each field of the struct at `path`, from the index's field table.
 pub(crate) fn struct_field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>, path: &str) -> Option<Vec<ItemVis>> {
     let def = reader.find_definition_by_path(path)?;

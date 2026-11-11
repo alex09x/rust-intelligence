@@ -28,6 +28,10 @@ pub(crate) fn find_receiver_start(_src: &str, masked: &str, dot_byte: usize) -> 
         while q > 0 && mb[q - 1].is_ascii_whitespace() {
             q -= 1;
         }
+        // A macro call (`bytes::regex!("foo")`) is the receiver with its name.
+        if q > 0 && mb[q - 1] == b'!' {
+            q -= 1;
+        }
         if q > 0 && (mb[q - 1].is_ascii_alphanumeric() || mb[q - 1] == b'_') {
             while q > 0 && (mb[q - 1].is_ascii_alphanumeric() || mb[q - 1] == b'_' || mb[q - 1] == b':') {
                 q -= 1;
@@ -294,5 +298,19 @@ pub(crate) fn is_caller_return_compatible(src: &str, masked: &str, starts: &[usi
         r.contains("Option")
     } else {
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_receiver_start;
+
+    #[test]
+    fn a_macro_call_receiver_keeps_its_name() {
+        let src = "assert!(bytes::regex!(\"foo\").is_match(b\"foo\"));";
+        let dot = src.find(").is_match").unwrap() + 1;
+        assert_eq!(find_receiver_start(src, src, dot), src.find("bytes::regex!"));
+        let plain = "x = a.b(c).is_match(1);";
+        assert_eq!(find_receiver_start(plain, plain, plain.find(").is").unwrap() + 1), plain.find("a.b").map(|p| p + 2));
     }
 }

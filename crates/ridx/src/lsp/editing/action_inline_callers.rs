@@ -12,10 +12,10 @@
 
 use super::action_inline_callers_cross::{is_safe_for_cross_file_inline, is_same_doc, process_other_document_call_sites, resolve_ref_to_absolute};
 use super::action_inline_callers_early_return::transform_early_returns;
-use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
-use super::action_inline_callers_params::call_takes_only_places;
+use super::action_inline_callers_helpers::{contains_recursive_call, is_primitive_scalar, parse_fn_params, FnParamInfo};
+pub(crate) use super::action_inline_callers_sites::process_call_sites_for_document;
 use super::action_inline_callers_transform::{
-    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
+    extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
 use super::action_inline_local::line_deletion_span;
 use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
@@ -28,6 +28,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 pub type InlineEdits = (Vec<Value>, BTreeMap<String, Vec<Value>>);
+/// Call sites as 1-based `(line, column)`.
+type Spans = Vec<(u32, u32)>;
 
 pub(crate) fn line_col_to_byte(doc: &str, starts: &[usize], line_1b: u32, col_1b: u32) -> Option<usize> {
     let start = *starts.get(line_1b.checked_sub(1)? as usize)?;
@@ -240,31 +242,42 @@ pub fn build_inline_into_all_callers_workspace(
     }
 
     let cross_file_safe = is_safe_for_cross_file_inline(&body_transformed, masked_doc);
+    // A call in a module nested in the function's (`mod tests`) sees only what that module imports: it gets the body
+    // with its names written as paths, as another file does.
+    let fn_mod = find_enclosing_mod_range(masked_doc, item.decl_start_byte);
+    let at_home = |&(sl, sc): &(u32, u32)| cross_file_safe || line_col_to_byte(doc_text, starts, sl, sc).is_some_and(|b| find_enclosing_mod_range(masked_doc, b) == fn_mod);
+    let has_nested = refs_by_file.iter().any(|(p, spans)| is_same_doc(p, file, canonical_file.as_deref()) && !spans.iter().all(at_home));
     // Otherwise, for other files of the crate: names written as the paths the index resolved, members checked per file.
-    let cross = (has_cross_file && !cross_file_safe)
-        .then(|| super::action_inline_callers_qualify::cross_bodies(doc_text, file, &item.name, item.name_byte, *bc, params_src, ws, &body_transformed, &parsed_params));
+    let cross = ((has_cross_file || has_nested) && !cross_file_safe)
+        .then(|| super::action_inline_callers_body::cross_bodies(doc_text, file, &item.name, item.name_byte, *bc, params_src, ws, &body_transformed, &parsed_params));
     for (abs_path, spans) in &refs_by_file {
         if is_same_doc(abs_path, file, canonical_file.as_deref()) {
-            let (edits, skipped) = process_call_sites_for_document(
-                doc_text,
-                masked_doc,
-                starts,
-                spans,
-                &item.name,
-                self_kind,
-                &parsed_params,
-                &body_transformed,
-                body_has_question_mark,
-                effective_ret_ty.as_deref(),
-                Some((def_lo, *bc)),
-                Some(file),
-                Some(ws),
-                is_fully_pub,
-                borrowed_return,
-            );
-            local_edits.extend(edits);
-            if skipped {
-                any_skipped = true;
+            let (home, nested): (Spans, Spans) = spans.iter().partition(|s| at_home(s));
+            let qualified = cross.as_ref().and_then(|c| c.local.as_ref()).map(|cb| (&cb.params[..], cb.body.as_str()));
+            for (spans, with) in [(home, Some((&parsed_params[..], body_transformed.as_str()))), (nested, qualified)] {
+                let Some((params, body)) = with.filter(|_| !spans.is_empty()) else {
+                    any_skipped |= !spans.is_empty();
+                    continue;
+                };
+                let (edits, skipped) = process_call_sites_for_document(
+                    doc_text,
+                    masked_doc,
+                    starts,
+                    &spans,
+                    &item.name,
+                    self_kind,
+                    params,
+                    body,
+                    body_has_question_mark,
+                    effective_ret_ty.as_deref(),
+                    Some((def_lo, *bc)),
+                    Some(file),
+                    Some(ws),
+                    is_fully_pub,
+                    borrowed_return,
+                );
+                local_edits.extend(edits);
+                any_skipped |= skipped;
             }
         } else if cross_file_safe && std::fs::read_to_string(abs_path).is_ok_and(|t| super::action_inline_callers_macros::macros_in_scope(raw_body_slice, &t)) {
             let skipped = process_other_document_call_sites(
@@ -282,9 +295,7 @@ pub fn build_inline_into_all_callers_workspace(
                 borrowed_return,
                 &mut other_file_edits,
             );
-            if skipped {
-                any_skipped = true;
-            }
+            any_skipped |= skipped;
         } else if let Some(cb) = cross.as_ref().and_then(|c| c.for_dest(ws, abs_path, raw_body_slice, doc_text, file, *bo + 1)) {
             let skipped = process_other_document_call_sites(
                 abs_path,
@@ -327,71 +338,4 @@ fn has_safe_pub_new_params(params: &[FnParamInfo]) -> bool {
                 !n.contains('\'') && !n.contains("impl ") && !n.contains("dyn ") && !n.contains('<')
             })
         })
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn process_call_sites_for_document(
-    doc: &str,
-    masked: &str,
-    starts: &[usize],
-    spans: &[(u32, u32)],
-    fn_name: &str,
-    self_kind: Option<SelfKind>,
-    params: &[FnParamInfo],
-    body_src: &str,
-    body_has_question_mark: bool,
-    effective_ret_ty: Option<&str>,
-    def_range: Option<(usize, usize)>,
-    file_opt: Option<&str>,
-    ws_opt: Option<&WorkspaceIndex>,
-    is_fully_pub: bool,
-    borrowed_return: bool,
-) -> (Vec<(usize, usize, String)>, bool) {
-    if borrowed_return && self_kind == Some(SelfKind::Value) {
-        return (Vec::new(), true);
-    }
-    // A declared type is written only where the definition is: another file may not see the names it uses.
-    let unwritten: Vec<FnParamInfo>;
-    let params = if def_range.is_some() {
-        params
-    } else {
-        unwritten = params.iter().map(|p| FnParamInfo { decl_ty: None, ..p.clone() }).collect();
-        &unwritten
-    };
-    let mut edits = Vec::new();
-    let mut any_skipped = false;
-    for &(span_line, span_col) in spans {
-        let Some(ref_byte) = line_col_to_byte(doc, starts, span_line, span_col) else {
-            any_skipped = true;
-            continue;
-        };
-        if let Some((def_lo, def_hi)) = def_range {
-            if ref_byte >= def_lo && ref_byte < def_hi {
-                continue;
-            }
-        }
-        if body_has_question_mark {
-            let ret = effective_ret_ty.unwrap_or("");
-            if !is_caller_return_compatible(doc, masked, starts, ref_byte, ret) {
-                any_skipped = true;
-                continue;
-            }
-        }
-        if let Some((site_start, site_end, inlined_text)) =
-            process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub, borrowed_return)
-        {
-            // A borrowed result must not point into a temporary the inlined block drops; under a `&` the block would be
-            // expected to yield the referent (`&({ …; &x.f })` where `&T` was asked, E0308), which no rewrite of the
-            // block avoids.
-            let under_borrow = masked[..site_start].trim_end().ends_with('&');
-            if borrowed_return && (!call_takes_only_places(&masked[site_start..site_end]) || under_borrow) {
-                any_skipped = true;
-                continue;
-            }
-            edits.push((site_start, site_end, inlined_text));
-        } else {
-            any_skipped = true;
-        }
-    }
-    (edits, any_skipped)
 }

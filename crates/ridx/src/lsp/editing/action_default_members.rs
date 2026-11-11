@@ -115,7 +115,12 @@ pub fn build_implement_default_members(
     let mut rendered_members = Vec::with_capacity(missing.len());
 
     // The crate the impl lives in: names from it are written `crate::…`.
-    let dest_crate = ws.reader_indices_for_file(current_file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_")).unwrap_or_default();
+    // An integration test (or bench, example) is a crate of its own though it carries the package's name: names of
+    // the trait's crate are written through that crate there, never `crate::`.
+    let trait_units: Vec<usize> = resolved_trait.file.as_deref().map(|f| ws.resolved_reader_file_ids(f).into_iter().map(|p| p.0).collect()).unwrap_or_default();
+    let same_unit = trait_units.is_empty() || ws.resolved_reader_file_ids(current_file).iter().any(|p| trait_units.contains(&p.0));
+    let dest_crate =
+        if same_unit { ws.reader_indices_for_file(current_file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_")).unwrap_or_default() } else { String::new() };
     let dest_links = ws.extern_crate_names_for_file(current_file);
     // The crate links `std` unless its root says `no_std` (also under `cfg_attr`).
     let dest_std = ws.reader_indices_for_file(current_file).first().is_some_and(|&i| {
@@ -218,8 +223,8 @@ pub fn build_implement_default_members(
             &alpha_masked,
             &alpha_params,
             &eff_gen_names,
-            resolved_trait.same_module,
-            resolved_trait.same_crate,
+            resolved_trait.same_module && same_unit,
+            resolved_trait.same_crate && same_unit,
             &all_trait_fns,
             // The impl's module names nothing a standard library body means (it may define a different `FlatMap`).
             if std_trait { &no_scope } else { &doc_scope },

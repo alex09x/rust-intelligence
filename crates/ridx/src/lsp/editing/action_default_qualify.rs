@@ -130,6 +130,11 @@ fn public_path(root_file: &Path, full: &str) -> Option<String> {
     }
     let (mut dir, mut text) = (root_file.parent()?.to_path_buf(), root_text);
     for (k, m) in segs[1..segs.len() - 1].iter().enumerate() {
+        // A module that re-exports the item by name (`pub use join_set::JoinSet;`) gives the shortest public path,
+        // whichever `cfg` makes the module below public (`mod join_set;` in one branch, `pub mod` in another).
+        if k > 0 && declares(&text, "pub use ", item) {
+            return Some(format!("{}::{item}", segs[..=k].join("::")));
+        }
         if !declares(&text, "pub mod ", m) {
             // A private module whose items the module above re-exports (`mod access; pub use access::*;`, or by
             // name): the item is reached there.
