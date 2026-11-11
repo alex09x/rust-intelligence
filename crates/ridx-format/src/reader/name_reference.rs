@@ -48,8 +48,20 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// returns every record.
     pub fn is_name_reference(&self, r: &RefEntry) -> bool {
         let path = self.get_str(r.target_path_offset());
-        if DefKind::from(r.kind) == DefKind::Local && path.rsplit("::").next().unwrap_or(path).starts_with("__") {
+        let kind = DefKind::from(r.kind);
+        let name = path.rsplit("::").next().unwrap_or(path);
+        if kind == DefKind::Local && name.starts_with("__") {
             return false;
+        }
+        // A method or a field is never renamed by an import, so its use spells its name. A derive's generated call
+        // given the span of the field it was made for (`remove_many` on `name: Vec<String>`) does not.
+        if matches!(kind, DefKind::AssocFn | DefKind::Field) {
+            let span = r.span();
+            let width = span.end_col().saturating_sub(span.start_col()) as usize;
+            let len = name.strip_prefix("r#").unwrap_or(name).chars().count();
+            if span.start_line() == span.end_line() && span.end_col() > span.start_col() && width != len && width != len + 2 && !name.starts_with('<') {
+                return false;
+            }
         }
         if r.target_def_id() == u32::MAX {
             return true;
