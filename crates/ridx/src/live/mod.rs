@@ -13,6 +13,7 @@
 mod assoc_path;
 pub mod meta;
 pub mod query;
+mod query_cfg;
 mod query_cursor;
 mod query_defs;
 mod query_dot;

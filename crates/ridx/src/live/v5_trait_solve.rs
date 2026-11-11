@@ -162,7 +162,8 @@ impl<'w> RidxV5ItemDb<'w> {
             }
             let Some(td) = wp.trait_def() else { continue };
             let b_trait = self.ty_def_gid(r_idx, td);
-            if !b_trait.is_some() {
+            // A trait the index holds no definition for (compiler-implemented, such as `Destruct`) cannot be solved here.
+            if !b_trait.is_some() || (b_trait.index & super::v5_db::TY_DEF_SYNTH_BIT) != 0 {
                 continue;
             }
             let raw_lhs = lower_v5_ty(self, r_idx, va, wp.lhs_ty(), remap, arena);
@@ -196,7 +197,7 @@ impl<'w> RidxV5ItemDb<'w> {
                 }
                 let Some(td) = wp.trait_def() else { continue };
                 let b_trait = self.ty_def_gid(r_idx, td);
-                if !b_trait.is_some() {
+                if !b_trait.is_some() || (b_trait.index & super::v5_db::TY_DEF_SYNTH_BIT) != 0 {
                     continue;
                 }
                 let raw_lhs = lower_v5_ty(self, r_idx, va, wp.lhs_ty(), remap, arena);

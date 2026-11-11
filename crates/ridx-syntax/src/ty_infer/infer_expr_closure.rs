@@ -293,6 +293,9 @@ impl<'a, 's> Runner<'a, 's> {
                 lhs = self.ctx.table.shallow_resolve(inner);
             }
             if let InferTyKind::Param { idx, def } = self.ctx.table.arena.kind(lhs) {
+                if !self.is_own_generic_param(idx, def) {
+                    continue;
+                }
                 let senv = SolveEnv { local_defs: self.local_defs, st: self.root_st, file_res: self.root_file_res, db: self.db, owner: self.norm_owner() };
                 if !param_has_active_bound(senv, &mut self.ctx.table, idx, def, trait_def) {
                     ok = false;
@@ -302,6 +305,15 @@ impl<'a, 's> Runner<'a, 's> {
         }
         self.ctx.where_obls_buf = obls;
         ok
+    }
+
+    /// Whether `Param { idx, def }` is a generic parameter declared by the code being inferred (not one left over
+    /// from an indexed type's own generics, such as an unsubstituted default).
+    fn is_own_generic_param(&self, idx: u16, def: GlobalDefId) -> bool {
+        let owner = self.norm_owner();
+        self.root_file_res.generics.iter().any(|g| {
+            (def.is_some() && g.def == def) || (owner.impl_node == Some(g.owner_node) && g.index == idx) || (owner.fn_node == Some(g.owner_node) && owner.impl_gc + g.index == idx)
+        })
     }
 
     pub(super) fn cand_matches_completion_rcvr(&mut self, cand: &MethodCand, rcvr: InferTyId) -> bool {

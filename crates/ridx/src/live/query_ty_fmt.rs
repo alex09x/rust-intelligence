@@ -19,9 +19,9 @@ use ridx_syntax::ty_infer::{FnInferResult, FrozenTyArena, InferTyArena, InferTyI
 use ridx_syntax::{NodeId, SyntaxKind as K};
 
 use super::query::LiveTy;
+use super::query_cfg::is_inside_inactive_target_cfg;
 use super::query_cursor::{
-    enclosing_macro_tt_span, find_enclosing_trait_def, is_cursor_on_typeable_token, is_inside_inactive_target_cfg, lower_cst_type_with_owners, pick_ty_in_fn,
-    smallest_type_node_at, ty_contains_placeholder,
+    enclosing_macro_tt_span, find_enclosing_trait_def, is_cursor_on_typeable_token, lower_cst_type_with_owners, pick_ty_in_fn, smallest_type_node_at, ty_contains_placeholder,
 };
 use super::query_loc::{collect_ty_def_locs, lookup_cst_param_name, write_def_name};
 use super::query_state::{CachedParsed, LiveEngine};

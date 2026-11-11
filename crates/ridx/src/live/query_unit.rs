@@ -239,3 +239,14 @@ pub(super) fn extend_method_index(
         }
     }
 }
+
+impl super::query_state::LiveEngine {
+    /// The unit to answer a query at `off` in: the file's own unit, or another one that compiles the same file when
+    /// only that one enables the code at the cursor (`#[cfg(test)]` code goes to the test harness).
+    pub(super) fn unit_for_cursor(&self, ws: &WorkspaceIndex, file_unit: usize, canon: &Path, off: u32) -> usize {
+        let Some(parsed) = self.parsed.as_ref() else { return file_unit };
+        let st = parsed.tree();
+        let db = RidxV5ItemDb::view(ws, &self.src, &self.state);
+        super::query_cfg::unit_enabling_cursor(&st, off, &db, file_unit, canon).unwrap_or(file_unit)
+    }
+}
