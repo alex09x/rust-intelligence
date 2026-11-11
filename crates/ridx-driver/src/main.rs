@@ -37,6 +37,7 @@ use owner::resolve_owner_from_ty;
 pub mod sysroot;
 
 mod assoc_res;
+mod attr_refs;
 mod build_index;
 pub(crate) mod cfg_extract;
 mod crate_items;

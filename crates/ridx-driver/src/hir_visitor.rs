@@ -15,7 +15,7 @@ impl<'tcx> HirVisitor<'tcx> {
         self.current_body_owner.map(|owner| self.tcx.param_env(owner.to_def_id()))
     }
 
-    fn add_ref_from_res(&mut self, span: Span, res: Res) {
+    pub(crate) fn add_ref_from_res(&mut self, span: Span, res: Res) {
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(self.tcx, span, self.package_root.as_deref()) else {
             return;
         };
@@ -144,6 +144,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     }
 
     fn visit_path(&mut self, path: &hir::Path<'tcx>, hir_id: HirId) {
+        self.note_macro_call_site(path.span);
         let span = if let Some(last_seg) = path.segments.last() { last_seg.ident.span } else { path.span };
         // A trait function named by a path in a body (`From::from`, `Default::default()`) is the implementation the
         // arguments select, as for a method call. Paths a macro or a desugaring wrote (a derive's
