@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use super::workspace_symbol_crates::{crate_entries, crate_entry_name, is_crate_entry};
 use super::workspace_symbol_use::{import_target_kind, use_is_pub};
 use super::*;
 
@@ -61,13 +62,10 @@ struct CachedWsDefs {
     types_by_name: Vec<SymEntry>,
 }
 
-/// Marks a crate root entry.
-const CRATE_ROOT: u32 = u32::MAX;
-
 fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
     let reader = &ws.readers[e.reader as usize];
-    if e.def == CRATE_ROOT {
-        reader.crate_name()
+    if is_crate_entry(e.def) {
+        crate_entry_name(reader, e.def)
     } else {
         reader.get_str(reader.definitions()[e.def as usize].name_offset())
     }
@@ -75,7 +73,7 @@ fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
 
 /// What rust-analyzer's `only_types` search returns: types, traits, type aliases and crates, not modules.
 fn is_ra_type_entry(e: &SymEntry) -> bool {
-    e.def == CRATE_ROOT
+    is_crate_entry(e.def)
         || matches!(e.kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TraitAlias | DefKind::TyAlias | DefKind::AssocTy | DefKind::ForeignTy)
 }
 
@@ -140,13 +138,7 @@ fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<
             by_name.push(SymEntry { reader: i as u32, def: d_idx as u32, kind });
         }
     }
-    let mut crates_seen = HashSet::new();
-    for (i, reader) in ws.readers.iter().enumerate() {
-        let (crate_name, root_file) = (reader.crate_name(), reader.get_file(0));
-        if !crate_name.is_empty() && !root_file.is_empty() && crates_seen.insert((crate_name, root_file)) {
-            by_name.push(SymEntry { reader: i as u32, def: CRATE_ROOT, kind: DefKind::Mod });
-        }
-    }
+    by_name.extend(crate_entries(ws).into_iter().map(|(reader, def)| SymEntry { reader, def, kind: DefKind::Mod }));
     // Stable sort: equal lowercased names keep index order. Lowercasing on the fly keeps no name copies alive.
     by_name.sort_by(|&a, &b| entry_name(ws, a).chars().flat_map(char::to_lowercase).cmp(entry_name(ws, b).chars().flat_map(char::to_lowercase)));
     let types_by_name = by_name.iter().copied().filter(is_ra_type_entry).collect();
@@ -261,12 +253,13 @@ impl WorkspaceIndex {
         let source_root = self.source_roots.get(i).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref());
         let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
         let crate_name = reader.crate_name();
-        if entry.def == CRATE_ROOT {
-            let span = crate::format::Span::new(0, 1, 1, 1, crate_name.len() as u32 + 1);
+        if is_crate_entry(entry.def) {
+            let name = crate_entry_name(reader, entry.def);
+            let span = crate::format::Span::new(0, 1, 1, 1, name.len() as u32 + 1);
             return WorkspaceSymbol {
                 crate_name,
-                name: crate_name,
-                path: crate_name,
+                name,
+                path: name,
                 kind: DefKind::Mod,
                 file: reader.get_file(0),
                 span,
