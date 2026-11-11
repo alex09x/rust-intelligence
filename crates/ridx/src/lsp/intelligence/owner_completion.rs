@@ -19,6 +19,7 @@ use std::sync::Arc;
 
 mod alias;
 mod extras;
+pub(crate) use extras::fixed_postfix_items;
 pub mod item;
 mod postfix;
 pub mod qualifier;
@@ -27,7 +28,8 @@ mod shape;
 pub mod smart_pointer;
 pub mod trait_filter;
 pub mod ufcs;
-use extras::{collect_extension_and_blanket_items, collect_through_iter_items};
+use extras::collect_extension_and_blanket_items;
+pub(crate) use extras::collect_through_iter_items;
 pub use qualifier::*;
 pub use receiver::*;
 pub use smart_pointer::*;

@@ -221,8 +221,15 @@ pub(crate) fn query_dot_candidates(
             } else if seen_methods.contains(&(label.clone(), None)) || !seen_methods.insert((label.clone(), from_trait.clone())) {
                 continue;
             }
-            let detail = def_signature_detail(&db, parsed, Some(&entry.local_defs), h.method_def);
             let def_location = resolve_def_location(&db, dm, canon, parsed, Some(&entry.local_defs), h.method_def);
+            let def_crate = db.metas.get(db.canonical_def(h.method_def).krate.0 as usize).map(|m| m.crate_name.as_str());
+            if h.method_def.krate != CrateId::LOCAL_OVERLAY
+                && def_crate.is_some_and(|c| c != db.metas[cur_krate.0 as usize].crate_name)
+                && def_location.as_ref().is_some_and(|l| engine.hidden.is_doc_hidden(&l.file, l.line))
+            {
+                continue;
+            }
+            let detail = def_signature_detail(&db, parsed, Some(&entry.local_defs), h.method_def);
             out.push(Cand { label, kind: DefKind::AssocFn, detail, def_location, from_trait });
         }
     }

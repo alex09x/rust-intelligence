@@ -43,18 +43,21 @@ pub struct PostfixFacts {
     pub in_breakable: bool,
 }
 
-/// The facts for the dot whose receiver ends at `dot_end - 1`, or `None` when no `receiver.name` expression is there
-/// (inside a macro call's token tree).
+/// The facts for the dot whose receiver ends at `dot_end - 1`. Inside a macro call's token tree, where no
+/// `receiver.name` expression is in the tree, only the receiver's type facts are set.
 pub(crate) fn postfix_facts(st: &SyntaxTree<'_>, dot_end: u32, db: &RidxV5ItemDb<'_>, arena: &InferTyArena, recv_ty: InferTyId, cands: &[Cand]) -> Option<PostfixFacts> {
     let dot = dot_end.checked_sub(1)? as usize;
     let cov = st.covering(dot);
     let expr = std::iter::once(cov)
         .chain(st.ancestors(cov))
-        .find(|&n| matches!(st.kind(n), K::MethodCallExpr | K::FieldExpr) && st.children(n).next().is_some_and(|r| st.range(r).end <= dot))?;
-    let mut with_refs = expr;
-    while let Some(p) = st.parent(with_refs).filter(|&p| matches!(st.kind(p), K::RefExpr | K::PrefixExpr)) {
-        with_refs = p;
-    }
+        .find(|&n| matches!(st.kind(n), K::MethodCallExpr | K::FieldExpr) && st.children(n).next().is_some_and(|r| st.range(r).end <= dot));
+    let with_refs = expr.map(|e| {
+        let mut n = e;
+        while let Some(p) = st.parent(n).filter(|&p| matches!(st.kind(p), K::RefExpr | K::PrefixExpr)) {
+            n = p;
+        }
+        n
+    });
     let mut stripped = recv_ty;
     while let InferTyKind::Ref { inner, .. } = arena.kind(stripped) {
         stripped = inner;
@@ -79,10 +82,10 @@ pub(crate) fn postfix_facts(st: &SyntaxTree<'_>, dot_end: u32, db: &RidxV5ItemDb
         is_bool: matches!(arena.kind(stripped), InferTyKind::Prim(PrimTy::Bool)),
         into_iter: cands.iter().any(|c| c.label == "into_iter" && c.from_trait.as_deref().is_some_and(|t| t.ends_with("IntoIterator"))),
         impls_drop,
-        in_condition: is_in_condition(st, with_refs),
-        in_block: is_in_block(st, expr),
-        in_arm_or_closure: st.parent(with_refs).is_some_and(|p| matches!(st.kind(p), K::MatchArm | K::ClosureExpr)),
-        in_breakable: is_in_breakable(st, expr),
+        in_condition: with_refs.is_some_and(|n| is_in_condition(st, n)),
+        in_block: expr.is_some_and(|e| is_in_block(st, e)),
+        in_arm_or_closure: with_refs.and_then(|n| st.parent(n)).is_some_and(|p| matches!(st.kind(p), K::MatchArm | K::ClosureExpr)),
+        in_breakable: expr.is_some_and(|e| is_in_breakable(st, e)),
     })
 }
 

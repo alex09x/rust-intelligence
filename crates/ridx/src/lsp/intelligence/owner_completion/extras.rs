@@ -138,6 +138,19 @@ pub(super) fn collect_extension_and_blanket_items(
     blanket_and_postfix
 }
 
+/// The postfix snippets whose presence depends on neither the receiver's type nor its position (all of
+/// [`POSTFIX_SNIPPETS`] except the labels in `positional`), filtered by `prefix`.
+pub(crate) fn fixed_postfix_items(prefix: &str, positional: &[&str]) -> Vec<Value> {
+    POSTFIX_SNIPPETS
+        .iter()
+        .filter(|(label, _)| !positional.contains(label) && (prefix.is_empty() || label.starts_with(prefix)))
+        .map(|&(label, detail)| {
+            let import = POSTFIX_IMPORTS.iter().find(|(l, _)| *l == label).map(|(_, import)| format!("({import})"));
+            item::item(label, import.as_deref(), 15, detail)
+        })
+        .collect()
+}
+
 /// The imported traits (full paths) that are not among the receiver's `owners` but have a supertrait that is.
 fn extension_traits(ws: &WorkspaceIndex, file_traits: &HashSet<String>, owners: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
@@ -166,7 +179,7 @@ fn extension_traits(ws: &WorkspaceIndex, file_traits: &HashSet<String>, owners: 
 
 /// The methods of the iterator a receiver's `iter()` returns, offered as `iter().name` the way rust-analyzer offers
 /// them on collections, options and paths that are not iterators themselves.
-pub(super) fn collect_through_iter_items(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_>) -> Vec<Value> {
+pub(crate) fn collect_through_iter_items(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_>) -> Vec<Value> {
     let mut out = Vec::new();
     let f_traits = get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text);
     let iter_extensions = extension_traits(ws, &f_traits, &[ITERATOR_TRAIT.to_string()]);
