@@ -32,20 +32,25 @@ impl WorkspaceIndex {
     }
 
     /// Every recorded type whose span starts on lines `start_line..=end_line` (1-based) of `file`, as
-    /// `((start_line, start_col), (end_line, end_col), type)` with 1-based columns, from the first shard holding it.
+    /// `((start_line, start_col), (end_line, end_col), type)` with 1-based columns. Every shard compiling the file
+    /// contributes (a library and its test harness compile different `cfg` regions); for a span recorded by several,
+    /// the first shard's type is kept.
     pub fn types_in_lines(&self, file: &str, start_line: u32, end_line: u32) -> Vec<TypeSpanEntry<'_>> {
-        let Some(&(i, fid)) = self.resolved_reader_file_ids(file).first() else { return Vec::new() };
-        let r = &self.readers[i];
-        let types = r.types();
-        let lo = types.partition_point(|e| (e.span().file_id(), e.span().start_line()) < (fid, start_line));
-        types[lo..]
-            .iter()
-            .take_while(|e| e.span().file_id() == fid && e.span().start_line() <= end_line)
-            .map(|e| {
+        let mut out: Vec<TypeSpanEntry<'_>> = Vec::new();
+        let mut seen: std::collections::HashSet<((u32, u32), (u32, u32))> = std::collections::HashSet::new();
+        for (i, fid) in self.resolved_reader_file_ids(file) {
+            let r = &self.readers[i];
+            let types = r.types();
+            let lo = types.partition_point(|e| (e.span().file_id(), e.span().start_line()) < (fid, start_line));
+            for e in types[lo..].iter().take_while(|e| e.span().file_id() == fid && e.span().start_line() <= end_line) {
                 let s = e.span();
-                ((s.start_line(), s.start_col()), (s.end_line(), s.end_col()), r.get_str(e.type_offset()))
-            })
-            .collect()
+                let (start, end) = ((s.start_line(), s.start_col()), (s.end_line(), s.end_col()));
+                if seen.insert((start, end)) {
+                    out.push((start, end, r.get_str(e.type_offset())));
+                }
+            }
+        }
+        out
     }
 
     pub(crate) fn type_entry_at_in_pairs(&self, pairs: &[(usize, u32)], line: u32, col: u32) -> Option<(&str, Option<&str>)> {
