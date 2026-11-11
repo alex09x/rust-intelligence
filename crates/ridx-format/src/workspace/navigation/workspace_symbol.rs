@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use super::workspace_symbol_use::{import_target_kind, use_is_pub};
 use super::*;
 
 fn contains_ascii_ci(haystack: &[u8], needle_lower: &[u8]) -> bool {
@@ -63,36 +64,6 @@ struct CachedWsDefs {
 /// Marks a crate root entry.
 const CRATE_ROOT: u32 = u32::MAX;
 
-/// Whether the `use` statement holding the name at `(line_1b, col_1b)` is `pub` or `pub(…)`. The index records
-/// no visibility for imports, so the source decides: walk back from the name to the statement's `use` keyword,
-/// across enclosing `{…}` groups, and look at the token before it.
-fn use_is_pub(src: &str, line_1b: u32, col_1b: u32) -> bool {
-    let Some(line_start) = src.split_inclusive('\n').take(line_1b.saturating_sub(1) as usize).map(str::len).try_fold(0usize, |a, l| a.checked_add(l)) else {
-        return false;
-    };
-    let line = src[line_start..].split('\n').next().unwrap_or("");
-    let at = line_start + line.char_indices().nth(col_1b.saturating_sub(1) as usize).map_or(line.len(), |(b, _)| b);
-    let b = src.as_bytes();
-    let is_id = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
-    let mut depth = 0i32;
-    let mut i = at.min(b.len());
-    while i > 0 {
-        i -= 1;
-        match b[i] {
-            b'}' => depth += 1,
-            b'{' => depth = (depth - 1).max(0),
-            b';' if depth == 0 => return false,
-            b'e' if depth == 0 && i >= 2 && &b[i - 2..=i] == b"use" && (i < 3 || !is_id(b[i - 3])) && b.get(i + 1).is_some_and(|c| !is_id(*c)) => {
-                let before = src[..i - 2].trim_end();
-                let before = if before.ends_with(')') { before[..before.rfind('(').unwrap_or(0)].trim_end() } else { before };
-                return before.ends_with("pub") && (before.len() == 3 || !is_id(before.as_bytes()[before.len() - 4]));
-            }
-            _ => {}
-        }
-    }
-    false
-}
-
 fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
     let reader = &ws.readers[e.reader as usize];
     if e.def == CRATE_ROOT {
@@ -106,16 +77,6 @@ fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
 fn is_ra_type_entry(e: &SymEntry) -> bool {
     e.def == CRATE_ROOT
         || matches!(e.kind, DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TraitAlias | DefKind::TyAlias | DefKind::AssocTy | DefKind::ForeignTy)
-}
-
-/// Kind of the item a `use` imports, through the path its signature records; `Use` when the index cannot tell.
-fn import_target_kind(ws: &WorkspaceIndex, reader: &crate::reader::IndexReader<memmap2::Mmap>, target: &str) -> DefKind {
-    reader
-        .find_definition_by_path(target)
-        .map(|d| DefKind::from(d.kind))
-        .or_else(|| ws.find_definition_by_path(target).map(|d| d.kind))
-        .or_else(|| ws.find_definition_by_path(&format!("{}::{target}", reader.crate_name())).map(|d| d.kind))
-        .unwrap_or(DefKind::Use)
 }
 
 fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<CachedWsDefs> {
@@ -160,9 +121,11 @@ fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<
             }
             let path = reader.get_str(def.path_offset());
             let span = def.span();
-            // rustc's test descriptor: a `const` named like its `#[test]` function, spanning the attribute.
+            // rustc's test descriptor: a `const` named like its `#[test]` function, spanning the attribute, or sharing
+            // the function's path (a `const` and a `fn` never share one otherwise) where a macro wrote both.
             let width = span.end_col().saturating_sub(span.start_col()) as usize;
-            if kind == DefKind::Const && span.start_line() == span.end_line() && width != name.chars().count() && width != name.chars().count() + 2 {
+            let spans_attr = span.start_line() == span.end_line() && width != name.chars().count() && width != name.chars().count() + 2;
+            if kind == DefKind::Const && (spans_attr || reader.has_multiple_definitions_at_path(path)) {
                 continue;
             }
             // rust-analyzer collects items declared in the bodies of module-level functions, not in method bodies.
