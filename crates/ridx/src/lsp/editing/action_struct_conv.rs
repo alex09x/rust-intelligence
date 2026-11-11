@@ -21,7 +21,7 @@ use super::action_struct_conv_helpers::{
     is_isolated_leaf_module, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
 };
 use super::action_struct_conv_index::{byte_to_line_col, field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, FieldRefs};
-use super::action_struct_conv_outside::{convert_outside, StructAt};
+use super::action_struct_conv_outside::{convert_outside, doc_outside_edits, StructAt};
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -67,6 +67,7 @@ pub fn build_convert_to_tuple_struct(
     let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
     let mut indexed = None;
     let mut other_files = BTreeMap::new();
+    let mut doc_literals = Vec::new();
     let mut struct_sites = std::collections::HashSet::new();
     if let Some(ws) = ws {
         let names: Vec<&str> = fields.iter().map(|(_, n, _, _)| n.as_str()).collect();
@@ -85,14 +86,14 @@ pub fn build_convert_to_tuple_struct(
             // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
             (Some(FieldRefs { sites, other_files: files }), Some(refs)) => {
                 let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi) };
-                other_files = convert_outside(&at, files, &field_index, fields.len())?;
+                (other_files, doc_literals) = convert_outside(&at, files, &field_index, fields.len())?;
                 struct_sites = struct_ref_sites(&refs, file, doc_text, starts);
                 indexed = Some(sites);
             }
             // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
             (None, Some(refs)) => {
                 let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi) };
-                if !convert_outside(&at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|o| o.is_empty()) {
+                if !convert_outside(&at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|(o, dl)| o.is_empty() && dl.is_empty()) {
                     return None;
                 }
             }
@@ -195,6 +196,7 @@ pub fn build_convert_to_tuple_struct(
 
     // Every place the compiler resolved to a field must be rewritten by one of the edits.
     if let Some(sites) = &indexed {
+        raw_edits.extend(doc_outside_edits(doc_text, masked_doc, (mod_lo, mod_hi), sites, &doc_literals, &field_index, fields.len())?);
         if !sites.iter().all(|&s| raw_edits.iter().any(|&(lo, hi, _)| s >= lo && s < hi)) {
             return None;
         }

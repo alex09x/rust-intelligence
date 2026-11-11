@@ -11,15 +11,15 @@
 //! `Convert to tuple struct` outside the struct's module. The index's references to the struct find, in other files,
 //! the literals and patterns that build or destructure it (`Name { .. }`) and the impls whose `Self { .. }` may; each
 //! is rewritten to `Name(..)`. The conversion is refused when a field label there is left outside every rewritten
-//! literal, when the struct is aliased (`type A = Name`, whose literals name no reference to it), or when such a site
-//! is in the struct's own file but outside its module.
+//! literal, or when the struct is aliased (`type A = Name`, whose literals name no reference to it). Sites in the
+//! struct's own file but outside its module are rewritten the same way, in the converted document.
 
 use super::action_parse::mask_comments_and_strings;
 use super::action_parse_decl::find_header_terminator;
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_struct_conv_fields::{splice, RawEdit};
 use super::action_struct_conv_helpers::{convert_brace_init_to_tuple, is_brace_struct_literal_or_pat, skip_optional_turbofish};
-use super::action_struct_conv_index::{line_col_to_byte, lsp_edits, skip_generic_args, Canon, OtherFile};
+use super::action_struct_conv_index::{line_col_to_byte, lsp_edits, receiver_ends_in_tuple_index, skip_generic_args, Canon, OtherFile};
 use ridx_format::LocationReferences;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -35,14 +35,25 @@ pub(crate) struct StructAt<'a> {
     pub module: (usize, usize),
 }
 
-/// Edits for the other files, as LSP edits keyed by URI; `None` when a site cannot be rewritten safely.
-pub(crate) fn convert_outside(at: &StructAt, mut files: BTreeMap<PathBuf, OtherFile>, field_index: &HashMap<&str, usize>, n_fields: usize) -> Option<BTreeMap<String, Vec<Value>>> {
+/// The literals and patterns of the struct to rewrite in the converted document outside its module, as
+/// `(edit start, opening brace)`, sorted.
+pub(crate) type DocLiterals = Vec<(usize, usize)>;
+
+/// Edits for the other files, as LSP edits keyed by URI, and the document's literals outside the struct's module;
+/// `None` when a site cannot be rewritten safely.
+pub(crate) fn convert_outside(
+    at: &StructAt,
+    mut files: BTreeMap<PathBuf, OtherFile>,
+    field_index: &HashMap<&str, usize>,
+    n_fields: usize,
+) -> Option<(BTreeMap<String, Vec<Value>>, DocLiterals)> {
     let mut canon_of = Canon::default();
     let canonical = canon_of.get(std::path::Path::new(at.file));
     let doc_masked = mask_comments_and_strings(at.doc);
     let mut masked: HashMap<PathBuf, String> = HashMap::new();
     // Per file, the literals to rewrite as `(edit start, opening brace)`.
     let mut literals: BTreeMap<PathBuf, Vec<(usize, usize)>> = BTreeMap::new();
+    let mut doc_literals: DocLiterals = Vec::new();
     for r in &at.refs.references {
         let path = r.resolved_path();
         let canon = if r.file == at.file { canonical.clone() } else { canon_of.get(&path) };
@@ -54,9 +65,12 @@ pub(crate) fn convert_outside(at: &StructAt, mut files: BTreeMap<PathBuf, OtherF
                 }
                 continue;
             }
-            if aliases(&doc_masked, b) || !shape_sites(at.doc, &doc_masked, b).is_empty() || is_impl_header(&doc_masked, b) {
+            // Outside the struct's module the document's literals (and an impl's `Self { .. }`) are rewritten as in
+            // another file.
+            if aliases(&doc_masked, b) {
                 return None;
             }
+            doc_literals.extend(shape_sites(at.doc, &doc_masked, b));
             continue;
         }
         let canon = canon?;
@@ -77,33 +91,70 @@ pub(crate) fn convert_outside(at: &StructAt, mut files: BTreeMap<PathBuf, OtherF
         let mut lits = literals.remove(&path).unwrap_or_default();
         lits.sort_unstable();
         lits.dedup();
-        let mut accesses = of.accesses;
-        let mut edits: Vec<RawEdit> = Vec::new();
-        for (lo, k) in lits {
-            let end = skip_balanced(m.as_bytes(), k, b'{', b'}')?;
-            if edits.iter().any(|e| lo < e.1 && e.0 < end) {
-                return None;
-            }
-            let (inner_lo, inner_hi) = (k + 1, end - 1);
-            let nested: Vec<RawEdit> = accesses.iter().filter(|e| e.0 >= inner_lo && e.1 <= inner_hi).cloned().collect();
-            accesses.retain(|e| !(e.0 >= inner_lo && e.1 <= inner_hi));
-            let inner = splice(&of.src[inner_lo..inner_hi], inner_lo, &nested);
-            let inner_m = splice(&m[inner_lo..inner_hi], inner_lo, &nested);
-            edits.push((lo, end, convert_brace_init_to_tuple(&inner, &inner_m, n_fields, field_index)?));
-        }
+        let edits = rewrite_literals(&of.src, &m, &lits, of.accesses, n_fields, field_index)?;
         if !of.labels.iter().all(|&l| edits.iter().any(|e| l >= e.0 && l < e.1)) {
-            return None;
-        }
-        edits.extend(accesses);
-        edits.sort_by_key(|e| e.0);
-        if edits.windows(2).any(|w| w[1].0 < w[0].1) {
             return None;
         }
         if !edits.is_empty() {
             out.insert(crate::lsp::protocol::path_to_uri(&of.shown), lsp_edits(&of.src, &edits));
         }
     }
-    Some(out)
+    doc_literals.sort_unstable();
+    doc_literals.dedup();
+    Some((out, doc_literals))
+}
+
+/// Each literal `(edit start, opening brace)` of `lits` rewritten to `Name(..)` with the field accesses inside it, and
+/// the remaining accesses; `None` when a literal cannot be converted or two edits overlap.
+fn rewrite_literals(src: &str, masked: &str, lits: &[(usize, usize)], mut accesses: Vec<RawEdit>, n_fields: usize, field_index: &HashMap<&str, usize>) -> Option<Vec<RawEdit>> {
+    let mut edits: Vec<RawEdit> = Vec::new();
+    for &(lo, k) in lits {
+        let end = skip_balanced(masked.as_bytes(), k, b'{', b'}')?;
+        if edits.iter().any(|e| lo < e.1 && e.0 < end) {
+            return None;
+        }
+        let (inner_lo, inner_hi) = (k + 1, end - 1);
+        let nested: Vec<RawEdit> = accesses.iter().filter(|e| e.0 >= inner_lo && e.1 <= inner_hi).cloned().collect();
+        accesses.retain(|e| !(e.0 >= inner_lo && e.1 <= inner_hi));
+        let inner = splice(&src[inner_lo..inner_hi], inner_lo, &nested);
+        let inner_m = splice(&masked[inner_lo..inner_hi], inner_lo, &nested);
+        edits.push((lo, end, convert_brace_init_to_tuple(&inner, &inner_m, n_fields, field_index)?));
+    }
+    edits.extend(accesses);
+    edits.sort_by_key(|e| e.0);
+    if edits.windows(2).any(|w| w[1].0 < w[0].1) {
+        return None;
+    }
+    Some(edits)
+}
+
+/// Edits for the converted document outside the struct's module `[lo, hi)`: its literals (`lits`) rewritten, and each
+/// field access the index found there (`sites`) renamed `.name` → `.N`. A label left outside every literal is caught by
+/// the caller's coverage check.
+pub(crate) fn doc_outside_edits(
+    doc: &str,
+    masked: &str,
+    (lo, hi): (usize, usize),
+    sites: &std::collections::HashSet<usize>,
+    lits: &[(usize, usize)],
+    field_index: &HashMap<&str, usize>,
+    n_fields: usize,
+) -> Option<Vec<RawEdit>> {
+    let mut accesses: Vec<RawEdit> = Vec::new();
+    for &s in sites.iter().filter(|&&s| !(lo..hi).contains(&s)) {
+        let name_len = doc[s..].find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(doc.len() - s);
+        let name = &doc[s..s + name_len];
+        let before = masked[..s].trim_end();
+        if !(before.ends_with('.') && !before.ends_with("..")) {
+            continue;
+        }
+        let idx = *field_index.get(name.strip_prefix("r#").unwrap_or(name))?;
+        if masked[s + name_len..].trim_start().starts_with('(') || receiver_ends_in_tuple_index(&before[..before.len() - 1]) {
+            return None;
+        }
+        accesses.push((s, s + name_len, idx.to_string()));
+    }
+    rewrite_literals(doc, masked, lits, accesses, n_fields, field_index)
 }
 
 /// Whether the struct cannot be followed from the reference at `b`: the target of a free type alias
