@@ -269,13 +269,11 @@ where
                         doc_version,
                     ));
                 }
-                if let Some((edits, other_files)) = build_convert_to_tuple_struct(doc_text, &masked_doc, &starts, &item, Some(ws), &file_path) {
-                    let mut action = make_multi_edit_assist(uri, "Convert to tuple struct", "refactor.rewrite", KIND_CONV_TUPLE_STRUCT, line0, col_u16, edits, doc_version);
-                    add_other_file_edits(&mut action["edit"], other_files);
-                    out.push(action);
-                }
-                if let Some((edits, other_files)) = convert_to_named(doc_text, &masked_doc, &starts, &item, ws, &file_path) {
-                    let mut action = make_multi_edit_assist(uri, "Convert to named struct", "refactor.rewrite", KIND_CONV_NAMED_STRUCT, line0, col_u16, edits, doc_version);
+                let to_tuple = build_convert_to_tuple_struct(doc_text, &masked_doc, &starts, &item, Some(ws), &file_path);
+                let to_named = convert_to_named(doc_text, &masked_doc, &starts, &item, ws, &file_path);
+                for (title, kind, conv) in [("Convert to tuple struct", KIND_CONV_TUPLE_STRUCT, to_tuple), ("Convert to named struct", KIND_CONV_NAMED_STRUCT, to_named)] {
+                    let Some((edits, other_files)) = conv else { continue };
+                    let mut action = make_multi_edit_assist(uri, title, "refactor.rewrite", kind, line0, col_u16, edits, doc_version);
                     add_other_file_edits(&mut action["edit"], other_files);
                     out.push(action);
                 }
