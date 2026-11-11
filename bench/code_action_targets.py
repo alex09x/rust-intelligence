@@ -72,6 +72,24 @@ def select_mode(run: Callable[[List[str]], Tuple[bool, str]], members: Dict[str,
     return [], set(), {"lib", "bin"}
 
 
+_CHECK_CFG = re.compile(r"""['"]cfg\((\w+)\)['"]""")
+
+
+def extra_configs(wt: str, members: Dict[str, str]) -> List[Tuple[str, List[str], Dict[str, str]]]:
+    """Configurations besides the default one, as `(name, extra check args, extra environment)`: all features, and
+    each plain cfg a manifest declares in `[lints.rust] unexpected_cfgs` (`cfg(tokio_unstable)`). A success that holds
+    only in the default configuration (an edit inside `debug!`, which expands to nothing without `debug`) is no
+    success; the caller keeps those configurations that pass at HEAD."""
+    names: Set[str] = set()
+    for d in {os.path.realpath(wt), *members}:
+        try:
+            with open(os.path.join(d, "Cargo.toml"), encoding="utf-8") as fh:
+                names |= set(_CHECK_CFG.findall(fh.read()))
+        except OSError:
+            continue
+    return [("all-features", ["--all-features"], {})] + [(f"cfg:{n}", [], {"RUSTFLAGS": f"--cfg {n}"}) for n in sorted(names)]
+
+
 def _target_kind(rel: str) -> str:
     if rel.startswith("tests/"):
         return "test"

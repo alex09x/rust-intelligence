@@ -209,8 +209,9 @@ def run_corpus_pkl(
         subprocess.run(["git", "checkout", "--", "."], cwd=wt, capture_output=True, text=True)
         subprocess.run(["git", "clean", "-fdq"], cwd=wt, capture_output=True, text=True)
 
-    def run_check(args: List[str], no_cache: bool = False) -> Tuple[bool, str]:
-        cmd = [mitts_path, "check", "--workspace"] + args + (["--no-cache"] if no_cache else [])
+    def run_check(args: List[str], no_cache: bool = False, config: Tuple[str, List[str], Dict[str, str]] = ("", [], {})) -> Tuple[bool, str]:
+        name, extra_args, extra_env = config
+        cmd = [mitts_path, "check", "--workspace"] + args + extra_args + (["--no-cache"] if no_cache else [])
         r = subprocess.run(
             cmd,
             cwd=wt,
@@ -218,7 +219,14 @@ def run_corpus_pkl(
             text=True,
             # A rustc wrapper (sccache from a cargo config) makes Mitts treat the build as uncacheable: every check
             # recompiled everything and left new objects in its store. Clear it so repeated checks hit the cache.
-            env=dict(os.environ, CARGO_TARGET_DIR=tgt, CARGO_BUILD_RUSTC_WRAPPER="", RUSTC_WRAPPER=""),
+            # Another configuration builds in a target directory of its own, keeping each one's artifacts.
+            env=dict(
+                os.environ,
+                CARGO_TARGET_DIR=tgt + (f"_{name.replace(':', '_')}" if name else ""),
+                CARGO_BUILD_RUSTC_WRAPPER="",
+                RUSTC_WRAPPER="",
+                **extra_env,
+            ),
         )
         return r.returncode == 0, r.stderr + "\n" + r.stdout
 
@@ -246,10 +254,36 @@ def run_corpus_pkl(
     print(f"[{corpus}] check {' '.join(mode) or '(lib, bins)'} excluding {sorted(excluded)}", flush=True)
     mode = mode + [a for p in sorted(excluded) for a in ("--exclude", p)]
 
-    def check(no_cache: bool = False) -> Tuple[bool, List[str]]:
-        ok_r, output = run_check(mode, no_cache)
+    def check(no_cache: bool = False, config: Tuple[str, List[str], Dict[str, str]] = ("", [], {})) -> Tuple[bool, List[str]]:
+        ok_r, output = run_check(mode, no_cache, config)
         errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
         return ok_r, errs[:3]
+
+    # The other configurations that pass at HEAD, found on first need and kept per checkout and mode.
+    configs_path = os.path.expanduser(f"{target_root}/cac_configs_{corpus}.json")
+    usable_configs: List[Tuple[str, List[str], Dict[str, str]]] = []
+    configs_known = False
+
+    def other_configs() -> List[Tuple[str, List[str], Dict[str, str]]]:
+        nonlocal usable_configs, configs_known
+        if configs_known:
+            return usable_configs
+        configs_known = True
+        candidates = [c for c in targets.extra_configs(wt, members) if not (c[0] == "all-features" and "--all-features" in mode)]
+        try:
+            with open(configs_path, encoding="utf-8") as fh:
+                saved_cfg = json.load(fh)
+            if saved_cfg.get("head") != head0 or saved_cfg.get("mode") != mode:
+                raise ValueError("another checkout")
+            usable_names = set(saved_cfg["usable"])
+        except (OSError, ValueError, KeyError):
+            reset()
+            usable_names = {c[0] for c in candidates if check(config=c)[0]}
+            with open(configs_path, "w", encoding="utf-8") as fh:
+                json.dump({"head": head0, "mode": mode, "usable": sorted(usable_names)}, fh)
+        usable_configs = [c for c in candidates if c[0] in usable_names]
+        print(f"[{corpus}] other configurations: {[c[0] for c in usable_configs]}", flush=True)
+        return usable_configs
 
     def checked(eds: Dict[str, list]) -> bool:
         for uri, es in eds.items():
@@ -280,6 +314,12 @@ def run_corpus_pkl(
             verified_failures: Set[str] = {k[len(key_prefix):] for k in json.load(fh) if k.startswith(key_prefix)}
     except (OSError, ValueError):
         verified_failures = set()
+    # rust-analyzer successes RIDX lacks, also checked in the other configurations.
+    try:
+        with open(cache_path + ".cfgverified", encoding="utf-8") as fh:
+            config_verified: Set[str] = {k[len(key_prefix):] for k in json.load(fh) if k.startswith(key_prefix)}
+    except (OSError, ValueError):
+        config_verified = set()
     summary = {
         who: {"positions_with_actions": 0, "actions_checked": 0, "actions_unchecked": 0, "actions_compiled": 0, "actions_broke_build": 0, "broke_by_title": Counter(), "sample_failures": []}
         for who in ("ridx", "ra")
@@ -332,11 +372,21 @@ def run_corpus_pkl(
                 title = str(act.get("title") or "<untitled>")
                 # A rust-analyzer success RIDX does not match is confirmed without Mitts' action cache as well: it
                 # counts against RIDX only when it really compiles.
-                if who == "ra" and cache[sig][0] and title not in pos_ok["ridx"] and sig not in verified_failures:
+                if who == "ra" and cache[sig][0] and title not in pos_ok["ridx"] and sig not in config_verified:
                     reset()
                     if apply_action_in_worktree(creates, eds, src, wt):
-                        cache[sig] = check(no_cache=True)
+                        if sig not in verified_failures:
+                            cache[sig] = check(no_cache=True)
+                        # It must compile in every other configuration that compiles at HEAD as well.
+                        for config in other_configs() if cache[sig][0] else []:
+                            reset()
+                            apply_action_in_worktree(creates, eds, src, wt)
+                            ok_k, err_k = check(config=config)
+                            if not ok_k:
+                                cache[sig] = (False, [f"under {config[0]}"] + err_k)
+                                break
                     verified_failures.add(sig)
+                    config_verified.add(sig)
                 ok_c, err_c = cache[sig]
                 if ok_c:
                     s["actions_compiled"] += 1
@@ -366,6 +416,13 @@ def run_corpus_pkl(
         stored_verified = set()
     with open(cache_path + ".verified", "w", encoding="utf-8") as fh:
         json.dump(sorted(stored_verified | {key_prefix + sig for sig in verified_failures}), fh)
+    try:
+        with open(cache_path + ".cfgverified", encoding="utf-8") as fh:
+            stored_cfg = set(json.load(fh))
+    except (OSError, ValueError):
+        stored_cfg = set()
+    with open(cache_path + ".cfgverified", "w", encoding="utf-8") as fh:
+        json.dump(sorted(stored_cfg | {key_prefix + sig for sig in config_verified}), fh)
     cov = compute_ra_compiling_coverage(per_pos_ok)
     out = {
         "corpus": corpus,
