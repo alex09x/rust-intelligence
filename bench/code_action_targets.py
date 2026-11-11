@@ -90,6 +90,60 @@ def extra_configs(wt: str, members: Dict[str, str]) -> List[Tuple[str, List[str]
     return [("all-features", ["--all-features"], {})] + [(f"cfg:{n}", [], {"RUSTFLAGS": f"--cfg {n}"}) for n in sorted(names)]
 
 
+def _block_end(text: str, open_at: int) -> int:
+    depth = 0
+    for i in range(open_at, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return i + 1
+    return len(text)
+
+
+def cfg_twin_at(path: str, line0: int, name: str) -> Optional[Tuple[int, int]]:
+    """The 0-based line span of the `#[cfg(..)]` item (not `#[cfg(test)]`) holding the function `name` declared at
+    line `line0` of `path`, when a twin, another item of the same header in the file, declares `fn name` as well:
+    another configuration compiles that twin instead, so inlining one body into a call outside that span changes what
+    the other configuration does (tokio's `counters.rs`, whose counting `mod imp` and empty `mod imp` share every
+    call). `None` without such a twin."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+    except OSError:
+        return None
+    at = sum(len(ln) + 1 for ln in text.split("\n")[:line0])
+    fn_re = re.compile(r"\bfn\s+" + re.escape(name) + r"\b")
+    pos = at
+    while True:
+        depth, open_at = 0, None
+        for i in range(pos - 1, -1, -1):
+            if text[i] == "}":
+                depth += 1
+            elif text[i] == "{":
+                if depth == 0:
+                    open_at = i
+                    break
+                depth -= 1
+        if open_at is None:
+            return None
+        header_lo = max(text.rfind(";", 0, open_at), text.rfind("{", 0, open_at), text.rfind("}", 0, open_at)) + 1
+        header = text[header_lo:open_at]
+        cfgs = [m.start() for m in re.finditer(r"#\[cfg\(", header)]
+        if any(not header.startswith("#[cfg(test)]", p) for p in cfgs):
+            own = header[header.rfind("]") + 1 :].strip()
+            for m in re.finditer(re.escape(own), text) if own else []:
+                if header_lo <= m.start() < open_at:
+                    continue
+                rest = text[m.end() :].lstrip()
+                if rest.startswith("{"):
+                    o = m.end() + (len(text[m.end() :]) - len(rest))
+                    if fn_re.search(text[o : _block_end(text, o)]):
+                        return text.count("\n", 0, open_at), text.count("\n", 0, _block_end(text, open_at))
+        pos = open_at
+
+
 def _target_kind(rel: str) -> str:
     if rel.startswith("tests/"):
         return "test"

@@ -27,6 +27,7 @@ import json
 import os
 import pickle
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -288,6 +289,28 @@ def run_corpus_pkl(
         print(f"[{corpus}] other configurations: {[c[0] for c in usable_configs]}", flush=True)
         return usable_configs
 
+    def config_dependent_inline(r: dict, eds: Dict[str, list]) -> bool:
+        path = os.path.join(wt, str(r.get("file") or ""))
+        line0 = int(r.get("line") or 1) - 1
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                line_text = fh.read().split("\n")[line0]
+        except (OSError, IndexError):
+            return False
+        ch = int(r.get("character") or 0)
+        m = next((m for m in re.finditer(r"[A-Za-z_][A-Za-z0-9_]*", line_text) if m.start() <= ch <= m.end()), None)
+        span = targets.cfg_twin_at(path, line0, m.group(0)) if m else None
+        if span is None:
+            return False
+        lo, hi = span
+        for uri, es in eds.items():
+            p = _map_uri_to_wt(uri, src, wt)
+            if not p or os.path.realpath(p) != os.path.realpath(path):
+                return True
+            if any(not (lo <= int(e["range"]["start"]["line"]) <= hi) for e in es):
+                return True
+        return False
+
     def checked(eds: Dict[str, list]) -> bool:
         for uri, es in eds.items():
             p = _map_uri_to_wt(uri, src, wt)
@@ -402,6 +425,11 @@ def run_corpus_pkl(
                             break
                     config_verified.add(sig)
                 ok_c, err_c = cache[sig]
+                # Inlining a function another configuration declares otherwise into a call outside its cfg item
+                # compiles everywhere yet changes what that configuration does: not counted as a success.
+                if ok_c and who == "ra" and title == "Inline into all callers" and config_dependent_inline(r, eds):
+                    s["actions_config_dependent"] = s.get("actions_config_dependent", 0) + 1
+                    continue
                 if ok_c:
                     s["actions_compiled"] += 1
                     pos_ok[who].add(title)
@@ -456,6 +484,7 @@ def run_corpus_pkl(
             "actions_checked": s["actions_checked"],
             "actions_compiled": s["actions_compiled"],
             "actions_broke_build": s["actions_broke_build"],
+            "actions_config_dependent": s.get("actions_config_dependent", 0),
             "actions_unchecked": s["actions_unchecked"],
             "compile_pct": round(100.0 * s["actions_compiled"] / denom, 1) if s["actions_checked"] else 100.0,
             "broke_by_title": dict(s["broke_by_title"].most_common()),
