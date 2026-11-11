@@ -30,6 +30,7 @@ CANDIDATES: List[Tuple[List[str], Set[str]]] = [
 ]
 
 _FAILED = re.compile(r"Failed to compile (\S+) v\S+")
+_FAILED_KIND = re.compile(r"Failed to compile \S+ v\S+ \[(\w+):(\w[\w-]*)\]")
 
 
 def workspace_members(wt: str) -> Dict[str, str]:
@@ -57,6 +58,11 @@ def select_mode(run: Callable[[List[str]], Tuple[bool, str]], members: Dict[str,
             ok, log = run(args + [a for p in sorted(excluded) for a in ("--exclude", p)])
             if ok:
                 return args, excluded, kinds
+            # A bench or example that cannot build (a nightly `#![feature]`, an example without `main`) drops that
+            # target kind, keeping its package's libraries and tests checked, before any package is excluded.
+            failed_kinds = {"bench" if k == "bench" or t == "bench" else k for k, t in _FAILED_KIND.findall(log)}
+            if failed_kinds and failed_kinds <= {"bench", "example"} and failed_kinds & kinds:
+                break
             culprits = failing_packages(log) & names
             if not culprits and len(names) <= 16:
                 culprits = {n for n in sorted(names - excluded) if not run(args + ["-p", n])[0]}
