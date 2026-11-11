@@ -156,6 +156,14 @@ pub fn next_item<I: Iterator>(mut it: I) -> Option<I::Item> {
         .find(|p| p.file_name().and_then(|s| s.to_str()).is_some_and(|s| s.starts_with("ws_app") && s.ends_with(".ridx")))
         .expect("ws_app.ridx shard");
     let ws_reader = IndexReader::open(&ws_ridx).expect("open ws_app.ridx");
+    // `dep_api` in `dep_api::Token` refers to the dependency's crate root.
+    let crate_root_refs: Vec<(u32, String, ridx_format::DefKind)> = ws_reader
+        .references()
+        .iter()
+        .filter(|r| r.span().start_line() == 16)
+        .map(|r| (r.span().start_col(), ws_reader.get_str(r.target_path_offset()).to_string(), ridx_format::DefKind::from(r.kind)))
+        .collect();
+    assert!(crate_root_refs.iter().any(|(_, p, k)| p == "dep_api" && *k == ridx_format::DefKind::Mod), "crate root segment: {crate_root_refs:?}");
     let ws_arena = ws_reader.ty_arena();
     let engine_idx = find_def_idx(&ws_reader, "Engine");
 

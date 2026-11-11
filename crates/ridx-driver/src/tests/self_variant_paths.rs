@@ -71,5 +71,13 @@ pub fn fmt_error(_: core::fmt::Error) {}\n";
         .map(|r| r.span().start_line())
         .collect();
     assert!(fmt_mod.contains(&18), "module segment: {fmt_mod:?}");
+    // `core` in `core::fmt::Error` refers to the crate root, as rust-analyzer lists `tt::` among `tt`'s references.
+    let line18: Vec<(u32, String)> = reader
+        .references()
+        .iter()
+        .filter(|r| r.span().start_line() == 18 && ridx_format::DefKind::from(r.kind) == ridx_format::DefKind::Mod)
+        .map(|r| (r.span().start_col(), reader.get_str(r.target_path_offset()).to_string()))
+        .collect();
+    assert!(line18.iter().any(|(c, p)| *c == 21 && p == "core"), "crate root segment: {line18:?}");
     let _ = fs::remove_dir_all(&temp_dir);
 }

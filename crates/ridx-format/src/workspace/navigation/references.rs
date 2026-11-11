@@ -123,7 +123,9 @@ impl WorkspaceIndex {
             let c = super::qualified_path::extract_root_crate(local_path);
             c == target_crate || matches!(c, "core" | "alloc" | "std" | "proc_macro") || self.has_crate(c)
         };
-        let global_path_buf = if is_global_angle { local_path.to_string() } else { format!("{target_crate}::{local_path}") };
+        // A crate's root is spelled by its name alone (`tt` in `tt::Leaf`), in its own crate and in its consumers.
+        let is_crate_root = target_path == target_crate;
+        let global_path_buf = if is_global_angle || is_crate_root { local_path.to_string() } else { format!("{target_crate}::{local_path}") };
         let global_path = global_path_buf.as_str();
         let mut spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
         if target_path.starts_with(&format!("{target_crate}::")) {

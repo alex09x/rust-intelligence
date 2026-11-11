@@ -9,6 +9,7 @@
  */
 
 mod candidates;
+mod crate_root_refs_tests;
 mod disambiguation;
 mod macro_ref_spelling_tests;
 mod references;
