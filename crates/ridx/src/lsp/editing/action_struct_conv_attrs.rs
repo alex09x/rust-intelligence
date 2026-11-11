@@ -39,6 +39,9 @@ const INERT_ATTRS: &[&str] = &["allow", "expect", "warn", "deny", "forbid", "doc
 /// The index's references read for evidence, at most.
 const EVIDENCE_REFS: usize = 400;
 
+/// How many references of one derive are looked at in all.
+const EVIDENCE_SCAN: usize = 4000;
+
 /// The index and the document whose attributes are checked.
 pub(crate) struct AttrCtx<'a> {
     pub ws: &'a WorkspaceIndex,
@@ -62,6 +65,7 @@ struct Attr<'s> {
 pub(crate) fn outer_attrs_allow_shape_change(doc: &str, lo: usize, hi: usize, ctx: Option<&AttrCtx>, shape: Shape) -> bool {
     let Some(attrs) = parse_attrs(doc, lo, hi) else { return false };
     let mut seen: HashSet<HelperKey> = HashSet::new();
+    let mut seen_other: HashSet<HelperKey> = HashSet::new();
     let mut helpers = Vec::new();
     // The helper keys to vouch for; a derive's search ends once they are all seen (at once without helpers).
     let needed: HashSet<HelperKey> =
@@ -80,7 +84,10 @@ pub(crate) fn outer_attrs_allow_shape_change(doc: &str, lo: usize, hi: usize, ct
                     continue;
                 }
                 match ctx.and_then(|c| derive_evidence(c, d_lo + d.len() - short.len(), shape, &needed)) {
-                    Some(keys) => seen.extend(keys),
+                    Some((keys, other)) => {
+                        seen.extend(keys);
+                        seen_other.extend(other);
+                    }
                     None if KNOWN_DERIVES.contains(&short) => {}
                     None => return false,
                 }
@@ -89,7 +96,14 @@ pub(crate) fn outer_attrs_allow_shape_change(doc: &str, lo: usize, hi: usize, ct
             helpers.push(a);
         }
     }
-    helpers.iter().all(|h| ctx.is_some_and(|c| !resolves_to_macro(c, h.at)) && helper_keys(h.name, h.args).iter().all(|k| seen.contains(k)))
+    helpers.iter().all(|h| ctx.is_some_and(|c| !resolves_to_macro(c, h.at)) && helper_keys(h.name, h.args).iter().all(|k| vouched(&seen, &seen_other, k)))
+}
+
+/// Whether helper key `k` is vouched for on the target shape: seen on a struct of that shape, or seen on one of the
+/// other shape while the same helper attribute (with other arguments) is seen on the target shape — the attribute
+/// takes that argument whatever the shape (`#[reflect(Event)]` beside the tuple structs' `#[reflect(Component)]`).
+fn vouched(shape_keys: &HashSet<HelperKey>, other_keys: &HashSet<HelperKey>, k: &HelperKey) -> bool {
+    shape_keys.contains(k) || (other_keys.contains(k) && shape_keys.iter().any(|(n, _)| *n == k.0))
 }
 
 /// The attributes in `doc[lo..hi]`, with those under `cfg_attr(predicate, …)` flattened; `None` on one it cannot read.
@@ -160,10 +174,10 @@ fn resolves_to_macro(c: &AttrCtx, at: usize) -> bool {
     c.ws.find_direct_references_at(c.file, line, col).is_some_and(|r| r.target_kind == DefKind::Macro)
 }
 
-/// The helper keys seen on structs of `shape` that compiled with the derive macro named at `at`, or `None` when the
-/// index has no such struct. The search ends once every key in `needed` was seen (at the first such struct when none
-/// is needed).
-fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<HelperKey>) -> Option<HashSet<HelperKey>> {
+/// The helper keys seen on structs of `shape` that compiled with the derive macro named at `at`, and those seen on
+/// structs of the other shape, or `None` when the index has no struct of `shape`. The search ends once every key in
+/// `needed` is vouched for (at the first such struct when none is needed).
+fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<HelperKey>) -> Option<(HashSet<HelperKey>, HashSet<HelperKey>)> {
     // A derive named like its trait (`#[derive(Component)]`) resolves to the trait; its references hold the derive
     // sites too, which `struct_shape_after` picks out of the rest.
     let derive_refs = |at: usize| {
@@ -175,11 +189,13 @@ fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<Helper
     let refs = derive_refs(at).or_else(|| same_name_derives(c.doc, at).into_iter().take(64).find_map(derive_refs))?;
     let mut sources: HashMap<std::path::PathBuf, Option<(String, Vec<usize>)>> = HashMap::new();
     let mut keys = HashSet::new();
+    let mut other = HashSet::new();
     let mut found = false;
-    // Only files spelling a needed helper attribute can vouch for it: the others are passed over without counting.
+    // Any struct of the shape vouches that the derive accepts it; only files spelling a needed helper attribute can
+    // vouch for that helper, and only those count toward the limit once the shape is vouched for.
     let helper_names: Vec<String> = needed.iter().map(|(n, _)| format!("#[{n}")).collect();
     let mut considered = 0;
-    for r in &refs.references {
+    for r in refs.references.iter().take(EVIDENCE_SCAN) {
         let path = r.resolved_path();
         let entry = sources.entry(path.clone()).or_insert_with(|| {
             let s = std::fs::read_to_string(&path).ok()?;
@@ -187,31 +203,30 @@ fn derive_evidence(c: &AttrCtx, at: usize, shape: Shape, needed: &HashSet<Helper
             Some((s, st))
         });
         let Some((src, starts)) = entry.as_ref() else { continue };
-        if !helper_names.is_empty() && !helper_names.iter().any(|h| src.contains(h.as_str())) {
+        let helpful = helper_names.is_empty() || helper_names.iter().any(|h| src.contains(h.as_str()));
+        if !helpful && found {
             continue;
         }
-        considered += 1;
+        considered += usize::from(helpful);
         if considered > EVIDENCE_REFS {
             break;
         }
         let Some(&ls) = starts.get((r.span.start_line() as usize).wrapping_sub(1)) else { continue };
         let ref_at = src[ls..].char_indices().nth(r.span.start_col().saturating_sub(1) as usize).map_or(src.len(), |(b, _)| ls + b);
         let Some((s, attrs_end)) = struct_shape_after(src, ref_at) else { continue };
-        if s != shape {
-            continue;
-        }
-        found = true;
+        found |= s == shape;
         let attr_lo = src[..ref_at].rfind("#[").unwrap_or(ref_at);
+        let into = if s == shape { &mut keys } else { &mut other };
         for a in parse_attrs(src, attr_lo, attrs_end).unwrap_or_default() {
             if a.name != "derive" {
-                keys.extend(helper_keys(a.name, a.args));
+                into.extend(helper_keys(a.name, a.args));
             }
         }
-        if needed.is_subset(&keys) {
+        if found && needed.iter().all(|k| vouched(&keys, &other, k)) {
             break;
         }
     }
-    found.then_some(keys)
+    found.then_some((keys, other))
 }
 
 /// The other places of `doc` naming the derive named at `at`: the `use` that imports it and other paths first (the
@@ -283,7 +298,17 @@ pub(crate) fn struct_shape_after(src: &str, at: usize) -> Option<(Shape, usize)>
 
 #[cfg(test)]
 mod tests {
-    use super::{helper_keys, outer_attrs_allow_shape_change, same_name_derives, struct_shape_after, Shape};
+    use super::{helper_keys, outer_attrs_allow_shape_change, same_name_derives, struct_shape_after, vouched, Shape};
+
+    #[test]
+    fn a_helper_argument_seen_on_the_other_shape_counts_when_its_attribute_is_seen_on_this_one() {
+        let k = |n: &str, a: &str| (n.to_string(), a.to_string());
+        let tuple = [k("reflect", "Component")].into_iter().collect();
+        let named = [k("reflect", "Event"), k("serde", "rename_all")].into_iter().collect();
+        assert!(vouched(&tuple, &named, &k("reflect", "Event")));
+        assert!(!vouched(&tuple, &named, &k("serde", "rename_all")));
+        assert!(!vouched(&tuple, &named, &k("reflect", "Hash")));
+    }
 
     #[test]
     fn the_file_s_other_derives_of_a_name_are_found() {
