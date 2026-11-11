@@ -295,3 +295,27 @@ pub(super) fn find_macro_template_trait_loc(resolved_file: &Path, raw_file: &str
     }
     None
 }
+
+/// Whether the block that holds line `from` is still open at the start of line `to`: the braces of the lines in between
+/// (comments and strings masked) never close more than they open.
+pub(super) fn still_open_at(conv: &mut PositionConverter, file: &str, from: u32, to: u32) -> bool {
+    if from == 0 || from >= to {
+        return true;
+    }
+    let text = (from..to).filter_map(|l| conv.get_line(file, l).map(str::to_string)).collect::<Vec<_>>().join("\n");
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(&text);
+    let mut depth = 0i32;
+    for b in masked.bytes() {
+        match b {
+            b'{' => depth += 1,
+            b'}' => {
+                depth -= 1;
+                if depth < 0 {
+                    return false;
+                }
+            }
+            _ => {}
+        }
+    }
+    true
+}

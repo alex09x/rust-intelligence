@@ -287,7 +287,11 @@ pub(super) fn resolve_self_into_locs(
     conv: &mut PositionConverter,
 ) {
     for c in ctx {
-        let Some(def) = ws.find_enclosing_impl_or_trait_def(c.idx, c.file_id, line) else {
+        // The nearest preceding impl item may be a derive's (on the struct itself) or close before `line`.
+        let Some(def) = ws
+            .find_enclosing_impl_or_trait_def(c.idx, c.file_id, line)
+            .filter(|d| !d.is_macro_expansion() && super::type_definition_parse::still_open_at(conv, file, d.span().start_line(), line))
+        else {
             continue;
         };
         let def_path = c.reader.get_str(def.path_offset());
