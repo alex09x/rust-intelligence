@@ -35,6 +35,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
+import code_action_targets as targets
+
 CORPORA = ("serde", "ripgrep", "tokio", "rust-analyzer", "bevy", "clap", "regex")
 
 
@@ -207,10 +209,8 @@ def run_corpus_pkl(
         subprocess.run(["git", "checkout", "--", "."], cwd=wt, capture_output=True, text=True)
         subprocess.run(["git", "clean", "-fdq"], cwd=wt, capture_output=True, text=True)
 
-    mode: List[str] = ["--all-targets"]
-
-    def check(no_cache: bool = False) -> Tuple[bool, List[str]]:
-        cmd = [mitts_path, "check", "--workspace"] + mode + (["--no-cache"] if no_cache else [])
+    def run_check(args: List[str], no_cache: bool = False) -> Tuple[bool, str]:
+        cmd = [mitts_path, "check", "--workspace"] + args + (["--no-cache"] if no_cache else [])
         r = subprocess.run(
             cmd,
             cwd=wt,
@@ -220,9 +220,7 @@ def run_corpus_pkl(
             # recompiled everything and left new objects in its store. Clear it so repeated checks hit the cache.
             env=dict(os.environ, CARGO_TARGET_DIR=tgt, CARGO_BUILD_RUSTC_WRAPPER="", RUSTC_WRAPPER=""),
         )
-        output = r.stderr + "\n" + r.stdout
-        errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
-        return r.returncode == 0, errs[:3]
+        return r.returncode == 0, r.stderr + "\n" + r.stdout
 
     with open(pkl_path, "rb") as fh:
         all_rows = pickle.load(fh)
@@ -230,13 +228,36 @@ def run_corpus_pkl(
     if not rows:
         rows = [r for r in all_rows if r.get("method") == "code_action"]
 
+    # The widest check that passes at HEAD, and which files it compiles: an edit anywhere else is not judged.
     reset()
-    ok, e = check()
-    if not ok:
-        mode = []
-        ok, e = check()
-        if not ok:
-            raise RuntimeError(f"Baseline check failed for {corpus}: {e}")
+    members = targets.workspace_members(wt)
+    head0 = subprocess.run(["git", "rev-parse", "HEAD"], cwd=wt, capture_output=True, text=True).stdout.strip()
+    mode_path = os.path.expanduser(f"{target_root}/cac_mode_{corpus}.json")
+    try:
+        with open(mode_path, encoding="utf-8") as fh:
+            saved = json.load(fh)
+        if saved.get("head") != head0:
+            raise ValueError("another checkout")
+        mode, excluded, kinds = list(saved["args"]), set(saved["excluded"]), set(saved["kinds"])
+    except (OSError, ValueError, KeyError):
+        mode, excluded, kinds = targets.select_mode(run_check, members)
+        with open(mode_path, "w", encoding="utf-8") as fh:
+            json.dump({"head": head0, "args": mode, "excluded": sorted(excluded), "kinds": sorted(kinds)}, fh)
+    print(f"[{corpus}] check {' '.join(mode) or '(lib, bins)'} excluding {sorted(excluded)}", flush=True)
+    mode = mode + [a for p in sorted(excluded) for a in ("--exclude", p)]
+
+    def check(no_cache: bool = False) -> Tuple[bool, List[str]]:
+        ok_r, output = run_check(mode, no_cache)
+        errs = [ln for ln in output.split("\n") if ": error" in ln or ln.startswith("error") or "rustc::error" in ln or "× Failed to compile" in ln]
+        return ok_r, errs[:3]
+
+    def checked(eds: Dict[str, list]) -> bool:
+        for uri, es in eds.items():
+            p = _map_uri_to_wt(uri, src, wt)
+            first = min((int(e["range"]["start"]["line"]) for e in es), default=0)
+            if not p or not targets.edit_is_checked(p, first, members, excluded, kinds):
+                return False
+        return True
 
     rng = random.Random(seed)
     rng.shuffle(rows)
@@ -260,7 +281,7 @@ def run_corpus_pkl(
     except (OSError, ValueError):
         verified_failures = set()
     summary = {
-        who: {"positions_with_actions": 0, "actions_checked": 0, "actions_compiled": 0, "actions_broke_build": 0, "broke_by_title": Counter(), "sample_failures": []}
+        who: {"positions_with_actions": 0, "actions_checked": 0, "actions_unchecked": 0, "actions_compiled": 0, "actions_broke_build": 0, "broke_by_title": Counter(), "sample_failures": []}
         for who in ("ridx", "ra")
     }
     per_pos_ok: List[Tuple[Set[str], Set[str]]] = []
@@ -288,6 +309,11 @@ def run_corpus_pkl(
                     s["positions_with_actions"] += 1
                     pos_counted = True
                 creates, eds = parsed
+                # An edit the selected check does not compile (an excluded package, a target kind left out, a crate
+                # outside the workspace) proves nothing either way.
+                if not checked(eds):
+                    s["actions_unchecked"] += 1
+                    continue
                 s["actions_checked"] += 1
                 sig = _edit_sig(creates, eds)
                 if sig not in cache:
@@ -303,8 +329,15 @@ def run_corpus_pkl(
                     if apply_action_in_worktree(creates, eds, src, wt):
                         cache[sig] = check(no_cache=True)
                     verified_failures.add(sig)
-                ok_c, err_c = cache[sig]
                 title = str(act.get("title") or "<untitled>")
+                # A rust-analyzer success RIDX does not match is confirmed without Mitts' action cache as well: it
+                # counts against RIDX only when it really compiles.
+                if who == "ra" and cache[sig][0] and title not in pos_ok["ridx"] and sig not in verified_failures:
+                    reset()
+                    if apply_action_in_worktree(creates, eds, src, wt):
+                        cache[sig] = check(no_cache=True)
+                    verified_failures.add(sig)
+                ok_c, err_c = cache[sig]
                 if ok_c:
                     s["actions_compiled"] += 1
                     pos_ok[who].add(title)
@@ -349,6 +382,7 @@ def run_corpus_pkl(
             "actions_checked": s["actions_checked"],
             "actions_compiled": s["actions_compiled"],
             "actions_broke_build": s["actions_broke_build"],
+            "actions_unchecked": s["actions_unchecked"],
             "compile_pct": round(100.0 * s["actions_compiled"] / denom, 1) if s["actions_checked"] else 100.0,
             "broke_by_title": dict(s["broke_by_title"].most_common()),
             "sample_failures": s["sample_failures"],
