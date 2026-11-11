@@ -259,6 +259,8 @@ pub(crate) fn qualify_member_paths(
             && !after.starts_with('!')
             // `name: value` / `name: Type` introduces a field or binding, not a path.
             && !(after.starts_with(':') && !is_path_head)
+            // `Visitor<'de, Value = …>` binds an associated type by its bare name.
+            && !(after.starts_with('=') && !after.starts_with("==") && (before.ends_with('<') || before.ends_with(',')))
             && (is_path_head || tok.starts_with(|c: char| c.is_ascii_uppercase()))
             && !visible(tok);
         if candidate {

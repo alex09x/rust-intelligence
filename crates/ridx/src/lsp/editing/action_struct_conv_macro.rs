@@ -21,18 +21,25 @@ use ridx_format::{DefKind, WorkspaceIndex};
 /// that name whose body names one of them, or a macro whose body cannot be read (a procedural one).
 pub(crate) fn macro_may_use_fields(ws: &WorkspaceIndex, masked: &str, b: usize, fields: &[&str]) -> bool {
     let Some(name) = macro_name_at(masked, b) else { return true };
+    macro_rules_bodies(ws, name).is_none_or(|bodies| bodies.iter().any(|body| fields.iter().any(|f| contains_word(body, f))))
+}
+
+/// The masked bodies of every `macro_rules! name` the index knows; `None` when there is none or one cannot be read
+/// (a procedural macro, a file gone from disk).
+pub(crate) fn macro_rules_bodies(ws: &WorkspaceIndex, name: &str) -> Option<Vec<String>> {
     let defs: Vec<_> = ws.exact_symbols_by_name(name).into_iter().filter(|s| s.kind == DefKind::Macro).collect();
     if defs.is_empty() {
-        return true;
+        return None;
     }
-    defs.iter().any(|d| {
-        let path = match d.source_root {
-            Some(root) if !std::path::Path::new(d.file).is_absolute() => ridx_format::join_resolving_overlap(root, std::path::Path::new(d.file)),
-            _ => ws.resolve_path_for_crate(d.crate_name, d.file),
-        };
-        let Ok(text) = std::fs::read_to_string(path) else { return true };
-        macro_rules_body(&mask_comments_and_strings(&text), name).is_none_or(|body| fields.iter().any(|f| contains_word(&body, f)))
-    })
+    defs.iter()
+        .map(|d| {
+            let path = match d.source_root {
+                Some(root) if !std::path::Path::new(d.file).is_absolute() => ridx_format::join_resolving_overlap(root, std::path::Path::new(d.file)),
+                _ => ws.resolve_path_for_crate(d.crate_name, d.file),
+            };
+            macro_rules_body(&mask_comments_and_strings(&std::fs::read_to_string(path).ok()?), name)
+        })
+        .collect()
 }
 
 /// The name of the innermost macro call (`name!(…)`, `name![…]`, `name! {…}`) around byte `b`.

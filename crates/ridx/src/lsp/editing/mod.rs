@@ -17,6 +17,7 @@ pub mod action_assists_edit;
 mod action_conversion_conflict;
 pub mod action_crate_checks;
 mod action_default_extract;
+mod action_default_macro;
 pub mod action_default_members;
 mod action_default_methods;
 mod action_default_prelude;

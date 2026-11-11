@@ -15,7 +15,7 @@ use super::action_inline_callers_qualify::tokens;
 use super::action_parse::{is_ident_byte, mask_comments_and_strings};
 
 /// Macros every expansion site sees wherever it is (`vec!`, `write!`, …).
-const STD_MACROS: &[&str] = &[
+pub(crate) const STD_MACROS: &[&str] = &[
     "assert",
     "assert_eq",
     "assert_ne",

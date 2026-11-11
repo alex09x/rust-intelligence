@@ -82,7 +82,9 @@ pub fn is_default_fn_compile_safe(
             if !prev_is_path && next_is_path && locals.contains(tok) && !matches!(tok, "self" | "Self" | "super" | "crate") {
                 return false;
             }
-            if !same_module && !prev_is_path && !next_is_single_colon {
+            // `Visitor<'de, Value = …>` binds an associated type of the trait before it by its bare name.
+            let assoc_binding = after_trim.starts_with('=') && !after_trim.starts_with("==") && matches!(prev_non_ws, b'<' | b',');
+            if !same_module && !prev_is_path && !next_is_single_colon && !assoc_binding {
                 let allowed = is_rust_kw_or_prelude(tok) || fn_gen_names.contains(tok) || impl_hdr_idents.contains(tok) || locals.contains(tok) || doc_scope.contains(tok);
                 if !allowed {
                     return false;

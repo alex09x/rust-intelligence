@@ -11,6 +11,7 @@
 //! Index-backed, compile-safe `Implement default members` code action builder.
 
 use super::action_default_extract::{collect_top_level_member_names, extract_default_fn_members, DefaultFnMember};
+use super::action_default_macro::macro_defined_words;
 use super::action_default_methods::resolvable_method_calls;
 use super::action_default_prelude::{shadows_prelude_name, unshadow_prelude};
 use super::action_default_qualify::{path_heads, qualify_member_paths, MemberOrigin};
@@ -44,10 +45,9 @@ pub fn build_implement_default_members(
     };
 
     let impl_body_masked = &masked_doc[body_open_byte + 1..*body_close_byte];
-    if has_top_level_macro_call(impl_body_masked) {
-        return None;
-    }
-    let implemented_fns = collect_top_level_member_names(impl_body_masked);
+    // Members the impl's macros may define count as implemented.
+    let mut implemented_fns = if has_top_level_macro_call(impl_body_masked) { macro_defined_words(ws, impl_body_masked)? } else { HashSet::new() };
+    implemented_fns.extend(collect_top_level_member_names(impl_body_masked));
 
     let (trait_path, mut trait_args) = split_trait_path_and_args(trait_ty)?;
     let simple_trait = trait_path.rsplit("::").next()?.trim();

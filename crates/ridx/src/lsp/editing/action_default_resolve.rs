@@ -199,6 +199,12 @@ pub fn resolve_trait_definition(
     if impl_mod != (0, masked_doc.len()) && (!trait_path.contains("::") || trait_path.starts_with("super::") || trait_path.starts_with("crate::")) {
         if let Some((generics, bo, bc)) = find_trait_in_range(doc_text, masked_doc, 0, masked_doc.len(), simple_clean, None) {
             let same_module = enclosing_module_span(masked_doc, bo) == impl_mod;
+            // Another module of the same file: the index's resolution carries the paths the trait's names need there.
+            if !same_module {
+                if let Some(found) = trait_from_index(doc_text, masked_doc, current_file, impl_body_open, simple_clean, ws, overlay_mgr, impl_mod) {
+                    return Some(found);
+                }
+            }
             return Some(ResolvedTraitSource {
                 src: doc_text.to_string(),
                 masked: masked_doc.to_string(),
