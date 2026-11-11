@@ -193,6 +193,9 @@ impl WorkspaceIndex {
             .unwrap_or_default();
 
         let mut match_memo = std::collections::HashMap::<(usize, &str), bool>::new();
+        let mut coord_cands = std::collections::HashMap::<&str, Vec<String>>::new();
+        let mut alias_spellings = std::collections::HashMap::<&str, Vec<String>>::new();
+        let mut alias_unit_memo = std::collections::HashMap::<(Option<&str>, &str), bool>::new();
 
         for (i, reader) in self.readers.iter().enumerate() {
             if self.is_reader_external(i) {
@@ -309,16 +312,20 @@ impl WorkspaceIndex {
                     if let Some((mod_prefix, item_name)) = local_path.rsplit_once("::") {
                         let parent_mod = mod_prefix.rsplit_once("::").map(|(p, _)| p);
                         for cname in [target_crate, reader_crate] {
-                            for cand in [
-                                Some(format!("{cname}::{item_name}")),
-                                (cname != target_crate).then(|| format!("{cname}::{local_path}")),
-                                parent_mod.map(|pm| format!("{cname}::{pm}::{item_name}")),
-                                (cname == target_crate).then(|| parent_mod.map(|pm| format!("{pm}::{item_name}"))).flatten(),
-                            ]
-                            .into_iter()
-                            .flatten()
-                            {
-                                for r in reader.find_references(&cand) {
+                            // The candidates depend only on the crate name: built once per name for all readers.
+                            let cands = coord_cands.entry(cname).or_insert_with(|| {
+                                [
+                                    Some(format!("{cname}::{item_name}")),
+                                    (cname != target_crate).then(|| format!("{cname}::{local_path}")),
+                                    parent_mod.map(|pm| format!("{cname}::{pm}::{item_name}")),
+                                    (cname == target_crate).then(|| parent_mod.map(|pm| format!("{pm}::{item_name}"))).flatten(),
+                                ]
+                                .into_iter()
+                                .flatten()
+                                .collect()
+                            });
+                            for cand in cands.iter() {
+                                for r in reader.find_references(cand) {
                                     if r.target_line() != 0 && points_at_definition(reader, r, coords) && matches_reference_target(reader, r, &ref_target) {
                                         push_reference(reader, r, (reader_crate, reader_unit, source_root), &mut seen_refs, &mut all_refs);
                                     }
@@ -334,13 +341,20 @@ impl WorkspaceIndex {
                 for (alias, uk) in extern_map {
                     if alias != target_crate {
                         if let Some(target_unit) = target_unit_key {
-                            if !self.matches_unit_memoized(&mut match_memo, i, uk.as_str(), target_unit, target_crate) {
+                            // A reader enters the match only through the unit of the target's crate it links, so the
+                            // answer is shared by every reader linking the same one.
+                            let linked = extern_map.get(target_crate).map(String::as_str);
+                            let ok = *alias_unit_memo.entry((linked, uk.as_str())).or_insert_with(|| self.matches_unit(i, uk.as_str(), target_unit, target_crate));
+                            if !ok {
                                 continue;
                             }
                         }
-                        let aliased_path = format!("{alias}::{local_path}");
-                        let mut aliased = super::qualified_path::consumer_spellings(local_path, alias);
-                        aliased.push(aliased_path);
+                        // The spellings depend only on the alias: built once per alias for all readers.
+                        let aliased = alias_spellings.entry(alias.as_str()).or_insert_with(|| {
+                            let mut s = super::qualified_path::consumer_spellings(local_path, alias);
+                            s.push(format!("{alias}::{local_path}"));
+                            s
+                        });
                         for r in aliased.iter().flat_map(|p| reader.find_references(p)) {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {
