@@ -139,7 +139,9 @@ pub(crate) fn cross_file_paths(body: &str, fn_src: &str, fn_file: &str, start: u
             }
             format!("crate::{rel}")
         } else {
-            return None;
+            // Another crate's item, which the function's crate (the callers' too) depends on: through its public
+            // modules or a root re-export.
+            super::action_default_qualify::path_for(ws, &def, crate_name, true).filter(|p| !p.starts_with("crate::"))?
         };
         if out.insert(tok.to_string(), path.clone()).is_some_and(|p| p != path) {
             return None;

@@ -136,6 +136,27 @@ fn public_std_path(ws: &WorkspaceIndex, path: &str, dest_std: bool) -> Option<St
     roots.iter().map(|r| format!("{r}::{tail}")).find(|c| ws.find_definition_by_path(c).is_some_and(|d| d.path == c))
 }
 
+/// The path to write in crate `dest_crate` for the item `def`: `crate::…` for the crate's own items (their visibility
+/// is the caller's to check), a public standard library path, or another crate's item through public modules or a
+/// root re-export; `None` when no written path is known to reach it.
+pub(crate) fn path_for(ws: &WorkspaceIndex, def: &ridx_format::ResolvedDefinition<'_>, dest_crate: &str, dest_std: bool) -> Option<String> {
+    let def_reader = def.reader_idx.and_then(|i| ws.readers().get(i));
+    let def_crate = def_reader.map(|r| r.crate_name().replace('-', "_")).unwrap_or_default();
+    let p = path_from(dest_crate, &def_crate, def.path).or_else(|| public_std_path(ws, def.path, dest_std))?;
+    let root = p.split("::").next().unwrap_or_default();
+    if matches!(root, "crate" | "core" | "std") {
+        return Some(p);
+    }
+    let root_file = def_reader.map(|r| r.get_file(0)).filter(|f| !f.is_empty())?;
+    let def_file = std::path::Path::new(def.file);
+    let def_path = match def.source_root {
+        Some(root) if !def_file.is_absolute() => ridx_format::join_resolving_overlap(root, def_file),
+        _ => def_file.to_path_buf(),
+    };
+    let root_file = def_path.ancestors().find(|a| a.join(root_file).is_file()).map(|a| a.join(root_file)).unwrap_or_else(|| root_file.into());
+    public_path(&root_file, &p)
+}
+
 /// Rewrites `src` (a member taken from `origin`) so names outside `visible` resolve as they did in the trait's file.
 /// Returns the new text and the crate roots it introduced (`core`, other crates), which the safety check must accept.
 /// `dest_std` tells whether the impl's crate links `std`.
@@ -195,24 +216,7 @@ pub(crate) fn qualify_member_paths(
         if !(kind_ok && named) {
             continue;
         }
-        let def_reader = def.reader_idx.and_then(|i| ws.readers().get(i));
-        let def_crate = def_reader.map(|r| r.crate_name().replace('-', "_")).unwrap_or_default();
-        // Another crate's item must be reached through public modules or a root re-export.
-        let path = path_from(dest_crate, &def_crate, def.path).or_else(|| public_std_path(ws, def.path, dest_std)).and_then(|p| {
-            let root = p.split("::").next().unwrap_or_default();
-            if matches!(root, "crate" | "core" | "std") {
-                return Some(p);
-            }
-            let root_file = def_reader.map(|r| r.get_file(0)).filter(|f| !f.is_empty())?;
-            let def_file = std::path::Path::new(def.file);
-            let def_path = match def.source_root {
-                Some(root) if !def_file.is_absolute() => ridx_format::join_resolving_overlap(root, def_file),
-                _ => def_file.to_path_buf(),
-            };
-            let root_file = def_path.ancestors().find(|a| a.join(root_file).is_file()).map(|a| a.join(root_file)).unwrap_or_else(|| root_file.into());
-            public_path(&root_file, &p)
-        });
-        if let Some(p) = path {
+        if let Some(p) = path_for(ws, &def, dest_crate, dest_std) {
             roots.insert(p.split("::").next().unwrap_or_default().to_string());
             edits.push((i, end, p));
         }

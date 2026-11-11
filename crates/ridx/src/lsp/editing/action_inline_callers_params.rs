@@ -116,6 +116,22 @@ pub(crate) fn has_inferred_placeholder(ty: &str) -> bool {
     })
 }
 
+/// `ty` with each named lifetime but `'static` written `'_` (`Walker<I<'db>>` → `Walker<I<'_>>`), for an annotation in
+/// the caller's body, where the callee's lifetime names mean nothing.
+pub(crate) fn anonymize_lifetimes(ty: &str) -> String {
+    let mut out = String::with_capacity(ty.len());
+    let mut rest = ty;
+    while let Some(p) = rest.find('\'') {
+        out.push_str(&rest[..=p]);
+        let after = &rest[p + 1..];
+        let n = after.len() - after.trim_start_matches(|c: char| c.is_alphanumeric() || c == '_').len();
+        out.push_str(if &after[..n] == "static" { "static" } else { "_" });
+        rest = &after[n..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// A parameter type with its named reference lifetimes dropped (`&'a mut T` → `&mut T`).
 pub(crate) fn normalize_param_type_for_binding(ty: &str) -> String {
     let mut out = String::with_capacity(ty.len());
@@ -167,4 +183,16 @@ pub(crate) fn call_takes_only_places(call: &str) -> bool {
     }
     let args = &call[open + 1..call.trim_end().len() - 1];
     !args.contains('(') && split_top_level_commas(args).iter().filter(|a| !a.trim().is_empty()).all(|a| is_place(a))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::anonymize_lifetimes;
+
+    #[test]
+    fn named_lifetimes_become_inferred_and_static_stays() {
+        assert_eq!(anonymize_lifetimes("TypeWalker<DbInterner<'db>>"), "TypeWalker<DbInterner<'_>>");
+        assert_eq!(anonymize_lifetimes("&'a mut Foo<'b, 'static>"), "&'_ mut Foo<'_, 'static>");
+        assert_eq!(anonymize_lifetimes("u32"), "u32");
+    }
 }

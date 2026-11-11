@@ -99,7 +99,7 @@ pub fn build_inline_into_all_callers_workspace(
     // places, which outlive the inlined block, and a `self` by reference.
     let borrowed_return = ret_src.as_deref().is_some_and(|r| r.starts_with('&') && !r.contains("'static"));
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
+        if type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
             if impl_has_type_generics {
@@ -114,7 +114,8 @@ pub fn build_inline_into_all_callers_workspace(
                 self_type_name.as_ref().map(|ty_name| rewrite_self_type_to_name(r, &mask_comments_and_strings(r), ty_name))
             }
         } else {
-            Some(r.to_string())
+            // Named lifetimes are the callee's: the annotation keeps the type with them inferred (`Walker<I<'_>>`).
+            Some(super::action_inline_callers_params::anonymize_lifetimes(r))
         }
     } else {
         None
@@ -184,14 +185,9 @@ pub fn build_inline_into_all_callers_workspace(
         }
         body_with_self_ty.trim().to_string()
     };
-    let body_transformed = if let Some(ret_ty) = &effective_ret_ty {
-        if !ret_ty.contains('\'') && !ret_ty.contains("Self") {
-            format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret")
-        } else {
-            body_transformed
-        }
-    } else {
-        body_transformed
+    let body_transformed = match &effective_ret_ty {
+        Some(ret_ty) if !ret_ty.contains("Self") => format!("let ret: {ret_ty} = {{ {body_transformed} }};\nret"),
+        _ => body_transformed,
     };
 
     let ws = ws?;
