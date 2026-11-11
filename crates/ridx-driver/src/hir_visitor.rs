@@ -29,7 +29,8 @@ impl<'tcx> HirVisitor<'tcx> {
             .associated_item_def_ids(trait_did)
             .iter()
             .copied()
-            .find(|&d| self.tcx.def_kind(d) == hir::def::DefKind::AssocTy && self.tcx.item_name(d) == name)
+            // Synthetic associated types (`impl Trait` in a trait method's return) have no name.
+            .find(|&d| self.tcx.def_kind(d) == hir::def::DefKind::AssocTy && self.tcx.opt_item_name(d) == Some(name))
             .map_or(Res::Err, |d| Res::Def(hir::def::DefKind::AssocTy, d))
     }
 
