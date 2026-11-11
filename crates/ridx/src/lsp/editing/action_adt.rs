@@ -320,7 +320,13 @@ fn doc_defines_inherent_new_or_macro(doc_text: &str, masked_doc: &str, struct_na
                 _ => None,
             };
             if let Some(em) = end_m {
-                if contains_word(&masked_doc[k..em], struct_name) {
+                // A macro may write `impl Name { fn new … }` when it names the struct and an `impl` or a `new`
+                // (in its arguments or its own name, `impl_new!`); one that only mentions the type does not.
+                let args = &masked_doc[k..em];
+                let name_start = masked_doc[..i].trim_end_matches(|c: char| c.is_alphanumeric() || c == '_').len();
+                let macro_name = &masked_doc[name_start..i];
+                let writes_ctor = contains_word(args, "new") || contains_word(args, "impl") || macro_name.contains("new") || macro_name.contains("impl");
+                if contains_word(args, struct_name) && writes_ctor {
                     return true;
                 }
                 i = em;
