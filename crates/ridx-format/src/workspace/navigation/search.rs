@@ -187,6 +187,24 @@ impl WorkspaceIndex {
         })
     }
 
+    /// The definitions the symbols at `positions` in `file` refer to, as [`Self::find_direct_references_at`] resolves
+    /// them, without collecting their references. The file is located among the index's units once.
+    pub fn resolve_definitions_at<'a>(&'a self, file: &str, positions: &[(u32, u32)]) -> Vec<Option<ResolvedDefinition<'a>>> {
+        self.resolve_definitions_in(&self.resolved_reader_file_ids(file), file, positions)
+    }
+
+    /// [`Self::resolve_definitions_at`] with the file's `(reader, file id)` pairs from
+    /// [`Self::resolved_reader_file_ids`], for callers that resolve in one file many times.
+    pub fn resolve_definitions_in<'a>(&'a self, pairs: &[(usize, u32)], file: &str, positions: &[(u32, u32)]) -> Vec<Option<ResolvedDefinition<'a>>> {
+        positions
+            .iter()
+            .map(|&(line, col)| {
+                let (exact, fallback_wide_ref, fallback_mod) = self.find_indexed_definition_candidates_in_pairs(pairs, file, line, col);
+                exact.or_else(|| self.resolve_cursor_path_at(file, line, col)).or(fallback_wide_ref).or(fallback_mod)
+            })
+            .collect()
+    }
+
     /// Finds all references to the symbol at cursor location across the workspace, including
     /// container-scoped trait/impl links for associated items.
     pub fn find_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<LocationReferences<'a>> {

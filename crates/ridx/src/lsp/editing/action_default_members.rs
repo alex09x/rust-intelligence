@@ -119,12 +119,17 @@ pub fn build_implement_default_members(
     let mut allowed_idents = path_heads(&format!("{generics_src} {self_ty} {trait_ty} {where_src}"));
     allowed_idents.extend(impl_hdr_idents.iter().filter(|t| t.starts_with('\'')).cloned());
     let hdr_heads = allowed_idents.clone();
+    // The trait's file is located among the index's units once for all its members.
+    let trait_file_ids = match (&resolved_trait.file, resolved_trait.same_module) {
+        (Some(f), false) => ws.resolved_reader_file_ids(f),
+        _ => Vec::new(),
+    };
 
     for m in missing {
         // Names the impl's module does not see are written as the paths the index resolved them to.
         let (fn_src, fn_masked, params_masked) = match (&resolved_trait.file, resolved_trait.same_module) {
             (Some(trait_file), false) => {
-                let origin = MemberOrigin { trait_src: &resolved_trait.src, trait_file, start: resolved_trait.body_open + 1 + m.start };
+                let origin = MemberOrigin { trait_src: &resolved_trait.src, trait_file, file_ids: &trait_file_ids, start: resolved_trait.body_open + 1 + m.start };
                 // A standard library name the impl's module also defines (clap's own `FlatMap`) means another item
                 // there: a standard library trait's names are written as full paths unless the prelude has them.
                 let visible = |t: &str| {

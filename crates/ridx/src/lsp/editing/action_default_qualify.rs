@@ -18,10 +18,12 @@ use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
 use std::path::Path;
 
-/// Where a member body sits: the trait file's text and path, and the body's byte offset in it.
+/// Where a member body sits: the trait file's text and path, the file's `(reader, file id)` pairs in the index (from
+/// `resolved_reader_file_ids`, located once for all members), and the body's byte offset in it.
 pub(crate) struct MemberOrigin<'a> {
     pub trait_src: &'a str,
     pub trait_file: &'a str,
+    pub file_ids: &'a [(usize, u32)],
     pub start: usize,
 }
 
@@ -94,6 +96,8 @@ pub(crate) fn qualify_member_paths(src: &str, origin: &MemberOrigin<'_>, ws: &Wo
     let b = masked.as_bytes();
     let mut edits: Vec<(usize, usize, String)> = Vec::new();
     let mut roots = HashSet::new();
+    // The names to resolve, `(start, end, position in the trait's file)`, resolved together below.
+    let mut names: Vec<(usize, usize, (u32, u32))> = Vec::new();
     let mut i = 0usize;
     while i < b.len() {
         if !(b[i].is_ascii_alphabetic() || b[i] == b'_') || (i > 0 && (is_ident_byte(b[i - 1]) || b[i - 1] == b'\'')) {
@@ -119,30 +123,41 @@ pub(crate) fn qualify_member_paths(src: &str, origin: &MemberOrigin<'_>, ws: &Wo
             let line_start = origin.trait_src[..abs].rfind('\n').map_or(0, |p| p + 1);
             let line = origin.trait_src[..line_start].matches('\n').count() as u32 + 1;
             let col = origin.trait_src[line_start..abs].chars().count() as u32 + 1;
-            if let Some(refs) = ws.find_direct_references_at(origin.trait_file, line, col) {
-                let kind_ok = !matches!(refs.target_kind, DefKind::Local | DefKind::TyParam | DefKind::Field | DefKind::Use | DefKind::Macro);
-                let named = refs.target_path.rsplit("::").next() == Some(tok.strip_prefix("r#").unwrap_or(tok));
-                let def_reader = refs.target_reader_idx.and_then(|i| ws.readers().get(i));
-                let def_crate = def_reader.map(|r| r.crate_name().replace('-', "_")).unwrap_or_default();
-                // Another crate's item must be reached through public modules or a root re-export.
-                let path = path_from(dest_crate, &def_crate, refs.target_path).and_then(|p| {
-                    let root = p.split("::").next().unwrap_or_default();
-                    if matches!(root, "crate" | "core" | "std") {
-                        return Some(p);
-                    }
-                    let root_file = def_reader.map(|r| r.get_file(0)).filter(|f| !f.is_empty())?;
-                    let root_file = refs.target_resolved_path().ancestors().find(|a| a.join(root_file).is_file()).map(|a| a.join(root_file)).unwrap_or_else(|| root_file.into());
-                    public_path(&root_file, &p)
-                });
-                if kind_ok && named {
-                    if let Some(p) = path {
-                        roots.insert(p.split("::").next().unwrap_or_default().to_string());
-                        edits.push((i, end, p));
-                    }
-                }
-            }
+            names.push((i, end, (line, col)));
         }
         i = end;
+    }
+    // Only the definitions are needed, not their references.
+    let positions: Vec<(u32, u32)> = names.iter().map(|n| n.2).collect();
+    for ((i, end, _), def) in names.into_iter().zip(ws.resolve_definitions_in(origin.file_ids, origin.trait_file, &positions)) {
+        let Some(def) = def else { continue };
+        let tok = &masked[i..end];
+        let kind_ok = !matches!(def.kind, DefKind::Local | DefKind::TyParam | DefKind::Field | DefKind::Use | DefKind::Macro);
+        let named = def.path.rsplit("::").next() == Some(tok.strip_prefix("r#").unwrap_or(tok));
+        if !(kind_ok && named) {
+            continue;
+        }
+        let def_reader = def.reader_idx.and_then(|i| ws.readers().get(i));
+        let def_crate = def_reader.map(|r| r.crate_name().replace('-', "_")).unwrap_or_default();
+        // Another crate's item must be reached through public modules or a root re-export.
+        let path = path_from(dest_crate, &def_crate, def.path).and_then(|p| {
+            let root = p.split("::").next().unwrap_or_default();
+            if matches!(root, "crate" | "core" | "std") {
+                return Some(p);
+            }
+            let root_file = def_reader.map(|r| r.get_file(0)).filter(|f| !f.is_empty())?;
+            let def_file = std::path::Path::new(def.file);
+            let def_path = match def.source_root {
+                Some(root) if !def_file.is_absolute() => ridx_format::join_resolving_overlap(root, def_file),
+                _ => def_file.to_path_buf(),
+            };
+            let root_file = def_path.ancestors().find(|a| a.join(root_file).is_file()).map(|a| a.join(root_file)).unwrap_or_else(|| root_file.into());
+            public_path(&root_file, &p)
+        });
+        if let Some(p) = path {
+            roots.insert(p.split("::").next().unwrap_or_default().to_string());
+            edits.push((i, end, p));
+        }
     }
     let mut out = src.to_string();
     for (lo, hi, text) in edits.into_iter().rev() {
