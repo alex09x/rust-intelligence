@@ -277,7 +277,13 @@ impl WorkspaceIndex {
                     let r_target_unit = reader.target_unit(r);
                     if let Some(target_unit) = effective_unit_key {
                         if !r_target_unit.is_empty() {
-                            if !self.matches_unit_memoized(&mut match_memo, i, r_target_unit, target_unit, target_crate) {
+                            // A build of the target's crate the index holds no shard for (a target with required
+                            // features compiles its dependencies again, with other features) is the same source
+                            // when the workspace has one version of that crate.
+                            let unindexed_build_of_target = self.unit_match.readers_for_unit(r_target_unit).is_none()
+                                && self.unit_match.crate_versions_count(target_crate) == 1
+                                && q_path.strip_prefix(target_crate).is_some_and(|rest| rest.starts_with("::"));
+                            if !unindexed_build_of_target && !self.matches_unit_memoized(&mut match_memo, i, r_target_unit, target_unit, target_crate) {
                                 continue;
                             }
                         } else if reader_crate == target_crate {
