@@ -87,6 +87,22 @@ impl<'w> RidxV5ItemDb<'w> {
         self.project_by_trait_and_name_depth(trait_gid, assoc_name, raw_self, trait_args, arena, vars, 0)
     }
 
+    /// Whether active parameter `param_idx` has trait bounds of which none is `trait_gid` or has it as a supertrait.
+    /// `false` for a trait's `Self`, without an active owner, or without bounds (nothing is known).
+    fn param_lacks_trait_bound(&self, param_idx: u16, trait_gid: GlobalDefId) -> bool {
+        let owner = self.active_owner_def.get();
+        if param_idx == 0 || !owner.is_some() {
+            return false;
+        }
+        let mut bounds = Vec::new();
+        self.v5_param_trait_bounds(owner, param_idx, &mut bounds);
+        !bounds.is_empty()
+            && !bounds.iter().any(|&b| {
+                let b = self.canonical_def(b);
+                b == trait_gid || self.trait_supertraits.get(&b).is_some_and(|s| s.iter().any(|&x| self.canonical_def(x) == trait_gid))
+            })
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn project_by_trait_and_name_depth(
         &self,
@@ -173,7 +189,11 @@ impl<'w> RidxV5ItemDb<'w> {
             if !trait_args.is_empty() {
                 self.try_bind_active_param_trait_args(idx, trait_gid, trait_args, arena, vars);
             }
-            return None;
+            // A parameter bounded by the trait keeps the projection abstract. One with other bounds only
+            // (`I: Iterator` for `<I as IntoIterator>::IntoIter`) gets the trait from an impl, a blanket one, below.
+            if !self.param_lacks_trait_bound(idx, trait_gid) {
+                return None;
+            }
         }
         if matches!(arena.kind(self_ty), InferTyKind::Unknown | InferTyKind::Infer(_)) {
             return None;
