@@ -20,6 +20,9 @@ use std::sync::{Arc, OnceLock};
 
 pub(crate) type ReachableCache = (Vec<(usize, usize)>, Vec<Vec<u64>>);
 pub(crate) type FieldVariantDeclRefs = Vec<(u32, u32, u32, u32)>;
+/// Per item name, the string offsets of a reader's reference targets that name an implementation's item
+/// (`<T as Trait>::item`, `m::<impl Trait for T>::item`).
+pub(crate) type QualifiedItemTargets = HashMap<Box<str>, Vec<u32>>;
 
 /// Precomputed lookup index for workspace unit matching and file-scoped definition positions.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -36,6 +39,7 @@ pub struct UnitMatchIndex {
     defs_by_pos: Vec<Vec<(u32, u32, u32)>>,
     pub(crate) assoc_ty_defs: Arc<Vec<OnceLock<Vec<u32>>>>,
     pub(crate) field_variant_decl_refs: Arc<Vec<OnceLock<FieldVariantDeclRefs>>>,
+    pub(crate) qualified_item_targets: Arc<Vec<OnceLock<QualifiedItemTargets>>>,
     pub(crate) resolved_uks: Vec<Option<String>>,
     pub(crate) reachable_reader_bits: Arc<OnceLock<ReachableCache>>,
 }
@@ -132,6 +136,7 @@ impl UnitMatchIndex {
             defs_by_pos,
             assoc_ty_defs,
             field_variant_decl_refs,
+            qualified_item_targets: Arc::new((0..readers.len()).map(|_| OnceLock::new()).collect()),
             resolved_uks,
             reachable_reader_bits: Arc::new(OnceLock::new()),
         }

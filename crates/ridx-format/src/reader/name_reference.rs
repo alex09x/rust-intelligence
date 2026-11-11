@@ -79,6 +79,32 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let name = target_path.rsplit("::").next().unwrap_or(target_path);
         (span.end_col() - span.start_col()) as usize > name.chars().count()
     }
+
+    /// The distinct reference target paths that name an implementation's item (`<T as Trait>::item`,
+    /// `m::<impl Trait for T>::item`), as string offsets grouped by the item's name. One pass over the target table.
+    pub fn qualified_item_targets(&self) -> std::collections::HashMap<Box<str>, Vec<u32>> {
+        let (by_target, refs) = (self.refs_by_target(), self.references());
+        let mut out: std::collections::HashMap<Box<str>, Vec<u32>> = std::collections::HashMap::new();
+        let mut last = u32::MAX;
+        for e in by_target {
+            let off = refs[e.index() as usize].target_path_offset();
+            if off == last {
+                continue;
+            }
+            last = off;
+            let path = self.get_str(off);
+            if !path.starts_with('<') && !path.contains("::<impl ") {
+                continue;
+            }
+            if let Some((head, item)) = path.rsplit_once("::") {
+                // The table is sorted by the target's hash, so the references to one target are adjacent.
+                if head.ends_with('>') && !item.is_empty() {
+                    out.entry(item.into()).or_default().push(off);
+                }
+            }
+        }
+        out
+    }
 }
 
 /// True when `inner` lies within `outer` in the same file and the two spans differ.

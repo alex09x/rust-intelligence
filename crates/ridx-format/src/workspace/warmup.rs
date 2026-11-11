@@ -147,6 +147,7 @@ impl WorkspaceIndex {
         let reach_cell = Arc::clone(&self.unit_match.reachable_reader_bits);
         let assoc_cells = Arc::clone(&self.unit_match.assoc_ty_defs);
         let fv_cells = Arc::clone(&self.unit_match.field_variant_decl_refs);
+        let qi_cells = Arc::clone(&self.unit_match.qualified_item_targets);
         let manifest_opt = super::cargo_targets::find_manifest_path(self);
         let n = self.unit_match.resolved_uks.len();
         let need_reach = reach_cell.get().is_none();
@@ -157,7 +158,7 @@ impl WorkspaceIndex {
             .filter(|&(i, p)| {
                 !self.is_reader_external(i)
                     && !p.as_os_str().is_empty()
-                    && (assoc_cells.get(i).is_some_and(|c| c.get().is_none()) || fv_cells.get(i).is_some_and(|c| c.get().is_none()))
+                    && [assoc_cells.get(i).map(|c| c.get().is_none()), fv_cells.get(i).map(|c| c.get().is_none()), qi_cells.get(i).map(|c| c.get().is_none())].contains(&Some(true))
             })
             .map(|(i, p)| (i, p.clone()))
             .collect();
@@ -177,13 +178,17 @@ impl WorkspaceIndex {
             for (idx, path) in ws_paths {
                 let need_assoc = assoc_cells.get(idx).is_some_and(|c| c.get().is_none());
                 let need_fv = fv_cells.get(idx).is_some_and(|c| c.get().is_none());
-                if need_assoc || need_fv {
+                let need_qi = qi_cells.get(idx).is_some_and(|c| c.get().is_none());
+                if need_assoc || need_fv || need_qi {
                     if let Ok(r) = IndexReader::open(&path) {
                         if let Some(cell) = assoc_cells.get(idx).filter(|c| c.get().is_none()) {
                             let _ = cell.get_or_init(|| UnitMatchIndex::compute_assoc_ty_defs(&r));
                         }
                         if let Some(cell) = fv_cells.get(idx).filter(|c| c.get().is_none()) {
                             let _ = cell.get_or_init(|| UnitMatchIndex::compute_field_variant_decl_refs(&r));
+                        }
+                        if let Some(cell) = qi_cells.get(idx).filter(|c| c.get().is_none()) {
+                            let _ = cell.get_or_init(|| r.qualified_item_targets());
                         }
                     }
                 }

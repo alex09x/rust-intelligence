@@ -28,6 +28,7 @@ mod search;
 #[cfg(test)]
 mod tests;
 pub mod trait_impl_refs;
+mod trait_item_uses;
 mod trait_rename_ext;
 mod workspace_symbol;
 

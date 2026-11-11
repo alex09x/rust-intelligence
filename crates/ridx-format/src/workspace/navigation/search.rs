@@ -192,6 +192,7 @@ impl WorkspaceIndex {
     pub fn find_references_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<LocationReferences<'a>> {
         let (def, mut refs) = self.resolve_direct_references_at(file, line, col)?;
         self.expand_trait_impl_references(&def, &mut refs);
+        self.expand_trait_item_impl_uses(&def, &mut refs);
         Some(LocationReferences {
             target_symbol: def.name,
             target_kind: def.kind,
