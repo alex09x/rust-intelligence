@@ -2,6 +2,24 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [Unreleased]
+
+Live type inference behind the LSP: dependencies and the standard library come from the rustc-built index, while the workspace's own code is parsed, name-resolved and type-inferred by `ridx` itself, on saved and on edited buffers alike. Figures below are from the 38-method, 7-corpus content-parity suite against rust-analyzer (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `clap`, `regex`), before (the last state without live inference in the LSP) and after (`602f4a19`), on the same index.
+
+### Added
+- **`textDocument/typeDefinition` from the inferred type**: every type the inferred type names (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator). Parity `89.22%` → `93.43%`.
+- **`textDocument/completion` after `.` from the receiver's inferred type**: fields and methods of the full receiver type with autoderef, traits in scope, bounds of type parameters and of a trait's `Self`, `#[doc(hidden)]` items of other crates hidden, postfix snippets (`let`, `letm`, `for`, `match`, `ifl`, `lete`, `while`, `if`, `not`, `break`, `drop`) chosen by the receiver's type and the expression's position as rust-analyzer does, and `await` / `await.member` on futures. Parity `78.36%` → `95.52%` (`1920/2010`); exact label-set matches `292` → `1326`; median latency `2.90 ms` → `1.76 ms`.
+- **`#[cfg(test)]` code answered from the unit that compiles it** (a library's test harness), for type queries and completion.
+
+### Changed
+- **`textDocument/references`**: `Self` inside an impl counts as a reference to its struct, enum or union. Parity `80.37%` → `82.20%`.
+- **`textDocument/inlayHint`**: recorded types are merged from every unit compiling the file, so test-module bindings get hints. Parity `94.31%` → `95.08%`.
+- **Trait solving**: bounds that land on a type parameter are checked against that parameter's declared bounds; compiler-implemented traits without an indexed definition (`Destruct`) no longer fail bound checks; type references no longer resolve to a same-path derive macro instead of the trait.
+
+### Notes
+- Refactoring assists stay compile-safe: `Inline into all callers` is not offered where the inlined body would reference private items from another module or crate, although rust-analyzer offers it there (`code_action` parity stays at `58%`).
+- Latency: `typeDefinition` median `0.54 ms` (`0.16 ms` before; the inferred answer costs a parse and a function inference on the first query in a file). Peak server memory on `bevy` is unchanged at about 1 GB.
+
 ## [0.2.0] - 2026-10-30
 
 First tagged release (`git tag` had no prior tags; entries below summarize changes relative to the initial `0.1.0` workspace baseline and the 5-corpus parity program `3fce845..d7fbd78`).
