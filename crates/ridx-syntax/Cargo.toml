@@ -1,6 +1,6 @@
 [package]
 name = "ridx-syntax"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 description = "Zero-dependency lossless Rust lexer and syntax tree for Rust Intelligence"
 authors = ["Alexander Panasenko <alex@prod.codes>"]

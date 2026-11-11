@@ -2,6 +2,13 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.4] - 2026-11-11
+
+Figures: the suite on the `0.3.4` and `0.3.3` release builds on one index (no re-index needed).
+
+### Fixed
+- **Type inference**: a projection on a type parameter whose bounds do not include the projection's trait goes through the impls, as rustc selects it: `<I as IntoIterator>::IntoIter` with `I: Iterator` is `I` by the blanket `impl<I: Iterator> IntoIterator for I`. A parameter bounded by the trait keeps the projection abstract. `typeDefinition` `1225` → `1226` of `1308`; no row lost in any of the 38 methods.
+
 ## [0.3.3] - 2026-11-11
 
 Figures: the suite on the `0.3.3` and `0.3.2` release builds on one index (the driver is unchanged; no re-index needed).
