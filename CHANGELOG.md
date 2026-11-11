@@ -2,14 +2,14 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
-## [Unreleased]
+## [0.3.1] - 2026-11-11
 
-Figures: the 38-method, 7-corpus suite, before (`0.3.0` with its driver) and after, both indexed afresh with the same Mitts build.
+Figures: the 38-method, 7-corpus suite, before (`0.3.0` with its driver) and after (the `0.3.1` release build), both indexed afresh with the same Mitts build. Indexes built by `0.3.0` should be rebuilt (`ridx index .`): the driver now records build scripts and trait functions named by paths.
 
 ### Changed
 - **`textDocument/references`** on a trait item also lists its uses the compiler resolved to an implementation (`v.into_iter()` on a `Vec`, `x.clone()` on a type deriving `Clone`), as rust-analyzer does; the uses a macro generates (a derive's body) are left out. Associated types named through `Self` or a type parameter in signatures (`-> Result<V::Value, Self::Error>`) and in `Trait<Assoc = T>` bounds are references to the trait's associated type. Parity `80.26%` → `83.62%` (`1593/1905`); `documentHighlight` `92.20%` → `93.32%`, incoming calls `91.07%` → `91.75%`; median latency unchanged (`0.63 ms` → `0.66 ms`).
 - **Indexing**: build scripts of the workspace's own packages are indexed; a trait function named by a path in a body (`From::from(x)`) refers to the implementation the arguments select.
-- **`textDocument/semanticTokens`**: a target root its own `#![cfg(…)]` switches off gets rust-analyzer's tokens (definitions typed, the file's own names `unresolvedReference`), and names inside macro arguments in doc examples are `generic`. Parity: full `91.90%` → `93.80%`, range `88.48%` → `90.24%`, delta `92.42%` → `94.28%`.
+- **`textDocument/semanticTokens`**: a target root its own `#![cfg(…)]` switches off, and an item an outer `#[cfg(…)]` leaves out of the build, get rust-analyzer's tokens (definitions typed; the names only that code defines or imports, method calls, fields and uses of locals `unresolvedReference`), and names inside macro arguments in doc examples are `generic`. Parity: full `91.90%` → `94.18%`, range `88.48%` → `90.67%`, delta `92.42%` → `94.66%`; median latency `0.45 ms` → `0.48 ms`, p95 `7.2 ms` → `8.3 ms`.
 - **`workspace/symbol`** kinds follow rust-analyzer's symbol index (associated functions are functions, associated types type parameters, statics constants, crate roots packages): answers identical to rust-analyzer's `643` → `994` of `2100`.
 
 ### Fixed
