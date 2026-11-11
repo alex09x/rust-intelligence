@@ -63,8 +63,9 @@ pub(crate) fn extract_default_fn_members(body_src: &str, body_masked: &str, same
                     }
                 } else if contains_word(inner_m, "cfg") {
                     cfg_attrs.push(body_src[attr_start..after_a].trim().to_string());
-                } else if inner_m.replace(' ', "").contains("doc(hidden)") || inner_m.trim_start().starts_with("unstable") {
-                    // Hidden members, and unstable library members a stable crate cannot use.
+                } else if (!same_crate && inner_m.replace(' ', "").contains("doc(hidden)")) || inner_m.trim_start().starts_with("unstable") {
+                    // Another crate's hidden members (its own crate implements them like any other), and unstable
+                    // library members a stable crate cannot use.
                     hidden = true;
                 }
                 i = after_a;

@@ -198,6 +198,12 @@ pub fn build_implement_default_members(
             (alpha_src, alpha_masked)
         };
         let alpha_params = extract_first_paren_masked(&alpha_masked).unwrap_or(sub_params);
+        // The macros of the trait's crate that the impl's file already calls (serde's `tri!`) are in scope there.
+        if !std_trait && super::action_inline_callers_macros::macros_in_scope(&alpha_src, doc_text) {
+            let mb = alpha_masked.as_bytes();
+            let calls = (0..mb.len()).filter(|&i| mb[i] == b'!' && mb.get(i + 1) != Some(&b'=') && i > 0 && is_ident_byte(mb[i - 1]));
+            allowed_idents.extend(calls.map(|i| alpha_masked[..i].rsplit(|c: char| !(c.is_alphanumeric() || c == '_')).next().unwrap_or("").to_string()));
+        }
         if !is_default_fn_compile_safe(
             &alpha_masked,
             &alpha_params,

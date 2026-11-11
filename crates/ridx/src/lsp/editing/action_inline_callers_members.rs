@@ -13,6 +13,7 @@
 
 use super::action_default_safety::is_rust_kw_or_prelude;
 use super::action_inline_callers_qualify::{line_col, reachable, tokens};
+use super::action_inline_callers_vis::{inside, member_owner, restricted_scope};
 use super::action_parse::mask_comments_and_strings;
 use super::action_parse_items::contains_word;
 use ridx_format::{DefKind, ItemVis, WorkspaceIndex};
@@ -65,10 +66,17 @@ pub(crate) fn assoc_calls_reachable(
             ItemVis::Crate if !external && def_crate == crate_name => {}
             ItemVis::Private if !external && def_crate == crate_name => {
                 // `m::Type::f`: visible in `m` and the modules inside it.
-                let rel = def.path.strip_prefix(&format!("{def_crate}::")).unwrap_or(def.path);
-                let module = rel.rsplitn(3, "::").nth(2);
-                if let Some(m) = module {
-                    super::action_inline_callers_qualify::narrow(within, m.to_string())?;
+                let owner = member_owner(def.path.strip_prefix(&format!("{def_crate}::")).unwrap_or(def.path));
+                if !owner.is_empty() {
+                    super::action_inline_callers_qualify::narrow(within, owner)?;
+                }
+            }
+            // `pub(super) fn f`: visible in the scope its declaration names.
+            ItemVis::Restricted if !external && def_crate == crate_name => {
+                let owner = member_owner(def.path.strip_prefix(&format!("{def_crate}::")).unwrap_or(def.path));
+                let scope = restricted_scope(ws, &def, &owner)?;
+                if !scope.is_empty() {
+                    super::action_inline_callers_qualify::narrow(within, scope)?;
                 }
             }
             _ => return None,
@@ -78,8 +86,10 @@ pub(crate) fn assoc_calls_reachable(
 }
 
 /// Whether every `.name` and `.N` of `body` (at byte `start` of `fn_src`) reaches a field or method visible from
-/// another file of `crate_name` whose text is `dest`: a trait's method needs the trait in the prelude or named in `dest`.
-pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: usize, ws: &WorkspaceIndex, crate_name: &str, dest: &str) -> bool {
+/// another file of `crate_name` whose text is `dest` and whose crate-relative module is `dest_module`: a private or
+/// restricted member only inside its scope, a trait's method with the trait in the prelude or named in `dest`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: usize, ws: &WorkspaceIndex, crate_name: &str, dest: &str, dest_module: Option<&str>) -> bool {
     let masked = mask_comments_and_strings(body);
     let pairs = ws.resolved_reader_file_ids(fn_file);
     let mb = masked.as_bytes();
@@ -103,8 +113,15 @@ pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: 
         let Some(reader) = def.reader_idx.and_then(|r| ws.readers().get(r)) else { return false };
         let def_crate = reader.crate_name().replace('-', "_");
         let vis = reader.find_definition_by_path(def.path).map(|d| d.item_vis()).unwrap_or(ItemVis::Private);
+        let owner = member_owner(def.path.strip_prefix(&format!("{def_crate}::")).unwrap_or(def.path));
+        let seen = |v: ItemVis| match v {
+            _ if reachable(v, &def_crate, crate_name) => true,
+            ItemVis::Private if def_crate == crate_name => dest_module.is_some_and(|d| inside(d, &owner)),
+            ItemVis::Restricted if def_crate == crate_name => dest_module.zip(restricted_scope(ws, &def, &owner)).is_some_and(|(d, s)| inside(d, &s)),
+            _ => false,
+        };
         match def.kind {
-            DefKind::Field => field_vis(reader, def.path).is_some_and(|v| reachable(v, &def_crate, crate_name)),
+            DefKind::Field => field_vis(reader, def.path).is_some_and(seen),
             DefKind::AssocFn | DefKind::Fn => {
                 let Some((parent, _)) = def.path.rsplit_once("::") else { return false };
                 match reader.find_definition_by_path(parent).map(|d| DefKind::from(d.kind)) {
@@ -112,7 +129,7 @@ pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: 
                         let tr = parent.rsplit("::").next().unwrap_or(parent);
                         is_rust_kw_or_prelude(tr) || contains_word(&dest_masked, tr)
                     }
-                    _ => reachable(vis, &def_crate, crate_name) || matches!(def_crate.as_str(), "core" | "alloc" | "std"),
+                    _ => seen(vis) || matches!(def_crate.as_str(), "core" | "alloc" | "std"),
                 }
             }
             _ => false,

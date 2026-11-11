@@ -41,6 +41,7 @@ mod action_inline_callers_params;
 mod action_inline_callers_qualify;
 mod action_inline_callers_recv;
 pub mod action_inline_callers_transform;
+mod action_inline_callers_vis;
 pub mod action_inline_local;
 pub mod action_parse;
 pub mod action_parse_decl;

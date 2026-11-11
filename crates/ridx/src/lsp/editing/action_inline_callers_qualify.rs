@@ -236,6 +236,8 @@ impl CrossFileBody {
         // Members are judged from the destination's crate: another crate sees only public ones.
         let dest_crate = if self.external { dest_units.first().map(|p| ws.readers()[p.0].crate_name().replace('-', "_")) } else { Some(self.crate_name.clone()) };
         let Some(dest_crate) = dest_crate.filter(|_| same_crate != self.external) else { return false };
+        // The destination's crate-relative module, against which private and restricted members are judged.
+        let dest_module = ws.module_path_for_file(dest_file).map(|m| m.split_once("::").map_or(String::new(), |(_, r)| r.to_string()));
         // Another crate's unit must be known to link every crate the paths start with (an example linking `clap`
         // does not see `clap_builder`); within the crate an unrecorded list is the function's own, which has them.
         let linked = match ws.extern_crate_names_for_file(dest_file) {
@@ -244,8 +246,10 @@ impl CrossFileBody {
         };
         linked
             && self.within.as_deref().is_none_or(|w| self.dest_inside(ws, dest_file, w))
-            && std::fs::read_to_string(dest)
-                .is_ok_and(|t| super::action_inline_callers_macros::macros_in_scope(raw_body, &t) && members_reachable(raw_body, fn_src, fn_file, start, ws, &dest_crate, &t))
+            && std::fs::read_to_string(dest).is_ok_and(|t| {
+                super::action_inline_callers_macros::macros_in_scope(raw_body, &t)
+                    && members_reachable(raw_body, fn_src, fn_file, start, ws, &dest_crate, &t, dest_module.as_deref())
+            })
     }
 
     /// Whether the module of `dest_file` is the crate-relative module `w` or lies inside it.
