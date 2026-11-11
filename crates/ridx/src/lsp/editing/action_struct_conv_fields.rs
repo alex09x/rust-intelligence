@@ -12,7 +12,7 @@
 
 use super::action_parse_decl::next_ident_token;
 use super::action_struct_conv_helpers::receiver_is_proven_owner;
-use super::action_struct_conv_index::{receiver_ends_in_tuple_index, FieldRefs};
+use super::action_struct_conv_index::receiver_ends_in_tuple_index;
 use std::collections::{HashMap, HashSet};
 
 /// A document-addressed replacement of `[lo, hi)`.
@@ -39,7 +39,7 @@ pub(crate) fn field_access_edits(
     (mod_lo, mod_hi): (usize, usize),
     (decl_lo, decl_hi): (usize, usize),
     field_index: &HashMap<&str, usize>,
-    indexed: Option<&FieldRefs>,
+    indexed: Option<&HashSet<usize>>,
     impl_spans: &[(usize, usize)],
     known_locals: &HashSet<String>,
 ) -> Option<Vec<RawEdit>> {
@@ -63,7 +63,7 @@ pub(crate) fn field_access_edits(
                     if !after_trim.starts_with('(') && !after_trim.starts_with("::<") {
                         match indexed {
                             // Another type's field of the same name: not ours to rewrite.
-                            Some(refs) if !refs.sites.contains(&k) => {
+                            Some(sites) if !sites.contains(&k) => {
                                 d = f_end;
                                 continue;
                             }

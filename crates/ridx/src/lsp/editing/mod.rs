@@ -46,6 +46,7 @@ mod action_struct_conv_attrs;
 mod action_struct_conv_fields;
 pub mod action_struct_conv_helpers;
 mod action_struct_conv_index;
+mod action_struct_conv_outside;
 pub mod actions;
 pub mod apply_registry;
 pub mod atomic_write;

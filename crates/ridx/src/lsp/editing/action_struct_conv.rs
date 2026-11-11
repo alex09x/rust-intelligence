@@ -20,7 +20,8 @@ use super::action_struct_conv_helpers::{
     collect_typed_locals, convert_brace_init_to_tuple, convert_tuple_init_to_brace, find_impl_body_spans_for, is_bare_value_ctor_fn_ref, is_brace_struct_literal_or_pat,
     is_isolated_leaf_module, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
 };
-use super::action_struct_conv_index::{field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, struct_shape_used_outside};
+use super::action_struct_conv_index::{byte_to_line_col, field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, FieldRefs};
+use super::action_struct_conv_outside::{convert_outside, StructAt};
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -63,20 +64,29 @@ pub fn build_convert_to_tuple_struct(
         return None;
     }
     let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
+    let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
     let mut indexed = None;
+    let mut other_files = BTreeMap::new();
     let mut struct_sites = std::collections::HashSet::new();
     if let Some(ws) = ws {
         let names: Vec<&str> = fields.iter().map(|(_, n, _, _)| n.as_str()).collect();
         let field_refs = field_name_bytes(&masked_doc[*open_delim_byte..*end_byte], *open_delim_byte, &names).and_then(|nb| indexed_field_refs(ws, file, doc_text, starts, &nb));
-        let name_byte = struct_name_byte(masked_doc, item.decl_start_byte, *open_delim_byte, &item.name);
-        match (field_refs, name_byte.and_then(|nb| struct_shape_used_outside(ws, file, doc_text, starts, nb, mod_lo, mod_hi))) {
-            // Built, destructured or implemented where the edits do not reach.
-            (_, Some(true)) => return None,
-            (Some(refs), Some(false)) => {
-                struct_sites = name_byte.and_then(|nb| struct_ref_sites(ws, file, doc_text, starts, nb)).unwrap_or_default();
-                indexed = Some(refs);
+        if let Some(name_byte) = struct_name_byte(masked_doc, item.decl_start_byte, *open_delim_byte, &item.name) {
+            let at = StructAt { file, doc: doc_text, starts, name_byte, module: (mod_lo, mod_hi) };
+            let (line, col) = byte_to_line_col(doc_text, starts, name_byte);
+            let known = ws.find_direct_references_at(file, line, col).is_some_and(|r| r.target_line == line);
+            match field_refs {
+                // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
+                Some(refs) => {
+                    let FieldRefs { sites, other_files: files } = refs;
+                    other_files = convert_outside(ws, &at, files, &field_index, fields.len())?;
+                    struct_sites = struct_ref_sites(ws, file, doc_text, starts, name_byte).unwrap_or_default();
+                    indexed = Some(sites);
+                }
+                // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
+                None if known && !convert_outside(ws, &at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|o| o.is_empty()) => return None,
+                None => {}
             }
-            _ => {}
         }
     }
     // With the index every field reference is known, so child modules, macros and wider visibility are checked by
@@ -117,7 +127,6 @@ pub fn build_convert_to_tuple_struct(
     };
     raw_edits.push((name_end, *end_byte, decl));
 
-    let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
     let mut field_edits =
         field_access_edits(doc_text, masked_doc, (mod_lo, mod_hi), (item.decl_start_byte, *end_byte), &field_index, indexed.as_ref(), &impl_spans, &known_locals)?;
 
@@ -175,12 +184,11 @@ pub fn build_convert_to_tuple_struct(
     raw_edits.extend(field_edits);
 
     // Every place the compiler resolved to a field must be rewritten by one of the edits.
-    if let Some(refs) = &indexed {
-        if !refs.sites.iter().all(|&s| raw_edits.iter().any(|&(lo, hi, _)| s >= lo && s < hi)) {
+    if let Some(sites) = &indexed {
+        if !sites.iter().all(|&s| raw_edits.iter().any(|&(lo, hi, _)| s >= lo && s < hi)) {
             return None;
         }
     }
-    let other_files = indexed.map(|r| r.other_files).unwrap_or_default();
     Some((to_lsp_edits(doc_text, starts, raw_edits)?, other_files))
 }
 
