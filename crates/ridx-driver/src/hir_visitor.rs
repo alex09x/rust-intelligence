@@ -15,25 +15,6 @@ impl<'tcx> HirVisitor<'tcx> {
         self.current_body_owner.map(|owner| self.tcx.param_env(owner.to_def_id()))
     }
 
-    /// The associated type `name` of the trait behind `Self` in `qself` (`Self` of an impl of a trait, or of a trait).
-    fn self_assoc_ty_res(&self, qself: &hir::Ty<'tcx>, name: rustc_span::Symbol) -> Res {
-        let hir::TyKind::Path(hir::QPath::Resolved(None, path)) = qself.kind else { return Res::Err };
-        let trait_did = match path.res {
-            Res::SelfTyAlias { alias_to, .. } if matches!(self.tcx.def_kind(alias_to), hir::def::DefKind::Impl { of_trait: true }) => {
-                self.tcx.impl_trait_ref(alias_to).skip_binder().def_id
-            }
-            Res::SelfTyParam { trait_ } => trait_,
-            _ => return Res::Err,
-        };
-        self.tcx
-            .associated_item_def_ids(trait_did)
-            .iter()
-            .copied()
-            // Synthetic associated types (`impl Trait` in a trait method's return) have no name.
-            .find(|&d| self.tcx.def_kind(d) == hir::def::DefKind::AssocTy && self.tcx.opt_item_name(d) == Some(name))
-            .map_or(Res::Err, |d| Res::Def(hir::def::DefKind::AssocTy, d))
-    }
-
     fn add_ref_from_res(&mut self, span: Span, res: Res) {
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(self.tcx, span, self.package_root.as_deref()) else {
             return;
@@ -215,14 +196,11 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     }
 
     fn visit_ty(&mut self, ty: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
-        if let hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) = ty.kind {
-            // Inside a body typeck resolves the path; in a signature `Self::Assoc` names an associated type of the
-            // trait the enclosing impl implements (or of the enclosing trait itself).
-            let res = match self.typeck {
-                Some(typeck) => typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id),
-                None => self.self_assoc_ty_res(qself, segment.ident.name),
-            };
-            self.add_ref_from_res(segment.ident.span, res);
+        if let Some(typeck) = self.typeck {
+            if let hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) = ty.kind {
+                let res = typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
+                self.add_ref_from_res(segment.ident.span, res);
+            }
         }
         intravisit::walk_ty(self, ty);
     }
