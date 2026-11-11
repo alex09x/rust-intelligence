@@ -18,7 +18,7 @@ use super::action_inline_callers_transform::{
     extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
 use super::action_inline_local::line_deletion_span;
-use super::action_parse::{is_ident_byte, mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
+use super::action_parse::{mask_comments_and_strings, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::contains_word;
 use super::action_struct_conv_helpers::to_lsp_edits;
 use super::action_struct_conv_index::byte_to_line_col;
@@ -192,7 +192,7 @@ pub fn build_inline_into_all_callers_workspace(
         rewrite_self_to_this(&body_with_self_ty, &masked_with_self_ty).trim().to_string()
     } else {
         // A `self` of an item the body declares (`impl Drop for ResetGuard { fn drop(&mut self) .. }`) is that item's.
-        let own = without_nested_items(&super::action_inline_callers_params::mask_macro_tokens(&masked_with_self_ty));
+        let own = super::action_inline_callers_early_return::without_nested_items(&super::action_inline_callers_params::mask_macro_tokens(&masked_with_self_ty));
         if contains_word(&own, "self") || masked_with_self_ty.contains("self::") {
             return None;
         }
@@ -343,26 +343,6 @@ pub fn build_inline_into_all_callers_workspace(
     let local_lsp_edits = if local_edits.is_empty() { Vec::new() } else { to_lsp_edits(doc_text, starts, local_edits)? };
 
     Some((local_lsp_edits, other_file_edits))
-}
-
-/// `masked` with the `impl` and `fn` items it declares blanked out, header to closing brace.
-fn without_nested_items(masked: &str) -> String {
-    let b = masked.as_bytes();
-    let mut out = masked.to_string().into_bytes();
-    let mut i = 0;
-    while let Some(p) = masked[i..].find(['i', 'f']).map(|p| p + i) {
-        let kw = ["impl", "fn"].into_iter().find(|k| masked[p..].starts_with(k) && b.get(p + k.len()).is_some_and(|c| !is_ident_byte(*c)));
-        let starts_word = p == 0 || !is_ident_byte(b[p - 1]);
-        match (kw, starts_word, masked[p..].find('{').map(|o| p + o)) {
-            (Some(_), true, Some(open)) => {
-                let end = super::action_parse_items::skip_balanced(b, open, b'{', b'}').unwrap_or(b.len());
-                out[p..end].fill(b' ');
-                i = end;
-            }
-            _ => i = p + 1,
-        }
-    }
-    String::from_utf8(out).unwrap_or_default()
 }
 
 fn has_safe_pub_new_params(params: &[FnParamInfo]) -> bool {

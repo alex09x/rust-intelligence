@@ -16,15 +16,42 @@
 use super::action_parse::is_ident_byte;
 use super::action_parse_items::contains_word;
 
+/// `masked` with the `impl` and `fn` items it declares (at the start of a statement) blanked out, header to closing
+/// brace: their `self`, `return` and `fn` are their own.
+pub(crate) fn without_nested_items(masked: &str) -> String {
+    let b = masked.as_bytes();
+    let mut out = masked.to_string().into_bytes();
+    let mut i = 0;
+    while let Some(p) = masked[i..].find(['i', 'f']).map(|p| p + i) {
+        let kw = ["impl", "fn"].into_iter().find(|k| masked[p..].starts_with(k) && b.get(p + k.len()).is_some_and(|c| !is_ident_byte(*c)));
+        let head = masked[..p].trim_end();
+        let at_statement = head.is_empty()
+            || head.ends_with([';', '{', '}', ']'])
+            || ["pub", "const", "unsafe", "async"].iter().any(|k| head.ends_with(k) && !head[..head.len() - k.len()].ends_with(|c: char| c.is_alphanumeric() || c == '_'));
+        let starts_word = p == 0 || !is_ident_byte(b[p - 1]);
+        match (kw, starts_word && at_statement, masked[p..].find('{').map(|o| p + o)) {
+            (Some(_), true, Some(open)) => {
+                let end = super::action_parse_items::skip_balanced(b, open, b'{', b'}').unwrap_or(b.len());
+                out[p..end].fill(b' ');
+                i = end;
+            }
+            _ => i = p + 1,
+        }
+    }
+    String::from_utf8(out).unwrap_or_default()
+}
+
 pub(crate) fn transform_early_returns(body_src: &str, masked_body: &str) -> Option<(String, String)> {
     if masked_body.contains("'inl") {
         return None;
     }
-    if contains_word(masked_body, "async") || contains_word(masked_body, "fn") {
+    // The body's own code, without the items it declares (`impl Drop for G { fn drop(..) { .. } }`).
+    let own = without_nested_items(masked_body);
+    if contains_word(&own, "async") || contains_word(&own, "fn") {
         return None;
     }
 
-    let mb = masked_body.as_bytes();
+    let mb = own.as_bytes();
     let mut return_indices = Vec::new();
     let mut i = 0usize;
     while i < mb.len() {
