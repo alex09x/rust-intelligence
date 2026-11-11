@@ -104,13 +104,19 @@ pub(crate) fn cross_file_paths(
         .into_iter()
         .filter(|&(i, e)| {
             let tok = &masked[i..e];
-            is_candidate(&masked, i, e, tok) && !is_rust_kw_or_prelude(tok) && !locals.contains(tok) && !matches!(tok, "self" | "Self" | "crate" | "this")
+            // A prelude name (`None`) is resolved too: a glob import (`use self::RenameRule::*`) may make it another item.
+            let prelude_item = is_rust_kw_or_prelude(tok) && tok.starts_with(|c: char| c.is_ascii_uppercase()) && tok != "Self";
+            is_candidate(&masked, i, e, tok) && (prelude_item || !is_rust_kw_or_prelude(tok)) && !locals.contains(tok) && !matches!(tok, "self" | "Self" | "crate" | "this")
         })
         .collect();
     let positions: Vec<(u32, u32)> = names.iter().map(|&(i, _)| line_col(fn_src, start + i)).collect();
     let mut out: HashMap<String, String> = HashMap::new();
     for (&(i, e), def) in names.iter().zip(ws.resolve_definitions_in(&pairs, fn_file, &positions)) {
         let tok = &masked[i..e];
+        // A prelude name that is the prelude's item (or that the index does not resolve) stays as it is.
+        if is_rust_kw_or_prelude(tok) && def.as_ref().is_none_or(|d| matches!(d.path.split("::").next(), Some("core" | "alloc" | "std"))) {
+            continue;
+        }
         let def = def?;
         if def.kind == DefKind::TyParam {
             ty_params.insert(tok.to_string());
@@ -145,11 +151,18 @@ pub(crate) fn cross_file_paths(
             // destination inside its parent.
             let rel = def.path.strip_prefix(&format!("{def_crate}::")).unwrap_or(def.path);
             let segs: Vec<&str> = rel.split("::").collect();
+            let mut written = rel.to_string();
             for k in 1..segs.len() {
                 let prefix = segs[..=k].join("::");
                 let vis = reader.find_definition_by_path(&format!("{def_crate}::{prefix}")).or_else(|| reader.find_definition_by_path(&prefix)).map(|d| d.item_vis());
                 match vis {
                     Some(v) if reachable(v, &def_crate, crate_name) => {}
+                    // A private module whose parent re-exports the item (`pub(crate) use self::any_value::AnyValue;`):
+                    // written through the re-export, which the crate sees.
+                    Some(ItemVis::Private) if k + 1 < segs.len() && super::action_inline_callers_members::reexported_above(ws, &def, segs[k]) => {
+                        written = format!("{}::{}", segs[..k].join("::"), segs[segs.len() - 1]);
+                        break;
+                    }
                     Some(ItemVis::Private) => narrow(&mut within, segs[..k].join("::"))?,
                     _ => return None,
                 }
@@ -168,7 +181,10 @@ pub(crate) fn cross_file_paths(
                     }
                 }
             }
-            format!("crate::{rel}")
+            format!("crate::{written}")
+        } else if !def.path.contains("::") && def.path.replace('-', "_") == def_crate {
+            // Another crate named by itself (`clap::Arg`): its name, the extern name the function's crate uses.
+            def_crate.clone()
         } else {
             // Another crate's item, which the function's crate (the callers' too) depends on: through its public
             // modules or a root re-export.
@@ -213,7 +229,11 @@ pub(crate) fn apply_paths(body: &str, paths: &HashMap<String, String>, locals: &
     let mut out = body.to_string();
     for (i, e) in tokens(&masked).into_iter().rev() {
         let tok = &masked[i..e];
-        if !is_candidate(&masked, i, e, tok) || is_rust_kw_or_prelude(tok) || locals.contains(tok) || matches!(tok, "self" | "Self" | "crate" | "this" | "ret") {
+        if !is_candidate(&masked, i, e, tok)
+            || (is_rust_kw_or_prelude(tok) && !paths.contains_key(tok))
+            || locals.contains(tok)
+            || matches!(tok, "self" | "Self" | "crate" | "this" | "ret")
+        {
             continue;
         }
         out.replace_range(i..e, paths.get(tok)?);

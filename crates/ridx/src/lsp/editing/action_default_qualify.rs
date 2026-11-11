@@ -105,6 +105,24 @@ fn path_from(dest_crate: &str, def_crate: &str, path: &str) -> Option<String> {
     }
 }
 
+/// Whether byte `p` of a module's masked text is at that module's own level: inside no braces but a macro call's
+/// (`cfg_rt! { pub mod task; }`), not in a nested `mod prelude { … }`, `fn` or `impl`.
+fn at_module_level(masked: &str, p: usize) -> bool {
+    let b = masked.as_bytes();
+    let (mut depth, mut i) = (0i32, p);
+    while i > 0 {
+        i -= 1;
+        match b[i] {
+            b'}' => depth += 1,
+            b'{' if depth > 0 => depth -= 1,
+            b'{' if masked[..i].trim_end().ends_with('!') => {}
+            b'{' => return false,
+            _ => {}
+        }
+    }
+    true
+}
+
 /// A path that reaches `full` (`krate::m1::m2::Item`) from another crate, read from the defining crate's sources rooted
 /// at `root_file`: the crate root's `pub use` re-export of `Item` when it has one, else `full` itself when every
 /// module on the way is declared `pub mod`; `None` when neither can be shown.
@@ -120,6 +138,7 @@ fn public_path(root_file: &Path, full: &str) -> Option<String> {
             let rest = &masked[p + kw.len()..];
             let b = masked.as_bytes();
             (p == 0 || !is_ident_byte(b[p - 1]))
+                && at_module_level(&masked, p)
                 && (kw != "pub mod " || rest.starts_with(name) && !rest[name.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_'))
                 && (kw != "pub use " || rest.split(';').next().is_some_and(|u| u.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == name)))
         })

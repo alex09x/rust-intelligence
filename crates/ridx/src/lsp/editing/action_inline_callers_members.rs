@@ -39,6 +39,42 @@ pub(crate) fn body_item_names(masked: &str) -> Vec<String> {
         .collect()
 }
 
+/// Whether the module that declares the private module `module` (on the way to `def`) re-exports `def`'s item to the
+/// crate or wider (`mod any_value; pub(crate) use self::any_value::AnyValue;`). The declaring file is found among the
+/// ancestors of `def`'s file: `dir/mod.rs`, `dir.rs` or `dir/lib.rs` with `mod module`.
+pub(crate) fn reexported_above(ws: &WorkspaceIndex, def: &ridx_format::ResolvedDefinition<'_>, module: &str) -> bool {
+    let Some(reader) = def.reader_idx.and_then(|r| ws.readers().get(r)) else { return false };
+    let item = def.path.rsplit("::").next().unwrap_or(def.path);
+    let file = ws.resolve_path_for_crate(reader.crate_name(), def.file);
+    let declares_mod =
+        |t: &str| t.match_indices("mod ").any(|(p, _)| t[p + 4..].trim_start().starts_with(module) && t[p + 4..].trim_start()[module.len()..].starts_with([';', ' ', '{']));
+    for dir in file.ancestors().skip(1) {
+        for cand in [dir.join("mod.rs"), dir.with_extension("rs"), dir.join("lib.rs")] {
+            let Ok(text) = std::fs::read_to_string(&cand) else { continue };
+            let masked = mask_comments_and_strings(&text);
+            if !declares_mod(&masked) {
+                continue;
+            }
+            return masked.match_indices("use ").any(|(p, _)| {
+                let head = masked[..p].trim_end();
+                let public = head.ends_with("pub") || head.ends_with("pub(crate)");
+                let stmt = masked[p + 4..].split(';').next().unwrap_or("");
+                public && contains_word(stmt, module) && contains_word(stmt, item)
+            });
+        }
+    }
+    false
+}
+
+/// Whether the masked text `dest` brings trait `tr` into scope: a `use` naming it, or a glob of a `prelude`. A word
+/// `Context` elsewhere (a struct of that name) does not.
+fn trait_imported(dest: &str, tr: &str) -> bool {
+    dest.match_indices("use ").any(|(p, _)| {
+        let stmt = dest[p + 4..].split(';').next().unwrap_or("");
+        (p == 0 || !dest.as_bytes()[p - 1].is_ascii_alphanumeric()) && (contains_word(stmt, tr) || stmt.contains("prelude::*"))
+    })
+}
+
 /// The visibility of each field of the struct at `path`, from the index's field table.
 pub(crate) fn struct_field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>, path: &str) -> Option<Vec<ItemVis>> {
     let def = reader.find_definition_by_path(path)?;
@@ -136,10 +172,17 @@ pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: 
             DefKind::Field => field_vis(reader, def.path).is_some_and(seen),
             DefKind::AssocFn | DefKind::Fn => {
                 let Some((parent, _)) = def.path.rsplit_once("::") else { return false };
+                // A trait impl's method (`<Flatten<I> as core::iter::Iterator>::next`) is the trait's: in scope with it.
+                // Also written `context::<impl Context<T, E> for Result<T, E>>::context`.
+                let impl_for = parent.rfind("<impl ").and_then(|p| parent[p + 6..].split_once(" for ")).map(|(t, _)| t);
+                if let Some(tr) = parent.strip_suffix('>').and_then(|p| p.rsplit_once(" as ").map(|(_, t)| t)).or(impl_for).map(|t| t.split('<').next().unwrap_or(t)) {
+                    let tr = tr.rsplit("::").next().unwrap_or(tr);
+                    return is_rust_kw_or_prelude(tr) || trait_imported(&dest_masked, tr);
+                }
                 match reader.find_definition_by_path(parent).map(|d| DefKind::from(d.kind)) {
                     Some(DefKind::Trait) => {
                         let tr = parent.rsplit("::").next().unwrap_or(parent);
-                        is_rust_kw_or_prelude(tr) || contains_word(&dest_masked, tr)
+                        is_rust_kw_or_prelude(tr) || trait_imported(&dest_masked, tr)
                     }
                     _ => seen(vis) || matches!(def_crate.as_str(), "core" | "alloc" | "std"),
                 }

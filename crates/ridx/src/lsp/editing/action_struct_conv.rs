@@ -60,7 +60,8 @@ pub fn build_convert_to_tuple_struct(
         Some((at, doc_text[at..*open_delim_byte].trim_end().trim_end_matches(',').to_string()))
     };
     let fields = parse_named_fields_clean(raw_fields)?;
-    if fields.is_empty() || fields.len() > 16 {
+    // A `macro_rules!` body naming a field (`$pat.tokens`) is no reference the index holds, and is left unrewritten.
+    if fields.is_empty() || fields.len() > 16 || super::action_struct_conv_fields::macro_bodies_name_fields(masked_doc, fields.iter().map(|f| f.1.as_str())) {
         return None;
     }
     let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));

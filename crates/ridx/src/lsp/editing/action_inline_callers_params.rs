@@ -139,6 +139,108 @@ pub(crate) fn generic_param_receives_call(params_src: &str, type_generics: &[Str
     })
 }
 
+/// Whether the masked body has a `?` that returns from the function itself: one inside a closure
+/// (`|it| it.next()?`), a macro's tokens (`quote! { x? }`), an `async` block or a nested `fn` returns from that
+/// instead and does not count.
+pub(crate) fn has_own_question_mark(masked: &str) -> bool {
+    let b = masked.as_bytes();
+    let close_of = |i: usize| -> usize {
+        let (open, close) = match b[i] {
+            b'(' => (b'(', b')'),
+            b'[' => (b'[', b']'),
+            _ => (b'{', b'}'),
+        };
+        skip_balanced(b, i, open, close).unwrap_or(b.len())
+    };
+    // The end of a closure body that is no block: the first `,` `;` or unmatched closer at depth 0.
+    let expr_end = |mut i: usize| -> usize {
+        let mut depth = 0i32;
+        while i < b.len() {
+            match b[i] {
+                b'(' | b'[' | b'{' => depth += 1,
+                b')' | b']' | b'}' if depth == 0 => return i,
+                b')' | b']' | b'}' => depth -= 1,
+                b',' | b';' if depth == 0 => return i,
+                _ => {}
+            }
+            i += 1;
+        }
+        i
+    };
+    // Byte positions only: the text may hold multi-byte characters, and a position past the end is the end.
+    let skip_ws = |mut j: usize| {
+        while j < b.len() && b[j].is_ascii_whitespace() {
+            j += 1;
+        }
+        j
+    };
+    let find_from = |j: usize, c: u8| b.get(j..).and_then(|s| s.iter().position(|&x| x == c)).map_or(b.len(), |p| j + p);
+    let mut i = 0;
+    while i < b.len() {
+        let c = b[i];
+        let mut q = i;
+        while q > 0 && b[q - 1].is_ascii_whitespace() {
+            q -= 1;
+        }
+        let prev = &b[..q];
+        if c == b'?' {
+            return true;
+        }
+        // A macro call's token tree.
+        if c == b'!' && i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_') {
+            let j = skip_ws(i + 1);
+            if matches!(b.get(j), Some(b'(' | b'[' | b'{')) {
+                i = close_of(j);
+                continue;
+            }
+        }
+        // A closure: `|params|` (or `||`) where an expression starts, then its body.
+        let opens_expr = prev.is_empty() || matches!(prev.last(), Some(b'(' | b',' | b'=' | b'{' | b';' | b':')) || prev.ends_with(b"move") || prev.ends_with(b"return");
+        if c == b'|' && opens_expr {
+            let params_end = if b.get(i + 1) == Some(&b'|') { i + 1 } else { find_from(i + 1, b'|') };
+            let mut j = skip_ws(params_end + 1);
+            if b.get(j..).is_some_and(|s| s.starts_with(b"->")) {
+                j = find_from(j, b'{');
+            }
+            i = if b.get(j) == Some(&b'{') { close_of(j) } else { expr_end(j) };
+            continue;
+        }
+        // An `async` block or a nested `fn` item: its own `?`.
+        let nested_fn = b[i..].starts_with(b"fn ") && (i == 0 || !(b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_'));
+        if (c == b'{' && prev.ends_with(b"async")) || (c == b'{' && prev.ends_with(b"move") && prev[..prev.len() - 4].trim_ascii_end().ends_with(b"async")) || nested_fn {
+            let open = if c == b'{' { i } else { find_from(i, b'{') };
+            i = if open < b.len() { close_of(open) } else { b.len() };
+            continue;
+        }
+        i += 1;
+    }
+    false
+}
+
+/// `src` with each whole word of `from` (outside comments and strings, not after `.` or `::`) replaced by the
+/// matching `to` (`E::write_u32` -> `NE::write_u32`).
+pub(crate) fn substitute_words(src: &str, from: &[String], to: &[String]) -> String {
+    let masked = super::action_parse::mask_comments_and_strings(src);
+    let b = masked.as_bytes();
+    let mut out = src.to_string();
+    let mut hits: Vec<(usize, usize, &str)> = Vec::new();
+    for (f, t) in from.iter().zip(to) {
+        for (i, _) in masked.match_indices(f.as_str()) {
+            let e = i + f.len();
+            let word = (i == 0 || !(b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_')) && b.get(e).is_none_or(|c| !(c.is_ascii_alphanumeric() || *c == b'_'));
+            let before = masked[..i].trim_end();
+            if word && !before.ends_with('.') && !before.ends_with("::") && !before.ends_with('\'') {
+                hits.push((i, e, t.as_str()));
+            }
+        }
+    }
+    hits.sort_by_key(|h| std::cmp::Reverse(h.0));
+    for (i, e, t) in hits {
+        out.replace_range(i..e, t);
+    }
+    out
+}
+
 /// `ty` with each named lifetime but `'static` written `'_` (`Walker<I<'db>>` → `Walker<I<'_>>`), for an annotation in
 /// the caller's body, where the callee's lifetime names mean nothing.
 pub(crate) fn anonymize_lifetimes(ty: &str) -> String {
@@ -210,7 +312,26 @@ pub(crate) fn call_takes_only_places(call: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{anonymize_lifetimes, generic_param_receives_call};
+    use super::{anonymize_lifetimes, generic_param_receives_call, has_own_question_mark, substitute_words};
+
+    #[test]
+    fn generic_parameters_take_the_turbofish_arguments() {
+        let (from, to) = (vec!["E".to_string()], vec!["wire::NE".to_string()]);
+        assert_eq!(substitute_words("E::write_u32(x, \"E\"); self.E; Ex::y", &from, &to), "wire::NE::write_u32(x, \"E\"); self.E; Ex::y");
+    }
+
+    #[test]
+    fn only_the_functions_own_question_marks_count() {
+        assert!(has_own_question_mark("let x = f()?; x"));
+        assert!(!has_own_question_mark("std::iter::successors(Some(a), |it| match it.next()? { _ => None })"));
+        assert!(!has_own_question_mark("quote! { let x = seq.next()?; }"));
+        assert!(!has_own_question_mark("let g = async move { h().await? }; fn inner() -> Option<u8> { Some(1)? .into() } 1"));
+        assert!(has_own_question_mark("v.iter().map(|x| x + 1).sum::<u8>().checked_add(1)?"));
+        // A closure at the very end, multi-byte text before it: no position past the end, no split character.
+        assert!(!has_own_question_mark("let é = 1; f(|"));
+        assert!(!has_own_question_mark("let s = \"ä\"; g(|x|"));
+        assert!(!has_own_question_mark("f(|| ->"));
+    }
 
     #[test]
     fn a_method_on_a_generic_parameter_loses_its_bound() {

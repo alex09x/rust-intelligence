@@ -71,7 +71,9 @@ pub fn build_inline_into_all_callers_workspace(
     let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src: _, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
         return None;
     };
-    let mut type_generics = extract_type_generic_names(generics_src);
+    // The function's own type parameters take each call's turbofish; the impl's cannot be named at a call.
+    let fn_generics = extract_type_generic_names(generics_src);
+    let mut type_generics = fn_generics.clone();
     if let super::action_parse::EnclosingContext::InherentImpl { generics_src: impl_gens, .. }
     | super::action_parse::EnclosingContext::TraitImpl { generics_src: impl_gens, .. }
     | super::action_parse::EnclosingContext::TraitDecl { generics_src: impl_gens, .. } = &item.enclosing
@@ -143,7 +145,7 @@ pub fn build_inline_into_all_callers_workspace(
         (raw_body_slice.to_string(), body_inner_m.to_string())
     };
 
-    let body_has_question_mark = raw_masked_body.contains('?');
+    let body_has_question_mark = super::action_inline_callers_params::has_own_question_mark(&raw_masked_body);
     if body_has_question_mark {
         let ret = effective_ret_ty.as_deref()?;
         if !ret.contains("Result") && !ret.contains("Option") {
@@ -157,7 +159,7 @@ pub fn build_inline_into_all_callers_workspace(
         || raw_masked_body.contains('$')
         || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
         || contains_recursive_call(&raw_masked_body, &item.name)
-        || type_generics.iter().any(|g| contains_word(&raw_masked_body, g))
+        || type_generics.iter().any(|g| !fn_generics.contains(g) && contains_word(&raw_masked_body, g))
         || (effective_ret_ty.is_none()
             && (raw_body_slice.trim().trim_end_matches(';').trim() == "None" || (raw_masked_body.contains(".collect()") && !raw_masked_body.contains("collect::<"))))
     {
@@ -275,6 +277,7 @@ pub fn build_inline_into_all_callers_workspace(
                     Some(ws),
                     is_fully_pub,
                     borrowed_return,
+                    &fn_generics,
                 );
                 local_edits.extend(edits);
                 any_skipped |= skipped;
@@ -294,6 +297,7 @@ pub fn build_inline_into_all_callers_workspace(
                 is_fully_pub,
                 borrowed_return,
                 &mut other_file_edits,
+                &fn_generics,
             );
             any_skipped |= skipped;
         } else if let Some(cb) = cross.as_ref().and_then(|c| c.for_dest(ws, abs_path, raw_body_slice, doc_text, file, *bo + 1)) {
@@ -311,6 +315,7 @@ pub fn build_inline_into_all_callers_workspace(
                 is_fully_pub,
                 borrowed_return,
                 &mut other_file_edits,
+                &fn_generics,
             );
             any_skipped |= skipped;
         } else {

@@ -147,6 +147,7 @@ pub(crate) fn process_other_document_call_sites(
     is_fully_pub: bool,
     borrowed_return: bool,
     other_file_edits: &mut BTreeMap<String, Vec<Value>>,
+    fn_generics: &[String],
 ) -> bool {
     let Ok(other_text) = std::fs::read_to_string(abs_path) else {
         return true; // skipped
@@ -169,6 +170,7 @@ pub(crate) fn process_other_document_call_sites(
         ws,
         is_fully_pub,
         borrowed_return,
+        fn_generics,
     );
     if !edits.is_empty() {
         if let Some(lsp_edits) = to_lsp_edits(&other_text, &other_starts, edits) {

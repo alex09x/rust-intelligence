@@ -144,15 +144,35 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
 
         match rx.recv_timeout(std::time::Duration::from_millis(20)) {
             Ok(msg) => {
-                let should_continue = dispatch::dispatch_lsp_message(
-                    protocol::LspMessage::Client(msg),
-                    &mut writer,
-                    &mut lifecycle,
-                    &mut multi_root,
-                    &mut overlay_mgr,
-                    &cancelled_requests,
-                    index_path.as_ref(),
-                )?;
+                // A panic in one handler answers that request with an internal error instead of ending the session:
+                // every later request would otherwise go unanswered.
+                let id = msg.get("method").and(msg.get("id")).cloned();
+                let method = msg.get("method").and_then(Value::as_str).unwrap_or("").to_string();
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    dispatch::dispatch_lsp_message(
+                        protocol::LspMessage::Client(msg),
+                        &mut writer,
+                        &mut lifecycle,
+                        &mut multi_root,
+                        &mut overlay_mgr,
+                        &cancelled_requests,
+                        index_path.as_ref(),
+                    )
+                }));
+                let should_continue = match outcome {
+                    Ok(result) => result?,
+                    Err(panic) => {
+                        let what = panic.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| panic.downcast_ref::<String>().cloned()).unwrap_or_default();
+                        logger::log_info(&format!("request {method} panicked: {what}"));
+                        if let Some(id) = id {
+                            protocol::send_response(
+                                &mut writer,
+                                &serde_json::json!({ "jsonrpc": "2.0", "id": id, "error": { "code": -32603, "message": format!("{method} failed: {what}") } }),
+                            )?;
+                        }
+                        true
+                    }
+                };
                 if !should_continue {
                     break;
                 }

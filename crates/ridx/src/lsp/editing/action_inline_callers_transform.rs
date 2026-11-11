@@ -14,7 +14,8 @@ use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{
     find_path_start, find_receiver_start, format_inlined_call, is_writable_binding_type, normalize_param_type_for_binding, FnParamInfo, SelfKind,
 };
-use super::action_parse::is_ident_byte;
+use super::action_inline_callers_params::substitute_words;
+use super::action_parse::{is_ident_byte, mask_comments_and_strings};
 use super::action_parse_items::{contains_word, skip_balanced};
 
 #[allow(clippy::too_many_arguments)]
@@ -31,6 +32,7 @@ pub(crate) fn process_call_site(
     ws_opt: Option<&ridx_format::WorkspaceIndex>,
     is_fully_pub: bool,
     borrowed_return: bool,
+    fn_generics: &[String],
 ) -> Option<(usize, usize, String)> {
     let mb = masked.as_bytes();
     let name_end = ref_byte + name.len();
@@ -42,7 +44,7 @@ pub(crate) fn process_call_site(
     while p < src.len() && mb[p].is_ascii_whitespace() {
         p += 1;
     }
-    let mut has_turbofish = false;
+    let mut turbofish: Option<Vec<String>> = None;
     if p + 2 < src.len() && &src[p..p + 2] == "::" {
         let mut q = p + 2;
         while q < src.len() && mb[q].is_ascii_whitespace() {
@@ -50,7 +52,7 @@ pub(crate) fn process_call_site(
         }
         if q < src.len() && mb[q] == b'<' {
             if let Some(close) = skip_balanced(mb, q, b'<', b'>') {
-                has_turbofish = true;
+                turbofish = Some(split_top_level_commas(&src[q + 1..close - 1]).into_iter().map(|a| a.trim().to_string()).filter(|a| !a.is_empty()).collect());
                 p = close;
                 while p < src.len() && mb[p].is_ascii_whitespace() {
                     p += 1;
@@ -61,9 +63,19 @@ pub(crate) fn process_call_site(
     if p >= src.len() || mb[p] != b'(' {
         return None;
     }
-    if has_turbofish && !body_src.trim().is_empty() {
-        return None;
-    }
+    // The function's own generic parameters the body names take the call's turbofish (`write_to::<NE>(…)`), each a
+    // plain path; without one the body's `E` would mean nothing here.
+    let substituted;
+    let body_src = match &turbofish {
+        _ if body_src.trim().is_empty() => body_src,
+        Some(args) if args.len() == fn_generics.len() && args.iter().all(|a| a.split("::").all(|s| !s.is_empty() && s.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_'))) => {
+            substituted = substitute_words(body_src, fn_generics, args);
+            &substituted
+        }
+        Some(_) => return None,
+        None if fn_generics.iter().any(|g| contains_word(&mask_comments_and_strings(body_src), g)) => return None,
+        None => body_src,
+    };
     let call_end = skip_balanced(mb, p, b'(', b')')?;
     let raw_args: Vec<String> = split_top_level_commas(&src[p + 1..call_end - 1]).into_iter().filter(|a| !a.trim().is_empty()).collect();
 

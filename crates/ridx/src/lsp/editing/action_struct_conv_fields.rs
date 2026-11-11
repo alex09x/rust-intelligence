@@ -90,6 +90,23 @@ pub(crate) fn field_access_edits(
     Some(out)
 }
 
+/// Whether a `macro_rules!` body of the masked document reads one of `names` as a field (`$e.tokens`): the index
+/// resolves no reference there, so a shape change would leave it behind.
+pub(crate) fn macro_bodies_name_fields<'a>(masked: &str, names: impl Iterator<Item = &'a str> + Clone) -> bool {
+    let b = masked.as_bytes();
+    masked.match_indices("macro_rules!").any(|(p, _)| {
+        let Some(open) = masked[p..].find('{').map(|o| p + o) else { return false };
+        let close = super::action_parse_items::skip_balanced(b, open, b'{', b'}').unwrap_or(b.len());
+        let body = &masked[open..close];
+        names.clone().any(|n| {
+            body.match_indices(n).any(|(i, _)| {
+                let after = body.as_bytes().get(i + n.len());
+                body[..i].trim_end().ends_with('.') && !body[..i].trim_end().ends_with("..") && after.is_none_or(|c| !(c.is_ascii_alphanumeric() || *c == b'_'))
+            })
+        })
+    })
+}
+
 /// The entries of a brace literal's comma split, with the pieces a closure's parameters (`|a, b| ..`) or a comparison
 /// split off joined back to the entry they continue: each entry starts with `name:`, a shorthand `name`, `..base`, or
 /// an attribute, after any leading comments.
@@ -146,7 +163,15 @@ pub(crate) fn split_leading_comments(t: &str) -> (&str, &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_continuations, split_leading_comments};
+    use super::{macro_bodies_name_fields, merge_continuations, split_leading_comments};
+
+    #[test]
+    fn a_field_read_in_a_macro_body_is_seen() {
+        let doc = "macro_rules! syntax { ($p:expr) => { let g = $p; assert_eq!(g.tokens, x); }; }";
+        assert!(macro_bodies_name_fields(doc, ["tokens"].into_iter()));
+        assert!(!macro_bodies_name_fields(doc, ["glob"].into_iter()));
+        assert!(!macro_bodies_name_fields("fn f(g: G) { g.tokens }", ["tokens"].into_iter()));
+    }
 
     #[test]
     fn closure_parameters_and_comments_stay_with_their_entry() {

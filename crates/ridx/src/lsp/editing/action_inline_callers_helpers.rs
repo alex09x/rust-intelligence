@@ -241,6 +241,13 @@ pub(crate) fn format_inlined_call(
 
 pub(crate) fn contains_recursive_call(masked_body: &str, fn_name: &str) -> bool {
     let mb = masked_body.as_bytes();
+    // A local of the same name (`let new = |r| …;`) is what a bare `new(…)` calls.
+    let shadowed = super::action_parse_items::contains_word(masked_body, "let")
+        && masked_body.match_indices("let ").any(|(p, _)| {
+            let rest = masked_body[p + 4..].trim_start();
+            let rest = rest.strip_prefix("mut ").map_or(rest, str::trim_start);
+            rest.starts_with(fn_name) && !rest[fn_name.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_')
+        });
     let mut start = 0;
     while let Some(idx) = masked_body[start..].find(fn_name) {
         let abs_idx = start + idx;
@@ -267,7 +274,7 @@ pub(crate) fn contains_recursive_call(masked_body: &str, fn_name: &str) -> bool 
                     if before_colons.ends_with("Self") {
                         return true;
                     }
-                } else {
+                } else if !shadowed {
                     return true;
                 }
             }

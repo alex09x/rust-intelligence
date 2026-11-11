@@ -34,6 +34,7 @@ pub(crate) fn process_call_sites_for_document(
     ws_opt: Option<&WorkspaceIndex>,
     is_fully_pub: bool,
     borrowed_return: bool,
+    fn_generics: &[String],
 ) -> (Vec<(usize, usize, String)>, bool) {
     if borrowed_return && self_kind == Some(SelfKind::Value) {
         return (Vec::new(), true);
@@ -66,7 +67,7 @@ pub(crate) fn process_call_sites_for_document(
             }
         }
         if let Some((site_start, site_end, inlined_text)) =
-            process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub, borrowed_return)
+            process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub, borrowed_return, fn_generics)
         {
             // A borrowed result must not point into a temporary the inlined block drops; under a `&` the block would be
             // expected to yield the referent (`&({ …; &x.f })` where `&T` was asked, E0308), which no rewrite of the

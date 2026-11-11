@@ -179,7 +179,9 @@ fn cross_file_body(
     if !external {
         self_type_path(ws, doc, file, name_byte, &crate_name, body, &mut paths)?;
     }
-    let body = apply_paths(body, &paths.paths, &locals)?;
+    // The function's generic parameters stay as they are: each call's turbofish replaces them.
+    let in_body: std::collections::HashSet<String> = locals.iter().chain(&paths.ty_params).cloned().collect();
+    let body = apply_paths(body, &paths.paths, &in_body)?;
     // A parameter's type, written on a binding at the call site: `Some(None)` when it has none.
     let qualify_ty = |t: &Option<String>| -> Option<Option<String>> {
         match t {
