@@ -14,6 +14,7 @@
 //! the trait in scope at the call site.
 
 use super::action_default_safety::is_rust_kw_or_prelude;
+use super::action_inline_callers_members::{members_reachable, struct_field_vis};
 use super::action_parse::{is_ident_byte, mask_comments_and_strings};
 use super::action_parse_decl::next_ident_token;
 use super::action_parse_items::contains_word;
@@ -51,13 +52,13 @@ pub(crate) fn tokens(masked: &str) -> Vec<(usize, usize)> {
 }
 
 /// `(line, col)` (1-based) of byte `at` in `src`.
-fn line_col(src: &str, at: usize) -> (u32, u32) {
+pub(crate) fn line_col(src: &str, at: usize) -> (u32, u32) {
     let line_start = src[..at].rfind('\n').map_or(0, |p| p + 1);
     (src[..line_start].matches('\n').count() as u32 + 1, src[line_start..at].chars().count() as u32 + 1)
 }
 
 /// Whether an item of `vis` defined in crate `def_crate` is reachable from another module of `dest_crate`.
-fn reachable(vis: ItemVis, def_crate: &str, dest_crate: &str) -> bool {
+pub(crate) fn reachable(vis: ItemVis, def_crate: &str, dest_crate: &str) -> bool {
     vis == ItemVis::Public || (vis == ItemVis::Crate && def_crate == dest_crate)
 }
 
@@ -76,8 +77,19 @@ fn narrow(within: &mut Option<String>, module: String) -> Option<()> {
 /// The paths to write for the names of `body` (at byte `start` of `fn_src`, the text of `fn_file`) in another file of
 /// `crate_name`, keyed by name, and the module a destination must lie in for private items on those paths to be
 /// visible; `None` when a name resolves to something unreachable or to two items. Generic parameters get no path: a
-/// body or parameter type that names one is refused when the paths are applied.
-pub(crate) fn cross_file_paths(body: &str, fn_src: &str, fn_file: &str, start: usize, ws: &WorkspaceIndex, crate_name: &str, locals: &HashSet<String>) -> Option<CrossFilePaths> {
+/// body or parameter type that names one is refused when the paths are applied. With `external` the destination is
+/// another crate that depends on `crate_name`, where its items are written `krate::…` and must be public.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn cross_file_paths(
+    body: &str,
+    fn_src: &str,
+    fn_file: &str,
+    start: usize,
+    ws: &WorkspaceIndex,
+    crate_name: &str,
+    locals: &HashSet<String>,
+    external: bool,
+) -> Option<CrossFilePaths> {
     let mut within: Option<String> = None;
     let mut ty_params: HashSet<String> = HashSet::new();
     let masked = mask_comments_and_strings(body);
@@ -108,6 +120,14 @@ pub(crate) fn cross_file_paths(body: &str, fn_src: &str, fn_file: &str, start: u
             // A standard item is written through `std` where it has a public path; private module paths are refused.
             let segs: Vec<&str> = def.path.split("::").collect();
             (segs.len() <= 3).then(|| format!("std::{}", segs[1..].join("::")))?
+        } else if def_crate == crate_name && external {
+            // The function's own crate seen from a crate that depends on it: public modules or a root re-export, and
+            // a struct built here public in every field.
+            let builds = masked[e..].trim_start().starts_with(['(', '{']);
+            if builds && def.kind == DefKind::Struct && !struct_field_vis(reader, def.path)?.iter().all(|v| *v == ItemVis::Public) {
+                return None;
+            }
+            super::action_default_qualify::path_for(ws, &def, "", true).filter(|p| !p.starts_with("crate::"))?
         } else if def_crate == crate_name {
             // A private item of the crate root is visible in the whole crate; one deeper only in its own module and
             // the modules inside it, so every segment past the first is `pub` or `pub(crate)`, or private with the
@@ -175,65 +195,6 @@ fn binding_type(t: &str, p: &CrossFilePaths, locals: &HashSet<String>) -> Option
     apply_paths(&out, &p.paths, locals)
 }
 
-/// The visibility of field `path` (`krate::m::S::name` or `…::S::0`) from the index's field table, which records it
-/// (a definition's own visibility does not for fields).
-fn field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>, path: &str) -> Option<ItemVis> {
-    let (owner, name) = path.rsplit_once("::")?;
-    let owner_def = reader.find_definition_by_path(owner)?;
-    let idx = reader.definitions().iter().position(|d| std::ptr::eq(d, owner_def))?;
-    reader.find_field(idx as u32, name).map(|f| f.vis)
-}
-
-/// The visibility of each field of the struct at `path`, from the index's field table.
-fn struct_field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>, path: &str) -> Option<Vec<ItemVis>> {
-    let def = reader.find_definition_by_path(path)?;
-    let idx = reader.definitions().iter().position(|d| std::ptr::eq(d, def))?;
-    Some(reader.fields_for_owner(idx as u32).map(|f| f.vis).collect())
-}
-
-/// Whether every `.name` and `.N` of `body` (at byte `start` of `fn_src`) reaches a field or method visible from
-/// another file of `crate_name` whose text is `dest`: a trait's method needs the trait in the prelude or named in `dest`.
-pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: usize, ws: &WorkspaceIndex, crate_name: &str, dest: &str) -> bool {
-    let masked = mask_comments_and_strings(body);
-    let pairs = ws.resolved_reader_file_ids(fn_file);
-    let mb = masked.as_bytes();
-    let mut members: Vec<(usize, usize)> = tokens(&masked).into_iter().filter(|&(i, _)| masked[..i].trim_end().ends_with('.') && !masked[..i].trim_end().ends_with("..")).collect();
-    // Tuple fields (`.0`), which are no identifiers.
-    for (p, _) in masked.match_indices('.') {
-        if mb.get(p + 1).is_some_and(|c| c.is_ascii_digit()) && (p == 0 || !mb[p - 1].is_ascii_digit()) && mb.get(p.wrapping_sub(1)) != Some(&b'.') {
-            let end = p + 1 + masked[p + 1..].bytes().take_while(|c| c.is_ascii_digit()).count();
-            members.push((p + 1, end));
-        }
-    }
-    let positions: Vec<(u32, u32)> = members.iter().map(|&(i, _)| line_col(fn_src, start + i)).collect();
-    let dest_masked = mask_comments_and_strings(dest);
-    members.iter().zip(ws.resolve_definitions_in(&pairs, fn_file, &positions)).all(|(&(i, e), def)| {
-        let tok = &masked[i..e];
-        // `.await` and tuple fields (`.0`) are no names to resolve.
-        if tok == "await" {
-            return true;
-        }
-        let Some(def) = def else { return false };
-        let Some(reader) = def.reader_idx.and_then(|r| ws.readers().get(r)) else { return false };
-        let def_crate = reader.crate_name().replace('-', "_");
-        let vis = reader.find_definition_by_path(def.path).map(|d| d.item_vis()).unwrap_or(ItemVis::Private);
-        match def.kind {
-            DefKind::Field => field_vis(reader, def.path).is_some_and(|v| reachable(v, &def_crate, crate_name)),
-            DefKind::AssocFn | DefKind::Fn => {
-                let Some((parent, _)) = def.path.rsplit_once("::") else { return false };
-                match reader.find_definition_by_path(parent).map(|d| DefKind::from(d.kind)) {
-                    Some(DefKind::Trait) => {
-                        let tr = parent.rsplit("::").next().unwrap_or(parent);
-                        is_rust_kw_or_prelude(tr) || contains_word(&dest_masked, tr)
-                    }
-                    _ => reachable(vis, &def_crate, crate_name) || matches!(def_crate.as_str(), "core" | "alloc" | "std"),
-                }
-            }
-            _ => false,
-        }
-    })
-}
-
 /// `body` with each name of `paths` written as its path; `None` when a name to move is left without one.
 pub(crate) fn apply_paths(body: &str, paths: &HashMap<String, String>, locals: &HashSet<String>) -> Option<String> {
     let masked = mask_comments_and_strings(body);
@@ -256,19 +217,25 @@ pub(crate) struct CrossFileBody {
     pub crate_name: String,
     /// The crate-relative module the destination must lie in, for the private items the paths name.
     pub within: Option<String>,
+    /// Written for files of other crates that depend on the function's (`krate::…` paths, public items only).
+    pub external: bool,
 }
 
 impl CrossFileBody {
-    /// Whether the body may go into `dest` (a file of the same crate, where every member it reaches is visible).
+    /// Whether the body may go into `dest`: a file of the function's crate (or, for an external body, of another
+    /// crate), where every member it reaches is visible.
     pub(crate) fn fits(&self, ws: &WorkspaceIndex, dest: &std::path::Path, raw_body: &str, fn_src: &str, fn_file: &str, start: usize) -> bool {
         // One compilation unit holds both files (an integration test is another crate, where `crate::` is the test).
         let dest_file = dest.to_str().unwrap_or_default();
         let units: Vec<usize> = ws.resolved_reader_file_ids(fn_file).into_iter().map(|p| p.0).collect();
-        let same_crate = ws.resolved_reader_file_ids(dest_file).iter().any(|p| units.contains(&p.0));
-        same_crate
-            && self.within.as_deref().is_none_or(|w| self.dest_inside(ws, dest_file, w))
+        let dest_units = ws.resolved_reader_file_ids(dest_file);
+        let same_crate = dest_units.iter().any(|p| units.contains(&p.0));
+        // Members are judged from the destination's crate: another crate sees only public ones.
+        let dest_crate = if self.external { dest_units.first().map(|p| ws.readers()[p.0].crate_name().replace('-', "_")) } else { Some(self.crate_name.clone()) };
+        let Some(dest_crate) = dest_crate.filter(|_| same_crate != self.external) else { return false };
+        self.within.as_deref().is_none_or(|w| self.dest_inside(ws, dest_file, w))
             && std::fs::read_to_string(dest)
-                .is_ok_and(|t| super::action_inline_callers_macros::macros_in_scope(raw_body, &t) && members_reachable(raw_body, fn_src, fn_file, start, ws, &self.crate_name, &t))
+                .is_ok_and(|t| super::action_inline_callers_macros::macros_in_scope(raw_body, &t) && members_reachable(raw_body, fn_src, fn_file, start, ws, &dest_crate, &t))
     }
 
     /// Whether the module of `dest_file` is the crate-relative module `w` or lies inside it.
@@ -279,10 +246,22 @@ impl CrossFileBody {
     }
 }
 
-/// Prepares the inlining of the function declared in `doc` (`file`) from its name at `name_byte` to its body's close
-/// at `body_close`, whose raw body starts at `body_open + 1`, into other files of its crate.
+/// The bodies to inline into other files: one for files of the function's crate, one for crates depending on it.
+pub(crate) struct CrossBodies {
+    pub local: Option<CrossFileBody>,
+    pub external: Option<CrossFileBody>,
+}
+
+impl CrossBodies {
+    /// The body that fits `dest`, if any (see [`CrossFileBody::fits`]).
+    pub(crate) fn for_dest(&self, ws: &WorkspaceIndex, dest: &std::path::Path, raw_body: &str, fn_src: &str, fn_file: &str, start: usize) -> Option<&CrossFileBody> {
+        [&self.local, &self.external].into_iter().flatten().find(|cb| cb.fits(ws, dest, raw_body, fn_src, fn_file, start))
+    }
+}
+
+/// [`cross_file_body`] for files of the function's crate and for crates depending on it.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn cross_file_body(
+pub(crate) fn cross_bodies(
     doc: &str,
     file: &str,
     name: &str,
@@ -292,12 +271,36 @@ pub(crate) fn cross_file_body(
     ws: &WorkspaceIndex,
     body: &str,
     params: &[super::action_inline_callers_params::FnParamInfo],
+) -> CrossBodies {
+    let at = |external| cross_file_body(doc, file, name, name_byte, body_close, params_src, ws, body, params, external);
+    CrossBodies { local: at(false), external: at(true) }
+}
+
+/// Prepares the inlining of the function declared in `doc` (`file`) from its name at `name_byte` to its body's close
+/// at `body_close`, whose raw body starts at `body_open + 1`, into other files of its crate (or, `external`, of crates
+/// depending on it, where a body naming `crate`, `self::` or `super::` means something else and is refused).
+#[allow(clippy::too_many_arguments)]
+fn cross_file_body(
+    doc: &str,
+    file: &str,
+    name: &str,
+    name_byte: usize,
+    body_close: usize,
+    params_src: &str,
+    ws: &WorkspaceIndex,
+    body: &str,
+    params: &[super::action_inline_callers_params::FnParamInfo],
+    external: bool,
 ) -> Option<CrossFileBody> {
     let crate_name = ws.reader_indices_for_file(file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_"))?;
     let sig_and_body = &doc[name_byte..body_close];
+    let body_masked = mask_comments_and_strings(body);
+    if external && (contains_word(&body_masked, "crate") || contains_word(&body_masked, "super") || body_masked.contains("self::")) {
+        return None;
+    }
     let mut locals = super::action_default_safety::collect_local_bindings(&mask_comments_and_strings(sig_and_body), &mask_comments_and_strings(params_src));
     locals.extend([name.to_string(), "ret".to_string()]);
-    let paths = cross_file_paths(sig_and_body, doc, file, name_byte, ws, &crate_name, &locals)?;
+    let paths = cross_file_paths(sig_and_body, doc, file, name_byte, ws, &crate_name, &locals, external)?;
     let body = apply_paths(body, &paths.paths, &locals)?;
     // A parameter's type, written on a binding at the call site: `Some(None)` when it has none.
     let qualify_ty = |t: &Option<String>| -> Option<Option<String>> {
@@ -310,7 +313,11 @@ pub(crate) fn cross_file_body(
         .iter()
         .map(|p| Some(super::action_inline_callers_params::FnParamInfo { ty: qualify_ty(&p.ty)?, decl_ty: qualify_ty(&p.decl_ty)?, ..p.clone() }))
         .collect::<Option<Vec<_>>>()?;
-    Some(CrossFileBody { body, params, crate_name, within: paths.within })
+    // Another crate sees no private item, wherever it is.
+    if external && paths.within.is_some() {
+        return None;
+    }
+    Some(CrossFileBody { body, params, crate_name, within: paths.within, external })
 }
 
 #[cfg(test)]

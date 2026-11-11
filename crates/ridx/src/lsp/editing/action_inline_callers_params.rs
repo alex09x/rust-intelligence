@@ -116,6 +116,29 @@ pub(crate) fn has_inferred_placeholder(ty: &str) -> bool {
     })
 }
 
+/// Whether the body calls a conversion method on a parameter typed by a generic parameter or `impl Trait`
+/// (`path.as_ref()` with `path: P`, `P: AsRef<Path>`): bound to the argument at the call, the bound that chose the
+/// target type is gone and the call may become ambiguous (E0283).
+pub(crate) fn generic_param_receives_call(params_src: &str, type_generics: &[String], body_masked: &str) -> bool {
+    split_top_level_commas(params_src).iter().any(|p| {
+        let (lhs, Some(ty)) = split_top_level_colon(p) else { return false };
+        let id = lhs.trim().trim_start_matches("mut ").trim();
+        let generic = contains_word(ty, "impl") || type_generics.iter().any(|g| contains_word(ty, g));
+        generic
+            && !id.is_empty()
+            && body_masked.match_indices(id).any(|(i, _)| {
+                let b = body_masked.as_bytes();
+                let before_ok = i == 0 || !(b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_' || b[i - 1] == b'.');
+                let after = &body_masked[i + id.len()..];
+                let ends = !after.starts_with(|c: char| c.is_alphanumeric() || c == '_');
+                // Only a conversion trait's method has an output the bound alone fixed; others are found on the
+                // argument's own type as before.
+                let method = after.trim_start().strip_prefix('.').map(|m| m.trim_start().split(|c: char| !(c.is_alphanumeric() || c == '_')).next().unwrap_or(""));
+                before_ok && ends && method.is_some_and(|m| matches!(m, "as_ref" | "as_mut" | "into" | "try_into" | "borrow" | "borrow_mut"))
+            })
+    })
+}
+
 /// `ty` with each named lifetime but `'static` written `'_` (`Walker<I<'db>>` → `Walker<I<'_>>`), for an annotation in
 /// the caller's body, where the callee's lifetime names mean nothing.
 pub(crate) fn anonymize_lifetimes(ty: &str) -> String {
@@ -187,7 +210,17 @@ pub(crate) fn call_takes_only_places(call: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::anonymize_lifetimes;
+    use super::{anonymize_lifetimes, generic_param_receives_call};
+
+    #[test]
+    fn a_method_on_a_generic_parameter_loses_its_bound() {
+        let gens = vec!["P".to_string()];
+        assert!(generic_param_receives_call("&self, path: P, into: &mut Vec<usize>", &gens, "f(&Candidate::new(path.as_ref()), into)"));
+        assert!(generic_param_receives_call("s: impl AsRef<str>", &gens, "s.as_ref().len()"));
+        assert!(!generic_param_receives_call("path: P", &gens, "g(path); pathname.len()"), "only moved on");
+        assert!(!generic_param_receives_call("n: usize", &gens, "n.pow(2)"));
+        assert!(!generic_param_receives_call("e: P", &gens, "e.custom(1)"), "a method the argument's type has itself");
+    }
 
     #[test]
     fn named_lifetimes_become_inferred_and_static_stays() {
