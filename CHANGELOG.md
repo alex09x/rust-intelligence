@@ -2,6 +2,19 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [Unreleased]
+
+Figures: the 38-method, 7-corpus suite, before (`0.3.0` with its driver) and after, both indexed afresh with the same Mitts build.
+
+### Changed
+- **`textDocument/references`** on a trait item also lists its uses the compiler resolved to an implementation (`v.into_iter()` on a `Vec`, `x.clone()` on a type deriving `Clone`), as rust-analyzer does; the uses a macro generates (a derive's body) are left out. Associated types named through `Self` or a type parameter in signatures (`-> Result<V::Value, Self::Error>`) and in `Trait<Assoc = T>` bounds are references to the trait's associated type. Parity `80.26%` → `83.62%` (`1593/1905`); `documentHighlight` `92.20%` → `93.32%`, incoming calls `91.07%` → `91.75%`; median latency unchanged (`0.63 ms` → `0.66 ms`).
+- **Indexing**: build scripts of the workspace's own packages are indexed; a trait function named by a path in a body (`From::from(x)`) refers to the implementation the arguments select.
+- **`textDocument/semanticTokens`**: a target root its own `#![cfg(…)]` switches off gets rust-analyzer's tokens (definitions typed, the file's own names `unresolvedReference`), and names inside macro arguments in doc examples are `generic`. Parity: full `91.90%` → `93.80%`, range `88.48%` → `90.24%`, delta `92.42%` → `94.28%`.
+- **`workspace/symbol`** kinds follow rust-analyzer's symbol index (associated functions are functions, associated types type parameters, statics constants, crate roots packages): answers identical to rust-analyzer's `643` → `994` of `2100`.
+
+### Fixed
+- **Indexing with Mitts**: a target with `required-features` that the main check already built keeps its shard and sidecar, and the extra check's wrapper cache is scoped to the run, so a re-index no longer drops the targets' shards. On `clap` the references of `Command::long_about` found from a test file went from `15` to `42`, as from its definition.
+
 ## [0.3.0] - 2026-11-11
 
 Live type inference behind the LSP: dependencies and the standard library come from the rustc-built index, while the workspace's own code is parsed, name-resolved and type-inferred by `ridx` itself, on saved and on edited buffers alike. Figures below are from the 38-method, 7-corpus content-parity suite against rust-analyzer (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `clap`, `regex`), before (the last state without live inference in the LSP) and after (`602f4a19`), on the same index.
