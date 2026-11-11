@@ -19,6 +19,7 @@ mod query_defs;
 mod query_dot;
 mod query_hidden;
 mod query_loc;
+mod query_members;
 mod query_path;
 mod query_path_qual;
 mod query_postfix;

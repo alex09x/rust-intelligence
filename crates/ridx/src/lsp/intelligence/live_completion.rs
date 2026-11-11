@@ -25,8 +25,9 @@ use crate::lsp::protocol::lsp_completion_kind;
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 
-/// LSP completion kind Snippet.
+/// LSP completion kinds Snippet and Keyword.
 const SNIPPET_KIND: u64 = 15;
+const KEYWORD_KIND: u32 = 14;
 
 /// Postfix snippets whose presence depends on the receiver's type or position.
 const POSITIONAL_POSTFIX: [&str; 11] = ["let", "letm", "for", "match", "ifl", "lete", "while", "if", "not", "break", "drop"];
@@ -95,6 +96,9 @@ pub(super) fn live_dot_items(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'
     let is_iterator = cands.iter().any(|c| c.label == "next" && c.from_trait.as_deref().is_some_and(|t| t.ends_with("Iterator")));
     if !is_iterator && cands.iter().any(|c| c.label == "iter") {
         items.extend(collect_through_iter_items(ws, ctx));
+    }
+    if postfix.as_ref().is_some_and(|f| f.is_future) && "await".starts_with(prefix) {
+        items.push(item::item("await", None, KEYWORD_KIND, "expr.await"));
     }
     items.extend(fixed_postfix_items(prefix, &POSITIONAL_POSTFIX));
     let positional = postfix.as_ref().map_or_else(|| vec![("match", "match expr {}")], positional_postfix);

@@ -43,6 +43,8 @@ pub struct PostfixFacts {
     pub in_breakable: bool,
     /// `receiver.name(...)`: a call follows on the same line, so only methods complete there.
     pub is_method_call: bool,
+    /// The receiver is a future: `await` and the members of its output (as `await.name`) complete too.
+    pub is_future: bool,
 }
 
 /// The facts for the dot whose receiver ends at `dot_end - 1`. Inside a macro call's token tree, where no
@@ -89,6 +91,7 @@ pub(crate) fn postfix_facts(st: &SyntaxTree<'_>, dot_end: u32, db: &RidxV5ItemDb
         in_arm_or_closure: with_refs.and_then(|n| st.parent(n)).is_some_and(|p| matches!(st.kind(p), K::MatchArm | K::ClosureExpr)),
         in_breakable: expr.is_some_and(|e| is_in_breakable(st, e)),
         is_method_call: expr.is_some_and(|e| st.kind(e) == K::MethodCallExpr && args_on_same_line(st, e, dot)),
+        is_future: false,
     })
 }
 
