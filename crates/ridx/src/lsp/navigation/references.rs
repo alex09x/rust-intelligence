@@ -15,6 +15,12 @@ use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 
+/// Whether the cursor of `file` (its editor buffer when open) sits in a literal on a word other than `name`.
+fn literal_word_is_not(overlay: Option<&crate::overlay::DocumentOverlay>, file: &str, line: u32, col: u32, name: &str) -> bool {
+    let text = overlay.map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(file).ok()).unwrap_or_default();
+    super::cursor_literal::literal_word_is_not(&text, line, col, name)
+}
+
 pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
@@ -70,7 +76,8 @@ pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
         };
 
         if query_line > 0 {
-            if let Some(loc_refs) = ws.find_references_at(&file, query_line, query_col) {
+            let found = ws.find_references_at(&file, query_line, query_col);
+            if let Some(loc_refs) = found.filter(|r| !literal_word_is_not(overlay_opt, &file, line_1based, col_1based, r.target_symbol)) {
                 let mut seen_out = std::collections::HashSet::new();
                 if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
                     let decl_path = super::type_definition_parse::on_disk(loc_refs.target_resolved_path());
@@ -117,7 +124,8 @@ pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
                     }
                 }
 
-                for (path, line, sc, ec) in super::references_gated::gated_file_refs(ws, &loc_refs) {
+                let gated = super::references_gated::gated_file_refs(ws, &loc_refs);
+                for (path, line, sc, ec) in gated.into_iter().chain(super::references_inactive::inactive_item_refs(ws, &loc_refs)) {
                     let r_uri = path_to_uri(path.to_str().unwrap_or_default());
                     if seen_out.insert((r_uri.clone(), line, sc, line, ec)) {
                         results.push(json!({ "uri": r_uri, "range": { "start": { "line": line, "character": sc }, "end": { "line": line, "character": ec } } }));
@@ -201,7 +209,11 @@ pub fn handle_document_highlight(msg: &Value, workspace: Option<&WorkspaceIndex>
     if let Some(ws) = workspace {
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
-            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
+            let found = ws.find_references_at(&file, line_1based, col_1based);
+            let in_literal = found.as_ref().is_some_and(|r| literal_word_is_not(overlay_opt, &file, line_1based, col_1based, r.target_symbol));
+            if in_literal {
+                // The word under the cursor in a literal names nothing the macro resolved.
+            } else if let Some(loc_refs) = found {
                 let decl_path = loc_refs.target_resolved_path();
                 let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
                 if decl_str == file || decl_str.ends_with(&file) || file.ends_with(decl_str) {

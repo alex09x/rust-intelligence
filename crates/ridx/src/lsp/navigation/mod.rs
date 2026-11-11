@@ -10,11 +10,13 @@
 
 //! LSP navigation handlers: definition, declaration, type definition, and implementation.
 
+mod cursor_literal;
 pub mod declaration;
 mod highlight_ext;
 mod impl_line;
 pub mod references;
 mod references_gated;
+mod references_inactive;
 pub mod type_definition;
 mod type_definition_live;
 mod type_definition_lookup;
