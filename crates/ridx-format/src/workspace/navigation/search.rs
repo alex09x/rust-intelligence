@@ -214,6 +214,23 @@ impl WorkspaceIndex {
         if def.kind == DefKind::Mod {
             // A module path a macro wrote (a derive's `bevy_ecs::resource::Resource`) names no module in the source.
             refs.retain(|r| !r.is_macro_expansion);
+        } else {
+            // A macro's reference is a use only where the source spells the name: a derive's generated `impl Debug
+            // for Thing` points at `#[derive(Debug)]`, which names no `Thing`.
+            let name = def.name.strip_prefix("r#").unwrap_or(def.name);
+            let mut lines: std::collections::HashMap<std::path::PathBuf, Option<Vec<String>>> = std::collections::HashMap::new();
+            refs.retain(|r| {
+                if !r.is_macro_expansion {
+                    return true;
+                }
+                let path = r.resolved_path();
+                let file = lines.entry(path.clone()).or_insert_with(|| std::fs::read_to_string(&path).ok().map(|s| s.lines().map(str::to_string).collect()));
+                let Some(text) = file.as_ref().and_then(|f| f.get((r.span.start_line() as usize).wrapping_sub(1))) else { return true };
+                let at: String = text.chars().skip(r.span.start_col().saturating_sub(1) as usize).collect();
+                let at = at.strip_prefix("r#").unwrap_or(&at);
+                let spelled: String = at.chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect();
+                spelled == name
+            });
         }
         Some(LocationReferences {
             target_symbol: def.name,

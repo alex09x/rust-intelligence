@@ -10,6 +10,7 @@
 
 mod candidates;
 mod disambiguation;
+mod macro_ref_spelling_tests;
 mod references;
 mod trait_impl_refs_tests;
 
