@@ -105,22 +105,23 @@ pub(crate) fn convert_outside(
 }
 
 /// Each literal `(edit start, opening brace)` of `lits` rewritten to `Name(..)` with the field accesses inside it, and
-/// the remaining accesses; `None` when a literal cannot be converted or two edits overlap.
-fn rewrite_literals(src: &str, masked: &str, lits: &[(usize, usize)], mut accesses: Vec<RawEdit>, n_fields: usize, field_index: &HashMap<&str, usize>) -> Option<Vec<RawEdit>> {
-    let mut edits: Vec<RawEdit> = Vec::new();
-    for &(lo, k) in lits {
+/// the remaining accesses; `None` when a literal cannot be converted or two edits overlap. Literals nested in another
+/// (`Name { a: Box::new(Name { .. }) }`) are rewritten first and carried into the enclosing one.
+fn rewrite_literals(src: &str, masked: &str, lits: &[(usize, usize)], accesses: Vec<RawEdit>, n_fields: usize, field_index: &HashMap<&str, usize>) -> Option<Vec<RawEdit>> {
+    let mut edits: Vec<RawEdit> = accesses;
+    for &(lo, k) in lits.iter().rev() {
         let end = skip_balanced(masked.as_bytes(), k, b'{', b'}')?;
-        if edits.iter().any(|e| lo < e.1 && e.0 < end) {
+        let (inner_lo, inner_hi) = (k + 1, end - 1);
+        let inside = |e: &RawEdit| e.0 >= inner_lo && e.1 <= inner_hi;
+        if edits.iter().any(|e| lo < e.1 && e.0 < end && !inside(e)) {
             return None;
         }
-        let (inner_lo, inner_hi) = (k + 1, end - 1);
-        let nested: Vec<RawEdit> = accesses.iter().filter(|e| e.0 >= inner_lo && e.1 <= inner_hi).cloned().collect();
-        accesses.retain(|e| !(e.0 >= inner_lo && e.1 <= inner_hi));
+        let nested: Vec<RawEdit> = edits.iter().filter(|e| inside(e)).cloned().collect();
+        edits.retain(|e| !inside(e));
         let inner = splice(&src[inner_lo..inner_hi], inner_lo, &nested);
         let inner_m = splice(&masked[inner_lo..inner_hi], inner_lo, &nested);
         edits.push((lo, end, convert_brace_init_to_tuple(&inner, &inner_m, n_fields, field_index)?));
     }
-    edits.extend(accesses);
     edits.sort_by_key(|e| e.0);
     if edits.windows(2).any(|w| w[1].0 < w[0].1) {
         return None;

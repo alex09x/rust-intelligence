@@ -89,3 +89,71 @@ pub(crate) fn field_access_edits(
     }
     Some(out)
 }
+
+/// The entries of a brace literal's comma split, with the pieces a closure's parameters (`|a, b| ..`) or a comparison
+/// split off joined back to the entry they continue: each entry starts with `name:`, a shorthand `name`, `..base`, or
+/// an attribute, after any leading comments.
+pub(crate) fn merge_continuations(pieces: Vec<String>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for p in pieces {
+        match out.last_mut() {
+            Some(prev) if !starts_entry(split_leading_comments(&p).1) => {
+                prev.push_str(", ");
+                prev.push_str(&p);
+            }
+            _ => out.push(p),
+        }
+    }
+    out
+}
+
+fn starts_entry(t: &str) -> bool {
+    if t.starts_with("..") || t.starts_with('#') {
+        return true;
+    }
+    // A shorthand pattern binding may be `ref`, `mut` or `ref mut`.
+    let mut body = t;
+    for kw in ["ref", "mut"] {
+        if let Some(r) = body.strip_prefix(kw).filter(|r| r.starts_with(char::is_whitespace)) {
+            body = r.trim_start();
+        }
+    }
+    let body = body.strip_prefix("r#").unwrap_or(body);
+    let id_len = body.len() - body.trim_start_matches(|c: char| c.is_alphanumeric() || c == '_').len();
+    if id_len == 0 || body.starts_with(|c: char| c.is_ascii_digit()) {
+        return false;
+    }
+    let rest = body[id_len..].trim_start();
+    rest.is_empty() || (rest.starts_with(':') && !rest.starts_with("::"))
+}
+
+/// `t` split into its leading `//` and `/* */` comments and the rest.
+pub(crate) fn split_leading_comments(t: &str) -> (&str, &str) {
+    let mut rest = t.trim_start();
+    loop {
+        if rest.starts_with("//") {
+            rest = rest.find('\n').map_or("", |p| &rest[p + 1..]).trim_start();
+        } else if rest.starts_with("/*") {
+            match rest.find("*/") {
+                Some(p) => rest = rest[p + 2..].trim_start(),
+                None => return (t, ""),
+            }
+        } else {
+            return (&t[..t.len() - rest.len()], rest);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{merge_continuations, split_leading_comments};
+
+    #[test]
+    fn closure_parameters_and_comments_stay_with_their_entry() {
+        let pieces = ["f: |a", "b| a + b", "// the count\n n", "..base"].map(String::from).to_vec();
+        assert_eq!(merge_continuations(pieces), ["f: |a, b| a + b", "// the count\n n", "..base"]);
+        let pattern = ["mut state_id", "ref mut tidx", "ref r#type"].map(String::from).to_vec();
+        assert_eq!(merge_continuations(pattern.clone()), pattern);
+        assert_eq!(split_leading_comments("// c\n /* d */ x: 1"), ("// c\n /* d */ ", "x: 1"));
+    }
+}

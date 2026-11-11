@@ -16,6 +16,7 @@ use super::action_generics_sub::{split_top_level_colon, split_top_level_commas};
 use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings};
 use super::action_parse_decl::{collapse_ws, extract_angle_generics, find_header_terminator, next_ident_token, split_top_level_where};
 use super::action_parse_items::{contains_word, skip_balanced};
+use super::action_struct_conv_fields::{merge_continuations, split_leading_comments};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
@@ -140,11 +141,11 @@ pub(crate) fn parse_tuple_fields_clean(raw: &str) -> Option<Vec<(String, String)
 /// update from a plain path (`{ a: x, ..base }`) fills them with `base.N`, which moves the same fields in the same
 /// order. Any other base would be evaluated once per field, so it is refused.
 pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, _inner_masked: &str, expected: usize, field_idx: &HashMap<&str, usize>) -> Option<String> {
-    let entries = split_top_level_commas(inner_src);
+    let entries = merge_continuations(split_top_level_commas(inner_src));
     let mut rest: Option<String> = None;
     let mut slots: Vec<Option<String>> = vec![None; expected];
     for (n, entry) in entries.iter().enumerate() {
-        let t = entry.trim();
+        let (comments, t) = split_leading_comments(entry.trim());
         if t.is_empty() {
             continue;
         }
@@ -170,7 +171,9 @@ pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, _inner_masked: &str, 
         if slots[idx].is_some() {
             return None;
         }
-        slots[idx] = Some(val_str);
+        // A trailing line comment would swallow the `,` or `)` that follows the value; a line break ends it.
+        let eol = if val_str.rsplit('\n').next().is_some_and(|l| l.contains("//")) { "\n" } else { "" };
+        slots[idx] = Some(format!("{comments}{val_str}{eol}"));
     }
     let ordered: Option<Vec<String>> = slots
         .into_iter()
