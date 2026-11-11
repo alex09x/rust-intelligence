@@ -193,6 +193,10 @@ impl WorkspaceIndex {
         let (def, mut refs) = self.resolve_direct_references_at(file, line, col)?;
         self.expand_trait_impl_references(&def, &mut refs);
         self.expand_trait_item_impl_uses(&def, &mut refs);
+        if def.kind == DefKind::Mod {
+            // A module path a macro wrote (a derive's `bevy_ecs::resource::Resource`) names no module in the source.
+            refs.retain(|r| !r.is_macro_expansion);
+        }
         Some(LocationReferences {
             target_symbol: def.name,
             target_kind: def.kind,
