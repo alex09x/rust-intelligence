@@ -127,7 +127,8 @@ pub(super) fn matches_reference_target(reader: &IndexReader<Mmap>, r: &RefEntry,
             let valid_width = width == 0
                 || width == name_chars
                 || (width == name_chars + 2 && is_raw_ident_keyword(name))
-                || (width == 4 && matches!(r_kind, DefKind::Mod | DefKind::StructCtor))
+                // `Self` (four columns) naming the type of the enclosing impl.
+                || (width == 4 && matches!(r_kind, DefKind::Mod | DefKind::StructCtor | DefKind::Struct | DefKind::Enum | DefKind::Union))
                 || (width == 5 && r_kind == DefKind::Mod)
                 || (width == 1 && r_kind == DefKind::Fn && r.target_def_id() != 0)
                 || r_kind == DefKind::Use;
