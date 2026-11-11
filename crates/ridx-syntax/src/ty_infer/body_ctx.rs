@@ -95,6 +95,8 @@ pub struct BodyInferCtx {
     /// Completion only: scope traits whose method names are known up front (sorted by crate, index), and those of
     /// them that declare the name being probed. Empty outside a completion query.
     pub(super) compl_known_traits: Vec<GlobalDefId>,
+    /// Completion only: a supertrait of a trait in lexical scope is not itself in scope, so scope traits are taken as written.
+    pub(super) compl_exact_scope: bool,
     pub(super) compl_name_traits: Vec<GlobalDefId>,
     pub(super) macro_scratch: Vec<ParseScratch>,
     pub(super) macro_depth: usize,
@@ -132,6 +134,7 @@ impl BodyInferCtx {
             fn_has_inner_trait_scopes: false,
             fn_scope_traits_ready: false,
             compl_known_traits: Vec::new(),
+            compl_exact_scope: false,
             compl_name_traits: Vec::new(),
             macro_scratch,
             macro_depth: 0,

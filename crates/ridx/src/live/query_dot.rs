@@ -81,6 +81,8 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
         entry.local_defs.collect_cst_method_names(&st, &mut cand_names);
         let mut traits: Vec<GlobalDefId> = Vec::with_capacity(64);
         entry.file_res.collect_traits_in_scope_at(at_node, &mut traits);
+        // Only the receiver's own bounds bring supertrait methods along; a supertrait of a trait in lexical scope is not in scope.
+        let scope_len = traits.len();
         let mut step_heads = [ImplTargetKey::Unknown; MAX_AUTODEREF_STEPS + 3];
         let mut sh_len = 0usize;
         let mut push_head = |h: ImplTargetKey| {
@@ -100,7 +102,7 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
             }
             match engine.infer_ctx.table.arena.kind(st_ty) {
                 InferTyKind::Dyn { principal, .. } | InferTyKind::Opaque { def: principal, .. } if principal.is_some() => {
-                    if !traits.contains(&principal) {
+                    if !traits[scope_len..].contains(&principal) {
                         traits.push(principal);
                     }
                     extra_traits.push(db.canonical_def(principal));
@@ -120,7 +122,7 @@ pub(crate) fn query_dot_candidates(ws: &WorkspaceIndex, engine: &mut LiveEngine,
                 cand_names.extend(ns.iter().map(|p| p.as_str(ws)));
             }
         }
-        let mut cursor = 0usize;
+        let mut cursor = scope_len;
         while cursor < traits.len() && traits.len() < 128 {
             let tdef = traits[cursor];
             cursor += 1;

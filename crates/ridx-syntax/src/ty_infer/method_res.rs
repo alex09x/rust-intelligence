@@ -204,7 +204,9 @@ impl<'a, 's> Runner<'a, 's> {
             if !self.ctx.fn_scope_traits_ready {
                 fn_cached.clear();
                 self.root_file_res.collect_traits_in_scope_at(expr, &mut fn_cached);
-                self.expand_supertraits(&mut fn_cached, 96);
+                if !self.ctx.compl_exact_scope {
+                    self.expand_supertraits(&mut fn_cached, 96);
+                }
                 self.ctx.fn_scope_traits_ready = true;
             }
             &mut fn_cached
@@ -223,7 +225,9 @@ impl<'a, 's> Runner<'a, 's> {
                     }
                 }
             }
-            self.expand_supertraits(scope_traits, 96);
+            if !self.ctx.compl_exact_scope {
+                self.expand_supertraits(scope_traits, 96);
+            }
             scope_traits
         };
 

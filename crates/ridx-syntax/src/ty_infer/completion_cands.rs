@@ -99,6 +99,7 @@ impl BodyInferCtx {
         let mut scope_traits = core::mem::take(&mut env.ctx.scope_traits_buf);
         env.ctx.compl_known_traits.clear();
         env.ctx.compl_known_traits.extend_from_slice(hints.known);
+        env.ctx.compl_exact_scope = true;
         for (n_idx, &mname) in candidate_names.iter().enumerate() {
             cands.clear();
             scope_traits.clear();
@@ -146,6 +147,7 @@ impl BodyInferCtx {
         }
         env.ctx.compl_known_traits.clear();
         env.ctx.compl_name_traits.clear();
+        env.ctx.compl_exact_scope = false;
         env.ctx.method_cands_buf = cands;
         env.ctx.scope_traits_buf = scope_traits;
         self.table.rollback_to(top_snap);
