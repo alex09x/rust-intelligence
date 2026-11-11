@@ -178,6 +178,28 @@ pub(crate) fn path_for(ws: &WorkspaceIndex, def: &ridx_format::ResolvedDefinitio
     public_path(&root_file, &p)
 }
 
+/// The `std`/`core`/`alloc` path `src` imports `name` from (`use std::sync::Arc;`, `use std::sync::{Arc, Mutex};`);
+/// in a standard library file (`crate_root` `alloc`, …) `use crate::sync::Arc` names that crate's item.
+fn std_use_path(src: &str, name: &str, crate_root: Option<&str>) -> Option<String> {
+    let masked = mask_comments_and_strings(src);
+    masked.match_indices("use ").filter(|(p, _)| *p == 0 || !is_ident_byte(masked.as_bytes()[p - 1])).find_map(|(p, _)| {
+        let stmt: String = masked[p + 4..].split(';').next()?.split_whitespace().collect();
+        let stmt = match (stmt.strip_prefix("crate::"), crate_root) {
+            (Some(rest), Some(root)) => format!("{root}::{rest}"),
+            _ => stmt,
+        };
+        if !["std::", "core::", "alloc::"].iter().any(|r| stmt.starts_with(r)) {
+            return None;
+        }
+        if let Some((prefix, group)) = stmt.split_once("::{") {
+            let group = group.strip_suffix('}')?;
+            group.split(',').any(|g| g == name).then(|| format!("{prefix}::{name}"))
+        } else {
+            (stmt.rsplit("::").next() == Some(name)).then_some(stmt)
+        }
+    })
+}
+
 /// Rewrites `src` (a member taken from `origin`) so names outside `visible` resolve as they did in the trait's file.
 /// Returns the new text and the crate roots it introduced (`core`, other crates), which the safety check must accept.
 /// `dest_std` tells whether the impl's crate links `std`.
@@ -234,7 +256,15 @@ pub(crate) fn qualify_member_paths(
         let bare = tok.strip_prefix("r#").unwrap_or(tok);
         let local = trait_module.and_then(|m| ws.find_definition_by_path(&format!("{m}::{bare}")).filter(|d| d.path == format!("{m}::{bare}")));
         let def = local.or(def);
-        let Some(def) = def else { continue };
+        let Some(def) = def else {
+            // Unresolved (a sysroot name the trait's file imports): the standard library path its `use` names.
+            let sysroot = origin.trait_path.and_then(|p| p.split("::").next()).filter(|r| matches!(*r, "core" | "alloc" | "std"));
+            if let Some(p) = std_use_path(origin.trait_src, bare, sysroot).and_then(|p| path_from(dest_crate, "", &p).or_else(|| public_std_path(ws, &p, dest_std))) {
+                roots.insert(p.split("::").next().unwrap_or_default().to_string());
+                edits.push((i, end, p));
+            }
+            continue;
+        };
         let kind_ok = !matches!(def.kind, DefKind::Local | DefKind::TyParam | DefKind::Field | DefKind::Use | DefKind::Macro);
         let named = def.path.rsplit("::").next() == Some(tok.strip_prefix("r#").unwrap_or(tok));
         if !(kind_ok && named) {
@@ -273,67 +303,6 @@ pub(crate) fn path_heads(src: &str) -> HashSet<String> {
     out
 }
 
-/// Whether the member body names a prelude item that `scope` (the impl module's own items and imports) shadows.
-pub(crate) fn shadows_prelude_name(body_masked: &str, scope: &HashSet<String>) -> bool {
-    const PRELUDE: &[&str] =
-        &["Result", "Option", "Some", "None", "Ok", "Err", "Box", "Vec", "String", "ToString", "ToOwned", "Default", "Iterator", "IntoIterator", "From", "Into"];
-    PRELUDE.iter().any(|p| scope.contains(*p) && super::action_parse_items::contains_word(body_masked, p))
-}
-
-/// `src` (masked as `masked`) with each prelude name that `scope` shadows (`type Result<T> = …` in the impl's module)
-/// written as its full path, so it keeps the meaning it had in the trait's file; `None` when such a name lives in
-/// `alloc` and the impl's crate does not link `std`.
-pub(crate) fn unshadow_prelude(src: &str, masked: &str, scope: &HashSet<String>, dest_std: bool) -> Option<String> {
-    const CORE: &[(&str, &str)] = &[
-        ("Result", "::core::result::Result"),
-        ("Option", "::core::option::Option"),
-        ("Some", "::core::option::Option::Some"),
-        ("None", "::core::option::Option::None"),
-        ("Ok", "::core::result::Result::Ok"),
-        ("Err", "::core::result::Result::Err"),
-        ("Default", "::core::default::Default"),
-        ("Iterator", "::core::iter::Iterator"),
-        ("IntoIterator", "::core::iter::IntoIterator"),
-        ("From", "::core::convert::From"),
-        ("Into", "::core::convert::Into"),
-    ];
-    const STD: &[(&str, &str)] = &[
-        ("Box", "::std::boxed::Box"),
-        ("Vec", "::std::vec::Vec"),
-        ("String", "::std::string::String"),
-        ("ToString", "::std::string::ToString"),
-        ("ToOwned", "::std::borrow::ToOwned"),
-    ];
-    let b = masked.as_bytes();
-    let mut edits: Vec<(usize, usize, &str)> = Vec::new();
-    let mut i = 0;
-    while i < b.len() {
-        if (b[i].is_ascii_alphabetic() || b[i] == b'_') && (i == 0 || !is_ident_byte(b[i - 1])) {
-            if let Some((tok, end)) = next_ident_token(masked, i) {
-                let before = masked[..i].trim_end();
-                if scope.contains(tok) && !before.ends_with("::") && !before.ends_with('.') {
-                    if let Some(&(_, p)) = CORE.iter().find(|(n, _)| *n == tok) {
-                        edits.push((i, end, p));
-                    } else if let Some(&(_, p)) = STD.iter().find(|(n, _)| *n == tok) {
-                        if !dest_std {
-                            return None;
-                        }
-                        edits.push((i, end, p));
-                    }
-                }
-                i = end;
-                continue;
-            }
-        }
-        i += 1;
-    }
-    let mut out = src.to_string();
-    for (lo, hi, p) in edits.into_iter().rev() {
-        out.replace_range(lo..hi, p);
-    }
-    Some(out)
-}
-
 /// Whether `cfg_attr(predicate, attrs…)` (the attribute's inner text) applies only `doc(…)` attributes.
 pub(crate) fn cfg_attr_only_documents(inner_masked: &str) -> bool {
     let Some(args) = inner_masked.trim().strip_prefix("cfg_attr").map(str::trim).and_then(|a| a.strip_prefix('(')).and_then(|a| a.strip_suffix(')')) else {
@@ -345,7 +314,17 @@ pub(crate) fn cfg_attr_only_documents(inner_masked: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{cfg_attr_only_documents, path_from, path_heads, public_path, shadows_prelude_name};
+    use super::super::action_default_prelude::shadows_prelude_name;
+    use super::{cfg_attr_only_documents, path_from, path_heads, public_path, std_use_path};
+
+    #[test]
+    fn a_sysroot_name_is_written_as_the_trait_file_imports_it() {
+        let src = "use std::sync::Arc;\nuse core::{fmt, cell::{Cell}};\nuse std::sync::{Mutex, mpsc};\nuse crate::x::Y;";
+        assert_eq!(std_use_path(src, "Arc", None).as_deref(), Some("std::sync::Arc"));
+        assert_eq!(std_use_path(src, "Mutex", None).as_deref(), Some("std::sync::Mutex"));
+        assert_eq!(std_use_path(src, "Y", None), None);
+        assert_eq!(std_use_path("use crate::sync::Arc;", "Arc", Some("alloc")).as_deref(), Some("alloc::sync::Arc"));
+    }
 
     #[test]
     fn test_public_path_through_pub_modules_or_root_reexport() {

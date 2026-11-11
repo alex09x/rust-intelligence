@@ -13,7 +13,6 @@
 use super::action_generics_sub::split_top_level_commas;
 use super::action_parse::is_ident_byte;
 use super::action_parse_decl::next_ident_token;
-use super::action_parse_items::contains_word;
 use std::collections::HashSet;
 
 #[allow(clippy::too_many_arguments)]
@@ -28,7 +27,8 @@ pub fn is_default_fn_compile_safe(
     impl_hdr_idents: &HashSet<String>,
     std_method: &dyn Fn(&str) -> bool,
 ) -> bool {
-    if contains_word(fn_masked, "unsafe") || fn_masked.contains('$') {
+    // An `unsafe` block is copied as it is: the impl runs the same code the default would, under the same contract.
+    if fn_masked.contains('$') {
         return false;
     }
     let locals = collect_local_bindings(fn_masked, params_masked);

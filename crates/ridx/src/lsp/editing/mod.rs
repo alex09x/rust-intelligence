@@ -19,6 +19,7 @@ pub mod action_crate_checks;
 mod action_default_extract;
 pub mod action_default_members;
 mod action_default_methods;
+mod action_default_prelude;
 mod action_default_qualify;
 pub mod action_default_resolve;
 pub mod action_default_safety;

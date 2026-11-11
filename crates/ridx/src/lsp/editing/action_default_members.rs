@@ -12,7 +12,8 @@
 
 use super::action_default_extract::{collect_top_level_member_names, extract_default_fn_members, DefaultFnMember};
 use super::action_default_methods::resolvable_method_calls;
-use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, unshadow_prelude, MemberOrigin};
+use super::action_default_prelude::{shadows_prelude_name, unshadow_prelude};
+use super::action_default_qualify::{path_heads, qualify_member_paths, MemberOrigin};
 use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args, trait_generic_defaults};
 use super::action_default_safety::is_rust_kw_or_prelude;
 use super::action_default_scope::{collect_module_scope_idents, enclosing_module_span, has_top_level_macro_call, is_default_fn_compile_safe};
@@ -198,6 +199,15 @@ pub fn build_implement_default_members(
             (alpha_src, alpha_masked)
         };
         let alpha_params = extract_first_paren_masked(&alpha_masked).unwrap_or(sub_params);
+        // A standard library body's `unsafe` leans on the library's internals, and `[const]`/`~const` bounds are unstable
+        // syntax: neither is copied.
+        let unstable = alpha_masked.contains("[const]") || alpha_masked.contains("~const");
+        if unstable || (std_trait && super::action_parse_items::contains_word(&alpha_masked, "unsafe")) {
+            if std_trait {
+                continue;
+            }
+            return None;
+        }
         // The macros of the trait's crate that the impl's file already calls (serde's `tri!`) are in scope there.
         if !std_trait && super::action_inline_callers_macros::macros_in_scope(&alpha_src, doc_text) {
             let mb = alpha_masked.as_bytes();

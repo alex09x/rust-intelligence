@@ -63,12 +63,18 @@ pub(crate) fn resolvable_method_calls(src: &str, origin: &MemberOrigin<'_>, ws: 
                 return false;
             }
             let Some((parent, _)) = def.path.rsplit_once("::") else { return false };
+            let public = || reader.find_definition_by_path(def.path).is_some_and(|d| d.item_vis() == ItemVis::Public);
+            // An inherent impl a macro generated in an anonymous const (`_::<impl SystemStateFlags>::intersects`,
+            // `bitflags!`): its parent names the impl, not a type definition.
+            if parent.rfind("<impl ").is_some_and(|p| parent.ends_with('>') && !parent[p..].contains(" as ")) {
+                return same_crate || public();
+            }
             match reader.find_definition_by_path(parent).map(|d| DefKind::from(d.kind)) {
                 Some(DefKind::Trait) => trait_in_scope(parent.rsplit("::").next().unwrap_or(parent)),
                 // An inherent method of a named type: public, or of the destination crate.
-                Some(DefKind::Struct | DefKind::Enum | DefKind::Union) => same_crate || reader.find_definition_by_path(def.path).is_some_and(|d| d.item_vis() == ItemVis::Public),
+                Some(DefKind::Struct | DefKind::Enum | DefKind::Union) => same_crate || public(),
                 // A primitive's inherent method (`char::encode_utf8`): its impl names no type definition.
-                None => matches!(reader.crate_name(), "core" | "alloc" | "std") && reader.find_definition_by_path(def.path).is_some_and(|d| d.item_vis() == ItemVis::Public),
+                None => matches!(reader.crate_name(), "core" | "alloc" | "std") && public(),
                 _ => false,
             }
         });
