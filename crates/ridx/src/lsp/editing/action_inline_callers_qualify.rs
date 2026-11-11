@@ -64,7 +64,7 @@ pub(crate) fn reachable(vis: ItemVis, def_crate: &str, dest_crate: &str) -> bool
 
 /// Narrows `within` (the crate-relative module a destination must lie in) to `module`: the deeper of two nested modules,
 /// `None` when they are apart.
-fn narrow(within: &mut Option<String>, module: String) -> Option<()> {
+pub(crate) fn narrow(within: &mut Option<String>, module: String) -> Option<()> {
     let inside = |inner: &str, outer: &str| inner == outer || inner.starts_with(&format!("{outer}::"));
     match within.as_deref() {
         Some(w) if inside(w, &module) => {}
@@ -167,6 +167,7 @@ pub(crate) fn cross_file_paths(
             return None;
         }
     }
+    super::action_inline_callers_members::assoc_calls_reachable(body, fn_src, fn_file, start, ws, crate_name, external, &mut within)?;
     Some(CrossFilePaths { paths: out, within, ty_params })
 }
 
@@ -219,6 +220,8 @@ pub(crate) struct CrossFileBody {
     pub within: Option<String>,
     /// Written for files of other crates that depend on the function's (`krate::…` paths, public items only).
     pub external: bool,
+    /// The crates the written paths start with (not `crate`, `core` or `std`): the destination's unit must link them.
+    pub roots: Vec<String>,
 }
 
 impl CrossFileBody {
@@ -233,7 +236,14 @@ impl CrossFileBody {
         // Members are judged from the destination's crate: another crate sees only public ones.
         let dest_crate = if self.external { dest_units.first().map(|p| ws.readers()[p.0].crate_name().replace('-', "_")) } else { Some(self.crate_name.clone()) };
         let Some(dest_crate) = dest_crate.filter(|_| same_crate != self.external) else { return false };
-        self.within.as_deref().is_none_or(|w| self.dest_inside(ws, dest_file, w))
+        // Another crate's unit must be known to link every crate the paths start with (an example linking `clap`
+        // does not see `clap_builder`); within the crate an unrecorded list is the function's own, which has them.
+        let linked = match ws.extern_crate_names_for_file(dest_file) {
+            Some(l) => self.roots.iter().all(|r| l.contains(&r.as_str())),
+            None => !self.external,
+        };
+        linked
+            && self.within.as_deref().is_none_or(|w| self.dest_inside(ws, dest_file, w))
             && std::fs::read_to_string(dest)
                 .is_ok_and(|t| super::action_inline_callers_macros::macros_in_scope(raw_body, &t) && members_reachable(raw_body, fn_src, fn_file, start, ws, &dest_crate, &t))
     }
@@ -317,7 +327,10 @@ fn cross_file_body(
     if external && paths.within.is_some() {
         return None;
     }
-    Some(CrossFileBody { body, params, crate_name, within: paths.within, external })
+    let mut roots: Vec<String> = paths.paths.values().filter_map(|p| p.split("::").next()).filter(|r| !matches!(*r, "crate" | "core" | "std")).map(String::from).collect();
+    roots.sort_unstable();
+    roots.dedup();
+    Some(CrossFileBody { body, params, crate_name, within: paths.within, external, roots })
 }
 
 #[cfg(test)]

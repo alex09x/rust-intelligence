@@ -68,6 +68,20 @@ const PUBLIC_STD_MODULES: &[&str] = &[
     "primitive",
 ];
 
+/// Public second-level modules of `core`/`std` whose items keep their definition path (`core::sync::atomic::Ordering`).
+const PUBLIC_STD_SUBMODULES: &[&str] = &[
+    "sync::atomic",
+    "sync::mpsc",
+    "collections::hash_map",
+    "collections::btree_map",
+    "collections::hash_set",
+    "collections::btree_set",
+    "collections::vec_deque",
+    "collections::binary_heap",
+    "os::unix",
+    "os::fd",
+];
+
 /// The path to write for an item defined in crate `def_crate` with index path `path` (crate-relative for the crate's
 /// own items), seen from crate `dest_crate`; `None` when no written path is known to reach it.
 fn path_from(dest_crate: &str, def_crate: &str, path: &str) -> Option<String> {
@@ -75,7 +89,10 @@ fn path_from(dest_crate: &str, def_crate: &str, path: &str) -> Option<String> {
     let full = match root {
         "core" | "std" => {
             let segs: Vec<&str> = path.split("::").collect();
-            return (segs.len() == 2 || (segs.len() == 3 && PUBLIC_STD_MODULES.contains(&segs[1]))).then(|| path.to_string());
+            let public = segs.len() == 2
+                || (segs.len() == 3 && PUBLIC_STD_MODULES.contains(&segs[1]))
+                || (segs.len() == 4 && PUBLIC_STD_SUBMODULES.contains(&format!("{}::{}", segs[1], segs[2]).as_str()));
+            return public.then(|| path.to_string());
         }
         "alloc" => return None,
         _ if root == def_crate || def_crate.is_empty() => path.to_string(),
@@ -112,9 +129,13 @@ fn public_path(root_file: &Path, full: &str) -> Option<String> {
         return Some(format!("{krate}::{item}"));
     }
     let (mut dir, mut text) = (root_file.parent()?.to_path_buf(), root_text);
-    for m in &segs[1..segs.len() - 1] {
+    for (k, m) in segs[1..segs.len() - 1].iter().enumerate() {
         if !declares(&text, "pub mod ", m) {
-            return None;
+            // A private module whose items the module above re-exports (`mod access; pub use access::*;`, or by
+            // name): the item is reached there.
+            let masked = mask_comments_and_strings(&text);
+            let glob = [format!("pub use {m}::*"), format!("pub use self::{m}::*")].iter().any(|g| masked.contains(g.as_str()));
+            return (glob || declares(&text, "pub use ", item)).then(|| format!("{}::{item}", segs[..=k].join("::")));
         }
         let (file, sub) = [(dir.join(format!("{m}.rs")), dir.join(m)), (dir.join(m).join("mod.rs"), dir.join(m))].into_iter().find(|(f, _)| f.is_file())?;
         text = std::fs::read_to_string(&file).ok()?;
@@ -208,8 +229,11 @@ pub(crate) fn qualify_member_paths(
     let trait_module = origin.trait_path.and_then(|p| p.rsplit_once("::")).map(|(m, _)| m);
     for ((i, end, _), def) in names.into_iter().zip(ws.resolve_definitions_in(origin.file_ids, origin.trait_file, &positions)) {
         let tok = &masked[i..end];
-        // Defined in the trait's own module (the file declares it): the bare name there means that item.
-        let def = def.or_else(|| trait_module.and_then(|m| ws.find_definition_by_path(&format!("{m}::{}", tok.strip_prefix("r#").unwrap_or(tok)))));
+        // Defined in the trait's own module (the file declares it): the bare name there means that item, before what
+        // the index guessed for a position it holds no reference at (a sysroot shard's `Ordering` is `cmp`'s).
+        let bare = tok.strip_prefix("r#").unwrap_or(tok);
+        let local = trait_module.and_then(|m| ws.find_definition_by_path(&format!("{m}::{bare}")).filter(|d| d.path == format!("{m}::{bare}")));
+        let def = local.or(def);
         let Some(def) = def else { continue };
         let kind_ok = !matches!(def.kind, DefKind::Local | DefKind::TyParam | DefKind::Field | DefKind::Use | DefKind::Macro);
         let named = def.path.rsplit("::").next() == Some(tok.strip_prefix("r#").unwrap_or(tok));
@@ -254,6 +278,60 @@ pub(crate) fn shadows_prelude_name(body_masked: &str, scope: &HashSet<String>) -
     const PRELUDE: &[&str] =
         &["Result", "Option", "Some", "None", "Ok", "Err", "Box", "Vec", "String", "ToString", "ToOwned", "Default", "Iterator", "IntoIterator", "From", "Into"];
     PRELUDE.iter().any(|p| scope.contains(*p) && super::action_parse_items::contains_word(body_masked, p))
+}
+
+/// `src` (masked as `masked`) with each prelude name that `scope` shadows (`type Result<T> = …` in the impl's module)
+/// written as its full path, so it keeps the meaning it had in the trait's file; `None` when such a name lives in
+/// `alloc` and the impl's crate does not link `std`.
+pub(crate) fn unshadow_prelude(src: &str, masked: &str, scope: &HashSet<String>, dest_std: bool) -> Option<String> {
+    const CORE: &[(&str, &str)] = &[
+        ("Result", "::core::result::Result"),
+        ("Option", "::core::option::Option"),
+        ("Some", "::core::option::Option::Some"),
+        ("None", "::core::option::Option::None"),
+        ("Ok", "::core::result::Result::Ok"),
+        ("Err", "::core::result::Result::Err"),
+        ("Default", "::core::default::Default"),
+        ("Iterator", "::core::iter::Iterator"),
+        ("IntoIterator", "::core::iter::IntoIterator"),
+        ("From", "::core::convert::From"),
+        ("Into", "::core::convert::Into"),
+    ];
+    const STD: &[(&str, &str)] = &[
+        ("Box", "::std::boxed::Box"),
+        ("Vec", "::std::vec::Vec"),
+        ("String", "::std::string::String"),
+        ("ToString", "::std::string::ToString"),
+        ("ToOwned", "::std::borrow::ToOwned"),
+    ];
+    let b = masked.as_bytes();
+    let mut edits: Vec<(usize, usize, &str)> = Vec::new();
+    let mut i = 0;
+    while i < b.len() {
+        if (b[i].is_ascii_alphabetic() || b[i] == b'_') && (i == 0 || !is_ident_byte(b[i - 1])) {
+            if let Some((tok, end)) = next_ident_token(masked, i) {
+                let before = masked[..i].trim_end();
+                if scope.contains(tok) && !before.ends_with("::") && !before.ends_with('.') {
+                    if let Some(&(_, p)) = CORE.iter().find(|(n, _)| *n == tok) {
+                        edits.push((i, end, p));
+                    } else if let Some(&(_, p)) = STD.iter().find(|(n, _)| *n == tok) {
+                        if !dest_std {
+                            return None;
+                        }
+                        edits.push((i, end, p));
+                    }
+                }
+                i = end;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    let mut out = src.to_string();
+    for (lo, hi, p) in edits.into_iter().rev() {
+        out.replace_range(lo..hi, p);
+    }
+    Some(out)
 }
 
 /// Whether `cfg_attr(predicate, attrs…)` (the attribute's inner text) applies only `doc(…)` attributes.

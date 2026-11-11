@@ -222,6 +222,14 @@ impl WorkspaceIndex {
         Vec::new()
     }
 
+    /// The names under which the compilation unit of `file_path` links other crates (its `extern` names), when the
+    /// index records them; `None` when it does not.
+    pub fn extern_crate_names_for_file(&self, file_path: &str) -> Option<Vec<&str>> {
+        let idx = self.reader_index_for_file(file_path)?;
+        let names = self.reader_extern_units.get(idx).filter(|m| !m.is_empty())?;
+        Some(names.keys().map(String::as_str).collect())
+    }
+
     /// Returns the canonical module path corresponding to `file_path` in the owning crate
     /// (e.g. `serde::de::impls` for `serde/src/de/impls.rs`).
     pub fn module_path_for_file(&self, file_path: &str) -> Option<String> {

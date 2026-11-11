@@ -33,6 +33,50 @@ pub(crate) fn struct_field_vis(reader: &ridx_format::IndexReader<memmap2::Mmap>,
     Some(reader.fields_for_owner(idx as u32).map(|f| f.vis).collect())
 }
 
+/// Checks the associated functions `body` calls by path (`MatchesError::unwrap(..)`) against the destination: public
+/// from another crate (`external`, or one the function's crate depends on), `pub(crate)` within the function's crate,
+/// private only inside the module of the type's impl, which narrows `within`. `None` when one cannot be reached.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn assoc_calls_reachable(
+    body: &str,
+    fn_src: &str,
+    fn_file: &str,
+    start: usize,
+    ws: &WorkspaceIndex,
+    crate_name: &str,
+    external: bool,
+    within: &mut Option<String>,
+) -> Option<()> {
+    let masked = mask_comments_and_strings(body);
+    let calls: Vec<(usize, usize)> =
+        tokens(&masked).into_iter().filter(|&(i, e)| masked[..i].ends_with("::") && (masked[e..].trim_start().starts_with('(') || masked[e..].starts_with("::<"))).collect();
+    let positions: Vec<(u32, u32)> = calls.iter().map(|&(i, _)| line_col(fn_src, start + i)).collect();
+    for def in ws.resolve_definitions_in(&ws.resolved_reader_file_ids(fn_file), fn_file, &positions).into_iter().flatten() {
+        if def.kind != DefKind::AssocFn {
+            continue;
+        }
+        let reader = def.reader_idx.and_then(|r| ws.readers().get(r))?;
+        let def_crate = reader.crate_name().replace('-', "_");
+        if matches!(def_crate.as_str(), "core" | "alloc" | "std") {
+            continue;
+        }
+        match reader.find_definition_by_path(def.path).map(|d| d.item_vis())? {
+            ItemVis::Public => {}
+            ItemVis::Crate if !external && def_crate == crate_name => {}
+            ItemVis::Private if !external && def_crate == crate_name => {
+                // `m::Type::f`: visible in `m` and the modules inside it.
+                let rel = def.path.strip_prefix(&format!("{def_crate}::")).unwrap_or(def.path);
+                let module = rel.rsplitn(3, "::").nth(2);
+                if let Some(m) = module {
+                    super::action_inline_callers_qualify::narrow(within, m.to_string())?;
+                }
+            }
+            _ => return None,
+        }
+    }
+    Some(())
+}
+
 /// Whether every `.name` and `.N` of `body` (at byte `start` of `fn_src`) reaches a field or method visible from
 /// another file of `crate_name` whose text is `dest`: a trait's method needs the trait in the prelude or named in `dest`.
 pub(crate) fn members_reachable(body: &str, fn_src: &str, fn_file: &str, start: usize, ws: &WorkspaceIndex, crate_name: &str, dest: &str) -> bool {

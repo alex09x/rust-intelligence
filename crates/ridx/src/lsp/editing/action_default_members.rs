@@ -12,7 +12,7 @@
 
 use super::action_default_extract::{collect_top_level_member_names, extract_default_fn_members, DefaultFnMember};
 use super::action_default_methods::resolvable_method_calls;
-use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, MemberOrigin};
+use super::action_default_qualify::{path_heads, qualify_member_paths, shadows_prelude_name, unshadow_prelude, MemberOrigin};
 use super::action_default_resolve::{resolve_trait_definition, split_trait_path_and_args, trait_generic_defaults};
 use super::action_default_safety::is_rust_kw_or_prelude;
 use super::action_default_scope::{collect_module_scope_idents, enclosing_module_span, has_top_level_macro_call, is_default_fn_compile_safe};
@@ -115,6 +115,7 @@ pub fn build_implement_default_members(
 
     // The crate the impl lives in: names from it are written `crate::…`.
     let dest_crate = ws.reader_indices_for_file(current_file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_")).unwrap_or_default();
+    let dest_links = ws.extern_crate_names_for_file(current_file);
     // The crate links `std` unless its root says `no_std` (also under `cfg_attr`).
     let dest_std = ws.reader_indices_for_file(current_file).first().is_some_and(|&i| {
         let root = ws.resolve_path_for_crate(ws.readers()[i].crate_name(), ws.readers()[i].get_file(0));
@@ -160,6 +161,10 @@ pub fn build_implement_default_members(
                 if std_trait && roots.iter().any(|r| !matches!(r.as_str(), "core" | "alloc" | "std")) {
                     continue;
                 }
+                // Another crate's path needs that crate linked by the impl's unit (`rand_core` behind `rand` is not).
+                if roots.iter().any(|r| !matches!(r.as_str(), "crate" | "core" | "alloc" | "std") && dest_links.as_ref().is_some_and(|l| !l.contains(&r.as_str()))) {
+                    return None;
+                }
                 allowed_idents.extend(roots);
                 let masked = mask_comments_and_strings(&src);
                 let params = extract_first_paren_masked(&masked).unwrap_or_else(|| m.params_masked.clone());
@@ -179,13 +184,19 @@ pub fn build_implement_default_members(
         };
         let alpha_masked = mask_comments_and_strings(&alpha_src);
         // A prelude name the body relies on (`Result`, `Option`, …) that the impl's module redefines or imports
-        // (`type Result<T> = …`) would change meaning once copied.
-        if !resolved_trait.same_module && shadows_prelude_name(&alpha_masked, &doc_scope) {
-            if std_trait {
-                continue;
-            }
-            return None;
-        }
+        // (`type Result<T> = …`) would change meaning once copied: it is written as its full path.
+        let (alpha_src, alpha_masked) = if !resolved_trait.same_module && shadows_prelude_name(&alpha_masked, &doc_scope) {
+            let Some(src) = unshadow_prelude(&alpha_src, &alpha_masked, &doc_scope, dest_std) else {
+                if std_trait {
+                    continue;
+                }
+                return None;
+            };
+            let masked = mask_comments_and_strings(&src);
+            (src, masked)
+        } else {
+            (alpha_src, alpha_masked)
+        };
         let alpha_params = extract_first_paren_masked(&alpha_masked).unwrap_or(sub_params);
         if !is_default_fn_compile_safe(
             &alpha_masked,
