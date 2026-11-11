@@ -264,6 +264,8 @@ def run_corpus_pkl(
         for who in ("ridx", "ra")
     }
     per_pos_ok: List[Tuple[Set[str], Set[str]]] = []
+    # Positions where an action rust-analyzer offers compiles and RIDX offers no compiling action of that title.
+    uncovered: List[dict] = []
 
     for r in rows:
         raw = r.get("_raw") or {}
@@ -312,6 +314,8 @@ def run_corpus_pkl(
                     if len(s["sample_failures"]) < 10:
                         s["sample_failures"].append({"pos": r.get("name"), "file": r.get("file"), "line": r.get("line"), "title": title, "errors": err_c})
         per_pos_ok.append((pos_ok["ridx"], pos_ok["ra"]))
+        if pos_ok["ra"] - pos_ok["ridx"]:
+            uncovered.append({"pos": r.get("name"), "file": r.get("file"), "line": r.get("line"), "character": r.get("character"), "titles": sorted(pos_ok["ra"] - pos_ok["ridx"])})
 
     reset()
     try:
@@ -335,6 +339,7 @@ def run_corpus_pkl(
         "checker": checker_version,
         "positions_evaluated": len(rows),
         "coverage_of_ra_compiling": cov,
+        "uncovered_ra_compiling_positions": uncovered,
     }
     for who in ("ridx", "ra"):
         s = summary[who]

@@ -25,13 +25,47 @@ pub(crate) struct MemberOrigin<'a> {
     pub trait_file: &'a str,
     pub file_ids: &'a [(usize, u32)],
     pub start: usize,
+    /// The trait's index path (`core::hash::Hash`): a name the index resolves at no position of the trait's file (a
+    /// sysroot shard records no references) is looked up in the trait's module.
+    pub trait_path: Option<&'a str>,
 }
 
 /// Public modules of `core`/`std` whose items keep their definition path (`core::fmt::Formatter`); other sysroot
 /// definition paths go through private modules (`core::io::io_slice::IoSlice`).
 const PUBLIC_STD_MODULES: &[&str] = &[
-    "fmt", "marker", "ops", "cmp", "convert", "iter", "option", "result", "mem", "ptr", "str", "slice", "num", "hash", "any", "borrow", "clone", "default", "error", "future",
-    "task", "pin", "cell", "time", "char",
+    "fmt",
+    "marker",
+    "ops",
+    "cmp",
+    "convert",
+    "iter",
+    "option",
+    "result",
+    "mem",
+    "ptr",
+    "str",
+    "slice",
+    "num",
+    "hash",
+    "any",
+    "borrow",
+    "clone",
+    "default",
+    "error",
+    "future",
+    "task",
+    "pin",
+    "cell",
+    "time",
+    "char",
+    "io",
+    "collections",
+    "sync",
+    "rc",
+    "ffi",
+    "path",
+    "array",
+    "primitive",
 ];
 
 /// The path to write for an item defined in crate `def_crate` with index path `path` (crate-relative for the crate's
@@ -129,9 +163,12 @@ pub(crate) fn qualify_member_paths(src: &str, origin: &MemberOrigin<'_>, ws: &Wo
     }
     // Only the definitions are needed, not their references.
     let positions: Vec<(u32, u32)> = names.iter().map(|n| n.2).collect();
+    let trait_module = origin.trait_path.and_then(|p| p.rsplit_once("::")).map(|(m, _)| m);
     for ((i, end, _), def) in names.into_iter().zip(ws.resolve_definitions_in(origin.file_ids, origin.trait_file, &positions)) {
-        let Some(def) = def else { continue };
         let tok = &masked[i..end];
+        // Defined in the trait's own module (the file declares it): the bare name there means that item.
+        let def = def.or_else(|| trait_module.and_then(|m| ws.find_definition_by_path(&format!("{m}::{}", tok.strip_prefix("r#").unwrap_or(tok)))));
+        let Some(def) = def else { continue };
         let kind_ok = !matches!(def.kind, DefKind::Local | DefKind::TyParam | DefKind::Field | DefKind::Use | DefKind::Macro);
         let named = def.path.rsplit("::").next() == Some(tok.strip_prefix("r#").unwrap_or(tok));
         if !(kind_ok && named) {

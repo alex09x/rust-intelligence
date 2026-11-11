@@ -130,7 +130,13 @@ pub fn build_implement_default_members(
         // Names the impl's module does not see are written as the paths the index resolved them to.
         let (fn_src, fn_masked, params_masked, member_methods) = match (&resolved_trait.file, resolved_trait.same_module) {
             (Some(trait_file), false) => {
-                let origin = MemberOrigin { trait_src: &resolved_trait.src, trait_file, file_ids: &trait_file_ids, start: resolved_trait.body_open + 1 + m.start };
+                let origin = MemberOrigin {
+                    trait_src: &resolved_trait.src,
+                    trait_file,
+                    file_ids: &trait_file_ids,
+                    start: resolved_trait.body_open + 1 + m.start,
+                    trait_path: resolved_trait.def_path.as_deref(),
+                };
                 // A standard library name the impl's module also defines (clap's own `FlatMap`) means another item
                 // there: a standard library trait's names are written as full paths unless the prelude has them.
                 let visible = |t: &str| {
