@@ -2,6 +2,16 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.5] - 2026-11-11
+
+Figures: the suite on the `0.3.5` and `0.3.4` release builds on one index (the driver is unchanged; no re-index needed). Every `Convert to tuple struct` edit `0.3.5` offers on the 7 corpora was applied and compiled (`bench/code_action_compile.py`): `93` of `93` compile; rust-analyzer's compile in `105` of `141`.
+
+### Changed
+- **`Convert to tuple struct`** is offered on many more structs, always with an edit that compiles: on a struct with a `where` clause (moved after the fields); beside a method named like a field; on a struct with a third-party derive the index has seen on a tuple struct that compiled (its helper attributes pass when each key they use was seen there; clap's `Parser`/`Args` stay refused); on a struct built, destructured or implemented in other files (`Name { .. }` and `Self { .. }` there are rewritten); with struct updates from a plain path (`..self`) and rest patterns (`..`). Refused where rewriting could not be complete: a free type alias of the struct, a bare path handed to a macro that may build it, fields under `#[cfg]`. `codeAction` parity `1206` → `1236` of `2070`, `codeAction/resolve` `881` → `884` of `2074`; no row lost in any of the 38 methods. Latency p50 `1.15` → `1.26 ms`, p95 `15.3` → `16.1 ms`.
+
+### Fixed
+- **`Convert to tuple struct`**: a field access inside the struct's own literal (`Self { syntax: self.syntax.clone() }`) is rewritten with it; it was left as `self.syntax`, which breaks the build (E0615) when a method shares the field's name.
+
 ## [0.3.4] - 2026-11-11
 
 Figures: the suite on the `0.3.4` and `0.3.3` release builds on one index (no re-index needed).
