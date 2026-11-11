@@ -324,7 +324,9 @@ pub fn build_inline_into_all_callers_workspace(
         }
     }
 
-    if (local_edits.is_empty() && other_file_edits.is_empty()) || (body_has_question_mark && any_skipped) {
+    // Calls left as they are (one inside `assert_eq!`, or in a function returning neither `Result` nor `Option`)
+    // keep the function; the others are inlined.
+    if local_edits.is_empty() && other_file_edits.is_empty() {
         return None;
     }
 

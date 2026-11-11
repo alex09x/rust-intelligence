@@ -188,15 +188,37 @@ fn cross_file_body(
             Some(t) => binding_type(t, &paths, &locals).map(Some),
         }
     };
+    // In another crate, a third crate named only by a parameter's type (`glam::Vec2`, which the caller knows as
+    // `bevy_math::Vec2`) may not be linked there: that parameter is bound untyped, taking its argument's type.
+    let third_party = |n: &String| paths.paths.get(n).and_then(|p| p.split("::").next()).is_some_and(|r| !matches!(r, "crate" | "core" | "std") && r != crate_name);
+    let unwritten =
+        |t: &Option<String>| external && t.as_deref().is_some_and(|t| paths.paths.keys().any(|n| third_party(n) && contains_word(t, n) && !contains_word(&body_masked, n)));
     let params = params
         .iter()
-        .map(|p| Some(super::action_inline_callers_params::FnParamInfo { ty: qualify_ty(&p.ty)?, decl_ty: qualify_ty(&p.decl_ty)?, ..p.clone() }))
+        .map(|p| {
+            if unwritten(&p.ty) || unwritten(&p.decl_ty) {
+                return Some(super::action_inline_callers_params::FnParamInfo { ty: None, decl_ty: None, ..p.clone() });
+            }
+            Some(super::action_inline_callers_params::FnParamInfo { ty: qualify_ty(&p.ty)?, decl_ty: qualify_ty(&p.decl_ty)?, ..p.clone() })
+        })
         .collect::<Option<Vec<_>>>()?;
     // Another crate sees no private item, wherever it is.
     if external && paths.within.is_some() {
         return None;
     }
-    let mut roots: Vec<String> = paths.paths.values().filter_map(|p| p.split("::").next()).filter(|r| !matches!(*r, "crate" | "core" | "std")).map(String::from).collect();
+    // The crates the written text starts paths with: the body's names and the parameter types still written.
+    let written = |n: &String| {
+        contains_word(&body_masked, n)
+            || params.iter().any(|p| [&p.ty, &p.decl_ty].iter().any(|t| t.as_deref().is_some_and(|t| contains_word(t, n) || t.contains(&format!("::{n}")))))
+    };
+    let mut roots: Vec<String> = paths
+        .paths
+        .iter()
+        .filter(|(n, _)| !external || written(n))
+        .filter_map(|(_, p)| p.split("::").next())
+        .filter(|r| !matches!(*r, "crate" | "core" | "std"))
+        .map(String::from)
+        .collect();
     roots.sort_unstable();
     roots.dedup();
     Some(CrossFileBody { body, params, crate_name, within: paths.within, external, roots })
