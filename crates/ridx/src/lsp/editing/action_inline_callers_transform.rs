@@ -104,13 +104,20 @@ pub(crate) fn process_call_site(
     if borrowed_return && recv_expr.is_some() && recv_ty.is_none() {
         return None;
     }
+    let mut recv_ty = recv_ty;
     if is_fully_pub {
         if self_kind == Some(SelfKind::MutRef) {
             let recv_str = recv_expr.unwrap_or("");
             let is_mut_ref = recv_ty.is_some_and(|t| t.starts_with("&mut "));
             let is_explicit_mut = recv_str.starts_with("&mut ") || recv_str == "self" || recv_str == "this";
             if !is_mut_ref && !is_explicit_mut {
-                return None;
+                // Without a type the receiver's declaration decides; a body dereferencing `self` needs the exact one.
+                match super::action_inline_callers_recv::mut_receiver_binding(masked, call_start, recv_str.trim()) {
+                    Some(super::action_inline_callers_recv::MutRecv::Reborrow) => recv_ty = Some("&mut _"),
+                    Some(super::action_inline_callers_recv::MutRecv::Borrow)
+                        if recv_ty.is_none_or(|t| !t.starts_with('&')) && !body_src.contains("*self") && !body_src.contains("*this") => {}
+                    _ => return None,
+                }
             }
         } else if self_kind == Some(SelfKind::Value) && recv_ty.is_none() {
             return None;
