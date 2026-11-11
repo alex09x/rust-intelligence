@@ -12,6 +12,7 @@
 //! (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator), on saved and on edited buffers alike, backed by a
 //! single process-wide [`LiveDb`].
 
+use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
 use super::type_definition_lookup::format_location;
@@ -32,6 +33,9 @@ pub(crate) fn global_live_db() -> &'static Mutex<LiveDb> {
 
 /// Drops all derived snapshots, shard tables, and inference caches in the process-wide [`LiveDb`].
 pub(crate) fn clear_live_db_cache() {
+    if let Some(c) = COMPILED_FILES.get() {
+        c.lock().unwrap_or_else(|e| e.into_inner()).clear();
+    }
     if let Some(lock) = LIVE_DB.get() {
         if let Ok(mut db) = lock.lock() {
             db.invalidate();
@@ -62,9 +66,18 @@ pub(crate) fn byte_offset_from_conv_or_overlay(file: &str, line: u32, col: u32, 
     u32::try_from(start + in_line).ok()
 }
 
+static COMPILED_FILES: OnceLock<Mutex<HashMap<String, bool>>> = OnceLock::new();
+
+/// Whether some unit of the index compiles `file`, remembered per file until the index is reloaded.
 fn is_file_compiled_in_ws(ws: &WorkspaceIndex, file: &str) -> bool {
+    let cache = COMPILED_FILES.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some(&hit) = cache.lock().unwrap_or_else(|e| e.into_inner()).get(file) {
+        return hit;
+    }
     let check = |idx: usize| ws.target_file_for_reader(idx, file).and_then(|tf| ws.readers()[idx].find_file_id(tf.as_ref())).is_some();
-    ws.reader_indices_for_file(file).into_iter().any(check) || ws.candidate_reader_indices_for_file(file).into_iter().any(check)
+    let compiled = ws.reader_indices_for_file(file).into_iter().any(check) || ws.candidate_reader_indices_for_file(file).into_iter().any(check);
+    cache.lock().unwrap_or_else(|e| e.into_inner()).insert(file.to_string(), compiled);
+    compiled
 }
 
 /// The definitions of the types in the type inferred at the cursor (plus whether inference was complete without `{unknown}`), or `None`.

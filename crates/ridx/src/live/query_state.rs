@@ -64,6 +64,9 @@ pub(crate) struct LiveEngine {
     pub trait_method_names: HashMap<GlobalDefId, Vec<PoolStr>>,
     pub(crate) hidden: super::query_hidden::HiddenCache,
     pub parsed: Option<CachedParsed>,
+    /// Trees of the files queried before the current one, oldest first; then units by absolute file path.
+    pub(super) parsed_recent: Vec<CachedParsed>,
+    units_by_file: Option<HashMap<PathBuf, Vec<usize>>>,
     pub fn_cache: HashMap<(FileId, u64, u64), CachedFnInfer>,
     fn_fifo: VecDeque<(FileId, u64, u64)>,
     pub infer_ctx: BodyInferCtx,
@@ -91,6 +94,8 @@ impl LiveEngine {
             trait_method_names: HashMap::new(),
             hidden: Default::default(),
             parsed: None,
+            parsed_recent: Vec::with_capacity(super::query_unit::RECENT_PARSED_FILES),
+            units_by_file: None,
             fn_cache: HashMap::with_capacity(64),
             fn_fifo: VecDeque::with_capacity(64),
             infer_ctx: BodyInferCtx::new(),
@@ -112,7 +117,8 @@ impl LiveEngine {
             let r_idx = if let Some(&cached) = self.file_to_unit.get(&canon) {
                 cached
             } else {
-                let found = super::query_unit::find_best_unit(ws, &mut self.state, &abs, &canon)?;
+                let units_by_file = self.units_by_file.get_or_insert_with(|| super::query_unit::index_units_by_file(ws, &self.state));
+                let found = super::query_unit::find_best_unit(ws, &mut self.state, units_by_file, &abs, &canon)?;
                 self.file_to_unit.insert(canon.clone(), found);
                 found
             };
@@ -134,6 +140,13 @@ impl LiveEngine {
                 self.clean_env_hashes.insert(fid, extract_file_fn_summaries(&cst, &mut tmp));
             }
             if self.parsed.as_ref().is_none_or(|p| p.file != fid || p.text_hash != th) {
+                if let Some(i) = self.parsed_recent.iter().position(|p| p.file == fid && p.text_hash == th) {
+                    let hit = self.parsed_recent.remove(i);
+                    if let Some(prev) = self.parsed.replace(hit) {
+                        self.remember_parsed(prev);
+                    }
+                    return Some((r_idx, fid, canon));
+                }
                 let owned_src = effective_src.to_string();
                 let lines = LineIndex::new(&owned_src);
                 let st = parse(&owned_src);
@@ -143,7 +156,9 @@ impl LiveEngine {
                     self.clean_env_hashes.entry(fid).or_insert(env_h);
                 }
                 let ridx_syntax::SyntaxTree { tokens, nodes, .. } = st;
-                self.parsed = Some(CachedParsed { file: fid, text_hash: th, src: owned_src, lines, bufs: Mutex::new((tokens, nodes)), fn_summaries });
+                if let Some(prev) = self.parsed.replace(CachedParsed { file: fid, text_hash: th, src: owned_src, lines, bufs: Mutex::new((tokens, nodes)), fn_summaries }) {
+                    self.remember_parsed(prev);
+                }
             }
         }
         Some((r_idx, fid, canon))

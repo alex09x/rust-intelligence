@@ -42,17 +42,23 @@ fn reader_stores_resolved(ws: &WorkspaceIndex, state: &LiveState, idx: usize, ab
 /// before test harnesses, the unit with more references first; failing that, the unit with the deepest source
 /// root above the file.
 ///
-/// The indexed lookup runs first; the disk-resolving scan over every stored path of every unit is kept only for
+/// The units listed for the path in `units_by_file` are ranked first; a scan of every unit's file table follows for
+/// paths the listing misses, and the disk-resolving scan over every stored path of every unit is kept only for
 /// spellings the index cannot map (symlinked roots), because it costs one `canonicalize` per stored file.
-pub(super) fn find_best_unit(ws: &WorkspaceIndex, state: &mut LiveState, abs: &Path, canon: &Path) -> Option<usize> {
-    for resolve_on_disk in [false, true] {
+pub(super) fn find_best_unit(ws: &WorkspaceIndex, state: &mut LiveState, units_by_file: &HashMap<PathBuf, Vec<usize>>, abs: &Path, canon: &Path) -> Option<usize> {
+    let listed: Vec<usize> = units_by_file.get(abs).into_iter().chain(units_by_file.get(canon)).flatten().copied().collect();
+    for pass in 0..3u8 {
         let mut best: Option<((u8, u8, u32), usize)> = None;
-        for idx in 0..ws.crate_count() {
+        let candidates: Vec<usize> = if pass == 0 { listed.clone() } else { (0..ws.crate_count()).collect() };
+        for idx in candidates {
             if state.metas[idx].is_dependency {
                 continue;
             }
-            let has_file =
-                if resolve_on_disk { reader_stores_resolved(ws, state, idx, abs, canon) } else { reader_stores(ws, idx, abs) || (canon != abs && reader_stores(ws, idx, canon)) };
+            let has_file = match pass {
+                0 => true,
+                1 => reader_stores(ws, idx, abs) || (canon != abs && reader_stores(ws, idx, canon)),
+                _ => reader_stores_resolved(ws, state, idx, abs, canon),
+            };
             if has_file {
                 state.ensure_meta(ws, idx);
                 let meta = &state.metas[idx];
@@ -240,7 +246,42 @@ pub(super) fn extend_method_index(
     }
 }
 
+/// Every workspace unit by the absolute path of each file in its file table (stored paths are absolute or relative
+/// to the unit's source root).
+pub(super) fn index_units_by_file(ws: &WorkspaceIndex, state: &LiveState) -> HashMap<PathBuf, Vec<usize>> {
+    let mut out: HashMap<PathBuf, Vec<usize>> = HashMap::new();
+    for (idx, rdr) in ws.readers().iter().enumerate() {
+        let Some(meta) = state.metas.get(idx).filter(|m| !m.is_dependency) else { continue };
+        for fid in 0..rdr.files_count() {
+            let stored = Path::new(rdr.get_file(fid));
+            let abs = if stored.is_absolute() {
+                stored.to_path_buf()
+            } else if let Some(root) = meta.source_root.as_deref() {
+                join_resolving_overlap(root, stored)
+            } else {
+                continue;
+            };
+            let units = out.entry(abs).or_default();
+            if !units.contains(&idx) {
+                units.push(idx);
+            }
+        }
+    }
+    out
+}
+
+/// How many recently queried files keep their syntax tree besides the current one.
+pub(super) const RECENT_PARSED_FILES: usize = 16;
+
 impl super::query_state::LiveEngine {
+    /// Keeps the tree of a file the queries moved away from, so returning to it does not parse it again.
+    pub(super) fn remember_parsed(&mut self, prev: super::query_loc::CachedParsed) {
+        if self.parsed_recent.len() >= RECENT_PARSED_FILES {
+            self.parsed_recent.remove(0);
+        }
+        self.parsed_recent.push(prev);
+    }
+
     /// The unit to answer a query at `off` in: the file's own unit, or another one that compiles the same file when
     /// only that one enables the code at the cursor (`#[cfg(test)]` code goes to the test harness).
     pub(super) fn unit_for_cursor(&self, ws: &WorkspaceIndex, file_unit: usize, canon: &Path, off: u32) -> usize {
