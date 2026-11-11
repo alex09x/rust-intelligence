@@ -222,14 +222,22 @@ pub fn run_driver_with_env(mut args: Vec<String>, env: DriverEnv) -> Result<(), 
         return res.map_err(|_| ());
     }
 
-    // Skip build scripts
+    // Build scripts of registry and git dependencies are compiled without indexing; those of local packages are
+    // indexed like any other target, under a shard name carrying the package (every build script is the crate
+    // `build_script_build`).
     let crate_name_arg = args.windows(2).find(|w| w[0] == "--crate-name").map(|w| w[1].as_str());
-    if crate_name_arg == Some("build_script_build") || crate_name_arg == Some("build_script_main") {
+    let local_package = std::env::var_os("CARGO_MANIFEST_DIR").is_some_and(|d| !metadata::is_immutable_package(Path::new(&d)));
+    let build_script = matches!(crate_name_arg, Some("build_script_build" | "build_script_main"));
+    if build_script && !local_package {
         let res = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut NoopCallbacks));
         return res.map_err(|_| ());
     }
 
-    let disambiguator = extract_target_disambiguator(&args);
+    let mut disambiguator = extract_target_disambiguator(&args);
+    if build_script {
+        let pkg = std::env::var("CARGO_PKG_NAME").unwrap_or_default().replace('-', "_");
+        disambiguator = Some(format!("_{pkg}{}", disambiguator.unwrap_or_default()));
+    }
 
     let mut callbacks = IndexCallbacks { env, disambiguator, compiler_args: args.clone(), crate_cfg: Vec::new() };
     run_with_callbacks(&args, &mut callbacks)

@@ -95,7 +95,8 @@ impl<'tcx> HirVisitor<'tcx> {
         }
         let typeck = self.typeck?;
         let args = typeck.node_args(expr_hir_id);
-        if args.has_infer() || args.has_escaping_bound_vars() || args.references_error() {
+        // Desugared paths (`for`, `?`) record no arguments; resolving with too few panics inside a query.
+        if args.len() != self.tcx.generics_of(def_id).count() || args.has_infer() || args.has_escaping_bound_vars() || args.references_error() {
             return None;
         }
         let body_owner = self.tcx.hir_enclosing_body_owner(expr_hir_id).to_def_id();
@@ -142,9 +143,18 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
         self.typeck = prev;
     }
 
-    fn visit_path(&mut self, path: &hir::Path<'tcx>, _: HirId) {
+    fn visit_path(&mut self, path: &hir::Path<'tcx>, hir_id: HirId) {
         let span = if let Some(last_seg) = path.segments.last() { last_seg.ident.span } else { path.span };
-        self.add_ref_from_res(span, path.res);
+        // A trait function named by a path in a body (`From::from`, `Default::default()`) is the implementation the
+        // arguments select, as for a method call. Paths a macro or a desugaring wrote (a derive's
+        // `Default::default()`) keep naming the trait's function: no implementation's name is written there.
+        let res = match path.res {
+            Res::Def(hir::def::DefKind::AssocFn, did) if !path.span.from_expansion() && self.typeck.is_some_and(|t| t.hir_owner == hir_id.owner) => {
+                self.resolve_trait_instance(hir_id, did).map_or(path.res, |i| Res::Def(self.tcx.def_kind(i), i))
+            }
+            _ => path.res,
+        };
+        self.add_ref_from_res(span, res);
         // Module segments of a path (`std::ops` in `std::ops::Bound`) are references to the modules.
         for seg in path.segments.iter().take(path.segments.len().saturating_sub(1)) {
             if let Res::Def(hir::def::DefKind::Mod, _) = seg.res {
