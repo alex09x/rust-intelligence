@@ -81,6 +81,10 @@ pub fn build_generate_new(doc_text: &str, masked_doc: &str, starts: &[usize], fi
     if struct_already_has_new(doc_text, masked_doc, file_path, &item.name, ws) {
         return None;
     }
+    // A `new` of a struct that is not public is not used yet: where dead code is denied it breaks the build.
+    if item.vis_prefix.trim() != "pub" && super::action_crate_checks::crate_denies_dead_code(masked_doc, file_path) {
+        return None;
+    }
 
     let (impl_gens, type_args, where_clause) = format_adt_impl_parts(generics_src, where_src)?;
     let unsized_params = collect_unsized_type_params(generics_src, where_src);

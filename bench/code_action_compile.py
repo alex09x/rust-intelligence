@@ -209,8 +209,8 @@ def run_corpus_pkl(
 
     mode: List[str] = ["--all-targets"]
 
-    def check() -> Tuple[bool, List[str]]:
-        cmd = [mitts_path, "check", "--workspace"] + mode
+    def check(no_cache: bool = False) -> Tuple[bool, List[str]]:
+        cmd = [mitts_path, "check", "--workspace"] + mode + (["--no-cache"] if no_cache else [])
         r = subprocess.run(
             cmd,
             cwd=wt,
@@ -254,6 +254,11 @@ def run_corpus_pkl(
     except (OSError, ValueError):
         disk_cache = {}
     cache: Dict[str, Tuple[bool, List[str]]] = dict(disk_cache)
+    try:
+        with open(cache_path + ".verified", encoding="utf-8") as fh:
+            verified_failures: Set[str] = {k[len(key_prefix):] for k in json.load(fh) if k.startswith(key_prefix)}
+    except (OSError, ValueError):
+        verified_failures = set()
     summary = {
         who: {"positions_with_actions": 0, "actions_checked": 0, "actions_compiled": 0, "actions_broke_build": 0, "broke_by_title": Counter(), "sample_failures": []}
         for who in ("ridx", "ra")
@@ -289,6 +294,13 @@ def run_corpus_pkl(
                         cache[sig] = (False, ["external or missing path outside workspace"])
                     else:
                         cache[sig] = check()
+                # A RIDX failure is confirmed without Mitts' action cache, which has reported errors of an earlier
+                # check's edit after the worktree was restored (an unrelated struct's "missing generics").
+                if who == "ridx" and not cache[sig][0] and sig not in verified_failures and cache[sig][1] != ["external or missing path outside workspace"]:
+                    reset()
+                    if apply_action_in_worktree(creates, eds, src, wt):
+                        cache[sig] = check(no_cache=True)
+                    verified_failures.add(sig)
                 ok_c, err_c = cache[sig]
                 title = str(act.get("title") or "<untitled>")
                 if ok_c:
@@ -310,6 +322,13 @@ def run_corpus_pkl(
     stored.update({key_prefix + sig: [ok_v, err_v] for sig, (ok_v, err_v) in cache.items()})
     with open(cache_path, "w", encoding="utf-8") as fh:
         json.dump(stored, fh)
+    try:
+        with open(cache_path + ".verified", encoding="utf-8") as fh:
+            stored_verified = set(json.load(fh))
+    except (OSError, ValueError):
+        stored_verified = set()
+    with open(cache_path + ".verified", "w", encoding="utf-8") as fh:
+        json.dump(sorted(stored_verified | {key_prefix + sig for sig in verified_failures}), fh)
     cov = compute_ra_compiling_coverage(per_pos_ok)
     out = {
         "corpus": corpus,

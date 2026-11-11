@@ -30,6 +30,7 @@ pub(crate) fn process_call_site(
     file_opt: Option<&str>,
     ws_opt: Option<&ridx_format::WorkspaceIndex>,
     is_fully_pub: bool,
+    borrowed_return: bool,
 ) -> Option<(usize, usize, String)> {
     let mb = masked.as_bytes();
     let name_end = ref_byte + name.len();
@@ -99,6 +100,10 @@ pub(crate) fn process_call_site(
         (path_start, None, None)
     };
 
+    // A borrowed result reaches the caller only through a receiver whose type says how to reborrow it.
+    if borrowed_return && recv_expr.is_some() && recv_ty.is_none() {
+        return None;
+    }
     if is_fully_pub {
         if self_kind == Some(SelfKind::MutRef) {
             let recv_str = recv_expr.unwrap_or("");

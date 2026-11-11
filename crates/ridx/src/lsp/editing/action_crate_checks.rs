@@ -39,6 +39,73 @@ pub(crate) fn crate_denies_missing_docs(masked_doc: &str, file_path: &str) -> bo
     false
 }
 
+/// Whether an unused new item breaks the build: the file, the package's crate roots or its `[lints]` deny (or forbid)
+/// `warnings`, `dead_code` or `unused`.
+pub(crate) fn crate_denies_dead_code(masked_doc: &str, file_path: &str) -> bool {
+    // The level the inner attributes leave, in order: a later `allow(dead_code)` lifts a `deny(warnings)`; a
+    // `forbid` stays.
+    // `Some(denied)` when the text's inner attributes set a level, `None` when they leave the outer one.
+    let level = |masked: &str| {
+        let mb = masked.as_bytes();
+        let (mut state, mut forbidden) = (None, false);
+        let mut i = 0usize;
+        while let Some(at) = masked[i..].find("#!").map(|p| i + p) {
+            let k = at + 2 + (masked[at + 2..].len() - masked[at + 2..].trim_start().len());
+            let Some(end_a) = skip_balanced(mb, k, b'[', b']') else { break };
+            match dead_code_level(masked[k + 1..end_a - 1].trim()) {
+                Some("forbid") => forbidden = true,
+                Some("deny") => state = Some(true),
+                Some(_) => state = Some(false),
+                None => {}
+            }
+            i = end_a;
+        }
+        if forbidden {
+            Some(true)
+        } else {
+            state
+        }
+    };
+    if let Some(denied) = level(masked_doc) {
+        return denied;
+    }
+    let denies = |masked: &str| level(masked) == Some(true);
+    let Some(crate_dir) = (!file_path.is_empty()).then(|| find_enclosing_crate_dir(Path::new(file_path))).flatten() else { return false };
+    for entry in ["src/lib.rs", "src/main.rs"] {
+        if let Ok(raw) = std::fs::read_to_string(crate_dir.join(entry)) {
+            if denies(&mask_comments_and_strings(&raw)) {
+                return true;
+            }
+        }
+    }
+    std::fs::read_to_string(crate_dir.join("Cargo.toml")).is_ok_and(|toml| {
+        toml.lines().any(|l| {
+            let l = l.trim();
+            ["warnings", "dead_code", "unused"].iter().any(|n| l.starts_with(n) && l[n.len()..].trim_start().starts_with('=')) && (l.contains("deny") || l.contains("forbid"))
+        })
+    })
+}
+
+/// The level (`deny`, `forbid`, `allow`, `warn`) an inner attribute's body sets for dead code: `deny`/`forbid` of
+/// `warnings`, `dead_code` or `unused`, `allow`/`warn` of `dead_code` or `unused` (also as a `cfg_attr` tail). Other
+/// attributes that mention them (`doc(test(attr(deny(warnings))))` for doctests) set nothing.
+fn dead_code_level(body: &str) -> Option<&'static str> {
+    let (name, args) = match body.find('(') {
+        Some(p) if body.ends_with(')') => (body[..p].trim(), &body[p + 1..body.len() - 1]),
+        _ => return None,
+    };
+    let parts = super::action_generics_sub::split_top_level_commas(args);
+    let names = |set: &[&str]| parts.iter().any(|l| set.contains(&l.trim()));
+    match name {
+        "deny" if names(&["warnings", "dead_code", "unused"]) => Some("deny"),
+        "forbid" if names(&["warnings", "dead_code", "unused"]) => Some("forbid"),
+        "allow" if names(&["dead_code", "unused"]) => Some("allow"),
+        "warn" if names(&["dead_code", "unused"]) => Some("warn"),
+        "cfg_attr" => parts.iter().skip(1).filter_map(|p| dead_code_level(p.trim())).next_back(),
+        _ => None,
+    }
+}
+
 fn masked_denies_missing_docs(masked: &str) -> bool {
     let mb = masked.as_bytes();
     let (mut warns_md, mut denies_warn) = (false, false);

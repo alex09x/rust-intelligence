@@ -42,6 +42,10 @@ pub fn build_fn_type_aliases(doc_text: &str, masked_doc: &str, current_file: &st
             return None;
         }
     }
+    // The alias is not used yet: where dead code is denied it breaks the build.
+    if super::action_crate_checks::crate_denies_dead_code(masked_doc, current_file) {
+        return None;
+    }
 
     let mut fresh_lifetimes: Vec<GenericDecl> = Vec::new();
     let mut lt_counter = 0usize;

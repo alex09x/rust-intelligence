@@ -121,6 +121,28 @@ fn test_reference_argument_through_a_temporary_chain_is_refused() {
 }
 
 #[test]
+fn test_borrowed_result_is_inlined_only_over_places() {
+    let place = concat!(
+        "fn make() -> String { String::from(\"a\") }\n",
+        "\n",
+        "fn «greet»(s: &String) -> &str {\n",
+        "    s.as_str()\n",
+        "}\n",
+        "pub fn caller(t: &String) -> usize {\n",
+        "    greet(t).len()\n",
+        "}\n",
+    );
+    let (_, updated) = inline_greet(place);
+    let updated = updated.expect("a borrowed result over a place is inlined");
+    assert!(!updated.contains("fn greet("), "{updated}");
+    assert_compiles(&updated);
+
+    // `&make()` is a temporary the inlined block would drop before `.len()` reads the borrow (E0716).
+    let temporary = place.replace("greet(t).len()", "greet(&make()).len()");
+    assert_eq!(inline_greet(&temporary).1, None);
+}
+
+#[test]
 fn test_impl_trait_parameter_takes_only_a_variable_argument() {
     let code = concat!("pub struct W(u32);\n", "\n", "fn «greet»(n: impl Into<u64>) -> u64 {\n", "    n.into()\n", "}\n", "pub fn caller() -> u64 {\n", "    greet(1)\n", "}\n",);
     // `let n = 1;` leaves the integer type to infer and `n.into()` cannot pick it (E0283/E0689).

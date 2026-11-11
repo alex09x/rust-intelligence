@@ -103,6 +103,20 @@ fn test_raw_string_and_extract_literal_assists_compile() {
 }
 
 #[test]
+fn test_unused_items_are_not_generated_where_dead_code_is_denied() {
+    let (temp, ws, mut ov, _) = setup_test_editing();
+    let path = temp.join("src/denied.rs");
+    let uri = format!("file://{}", path.to_str().unwrap());
+    let code = concat!("#![deny(warnings)]\n", "struct Hidden(u8);\n", "pub fn run(n: u32) -> u32 { n }\n");
+    ov.open_document(&uri, path.to_str().unwrap(), 1, code.to_string());
+    let titles = |line: u32, col: u32| query_deferred_and_resolve(&uri, line, col, &ws, &ov).into_iter().map(|(t, _)| t).collect::<Vec<_>>();
+    let on_fn = titles(2, 8);
+    assert!(!on_fn.iter().any(|t| t.starts_with("Generate a type alias")), "{on_fn:?}");
+    let on_struct = titles(1, 8);
+    assert!(!on_struct.iter().any(|t| t == "Generate `new`"), "{on_struct:?}");
+}
+
+#[test]
 fn test_tuple_new_params_and_regular_string_follow_rust_analyzer() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/tuple_new.rs");

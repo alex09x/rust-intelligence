@@ -13,6 +13,7 @@
 use super::action_inline_callers_cross::{is_safe_for_cross_file_inline, is_same_doc, process_other_document_call_sites, resolve_ref_to_absolute};
 use super::action_inline_callers_early_return::transform_early_returns;
 use super::action_inline_callers_helpers::{contains_recursive_call, is_caller_return_compatible, is_primitive_scalar, parse_fn_params, FnParamInfo, SelfKind};
+use super::action_inline_callers_params::call_takes_only_places;
 use super::action_inline_callers_transform::{
     extract_type_generic_names, find_enclosing_mod_range, has_only_lifetime_generics, process_call_site, rewrite_self_to_this, rewrite_self_type_to_name, unwrap_tail_return,
 };
@@ -87,10 +88,15 @@ pub fn build_inline_into_all_callers_workspace(
         }
         _ => None,
     };
+    // An `impl Trait` result fixes the type its body infers (`std::iter::empty()`, a closure's parameters): inlined,
+    // nothing would.
+    if ret_src.as_deref().is_some_and(|r| r.contains("impl ")) {
+        return None;
+    }
+    // A result that borrows (`-> &T`) may point into the receiver or an argument: each call site then takes only
+    // places, which outlive the inlined block, and a `self` by reference.
+    let borrowed_return = ret_src.as_deref().is_some_and(|r| r.starts_with('&') && !r.contains("'static"));
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
-        if r.contains("impl ") || (r.starts_with('&') && !r.contains("'static")) {
-            return None;
-        }
         if (r.contains('\'') && !r.contains("'static")) || type_generics.iter().any(|g| contains_word(r, g)) {
             None
         } else if r == "Self" {
@@ -251,6 +257,7 @@ pub fn build_inline_into_all_callers_workspace(
                 Some(file),
                 Some(ws),
                 is_fully_pub,
+                borrowed_return,
             );
             local_edits.extend(edits);
             if skipped {
@@ -269,6 +276,7 @@ pub fn build_inline_into_all_callers_workspace(
                 file,
                 Some(ws),
                 is_fully_pub,
+                borrowed_return,
                 &mut other_file_edits,
             );
             if skipped {
@@ -317,7 +325,11 @@ pub(crate) fn process_call_sites_for_document(
     file_opt: Option<&str>,
     ws_opt: Option<&WorkspaceIndex>,
     is_fully_pub: bool,
+    borrowed_return: bool,
 ) -> (Vec<(usize, usize, String)>, bool) {
+    if borrowed_return && self_kind == Some(SelfKind::Value) {
+        return (Vec::new(), true);
+    }
     // A declared type is written only where the definition is: another file may not see the names it uses.
     let unwritten: Vec<FnParamInfo>;
     let params = if def_range.is_some() {
@@ -345,7 +357,17 @@ pub(crate) fn process_call_sites_for_document(
                 continue;
             }
         }
-        if let Some((site_start, site_end, inlined_text)) = process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub) {
+        if let Some((site_start, site_end, inlined_text)) =
+            process_call_site(doc, masked, starts, ref_byte, fn_name, self_kind, params, body_src, file_opt, ws_opt, is_fully_pub, borrowed_return)
+        {
+            // A borrowed result must not point into a temporary the inlined block drops; under a `&` the block would be
+            // expected to yield the referent (`&({ …; &x.f })` where `&T` was asked, E0308), which no rewrite of the
+            // block avoids.
+            let under_borrow = masked[..site_start].trim_end().ends_with('&');
+            if borrowed_return && (!call_takes_only_places(&masked[site_start..site_end]) || under_borrow) {
+                any_skipped = true;
+                continue;
+            }
             edits.push((site_start, site_end, inlined_text));
         } else {
             any_skipped = true;
