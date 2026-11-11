@@ -107,9 +107,15 @@ pub fn build_inline_into_all_callers_workspace(
     // A result that borrows (`-> &T`) may point into the receiver or an argument: each call site then takes only
     // places, which outlive the inlined block, and a `self` by reference.
     let borrowed_return = ret_src.as_deref().is_some_and(|r| r.starts_with('&') && !r.contains("'static"));
+    // A trait's default method naming `Self` in its result (`Result<(), Self::Error>`) is known to return a `Result`
+    // (for the `?` checks); the inlined block is left unannotated, `Self` being another type at an implementor's call.
+    let in_trait_decl = matches!(item.enclosing, super::action_parse::EnclosingContext::TraitDecl { .. });
+    let self_in_trait = in_trait_decl && ret_src.as_deref().is_some_and(|r| contains_word(r, "Self") && !type_generics.iter().any(|g| contains_word(r, g)));
     let effective_ret_ty = if let Some(r) = ret_src.as_deref() {
         if type_generics.iter().any(|g| contains_word(r, g)) {
             None
+        } else if self_in_trait {
+            Some(super::action_inline_callers_params::anonymize_lifetimes(r))
         } else if r == "Self" {
             if impl_has_type_generics {
                 None
