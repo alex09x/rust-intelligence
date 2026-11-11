@@ -13,9 +13,12 @@
 pub(crate) use super::action_inline_callers_params::{is_primitive_scalar, is_writable_binding_type, normalize_param_type_for_binding, parse_fn_params, FnParamInfo, SelfKind};
 
 /// Where the receiver of the method call whose `.` is at `dot_byte` starts: the whole chain before it (`a.b()?.c()`
-/// for `.d()`), which the inlined block binds once by `let this`, as the call evaluated it once.
-pub(crate) fn find_receiver_start(src: &str, masked: &str, dot_byte: usize) -> Option<usize> {
+/// for `.d()`), which the inlined block binds once, as the call evaluated it once; and whether a call follows another
+/// link in it (`a.b().c()`): such a chain may return a reference into a temporary of the chain, which only a `match`
+/// keeps alive for the whole inlined block (a `let` drops it at its `;`, E0716).
+pub(crate) fn receiver_chain_start(src: &str, masked: &str, dot_byte: usize) -> Option<(usize, bool)> {
     let mb = masked.as_bytes();
+    let mut chained = false;
     // A `?` ends the link before it (`a.b()?.c()`).
     let link_end = |mut e: usize| {
         while e > 0 && mb[e - 1].is_ascii_whitespace() {
@@ -28,8 +31,6 @@ pub(crate) fn find_receiver_start(src: &str, masked: &str, dot_byte: usize) -> O
     };
     let first_end = link_end(dot_byte);
     let mut q = receiver_link_start(src, masked, first_end)?;
-    // Only the chain's head may be a call: a later call may return a reference into a temporary of the chain, which
-    // the call's own statement kept alive and a `let this = …;` drops at its `;` (E0716).
     let mut later_call = mb[q..first_end].contains(&b'(') || first_end < dot_byte;
     loop {
         let mut r = q;
@@ -37,16 +38,14 @@ pub(crate) fn find_receiver_start(src: &str, masked: &str, dot_byte: usize) -> O
             r -= 1;
         }
         if r > 1 && mb[r - 1] == b'.' && mb[r - 2] != b'.' {
-            if later_call {
-                return None;
-            }
+            chained |= later_call;
             let end = link_end(r - 1);
             let head = receiver_link_start(src, masked, end)?;
             later_call = mb[head..end].contains(&b'(') || end < r - 1;
             q = head;
             continue;
         }
-        return Some(q);
+        return Some((q, chained));
     }
 }
 
@@ -180,6 +179,7 @@ pub(crate) fn find_path_start(masked: &str, ref_byte: usize) -> usize {
     p
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn format_inlined_call(
     recv_expr: Option<&str>,
     self_kind: Option<SelfKind>,
@@ -188,6 +188,7 @@ pub(crate) fn format_inlined_call(
     args: &[String],
     body_src: &str,
     is_standalone: bool,
+    recv_in_match: bool,
 ) -> String {
     let mut bindings = Vec::new();
     if let (Some(recv), Some(sk)) = (recv_expr, self_kind) {
@@ -268,9 +269,21 @@ pub(crate) fn format_inlined_call(
         }
     }
 
+    // A chained receiver is the scrutinee of a `match`, whose temporaries live as long as the whole block.
+    let scrutinee = if recv_in_match && recv_expr.is_some() && self_kind.is_some() && !bindings.is_empty() {
+        let b = bindings.remove(0);
+        let (pat, rhs) = b.strip_prefix("let ").and_then(|s| s.strip_suffix(';')).and_then(|s| s.split_once(" = ")).unwrap_or(("this", ""));
+        Some((pat.to_string(), rhs.to_string()))
+    } else {
+        None
+    };
     let stmts = if bindings.is_empty() { String::new() } else { format!("{} ", bindings.join(" ")) };
 
     let blk = if stmts.is_empty() { format!("{{ {body_src} }}") } else { format!("{{ {stmts}{body_src} }}") };
+    let blk = match scrutinee {
+        Some((pat, rhs)) => format!("match {rhs} {{ {pat} => {blk} }}"),
+        None => blk,
+    };
 
     if is_standalone {
         blk
@@ -350,22 +363,26 @@ pub(crate) fn is_caller_return_compatible(src: &str, masked: &str, starts: &[usi
 
 #[cfg(test)]
 mod tests {
-    use super::find_receiver_start;
+    use super::{format_inlined_call, receiver_chain_start, SelfKind};
 
     #[test]
     fn a_macro_call_receiver_keeps_its_name() {
         let src = "assert!(bytes::regex!(\"foo\").is_match(b\"foo\"));";
         let dot = src.find(").is_match").unwrap() + 1;
-        assert_eq!(find_receiver_start(src, src, dot), src.find("bytes::regex!"));
-        // A chain is the receiver as a whole when only its head is a call; a later call (or `?`) may borrow from a
-        // temporary of the chain, so no receiver is given.
+        assert_eq!(receiver_chain_start(src, src, dot), src.find("bytes::regex!").map(|p| (p, false)));
+        // A chain is the receiver as a whole; one where a call follows another link (or a `?`) may borrow from a
+        // temporary of the chain, which is said so that a `match` binds it.
         let headed = "x = Builder::new().cfg.items.is_match(1);";
-        assert_eq!(find_receiver_start(headed, headed, headed.find(".is_match").unwrap()), headed.find("Builder"));
+        assert_eq!(receiver_chain_start(headed, headed, headed.find(".is_match").unwrap()), headed.find("Builder").map(|p| (p, false)));
         let plain = "x = a.b(c).is_match(1);";
-        assert_eq!(find_receiver_start(plain, plain, plain.find(").is").unwrap() + 1), None);
+        assert_eq!(receiver_chain_start(plain, plain, plain.find(").is").unwrap() + 1), Some((4, true)));
         let tried = "let y = self.cfg.get(k)?.value().is_match(1);";
-        assert_eq!(find_receiver_start(tried, tried, tried.find(".is_match").unwrap()), None);
+        assert_eq!(receiver_chain_start(tried, tried, tried.find(".is_match").unwrap()), Some((8, true)));
         let range = "for i in 0..n.len() {}";
-        assert_eq!(find_receiver_start(range, range, range.find(".len").unwrap()), range.find("n.len"));
+        assert_eq!(receiver_chain_start(range, range, range.find(".len").unwrap()), range.find("n.len").map(|p| (p, false)));
+        let f = |recv| format_inlined_call(Some(recv), Some(SelfKind::Ref), None, &[], &[], "this.x", false, true);
+        assert_eq!(f("a.b().c()"), "(match &a.b().c() { this => { this.x } })");
+        let body = "for i in 0..self.n { x.self_y(self) }";
+        assert_eq!(super::super::action_inline_callers_transform::rewrite_self_to_this(body, body), "for i in 0..this.n { x.self_y(this) }");
     }
 }

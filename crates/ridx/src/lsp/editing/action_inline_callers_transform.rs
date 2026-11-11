@@ -12,7 +12,7 @@
 
 use super::action_generics_sub::split_top_level_commas;
 use super::action_inline_callers_helpers::{
-    find_path_start, find_receiver_start, format_inlined_call, is_writable_binding_type, normalize_param_type_for_binding, FnParamInfo, SelfKind,
+    find_path_start, format_inlined_call, is_writable_binding_type, normalize_param_type_for_binding, receiver_chain_start, FnParamInfo, SelfKind,
 };
 use super::action_inline_callers_params::substitute_words;
 use super::action_parse::{is_ident_byte, mask_comments_and_strings};
@@ -79,14 +79,17 @@ pub(crate) fn process_call_site(
     let call_end = skip_balanced(mb, p, b'(', b')')?;
     let raw_args: Vec<String> = split_top_level_commas(&src[p + 1..call_end - 1]).into_iter().filter(|a| !a.trim().is_empty()).collect();
 
+    let mut recv_in_match = false;
     let (call_start, recv_expr, recv_ty) = if self_kind.is_some() {
         let before_dot = src[..ref_byte].trim_end();
         if !before_dot.ends_with('.') || before_dot.ends_with("..") {
             return None;
         }
         let dot_byte = before_dot.len() - 1;
-        // A receiver that is a call or an index (`Foo::new().m()`, `v[i].m()`) is bound once by `let this`.
-        let recv_start = find_receiver_start(src, masked, dot_byte)?;
+        // A receiver that is a call or an index (`Foo::new().m()`, `v[i].m()`) is bound once by `let this`, a chain
+        // with a later call (`a.b().c().m()`) by a `match`.
+        let (recv_start, chained) = receiver_chain_start(src, masked, dot_byte)?;
+        recv_in_match = chained;
         if recv_start > 0 && (mb[recv_start - 1] == b'.' || is_ident_byte(mb[recv_start - 1])) {
             return None;
         }
@@ -143,9 +146,10 @@ pub(crate) fn process_call_site(
     // Every argument is bound by a `let` before the body, in order, so a call argument evaluates once and in place.
     // Refused: a closure (its `|a, b|` would split on the comma) and an argument naming a parameter bound before it,
     // which would read that binding instead of the caller's variable.
-    let masked_args = split_top_level_commas(&masked[p + 1..call_end - 1]);
+    // Each argument masked on its own: a string literal masked in place is blank, and would be lost as an argument.
+    let masked_args: Vec<String> = raw_args.iter().map(|a| mask_comments_and_strings(a)).collect();
     let plain: Vec<&FnParamInfo> = params.iter().filter(|p| !p.is_self).collect();
-    for (i, arg) in masked_args.iter().filter(|a| !a.trim().is_empty()).enumerate() {
+    for (i, arg) in masked_args.iter().enumerate() {
         let earlier_bound = plain.iter().take(i).filter_map(|p| p.ident.as_deref()).map(|id| id.trim_start_matches("mut ")).any(|id| contains_word(arg, id))
             || (self_kind.is_some() && contains_word(arg, "this"));
         if arg.contains('|') || earlier_bound {
@@ -179,7 +183,7 @@ pub(crate) fn process_call_site(
     let next_ch = masked[call_end..].trim_start().as_bytes().first().copied().unwrap_or(b'}');
     let standalone = matches!(prev_ch, b'{' | b';') && matches!(next_ch, b';' | b'}');
 
-    let inlined = format_inlined_call(recv_expr, self_kind, recv_ty, params, &raw_args, body_src, standalone);
+    let inlined = format_inlined_call(recv_expr, self_kind, recv_ty, params, &raw_args, body_src, standalone, recv_in_match);
     Some((call_start, call_end, inlined))
 }
 
@@ -189,7 +193,8 @@ pub(crate) fn rewrite_self_to_this(body_src: &str, masked_body: &str) -> String 
     let mut i = 0usize;
     while i < mb.len() {
         if mb[i] == b's' && i + 4 <= mb.len() && &mb[i..i + 4] == b"self" {
-            let prev_ok = i == 0 || (!is_ident_byte(mb[i - 1]) && mb[i - 1] != b'.' && !(i >= 2 && &mb[i - 2..i] == b"::"));
+            // `x.self` is no receiver; `0..self.n` (a range) is.
+            let prev_ok = i == 0 || (!is_ident_byte(mb[i - 1]) && (mb[i - 1] != b'.' || (i >= 2 && mb[i - 2] == b'.')) && !(i >= 2 && &mb[i - 2..i] == b"::"));
             let next_ok = i + 4 == mb.len() || (!is_ident_byte(mb[i + 4]) && !(i + 6 <= mb.len() && &mb[i + 4..i + 6] == b"::"));
             if prev_ok && next_ok {
                 out.push_str("this");
@@ -210,7 +215,8 @@ pub(crate) fn rewrite_self_type_to_name(body_src: &str, masked_body: &str, type_
     let mut i = 0usize;
     while i < mb.len() {
         if mb[i] == b'S' && i + 4 <= mb.len() && &mb[i..i + 4] == b"Self" {
-            let prev_ok = i == 0 || (!is_ident_byte(mb[i - 1]) && mb[i - 1] != b'.' && !(i >= 2 && &mb[i - 2..i] == b"::"));
+            // `x.self` is no receiver; `0..self.n` (a range) is.
+            let prev_ok = i == 0 || (!is_ident_byte(mb[i - 1]) && (mb[i - 1] != b'.' || (i >= 2 && mb[i - 2] == b'.')) && !(i >= 2 && &mb[i - 2..i] == b"::"));
             let next_ok = i + 4 == mb.len() || !is_ident_byte(mb[i + 4]);
             if prev_ok && next_ok {
                 out.push_str(type_name);
