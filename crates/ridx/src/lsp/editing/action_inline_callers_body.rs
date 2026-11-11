@@ -44,7 +44,7 @@ impl CrossFileBody {
         let dest_crate = if self.external { dest_units.first().map(|p| ws.readers()[p.0].crate_name().replace('-', "_")) } else { Some(self.crate_name.clone()) };
         let Some(dest_crate) = dest_crate.filter(|_| same_crate != self.external) else { return false };
         // The destination's crate-relative module, against which private and restricted members are judged.
-        let dest_module = ws.module_path_for_file(dest_file).map(|m| m.split_once("::").map_or(String::new(), |(_, r)| r.to_string()));
+        let dest_module = ws.module_of_file(dest_file);
         let Ok(text) = std::fs::read_to_string(dest) else { return false };
         // Another crate's unit must link every crate the paths start with (an example linking `clap` does not see
         // `clap_builder`): by the index's extern list, or, where the index records none, by the destination naming
@@ -67,8 +67,7 @@ impl CrossFileBody {
 
     /// Whether the module of `dest_file` is the crate-relative module `w` or lies inside it.
     fn dest_inside(&self, ws: &WorkspaceIndex, dest_file: &str, w: &str) -> bool {
-        let Some(module) = ws.module_path_for_file(dest_file) else { return false };
-        let rel = module.split_once("::").map_or("", |(_, r)| r);
+        let Some(rel) = ws.module_of_file(dest_file) else { return false };
         rel == w || rel.starts_with(&format!("{w}::"))
     }
 }

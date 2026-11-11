@@ -217,6 +217,39 @@ pub(crate) fn has_own_question_mark(masked: &str) -> bool {
     false
 }
 
+/// The masked body with every macro call's token tree (`quote! { … }`, `format!(…)`) blanked, same length: what the
+/// function itself names, apart from what its macros receive as tokens.
+pub(crate) fn mask_macro_tokens(masked: &str) -> String {
+    let mut out = masked.as_bytes().to_vec();
+    let b = masked.as_bytes();
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'!' && i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_') {
+            let mut j = i + 1;
+            while j < b.len() && b[j].is_ascii_whitespace() {
+                j += 1;
+            }
+            if let Some(&open) = b.get(j).filter(|c| matches!(c, b'(' | b'[' | b'{')) {
+                let close = match open {
+                    b'(' => b')',
+                    b'[' => b']',
+                    _ => b'}',
+                };
+                let end = skip_balanced(b, j, open, close).unwrap_or(b.len());
+                for c in &mut out[j + 1..end.saturating_sub(1).max(j + 1)] {
+                    if c.is_ascii() {
+                        *c = b' ';
+                    }
+                }
+                i = end;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    String::from_utf8(out).unwrap_or_else(|_| masked.to_string())
+}
+
 /// `src` with each whole word of `from` (outside comments and strings, not after `.` or `::`) replaced by the
 /// matching `to` (`E::write_u32` -> `NE::write_u32`).
 pub(crate) fn substitute_words(src: &str, from: &[String], to: &[String]) -> String {
@@ -312,7 +345,14 @@ pub(crate) fn call_takes_only_places(call: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{anonymize_lifetimes, generic_param_receives_call, has_own_question_mark, substitute_words};
+    use super::{anonymize_lifetimes, generic_param_receives_call, has_own_question_mark, mask_macro_tokens, substitute_words};
+
+    #[test]
+    fn macro_tokens_are_not_the_functions_names() {
+        let m = mask_macro_tokens("let x = quote! { impl Self { fn f(self) {} } }; Self::g()");
+        assert!(!m[..m.find(';').unwrap()].contains("Self") && m.ends_with("Self::g()"));
+        assert_eq!(mask_macro_tokens("vec![a, b]").len(), "vec![a, b]".len());
+    }
 
     #[test]
     fn generic_parameters_take_the_turbofish_arguments() {

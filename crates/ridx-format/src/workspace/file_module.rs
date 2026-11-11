@@ -230,6 +230,40 @@ impl WorkspaceIndex {
         Some(names.keys().map(String::as_str).collect())
     }
 
+    /// The crate-relative module `file_path` is (`flags::complete::fish`, `""` for the crate root), read from the
+    /// module-level items the index holds for it (functions, types, traits, consts, statics, modules): the shallowest
+    /// of their parents, so an inline `mod tests { … }` of the file does not stand for it. `None` when the file
+    /// declares no such item.
+    pub fn module_of_file(&self, file_path: &str) -> Option<String> {
+        use crate::format::DefKind;
+        let idx = self.reader_index_for_file(file_path)?;
+        let reader = &self.readers[idx];
+        let cname = reader.crate_name();
+        let fid = self.target_file_id_for_reader(idx, file_path)?;
+        let defs = reader.definitions();
+        let mut best: Option<String> = None;
+        for &(_, _, def_idx) in self.unit_match.defs_in_file_up_to(idx, fid, u32::MAX) {
+            let Some(def) = defs.get(def_idx as usize) else { continue };
+            let module_level = matches!(
+                DefKind::from(def.kind),
+                DefKind::Fn | DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::Const | DefKind::Static | DefKind::TyAlias | DefKind::Mod
+            );
+            if !module_level || def.is_macro_expansion() {
+                continue;
+            }
+            let path = reader.get_str(def.path_offset());
+            let rel = path.strip_prefix(cname).and_then(|r| r.strip_prefix("::")).unwrap_or(path);
+            let parent = rel.rsplit_once("::").map_or("", |(p, _)| p);
+            if parent.contains(['<', ' ']) {
+                continue;
+            }
+            if best.as_deref().is_none_or(|b| parent.matches("::").count() + usize::from(!parent.is_empty()) < b.matches("::").count() + usize::from(!b.is_empty())) {
+                best = Some(parent.to_string());
+            }
+        }
+        best
+    }
+
     /// Returns the canonical module path corresponding to `file_path` in the owning crate
     /// (e.g. `serde::de::impls` for `serde/src/de/impls.rs`).
     pub fn module_path_for_file(&self, file_path: &str) -> Option<String> {

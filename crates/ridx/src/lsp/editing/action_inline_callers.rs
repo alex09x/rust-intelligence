@@ -157,7 +157,8 @@ pub fn build_inline_into_all_callers_workspace(
 
     if contains_word(&raw_masked_body, "super")
         || raw_masked_body.contains('$')
-        || (contains_word(&raw_masked_body, "Self") && self_type_name.is_none())
+        // A free function names `Self` only inside a macro's tokens (`quote! { Self }`), which are output, not its own.
+        || (self_type_name.is_none() && contains_word(&super::action_inline_callers_params::mask_macro_tokens(&raw_masked_body), "Self"))
         || contains_recursive_call(&raw_masked_body, &item.name)
         || type_generics.iter().any(|g| !fn_generics.contains(g) && contains_word(&raw_masked_body, g))
         || (effective_ret_ty.is_none()
@@ -185,7 +186,7 @@ pub fn build_inline_into_all_callers_workspace(
     let body_transformed = if self_param.is_some() {
         rewrite_self_to_this(&body_with_self_ty, &masked_with_self_ty).trim().to_string()
     } else {
-        if contains_word(&masked_with_self_ty, "self") {
+        if contains_word(&super::action_inline_callers_params::mask_macro_tokens(&masked_with_self_ty), "self") {
             return None;
         }
         body_with_self_ty.trim().to_string()

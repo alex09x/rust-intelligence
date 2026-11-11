@@ -12,7 +12,47 @@
 
 pub(crate) use super::action_inline_callers_params::{is_primitive_scalar, is_writable_binding_type, normalize_param_type_for_binding, parse_fn_params, FnParamInfo, SelfKind};
 
-pub(crate) fn find_receiver_start(_src: &str, masked: &str, dot_byte: usize) -> Option<usize> {
+/// Where the receiver of the method call whose `.` is at `dot_byte` starts: the whole chain before it (`a.b()?.c()`
+/// for `.d()`), which the inlined block binds once by `let this`, as the call evaluated it once.
+pub(crate) fn find_receiver_start(src: &str, masked: &str, dot_byte: usize) -> Option<usize> {
+    let mb = masked.as_bytes();
+    // A `?` ends the link before it (`a.b()?.c()`).
+    let link_end = |mut e: usize| {
+        while e > 0 && mb[e - 1].is_ascii_whitespace() {
+            e -= 1;
+        }
+        if e > 0 && mb[e - 1] == b'?' {
+            e -= 1;
+        }
+        e
+    };
+    let first_end = link_end(dot_byte);
+    let mut q = receiver_link_start(src, masked, first_end)?;
+    // Only the chain's head may be a call: a later call may return a reference into a temporary of the chain, which
+    // the call's own statement kept alive and a `let this = …;` drops at its `;` (E0716).
+    let mut later_call = mb[q..first_end].contains(&b'(') || first_end < dot_byte;
+    loop {
+        let mut r = q;
+        while r > 0 && mb[r - 1].is_ascii_whitespace() {
+            r -= 1;
+        }
+        if r > 1 && mb[r - 1] == b'.' && mb[r - 2] != b'.' {
+            if later_call {
+                return None;
+            }
+            let end = link_end(r - 1);
+            let head = receiver_link_start(src, masked, end)?;
+            later_call = mb[head..end].contains(&b'(') || end < r - 1;
+            q = head;
+            continue;
+        }
+        return Some(q);
+    }
+}
+
+/// Where one link of a receiver chain ending before byte `dot_byte` starts: a call or macro call with its name, an
+/// index with its base, a block, or a path of identifiers and fields.
+fn receiver_link_start(_src: &str, masked: &str, dot_byte: usize) -> Option<usize> {
     let mb = masked.as_bytes();
     let mut p = dot_byte;
     while p > 0 && mb[p - 1].is_ascii_whitespace() {
@@ -317,7 +357,15 @@ mod tests {
         let src = "assert!(bytes::regex!(\"foo\").is_match(b\"foo\"));";
         let dot = src.find(").is_match").unwrap() + 1;
         assert_eq!(find_receiver_start(src, src, dot), src.find("bytes::regex!"));
+        // A chain is the receiver as a whole when only its head is a call; a later call (or `?`) may borrow from a
+        // temporary of the chain, so no receiver is given.
+        let headed = "x = Builder::new().cfg.items.is_match(1);";
+        assert_eq!(find_receiver_start(headed, headed, headed.find(".is_match").unwrap()), headed.find("Builder"));
         let plain = "x = a.b(c).is_match(1);";
-        assert_eq!(find_receiver_start(plain, plain, plain.find(").is").unwrap() + 1), plain.find("a.b").map(|p| p + 2));
+        assert_eq!(find_receiver_start(plain, plain, plain.find(").is").unwrap() + 1), None);
+        let tried = "let y = self.cfg.get(k)?.value().is_match(1);";
+        assert_eq!(find_receiver_start(tried, tried, tried.find(".is_match").unwrap()), None);
+        let range = "for i in 0..n.len() {}";
+        assert_eq!(find_receiver_start(range, range, range.find(".len").unwrap()), range.find("n.len"));
     }
 }
