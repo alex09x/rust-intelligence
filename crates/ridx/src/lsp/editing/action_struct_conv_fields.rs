@@ -161,9 +161,63 @@ pub(crate) fn split_leading_comments(t: &str) -> (&str, &str) {
     }
 }
 
+/// `t` split into its leading `#[cfg(…)]` attributes and the rest; `None` on another attribute or one it cannot read.
+pub(crate) fn split_leading_cfgs(t: &str) -> Option<(&str, &str)> {
+    let masked = super::action_parse::mask_comments_and_strings(t);
+    let mut p = 0;
+    while masked[p..].starts_with('#') {
+        let open = p + 1 + (masked[p + 1..].len() - masked[p + 1..].trim_start().len());
+        if !masked[open..].starts_with("[cfg(") {
+            return None;
+        }
+        p = super::action_parse_items::skip_balanced(masked.as_bytes(), open, b'[', b']')?;
+        p += masked[p..].len() - masked[p..].trim_start().len();
+    }
+    Some((&t[..p], &t[p..]))
+}
+
+/// The index of the first field (by its leading text) under `#[cfg(…)]`, or the number of fields; `None` when a later
+/// field may exist without one before it, which would shift the tuple indices between configurations. A later field
+/// keeps the indices when it carries each earlier predicate, alone or inside an `all(…)`.
+pub(crate) fn first_cfg_field(leadings: &[&str]) -> Option<usize> {
+    let preds: Vec<Vec<&str>> = leadings
+        .iter()
+        .map(|l| {
+            let masked = super::action_parse::mask_comments_and_strings(l);
+            let mut out = Vec::new();
+            for (at, _) in masked.match_indices("#[cfg(") {
+                let open = at + 5;
+                let close = super::action_parse_items::skip_balanced(masked.as_bytes(), open, b'(', b')')?;
+                out.push(l[open + 1..close - 1].trim());
+            }
+            Some(out)
+        })
+        .collect::<Option<_>>()?;
+    let first = preds.iter().position(|p| !p.is_empty()).unwrap_or(preds.len());
+    let implies = |later: &[&str], p: &str| later.iter().any(|q| *q == p || (q.starts_with("all(") && !q.contains("not(") && !q.contains("any(") && q.contains(p)));
+    for i in first..preds.len() {
+        if preds[i + 1..].iter().any(|later| !preds[i].iter().all(|p| implies(later, p))) {
+            return None;
+        }
+    }
+    Some(first)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{macro_bodies_name_fields, merge_continuations, split_leading_comments};
+    use super::{first_cfg_field, macro_bodies_name_fields, merge_continuations, split_leading_cfgs, split_leading_comments};
+
+    #[test]
+    fn cfg_fields_keep_their_indices_only_at_the_end() {
+        assert_eq!(first_cfg_field(&["", "#[cfg(feature = \"syntax\")]"]), Some(1));
+        assert_eq!(first_cfg_field(&["", ""]), Some(2));
+        let tokio = ["", "#[cfg(tokio_unstable)]", "/// d\n#[cfg(tokio_unstable)]", "#[cfg(all(tokio_unstable, feature = \"x\"))]"];
+        assert_eq!(first_cfg_field(&tokio), Some(1));
+        assert_eq!(first_cfg_field(&["#[cfg(a)]", ""]), None);
+        assert_eq!(first_cfg_field(&["#[cfg(a)]", "#[cfg(not(a))]"]), None);
+        assert_eq!(split_leading_cfgs("#[cfg(feature = \"]\")]\n x: 1"), Some(("#[cfg(feature = \"]\")]\n ", "x: 1")));
+        assert_eq!(split_leading_cfgs("#[allow(unused)] x"), None);
+    }
 
     #[test]
     fn a_field_read_in_a_macro_body_is_seen() {

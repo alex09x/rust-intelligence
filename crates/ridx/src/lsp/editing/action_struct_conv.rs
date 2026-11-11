@@ -65,6 +65,9 @@ pub fn build_convert_to_tuple_struct(
         return None;
     }
     let (mod_lo, mod_hi) = item.enclosing_block.unwrap_or_else(|| enclosing_module_span(masked_doc, item.decl_start_byte));
+    // Fields under `#[cfg(…)]` keep their indices only at the end, each carrying the predicates of those before it.
+    let first_cfg = super::action_struct_conv_fields::first_cfg_field(&fields.iter().map(|f| f.3.as_str()).collect::<Vec<_>>())?;
+    let shape = (fields.len(), first_cfg);
     let field_index: HashMap<&str, usize> = fields.iter().enumerate().map(|(idx, (_, n, _, _))| (n.as_str(), idx)).collect();
     let mut indexed = None;
     let mut other_files = BTreeMap::new();
@@ -87,14 +90,14 @@ pub fn build_convert_to_tuple_struct(
             // Built, destructured or implemented elsewhere: those sites are rewritten too, or nothing is offered.
             (Some(FieldRefs { sites, other_files: files }), Some(refs)) => {
                 let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws) };
-                (other_files, doc_literals) = convert_outside(&at, files, &field_index, fields.len())?;
+                (other_files, doc_literals) = convert_outside(&at, files, &field_index, shape)?;
                 struct_sites = struct_ref_sites(&refs, file, doc_text, starts);
                 indexed = Some(sites);
             }
             // Without the fields' references only the module's text is rewritten: nothing elsewhere may need it.
             (None, Some(refs)) => {
                 let at = StructAt { file, doc: doc_text, starts, refs: &refs, module: (mod_lo, mod_hi), ws: Some(ws) };
-                if !convert_outside(&at, BTreeMap::new(), &field_index, fields.len()).is_some_and(|(o, dl)| o.is_empty() && dl.is_empty()) {
+                if !convert_outside(&at, BTreeMap::new(), &field_index, shape).is_some_and(|(o, dl)| o.is_empty() && dl.is_empty()) {
                     return None;
                 }
             }
@@ -180,7 +183,7 @@ pub fn build_convert_to_tuple_struct(
                         field_edits.retain(|e| !(e.0 >= inner_lo && e.1 <= inner_hi));
                         let inner = splice(&doc_text[inner_lo..inner_hi], inner_lo, &nested);
                         let inner_masked = splice(&masked_doc[inner_lo..inner_hi], inner_lo, &nested);
-                        let tup_text = convert_brace_init_to_tuple(&inner, &inner_masked, fields.len(), &field_index)?;
+                        let tup_text = convert_brace_init_to_tuple(&inner, &inner_masked, shape, &field_index)?;
                         raw_edits.push((after_tf, brace_end, tup_text));
                         i = brace_end;
                         continue;
@@ -197,7 +200,7 @@ pub fn build_convert_to_tuple_struct(
 
     // Every place the compiler resolved to a field must be rewritten by one of the edits.
     if let Some(sites) = &indexed {
-        raw_edits.extend(doc_outside_edits(doc_text, masked_doc, (mod_lo, mod_hi), sites, &doc_literals, &field_index, fields.len())?);
+        raw_edits.extend(doc_outside_edits(doc_text, masked_doc, (mod_lo, mod_hi), sites, &doc_literals, &field_index, shape)?);
         if !sites.iter().all(|&s| raw_edits.iter().any(|&(lo, hi, _)| s >= lo && s < hi)) {
             return None;
         }

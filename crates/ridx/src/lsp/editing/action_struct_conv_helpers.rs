@@ -16,7 +16,7 @@ use super::action_generics_sub::{split_top_level_colon, split_top_level_commas};
 use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings};
 use super::action_parse_decl::{collapse_ws, extract_angle_generics, find_header_terminator, next_ident_token, split_top_level_where};
 use super::action_parse_items::{contains_word, skip_balanced};
-use super::action_struct_conv_fields::{merge_continuations, split_leading_comments};
+use super::action_struct_conv_fields::{merge_continuations, split_leading_cfgs, split_leading_comments};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
@@ -139,13 +139,16 @@ pub(crate) fn parse_tuple_fields_clean(raw: &str) -> Option<Vec<(String, String)
 
 /// `{ a: x, b }` → `(x, b)` in field order. A rest pattern (`{ a, .. }`) fills the other fields with `_`; a struct
 /// update from a plain path (`{ a: x, ..base }`) fills them with `base.N`, which moves the same fields in the same
-/// order. Any other base would be evaluated once per field, so it is refused.
-pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, _inner_masked: &str, expected: usize, field_idx: &HashMap<&str, usize>) -> Option<String> {
+/// order. Any other base would be evaluated once per field, so it is refused. An entry's `#[cfg(…)]` travels with its
+/// value; the fields from `first_cfg` on exist only under theirs, so neither a rest pattern nor a base fills them.
+pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, _inner_masked: &str, (expected, first_cfg): (usize, usize), field_idx: &HashMap<&str, usize>) -> Option<String> {
     let entries = merge_continuations(split_top_level_commas(inner_src));
     let mut rest: Option<String> = None;
     let mut slots: Vec<Option<String>> = vec![None; expected];
     for (n, entry) in entries.iter().enumerate() {
         let (comments, t) = split_leading_comments(entry.trim());
+        let (cfgs, t) = split_leading_cfgs(t)?;
+        let comments = format!("{comments}{cfgs}");
         if t.is_empty() {
             continue;
         }
@@ -180,6 +183,7 @@ pub(crate) fn convert_brace_init_to_tuple(inner_src: &str, _inner_masked: &str, 
         .enumerate()
         .map(|(i, s)| match (s, &rest) {
             (Some(v), _) => Some(v),
+            (None, _) if i >= first_cfg => None,
             (None, Some(r)) if r == "_" => Some("_".to_string()),
             (None, Some(base)) => Some(format!("{base}{i}")),
             (None, None) => None,

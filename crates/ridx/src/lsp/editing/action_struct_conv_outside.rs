@@ -47,7 +47,7 @@ pub(crate) fn convert_outside(
     at: &StructAt,
     mut files: BTreeMap<PathBuf, OtherFile>,
     field_index: &HashMap<&str, usize>,
-    n_fields: usize,
+    n_fields: (usize, usize),
 ) -> Option<(BTreeMap<String, Vec<Value>>, DocLiterals)> {
     let mut canon_of = Canon::default();
     let canonical = canon_of.get(std::path::Path::new(at.file));
@@ -113,7 +113,14 @@ pub(crate) fn convert_outside(
 /// Each literal `(edit start, opening brace)` of `lits` rewritten to `Name(..)` with the field accesses inside it, and
 /// the remaining accesses; `None` when a literal cannot be converted or two edits overlap. Literals nested in another
 /// (`Name { a: Box::new(Name { .. }) }`) are rewritten first and carried into the enclosing one.
-fn rewrite_literals(src: &str, masked: &str, lits: &[(usize, usize)], accesses: Vec<RawEdit>, n_fields: usize, field_index: &HashMap<&str, usize>) -> Option<Vec<RawEdit>> {
+fn rewrite_literals(
+    src: &str,
+    masked: &str,
+    lits: &[(usize, usize)],
+    accesses: Vec<RawEdit>,
+    n_fields: (usize, usize),
+    field_index: &HashMap<&str, usize>,
+) -> Option<Vec<RawEdit>> {
     let mut edits: Vec<RawEdit> = accesses;
     for &(lo, k) in lits.iter().rev() {
         let end = skip_balanced(masked.as_bytes(), k, b'{', b'}')?;
@@ -145,7 +152,7 @@ pub(crate) fn doc_outside_edits(
     sites: &std::collections::HashSet<usize>,
     lits: &[(usize, usize)],
     field_index: &HashMap<&str, usize>,
-    n_fields: usize,
+    n_fields: (usize, usize),
 ) -> Option<Vec<RawEdit>> {
     let mut accesses: Vec<RawEdit> = Vec::new();
     for &s in sites.iter().filter(|&&s| !(lo..hi).contains(&s)) {
