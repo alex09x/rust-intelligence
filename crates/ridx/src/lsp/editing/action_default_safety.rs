@@ -96,7 +96,7 @@ pub fn is_default_fn_compile_safe(
     true
 }
 
-fn collect_local_bindings(fn_masked: &str, params_masked: &str) -> HashSet<String> {
+pub(crate) fn collect_local_bindings(fn_masked: &str, params_masked: &str) -> HashSet<String> {
     let mut locals = HashSet::new();
     locals.insert("self".to_string());
     for p in split_top_level_commas(params_masked) {

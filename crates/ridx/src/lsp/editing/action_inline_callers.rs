@@ -240,6 +240,10 @@ pub fn build_inline_into_all_callers_workspace(
     }
 
     let cross_file_safe = is_pub && is_safe_for_cross_file_inline(&body_transformed, masked_doc);
+    // Otherwise, for other files of the crate: names written as the paths the index resolved, members checked per file.
+    let cross = (is_pub && has_cross_file && !cross_file_safe)
+        .then(|| super::action_inline_callers_qualify::cross_file_body(doc_text, file, &item.name, item.name_byte, *bc, params_src, ws, &body_transformed, &parsed_params))
+        .flatten();
     for (abs_path, spans) in &refs_by_file {
         if is_same_doc(abs_path, file, canonical_file.as_deref()) {
             let (edits, skipped) = process_call_sites_for_document(
@@ -282,7 +286,24 @@ pub fn build_inline_into_all_callers_workspace(
             if skipped {
                 any_skipped = true;
             }
-        } else if !is_pub {
+        } else if let Some(cb) = cross.as_ref().filter(|cb| cb.fits(ws, abs_path, raw_body_slice, doc_text, file, *bo + 1)) {
+            let skipped = process_other_document_call_sites(
+                abs_path,
+                spans,
+                &item.name,
+                self_kind,
+                &cb.params,
+                &cb.body,
+                body_has_question_mark,
+                effective_ret_ty.as_deref(),
+                file,
+                Some(ws),
+                is_fully_pub,
+                borrowed_return,
+                &mut other_file_edits,
+            );
+            any_skipped |= skipped;
+        } else {
             any_skipped = true;
         }
     }
