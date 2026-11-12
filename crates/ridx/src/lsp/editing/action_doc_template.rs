@@ -14,12 +14,21 @@ use super::action_generics_sub::{split_top_level_colon, split_top_level_commas, 
 use super::action_parse::{mask_comments_and_strings, EnclosingContext, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_items::contains_word;
 
-pub fn build_doc_template(masked_doc: &str, item: &ParsedCursorItem) -> Option<(u32, u32, String)> {
+/// Whether the index holds the definition of the item (its name resolves to itself): false for code a `#[cfg]` leaves
+/// out of every build the index made.
+pub fn indexed_item(ws: &ridx_format::WorkspaceIndex, file: &str, doc: &str, starts: &[usize], item: &ParsedCursorItem) -> bool {
+    let (line, col) = super::action_struct_conv_index::byte_to_line_col(doc, starts, item.name_byte);
+    ws.find_direct_references_at(file, line, col).is_some_and(|r| r.target_line == line)
+}
+
+pub fn build_doc_template(masked_doc: &str, item: &ParsedCursorItem, indexed: bool) -> Option<(u32, u32, String)> {
     let ItemKindInfo::Fn { is_unsafe, params_src, ret_src, has_body, body_range, .. } = &item.kind else {
         return None;
     };
-    // A trait impl's method takes documentation too (rust-analyzer offers it there as well).
-    if item.has_doc {
+    // A trait impl's method is documented by its trait. rust-analyzer offers the template there only in code it does
+    // not compile (a `#[cfg]` left out, a Windows-only impl), where it cannot tell the impl a trait's: the index holds
+    // no definition (`indexed`) for such code either.
+    if item.has_doc || (matches!(item.enclosing, EnclosingContext::TraitImpl { .. }) && indexed) {
         return None;
     }
     if !*has_body && !matches!(item.enclosing, EnclosingContext::TraitDecl { .. }) {

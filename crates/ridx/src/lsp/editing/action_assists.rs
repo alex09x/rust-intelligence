@@ -14,7 +14,7 @@ use super::action_adt::{build_generate_impl, build_generate_new, build_generate_
 use super::action_adt_traits::{build_default_from_new, build_enum_discriminants, build_single_field_from};
 use super::action_assists_edit::{add_other_file_edits, build_insertion_workspace_edit, make_assist_action, make_multi_edit_assist};
 use super::action_default_members::build_implement_default_members;
-use super::action_doc_template::build_doc_template;
+use super::action_doc_template::{build_doc_template, indexed_item};
 use super::action_extract_lit::{collect_extract_literal_assists, is_extract_lit_data_kind, resolve_extract_literal_assist};
 use super::action_generics::build_fn_type_aliases;
 use super::action_inline_callers::build_inline_into_all_callers_workspace;
@@ -139,7 +139,7 @@ where
                     }
                 }
                 if matches_kind("refactor.rewrite") {
-                    if let Some((ins_line, ins_col, doc_ins)) = build_doc_template(&masked_doc, &item) {
+                    if let Some((ins_line, ins_col, doc_ins)) = build_doc_template(&masked_doc, &item, indexed_item(ws, &file_path, doc_text, &starts, &item)) {
                         out.push(make_assist_action(
                             uri,
                             "Generate a documentation template",
@@ -320,7 +320,8 @@ pub fn resolve_decl_assist(
 
     match data_kind {
         KIND_DOC_TEMPLATE => {
-            let (l, c, text) = build_doc_template(&masked_doc, &item).ok_or_else(|| LspError::request_failed("Cannot build documentation template"))?;
+            let (l, c, text) = build_doc_template(&masked_doc, &item, indexed_item(ws, &file_path, doc_text, &starts, &item))
+                .ok_or_else(|| LspError::request_failed("Cannot build documentation template"))?;
             Ok(build_insertion_workspace_edit(uri, l, c, &text, doc_version))
         }
         KIND_FN_ALIAS_NAMED => {
