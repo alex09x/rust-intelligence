@@ -71,7 +71,7 @@ pub(crate) fn query_deferred_and_resolve(uri: &str, line: u32, character: u32, w
 }
 
 #[test]
-fn test_doc_template_inner_attrs_and_trait_impl_suppression() {
+fn test_doc_template_inner_attrs_and_trait_impl() {
     let (temp, ws, mut ov, _) = setup_test_editing();
     let path = temp.join("src/doc_case.rs");
     let uri = format!("file://{}", path.to_str().unwrap());
@@ -88,7 +88,12 @@ fn test_doc_template_inner_attrs_and_trait_impl_suppression() {
 
     let actions_trait_impl = query_deferred_and_resolve(&uri, 11, 8, &ws, &ov);
     let titles_ti: Vec<&str> = actions_trait_impl.iter().map(|(t, _)| t.as_str()).collect();
-    assert!(!titles_ti.contains(&"Generate a documentation template"), "Trait impl methods must not emit doc template");
+    // A trait impl's method is documented as rust-analyzer offers it, and the documented file still compiles.
+    assert!(titles_ti.contains(&"Generate a documentation template"), "trait impl methods take a doc template");
+    for (title, edits) in actions_trait_impl.iter().filter(|(t, _)| t == "Generate a documentation template") {
+        let updated = apply_text_edits(code, edits.as_array().unwrap());
+        assert_rustc_compiles(&updated, title);
+    }
 }
 
 #[test]

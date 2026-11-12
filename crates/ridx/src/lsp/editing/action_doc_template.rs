@@ -18,7 +18,8 @@ pub fn build_doc_template(masked_doc: &str, item: &ParsedCursorItem) -> Option<(
     let ItemKindInfo::Fn { is_unsafe, params_src, ret_src, has_body, body_range, .. } = &item.kind else {
         return None;
     };
-    if item.has_doc || matches!(item.enclosing, EnclosingContext::TraitImpl { .. }) {
+    // A trait impl's method takes documentation too (rust-analyzer offers it there as well).
+    if item.has_doc {
         return None;
     }
     if !*has_body && !matches!(item.enclosing, EnclosingContext::TraitDecl { .. }) {
