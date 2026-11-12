@@ -54,6 +54,57 @@ pub(crate) fn rejoin_punctuation(exp: &str) -> String {
     out
 }
 
+/// The expansion with the single spaces the transcription put around punctuation that is written tight in Rust
+/// dropped: before `,` `;` `)` `]` `?` and a field's or bound's `:`, after `(` `[`, around `::` and a member `.`, and
+/// inside a macro call's `name ! (`. Operators keep their spaces; strings and comments are left as they are.
+pub(crate) fn tidy_spacing(exp: &str) -> String {
+    let masked = mask_comments_and_strings(exp);
+    if masked.len() != exp.len() {
+        return exp.to_string();
+    }
+    let b = masked.as_bytes();
+    let id = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
+    // The nearest byte before `i` that is no space.
+    let prev_solid = |i: usize| b[..i].iter().rev().copied().find(|&c| c != b' ').unwrap_or(b' ');
+    let o = exp.as_bytes();
+    let mut out = String::with_capacity(exp.len());
+    let mut last = 0;
+    for i in 1..b.len().saturating_sub(1) {
+        let (l, r) = (b[i - 1], b[i + 1]);
+        // A single space of the code (a string's masked text is spaces too, with no punctuation around).
+        if b[i] != b' ' || o[i] != b' ' || o[i - 1].is_ascii_whitespace() || o[i + 1].is_ascii_whitespace() {
+            continue;
+        }
+        let r2 = b.get(i + 2).copied().unwrap_or(b' ');
+        let l2 = if i >= 2 { b[i - 2] } else { b' ' };
+        let bang_call = |at: usize| id(prev_solid(at)) && matches!(b[at + 1..].iter().copied().find(|&c| c != b' '), Some(b'(' | b'[' | b'{'));
+        // A call's parenthesis (`f (x)`), not one after a keyword (`if (a)`, `in (0..n)`).
+        let word = &masked[masked[..i].trim_end_matches(|c: char| c.is_alphanumeric() || c == '_').len()..i];
+        let call = r == b'('
+            && id(l)
+            && !matches!(
+                word,
+                "if" | "while" | "match" | "return" | "in" | "for" | "let" | "as" | "else" | "move" | "mut" | "ref" | "where" | "impl" | "dyn" | "fn" | "break" | "yield"
+            );
+        let drop = call
+            || matches!(r, b',' | b';' | b')' | b']' | b'?')
+            || matches!(l, b'(' | b'[')
+            || (r == b':' && r2 == b':' && (id(l) || l == b'>'))
+            || (l == b':' && l2 == b':')
+            || (r == b':' && r2 != b':' && l != b':')
+            || (r == b'!' && r2 != b'=' && bang_call(i + 1))
+            || (l == b'!' && matches!(r, b'(' | b'[' | b'{') && id(prev_solid(i - 1)))
+            || (r == b'.' && r2 != b'.' && l != b'.' && (id(l) || matches!(l, b')' | b']')))
+            || (l == b'.' && l2 != b'.' && id(r));
+        if drop {
+            out.push_str(&exp[last..i]);
+            last = i + 1;
+        }
+    }
+    out.push_str(&exp[last..]);
+    out
+}
+
 /// The top-level pieces of macro arguments, split at `,`, `;` and `=>`.
 pub(crate) fn top_level_pieces(m: &str) -> Vec<&str> {
     let b = m.as_bytes();
@@ -106,7 +157,17 @@ pub(crate) fn is_atomic(expr: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_atomic, rejoin_punctuation, top_level_pieces};
+    use super::{is_atomic, rejoin_punctuation, tidy_spacing, top_level_pieces};
+
+    #[test]
+    fn transcribed_punctuation_is_written_tight() {
+        // A string's or a comment's characters are never taken for spaces.
+        let s = "f (\"x\" , \"(socket\\\\ y)\") ; // see `Panic behavior` ( a )\n g (1)";
+        assert_eq!(tidy_spacing(s), "f(\"x\", \"(socket\\\\ y)\"); // see `Panic behavior` ( a )\n g(1)");
+        let exp = "::expect_test :: Expect {position : ::expect_test :: Position {file : file ! () , line : line ! () , } , data : r#\"a , b\"# , }";
+        assert_eq!(tidy_spacing(exp), "::expect_test::Expect {position: ::expect_test::Position {file: file!(), line: line!(), }, data: r#\"a , b\"#, }");
+        assert_eq!(tidy_spacing("x = ! (a != b) ; v . iter () . map (f) ? ; 0 .. n ; if (a) { g (1 , 2) }"), "x = ! (a != b); v.iter().map(f)?; 0 .. n; if (a) { g(1, 2) }");
+    }
 
     #[test]
     fn operators_split_by_the_transcription_are_joined_again() {

@@ -15,7 +15,7 @@
 
 use super::action_inline_callers_macros::{macros_in_scope, STD_MACROS};
 use super::action_inline_callers_qualify::tokens;
-use super::action_inline_macro_text::{is_atomic, rejoin_punctuation, top_level_pieces};
+use super::action_inline_macro_text::{is_atomic, rejoin_punctuation, tidy_spacing, top_level_pieces};
 use super::action_parse::{is_ident_byte, line_starts_of, mask_comments_and_strings};
 use super::action_parse_enclosing::find_enclosing_fn_at_cursor;
 use super::action_parse_items::{contains_word, skip_balanced};
@@ -67,8 +67,8 @@ pub fn plan_inline_macro(doc: &str, file: &str, cursor: usize, ws: &WorkspaceInd
     let (def_text, def_crate) = macro_definition(doc, &starts, file, call.name.0, name, ws)?;
     let def = MacroRulesDef::parse_body(&def_text)?;
     let inner = &doc[call.open + 1..call.close - 1];
-    let prefix = crate_prefix(ws, file, &masked[call.path_start..call.name.0], def_crate.as_deref())?;
-    let expansion = rejoin_punctuation(&def.expand(inner, &prefix)?);
+    let prefix = crate_prefix(ws, file, &masked, &masked[call.path_start..call.name.0], def_crate.as_deref())?;
+    let expansion = tidy_spacing(&rejoin_punctuation(&def.expand(inner, &prefix)?));
     let expansion = expansion.trim();
     if expansion.is_empty() || !keeps_meaning(&def_text, inner, expansion, doc) {
         return None;
@@ -182,13 +182,16 @@ fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at: usize, nam
 }
 
 /// What `$crate` becomes in the file: `crate` for its own macros; another crate's name, written as the call's path
-/// writes it (`bitflags::bitflags!`) or as the file's crate links it.
-fn crate_prefix(ws: &WorkspaceIndex, file: &str, call_path: &str, def_crate: Option<&str>) -> Option<String> {
+/// writes it (`bitflags::bitflags!`), as the file's crate links it, or as the file itself names it (`use
+/// expect_test::expect;` in a test module, whose dev-dependencies the library unit's extern list leaves out).
+fn crate_prefix(ws: &WorkspaceIndex, file: &str, masked_doc: &str, call_path: &str, def_crate: Option<&str>) -> Option<String> {
     let Some(def_crate) = def_crate else { return Some("crate".to_string()) };
     if let Some(head) = call_path.trim_end_matches("::").split("::").next().filter(|h| !h.is_empty() && *h != "crate" && *h != "self" && *h != "super") {
         return Some(format!("::{head}"));
     }
-    ws.extern_crate_names_for_file(file).is_none_or(|l| l.contains(&def_crate)).then(|| format!("::{def_crate}"))
+    let b = masked_doc.as_bytes();
+    let named_root = masked_doc.match_indices(&format!("{def_crate}::")).any(|(p, _)| p == 0 || !(is_ident_byte(b[p - 1]) || b[p - 1] == b':'));
+    (named_root || ws.extern_crate_names_for_file(file).is_none_or(|l| l.contains(&def_crate))).then(|| format!("::{def_crate}"))
 }
 
 /// Whether the expansion means what the call meant (see the module documentation).
