@@ -258,6 +258,8 @@ pub(super) fn pat_head_lit(p: &PatElem) -> Option<(&str, T, Option<T>)> {
     match p {
         PatElem::Lit(t, k) => Some((t.as_str(), *k, None)),
         PatElem::Rep { inner, .. } => inner.first().and_then(pat_head_lit),
+        // A block (`-> $ret:ty $body:block`) or a `{ … }` group opens with the first top-level `{`.
+        PatElem::Var { frag: FragKind::Block, .. } | PatElem::Group { open: T::LBrace, .. } => Some(("{", T::LBrace, None)),
         _ => None,
     }
 }
@@ -312,4 +314,16 @@ pub(super) fn scan_until_next(
         }
     }
     (i > pos).then_some(i)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MacroRulesDef;
+
+    #[test]
+    fn a_type_ends_where_the_block_after_it_opens() {
+        let def = MacroRulesDef::parse_body("{ (fn $name:ident() -> $ret:ty $body:block) => { pub fn $name() -> $ret $body }; }").unwrap();
+        let out = def.expand("fn answer() -> Option<u8> { Some(42) }", "crate").unwrap();
+        assert_eq!(out.split_whitespace().collect::<String>(), "pubfnanswer()->Option<u8>{Some(42)}");
+    }
 }

@@ -207,8 +207,11 @@ fn doc_has_conversion_for(masked: &str, type_name: &str, field_ty: &str) -> bool
                 _ => None,
             };
             if let Some(em) = end_m {
+                // A call naming the type converts to it if the macro says so by its name, or if this file's own
+                // `macro_rules!` of that name writes a conversion (`tri!(… Visitor { … })` does not).
                 let lower = mac_name.to_ascii_lowercase();
-                if (file_defines_from_macro || lower.contains("from") || lower.contains("newtype")) && contains_word(&masked[k..em], type_name) {
+                let writes_from = lower.contains("from") || lower.contains("newtype") || (file_defines_from_macro && local_macro_writes_from(masked, &mac_name));
+                if writes_from && contains_word(&masked[k..em], type_name) {
                     return true;
                 }
                 i = em;
@@ -218,6 +221,25 @@ fn doc_has_conversion_for(masked: &str, type_name: &str, field_ty: &str) -> bool
         i += 1;
     }
     false
+}
+
+/// Whether a `macro_rules! name` in `masked` writes `From` or `TryFrom`; a body that cannot be read counts as one.
+fn local_macro_writes_from(masked: &str, name: &str) -> bool {
+    let mb = masked.as_bytes();
+    masked.match_indices("macro_rules!").any(|(p, m)| {
+        let Some((n, end)) = next_ident_token(masked, p + m.len()) else { return false };
+        if n != name {
+            return false;
+        }
+        let open = end + (masked[end..].len() - masked[end..].trim_start().len());
+        let close = match mb.get(open).copied() {
+            Some(b'{') => skip_balanced(mb, open, b'{', b'}'),
+            Some(b'(') => skip_balanced(mb, open, b'(', b')'),
+            Some(b'[') => skip_balanced(mb, open, b'[', b']'),
+            _ => None,
+        };
+        close.is_none_or(|c| contains_word(&masked[open..c], "From") || contains_word(&masked[open..c], "TryFrom"))
+    })
 }
 
 pub(crate) fn doc_already_implements_trait_for(masked_doc: &str, trait_kw: &str, type_name: &str) -> bool {

@@ -69,12 +69,28 @@ pub(crate) fn doc_has_conflicting_conversion(masked: &str, type_name: &str, fiel
         if !matches!(name, "From" | "TryFrom") {
             continue;
         }
-        let Some(arg) = trait_part.find('<').and_then(|p| trait_part[p + 1..].strip_suffix('>')) else { continue };
-        if strip_paths(arg) == want || parse_generics_list(gens).iter().any(|g| g.kind == GenKind::Type && contains_word(arg, &g.name)) {
+        let Some(raw_arg) = trait_part.find('<').and_then(|p| trait_part[p + 1..].strip_suffix('>')) else { continue };
+        let arg = strip_paths(raw_arg);
+        if arg == want {
+            return true;
+        }
+        // A generic argument overlaps when it can be the field's type: a bare parameter (`From<T>`), or one under the
+        // same outer type (`From<Vec<T>>` against `Vec<u8>`); `From<ComponentIdFor<T>>` never is `usize`.
+        let params: Vec<String> = parse_generics_list(gens).into_iter().filter(|g| g.kind == GenKind::Type).map(|g| g.name).collect();
+        if params.iter().any(|p| contains_word(raw_arg, p)) && (params.iter().any(|p| *p == head(&arg)) || head(&arg) == head(&want)) {
             return true;
         }
     }
     false
+}
+
+/// A type's outer constructor: its name before any generic arguments, or its first symbol (`&`, `(`, `[`, `*`).
+fn head(t: &str) -> &str {
+    if t.starts_with(|c: char| c.is_alphanumeric() || c == '_') {
+        t.split(['<', '(']).next().unwrap_or(t)
+    } else {
+        &t[..t.chars().next().map_or(0, char::len_utf8)]
+    }
 }
 
 #[cfg(test)]
@@ -89,5 +105,8 @@ mod tests {
         assert!(doc_has_conflicting_conversion("impl TryFrom<std::sync::Arc<a::B>>\n for Name { }", "Name", "Arc<B>"));
         assert!(doc_has_conflicting_conversion("impl<T: Into<usize>> From<T> for ComponentId {}", "ComponentId", "usize"));
         assert!(!doc_has_conflicting_conversion("impl From<usize> for OtherId {}", "ComponentId", "usize"));
+        assert!(!doc_has_conflicting_conversion("impl<T: Component> From<ComponentIdFor<'_, T>> for ComponentId {}", "ComponentId", "usize"));
+        assert!(doc_has_conflicting_conversion("impl<T> From<Vec<T>> for Ids {}", "Ids", "Vec<u8>"));
+        assert!(doc_has_conflicting_conversion("impl<'a, T> From<&'a T> for Ids {}", "Ids", "&'static str"));
     }
 }

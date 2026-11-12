@@ -79,7 +79,7 @@ pub fn build_single_field_from(doc_text: &str, masked_doc: &str, starts: &[usize
     if fty.is_empty()
         || contains_inferred_underscore(&fty)
         || contains_word(&fty_masked, "Self")
-        || contains_word(&fty_masked, &item.name)
+        || names_own_type(&fty_masked, &item.name)
         || is_potentially_unsized(&fty, &unsized_params)
     {
         return None;
@@ -292,20 +292,47 @@ fn doc_already_implements_or_derives_default(doc_text: &str, masked_doc: &str, b
 }
 
 /// The value of a `PhantomData` field's type (`PhantomData<&'a ()>` → `PhantomData`, `core::marker::PhantomData<T>` →
-/// `core::marker::PhantomData`); `None` for any other type.
+/// `core::marker::PhantomData`) or of a unit field (`()`), as rust-analyzer builds them; `None` for any other type.
 fn phantom_value(ty: &str) -> Option<String> {
+    if ty.trim() == "()" {
+        return Some("()".to_string());
+    }
     let base = ty.split('<').next().unwrap_or(ty).trim();
     (base.rsplit("::").next() == Some("PhantomData")).then(|| base.to_string())
 }
 
+/// Whether the field type may name the struct itself: its name bare or under `crate`/`self`/`super`, not one reached
+/// through another module or crate (`regex_automata::MatchKind` in `struct MatchKind`).
+fn names_own_type(fty_masked: &str, name: &str) -> bool {
+    let b = fty_masked.as_bytes();
+    fty_masked.match_indices(name).any(|(p, _)| {
+        if (p > 0 && is_ident_byte(b[p - 1])) || b.get(p + name.len()).is_some_and(|c| is_ident_byte(*c)) {
+            return false;
+        }
+        let path = fty_masked[..p].rsplit(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':')).next().unwrap_or("");
+        let root = path.split("::").next().unwrap_or("");
+        path.is_empty() || matches!(root, "crate" | "self" | "super" | "Self")
+    })
+}
+
 #[cfg(test)]
 mod tests {
-    use super::phantom_value;
+    use super::{names_own_type, phantom_value};
+
+    #[test]
+    fn a_field_type_from_another_module_is_another_type() {
+        assert!(names_own_type("Box<MatchKind>", "MatchKind"));
+        assert!(names_own_type("Option<crate::flags::MatchKind>", "MatchKind"));
+        assert!(!names_own_type("regex_automata::MatchKind", "MatchKind"));
+        assert!(!names_own_type("onepass::Config", "Config"));
+        assert!(!names_own_type("MatchKinds", "MatchKind"));
+    }
 
     #[test]
     fn a_phantom_field_is_built_by_its_path() {
         assert_eq!(phantom_value("PhantomData<&'a ()>").as_deref(), Some("PhantomData"));
         assert_eq!(phantom_value("core::marker::PhantomData<fn() -> T>").as_deref(), Some("core::marker::PhantomData"));
         assert_eq!(phantom_value("Vec<PhantomData<u8>>"), None);
+        assert_eq!(phantom_value("()").as_deref(), Some("()"));
     }
 }

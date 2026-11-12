@@ -18,10 +18,11 @@ use super::action_struct_conv_attrs::{outer_attrs_allow_shape_change, AttrCtx, S
 use super::action_struct_conv_fields::{field_access_edits, splice};
 use super::action_struct_conv_helpers::{
     collect_typed_locals, convert_brace_init_to_tuple, convert_tuple_init_to_brace, find_impl_body_spans_for, is_bare_value_ctor_fn_ref, is_brace_struct_literal_or_pat,
-    is_isolated_leaf_module, parse_named_fields_clean, parse_tuple_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
+    is_isolated_leaf_module, parse_named_fields_clean, receiver_is_proven_owner, skip_optional_turbofish, to_lsp_edits,
 };
 use super::action_struct_conv_index::{byte_to_line_col, field_name_bytes, indexed_field_refs, struct_name_byte, struct_ref_sites, FieldRefs};
 use super::action_struct_conv_outside::{convert_outside, doc_outside_edits, StructAt};
+use super::action_struct_conv_tuple_fields::{named_field_decl, parse_tuple_fields_clean};
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -226,7 +227,7 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
     }
 
     let fields = parse_tuple_fields_clean(raw_fields)?;
-    if fields.is_empty() || fields.len() > 16 || !uses_confined_to_module(&item.vis_prefix, fields.iter().map(|(vis, _)| vis.as_str())) {
+    if fields.is_empty() || fields.len() > 16 || !uses_confined_to_module(&item.vis_prefix, fields.iter().map(|(_, vis, _)| vis.as_str())) {
         return None;
     }
 
@@ -234,18 +235,7 @@ pub fn build_convert_to_named_struct(doc_text: &str, masked_doc: &str, starts: &
     let known_locals = collect_typed_locals(&masked_doc[mod_lo..mod_hi], &item.name);
     let mut raw_edits: Vec<(usize, usize, String)> = Vec::new();
 
-    let named_defs: Vec<String> = fields
-        .iter()
-        .enumerate()
-        .map(|(idx, (vis, ty))| {
-            let fnm = format!("field{}", idx + 1);
-            if vis.is_empty() {
-                format!("{fnm}: {ty}")
-            } else {
-                format!("{vis} {fnm}: {ty}")
-            }
-        })
-        .collect();
+    let named_defs: Vec<String> = fields.iter().enumerate().map(|(idx, f)| named_field_decl(idx, f)).collect();
     raw_edits.push((*open_delim_byte, *end_byte, format!(" {{ {} }}", named_defs.join(", "))));
 
     let mb = masked_doc.as_bytes();

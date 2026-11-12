@@ -67,17 +67,6 @@ pub(crate) fn parse_named_fields_clean(raw: &str) -> Option<Vec<(String, String,
     }
     let mb = mf.as_bytes();
     let mut out = Vec::new();
-    // Leading whitespace and outer attributes (`#[serde(skip)]`) of an entry; they travel with the field.
-    let skip_attrs = |m: &str| -> Option<usize> {
-        let b = m.as_bytes();
-        let mut p = m.len() - m.trim_start().len();
-        while p < b.len() && b[p] == b'#' {
-            let open = p + 1 + (m[p + 1..].len() - m[p + 1..].trim_start().len());
-            p = skip_balanced(b, open, b'[', b']')?;
-            p += m[p..].len() - m[p..].trim_start().len();
-        }
-        Some(p)
-    };
     let (mut depth, mut start) = (0i32, 0usize);
     for i in 0..=mb.len() {
         let c = mb.get(i).copied();
@@ -99,7 +88,7 @@ pub(crate) fn parse_named_fields_clean(raw: &str) -> Option<Vec<(String, String,
             }
             continue;
         }
-        let lead = skip_attrs(m)?;
+        let lead = skip_field_attrs(m)?;
         let leading = r[..lead].trim().to_string();
         let t = r[lead..].trim_end();
         let rest = strip_field_vis(t);
@@ -115,26 +104,17 @@ pub(crate) fn parse_named_fields_clean(raw: &str) -> Option<Vec<(String, String,
     Some(out)
 }
 
-pub(crate) fn parse_tuple_fields_clean(raw: &str) -> Option<Vec<(String, String)>> {
-    let mf = mask_comments_and_strings(raw);
-    if mf.contains('#') || mf.contains('$') {
-        return None;
+/// Leading whitespace and outer attributes (`#[serde(skip)]`) of a field entry's masked text; they travel with the
+/// field.
+pub(crate) fn skip_field_attrs(m: &str) -> Option<usize> {
+    let b = m.as_bytes();
+    let mut p = m.len() - m.trim_start().len();
+    while p < b.len() && b[p] == b'#' {
+        let open = p + 1 + (m[p + 1..].len() - m[p + 1..].trim_start().len());
+        p = skip_balanced(b, open, b'[', b']')?;
+        p += m[p..].len() - m[p..].trim_start().len();
     }
-    let mut out = Vec::new();
-    for entry in split_top_level_commas(raw) {
-        let t = entry.trim();
-        if t.is_empty() {
-            continue;
-        }
-        let rest = strip_field_vis(t);
-        let vis = collapse_ws(t[..t.len() - rest.len()].trim());
-        let fty = collapse_ws(rest);
-        if fty.is_empty() {
-            return None;
-        }
-        out.push((vis, fty));
-    }
-    Some(out)
+    Some(p)
 }
 
 /// `{ a: x, b }` → `(x, b)` in field order. A rest pattern (`{ a, .. }`) fills the other fields with `_`; a struct

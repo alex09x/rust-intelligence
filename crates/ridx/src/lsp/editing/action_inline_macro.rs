@@ -211,6 +211,22 @@ fn keeps_meaning(def_text: &str, inner: &str, expansion: &str, doc: &str) -> boo
     macros_in_scope(expansion, doc) || nested_macros_defined_in(&exp_m, &mask_comments_and_strings(doc))
 }
 
+/// The length of a `let` pattern in `rest` (after `let`): up to its `=`, `:` or `;`.
+fn let_pattern_len(rest: &str) -> usize {
+    let b = rest.as_bytes();
+    let mut depth = 0i32;
+    for (i, &c) in b.iter().enumerate() {
+        match c {
+            b'(' | b'[' | b'{' => depth += 1,
+            b')' | b']' | b'}' => depth -= 1,
+            b'=' | b';' if depth <= 0 => return i,
+            b':' if depth <= 0 && b.get(i + 1) != Some(&b':') && (i == 0 || b[i - 1] != b':') => return i,
+            _ => {}
+        }
+    }
+    b.len()
+}
+
 /// The names a macro template binds itself (not through a metavariable `$x`): `let x`, `let mut x`, `for x in`,
 /// closure parameters, labels.
 fn binders(m: &str) -> Vec<String> {
@@ -219,10 +235,16 @@ fn binders(m: &str) -> Vec<String> {
     let mut out = Vec::new();
     for i in 0..toks.len() {
         match word(i) {
+            // The names a pattern binds (`let x`, `if let Some(&s)`, `let (a, mut b)`), not its constructors.
             Some("let") => {
-                let j = if word(i + 1) == Some("mut") { i + 2 } else { i + 1 };
-                if let Some(&(s, e)) = toks.get(j).filter(|&&(s, _)| !m[toks[i].1..s].contains('$')) {
-                    out.push(m[s..e].to_string());
+                let pat_end = toks[i].1 + let_pattern_len(&m[toks[i].1..]);
+                for &(s, e) in toks[i + 1..].iter().take_while(|&&(s, _)| s < pat_end) {
+                    let name = &m[s..e];
+                    let after = m[e..].trim_start();
+                    let binds = name.starts_with(|c: char| c.is_lowercase() || c == '_') && !matches!(name, "mut" | "ref" | "_");
+                    if binds && !m[..s].ends_with("::") && !after.starts_with(['(', '{', '!']) && !after.starts_with("::") && !m[toks[i].1..s].contains('$') {
+                        out.push(name.to_string());
+                    }
                 }
             }
             Some("for") if word(i + 2) == Some("in") && !m[toks[i].1..toks[i + 1].0].contains('$') => out.push(word(i + 1).unwrap_or_default().to_string()),
@@ -300,6 +322,7 @@ mod tests {
         assert_eq!((&q[c.path_start..c.name.0], &q[c.name.0..c.name.1]), ("bitflags::", "bitflags"));
         assert_eq!(binders("{ let tmp = 1; for i in 0..n {} 'out: loop {} |a, b| a }"), ["a", "b", "i", "out", "tmp"]);
         assert!(binders("{ impl X for Y { fn f(&mut self) { let $v = 1; for $i in 0..n {} } } }").is_empty());
+        assert_eq!(binders("{ let msg = if let Some(&s) = e.downcast_ref::<&str>() { s } else { x }; let (a, mut b): (u8, u8) = p; }"), ["a", "b", "msg", "s"]);
         let pp = "pin_project! {\n    #[derive(Debug)]\n    struct RunUntil<'a, F> {\n        local_set: &'a LocalSet,\n    }\n}";
         let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(pp);
         let c = macro_call_at(&masked, pp.find("RunUntil").unwrap()).expect("call around a struct with lifetimes");

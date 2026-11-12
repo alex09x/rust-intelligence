@@ -30,8 +30,9 @@ pub(crate) enum Shape {
 /// Derives of the standard library and serde: they take named and tuple structs alike.
 const STD_DERIVES: &[&str] = &["Debug", "Clone", "Copy", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Default", "Serialize", "Deserialize"];
 
-/// Third-party derives known to take both shapes, accepted without the index (clap's `Parser`/`Args` do not).
-const KNOWN_DERIVES: &[&str] = &["Component", "Resource", "Reflect", "Arbitrary"];
+/// Third-party derives known to take both shapes, accepted without the index (clap's `Parser`/`Args` do not);
+/// `derive_more`'s `From`/`Into` convert the fields in order whatever their names.
+const KNOWN_DERIVES: &[&str] = &["Component", "Resource", "Reflect", "Arbitrary", "From", "Into"];
 
 /// Built-in attributes that do not depend on how the fields are written.
 const INERT_ATTRS: &[&str] = &["allow", "expect", "warn", "deny", "forbid", "doc", "must_use", "non_exhaustive", "repr"];
@@ -162,8 +163,12 @@ fn push_attr<'s>(doc: &'s str, lo: usize, hi: usize, out: &mut Vec<Attr<'s>>) ->
     Some(())
 }
 
-/// The keys a helper attribute uses: each top-level argument up to `=` or `(`, or the bare name.
+/// The keys a helper attribute uses: each top-level argument up to `=` or `(`, or the bare name. `#[require(…)]`
+/// lists other components, which no field name can be, so one key stands for all its arguments.
 fn helper_keys(name: &str, args: &str) -> Vec<HelperKey> {
+    if name == "require" {
+        return vec![(name.to_string(), "*".to_string())];
+    }
     let Some(list) = args.strip_prefix('(').and_then(|x| x.strip_suffix(')')) else { return vec![(name.to_string(), String::new())] };
     split_top_level_commas(list).iter().map(|p| p.split(['=', '(']).next().unwrap_or("").trim().to_string()).filter(|k| !k.is_empty()).map(|k| (name.to_string(), k)).collect()
 }
@@ -331,6 +336,7 @@ mod tests {
         let k: Vec<String> = helper_keys("reflect", "(Default, Component, from = \"x\")").into_iter().map(|(_, k)| k).collect();
         assert_eq!(k, ["Default", "Component", "from"]);
         assert_eq!(helper_keys("entities", ""), [("entities".to_string(), String::new())]);
+        assert_eq!(helper_keys("require", "(TextFont, TextColor(Color::WHITE))"), [("require".to_string(), "*".to_string())]);
     }
 
     #[test]

@@ -11,6 +11,7 @@
 //! LSP editing handlers: rename, formatting, code actions, and commands.
 
 pub mod action_adt;
+mod action_adt_has_new;
 pub mod action_adt_traits;
 pub mod action_assists;
 pub mod action_assists_edit;
@@ -65,6 +66,8 @@ mod action_struct_conv_index;
 mod action_struct_conv_macro;
 mod action_struct_conv_named;
 mod action_struct_conv_outside;
+mod action_struct_conv_tuple_fields;
+mod action_struct_conv_value_use;
 mod action_suggest_name;
 pub mod actions;
 pub mod apply_registry;

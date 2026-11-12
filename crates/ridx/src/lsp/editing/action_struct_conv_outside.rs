@@ -185,7 +185,13 @@ pub(crate) fn aliases(masked: &str, b: usize) -> bool {
 pub(crate) fn macro_arg(masked: &str, b: usize) -> bool {
     let name_end = b + masked[b..].len() - masked[b..].trim_start_matches(|c: char| c.is_alphanumeric() || c == '_').len();
     let after = skip_generic_args(&masked[name_end..]).trim_start();
-    after.starts_with([',', ')', ']']) && in_macro_call(masked, b)
+    // A slice type or a cast's target (`&[x, y] as &[Name]`) names the type inside an expression.
+    let lo = (b.saturating_sub(24)..b).find(|&i| masked.is_char_boundary(i)).unwrap_or(b);
+    let tail = masked[lo..b].trim_end();
+    let before: String = tail.split_whitespace().collect();
+    let as_word = tail.strip_suffix("as").is_some_and(|r| !r.ends_with(|c: char| c.is_alphanumeric() || c == '_'));
+    let typed = before.ends_with("&[") || before.ends_with("as&") || before.ends_with("->") || as_word;
+    after.starts_with([',', ')', ']']) && !typed && in_macro_call(masked, b)
 }
 
 /// The name of the free type alias whose target holds the reference at `b` (`type SQuery<D> = Query<..>` → `SQuery`).
@@ -339,5 +345,9 @@ mod tests {
         let s = "from_id![(hir_def::UnionId, crate::Name), (A, B)]; f(Name::new(), x);";
         assert!(aliases(s, s.find("Name").unwrap()), "a bare path handed to a macro");
         assert!(!aliases(s, s.rfind("Name").unwrap()));
+        let s = "assert_eq!(e.get(&[x, y] as &[Name]), z); assert!(f(x as Name)); vec![Name];";
+        let at = |n: usize| s.match_indices("Name").nth(n).unwrap().0;
+        assert!(!aliases(s, at(0)) && !aliases(s, at(1)), "a type in a macro's expression");
+        assert!(aliases(s, at(2)), "a bare path in a macro's list");
     }
 }

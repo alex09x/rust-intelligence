@@ -13,13 +13,12 @@
 use super::action_crate_checks::crate_denies_missing_docs;
 use super::action_generics_helpers::{clean_param_ident, contains_inferred_underscore};
 use super::action_generics_sub::{collect_tokens_and_lifetimes, parse_generics_list, split_top_level_colon, split_top_level_commas, strip_leading_attrs_keep_cfg, GenKind};
-use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings, AdtFieldsKind, EnclosingContext, ItemKindInfo, ParsedCursorItem};
-use super::action_parse_decl::{collapse_ws, extract_angle_generics, next_ident_token, split_top_level_where};
+use super::action_parse::{byte_to_utf16_pos, mask_comments_and_strings, AdtFieldsKind, EnclosingContext, ItemKindInfo, ParsedCursorItem};
+use super::action_parse_decl::collapse_ws;
 use super::action_parse_items::{contains_word, skip_balanced};
 use super::action_suggest_name::{name_of_type, NameGenerator};
-use ridx_format::{DefKind, WorkspaceIndex};
+use ridx_format::WorkspaceIndex;
 use std::collections::HashSet;
-use std::path::Path;
 
 /// rust-analyzer's `Generate trait impl`: an `impl _ for Type {}` template after the type, the trait left for the
 /// user to name (an editor with snippets places the cursor on the `_`).
@@ -78,7 +77,7 @@ pub fn build_generate_new(doc_text: &str, masked_doc: &str, starts: &[usize], fi
     if contains_word(&mask_comments_and_strings(generics_src), "cfg") {
         return None;
     }
-    if struct_already_has_new(doc_text, masked_doc, file_path, &item.name, ws) {
+    if super::action_adt_has_new::struct_already_has_new(doc_text, masked_doc, file_path, item, ws) {
         return None;
     }
     // A `new` of a struct that is not public is not used yet: where dead code is denied it breaks the build.
@@ -278,121 +277,6 @@ pub(crate) fn is_potentially_unsized(fty: &str, unsized_params: &HashSet<String>
                 return true;
             }
         }
-    }
-    false
-}
-
-fn struct_already_has_new(doc_text: &str, masked_doc: &str, file_path: &str, struct_name: &str, ws: &WorkspaceIndex) -> bool {
-    if doc_defines_inherent_new_or_macro(doc_text, masked_doc, struct_name) {
-        return true;
-    }
-    let req_path = Path::new(file_path);
-    // This struct's own `new` (its path, with or without the crate's name), not that of a same-named struct elsewhere.
-    let mut news = HashSet::new();
-    for s in ws.exact_local_symbols_by_name(struct_name) {
-        if s.kind == DefKind::Struct && s.name.strip_prefix("r#").unwrap_or(s.name) == struct_name && s.resolved_path() == req_path {
-            if ws.find_definition_by_path(&format!("{}::new", s.path)).is_some() {
-                return true;
-            }
-            news.insert((s.crate_name.to_string(), format!("{}::new", s.path)));
-            if let Some(rel) = s.path.strip_prefix(&format!("{}::", s.crate_name)) {
-                news.insert((s.crate_name.to_string(), format!("{rel}::new")));
-            }
-        }
-    }
-    !news.is_empty() && ws.exact_local_symbols_by_name("new").iter().any(|sym| sym.name == "new" && news.contains(&(sym.crate_name.to_string(), sym.path.to_string())))
-}
-
-fn doc_defines_inherent_new_or_macro(doc_text: &str, masked_doc: &str, struct_name: &str) -> bool {
-    let mb = masked_doc.as_bytes();
-    let mut brace_depth = 0i32;
-    let mut i = 0usize;
-    while i < mb.len() {
-        if brace_depth == 0 && mb[i] == b'!' && mb.get(i + 1).copied() != Some(b'=') {
-            let mut k = i + 1;
-            while k < mb.len() && mb[k].is_ascii_whitespace() {
-                k += 1;
-            }
-            let end_m = match mb.get(k).copied() {
-                Some(b'(') => skip_balanced(mb, k, b'(', b')'),
-                Some(b'[') => skip_balanced(mb, k, b'[', b']'),
-                Some(b'{') => skip_balanced(mb, k, b'{', b'}'),
-                _ => None,
-            };
-            if let Some(em) = end_m {
-                // A macro may write `impl Name { fn new … }` when it names the struct and an `impl` or a `new`
-                // (in its arguments or its own name, `impl_new!`); one that only mentions the type does not.
-                let args = &masked_doc[k..em];
-                let name_start = masked_doc[..i].trim_end_matches(|c: char| c.is_alphanumeric() || c == '_').len();
-                let macro_name = &masked_doc[name_start..i];
-                let writes_ctor = contains_word(args, "new") || contains_word(args, "impl") || macro_name.contains("new") || macro_name.contains("impl");
-                if contains_word(args, struct_name) && writes_ctor {
-                    return true;
-                }
-                i = em;
-                continue;
-            }
-        }
-        if i + 4 < mb.len() && &mb[i..i + 4] == b"impl" && (i == 0 || !is_ident_byte(mb[i - 1])) && !is_ident_byte(mb[i + 4]) {
-            let (_, after_g) = extract_angle_generics(doc_text, masked_doc, i + 4);
-            if let Some(bo) = super::action_parse_decl::find_header_terminator(mb, after_g) {
-                if mb[bo] == b'{' {
-                    if let Some(bc_after) = skip_balanced(mb, bo, b'{', b'}') {
-                        let (head_s, head_m, _) = split_top_level_where(&doc_text[after_g..bo], &masked_doc[after_g..bo]);
-                        if super::action_parse_decl::split_impl_trait_for(head_s, head_m).is_none() {
-                            let base_ty = head_s.split('<').next().unwrap_or(head_s).trim().rsplit("::").next().unwrap_or("").trim();
-                            if base_ty.strip_prefix("r#").unwrap_or(base_ty) == struct_name {
-                                let body_m = &masked_doc[bo + 1..bc_after - 1];
-                                if super::action_default_scope::has_top_level_macro_call(body_m) || impl_body_has_fn_new(body_m) {
-                                    return true;
-                                }
-                            }
-                        }
-                        i = bc_after;
-                        continue;
-                    }
-                }
-            }
-        }
-        match mb[i] {
-            b'{' => brace_depth += 1,
-            b'}' => brace_depth = (brace_depth - 1).max(0),
-            _ => {}
-        }
-        i += 1;
-    }
-    false
-}
-
-fn impl_body_has_fn_new(body_masked: &str) -> bool {
-    let b = body_masked.as_bytes();
-    let (mut br, mut pa, mut bk) = (0i32, 0i32, 0i32);
-    let mut i = 0usize;
-    while i < b.len() {
-        match b[i] {
-            b'{' => br += 1,
-            b'}' => br = (br - 1).max(0),
-            b'(' => pa += 1,
-            b')' => pa = (pa - 1).max(0),
-            b'[' => bk += 1,
-            b']' => bk = (bk - 1).max(0),
-            _ if br == 0
-                && pa == 0
-                && bk == 0
-                && i + 2 <= b.len()
-                && &b[i..i + 2] == b"fn"
-                && (i == 0 || !is_ident_byte(b[i - 1]))
-                && (i + 2 == b.len() || !is_ident_byte(b[i + 2])) =>
-            {
-                if let Some((n, _)) = next_ident_token(body_masked, i + 2) {
-                    if n.strip_prefix("r#").unwrap_or(n) == "new" {
-                        return true;
-                    }
-                }
-            }
-            _ => {}
-        }
-        i += 1;
     }
     false
 }
