@@ -138,7 +138,14 @@ fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at: usize, nam
             let defs: Vec<_> = ws.exact_symbols_by_name(name).into_iter().filter(|s| s.kind == DefKind::Macro && !s.is_macro_expansion).collect();
             let local: Vec<_> = defs.iter().filter(|s| own.as_deref() == Some(s.crate_name)).collect();
             let pick = if local.is_empty() { defs.iter().collect::<Vec<_>>() } else { local };
-            let mut places: Vec<(std::path::PathBuf, u32)> = pick.iter().map(|s| (s.resolved_path(), s.span.start_line())).collect();
+            // One definition seen through several units is one place.
+            let mut places: Vec<(std::path::PathBuf, u32)> = pick
+                .iter()
+                .map(|s| {
+                    let p = s.resolved_path();
+                    (std::fs::canonicalize(&p).unwrap_or(p), s.span.start_line())
+                })
+                .collect();
             places.sort();
             places.dedup();
             let [only] = places.as_slice() else { return None };
@@ -151,9 +158,13 @@ fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at: usize, nam
     }
     let masked = mask_comments_and_strings(&text);
     let line_lo = line_starts_of(&text).get((target_line as usize).saturating_sub(1)).copied()?;
-    let at = masked[..(line_lo + 400).min(masked.len())].rfind("macro_rules!")?;
-    let rest = masked[at + 12..].trim_start();
-    let after = rest.strip_prefix(name).filter(|r| !r.starts_with(|c: char| c.is_alphanumeric() || c == '_'))?;
+    // The `macro_rules! name` nearest to the line the index gives (a file may define several macros close together).
+    let named = |at: usize| {
+        let rest = masked[at + 12..].trim_start();
+        rest.strip_prefix(name).filter(|r| !r.starts_with(|c: char| c.is_alphanumeric() || c == '_'))
+    };
+    let at = masked.match_indices("macro_rules!").map(|(p, _)| p).filter(|&p| named(p).is_some()).min_by_key(|&p| p.abs_diff(line_lo))?;
+    let after = named(at)?;
     let open = masked.len() - after.trim_start().len();
     let b = masked.as_bytes();
     let close_ch = match *b.get(open)? {
