@@ -80,6 +80,12 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
             validate_workspace_edit(&assist["edit"], workspace)?;
             actions.push(assist);
         }
+        if matches_kind("refactor.inline") {
+            if let Some(action) = super::action_inline_macro::inline_macro_action(&doc_text, uri, range, doc_version, ws) {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
+        }
     }
 
     if matches_kind("quickfix") {
@@ -212,6 +218,12 @@ pub fn handle_code_action_resolve(msg: &Value, workspace: Option<&WorkspaceIndex
             }]);
         }
         resolved["edit"] = edit_obj;
+    } else if kind == super::action_inline_macro::KIND_INLINE_MACRO {
+        let ws = workspace.ok_or_else(|| LspError::request_failed("Workspace index required to inline a macro"))?;
+        let line0 = data["cursor"]["line"].as_u64().ok_or_else(|| LspError::invalid_params("data.cursor.line missing"))? as u32;
+        let col = data["cursor"]["character"].as_u64().ok_or_else(|| LspError::invalid_params("data.cursor.character missing"))? as u32;
+        resolved["edit"] =
+            super::action_inline_macro::inline_macro_edit(&doc_text, uri, line0, col, live_ver, ws).ok_or_else(|| LspError::request_failed("Cannot inline the macro call"))?;
     } else if is_decl_assist_data_kind(kind) {
         resolved["edit"] = resolve_decl_assist(kind, data, &doc_text, uri, live_ver, workspace, overlay_mgr)?;
     } else {
