@@ -140,7 +140,7 @@ impl PositionConverter {
 
     pub fn invalidate(&mut self, file: &str) {
         self.cache.remove(file);
-        let canon = ridx_format::canonicalize_best_effort(std::path::Path::new(file));
+        let canon = ridx_format::canonicalize_cached(std::path::Path::new(file));
         if let Some(orig) = self.canon_to_key.remove(&canon) {
             self.cache.remove(&orig);
         }
@@ -155,7 +155,7 @@ impl PositionConverter {
         let resolved: std::borrow::Cow<'_, str> = if self.cache.contains_key(file) {
             std::borrow::Cow::Borrowed(file)
         } else {
-            let canon = ridx_format::canonicalize_best_effort(std::path::Path::new(file));
+            let canon = ridx_format::canonicalize_cached(std::path::Path::new(file));
             if let Some(existing) = self.canon_to_key.get(&canon) {
                 std::borrow::Cow::Owned(existing.clone())
             } else {

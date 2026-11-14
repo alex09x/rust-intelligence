@@ -28,12 +28,16 @@ impl OverlayManager {
     }
 
     fn canon_key(file_path: &str) -> std::path::PathBuf {
-        ridx_format::canonicalize_best_effort(std::path::Path::new(file_path))
+        ridx_format::canonicalize_cached(std::path::Path::new(file_path))
     }
 
     fn resolve_existing_key<'a>(&'a self, file_path: &'a str) -> Option<&'a str> {
         if self.overlays.contains_key(file_path) {
             return Some(file_path);
+        }
+        // No buffer open: nothing an alias could name (the common case on every closed-file lookup).
+        if self.canon_to_key.is_empty() {
+            return None;
         }
         self.canon_to_key.get(&Self::canon_key(file_path)).map(String::as_str)
     }
@@ -162,6 +166,9 @@ impl OverlayManager {
     pub fn get_mut(&mut self, file_path: &str) -> Option<&mut DocumentOverlay> {
         if self.overlays.contains_key(file_path) {
             return self.overlays.get_mut(file_path);
+        }
+        if self.canon_to_key.is_empty() {
+            return None;
         }
         let key = self.canon_to_key.get(&Self::canon_key(file_path))?.clone();
         self.overlays.get_mut(&key)

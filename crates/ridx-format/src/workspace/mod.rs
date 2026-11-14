@@ -267,7 +267,7 @@ impl WorkspaceIndex {
 
         if let Some(ws_root) = effective_root {
             if target_path.is_absolute() {
-                let in_ws = target_path.starts_with(ws_root) || crate::paths::canonicalize_best_effort(target_path).starts_with(crate::paths::canonicalize_best_effort(ws_root));
+                let in_ws = target_path.starts_with(ws_root) || crate::paths::canonicalize_cached(target_path).starts_with(crate::paths::canonicalize_cached(ws_root));
                 if !in_ws {
                     return true;
                 }

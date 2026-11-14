@@ -55,6 +55,25 @@ pub fn canonicalize_best_effort(path: &Path) -> PathBuf {
     normalize_path(path)
 }
 
+/// [`canonicalize_best_effort`], remembered per path: lookups run per shard on every request, and a
+/// directory's links do not change while the server runs (a later file under it resolves the same way).
+pub fn canonicalize_cached(path: &Path) -> PathBuf {
+    use std::collections::HashMap;
+    use std::sync::{Mutex, OnceLock};
+    static MEMO: OnceLock<Mutex<HashMap<PathBuf, PathBuf>>> = OnceLock::new();
+    let memo = MEMO.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some(hit) = memo.lock().unwrap_or_else(|e| e.into_inner()).get(path) {
+        return hit.clone();
+    }
+    let canon = canonicalize_best_effort(path);
+    let mut m = memo.lock().unwrap_or_else(|e| e.into_inner());
+    if m.len() >= 16_384 {
+        m.clear();
+    }
+    m.insert(path.to_path_buf(), canon.clone());
+    canon
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

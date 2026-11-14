@@ -17,20 +17,26 @@ impl WorkspaceIndex {
     /// symlinked directories like `/var/folders` vs `/private/var/folders`).
     fn canonical_target_for_reader(&self, reader_idx: usize, p: &Path, check_hashes: bool) -> Option<(String, Option<u32>)> {
         let root_opt = self.reader_root(reader_idx);
-        let canon_ws = self.workspace_root.as_deref().map(crate::paths::canonicalize_best_effort);
+        let canon_ws = self.workspace_root.as_deref().map(crate::paths::canonicalize_cached);
         let canon_root = root_opt.map(|root| {
             if root.is_absolute() {
-                crate::paths::canonicalize_best_effort(root)
+                crate::paths::canonicalize_cached(root)
             } else if let Some(ws) = canon_ws.as_deref() {
-                crate::paths::canonicalize_best_effort(&ws.join(root))
+                crate::paths::canonicalize_cached(&ws.join(root))
             } else {
-                crate::paths::canonicalize_best_effort(root)
+                crate::paths::canonicalize_cached(root)
             }
         });
         let lookup_stored = |s: &str| self.reader_find_file_id(reader_idx, s).map(|fid| (s.to_string(), Some(fid)));
 
         if p.is_absolute() {
-            let canon_p = crate::paths::canonicalize_best_effort(p);
+            let canon_p = crate::paths::canonicalize_cached(p);
+            // No link on the path, the root or the workspace root: the lexical lookups that missed were
+            // already these. The common case, and the one that must stay free.
+            let root_abs = root_opt.map(|r| if r.is_absolute() { r.to_path_buf() } else { self.workspace_root.as_deref().map_or_else(|| r.to_path_buf(), |ws| ws.join(r)) });
+            if canon_p == p && canon_ws.as_deref() == self.workspace_root.as_deref() && canon_root.as_deref() == root_abs.as_deref() {
+                return None;
+            }
             if let Some(cs) = canon_p.to_str() {
                 if let Some(found) = lookup_stored(cs) {
                     return Some(found);
@@ -57,7 +63,7 @@ impl WorkspaceIndex {
 
         let canon_roots = [canon_ws.as_deref(), canon_root.as_deref()];
         for anchor in canon_roots.into_iter().flatten() {
-            let joined = crate::paths::canonicalize_best_effort(&anchor.join(p));
+            let joined = crate::paths::canonicalize_cached(&anchor.join(p));
             if let Some(s) = joined.to_str() {
                 if let Some(found) = lookup_stored(s) {
                     return Some(found);
@@ -74,7 +80,7 @@ impl WorkspaceIndex {
         if check_hashes {
             if let Some(hashes) = self.reader_file_hashes.get(reader_idx) {
                 for anchor in canon_roots.into_iter().flatten() {
-                    let joined = crate::paths::canonicalize_best_effort(&anchor.join(p));
+                    let joined = crate::paths::canonicalize_cached(&anchor.join(p));
                     if let Some(s) = joined.to_str() {
                         if hashes.contains_key(s) {
                             return Some((s.to_string(), None));
@@ -276,11 +282,11 @@ impl WorkspaceIndex {
                             let resolved_owned;
                             let root_cmp = if canonicalize_roots {
                                 resolved_owned = if root.is_absolute() {
-                                    crate::paths::canonicalize_best_effort(root)
+                                    crate::paths::canonicalize_cached(root)
                                 } else if let Some(ws) = ws_root {
-                                    crate::paths::canonicalize_best_effort(&ws.join(root))
+                                    crate::paths::canonicalize_cached(&ws.join(root))
                                 } else {
-                                    crate::paths::canonicalize_best_effort(root)
+                                    crate::paths::canonicalize_cached(root)
                                 };
                                 resolved_owned.as_path()
                             } else {

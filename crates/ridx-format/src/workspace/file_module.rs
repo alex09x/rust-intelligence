@@ -100,8 +100,8 @@ impl WorkspaceIndex {
         }
         let canon_p_opt = if p_is_abs || abs_p.is_some() {
             let candidate = abs_p.as_deref().unwrap_or(p);
-            let canon_p = crate::paths::canonicalize_best_effort(candidate);
-            let canon_ws = self.workspace_root.as_deref().map(crate::paths::canonicalize_best_effort);
+            let canon_p = crate::paths::canonicalize_cached(candidate);
+            let canon_ws = self.workspace_root.as_deref().map(crate::paths::canonicalize_cached);
             if let Some(canon_str) = canon_p.to_str() {
                 let canon_clean = is_clean_posix_bytes(canon_p.as_os_str().as_encoded_bytes());
                 if let Some(top) = self.match_source_roots(&canon_p, canon_str, canon_clean, None, false, canon_ws.as_deref(), true) {

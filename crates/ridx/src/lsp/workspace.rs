@@ -102,7 +102,7 @@ impl MultiRootWorkspace {
         if self.roots.len() <= 1 {
             return self.roots.first().map(|(_, ws)| ws);
         }
-        let canon = ridx_format::canonicalize_best_effort(file_path);
+        let canon = ridx_format::canonicalize_cached(file_path);
         let mut best_match: Option<(usize, &WorkspaceIndex)> = None;
 
         for (root, ws) in &self.roots {

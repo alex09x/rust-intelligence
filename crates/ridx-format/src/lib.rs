@@ -25,7 +25,7 @@ pub mod workspace;
 pub mod writer;
 
 pub use format::*;
-pub use paths::{canonicalize_best_effort, normalize_path};
+pub use paths::{canonicalize_best_effort, canonicalize_cached, normalize_path};
 pub use reader::{IndexReader, MacroDefView, ResolvedDefinition};
 pub use ty_arena::{
     AssocBindingIter, AssocBindingView, AssocTyIter, AssocTyView, DefTyView, FieldIter, FieldView, FnSigView, GenericArgIter, GenericArgView, GenericParamIter, GenericParamView,
