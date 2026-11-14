@@ -236,6 +236,19 @@ fn test_workspace_diagnostic_discovers_closed_files() {
     let report = err_item.unwrap();
     assert!(!report["items"].as_array().unwrap().is_empty(), "Must contain syntax error for broken closed file");
 
+    // The client sends the ids back; an unchanged workspace is answered `unchanged`, a changed file in full.
+    let uri = report["uri"].as_str().unwrap().to_string();
+    let prev: Vec<Value> = items.iter().map(|r| json!({ "uri": r["uri"], "value": r["resultId"] })).collect();
+    let again = handle_workspace_diagnostic(&json!({ "params": { "previousResultIds": prev } }), &overlay_mgr, &multi_root);
+    let lib = again["items"].as_array().unwrap().iter().find(|r| r["uri"] == uri.as_str()).unwrap().clone();
+    assert_eq!(lib["kind"], "unchanged", "{lib}");
+    assert_eq!(lib["resultId"], report["resultId"]);
+    fs::write(&src_file, "fn fixed() {}\n").unwrap();
+    let after = handle_workspace_diagnostic(&json!({ "params": { "previousResultIds": prev } }), &overlay_mgr, &multi_root);
+    let lib = after["items"].as_array().unwrap().iter().find(|r| r["uri"] == uri.as_str()).unwrap().clone();
+    assert_eq!(lib["kind"], "full", "{lib}");
+    assert!(lib["items"].as_array().unwrap().is_empty());
+
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
