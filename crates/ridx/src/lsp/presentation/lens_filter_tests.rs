@@ -249,6 +249,16 @@ fn test_code_lens_skips_definitions_whose_range_does_not_spell_their_name() {
 }
 
 #[test]
+fn test_code_lens_skips_items_local_to_a_function_body() {
+    // rust-analyzer annotates the items a module declares: a test's own `struct Opt` gets no lens.
+    let text = format!("{KEEP}fn parses() {{ struct Opt; }}\n");
+    let mut local = def(DefKind::Struct, "Opt", at(&text, "Opt"));
+    local.path = "lens_crate::parses::Opt".to_string();
+    let sh = shard(&text, vec![def(DefKind::Fn, "keep", at(&text, "keep")), def(DefKind::Fn, "parses", at(&text, "parses")), local]);
+    assert_eq!(names(&lenses(&sh)), vec!["keep", "parses"]);
+}
+
+#[test]
 fn test_code_lens_drops_the_lenses_of_a_file_edited_after_indexing() {
     let text = "pub fn alpha() {}\n";
     let sh = shard(text, vec![def(DefKind::Fn, "alpha", at(text, "alpha"))]);

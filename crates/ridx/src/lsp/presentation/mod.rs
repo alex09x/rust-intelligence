@@ -19,6 +19,7 @@ pub mod lens;
 mod lens_runnable_hints;
 mod lens_runnables;
 mod lens_targets;
+mod lens_test_modules;
 pub mod reconcile;
 pub mod selection;
 pub mod tokens;

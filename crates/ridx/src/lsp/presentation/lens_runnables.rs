@@ -14,6 +14,7 @@
 
 use super::lens_runnable_hints::RunnableHints;
 use super::lens_targets::{file_target, FileTarget, TargetKind};
+use super::lens_test_modules::{ident_after, is_test_attr, test_modules};
 use crate::lsp::editing::action_parse::mask_comments_and_strings;
 use crate::lsp::protocol::path_to_uri;
 use serde_json::{json, Value};
@@ -69,12 +70,6 @@ fn item_end(lines: &[&str], masked_lines: &[&str], line: usize) -> (u32, u32) {
     (last as u32, lines.get(last).map_or(0, |l| l.encode_utf16().count() as u32))
 }
 
-fn is_test_attr(attr: &str) -> bool {
-    let inner = attr.trim().trim_start_matches("#[").trim_end_matches(']');
-    let path = inner.split('(').next().unwrap_or(inner).trim();
-    path == "test" || path.ends_with("::test")
-}
-
 fn doc_has_rust_block(doc_lines: &[&str]) -> bool {
     doc_lines.iter().any(|l| {
         let t = l.trim_start().trim_start_matches("///").trim_start_matches("//!").trim();
@@ -83,25 +78,6 @@ fn doc_has_rust_block(doc_lines: &[&str]) -> bool {
                 .all(|tag| matches!(tag.trim(), "" | "rust" | "should_panic" | "no_run" | "compile_fail" | "edition2015" | "edition2018" | "edition2021" | "edition2024"))
         })
     })
-}
-
-fn ident_after<'a>(masked_line: &'a str, keyword: &str) -> Option<(usize, &'a str)> {
-    let mut search = 0;
-    while let Some(found) = masked_line[search..].find(keyword) {
-        let at = search + found;
-        let before_ok = at == 0 || !masked_line.as_bytes()[at - 1].is_ascii_alphanumeric() && masked_line.as_bytes()[at - 1] != b'_';
-        let rest = &masked_line[at + keyword.len()..];
-        if before_ok && rest.starts_with(|c: char| c.is_whitespace()) {
-            let trimmed = rest.trim_start();
-            let start = masked_line.len() - trimmed.len();
-            let len = trimmed.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(trimmed.len());
-            if len > 0 {
-                return Some((start, &masked_line[start..start + len]));
-            }
-        }
-        search = at + keyword.len();
-    }
-    None
 }
 
 /// An inline module open at the current line.
@@ -294,41 +270,6 @@ fn runnable_arg(r: &Runnable, target: &FileTarget, uri: &str) -> Value {
     })
 }
 
-/// Whether a module declared in `text` with `mod name;` (the file `name.rs` or `name/mod.rs` beside `file`) holds a
-/// `#[test]` function, itself or in its own submodules, up to `depth` levels down.
-fn child_modules_hold_tests(file: &Path, text: &str, depth: u32) -> bool {
-    if depth == 0 {
-        return false;
-    }
-    let stem = file.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-    let Some(parent) = file.parent() else { return false };
-    let dir = if matches!(stem, "mod" | "lib" | "main") { parent.to_path_buf() } else { parent.join(stem) };
-    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
-    for line in masked.lines() {
-        let t = line.trim();
-        let t = t.strip_prefix("pub(crate) ").or_else(|| t.strip_prefix("pub ")).unwrap_or(t);
-        let Some(name) = t.strip_prefix("mod ").and_then(|r| r.strip_suffix(';')).map(str::trim) else { continue };
-        for cand in [dir.join(format!("{name}.rs")), dir.join(name).join("mod.rs")] {
-            if let Ok(child) = std::fs::read_to_string(&cand) {
-                if holds_test_attribute(&child) || child_modules_hold_tests(&cand, &child, depth - 1) {
-                    return true;
-                }
-                break;
-            }
-        }
-    }
-    false
-}
-
-/// Whether `text` has a test attribute (`#[test]`, `#[tokio::test]`, ...) outside comments.
-fn holds_test_attribute(text: &str) -> bool {
-    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
-    masked.lines().any(|l| {
-        let t = l.trim_start();
-        t.starts_with("#[test]") || (t.starts_with("#[") && t.contains("::test") && t.trim_end().ends_with(']'))
-    })
-}
-
 /// Runnable lenses of `file` in rust-analyzer's shape, sorted by position, a `Run` lens before its `Debug` lens.
 pub fn runnable_lenses(file: &str, text: &str, run: bool, debug: bool, hints: &RunnableHints) -> Vec<Value> {
     if !run && !debug {
@@ -340,9 +281,23 @@ pub fn runnable_lenses(file: &str, text: &str, run: bool, debug: bool, hints: &R
     let uri = path_to_uri(file);
     let mut out = Vec::new();
     let mut runnables = collect_runnables(text, &target, hints);
-    // A file holding tests, itself or in the modules it declares, is a test module: rust-analyzer runs it from a lens
-    // spanning the whole file.
-    let holds_tests = runnables.iter().any(|r| r.kind == RunKind::Test) || child_modules_hold_tests(Path::new(file), text, 4);
+    // A module runs as a whole when it declares a test itself or several test submodules (rust-analyzer's
+    // `has_test_function_or_multiple_test_submodules`); the file's own module from a lens spanning the whole file.
+    let generated: std::collections::HashSet<u32> = hints.tests.keys().copied().collect();
+    // Outside Cargo's layout only the index tells what is compiled: its tests count, not the text's.
+    let modules = test_modules(Path::new(file), text, &generated, if target.layout_known { 4 } else { 0 }, target.layout_known);
+    runnables.retain(|r| r.kind != RunKind::TestMod || modules.inline.contains(&r.line0));
+    // A `mod name;` whose file is a test module runs from its declaration's name (`test-mod util::maybe_dangling`).
+    let text_lines: Vec<&str> = text.lines().collect();
+    for (line0, at, sub) in &modules.outline {
+        let Some(line) = text_lines.get(*line0 as usize) else { continue };
+        let name = sub.rsplit("::").next().unwrap_or(sub);
+        let path = target.module_prefix.iter().map(String::as_str).chain([sub.as_str()]).collect::<Vec<_>>().join("::");
+        let name_col16 = line.get(..*at).map_or(0, |s| s.encode_utf16().count() as u32);
+        runnables.push(Runnable { kind: RunKind::TestMod, path, line0: *line0, name_col16, name_len16: name.encode_utf16().count() as u32, span: None });
+    }
+    runnables.sort_by_key(|r| (r.line0, r.name_col16));
+    let holds_tests = modules.file;
     let file_module = holds_tests.then(|| {
         let line_count = text.lines().count() as u32;
         let (end_line, end_col) = match text.lines().last() {

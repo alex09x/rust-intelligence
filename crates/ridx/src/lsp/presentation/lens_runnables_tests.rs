@@ -56,13 +56,27 @@ fn library_tests_modules_and_doctests() {
     let dir = package(&[("src/lib.rs", lib)]);
     let got: Vec<_> = lenses(&dir, "src/lib.rs").iter().map(summary).collect();
     let lib_args = |extra: &[&str]| -> Vec<String> { ["test", "--package", "demo-pkg", "--lib"].iter().chain(extra).map(|s| s.to_string()).collect() };
-    assert_eq!(got[0], ("▶︎ Run Tests".into(), 0, "test-mod ".into(), lib_args(&[])), "the file holding tests runs as a whole");
-    assert_eq!(got[2], ("▶︎ Run Doctest".into(), 0, "doctest add".into(), vec!["test".into(), "--doc".into(), "--package".into(), "demo-pkg".into()]));
-    assert_eq!(got[3].0, "⚙︎ Debug");
-    assert_eq!(got[4], ("▶︎ Run Tests".into(), 7, "test-mod tests".into(), lib_args(&[])));
-    assert_eq!(got[6], ("▶︎ Run Test".into(), 9, "test tests::adds".into(), lib_args(&[])));
-    assert_eq!(got[8], ("▶︎ Run Test".into(), 11, "test tests::adds_async".into(), lib_args(&[])));
-    assert_eq!(got.len(), 10, "`helper` is no runnable: {got:?}");
+    // The file's only tests sit in one `mod tests`: that module runs, the file gets no lens of its own (rust-analyzer
+    // runs a module with a test of its own or several test submodules).
+    assert_eq!(got[0], ("▶︎ Run Doctest".into(), 0, "doctest add".into(), vec!["test".into(), "--doc".into(), "--package".into(), "demo-pkg".into()]));
+    assert_eq!(got[1].0, "⚙︎ Debug");
+    assert_eq!(got[2], ("▶︎ Run Tests".into(), 7, "test-mod tests".into(), lib_args(&[])));
+    assert_eq!(got[4], ("▶︎ Run Test".into(), 9, "test tests::adds".into(), lib_args(&[])));
+    assert_eq!(got[6], ("▶︎ Run Test".into(), 11, "test tests::adds_async".into(), lib_args(&[])));
+    assert_eq!(got.len(), 8, "`helper` is no runnable: {got:?}");
+    // A test of the file's own makes the file a test module.
+    let own = package(&[("src/lib.rs", "#[test]\nfn top() {}\n")]);
+    let got: Vec<_> = lenses(&own, "src/lib.rs").iter().map(summary).collect();
+    assert_eq!((got[0].0.as_str(), got[0].1, got[0].2.as_str()), ("▶︎ Run Tests", 0, "test-mod "));
+}
+
+#[test]
+fn a_declared_test_module_runs_from_its_mod_item() {
+    // `mod a;` whose file holds a test: the lens sits on the declaration's name; one such module makes the
+    // declaring file no test module of its own.
+    let dir = package(&[("src/lib.rs", "pub fn f() {}\nmod a;\n"), ("src/a.rs", "#[test]\nfn t() {}\n")]);
+    let got: Vec<_> = lenses(&dir, "src/lib.rs").iter().map(summary).collect();
+    assert_eq!(got.iter().map(|g| (g.0.as_str(), g.1, g.2.as_str())).collect::<Vec<_>>(), [("▶︎ Run Tests", 1, "test-mod a"), ("⚙︎ Debug", 1, "test-mod a")]);
 }
 
 #[test]
@@ -109,7 +123,7 @@ fn index_hints_add_macro_generated_tests_and_main() {
     let file = dir.path().join("src/lib.rs");
     let got: Vec<_> = runnable_lenses(file.to_str().unwrap(), lib, true, false, &hints).iter().map(summary).collect();
     let titles: Vec<_> = got.iter().map(|g| (g.0.as_str(), g.1, g.2.as_str())).collect();
-    assert_eq!(titles, [("▶︎ Run Tests", 0, "test-mod "), ("▶︎ Run Tests", 1, "test-mod tests"), ("▶︎ Run Test", 2, "test tests::empty_text")]);
+    assert_eq!(titles, [("▶︎ Run Tests", 1, "test-mod tests"), ("▶︎ Run Test", 2, "test tests::empty_text")]);
 
     let mut bench_hints = RunnableHints::default();
     bench_hints.mains.insert(0, FnSite { col16: 0, len16: 15, name: "main".into() });

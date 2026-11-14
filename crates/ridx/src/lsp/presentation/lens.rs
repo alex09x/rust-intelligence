@@ -131,6 +131,12 @@ fn index_lenses<'a>(ws: &'a WorkspaceIndex, file: &str, text: &mut LensText) -> 
             if def.span.file_id != fid || !LENS_KINDS.contains(&DefKind::from(def.kind)) || def.is_macro_expansion() {
                 continue;
             }
+            // rust-analyzer annotates the items a module declares, not those local to a function or a `const` body
+            // (a test's `#[derive(Parser)] struct Opt`).
+            let parent_kind = r.get_str(def.path_offset).rsplit_once("::").and_then(|(parent, _)| r.find_definition_by_path(parent)).map(|p| DefKind::from(p.kind));
+            if matches!(parent_kind, Some(DefKind::Fn | DefKind::AssocFn | DefKind::Const | DefKind::Static | DefKind::AnonConst | DefKind::Closure)) {
+                continue;
+            }
             let name = r.get_str(def.name_offset);
             if name.is_empty() || !range_spells_name(text, file, (def.span.start_line, def.span.start_col), (def.span.end_line, def.span.end_col), name) {
                 continue;
