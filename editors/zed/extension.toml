@@ -1,0 +1,11 @@
+id = "rust-intelligence"
+name = "rust-intelligence"
+version = "0.1.0"
+schema_version = 1
+authors = ["Alexander Panasenko <alex@prod.codes>"]
+description = "Compiler-backed, mmap-indexed Rust code intelligence: ridx lsp as the Rust language server."
+repository = "https://github.com/alex09x/rust-intelligence"
+
+[language_servers.rust-intelligence]
+name = "rust-intelligence"
+languages = ["Rust"]

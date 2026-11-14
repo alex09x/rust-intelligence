@@ -193,7 +193,7 @@ All records are little-endian with strict 8-byte alignment:
 
 `ridx` can be invoked directly without a subcommand as a drop-in `rust-analyzer` replacement (supporting `--version`, `-v`/`-q`, `--log-file <path>`, and `--print-config-schema`). Ready-to-use editor configurations are provided in [`docs/editors/`](docs/editors/):
 - **VS Code**: [`docs/editors/vscode-settings.json`](docs/editors/vscode-settings.json) (`"rust-analyzer.server.path": "ridx"`)
-- **Zed**: [`docs/editors/zed-settings.json`](docs/editors/zed-settings.json) (`lsp.rust-analyzer.binary.path = "ridx"`)
+- **Zed**: the [`editors/zed`](editors/zed) extension registers `ridx lsp` as the `rust-intelligence` language server (`zed: install dev extension`, then [`docs/editors/zed-settings.json`](docs/editors/zed-settings.json) selects it for Rust)
 - **Neovim (`nvim-lspconfig`)**: [`docs/editors/neovim-lspconfig.lua`](docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`)
 
 ### CLI Usage

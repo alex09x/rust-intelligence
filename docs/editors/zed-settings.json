@@ -1,9 +1,14 @@
 {
+  "languages": {
+    "Rust": {
+      "language_servers": ["rust-intelligence", "!rust-analyzer"]
+    }
+  },
   "lsp": {
-    "rust-analyzer": {
+    "rust-intelligence": {
       "binary": {
         "path": "ridx",
-        "arguments": []
+        "arguments": ["lsp"]
       }
     }
   }
