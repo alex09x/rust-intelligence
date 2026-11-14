@@ -57,13 +57,14 @@ pub fn compute_variant_id_with_env(
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     profile.hash(&mut hasher);
 
-    let work_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+    let canon_manifest = ridx_format::canonicalize_best_effort(manifest_path);
+    let work_dir = canon_manifest.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
 
     // 1. Cargo configuration files (.cargo/config.toml, .cargo/config)
     let config_files = find_cargo_configs(work_dir);
     let mut config_target = None;
     for cfg in &config_files {
-        cfg.display().to_string().hash(&mut hasher);
+        ridx_format::canonicalize_best_effort(cfg).display().to_string().hash(&mut hasher);
         if let Ok(content) = fs::read_to_string(cfg) {
             content.hash(&mut hasher);
             if config_target.is_none() {
@@ -85,8 +86,8 @@ pub fn compute_variant_id_with_env(
     // 4. All workspace member manifests (Cargo.toml in workspace root and subdirectories)
     let mut all_manifests = Vec::new();
     collect_all_workspace_manifests(work_dir, &mut all_manifests);
-    if !all_manifests.contains(&manifest_path.to_path_buf()) {
-        all_manifests.push(manifest_path.to_path_buf());
+    if !all_manifests.contains(&canon_manifest) {
+        all_manifests.push(canon_manifest.clone());
     }
     all_manifests.sort();
     for m in all_manifests {

@@ -50,7 +50,7 @@ impl MultiRootWorkspace {
     }
 
     pub fn add_root(&mut self, path: PathBuf) -> bool {
-        let norm_path = path.canonicalize().unwrap_or_else(|_| path.clone());
+        let norm_path = ridx_format::canonicalize_best_effort(&path);
         let root_dir = if norm_path.is_file() {
             if norm_path.file_name().and_then(|n| n.to_str()) == Some("Cargo.toml") {
                 norm_path.parent().unwrap_or(&norm_path).to_path_buf()
@@ -84,13 +84,13 @@ impl MultiRootWorkspace {
     }
 
     pub fn remove_root(&mut self, path: &Path) -> bool {
-        let norm_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        let norm_path = ridx_format::canonicalize_best_effort(path);
         let before_len = self.roots.len();
         self.roots.retain(|(p, ws)| {
             if p == &norm_path || p == path {
                 return false;
             }
-            if ws.paths().iter().any(|ip| ip == path || ip == &norm_path || ip.canonicalize().map(|c| c == norm_path).unwrap_or(false)) {
+            if ws.paths().iter().any(|ip| ip == path || ip == &norm_path || ridx_format::canonicalize_best_effort(ip) == norm_path) {
                 return false;
             }
             true
@@ -102,7 +102,7 @@ impl MultiRootWorkspace {
         if self.roots.len() <= 1 {
             return self.roots.first().map(|(_, ws)| ws);
         }
-        let canon = file_path.canonicalize().unwrap_or_else(|_| file_path.to_path_buf());
+        let canon = ridx_format::canonicalize_best_effort(file_path);
         let mut best_match: Option<(usize, &WorkspaceIndex)> = None;
 
         for (root, ws) in &self.roots {

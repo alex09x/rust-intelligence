@@ -22,6 +22,9 @@ fn main() {
             let lib_dir = PathBuf::from(sysroot_str).join("lib");
             if lib_dir.is_dir() {
                 println!("cargo:rustc-link-search=native={}", lib_dir.display());
+                if env::var("CARGO_CFG_TARGET_FAMILY").as_deref() == Ok("unix") {
+                    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir.display());
+                }
             }
         }
     }

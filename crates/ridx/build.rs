@@ -44,6 +44,18 @@ fn main() {
     println!("cargo:rustc-env=RIDX_BUILD_DIRTY={dirty}");
     println!("cargo:rerun-if-env-changed=RIDX_BUILD_COMMIT");
     println!("cargo:rerun-if-env-changed=RIDX_BUILD_DIRTY");
+    println!("cargo:rerun-if-env-changed=RUSTC");
+
+    let rustc = std::env::var("RUSTC").unwrap_or_else(|_| "rustc".to_string());
+    if let Ok(out) = Command::new(rustc).args(["--print", "sysroot"]).output() {
+        if out.status.success() {
+            let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            let lib_dir = std::path::PathBuf::from(sysroot).join("lib");
+            if lib_dir.is_dir() {
+                println!("cargo:rustc-env=RIDX_BUILD_SYSROOT_LIB={}", lib_dir.display());
+            }
+        }
+    }
 
     if let Ok(out) = Command::new("git").args(["rev-parse", "--git-dir"]).output() {
         if out.status.success() {

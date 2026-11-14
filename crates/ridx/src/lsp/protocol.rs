@@ -130,41 +130,56 @@ pub fn path_to_uri(file: &str) -> String {
 #[derive(Default)]
 pub struct PositionConverter {
     pub(crate) cache: HashMap<String, (String, Vec<usize>)>,
+    canon_to_key: HashMap<std::path::PathBuf, String>,
 }
 
 impl PositionConverter {
     pub fn new() -> Self {
-        Self { cache: HashMap::new() }
+        Self { cache: HashMap::new(), canon_to_key: HashMap::new() }
     }
 
     pub fn invalidate(&mut self, file: &str) {
         self.cache.remove(file);
+        let canon = ridx_format::canonicalize_best_effort(std::path::Path::new(file));
+        if let Some(orig) = self.canon_to_key.remove(&canon) {
+            self.cache.remove(&orig);
+        }
     }
 
     pub fn clear(&mut self) {
         self.cache.clear();
+        self.canon_to_key.clear();
     }
 
     pub fn get_line(&mut self, file: &str, line_1based: u32) -> Option<&str> {
-        if !self.cache.contains_key(file) {
-            if self.cache.len() >= 2048 {
-                self.cache.clear();
-            }
-            if let Ok(c) = std::fs::read_to_string(file) {
-                let mut starts = Vec::with_capacity(c.len() / 32 + 16);
-                starts.push(0);
-                for (idx, b) in c.bytes().enumerate() {
-                    if b == b'\n' {
-                        starts.push(idx + 1);
-                    }
-                }
-                self.cache.insert(file.to_string(), (c, starts));
+        let resolved: std::borrow::Cow<'_, str> = if self.cache.contains_key(file) {
+            std::borrow::Cow::Borrowed(file)
+        } else {
+            let canon = ridx_format::canonicalize_best_effort(std::path::Path::new(file));
+            if let Some(existing) = self.canon_to_key.get(&canon) {
+                std::borrow::Cow::Owned(existing.clone())
             } else {
-                return None;
+                if self.cache.len() >= 2048 {
+                    self.clear();
+                }
+                if let Ok(c) = std::fs::read_to_string(file) {
+                    let mut starts = Vec::with_capacity(c.len() / 32 + 16);
+                    starts.push(0);
+                    for (idx, b) in c.bytes().enumerate() {
+                        if b == b'\n' {
+                            starts.push(idx + 1);
+                        }
+                    }
+                    self.cache.insert(file.to_string(), (c, starts));
+                    self.canon_to_key.insert(canon, file.to_string());
+                    std::borrow::Cow::Borrowed(file)
+                } else {
+                    return None;
+                }
             }
-        }
+        };
 
-        let (content, line_starts) = self.cache.get(file)?;
+        let (content, line_starts) = self.cache.get(resolved.as_ref())?;
         let line_idx = line_1based.saturating_sub(1) as usize;
         if line_idx >= line_starts.len() || content.is_empty() {
             None

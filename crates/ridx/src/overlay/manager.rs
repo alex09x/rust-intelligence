@@ -18,12 +18,30 @@ use std::collections::HashMap;
 #[derive(Default)]
 pub struct OverlayManager {
     overlays: HashMap<String, DocumentOverlay>,
+    canon_to_key: HashMap<std::path::PathBuf, String>,
     doc_symbol_cache: DocumentSymbolDiskCache,
 }
 
 impl OverlayManager {
     pub fn new() -> Self {
-        Self { overlays: HashMap::new(), doc_symbol_cache: DocumentSymbolDiskCache::new() }
+        Self { overlays: HashMap::new(), canon_to_key: HashMap::new(), doc_symbol_cache: DocumentSymbolDiskCache::new() }
+    }
+
+    fn canon_key(file_path: &str) -> std::path::PathBuf {
+        ridx_format::canonicalize_best_effort(std::path::Path::new(file_path))
+    }
+
+    fn resolve_existing_key<'a>(&'a self, file_path: &'a str) -> Option<&'a str> {
+        if self.overlays.contains_key(file_path) {
+            return Some(file_path);
+        }
+        self.canon_to_key.get(&Self::canon_key(file_path)).map(String::as_str)
+    }
+
+    fn insert_overlay(&mut self, file_path: &str, overlay: DocumentOverlay) {
+        let key = file_path.to_string();
+        self.canon_to_key.insert(Self::canon_key(file_path), key.clone());
+        self.overlays.insert(key, overlay);
     }
 
     pub(crate) fn doc_symbol_cache(&self) -> &DocumentSymbolDiskCache {
@@ -32,7 +50,7 @@ impl OverlayManager {
 
     #[allow(dead_code)]
     pub fn update(&mut self, file_path: &str, version: i32, text: String) -> bool {
-        if let Some(existing) = self.overlays.get_mut(file_path) {
+        if let Some(existing) = self.get_mut(file_path) {
             existing.update(version, text);
             true
         } else {
@@ -41,7 +59,7 @@ impl OverlayManager {
     }
 
     pub fn apply_content_changes(&mut self, file_path: &str, version: i32, changes: &[serde_json::Value]) -> bool {
-        if let Some(existing) = self.overlays.get_mut(file_path) {
+        if let Some(existing) = self.get_mut(file_path) {
             existing.apply_content_changes(version, changes);
             true
         } else {
@@ -51,11 +69,11 @@ impl OverlayManager {
 
     #[allow(dead_code)]
     pub fn open_or_update(&mut self, uri: &str, file_path: &str, version: i32, text: String) {
-        if let Some(existing) = self.overlays.get_mut(file_path) {
+        if let Some(existing) = self.get_mut(file_path) {
             existing.update(version, text);
         } else {
             let overlay = DocumentOverlay::new_with_provenance(uri, file_path, version, text, true);
-            self.overlays.insert(file_path.to_string(), overlay);
+            self.insert_overlay(file_path, overlay);
         }
     }
 
@@ -76,7 +94,7 @@ impl OverlayManager {
 
     #[allow(dead_code)]
     pub fn save_document(&mut self, file_path: &str) {
-        if let Some(overlay) = self.overlays.get_mut(file_path) {
+        if let Some(overlay) = self.get_mut(file_path) {
             overlay.disk_text = Some(overlay.text.clone());
         }
     }
@@ -87,7 +105,7 @@ impl OverlayManager {
     }
 
     pub fn open_with_provenance(&mut self, uri: &str, file_path: &str, version: i32, text: String, is_compiled: bool) {
-        if let Some(existing) = self.overlays.get_mut(file_path) {
+        if let Some(existing) = self.get_mut(file_path) {
             existing.update(version, text);
             if is_compiled {
                 existing.compiled_text = Some(existing.text.clone());
@@ -96,32 +114,39 @@ impl OverlayManager {
             }
         } else {
             let overlay = DocumentOverlay::new_with_provenance(uri, file_path, version, text, is_compiled);
-            self.overlays.insert(file_path.to_string(), overlay);
+            self.insert_overlay(file_path, overlay);
         }
     }
 
     pub fn open_with_source_hash(&mut self, uri: &str, file_path: &str, version: i32, text: String, expected_hash: Option<u64>) {
-        if let Some(existing) = self.overlays.get_mut(file_path) {
+        if let Some(existing) = self.get_mut(file_path) {
             let disk_text = std::fs::read_to_string(file_path).ok();
             existing.update(version, text);
             existing.compiled_text = super::resolve_compiled_text(existing.content_hash, &existing.text, disk_text.as_deref(), expected_hash);
             existing.disk_text = disk_text;
         } else {
             let overlay = DocumentOverlay::new_with_source_hash(uri, file_path, version, text, expected_hash);
-            self.overlays.insert(file_path.to_string(), overlay);
+            self.insert_overlay(file_path, overlay);
         }
     }
 
     pub fn close(&mut self, file_path: &str) {
-        self.overlays.remove(file_path);
+        if let Some(key) = self.resolve_existing_key(file_path).map(str::to_string) {
+            self.overlays.remove(&key);
+            self.canon_to_key.remove(&Self::canon_key(&key));
+        }
     }
 
     #[allow(dead_code)]
     pub fn rename(&mut self, old_file_path: &str, new_uri: &str, new_file_path: &str) -> bool {
-        if let Some(mut overlay) = self.overlays.remove(old_file_path) {
+        let Some(old_key) = self.resolve_existing_key(old_file_path).map(str::to_string) else {
+            return false;
+        };
+        if let Some(mut overlay) = self.overlays.remove(&old_key) {
+            self.canon_to_key.remove(&Self::canon_key(&old_key));
             overlay.uri = new_uri.to_string();
             overlay.file_path = new_file_path.to_string();
-            self.overlays.insert(new_file_path.to_string(), overlay);
+            self.insert_overlay(new_file_path, overlay);
             true
         } else {
             false
@@ -129,26 +154,31 @@ impl OverlayManager {
     }
 
     pub fn get(&self, file_path: &str) -> Option<&DocumentOverlay> {
-        self.overlays.get(file_path)
+        let key = self.resolve_existing_key(file_path)?;
+        self.overlays.get(key)
     }
 
     #[allow(dead_code)]
     pub fn get_mut(&mut self, file_path: &str) -> Option<&mut DocumentOverlay> {
-        self.overlays.get_mut(file_path)
+        if self.overlays.contains_key(file_path) {
+            return self.overlays.get_mut(file_path);
+        }
+        let key = self.canon_to_key.get(&Self::canon_key(file_path))?.clone();
+        self.overlays.get_mut(&key)
     }
 
     pub fn find_definition_at(&self, file_path: &str, line: u32, col: u32) -> Option<OverlayDefinition> {
-        let overlay = self.overlays.get(file_path)?;
+        let overlay = self.get(file_path)?;
         overlay.find_definition_at(line, col)
     }
 
     pub fn document_symbols(&self, file_path: &str) -> Option<&[OverlaySymbol]> {
-        self.overlays.get(file_path).map(|o| o.document_symbols())
+        self.get(file_path).map(|o| o.document_symbols())
     }
 
     pub fn find_global_symbol_definition(&self, current_file: &str, ident: &str, path_prefix: Option<&str>) -> Option<OverlayDefinition> {
         // If the current file has a local declaration for this ident, it must not jump elsewhere.
-        if let Some(current_ov) = self.overlays.get(current_file) {
+        if let Some(current_ov) = self.get(current_file) {
             let has_local_binding = current_ov.symbols.iter().any(|s| s.name == ident && matches!(s.kind, DefKind::Local | DefKind::Field));
             if has_local_binding {
                 return None;
@@ -165,7 +195,7 @@ impl OverlayManager {
 
         let Some(prefix) = path_prefix else {
             // Without a module path prefix, an unqualified identifier can only resolve within the same file.
-            let current_ov = self.overlays.get(current_file)?;
+            let current_ov = self.get(current_file)?;
             return current_ov.document_symbols().iter().find(|s| is_item_symbol(s)).map(|s| s.to_definition(current_file));
         };
 
@@ -189,8 +219,13 @@ impl OverlayManager {
         if candidates.is_empty() {
             return None;
         }
+        let resolved_current = self.resolve_existing_key(current_file).unwrap_or(current_file);
         candidates.sort_by(|(fa, sa), (fb, sb)| {
-            (*fa != current_file).cmp(&(*fb != current_file)).then_with(|| fa.cmp(fb)).then_with(|| sa.start_line.cmp(&sb.start_line)).then_with(|| sa.start_col.cmp(&sb.start_col))
+            (*fa != resolved_current)
+                .cmp(&(*fb != resolved_current))
+                .then_with(|| fa.cmp(fb))
+                .then_with(|| sa.start_line.cmp(&sb.start_line))
+                .then_with(|| sa.start_col.cmp(&sb.start_col))
         });
 
         let suffix_rs = format!("/{normalized_prefix}.rs");
@@ -209,7 +244,7 @@ impl OverlayManager {
     }
 
     pub fn reconcile_with_disk(&mut self, file_path: &str, disk_content_hash: u64) {
-        if let Some(overlay) = self.overlays.get_mut(file_path) {
+        if let Some(overlay) = self.get_mut(file_path) {
             if overlay.content_hash == disk_content_hash {
                 overlay.disk_text = Some(overlay.text.clone());
             } else if let Ok(disk) = std::fs::read_to_string(file_path) {
@@ -220,12 +255,12 @@ impl OverlayManager {
 
     #[allow(dead_code)]
     pub fn map_compiled_line_to_live(&self, file_path: &str, compiled_line: u32) -> Option<u32> {
-        self.overlays.get(file_path)?.map_compiled_line_to_live(compiled_line)
+        self.get(file_path)?.map_compiled_line_to_live(compiled_line)
     }
 
     #[allow(dead_code)]
     pub fn advance_compiled_baseline(&mut self, file_path: &str, text: String) {
-        if let Some(overlay) = self.overlays.get_mut(file_path) {
+        if let Some(overlay) = self.get_mut(file_path) {
             overlay.advance_compiled_baseline(text);
         }
     }

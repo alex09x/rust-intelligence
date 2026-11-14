@@ -34,8 +34,14 @@ pub(crate) fn assert_rustc_compiles(code: &str, label: &str) {
     let src_path = dir.join("check.rs");
     let out_path = dir.join("libcheck.rmeta");
     fs::write(&src_path, code).unwrap();
-    let output =
-        Command::new("rustc").args(["--edition=2021", "--crate-type=lib", "--emit=metadata"]).arg(&src_path).arg("-o").arg(&out_path).output().expect("rustc must execute");
+    let output = Command::new("rustc")
+        .current_dir(&dir)
+        .args(["--edition=2021", "--crate-type=lib", "--emit=metadata"])
+        .arg(&src_path)
+        .arg("-o")
+        .arg(&out_path)
+        .output()
+        .expect("rustc must execute");
     let _ = fs::remove_dir_all(&dir);
     assert!(output.status.success(), "rustc failed on [{label}]:\n{}\n--- code ---\n{code}", String::from_utf8_lossy(&output.stderr));
 }

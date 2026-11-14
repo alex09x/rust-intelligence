@@ -94,68 +94,24 @@ impl WorkspaceIndex {
         let abs_p = if p_is_abs { None } else { self.workspace_root.as_ref().map(|ws| ws.join(p)) };
         let abs_p_clean = abs_p.as_ref().is_some_and(|ap| is_clean_posix_bytes(ap.as_os_str().as_encoded_bytes()));
 
-        // 1. Longest prefix match against source_roots
-        let mut matching_roots: Vec<(usize, usize, usize)> = Vec::new(); // (reader_idx, comps, len)
-        let mut last_root_meta: Option<(&Path, bool, usize, usize)> = None;
-        for (i, _) in self.readers.iter().enumerate() {
-            if let Some(root) = self.reader_root(i) {
-                if !root.as_os_str().is_empty() {
-                    let (matches, comps, len) = match last_root_meta {
-                        Some((prev, m, c, l)) if prev == root => (m, c, l),
-                        _ => {
-                            let m = fast_path_starts_with(p, p_clean, root)
-                                || abs_p.as_deref().is_some_and(|ap| fast_path_starts_with(ap, abs_p_clean, root))
-                                || (p_is_abs && root.is_relative() && self.workspace_root.as_ref().is_some_and(|ws| p.starts_with(ws.join(root))));
-                            let (c, l) = if m { (root.components().count(), root.as_os_str().len()) } else { (0, 0) };
-                            last_root_meta = Some((root, m, c, l));
-                            (m, c, l)
-                        }
-                    };
-                    if matches {
-                        matching_roots.push((i, comps, len));
-                    }
-                }
-            }
-        }
-        if let Some((_, max_comps, max_len)) = matching_roots.iter().max_by_key(|(_, comps, len)| (*comps, *len)).copied() {
-            let top: Vec<usize> = matching_roots.into_iter().filter(|(_, comps, len)| *comps == max_comps && *len == max_len).map(|(i, _, _)| i).collect();
-            if top.len() > 1 {
-                let ws_rel = self.workspace_root.as_deref().and_then(|ws| p.strip_prefix(ws).ok()).and_then(|r| r.to_str());
-                let mut filtered = Vec::with_capacity(top.len());
-                let mut any_exact = false;
-                let fast_valid = self.unit_match.is_valid_for_readers(&self.readers);
-                let exact_full = if fast_valid { self.unit_match.readers_for_clean_file(file_path) } else { None };
-                let exact_rel = if fast_valid {
-                    match ws_rel {
-                        Some(rel) => self.unit_match.readers_for_clean_file(rel),
-                        None => Some(&[][..]),
-                    }
-                } else {
-                    None
-                };
-                for &i in &top {
-                    let exact = if let (Some(ef), Some(er)) = (exact_full, exact_rel) {
-                        if !self.unit_match.reader_has_special(i) {
-                            ef.binary_search_by_key(&i, |&(r, _)| r).is_ok() || er.binary_search_by_key(&i, |&(r, _)| r).is_ok()
-                        } else {
-                            self.reader_find_file_id(i, file_path).is_some() || ws_rel.is_some_and(|rel| self.reader_find_file_id(i, rel).is_some())
-                        }
-                    } else {
-                        self.reader_find_file_id(i, file_path).is_some() || ws_rel.is_some_and(|rel| self.reader_find_file_id(i, rel).is_some())
-                    };
-                    if exact {
-                        any_exact = true;
-                    }
-                    if exact || self.readers[i].files_count() == 0 || self.target_kinds.get(i).copied().flatten().is_some_and(|k| k.is_lib()) {
-                        filtered.push(i);
-                    }
-                }
-                if any_exact {
-                    return filtered;
-                }
-            }
+        // 1. Longest prefix match against source_roots (fast lexical path, then canonical fallback)
+        if let Some(top) = self.match_source_roots(p, file_path, p_clean, abs_p.as_deref(), abs_p_clean, self.workspace_root.as_deref(), false) {
             return top;
         }
+        let canon_p_opt = if p_is_abs || abs_p.is_some() {
+            let candidate = abs_p.as_deref().unwrap_or(p);
+            let canon_p = crate::paths::canonicalize_best_effort(candidate);
+            let canon_ws = self.workspace_root.as_deref().map(crate::paths::canonicalize_best_effort);
+            if let Some(canon_str) = canon_p.to_str() {
+                let canon_clean = is_clean_posix_bytes(canon_p.as_os_str().as_encoded_bytes());
+                if let Some(top) = self.match_source_roots(&canon_p, canon_str, canon_clean, None, false, canon_ws.as_deref(), true) {
+                    return top;
+                }
+            }
+            Some(canon_p)
+        } else {
+            None
+        };
 
         let abs_str = abs_p.as_deref().and_then(|ap| ap.to_str());
 
@@ -173,8 +129,11 @@ impl WorkspaceIndex {
             }
         }
 
-        // 3. reader.find_file_id match (direct index match)
-        let indices: Vec<usize> = (0..self.readers.len()).filter(|&i| self.reader_find_file_id(i, file_path).is_some()).collect();
+        // 3. reader.find_file_id match (direct index match, including canonical alias)
+        let canon_str = canon_p_opt.as_deref().and_then(|cp| cp.to_str()).filter(|&cs| cs != file_path);
+        let indices: Vec<usize> = (0..self.readers.len())
+            .filter(|&i| self.reader_find_file_id(i, file_path).is_some() || canon_str.is_some_and(|cs| self.reader_find_file_id(i, cs).is_some()))
+            .collect();
         if !indices.is_empty() {
             return indices;
         }

@@ -13,7 +13,80 @@ use crate::workspace::WorkspaceIndex;
 use std::path::Path;
 
 impl WorkspaceIndex {
-    /// Resolves `file` directly to its `file_id` in `reader_idx` without allocating intermediate strings.
+    /// Resolves `file` via canonicalized paths when direct prefix/table lookup misses (e.g.
+    /// symlinked directories like `/var/folders` vs `/private/var/folders`).
+    fn canonical_target_for_reader(&self, reader_idx: usize, p: &Path, check_hashes: bool) -> Option<(String, Option<u32>)> {
+        let root_opt = self.reader_root(reader_idx);
+        let canon_ws = self.workspace_root.as_deref().map(crate::paths::canonicalize_best_effort);
+        let canon_root = root_opt.map(|root| {
+            if root.is_absolute() {
+                crate::paths::canonicalize_best_effort(root)
+            } else if let Some(ws) = canon_ws.as_deref() {
+                crate::paths::canonicalize_best_effort(&ws.join(root))
+            } else {
+                crate::paths::canonicalize_best_effort(root)
+            }
+        });
+        let lookup_stored = |s: &str| self.reader_find_file_id(reader_idx, s).map(|fid| (s.to_string(), Some(fid)));
+
+        if p.is_absolute() {
+            let canon_p = crate::paths::canonicalize_best_effort(p);
+            if let Some(cs) = canon_p.to_str() {
+                if let Some(found) = lookup_stored(cs) {
+                    return Some(found);
+                }
+            }
+            if let Some(ref cr) = canon_root {
+                if !canon_p.starts_with(cr) {
+                    return None;
+                }
+            } else if let Some(ref cws) = canon_ws {
+                if !canon_p.starts_with(cws) {
+                    return None;
+                }
+            }
+            for base in [canon_ws.as_deref(), canon_root.as_deref()].into_iter().flatten() {
+                if let Some(s) = canon_p.strip_prefix(base).ok().and_then(|r| r.to_str()) {
+                    if let Some(found) = lookup_stored(s) {
+                        return Some(found);
+                    }
+                }
+            }
+            return None;
+        }
+
+        let canon_roots = [canon_ws.as_deref(), canon_root.as_deref()];
+        for anchor in canon_roots.into_iter().flatten() {
+            let joined = crate::paths::canonicalize_best_effort(&anchor.join(p));
+            if let Some(s) = joined.to_str() {
+                if let Some(found) = lookup_stored(s) {
+                    return Some(found);
+                }
+            }
+            for base in canon_roots.into_iter().flatten() {
+                if let Some(s) = joined.strip_prefix(base).ok().and_then(|r| r.to_str()) {
+                    if let Some(found) = lookup_stored(s) {
+                        return Some(found);
+                    }
+                }
+            }
+        }
+        if check_hashes {
+            if let Some(hashes) = self.reader_file_hashes.get(reader_idx) {
+                for anchor in canon_roots.into_iter().flatten() {
+                    let joined = crate::paths::canonicalize_best_effort(&anchor.join(p));
+                    if let Some(s) = joined.to_str() {
+                        if hashes.contains_key(s) {
+                            return Some((s.to_string(), None));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Resolves `file` directly to its `file_id` in `reader_idx` without allocating intermediate strings on fast path.
     pub(crate) fn target_file_id_for_reader(&self, reader_idx: usize, file: &str) -> Option<u32> {
         let _ = self.readers.get(reader_idx)?;
         let p = Path::new(file);
@@ -24,37 +97,36 @@ impl WorkspaceIndex {
             if let Some(fid) = self.reader_find_file_id(reader_idx, file) {
                 return Some(fid);
             }
-            if let Some(root) = root_opt {
-                let matches_root = if root.is_absolute() {
+            let matches_container = if let Some(root) = root_opt {
+                if root.is_absolute() {
                     fast_path_starts_with(p, p_clean, root)
                 } else if let Some(ws_root) = &self.workspace_root {
                     p.starts_with(ws_root.join(root))
                 } else {
                     false
-                };
-                if !matches_root {
-                    return None;
                 }
             } else if let Some(ws_root) = &self.workspace_root {
-                if !fast_path_starts_with(p, p_clean, ws_root) {
-                    return None;
+                fast_path_starts_with(p, p_clean, ws_root)
+            } else {
+                true
+            };
+            if matches_container {
+                if let Some(ws_root) = &self.workspace_root {
+                    if let Some(s) = p.strip_prefix(ws_root).ok().and_then(|r| r.to_str()) {
+                        if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
+                            return Some(fid);
+                        }
+                    }
                 }
-            }
-            if let Some(ws_root) = &self.workspace_root {
-                if let Some(s) = p.strip_prefix(ws_root).ok().and_then(|r| r.to_str()) {
-                    if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
-                        return Some(fid);
+                if let Some(root) = root_opt {
+                    if let Some(s) = p.strip_prefix(root).ok().and_then(|r| r.to_str()) {
+                        if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
+                            return Some(fid);
+                        }
                     }
                 }
             }
-            if let Some(root) = root_opt {
-                if let Some(s) = p.strip_prefix(root).ok().and_then(|r| r.to_str()) {
-                    if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
-                        return Some(fid);
-                    }
-                }
-            }
-            return None;
+            return self.canonical_target_for_reader(reader_idx, p, false).and_then(|(_, fid)| fid);
         }
 
         if let Some(fid) = self.reader_find_file_id(reader_idx, file) {
@@ -76,7 +148,7 @@ impl WorkspaceIndex {
                 }
             }
         }
-        None
+        self.canonical_target_for_reader(reader_idx, p, false).and_then(|(_, fid)| fid)
     }
 
     /// Returns prioritized `(reader_idx, file_id)` pairs for `file` (library targets first).
@@ -109,39 +181,38 @@ impl WorkspaceIndex {
             }
             // Otherwise the file must lie under the reader's source root, else under the
             // workspace root, before it is re-expressed in the reader's coordinates.
-            if let Some(root) = root_opt {
-                let matches_root = if root.is_absolute() {
+            let matches_container = if let Some(root) = root_opt {
+                if root.is_absolute() {
                     fast_path_starts_with(p, p_clean, root)
                 } else if let Some(ws_root) = &self.workspace_root {
                     p.starts_with(ws_root.join(root))
                 } else {
                     false
-                };
-                if !matches_root {
-                    return None;
                 }
             } else if let Some(ws_root) = &self.workspace_root {
-                if !fast_path_starts_with(p, p_clean, ws_root) {
-                    return None;
+                fast_path_starts_with(p, p_clean, ws_root)
+            } else {
+                true
+            };
+            if matches_container {
+                // A. Relative to the workspace root (workspace crates).
+                if let Some(ws_root) = &self.workspace_root {
+                    if let Some(s) = p.strip_prefix(ws_root).ok().and_then(|r| r.to_str()) {
+                        if stored(s) {
+                            return owned(s);
+                        }
+                    }
                 }
-            }
-            // A. Relative to the workspace root (workspace crates).
-            if let Some(ws_root) = &self.workspace_root {
-                if let Some(s) = p.strip_prefix(ws_root).ok().and_then(|r| r.to_str()) {
-                    if stored(s) {
-                        return owned(s);
+                // B. Relative to the source root (dependencies indexed from their package root).
+                if let Some(root) = root_opt {
+                    if let Some(s) = p.strip_prefix(root).ok().and_then(|r| r.to_str()) {
+                        if stored(s) {
+                            return owned(s);
+                        }
                     }
                 }
             }
-            // B. Relative to the source root (dependencies indexed from their package root).
-            if let Some(root) = root_opt {
-                if let Some(s) = p.strip_prefix(root).ok().and_then(|r| r.to_str()) {
-                    if stored(s) {
-                        return owned(s);
-                    }
-                }
-            }
-            return None;
+            return self.canonical_target_for_reader(reader_idx, p, false).map(|(s, _)| std::borrow::Cow::Owned(s));
         }
 
         // Relative input: the stored form itself; else the path anchored to the workspace root or
@@ -179,7 +250,94 @@ impl WorkspaceIndex {
                 }
             }
         }
-        None
+        self.canonical_target_for_reader(reader_idx, p, true).map(|(s, _)| std::borrow::Cow::Owned(s))
+    }
+
+    /// Matches `p` (and `abs_p`) against reader `source_roots` using longest prefix match.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn match_source_roots(
+        &self,
+        p: &Path,
+        file_path: &str,
+        p_clean: bool,
+        abs_p: Option<&Path>,
+        abs_p_clean: bool,
+        ws_root: Option<&Path>,
+        canonicalize_roots: bool,
+    ) -> Option<Vec<usize>> {
+        let mut matching_roots: Vec<(usize, usize, usize)> = Vec::new();
+        let mut last_root_meta: Option<(&Path, bool, usize, usize)> = None;
+        for (i, _) in self.readers.iter().enumerate() {
+            if let Some(root) = self.reader_root(i) {
+                if !root.as_os_str().is_empty() {
+                    let (matches, comps, len) = match last_root_meta {
+                        Some((prev, m, c, l)) if prev == root => (m, c, l),
+                        _ => {
+                            let resolved_owned;
+                            let root_cmp = if canonicalize_roots {
+                                resolved_owned = if root.is_absolute() {
+                                    crate::paths::canonicalize_best_effort(root)
+                                } else if let Some(ws) = ws_root {
+                                    crate::paths::canonicalize_best_effort(&ws.join(root))
+                                } else {
+                                    crate::paths::canonicalize_best_effort(root)
+                                };
+                                resolved_owned.as_path()
+                            } else {
+                                root
+                            };
+                            let m = fast_path_starts_with(p, p_clean, root_cmp)
+                                || abs_p.is_some_and(|ap| fast_path_starts_with(ap, abs_p_clean, root_cmp))
+                                || (!canonicalize_roots && p.is_absolute() && root.is_relative() && ws_root.is_some_and(|ws| p.starts_with(ws.join(root))));
+                            let (c, l) = if m { (root_cmp.components().count(), root_cmp.as_os_str().len()) } else { (0, 0) };
+                            last_root_meta = Some((root, m, c, l));
+                            (m, c, l)
+                        }
+                    };
+                    if matches {
+                        matching_roots.push((i, comps, len));
+                    }
+                }
+            }
+        }
+        let (_, max_comps, max_len) = matching_roots.iter().max_by_key(|(_, comps, len)| (*comps, *len)).copied()?;
+        let top: Vec<usize> = matching_roots.into_iter().filter(|(_, comps, len)| *comps == max_comps && *len == max_len).map(|(i, _, _)| i).collect();
+        if top.len() > 1 {
+            let ws_rel = ws_root.and_then(|ws| p.strip_prefix(ws).ok()).and_then(|r| r.to_str());
+            let mut filtered = Vec::with_capacity(top.len());
+            let mut any_exact = false;
+            let fast_valid = self.unit_match.is_valid_for_readers(&self.readers);
+            let exact_full = if fast_valid { self.unit_match.readers_for_clean_file(file_path) } else { None };
+            let exact_rel = if fast_valid {
+                match ws_rel {
+                    Some(rel) => self.unit_match.readers_for_clean_file(rel),
+                    None => Some(&[][..]),
+                }
+            } else {
+                None
+            };
+            for &i in &top {
+                let exact = if let (Some(ef), Some(er)) = (exact_full, exact_rel) {
+                    if !self.unit_match.reader_has_special(i) {
+                        ef.binary_search_by_key(&i, |&(r, _)| r).is_ok() || er.binary_search_by_key(&i, |&(r, _)| r).is_ok()
+                    } else {
+                        self.reader_find_file_id(i, file_path).is_some() || ws_rel.is_some_and(|rel| self.reader_find_file_id(i, rel).is_some())
+                    }
+                } else {
+                    self.reader_find_file_id(i, file_path).is_some() || ws_rel.is_some_and(|rel| self.reader_find_file_id(i, rel).is_some())
+                };
+                if exact {
+                    any_exact = true;
+                }
+                if exact || self.readers[i].files_count() == 0 || self.target_kinds.get(i).copied().flatten().is_some_and(|k| k.is_lib()) {
+                    filtered.push(i);
+                }
+            }
+            if any_exact {
+                return Some(filtered);
+            }
+        }
+        Some(top)
     }
 
     /// Returns reader indices prioritized for querying items in `file`:

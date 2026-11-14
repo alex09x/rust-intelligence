@@ -179,13 +179,32 @@ exit 0
         cap_clone.lock().unwrap().push(notif);
     });
 
-    // Trigger A, then immediately trigger B
+    // Trigger A, wait until mock cargo for A has started and incremented counter, then trigger B
     state.trigger_check(&ws_dir);
-    std::thread::sleep(Duration::from_millis(15));
+    let start = std::time::Instant::now();
+    loop {
+        let count: u32 = fs::read_to_string(&count_file).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+        if count >= 1 {
+            break;
+        }
+        assert!(start.elapsed() < Duration::from_secs(5), "Worker A mock cargo did not start within 5s");
+        std::thread::sleep(Duration::from_millis(5));
+    }
     state.trigger_check(&ws_dir);
 
-    // Wait for B to finish (200ms is plenty for B's 50ms sleep)
-    std::thread::sleep(Duration::from_millis(250));
+    // Wait until Worker B completes and publishes its diagnostic
+    let wait_b = std::time::Instant::now();
+    loop {
+        let ready = {
+            let guard = captured.lock().unwrap();
+            guard.iter().any(|n| n.to_string().contains("error from worker B"))
+        };
+        if ready {
+            break;
+        }
+        assert!(wait_b.elapsed() < Duration::from_secs(5), "Worker B did not publish diagnostic within 5s: {:?}", *captured.lock().unwrap());
+        std::thread::sleep(Duration::from_millis(10));
+    }
 
     let notifs = captured.lock().unwrap().clone();
 

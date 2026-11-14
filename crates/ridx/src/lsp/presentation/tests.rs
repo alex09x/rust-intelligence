@@ -305,7 +305,7 @@ fn test_workspace_diagnostic_filters_external_dependencies() {
     let mut uris: Vec<_> = items.iter().map(|it| it["uri"].as_str().unwrap().to_string()).collect();
     uris.sort();
 
-    let expected_ws_uri = path_to_uri(&ws_file.to_string_lossy());
+    let expected_ws_uri = path_to_uri(&ridx_format::canonicalize_best_effort(&ws_file).to_string_lossy());
     assert_eq!(uris, vec![expected_ws_uri]);
 
     let _ = fs::remove_dir_all(&temp_dir);
@@ -370,7 +370,7 @@ fn test_workspace_diagnostic_excludes_external_files_in_workspace_reader() {
     let items = res["items"].as_array().expect("items array");
     let uris: Vec<_> = items.iter().map(|it| it["uri"].as_str().unwrap().to_string()).collect();
 
-    let expected_uri = path_to_uri(&ws_file.to_string_lossy());
+    let expected_uri = path_to_uri(&ridx_format::canonicalize_best_effort(&ws_file).to_string_lossy());
     assert_eq!(uris, vec![expected_uri]);
 
     let _ = fs::remove_dir_all(&temp_dir);

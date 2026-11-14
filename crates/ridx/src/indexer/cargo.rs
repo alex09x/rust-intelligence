@@ -111,25 +111,22 @@ pub fn collect_all_workspace_manifests(dir: &Path, manifests: &mut Vec<PathBuf>)
 }
 
 pub fn compute_sysroot_ld_path() -> Option<String> {
-    let out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    let lib_dir = std::path::PathBuf::from(&sysroot).join("lib");
-    let mut ld = lib_dir.to_string_lossy().to_string();
-    if let Some(parent) = std::path::PathBuf::from(&sysroot).parent() {
-        if let Ok(entries) = std::fs::read_dir(parent) {
-            for entry in entries.flatten() {
-                let cand_lib = entry.path().join("lib");
-                if cand_lib.is_dir() {
-                    ld = format!("{}:{}", ld, cand_lib.to_string_lossy());
-                }
-            }
+    // Prefer the toolchain sysroot recorded when `ridx`/`ridx-driver` was built so CWD
+    // outside the workspace cannot resolve a different rustup toolchain whose libLLVM
+    // collides with `librustc_driver`.
+    let mut ld = option_env!("RIDX_BUILD_SYSROOT_LIB").filter(|s| !s.is_empty() && std::path::Path::new(s).is_dir()).map(str::to_string).or_else(|| {
+        let out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().ok()?;
+        if !out.status.success() {
+            return None;
         }
-    }
+        let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        let lib_dir = std::path::PathBuf::from(sysroot).join("lib");
+        Some(lib_dir.to_string_lossy().into_owned())
+    })?;
     if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
-        ld = format!("{}:{}", ld, existing);
+        if !existing.is_empty() {
+            ld = format!("{ld}:{existing}");
+        }
     }
     Some(ld)
 }

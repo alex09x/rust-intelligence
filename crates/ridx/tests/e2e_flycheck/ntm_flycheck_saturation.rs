@@ -137,14 +137,36 @@ exit 0
             .unwrap();
     }
 
-    let ws_clone = ws_dir.clone();
-    let server_handle = std::thread::spawn(move || {
-        let mut output = Vec::new();
-        let res = run_lsp_server_stream(reader, &mut output, Some(ws_clone));
-        (res, output)
-    });
+    #[derive(Clone)]
+    struct SharedOutput(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);
+    impl std::io::Write for SharedOutput {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
 
-    std::thread::sleep(std::time::Duration::from_millis(250));
+    let out_buf = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let mut writer = SharedOutput(std::sync::Arc::clone(&out_buf));
+    let ws_clone = ws_dir.clone();
+    let server_handle = std::thread::spawn(move || run_lsp_server_stream(reader, &mut writer, Some(ws_clone)));
+
+    let wait_for_output = |needles: &[&str]| {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            let snapshot = String::from_utf8_lossy(&out_buf.lock().unwrap()).into_owned();
+            if needles.iter().all(|n| snapshot.contains(n)) {
+                return;
+            }
+            assert!(std::time::Instant::now() < deadline, "Timed out waiting for {needles:?} in LSP output:\n{snapshot}");
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    };
+
+    wait_for_output(&["\"id\":169", "error file 1", "error file 2"]);
 
     // Run 2: clear errors, saturate queue with 70 requests again
     pipe_tx
@@ -161,13 +183,14 @@ exit 0
             .unwrap();
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(250));
+    wait_for_output(&["\"id\":269", "\"diagnostics\":[]"]);
 
     pipe_tx.send(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 300, "method": "shutdown", "params": null }))).unwrap();
     pipe_tx.send(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "exit", "params": null }))).unwrap();
     drop(pipe_tx);
 
-    let (res, output) = server_handle.join().unwrap();
+    let res = server_handle.join().unwrap();
+    let output = out_buf.lock().unwrap().clone();
     let _ = fs::remove_dir_all(&tmp);
 
     assert!(res.is_ok(), "Server should complete cleanly");

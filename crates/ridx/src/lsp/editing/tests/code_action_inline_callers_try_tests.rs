@@ -55,7 +55,7 @@ fn assert_rustc_compiles(source: &str, label: &str) {
     let src_file = tmp_dir.join("lib.rs");
     fs::write(&src_file, source).expect("Failed to write test source for rustc check");
 
-    let status = Command::new("rustc").arg("--crate-type=lib").arg("--emit=metadata").arg(&src_file).arg("--out-dir").arg(&tmp_dir).output();
+    let status = Command::new("rustc").current_dir(&tmp_dir).arg("--crate-type=lib").arg("--emit=metadata").arg(&src_file).arg("--out-dir").arg(&tmp_dir).output();
 
     let _ = fs::remove_dir_all(&tmp_dir);
     if let Ok(out) = status {
