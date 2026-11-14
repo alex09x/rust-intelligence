@@ -20,7 +20,7 @@ use serde_json::Value;
 
 use super::owner_completion::{collect_through_iter_items, fixed_postfix_items, item, OwnerCompletionContext};
 use crate::live::{Cand, DotCompletion, PostfixFacts, TryEnum};
-use crate::lsp::navigation::global_live_db;
+use crate::lsp::navigation as live_nav;
 use crate::lsp::protocol::lsp_completion_kind;
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
@@ -74,7 +74,8 @@ fn positional_postfix(facts: &PostfixFacts) -> Vec<(&'static str, &'static str)>
 /// receiver's type cannot be inferred, so the owner index answers instead.
 pub(super) fn live_dot_items(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_>, cursor_byte: u32, overlay_mgr: &OverlayManager) -> Option<Vec<Value>> {
     let DotCompletion { cands, postfix } = {
-        let mut db = global_live_db().lock().unwrap_or_else(|e| e.into_inner());
+        let db = live_nav::live_db_for(ws);
+        let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
         db.dot_completion(ws, ctx.file, cursor_byte, Some(overlay_mgr))
     };
     // `Drop::drop` cannot be called explicitly; the `drop` postfix snippet stands for it.

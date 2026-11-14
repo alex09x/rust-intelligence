@@ -145,15 +145,15 @@ fn test_l2_completion_receiver_isolation() {
 
     let execute_item = items.iter().find(|item| item["label"] == "execute").expect("execute method must be suggested for ext_svc.");
 
-    // Detail must reference core_lib, NOT app_crate
+    // The detail is the method's signature, as rust-analyzer gives it.
     let detail = execute_item["detail"].as_str().unwrap();
-    assert!(detail.contains("core_lib") || detail.contains("CoreService"), "Completion detail must belong to core_lib, got: {detail}");
+    assert_eq!(detail, "fn(&self) -> u32");
 
-    // Verify cross-crate receiver isolation: no app_crate methods are leaked
-    for item in items {
-        let det = item["detail"].as_str().unwrap_or("");
-        assert!(!det.contains("app_crate"), "Local app_crate method must not leak into ext_svc. completion: {det}");
-    }
+    // Cross-crate receiver isolation: `ext_svc` is core_lib's `CoreService`, not the app crate's same-named type
+    // (field `local_val`). Before a call's parentheses only methods complete, as in rust-analyzer.
+    let labels: Vec<&str> = items.iter().filter_map(|item| item["label"].as_str()).collect();
+    assert!(!labels.contains(&"local_val"), "the app crate's field must not leak into ext_svc. completion: {labels:?}");
+    assert!(!labels.contains(&"id"), "a field is no method: {labels:?}");
 }
 
 #[test]
@@ -176,11 +176,13 @@ fn test_l2_completion_generic_trait_bound() {
     let res = handle_completion(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().expect("Completion items must be an array");
 
+    // A bound's methods are offered with their signatures as detail, as rust-analyzer does (the bound's own trait
+    // needs no `(as Greeter)` label: it is in scope).
     let greet_item = items.iter().find(|item| item["label"] == "greet").expect("greet method must be suggested for g. where G: Greeter");
-    assert!(greet_item["detail"].as_str().unwrap().contains("Greeter"), "Detail should mention Greeter trait");
+    assert_eq!(greet_item["detail"].as_str().unwrap(), "fn(&self) -> &'static str");
 
     let default_greet_item = items.iter().find(|item| item["label"] == "default_greet").expect("default_greet method must be suggested for g. where G: Greeter");
-    assert!(default_greet_item["detail"].as_str().unwrap().contains("Greeter"), "Detail should mention Greeter trait");
+    assert_eq!(default_greet_item["detail"].as_str().unwrap(), "fn(&self) -> &'static str");
 }
 
 #[test]

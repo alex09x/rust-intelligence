@@ -272,6 +272,8 @@ impl WorkspaceIndex {
                 if q.is_empty() || (r_crate != def_crate && q == local_path) {
                     continue;
                 }
+                // A proc macro's generated call is no name use (`find_references` skips it): ask for macro-written refs.
+                any_macro_exp = any_macro_exp || (check_pm_attr && reader.has_macro_expansion_reference(q, def.start_line));
                 for r in reader.find_references(q) {
                     if def.start_line > 0 && r.target_line() > 0 && r.target_line() != def.start_line {
                         continue;

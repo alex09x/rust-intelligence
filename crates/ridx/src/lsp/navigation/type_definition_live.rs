@@ -9,11 +9,11 @@
  */
 
 //! `textDocument/typeDefinition` from the type inferred at the cursor: every type the inferred type names
-//! (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator), on saved and on edited buffers alike, backed by a
-//! single process-wide [`LiveDb`].
+//! (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator), on saved and on edited buffers alike, backed by one
+//! [`LiveDb`] per workspace.
 
 use std::collections::HashMap;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use super::type_definition_lookup::format_location;
 use super::type_definition_walk::finalize_locations;
@@ -23,22 +23,43 @@ use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 
-static LIVE_DB: OnceLock<Mutex<LiveDb>> = OnceLock::new();
+/// The [`LiveDb`]s of the workspaces served lately, most recent last, each under its workspace's instance id.
+type LiveDbs = Mutex<Vec<(u64, Arc<Mutex<LiveDb>>)>>;
+static LIVE_DBS: OnceLock<LiveDbs> = OnceLock::new();
+/// How many workspaces keep their [`LiveDb`]: a multi-root server's roots, without one evicting the other's on
+/// every request it alternates between them.
+const LIVE_DB_SLOTS: usize = 4;
 
-/// The process-wide [`LiveDb`] every handler shares, so a file is parsed and a function inferred once.
-#[inline]
-pub(crate) fn global_live_db() -> &'static Mutex<LiveDb> {
-    LIVE_DB.get_or_init(|| Mutex::new(LiveDb::new()))
+/// The [`LiveDb`] of `ws` every handler shares, so a file is parsed and a function inferred once. One
+/// database serves one workspace; requests alternating between workspaces keep each one's database instead of
+/// rebuilding a single shared one each time.
+pub(crate) fn live_db_for(ws: &WorkspaceIndex) -> Arc<Mutex<LiveDb>> {
+    let id = ws.instance_id();
+    let mut dbs = LIVE_DBS.get_or_init(Default::default).lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(pos) = dbs.iter().position(|(i, _)| *i == id) {
+        let entry = dbs.remove(pos);
+        let db = Arc::clone(&entry.1);
+        dbs.push(entry);
+        return db;
+    }
+    if dbs.len() >= LIVE_DB_SLOTS {
+        dbs.remove(0);
+    }
+    let db = Arc::new(Mutex::new(LiveDb::new()));
+    dbs.push((id, Arc::clone(&db)));
+    db
 }
 
-/// Drops all derived snapshots, shard tables, and inference caches in the process-wide [`LiveDb`].
+/// Drops all derived snapshots, shard tables, and inference caches in every workspace's [`LiveDb`].
 pub(crate) fn clear_live_db_cache() {
     if let Some(c) = COMPILED_FILES.get() {
         c.lock().unwrap_or_else(|e| e.into_inner()).clear();
     }
-    if let Some(lock) = LIVE_DB.get() {
-        if let Ok(mut db) = lock.lock() {
-            db.invalidate();
+    if let Some(dbs) = LIVE_DBS.get() {
+        for (_, lock) in dbs.lock().unwrap_or_else(|e| e.into_inner()).iter() {
+            if let Ok(mut db) = lock.lock() {
+                db.invalidate();
+            }
         }
     }
 }
@@ -88,7 +109,8 @@ pub(super) fn resolve_inferred_type(ws: &WorkspaceIndex, file: &str, (line, col)
     }
     let offset = byte_offset_from_conv_or_overlay(file, line, col, overlay_mgr, conv)?;
     let ty = {
-        let mut db = global_live_db().lock().unwrap_or_else(|e| e.into_inner());
+        let db = live_db_for(ws);
+        let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
         db.type_at(ws, file, offset, Some(overlay_mgr))?
     };
     let complete = is_dirty || !ty.display.contains("{unknown}");

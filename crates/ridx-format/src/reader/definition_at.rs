@@ -103,7 +103,10 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 continue;
             }
             let size = span.approximate_size();
-            if best.is_none_or(|(_, best_size)| size <= best_size) {
+            // A shorthand (`Point { x }`) names the local and the field on one span: the local comes first, as
+            // rust-analyzer's first definition of a field shorthand.
+            let yields_to_local = |b: &RefEntry| DefKind::from(b.kind) == DefKind::Local && DefKind::from(r.kind) == DefKind::Field;
+            if best.is_none_or(|(b, best_size)| size < best_size || (size == best_size && !yields_to_local(b))) {
                 best = Some((r, size));
             }
         }

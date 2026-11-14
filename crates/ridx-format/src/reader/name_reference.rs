@@ -16,6 +16,23 @@ use super::IndexReader;
 use crate::format::*;
 
 impl<B: AsRef<[u8]>> IndexReader<B> {
+    /// Whether a macro expansion wrote a reference to `target_path` whose target sits on 1-based `def_line` (0
+    /// matches any). Unlike `find_references` this counts the references that are no use of the name, such as a
+    /// proc macro's generated call carrying its call site's span: rename safety needs to know the call exists.
+    pub fn has_macro_expansion_reference(&self, target_path: &str, def_line: u32) -> bool {
+        let hash = fnv1a_64(target_path.as_bytes());
+        let (ref_hashes, refs) = (self.refs_by_target(), self.references());
+        let Ok(mut i) = ref_hashes.binary_search_by_key(&hash, |e| e.hash()) else { return false };
+        while i > 0 && ref_hashes[i - 1].hash() == hash {
+            i -= 1;
+        }
+        ref_hashes[i..]
+            .iter()
+            .take_while(|e| e.hash() == hash)
+            .map(|e| &refs[e.index() as usize])
+            .any(|r| r.is_macro_expansion() && self.get_str(r.target_path_offset()) == target_path && (def_line == 0 || r.target_line() == 0 || r.target_line() == def_line))
+    }
+
     /// The definition `def_id` among the definitions stored under `path`, if any.
     fn find_definition_by_id_under_path(&self, def_id: u32, path: &str) -> Option<&DefEntry> {
         let hash = fnv1a_64(path.as_bytes());
