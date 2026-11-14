@@ -10,7 +10,15 @@
 
 //! Which imports count as workspace symbols: re-exports, decided from the `use` statement's source.
 
-use super::use_is_pub;
+use super::{declared_pub_super, use_is_pub};
+
+#[test]
+fn test_a_child_items_pub_super_is_read_from_its_declaration() {
+    let src = "mod state {\n    pub(super) struct Version(usize);\n    pub(crate) struct Other;\n    struct Hidden;\n}\n";
+    assert!(declared_pub_super(src, 2, 23), "pub(super) item");
+    assert!(!declared_pub_super(src, 3, 23), "pub(crate) item keeps the private import implicit");
+    assert!(!declared_pub_super(src, 4, 12), "private item");
+}
 
 #[test]
 fn test_use_is_pub_reads_the_statement_visibility() {

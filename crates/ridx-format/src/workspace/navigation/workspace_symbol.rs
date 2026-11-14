@@ -9,42 +9,9 @@
  */
 
 use super::workspace_symbol_crates::{crate_entries, crate_entry_name, is_crate_entry};
-use super::workspace_symbol_use::{import_target_kind, use_is_pub};
+use super::workspace_symbol_match::{contains_ascii_ci, is_fuzzy_subseq, ra_fuzzy_match};
+use super::workspace_symbol_use::{child_item_of_private_import, declared_pub_super, import_target_kind, use_is_pub};
 use super::*;
-
-fn contains_ascii_ci(haystack: &[u8], needle_lower: &[u8]) -> bool {
-    if needle_lower.is_empty() {
-        return true;
-    }
-    if haystack.len() < needle_lower.len() {
-        return false;
-    }
-    let first = needle_lower[0];
-    let first_upper = first.to_ascii_uppercase();
-    let max_start = haystack.len() - needle_lower.len();
-    for i in 0..=max_start {
-        let b = haystack[i];
-        if (b == first || b == first_upper) && haystack[i + 1..i + needle_lower.len()].eq_ignore_ascii_case(&needle_lower[1..]) {
-            return true;
-        }
-    }
-    false
-}
-
-fn is_fuzzy_subseq(name: &str, query: &str) -> bool {
-    if !(2..=12).contains(&query.len()) || name.len() < query.len() || !name.is_ascii() || !query.is_ascii() {
-        return false;
-    }
-    let has_upper = query.bytes().any(|b| b.is_ascii_uppercase());
-    let mut nb = name.bytes();
-    for qb in query.bytes() {
-        let found = if has_upper && qb.is_ascii_uppercase() { nb.any(|c| c == qb) } else { nb.any(|c| c.eq_ignore_ascii_case(&qb)) };
-        if !found {
-            return false;
-        }
-    }
-    true
-}
 
 /// A symbol rust-analyzer's search covers: a workspace definition `(reader, definition)` or a crate root
 /// `(reader, CRATE_ROOT)`, with the kind it is listed under (an import takes the kind of what it imports).
@@ -62,12 +29,15 @@ struct CachedWsDefs {
     types_by_name: Vec<SymEntry>,
 }
 
+/// The name an entry is matched and ordered by; a raw identifier counts by its name (`async` for `r#async`), as in
+/// rust-analyzer.
 fn entry_name(ws: &WorkspaceIndex, e: SymEntry) -> &str {
     let reader = &ws.readers[e.reader as usize];
     if is_crate_entry(e.def) {
         crate_entry_name(reader, e.def)
     } else {
-        reader.get_str(reader.definitions()[e.def as usize].name_offset())
+        let name = reader.get_str(reader.definitions()[e.def as usize].name_offset());
+        name.strip_prefix("r#").unwrap_or(name)
     }
 }
 
@@ -105,14 +75,18 @@ fn get_or_build_ws_defs(ws: &WorkspaceIndex, has_local: bool) -> std::sync::Arc<
             let kind = DefKind::from(def.kind);
             let name = reader.get_str(def.name_offset());
             // rust-analyzer lists re-exports (`pub use a::B;`) and renaming imports (`use a::B as C;`) as symbols,
-            // not plain private imports, globs or `self`.
+            // not plain private imports, globs or `self` — except a private import of a child's `pub(super)` item,
+            // which keeps the item's explicit visibility.
             let target = if def.sig_offset() != 0 { reader.get_str(def.sig_offset()) } else { "" };
             let renamed = target.rsplit("::").next().is_some_and(|last| !last.is_empty() && last != name);
             let is_named_import = kind == DefKind::Use && !matches!(name, "*" | "_" | "self") && {
                 let span = def.span();
                 let file = reader.get_file(span.file_id());
-                let read = || ws.read_source_file(file).or_else(|| ws.resolve_path_for_crate(reader.crate_name(), file).to_str().and_then(|s| ws.read_source_file(s)));
-                renamed || sources.entry(file).or_insert_with(read).as_deref().is_some_and(|src| use_is_pub(src, span.start_line(), span.start_col()))
+                let read = |file: &str| ws.read_source_file(file).or_else(|| ws.resolve_path_for_crate(reader.crate_name(), file).to_str().and_then(|s| ws.read_source_file(s)));
+                renamed
+                    || sources.entry(file).or_insert_with(|| read(file)).as_deref().is_some_and(|src| use_is_pub(src, span.start_line(), span.start_col()))
+                    || child_item_of_private_import(reader, reader.get_str(def.path_offset()), target)
+                        .is_some_and(|(item_file, l, c)| sources.entry(item_file).or_insert_with(|| read(item_file)).as_deref().is_some_and(|src| declared_pub_super(src, l, c)))
             };
             if (is_excluded_ws_kind(kind) && !is_named_import) || name.is_empty() {
                 continue;
@@ -192,22 +166,6 @@ fn is_type_or_mod_ws_kind(kind: DefKind) -> bool {
     )
 }
 
-/// rust-analyzer's symbol match: the query is a subsequence of the name, compared case-insensitively except for the
-/// query's own uppercase letters when it has any.
-fn ra_fuzzy_match(name: &str, query: &str, case_sensitive: bool) -> bool {
-    if name.len() < query.len() {
-        return false;
-    }
-    // Smart case: with an uppercase letter in the query its uppercase letters must match exactly; lowercase ones
-    // always match either case (`oolVisito` finds `TagContentOtherFieldVisitor`, `Option` misses `option`).
-    if name.is_ascii() && query.is_ascii() {
-        let mut nb = name.bytes();
-        return query.bytes().all(|q| nb.any(|n| if case_sensitive && q.is_ascii_uppercase() { n == q } else { n.eq_ignore_ascii_case(&q) }));
-    }
-    let mut name_chars = name.chars();
-    query.chars().all(|q| name_chars.any(|n| if case_sensitive && q.is_uppercase() { n == q } else { n.to_lowercase().eq(q.to_lowercase()) }))
-}
-
 impl WorkspaceIndex {
     /// Workspace symbols as rust-analyzer lists them: items and imports whose name contains the query as a smart-case
     /// subsequence, plus crates (dependencies included) whose name does, ordered by lowercased name and cut at
@@ -236,7 +194,9 @@ impl WorkspaceIndex {
                 continue;
             }
             let symbol = self.ws_symbol_at(entry);
-            if !seen.insert((symbol.resolved_path(), symbol.span.start_line(), symbol.span.start_col())) {
+            // The name is part of the key: a crate root is listed under its crate's name and its target's dashed name
+            // (`search_stdin`, `search-stdin`), both at the root file's first position.
+            if !seen.insert((symbol.resolved_path(), symbol.span.start_line(), symbol.span.start_col(), symbol.name)) {
                 continue;
             }
             out.push(symbol);

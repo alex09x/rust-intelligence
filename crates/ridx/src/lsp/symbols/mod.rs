@@ -40,9 +40,12 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
             let need_utf16_conv = !s.name.is_ascii() || s.span.start_line() <= 2;
             let start_char = if need_utf16_conv { conv.char_col_to_utf16_col(path_str, s.span.start_line(), s.span.start_col()) } else { s.span.start_col().saturating_sub(1) };
             let end_char = if need_utf16_conv { conv.char_col_to_utf16_col(path_str, s.span.end_line(), s.span.end_col()) } else { s.span.end_col().saturating_sub(1) };
+            // A crate root, listed under the crate's name or its Cargo target's dashed name (`search-stdin`).
+            let crate_root = s.kind == ridx_format::DefKind::Mod && s.path == s.name && (s.name == s.crate_name || s.name.replace('-', "_") == s.crate_name);
             results.push(json!({
-                "name": s.name,
-                "kind": workspace_symbol_kind(s.kind, s.path == s.crate_name && s.name == s.crate_name),
+                // rust-analyzer lists a raw identifier by its name (`async` for `r#async`).
+                "name": s.name.strip_prefix("r#").unwrap_or(s.name),
+                "kind": workspace_symbol_kind(s.kind, crate_root),
                 "location": {
                     "uri": uri,
                     "range": {

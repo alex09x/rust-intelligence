@@ -32,6 +32,7 @@ mod trait_item_uses;
 mod trait_rename_ext;
 mod workspace_symbol;
 mod workspace_symbol_crates;
+mod workspace_symbol_match;
 mod workspace_symbol_use;
 
 pub use blast_radius::{BlastRadiusIndex, DirectBlastRadius};

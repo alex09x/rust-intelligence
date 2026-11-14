@@ -24,6 +24,28 @@ pub(super) fn import_target_kind(ws: &WorkspaceIndex, reader: &crate::reader::In
         .unwrap_or(DefKind::Use)
 }
 
+/// Whether a private `use` (path `use_path`, importing `target`) takes an explicit visibility from the item it
+/// imports, as rust-analyzer's visibility minimum does: the item is `pub(super)` in a direct child of the importing
+/// module (`use self::state::Version;` with `mod state { pub(super) struct Version; }`), so both visibilities name
+/// the same module and the item's explicit one is kept. Gives the item's file and name position when it lies in such
+/// a child; `declared_pub_super` then reads its visibility from the source.
+pub(super) fn child_item_of_private_import<'a>(reader: &'a crate::reader::IndexReader<memmap2::Mmap>, use_path: &str, target: &str) -> Option<(&'a str, u32, u32)> {
+    let (use_module, _) = use_path.rsplit_once("::")?;
+    let (item_module, _) = target.rsplit_once("::")?;
+    if item_module.rsplit_once("::").map(|(parent, _)| parent) != Some(use_module) {
+        return None;
+    }
+    let span = reader.find_definition_by_path(target)?.span();
+    Some((reader.get_file(span.file_id()), span.start_line(), span.start_col()))
+}
+
+/// Whether the item whose name is at `(line_1b, col_1b)` of `src` is declared `pub(super)`.
+pub(super) fn declared_pub_super(src: &str, line_1b: u32, col_1b: u32) -> bool {
+    let Some(line) = src.lines().nth(line_1b.saturating_sub(1) as usize) else { return false };
+    let head: String = line.chars().take(col_1b.saturating_sub(1) as usize).collect();
+    head.trim_start().starts_with("pub(super)")
+}
+
 /// Whether the `use` statement holding the name at `(line_1b, col_1b)` is `pub` or `pub(…)`. The index records
 /// no visibility for imports, so the source decides: walk back from the name to the statement's `use` keyword,
 /// across enclosing `{…}` groups, and look at the token before it.
