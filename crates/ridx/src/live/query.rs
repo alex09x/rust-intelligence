@@ -72,7 +72,12 @@ pub struct LiveDb {
     ws_stamp: Option<(u64, u64, usize)>,
     engine: Option<LiveEngine>,
     manual_overlays: HashMap<PathBuf, String>,
+    /// The last dot completion, under the file, offset, unit, buffer signature and on-disk time it was made for:
+    /// a request repeated on unchanged text (a re-trigger, a retried cancelled request) is answered from it.
+    dot_memo: Option<(DotKey, DotCompletion)>,
 }
+
+type DotKey = (PathBuf, u32, usize, u64, Option<std::time::SystemTime>);
 
 impl fmt::Debug for LiveDb {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -98,6 +103,7 @@ impl LiveDb {
     pub fn invalidate(&mut self) {
         self.ws_stamp = None;
         self.engine = None;
+        self.dot_memo = None;
     }
 
     fn sync_engine(&mut self, ws: &WorkspaceIndex) -> &mut LiveEngine {
@@ -160,8 +166,18 @@ impl LiveDb {
         let Some(env_salt) = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
             return DotCompletion::default();
         };
+        // A clean file is read from disk: its modification time keeps an edit made outside any buffer apart.
+        let disk_time = (env_salt == 0).then(|| std::fs::metadata(&canon).and_then(|m| m.modified()).ok()).flatten();
+        let key: DotKey = (canon.clone(), byte_offset, r_idx, env_salt, disk_time);
+        if let Some((k, memo)) = &self.dot_memo {
+            if *k == key {
+                return memo.clone();
+            }
+        }
         let (cands, postfix) = query_dot_candidates(ws, engine, r_idx, fid, &canon, env_salt, byte_offset);
-        DotCompletion { cands, postfix }
+        let result = DotCompletion { cands, postfix };
+        self.dot_memo = Some((key, result.clone()));
+        result
     }
 
     /// Returns associated items, enum variants, or module items for a `Type::` or `module::` path at `byte_offset`.
