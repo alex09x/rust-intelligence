@@ -84,7 +84,7 @@ fn test_initialize_semantic_tokens_provider_capabilities() {
     let sem = &val["result"]["capabilities"]["semanticTokensProvider"];
     assert_eq!(sem["range"], true);
     assert_eq!(sem["full"]["delta"], true);
-    assert_eq!(sem["legend"]["tokenTypes"].as_array().unwrap().len(), 18);
+    assert_eq!(sem["legend"]["tokenTypes"].as_array().unwrap().len(), 20);
     assert_eq!(sem["legend"]["tokenModifiers"].as_array().unwrap().len(), 4);
 }
 

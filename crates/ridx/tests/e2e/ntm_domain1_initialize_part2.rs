@@ -117,9 +117,12 @@ fn test_initialize_semantic_tokens_legend() {
     let legend = &val["result"]["capabilities"]["semanticTokensProvider"]["legend"];
     let types = legend["tokenTypes"].as_array().unwrap();
     let mods = legend["tokenModifiers"].as_array().unwrap();
-    assert_eq!(types.len(), 18);
+    // rust-analyzer's `unresolvedReference` and `generic` follow the 18 standard types.
+    assert_eq!(types.len(), 20);
     assert_eq!(mods.len(), 4);
     assert_eq!(types[0], "namespace");
+    assert_eq!(types[18], "unresolvedReference");
+    assert_eq!(types[19], "generic");
     assert_eq!(mods[0], "declaration");
 }
 

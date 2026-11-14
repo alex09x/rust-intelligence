@@ -31,14 +31,37 @@ fn is_rust_fence(info: &str) -> bool {
     !other || rust
 }
 
+/// Where the block comment open at `depth` closes on `line`, scanning from `from`: block comments nest, so a
+/// `/*` inside (`src/**/foo.rs`) opens a level its `*/` closes. Updates `depth`; the byte offset of the final `*/`.
+fn block_close(line: &str, from: usize, depth: &mut u32) -> Option<usize> {
+    let b = line.as_bytes();
+    let mut i = from;
+    while i + 1 < b.len() {
+        match (b[i], b[i + 1]) {
+            (b'/', b'*') => {
+                *depth += 1;
+                i += 2;
+            }
+            (b'*', b'/') => {
+                *depth -= 1;
+                if *depth == 0 {
+                    return Some(i);
+                }
+                i += 2;
+            }
+            _ => i += 1,
+        }
+    }
+    None
+}
+
 /// Byte range of a doc line's text: a `///` / `//!` line, or a line of a `/** … */` / `/*! … */` block
-/// (`in_block` carries the block across lines). `None` for any other line.
-fn doc_content(line: &str, in_block: &mut bool) -> Option<(usize, usize)> {
+/// (`depth` carries the block's nesting across lines, 0 outside). `None` for any other line.
+fn doc_content(line: &str, depth: &mut u32) -> Option<(usize, usize)> {
     let lead = line.len() - line.trim_start().len();
     let t = &line[lead..];
-    if *in_block {
-        let end = line.find("*/");
-        *in_block = end.is_none();
+    if *depth > 0 {
+        let end = block_close(line, 0, depth);
         let start = if t.starts_with('*') && !t.starts_with("*/") { lead + 1 } else { lead };
         return Some((start, end.unwrap_or(line.len()).max(start)));
     }
@@ -46,8 +69,8 @@ fn doc_content(line: &str, in_block: &mut bool) -> Option<(usize, usize)> {
         return Some((lead + 3, line.len()));
     }
     if (t.starts_with("/**") && !t.starts_with("/***") && !t.starts_with("/**/")) || t.starts_with("/*!") {
-        let end = line[lead + 3..].find("*/").map(|e| lead + 3 + e);
-        *in_block = end.is_none();
+        *depth = 1;
+        let end = block_close(line, lead + 3, depth);
         return Some((lead + 3, end.unwrap_or(line.len())));
     }
     None
@@ -56,7 +79,7 @@ fn doc_content(line: &str, in_block: &mut bool) -> Option<(usize, usize)> {
 /// Tokens for every doc comment of `text`. `ws` resolves intra-doc links; without it links stay plain.
 pub(super) fn scan_doc_comments(text: &str, ws: Option<&WorkspaceIndex>, tokens: &mut Vec<RawToken>) {
     let mut fence: Option<(&str, bool)> = None;
-    let (mut in_block_comment, mut in_doc_block) = (false, false);
+    let (mut in_block_comment, mut in_doc_block) = (false, 0u32);
     let mut macro_args = MacroArgs::default();
     for (line_idx, full_line) in text.lines().enumerate() {
         let Some((start, end)) = doc_content(full_line, &mut in_doc_block) else {

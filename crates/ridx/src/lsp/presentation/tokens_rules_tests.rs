@@ -86,6 +86,18 @@ fn test_doc_examples_in_rust_fences_are_scanned_and_other_fences_are_not() {
 }
 
 #[test]
+fn test_a_nested_block_comment_does_not_end_the_doc_block() {
+    // `src/**/foo.rs` opens and closes a nested comment: the `/*! … */` block goes on to its example.
+    let text = "/*!\n* `src/**/foo.rs`\n\n```\nlet v = Vec::new();\n```\n*/\nfn f() {}\n";
+    let mut tokens = Vec::new();
+    tokens_doc::scan_doc_comments(text, None, &mut tokens);
+    let got = spans(&tokens);
+    assert!(got.contains(&(4, 4, 1, TOKEN_TYPE_VARIABLE)), "v: {got:?}");
+    assert!(got.contains(&(4, 8, 3, TOKEN_TYPE_STRUCT)), "Vec: {got:?}");
+    assert!(got.iter().all(|t| t.0 != 7), "code after the block is no doc: {got:?}");
+}
+
+#[test]
 fn test_detached_file_types_definitions_and_bindings_only() {
     let text = "use other::Thing;\nstruct S {\n    a: u8,\n}\nfn main() {\n    let x = Thing::new();\n    let f = |y: u8| y;\n}\n";
     let mut tokens = Vec::new();
