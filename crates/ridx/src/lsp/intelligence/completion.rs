@@ -17,7 +17,58 @@ use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 
+/// The completion list at the cursor, each item carrying the edit accepting it makes (see [`completion_edits`]).
+///
+/// [`completion_edits`]: super::completion_edits
 pub fn handle_completion(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
+    let mut response = completion_list(msg, workspace, overlay_mgr, conv)?;
+    let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
+    let file = uri_to_path(uri);
+    let scopes;
+    let text: &str = if let Some(overlay) = overlay_mgr.get(&file) {
+        &overlay.text
+    } else if let Some(s) = super::scope_cache::get_or_parse_file_scopes(&file, None) {
+        scopes = s;
+        &scopes.text
+    } else {
+        return Ok(response);
+    };
+    let Some(line_start) = line_start_byte(text, line_0based as usize) else { return Ok(response) };
+    let line_end = text[line_start..].find('\n').map_or(text.len(), |i| line_start + i);
+    let line = &text[line_start..line_end];
+    let cursor = utf16_to_byte(line, utf16_col_0based);
+    let site = super::completion_edits::EditSite {
+        before: &line[..cursor],
+        after: &line[cursor..],
+        line_0based,
+        col_utf16: utf16_col_0based,
+        in_use_item: super::completion_edits::in_use_item(text, line_start + cursor),
+        doc_text: text,
+    };
+    super::completion_edits::apply(&mut response, &site);
+    Ok(response)
+}
+
+fn line_start_byte(text: &str, line: usize) -> Option<usize> {
+    if line == 0 {
+        return Some(0);
+    }
+    text.match_indices('\n').nth(line - 1).map(|(i, _)| i + 1)
+}
+
+/// The byte offset in `line` of the UTF-16 column `col`, clamped to the line.
+fn utf16_to_byte(line: &str, col: u32) -> usize {
+    let mut units = 0u32;
+    for (i, c) in line.char_indices() {
+        if units >= col {
+            return i;
+        }
+        units += c.len_utf16() as u32;
+    }
+    line.len()
+}
+
+fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
     let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
     let line_1based = line_0based + 1;
 
