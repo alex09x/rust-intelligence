@@ -98,6 +98,13 @@ fn test_a_nested_block_comment_does_not_end_the_doc_block() {
 }
 
 #[test]
+fn test_doc_blocks_span_their_comment_lines() {
+    // A `//!` run, a `/*! … */` block with a nested comment, and a `///` run; a plain `//` line is no doc.
+    let text = "//! Crate docs.\n//! ```\n//! let a = 1;\n//! ```\n\n// plain\n/*!\nsrc/**/x.rs\n*/\nfn f() {}\n/// Item docs.\nfn g() {}\n";
+    assert_eq!(tokens_doc::doc_block_spans(text), vec![(0, 3), (6, 8), (10, 10)]);
+}
+
+#[test]
 fn test_detached_file_types_definitions_and_bindings_only() {
     let text = "use other::Thing;\nstruct S {\n    a: u8,\n}\nfn main() {\n    let x = Thing::new();\n    let f = |y: u8| y;\n}\n";
     let mut tokens = Vec::new();

@@ -76,6 +76,30 @@ fn doc_content(line: &str, depth: &mut u32) -> Option<(usize, usize)> {
     None
 }
 
+/// The 0-based line spans `(first, last)` of the doc comment blocks of `text`: runs of `///` / `//!` lines and
+/// `/** … */` / `/*! … */` blocks. rust-analyzer highlights a block's examples and links as one injection, so a
+/// range request that reaches any line of a block gets the whole block's tokens.
+pub(super) fn doc_block_spans(text: &str) -> Vec<(u32, u32)> {
+    let mut spans: Vec<(u32, u32)> = Vec::new();
+    let mut depth = 0u32;
+    let mut open: Option<u32> = None;
+    for (i, line) in text.lines().enumerate() {
+        let i = i as u32;
+        match (doc_content(line, &mut depth).is_some(), open) {
+            (true, None) => open = Some(i),
+            (false, Some(first)) => {
+                spans.push((first, i - 1));
+                open = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(first) = open {
+        spans.push((first, text.lines().count().saturating_sub(1) as u32));
+    }
+    spans
+}
+
 /// Tokens for every doc comment of `text`. `ws` resolves intra-doc links; without it links stay plain.
 pub(super) fn scan_doc_comments(text: &str, ws: Option<&WorkspaceIndex>, tokens: &mut Vec<RawToken>) {
     let mut fence: Option<(&str, bool)> = None;

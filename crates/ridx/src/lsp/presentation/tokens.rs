@@ -362,7 +362,12 @@ pub fn handle_semantic_tokens_range(msg: &Value, workspace: Option<&WorkspaceInd
     let end_line = msg["params"]["range"]["end"]["line"].as_u64().unwrap_or(u32::MAX as u64) as u32;
 
     let raw_tokens = collect_raw_tokens(&file, workspace, overlay_mgr, conv);
-    let in_range: Vec<RawToken> = raw_tokens.into_iter().filter(|t| t.line >= start_line && t.line <= end_line).collect();
+    // A doc comment block the range reaches is highlighted whole, as rust-analyzer's doc injection does: its examples'
+    // tokens past the range's end come with it.
+    let text = overlay_mgr.get(&file).map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok()).unwrap_or_default();
+    let blocks: Vec<(u32, u32)> = super::tokens_doc::doc_block_spans(&text).into_iter().filter(|&(a, b)| a <= end_line && b >= start_line).collect();
+    let in_range: Vec<RawToken> =
+        raw_tokens.into_iter().filter(|t| (t.line >= start_line && t.line <= end_line) || blocks.iter().any(|&(a, b)| t.line >= a && t.line <= b)).collect();
 
     let data = encode_tokens_delta(&in_range);
     json!({ "data": data })
