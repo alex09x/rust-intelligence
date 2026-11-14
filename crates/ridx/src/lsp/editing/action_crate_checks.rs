@@ -259,7 +259,38 @@ pub(crate) fn doc_already_implements_trait_for(masked_doc: &str, trait_kw: &str,
     false
 }
 
-pub(crate) fn nested_fn_has_non_runtime_ref(after_masked: &str, name: &str) -> bool {
+/// Whether the `!` at `bang` ends the name of a std macro that only evaluates its arguments as expressions at run
+/// time (`assert!(f(x))`), so a call of a local closure in them compiles as the call of the function did. A
+/// `macro_rules!` of the same name in the enclosing block is a local macro and is not trusted.
+fn is_std_runtime_macro(masked: &str, block_masked: &str, bang: usize) -> bool {
+    const RUNTIME: &[&str] = &[
+        "assert",
+        "assert_eq",
+        "assert_ne",
+        "debug_assert",
+        "debug_assert_eq",
+        "debug_assert_ne",
+        "print",
+        "println",
+        "eprint",
+        "eprintln",
+        "format",
+        "write",
+        "writeln",
+        "panic",
+        "dbg",
+        "vec",
+    ];
+    let head = masked[..bang].trim_end();
+    let name = &head[head.trim_end_matches(|c: char| c.is_ascii_alphanumeric() || c == '_').len()..];
+    let path_prefix = head[..head.len() - name.len()].trim_end();
+    let bare_or_std = !path_prefix.ends_with("::") || path_prefix.ends_with("std::") || path_prefix.ends_with("core::");
+    RUNTIME.contains(&name) && bare_or_std && !block_masked.contains(&format!("macro_rules! {name}"))
+}
+
+/// Whether NAME is used after the nested fn where a closure cannot stand: in an attribute, an item, or the
+/// arguments of a macro that is not a std run-time macro. `block_masked` is the whole enclosing block.
+pub(crate) fn nested_fn_has_non_runtime_ref(after_masked: &str, block_masked: &str, name: &str) -> bool {
     let mb = after_masked.as_bytes();
     let mut i = 0usize;
     while i < mb.len() {
@@ -291,7 +322,7 @@ pub(crate) fn nested_fn_has_non_runtime_ref(after_masked: &str, name: &str) -> b
                 _ => None,
             };
             if let Some(em) = end_m {
-                if contains_word(&after_masked[k..em], name) {
+                if contains_word(&after_masked[k..em], name) && !is_std_runtime_macro(after_masked, block_masked, i) {
                     return true;
                 }
                 i = em;

@@ -51,6 +51,7 @@ mod action_inline_callers_vis;
 pub mod action_inline_local;
 pub mod action_inline_macro;
 mod action_inline_macro_text;
+mod action_nested_fn_cfg;
 pub mod action_parse;
 pub mod action_parse_decl;
 pub mod action_parse_enclosing;

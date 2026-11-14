@@ -144,7 +144,7 @@ fn plan_extract_literal(doc_text: &str, masked_doc: &str, cursor_byte: usize, fi
     if has_unbraced_closure_bar(&masked_doc[block_open + 1..lit.start_byte]) {
         return None;
     }
-    if is_pattern_or_direct_binding_rhs(masked_doc, block_open + 1, lit.start_byte, lit.end_byte) {
+    if is_pattern_or_direct_binding_rhs(masked_doc, block_open + 1, lit.start_byte, lit.end_byte, lit.prefix) {
         return None;
     }
 
@@ -268,17 +268,21 @@ fn find_enclosing_stmt_start(masked_doc: &str, floor: usize, lit_start: usize) -
     last + ws_skip
 }
 
-fn is_pattern_or_direct_binding_rhs(masked_doc: &str, floor: usize, lit_start: usize, lit_end: usize) -> bool {
+/// Whether the literal sits where extracting it changes nothing that compiles the same: a pattern (`"a" =>`, `"a" |`),
+/// the whole initializer of a local `const`/`static` (an item's initializer cannot always read another static), or a
+/// byte string bound by a typed `let` (the extracted `&[u8]` would not be the `&[u8; N]` the annotation may name).
+/// A plain `let x = "a";` is extracted like rust-analyzer does: `let var_name = "a"; let x = var_name;`.
+fn is_pattern_or_direct_binding_rhs(masked_doc: &str, floor: usize, lit_start: usize, lit_end: usize, lit_prefix: &str) -> bool {
     let stmt_s = find_enclosing_stmt_start(masked_doc, floor, lit_start);
     let prefix = masked_doc[stmt_s..lit_start].trim();
     let suffix = masked_doc[lit_end..].trim_start();
-    if (prefix.starts_with("let ") || prefix.starts_with("const ") || prefix.starts_with("static "))
-        && prefix.ends_with('=')
-        && !prefix.ends_with("==")
-        && !prefix.ends_with("!=")
-        && suffix.starts_with(';')
-    {
-        return true;
+    if prefix.ends_with('=') && !prefix.ends_with("==") && !prefix.ends_with("!=") && suffix.starts_with(';') {
+        if prefix.starts_with("const ") || prefix.starts_with("static ") {
+            return true;
+        }
+        if prefix.starts_with("let ") && lit_prefix == "b" && prefix.contains(':') {
+            return true;
+        }
     }
     suffix.starts_with("=>") || (suffix.starts_with('|') && !suffix.starts_with("||"))
 }

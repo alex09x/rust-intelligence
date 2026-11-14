@@ -11,11 +11,13 @@
 pub mod code_action_assists_tests;
 mod code_action_default_const_tests;
 pub mod code_action_expanded_tests;
+mod code_action_extract_literal_tests;
 pub mod code_action_inline_callers_args_tests;
 pub mod code_action_inline_callers_generic_tests;
 pub mod code_action_inline_callers_self_tests;
 pub mod code_action_inline_callers_tests;
 pub mod code_action_inline_callers_try_tests;
+mod code_action_nested_fn_tests;
 pub mod code_action_resolve_tests;
 pub mod code_action_struct_where_tests;
 pub mod code_action_tests;

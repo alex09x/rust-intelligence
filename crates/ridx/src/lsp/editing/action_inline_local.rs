@@ -15,17 +15,32 @@ use super::action_default_scope::enclosing_module_span;
 use super::action_generics_helpers::clean_param_ident;
 use super::action_generics_sub::{parse_generics_list, split_top_level_colon, split_top_level_commas, GenKind};
 use super::action_inline_callers_helpers::contains_recursive_call;
+use super::action_nested_fn_cfg as nested_cfg;
 use super::action_parse::{byte_to_utf16_pos, is_ident_byte, mask_comments_and_strings, EnclosingContext, ItemKindInfo, ParsedCursorItem};
 use super::action_parse_decl::{collapse_ws, extract_angle_generics, next_ident_token};
 use super::action_parse_items::{contains_word, skip_balanced};
 use serde_json::{json, Value};
 
 pub fn build_nested_fn_to_closure(doc_text: &str, masked_doc: &str, starts: &[usize], item: &ParsedCursorItem) -> Option<Vec<Value>> {
-    if !item.in_fn_body || !matches!(item.enclosing, EnclosingContext::None) || !item.vis_prefix.is_empty() || !item.cfg_attrs.is_empty() || item.has_doc {
+    if !item.in_fn_body || !matches!(item.enclosing, EnclosingContext::None) || !item.vis_prefix.is_empty() || item.has_doc {
         return None;
     }
     let ItemKindInfo::Fn { is_unsafe: false, extern_abi: None, generics_src, params_src, ret_src, where_src, has_body: true, body_range: Some((bo, bc)) } = &item.kind else {
         return None;
+    };
+    // A cfg-gated fn keeps its `#[cfg]` on the `let` (attributes on statements are allowed); its same-named twins
+    // under the other cfgs are blanked out so that they are not taken for uses or a forward reference.
+    // The edit starts at `fn`: the attributes above stay, and must be valid on a statement.
+    if item.first_attr_byte < item.decl_start_byte && !nested_cfg::only_statement_attrs(masked_doc, item.first_attr_byte, item.decl_start_byte) {
+        return None;
+    }
+    let twins_masked;
+    let masked_doc = if item.cfg_attrs.is_empty() {
+        masked_doc
+    } else {
+        let (blk_open, blk_close) = item.enclosing_block?;
+        twins_masked = nested_cfg::blank_cfg_twins(masked_doc, blk_open, blk_close, (item.decl_start_byte, *bc), &item.name)?;
+        twins_masked.as_str()
     };
     if !generics_src.trim().is_empty() || !where_src.trim().is_empty() {
         return None;
@@ -50,7 +65,7 @@ pub fn build_nested_fn_to_closure(doc_text: &str, masked_doc: &str, starts: &[us
         return None;
     }
     let after_slice = &masked_doc[*bc..blk_close];
-    if after_slice.contains(&format!("{}::<", item.name)) || nested_fn_has_non_runtime_ref(after_slice, &item.name) {
+    if after_slice.contains(&format!("{}::<", item.name)) || nested_fn_has_non_runtime_ref(after_slice, &masked_doc[blk_open..blk_close], &item.name) {
         return None;
     }
 
