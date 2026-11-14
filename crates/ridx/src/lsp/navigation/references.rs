@@ -216,7 +216,14 @@ pub fn handle_document_highlight(msg: &Value, workspace: Option<&WorkspaceIndex>
             } else if let Some(loc_refs) = found {
                 let decl_path = loc_refs.target_resolved_path();
                 let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
-                if decl_str == file || decl_str.ends_with(&file) || file.ends_with(decl_str) {
+                let declared_here = decl_str == file || decl_str.ends_with(&file) || file.ends_with(decl_str);
+                // A derive's generated `fn default` is "declared" on `#[derive(Default)]`, which spells no `default`.
+                let name = loc_refs.target_symbol.strip_prefix("r#").unwrap_or(loc_refs.target_symbol);
+                let spelled = conv.get_line(&file, loc_refs.target_line).is_some_and(|l| {
+                    let at: String = l.chars().skip(loc_refs.target_col.saturating_sub(1) as usize).collect();
+                    at.strip_prefix("r#").unwrap_or(&at).starts_with(name)
+                });
+                if declared_here && spelled {
                     let sc = conv.char_col_to_utf16_col(&file, loc_refs.target_line, loc_refs.target_col);
                     let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
                         conv.char_col_to_utf16_col(&file, loc_refs.target_end_line, loc_refs.target_end_col)
@@ -253,7 +260,15 @@ pub fn handle_document_highlight(msg: &Value, workspace: Option<&WorkspaceIndex>
                 super::highlight_ext::dedup_highlights(&mut highlights);
                 let doc_text = overlay_opt.map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
                 if let Some(ref text) = doc_text {
-                    super::highlight_ext::augment_resolved_highlights(&file, text, loc_refs.target_symbol, loc_refs.target_kind, conv, &mut highlights);
+                    let target_crate = loc_refs.target_reader_idx.and_then(|i| ws.readers().get(i)).map_or("", |r| r.crate_name());
+                    super::highlight_ext::augment_resolved_highlights(
+                        &file,
+                        text,
+                        (loc_refs.target_symbol, loc_refs.target_path, target_crate),
+                        loc_refs.target_kind,
+                        conv,
+                        &mut highlights,
+                    );
                 }
             } else {
                 let doc_text = overlay_opt.map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok());

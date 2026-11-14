@@ -171,7 +171,20 @@ where
     }
 }
 
-pub(crate) fn augment_resolved_highlights(file: &str, text: &str, target_symbol: &str, target_kind: DefKind, conv: &mut PositionConverter, highlights: &mut Vec<Value>) {
+/// Adds the uses the index left out on top of the resolved `highlights`, read off the text by name. A name is not
+/// a target, so a same-named item must be kept apart: a qualified token (`tokio_util::sync`, `io::Stderr::new`)
+/// counts only when its qualifier is the target's parent module (or `crate`/`self`/`super`), and `Self` only inside
+/// an `impl` whose header type the index already resolved to the target (not `impl … for Stderr` naming tokio's
+/// own `Stderr` beside `std::io::Stderr`).
+/// `target` is the target's name, its crate-relative path and its crate's name (the parent of a top-level item).
+pub(crate) fn augment_resolved_highlights(
+    file: &str,
+    text: &str,
+    (target_symbol, target_path, target_crate): (&str, &str, &str),
+    target_kind: DefKind,
+    conv: &mut PositionConverter,
+    highlights: &mut Vec<Value>,
+) {
     if target_symbol.is_empty() || highlights.is_empty() {
         return;
     }
@@ -179,6 +192,14 @@ pub(crate) fn augment_resolved_highlights(file: &str, text: &str, target_symbol:
     if !is_type_like && !matches!(target_kind, DefKind::Mod | DefKind::AssocTy) {
         return;
     }
+    let resolved: HashSet<(u64, u64)> =
+        highlights.iter().map(|h| (h["range"]["start"]["line"].as_u64().unwrap_or(0), h["range"]["start"]["character"].as_u64().unwrap_or(0))).collect();
+    let parent = target_path.rsplit("::").nth(1).unwrap_or(target_crate);
+    let qualifier_fits = |prefix: &str| {
+        let Some(p) = prefix.trim_end().strip_suffix("::") else { return true };
+        let q = &p[p.trim_end_matches(|c: char| c.is_alphanumeric() || c == '_').len()..];
+        q.is_empty() || q == parent || matches!(q, "crate" | "self" | "super" | "Self")
+    };
 
     let mut impl_header_pending = false;
     let mut impl_in_where = false;
@@ -223,18 +244,21 @@ pub(crate) fn augment_resolved_highlights(file: &str, text: &str, target_symbol:
                 return;
             }
             if !impl_in_where && tok == target_symbol && !prefix.trim_end().ends_with(':') {
-                impl_target_matched = true;
+                let at = (u64::from(line_1based.saturating_sub(1)), u64::from(conv.char_col_to_utf16_col(file, line_1based, sc)));
+                impl_target_matched = resolved.contains(&at);
             }
         }
 
         if target_kind == DefKind::Mod && tok == target_symbol {
             let p_trim = prefix.trim_end();
             let s_trim = suffix.trim_start();
-            if (s_trim.starts_with("::") && !p_trim.ends_with('.')) || (p_trim.ends_with("::") && !s_trim.starts_with('(')) || p_trim.split_whitespace().last() == Some("mod") {
+            let shaped =
+                (s_trim.starts_with("::") && !p_trim.ends_with('.')) || (p_trim.ends_with("::") && !s_trim.starts_with('(')) || p_trim.split_whitespace().last() == Some("mod");
+            if shaped && qualifier_fits(prefix) {
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
         } else if is_type_like {
-            if (tok == "Self" && impl_brace_depth > 0) || (tok == target_symbol && suffix.trim_start().starts_with("::")) {
+            if (tok == "Self" && impl_brace_depth > 0) || (tok == target_symbol && suffix.trim_start().starts_with("::") && qualifier_fits(prefix)) {
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
         } else if target_kind == DefKind::AssocTy && tok == target_symbol {
