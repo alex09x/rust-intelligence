@@ -167,7 +167,7 @@ pub fn dispatch_lsp_message<W: Write>(
 
         "$/cancelRequest" => {
             if let Some(cancel_id) = msg.get("params").and_then(|p| p.get("id")) {
-                cancelled_requests.lock().unwrap().insert(cancel_id.clone());
+                cancelled_requests.lock().unwrap_or_else(|e| e.into_inner()).insert(cancel_id.clone());
             }
             return Ok(true);
         }

@@ -26,7 +26,13 @@ pub(super) struct InactiveItem {
 }
 
 type Items = Arc<Vec<InactiveItem>>;
-static INACTIVE: OnceLock<Mutex<HashMap<(usize, usize), Items>>> = OnceLock::new();
+static INACTIVE: OnceLock<Mutex<HashMap<super::references_gated::WsKey, Items>>> = OnceLock::new();
+
+pub(crate) fn clear_inactive_cache() {
+    if let Some(mut c) = INACTIVE.get().and_then(|m| m.lock().ok()) {
+        c.clear();
+    }
+}
 
 /// Byte index just past the bracket group opening at `open` (`[`, `(` or `{`), or `None` when unbalanced.
 fn group_end(b: &[u8], open: usize) -> Option<usize> {
@@ -120,7 +126,7 @@ pub(super) fn cfg_gated_items(masked: &str) -> Vec<(usize, usize)> {
 
 /// The workspace's cfg-gated items in which no indexed build holds a reference.
 fn inactive_items(ws: &WorkspaceIndex) -> Items {
-    let key = (ws as *const WorkspaceIndex as usize, ws.readers().len());
+    let key = super::references_gated::ws_cache_key(ws);
     let cache = INACTIVE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some(v) = cache.lock().ok().and_then(|c| c.get(&key).cloned()) {
         return v;
@@ -164,7 +170,7 @@ fn inactive_items(ws: &WorkspaceIndex) -> Items {
     }
     let v = Arc::new(out);
     if let Ok(mut c) = cache.lock() {
-        c.insert(key, Arc::clone(&v));
+        super::references_gated::insert_bounded(&mut c, key, Arc::clone(&v));
     }
     v
 }

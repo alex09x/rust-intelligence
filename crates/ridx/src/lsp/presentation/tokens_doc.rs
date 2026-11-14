@@ -76,16 +76,49 @@ fn doc_content(line: &str, depth: &mut u32) -> Option<(usize, usize)> {
     None
 }
 
+/// For each line of `text`, whether it starts inside a literal that spans lines (a test fixture's `r#"…"#`): a
+/// `///` or `/**` there is the literal's text, not a doc comment.
+fn lines_in_literals(text: &str) -> Vec<bool> {
+    let mut out = vec![false; text.lines().count()];
+    if !text.contains('"') {
+        return out;
+    }
+    let starts: Vec<usize> = std::iter::once(0).chain(text.match_indices('\n').map(|(i, _)| i + 1)).collect();
+    for t in ridx_syntax::lex(text).into_iter().filter(|t| t.kind.is_literal()) {
+        let (s, e) = (t.start as usize, t.end as usize);
+        for l in starts.partition_point(|&l| l <= s)..starts.partition_point(|&l| l < e) {
+            if let Some(f) = out.get_mut(l) {
+                *f = true;
+            }
+        }
+    }
+    out
+}
+
+/// [`doc_content`] for every line of `text`, with the lines inside a literal no doc.
+fn doc_lines(text: &str) -> impl Iterator<Item = (usize, &str, Option<(usize, usize)>)> {
+    let in_lit = lines_in_literals(text);
+    let mut depth = 0u32;
+    text.lines().enumerate().map(move |(i, line)| {
+        let content = if in_lit.get(i).copied().unwrap_or(false) {
+            depth = 0;
+            None
+        } else {
+            doc_content(line, &mut depth)
+        };
+        (i, line, content)
+    })
+}
+
 /// The 0-based line spans `(first, last)` of the doc comment blocks of `text`: runs of `///` / `//!` lines and
 /// `/** … */` / `/*! … */` blocks. rust-analyzer highlights a block's examples and links as one injection, so a
 /// range request that reaches any line of a block gets the whole block's tokens.
 pub(super) fn doc_block_spans(text: &str) -> Vec<(u32, u32)> {
     let mut spans: Vec<(u32, u32)> = Vec::new();
-    let mut depth = 0u32;
     let mut open: Option<u32> = None;
-    for (i, line) in text.lines().enumerate() {
+    for (i, _, content) in doc_lines(text) {
         let i = i as u32;
-        match (doc_content(line, &mut depth).is_some(), open) {
+        match (content.is_some(), open) {
             (true, None) => open = Some(i),
             (false, Some(first)) => {
                 spans.push((first, i - 1));
@@ -103,10 +136,10 @@ pub(super) fn doc_block_spans(text: &str) -> Vec<(u32, u32)> {
 /// Tokens for every doc comment of `text`. `ws` resolves intra-doc links; without it links stay plain.
 pub(super) fn scan_doc_comments(text: &str, ws: Option<&WorkspaceIndex>, tokens: &mut Vec<RawToken>) {
     let mut fence: Option<(&str, bool)> = None;
-    let (mut in_block_comment, mut in_doc_block) = (false, 0u32);
+    let mut in_block_comment = false;
     let mut macro_args = MacroArgs::default();
-    for (line_idx, full_line) in text.lines().enumerate() {
-        let Some((start, end)) = doc_content(full_line, &mut in_doc_block) else {
+    for (line_idx, full_line, content) in doc_lines(text) {
+        let Some((start, end)) = content else {
             fence = None;
             continue;
         };

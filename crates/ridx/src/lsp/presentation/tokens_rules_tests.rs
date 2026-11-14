@@ -90,7 +90,19 @@ fn test_a_macro_attributes_arguments_keep_the_index_tokens_only() {
     tokens_attr::apply_attribute_rules(text, &mut tokens, 3);
     let got = spans(&tokens);
     assert_eq!(got, vec![(0, 21, 6, TOKEN_TYPE_STRUCT), (0, 29, 3, TOKEN_TYPE_FUNCTION)]);
-    assert!(tokens_attr::spells_target(Some("    Parser::new()"), 5, "clap::Parser") && !tokens_attr::spells_target(Some("    Parsers"), 5, "Parser"));
+    assert!(tokens_attr::spells_target(Some("    Parser::new()"), 4, "clap::Parser") && !tokens_attr::spells_target(Some("    Parsers"), 4, "Parser"));
+    // UTF-16 columns: `é` is one unit, `𝄞` two; the name after them is found where the editor counts it.
+    assert!(tokens_attr::spells_target(Some("é = Parser"), 4, "Parser") && tokens_attr::spells_target(Some("𝄞 = Parser"), 5, "Parser"));
+}
+
+#[test]
+fn test_a_qualified_macro_attribute_path_is_no_code() {
+    // `#[clap::arg(value_parser = p)]`: neither `clap` nor `arg` is an argument; `p` is.
+    let text = "#[clap::arg(value_parser = p)]\nstruct S;\n";
+    let tok = |col, length| RawToken { line: 0, col, length, token_type: TOKEN_TYPE_FUNCTION, token_modifiers: 0 };
+    let mut tokens = vec![tok(2, 4), tok(8, 3), tok(27, 1)];
+    tokens_attr::apply_attribute_rules(text, &mut tokens, 3);
+    assert_eq!(spans(&tokens), vec![(0, 27, 1, TOKEN_TYPE_FUNCTION)]);
 }
 
 #[test]
@@ -114,6 +126,16 @@ fn test_a_nested_block_comment_does_not_end_the_doc_block() {
     assert!(got.contains(&(4, 4, 1, TOKEN_TYPE_VARIABLE)), "v: {got:?}");
     assert!(got.contains(&(4, 8, 3, TOKEN_TYPE_STRUCT)), "Vec: {got:?}");
     assert!(got.iter().all(|t| t.0 != 7), "code after the block is no doc: {got:?}");
+}
+
+#[test]
+fn test_doc_markers_inside_a_string_literal_are_no_doc() {
+    // A fixture's `/**` line opens no block: the doc comment after the literal is still found, alone.
+    let text = "fn t() {\n    check(r#\"\n/** unclosed\n```\nlet v = Vec::new();\n\"#);\n}\n/// Real.\nfn f() {}\n";
+    assert_eq!(tokens_doc::doc_block_spans(text), vec![(7, 7)]);
+    let mut tokens = Vec::new();
+    tokens_doc::scan_doc_comments(text, None, &mut tokens);
+    assert!(tokens.is_empty(), "no example token from the literal: {:?}", spans(&tokens));
 }
 
 #[test]

@@ -163,7 +163,8 @@ where
                 continue;
             }
 
-            if matches!(ch, '{' | '}') {
+            // Angles are reported for generic lists (`->` and `=>` are no closing angle).
+            if matches!(ch, '{' | '}' | '<') || (ch == '>' && !matches!(i.checked_sub(1).map(|p| chars[p]), Some('-' | '='))) {
                 on_tok(line_1based, (i + 1) as u32, (i + 2) as u32, "", "", "", ch);
             }
             i += 1;
@@ -205,10 +206,28 @@ pub(crate) fn augment_resolved_highlights(
     let mut impl_in_where = false;
     let mut impl_target_matched = false;
     let mut impl_brace_depth = 0i32;
+    // In the header: `<…>` depth and the `{ … }` const arguments open in it (`Foo<{ 1 }>`), neither the body.
+    let (mut header_angle, mut header_const_braces) = (0i32, 0i32);
+    // Inside the target's impl: the depths at which the bodies of impls nested in its methods open, and whether a
+    // nested impl's header is being read. Their `Self` is another type.
+    let (mut nested_bodies, mut nested_pending): (Vec<i32>, bool) = (Vec::new(), false);
+    // `impl` starting an item, not `impl Trait` in a type (`-> impl Iterator`, `x: impl Fn()`).
+    let item_impl = |prefix: &str| {
+        let p = prefix.trim_end();
+        p.is_empty() || p.ends_with(['}', ';', ']', '{']) || p.ends_with("unsafe") || p.ends_with("default")
+    };
 
     scan_code_tokens(text, |line_1based, sc, ec, tok, prefix, suffix, brace| {
+        if matches!(brace, '<' | '>') {
+            if impl_header_pending && header_const_braces == 0 {
+                header_angle = if brace == '<' { header_angle + 1 } else { (header_angle - 1).max(0) };
+            }
+            return;
+        }
         if brace == '{' {
-            if impl_header_pending {
+            if impl_header_pending && (header_angle > 0 || header_const_braces > 0) {
+                header_const_braces += 1;
+            } else if impl_header_pending {
                 impl_header_pending = false;
                 impl_in_where = false;
                 if impl_target_matched {
@@ -216,11 +235,19 @@ pub(crate) fn augment_resolved_highlights(
                 }
             } else if impl_brace_depth > 0 {
                 impl_brace_depth += 1;
+                if std::mem::take(&mut nested_pending) {
+                    nested_bodies.push(impl_brace_depth);
+                }
             }
             return;
         }
         if brace == '}' {
-            if impl_brace_depth > 0 {
+            if impl_header_pending && header_const_braces > 0 {
+                header_const_braces -= 1;
+            } else if impl_brace_depth > 0 {
+                if nested_bodies.last() == Some(&impl_brace_depth) {
+                    nested_bodies.pop();
+                }
                 impl_brace_depth -= 1;
                 if impl_brace_depth == 0 {
                     impl_target_matched = false;
@@ -228,10 +255,15 @@ pub(crate) fn augment_resolved_highlights(
             }
             return;
         }
-        if tok == "impl" && impl_brace_depth == 0 {
-            impl_header_pending = true;
-            impl_in_where = false;
-            impl_target_matched = false;
+        if tok == "impl" && item_impl(prefix) {
+            if impl_brace_depth == 0 {
+                impl_header_pending = true;
+                impl_in_where = false;
+                impl_target_matched = false;
+                (header_angle, header_const_braces) = (0, 0);
+            } else {
+                nested_pending = true;
+            }
             return;
         }
         if impl_header_pending {
@@ -243,7 +275,9 @@ pub(crate) fn augment_resolved_highlights(
                 impl_in_where = true;
                 return;
             }
-            if !impl_in_where && tok == target_symbol && !prefix.trim_end().ends_with(':') {
+            // A bound (`T: Foo`) is no header type; a path qualifier (`crate::Foo`, `io::Stderr`) is part of one.
+            let p = prefix.trim_end();
+            if !impl_in_where && tok == target_symbol && (!p.ends_with(':') || p.ends_with("::")) {
                 let at = (u64::from(line_1based.saturating_sub(1)), u64::from(conv.char_col_to_utf16_col(file, line_1based, sc)));
                 impl_target_matched = resolved.contains(&at);
             }
@@ -258,7 +292,9 @@ pub(crate) fn augment_resolved_highlights(
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
         } else if is_type_like {
-            if (tok == "Self" && impl_brace_depth > 0) || (tok == target_symbol && suffix.trim_start().starts_with("::") && qualifier_fits(prefix)) {
+            if (tok == "Self" && impl_brace_depth > 0 && nested_bodies.is_empty() && !nested_pending)
+                || (tok == target_symbol && suffix.trim_start().starts_with("::") && qualifier_fits(prefix))
+            {
                 push_hl(file, line_1based, sc, ec, 1, conv, highlights);
             }
         } else if target_kind == DefKind::AssocTy && tok == target_symbol {

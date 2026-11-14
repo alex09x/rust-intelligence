@@ -19,7 +19,29 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 
 type GatedFiles = Arc<Vec<(PathBuf, String)>>;
-static GATED: OnceLock<Mutex<HashMap<(usize, usize), GatedFiles>>> = OnceLock::new();
+/// An index's `instance_id`, `generation` (bumped by a reload) and shard count.
+pub(super) type WsKey = (u64, u64, usize);
+/// Per index: a reload builds the list afresh.
+static GATED: OnceLock<Mutex<HashMap<WsKey, GatedFiles>>> = OnceLock::new();
+
+/// The key a workspace's derived reference tables are kept under, changed by every reload of its index.
+pub(super) fn ws_cache_key(ws: &WorkspaceIndex) -> WsKey {
+    (ws.instance_id(), ws.generation(), ws.readers().len())
+}
+
+/// Keeps a few workspaces' tables: an older generation is never asked again, so the map is emptied when full.
+pub(super) fn insert_bounded<V>(map: &mut HashMap<WsKey, V>, key: WsKey, v: V) {
+    if map.len() >= 8 {
+        map.clear();
+    }
+    map.insert(key, v);
+}
+
+pub(crate) fn clear_gated_cache() {
+    if let Some(mut c) = GATED.get().and_then(|m| m.lock().ok()) {
+        c.clear();
+    }
+}
 
 fn is_id(c: u8) -> bool {
     c.is_ascii_alphanumeric() || c == b'_'
@@ -37,7 +59,7 @@ fn gated_off(masked: &str) -> bool {
 
 /// The workspace's files with an inner `#![cfg(…)]` on which no reader has a reference, with their masked text.
 fn gated_files(ws: &WorkspaceIndex) -> GatedFiles {
-    let key = (ws as *const WorkspaceIndex as usize, ws.readers().len());
+    let key = ws_cache_key(ws);
     let cache = GATED.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some(v) = cache.lock().ok().and_then(|c| c.get(&key).cloned()) {
         return v;
@@ -79,7 +101,7 @@ fn gated_files(ws: &WorkspaceIndex) -> GatedFiles {
     }
     let v = Arc::new(out);
     if let Ok(mut c) = cache.lock() {
-        c.insert(key, Arc::clone(&v));
+        insert_bounded(&mut c, key, Arc::clone(&v));
     }
     v
 }
@@ -143,7 +165,27 @@ pub(super) fn gated_file_refs(ws: &WorkspaceIndex, refs: &LocationReferences<'_>
 
 #[cfg(test)]
 mod tests {
-    use super::crate_paths_ending_in;
+    use super::{crate_paths_ending_in, insert_bounded, ws_cache_key};
+
+    #[test]
+    fn a_reload_changes_the_cache_key_and_the_cache_stays_bounded() {
+        // The key was the index's address: a reload in place kept it, and the old tables were served.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join("target/ridx")).unwrap();
+        let mut writer = ridx_format::IndexWriter::new("gated_demo", "0.1.0");
+        writer.write_to(&mut std::fs::File::create(dir.path().join("target/ridx/gated_demo.ridx")).unwrap()).unwrap();
+        let mut ws = ridx_format::WorkspaceIndex::open(dir.path().join("target/ridx")).unwrap();
+        let before = ws_cache_key(&ws);
+        ws.bump_generation();
+        assert_ne!(ws_cache_key(&ws), before, "a reload bumps the generation");
+        let other = ridx_format::WorkspaceIndex::open(dir.path().join("target/ridx")).unwrap();
+        assert_ne!(ws_cache_key(&other).0, before.0, "another index never shares the key");
+        let mut map = std::collections::HashMap::new();
+        for g in 0..20u64 {
+            insert_bounded(&mut map, (1, g, 1), g);
+        }
+        assert!(map.len() <= 8 && map.get(&(1, 19, 1)) == Some(&19), "{map:?}");
+    }
 
     #[test]
     fn finds_crate_rooted_paths_to_a_name() {

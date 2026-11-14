@@ -128,7 +128,8 @@ pub(crate) fn try_skip_non_target_item(p: &mut Parser<'_>) -> bool {
         _ => return false,
     };
     let mut i = idx + 1;
-    let (mut p_depth, mut b_depth, mut c_depth) = (0u32, 0u32, 0u32);
+    // `a_depth`: inside `<…>` a `{ … }` is a const argument, not the body.
+    let (mut p_depth, mut b_depth, mut c_depth, mut a_depth) = (0u32, 0u32, 0u32, 0u32);
     let mut saw_params = !need_params
         || (i < len && p.tokens[p.sig[i] as usize].kind == T::Semi)
         || (i + 1 < len && p.tokens[p.sig[i] as usize].kind == T::LBrace && p.tokens[p.sig[i + 1] as usize].kind == T::RBrace);
@@ -144,6 +145,8 @@ pub(crate) fn try_skip_non_target_item(p: &mut Parser<'_>) -> bool {
             T::RParen => p_depth = p_depth.saturating_sub(1),
             T::LBracket => b_depth += 1,
             T::RBracket => b_depth = b_depth.saturating_sub(1),
+            T::Lt if p_depth == 0 && b_depth == 0 && c_depth == 0 => a_depth += 1,
+            T::Gt if p_depth == 0 && b_depth == 0 && c_depth == 0 && p.tokens[p.sig[i - 1] as usize].kind != T::Minus => a_depth = a_depth.saturating_sub(1),
             T::Semi if saw_params && p_depth == 0 && b_depth == 0 && c_depth == 0 => {
                 if allow_semi {
                     end_idx = Some(i);
@@ -151,7 +154,7 @@ pub(crate) fn try_skip_non_target_item(p: &mut Parser<'_>) -> bool {
                 break;
             }
             T::LBrace => {
-                if allow_brace && saw_params && p_depth == 0 && b_depth == 0 && c_depth == 0 && p.tokens[p.sig[i - 1] as usize].kind != T::Eq {
+                if allow_brace && saw_params && p_depth == 0 && b_depth == 0 && c_depth == 0 && a_depth == 0 && p.tokens[p.sig[i - 1] as usize].kind != T::Eq {
                     let mut d = 1u32;
                     let mut j = i + 1;
                     while j < len && d > 0 {

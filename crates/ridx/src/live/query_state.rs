@@ -30,6 +30,8 @@ use super::v5_lazy::PoolStr;
 use super::v5_ty_tables::fnv1a_str;
 
 const MAX_CACHED_FNS: usize = 256;
+/// Clean files whose parse trees are kept.
+const MAX_PARSED_FILES: usize = 64;
 
 pub(crate) struct CachedFnInfer {
     pub fn_node: NodeId,
@@ -67,6 +69,9 @@ pub(crate) struct LiveEngine {
     fn_fifo: VecDeque<(FileId, u64, u64)>,
     pub infer_ctx: BodyInferCtx,
     pub shared_macro_defs: LocalCstDefs,
+    /// The signature salt `shared_macro_defs` was filled under: its expansions and failed lookups went through
+    /// that crate's items, so an edit to them (a new `macro_rules!`, a `use`) starts it afresh.
+    macro_defs_salt: u64,
     pub shared_file_res: FileNameRes,
 }
 
@@ -96,6 +101,7 @@ impl LiveEngine {
             fn_fifo: VecDeque::with_capacity(64),
             infer_ctx: BodyInferCtx::new(),
             shared_macro_defs: LocalCstDefs::new(),
+            macro_defs_salt: 0,
             shared_file_res: FileNameRes::new(),
         }
     }
@@ -190,8 +196,16 @@ impl LiveEngine {
                     let ridx_syntax::SyntaxTree { tokens, nodes, .. } = st;
                     let arc =
                         Arc::new(CachedParsed { file: fid, text_hash: u64::MAX, src: owned_src, lines, bufs: Mutex::new((tokens, nodes)), fn_summaries: Vec::new(), focused_span });
+                    // Trees of every file asked about would stay for the whole session: past the bound, start
+                    // afresh, with the inferences that point into them.
+                    if self.parsed_cache.len() >= MAX_PARSED_FILES && !self.parsed_cache.contains_key(&fid) {
+                        self.parsed_cache.clear();
+                        self.fn_cache.clear();
+                        self.fn_fifo.clear();
+                    }
                     if self.parsed_cache.insert(fid, Arc::clone(&arc)).is_some() {
                         self.fn_cache.retain(|&(f, _, _), _| f != fid);
+                        self.fn_fifo.retain(|&(f, _, _)| f != fid);
                     }
                     self.parsed = Some(arc);
                 }
@@ -327,12 +341,16 @@ impl LiveEngine {
         if self.fn_cache.contains_key(&key) {
             return Some(key);
         }
-        let (mut file_res, mut local_defs, mut result, mut arena) = if self.fn_cache.len() >= MAX_CACHED_FNS {
-            if let Some(old) = self.fn_fifo.pop_front().and_then(|k| self.fn_cache.remove(&k)) {
-                (old.file_res, old.local_defs, old.result, old.arena)
-            } else {
-                (FileNameRes::new(), LocalCstDefs::new(), FnInferResult::new(), FrozenTyArena::with_capacity(64))
-            }
+        // The queue may hold keys a reparse already dropped from the cache: skip them to evict a live entry.
+        let mut evicted = None;
+        while self.fn_cache.len() >= MAX_CACHED_FNS && evicted.is_none() {
+            let Some(k) = self.fn_fifo.pop_front() else { break };
+            evicted = self.fn_cache.remove(&k);
+        }
+        let (mut file_res, mut local_defs, mut result, mut arena) = if let Some(old) = evicted {
+            (old.file_res, old.local_defs, old.result, old.arena)
+        } else if self.fn_cache.len() >= MAX_CACHED_FNS {
+            (FileNameRes::new(), LocalCstDefs::new(), FnInferResult::new(), FrozenTyArena::with_capacity(64))
         } else {
             let mut fr = FileNameRes::new();
             fr.refs.reserve(32);
@@ -360,6 +378,9 @@ impl LiveEngine {
         }
         file_res.swap_scratch(&mut self.shared_file_res);
         self.shared_ext_cache = snap.take_ext_cache();
+        if self.macro_defs_salt != env_salt {
+            (self.shared_macro_defs, self.macro_defs_salt) = (LocalCstDefs::new(), env_salt);
+        }
         local_defs.swap_macro_caches(&mut self.shared_macro_defs);
         if has_v5_sigs {
             local_defs.index_target_fn_with_item_db(&st, Some(dm), Some(&db), fid, fn_node);

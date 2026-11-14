@@ -123,7 +123,7 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
     let src_lines: Vec<&str> = text.map(|t| t.lines().collect()).unwrap_or_default();
     // A `use` item's token yields to the reference the index holds on the same name, which knows what it imports.
     let mut use_tokens = Vec::new();
-    let macro_attrs = text.filter(|t| t.contains("#[")).map(|t| super::tokens_attr::attr_spans(t).macro_attrs);
+    let macro_attrs = text.filter(|t| t.contains('#')).map(|t| super::tokens_attr::attr_spans(t).macro_attrs).filter(|s| !s.is_empty());
     let spells_target = super::tokens_attr::spells_target;
 
     // 1. Overlay symbols (live buffers)
@@ -192,16 +192,8 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                 }
 
                 for rf in reader.references() {
-                    // A derive helper's argument (`#[arg(value_parser = f(x))]`) is code the derive copied: its
-                    // references are the expansion's, on tokens the source spells.
-                    let attr_arg = rf.is_macro_expansion()
-                        && macro_attrs.as_ref().is_some_and(|spans| {
-                            let probe =
-                                RawToken { line: rf.span.start_line.saturating_sub(1), col: rf.span.start_col.saturating_sub(1), length: 1, token_type: 0, token_modifiers: 0 };
-                            super::tokens_attr::inside(&probe, spans)
-                                && spells_target(src_lines.get(probe.line as usize).copied(), rf.span.start_col, reader.get_str(rf.target_path_offset()))
-                        });
-                    if rf.span.file_id == file_id && (!rf.is_macro_expansion() || attr_arg) && rf.span.start_line == rf.span.end_line {
+                    let expansion = rf.is_macro_expansion();
+                    if rf.span.file_id == file_id && (!expansion || macro_attrs.is_some()) && rf.span.start_line == rf.span.end_line {
                         let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
                             if let Some((live_l, live_c)) = overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col) {
                                 let span_len = rf.span.end_col.saturating_sub(rf.span.start_col);
@@ -218,6 +210,17 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                             let ec = conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
                             (sl, sc, ec.saturating_sub(sc))
                         };
+                        // A derive helper's argument (`#[arg(value_parser = f(x))]`) is code the derive copied: its
+                        // references are the expansion's, on tokens the source spells. Checked where the token
+                        // stands in the text served (the live buffer's lines and UTF-16 columns).
+                        let attr_arg = || {
+                            let probe = RawToken { line: sl, col: sc, length: 1, token_type: 0, token_modifiers: 0 };
+                            macro_attrs.as_ref().is_some_and(|spans| super::tokens_attr::inside(&probe, spans))
+                                && spells_target(src_lines.get(sl as usize).copied(), sc, reader.get_str(rf.target_path_offset()))
+                        };
+                        if expansion && !attr_arg() {
+                            continue;
+                        }
 
                         if length > 0 {
                             let tt = super::tokens_keywords::reference_token(src_lines.get(sl as usize).copied(), sc, length, DefKind::from(rf.kind));

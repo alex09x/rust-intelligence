@@ -133,6 +133,67 @@ fn live_db_clean_and_dirty_overlay_queries() {
 }
 
 #[test]
+fn only_a_line_that_is_just_an_import_has_no_typed_expression() {
+    use super::query::is_top_level_use_line as is_use;
+    for l in ["use a::B;", "pub use a::{B, C};", "pub(crate) use a::B; // why", "pub(in crate::x) use a::B;", "use a::{"] {
+        assert!(is_use(l), "{l}");
+    }
+    for l in ["use a::B; fn f() { let x = 1; }", "    use a::B;", "pub fn user() {}", "pub(crate) fn use_it() {}", "useful();"] {
+        assert!(!is_use(l), "{l}");
+    }
+}
+
+#[test]
+fn repeated_dot_completion_follows_an_edit_inside_the_body() {
+    // `let x = a;` → `let x = b;` keeps every offset and every signature: the repeat must not reuse the old answer.
+    let (_dir, lib_rs, ws) = setup_tiny_workspace();
+    let clean_text = fs::read_to_string(&lib_rs).unwrap();
+    let body = |v: &str| format!("{clean_text}\npub struct Added {{ pub val: u64 }}\npub fn edit_fn(a: Added, b: Counter) {{\n    let x = {v};\n    x.\n}}\n");
+    let (first, second) = (body("a"), body("b"));
+    let mut live = LiveDb::new();
+    let mut ov = OverlayManager::new();
+    let path_str = lib_rs.to_str().unwrap();
+    ov.open_with_provenance(&format!("file://{path_str}"), path_str, 1, clean_text, true);
+    let labels = |live: &mut LiveDb, ov: &OverlayManager, text: &str| -> Vec<String> {
+        let dot = text.rfind("x.").unwrap() as u32 + 2;
+        live.dot_candidates(&ws, &lib_rs, dot, Some(ov)).into_iter().map(|c| c.label).collect()
+    };
+    ov.update(path_str, 2, first.clone());
+    let got = labels(&mut live, &ov, &first);
+    assert!(got.contains(&"val".to_string()), "Added's field: {got:?}");
+    ov.update(path_str, 3, second.clone());
+    let got = labels(&mut live, &ov, &second);
+    assert!(got.contains(&"count".to_string()) && !got.contains(&"val".to_string()), "Counter's members after the edit: {got:?}");
+}
+
+#[test]
+fn a_macro_defined_by_a_later_edit_is_expanded() {
+    // The first request finds no `mk!`; the edit that adds `macro_rules! mk` must not be answered from that failure.
+    let (_dir, lib_rs, ws) = setup_tiny_workspace();
+    let clean_text = fs::read_to_string(&lib_rs).unwrap();
+    // A path call (`crate::mk!`) is looked up through the crate's items, whose lookup failure is remembered.
+    let user = "pub fn edit_fn() {\n    let v = crate::mk!();\n    v.\n}\n";
+    let (first, second) = (format!("{clean_text}\n{user}"), format!("{clean_text}\n#[macro_export]\nmacro_rules! mk {{ () => {{ Counter::new(1) }} }}\n{user}"));
+    let mut ov = OverlayManager::new();
+    let path_str = lib_rs.to_str().unwrap();
+    ov.open_with_provenance(&format!("file://{path_str}"), path_str, 1, clean_text, true);
+    let labels = |live: &mut LiveDb, ov: &OverlayManager, text: &str| -> Vec<String> {
+        let dot = text.rfind("v.").unwrap() as u32 + 2;
+        live.dot_candidates(&ws, &lib_rs, dot, Some(ov)).into_iter().map(|c| c.label).collect()
+    };
+    ov.update(path_str, 2, second.clone());
+    let fresh = labels(&mut LiveDb::new(), &ov, &second);
+    assert!(fresh.contains(&"count".to_string()), "a fresh database expands the macro: {fresh:?}");
+    let mut live = LiveDb::new();
+    ov.update(path_str, 3, first.clone());
+    let got = labels(&mut live, &ov, &first);
+    assert!(!got.contains(&"count".to_string()), "no macro yet: {got:?}");
+    ov.update(path_str, 4, second.clone());
+    let got = labels(&mut live, &ov, &second);
+    assert!(got.contains(&"count".to_string()), "the new macro's Counter: {got:?}");
+}
+
+#[test]
 fn live_ty_defs_exclude_impls_assocs_and_non_typeable_tokens() {
     let (_dir, lib_rs, ws) = setup_tiny_workspace();
     let mut live = LiveDb::new();

@@ -49,14 +49,17 @@ pub(crate) fn live_db_for(ws: &WorkspaceIndex) -> Arc<Mutex<LiveDb>> {
     db
 }
 
-/// Drops all derived snapshots, shard tables, and inference caches in every workspace's [`LiveDb`].
+/// Drops all derived snapshots, shard tables, and inference caches in every workspace's [`LiveDb`], and the
+/// reference tables derived from the index. A database a panicking request left poisoned is reset too: its
+/// half-updated state is what must not be served again.
 pub(crate) fn clear_live_db_cache() {
     super::type_definition_lookup::clear_ws_type_index();
+    super::references_gated::clear_gated_cache();
+    super::references_inactive::clear_inactive_cache();
     if let Some(dbs) = LIVE_DBS.get() {
         for (_, lock) in dbs.lock().unwrap_or_else(|e| e.into_inner()).iter() {
-            if let Ok(mut db) = lock.lock() {
-                db.invalidate();
-            }
+            lock.lock().unwrap_or_else(|e| e.into_inner()).invalidate();
+            lock.clear_poison();
         }
     }
 }
@@ -78,7 +81,7 @@ pub(crate) fn byte_offset_from_conv_or_overlay(file: &str, line: u32, col: u32, 
         return byte_offset_at(&overlay.text, line, col);
     }
     let line_text = conv.get_line(file, line)?;
-    if !line_text.starts_with(' ') && !line_text.starts_with('\t') && super::type_definition_qual::is_use_statement_line(line_text) {
+    if crate::live::query::is_top_level_use_line(line_text) {
         return None;
     }
     let in_line = line_text.char_indices().nth(col.saturating_sub(1) as usize).map_or(line_text.len(), |(i, _)| i);

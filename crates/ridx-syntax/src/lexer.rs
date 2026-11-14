@@ -96,6 +96,8 @@ pub(crate) fn lex_for_offset(src: &str, target_offset: u32) -> Vec<Token> {
     let (mut next_item_start, mut item_kw_start, mut kw_tok_idx, mut kw_start) = (None::<u32>, 0u32, 0usize, 0u32);
     let (mut pb_depth, mut brace_depth, mut target_item_depth) = (0u32, 0u32, 0u32);
     let (mut in_target_item, mut top_is_container, mut skip_delim_check, mut saw_eq) = (false, false, false, false);
+    // `<…>` depth in an item's header and the `{ … }` const arguments open inside it: neither opens the body.
+    let (mut angle, mut const_braces) = (0u32, 0u32);
     while pos < len {
         if pb_depth == 0 && collapse_kw == TokenKind::Whitespace && next_item_start.is_none() && (pos as u32) > target_offset && prev_non_trivia == TokenKind::RBrace {
             if brace_depth == 1 && top_is_container {
@@ -127,7 +129,8 @@ pub(crate) fn lex_for_offset(src: &str, target_offset: u32) -> Vec<Token> {
                 }
             }
             let is_const = matches!(collapse_kw, TokenKind::Const | TokenKind::Static);
-            let try_delim = if b0 == b'{' && collapse_kw != TokenKind::Whitespace && collapse_kw != TokenKind::Bang && (is_const || prev_non_trivia != TokenKind::Eq) {
+            let try_delim = if b0 == b'{' && angle == 0 && collapse_kw != TokenKind::Whitespace && collapse_kw != TokenKind::Bang && (is_const || prev_non_trivia != TokenKind::Eq)
+            {
                 Some((TokenKind::LBrace, TokenKind::RBrace, b'}', item_kw_start))
             } else if b0 == b'[' && is_const && saw_eq {
                 Some((TokenKind::LBracket, TokenKind::RBracket, b']', item_kw_start))
@@ -218,6 +221,10 @@ pub(crate) fn lex_for_offset(src: &str, target_offset: u32) -> Vec<Token> {
             TokenKind::LParen | TokenKind::LBracket => pb_depth += 1,
             TokenKind::RParen | TokenKind::RBracket => pb_depth = pb_depth.saturating_sub(1),
             TokenKind::Eq if pb_depth == 0 => saw_eq = true,
+            TokenKind::Lt if pb_depth == 0 && collapse_kw != TokenKind::Whitespace => angle += 1,
+            TokenKind::Gt if pb_depth == 0 && collapse_kw != TokenKind::Whitespace && prev_non_trivia != TokenKind::Minus => angle = angle.saturating_sub(1),
+            TokenKind::LBrace if angle > 0 && collapse_kw != TokenKind::Whitespace => (pb_depth, const_braces) = (pb_depth + 1, const_braces + 1),
+            TokenKind::RBrace if const_braces > 0 => (pb_depth, const_braces) = (pb_depth.saturating_sub(1), const_braces - 1),
             TokenKind::LBrace => {
                 if brace_depth == 0 && pb_depth == 0 && collapse_kw != TokenKind::Whitespace {
                     top_is_container = matches!(collapse_kw, TokenKind::Impl | TokenKind::Trait | TokenKind::Mod);
@@ -276,14 +283,14 @@ pub(crate) fn lex_for_offset(src: &str, target_offset: u32) -> Vec<Token> {
                     }
                     SkipItem::ContainsTarget => {
                         if matches!(kind, TokenKind::Impl | TokenKind::Trait) {
-                            (collapse_kw, item_kw_start, kw_tok_idx, kw_start, skip_delim_check) = (kind, item_s, tokens.len(), start as u32, true);
+                            (collapse_kw, item_kw_start, kw_tok_idx, kw_start, skip_delim_check, angle) = (kind, item_s, tokens.len(), start as u32, true, 0);
                         } else {
                             (in_target_item, target_item_depth) = (true, brace_depth);
                             (collapse_kw, next_item_start, saw_eq) = (TokenKind::Whitespace, None, false);
                         }
                     }
                     SkipItem::Bail => {
-                        (collapse_kw, item_kw_start, kw_tok_idx, kw_start) = (kind, item_s, tokens.len(), start as u32);
+                        (collapse_kw, item_kw_start, kw_tok_idx, kw_start, angle) = (kind, item_s, tokens.len(), start as u32, 0);
                     }
                 }
             }
@@ -292,7 +299,7 @@ pub(crate) fn lex_for_offset(src: &str, target_offset: u32) -> Vec<Token> {
             {
                 let item_s = *next_item_start.get_or_insert(start as u32);
                 if collapse_kw == TokenKind::Whitespace || (collapse_kw == TokenKind::Const && !saw_eq && prev_non_trivia != TokenKind::Colon) {
-                    (collapse_kw, item_kw_start, kw_tok_idx, kw_start) = (kind, item_s, tokens.len(), start as u32);
+                    (collapse_kw, item_kw_start, kw_tok_idx, kw_start, angle) = (kind, item_s, tokens.len(), start as u32, 0);
                 }
             }
             TokenKind::Ident if pb_depth == 0 && !in_target_item && matches!(&src[start..end], "macro_rules" | "macro") => {

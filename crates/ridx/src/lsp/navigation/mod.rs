@@ -18,6 +18,7 @@ pub mod references;
 mod references_gated;
 mod references_inactive;
 pub mod type_definition;
+mod type_definition_index;
 mod type_definition_live;
 mod type_definition_lookup;
 pub(crate) mod type_definition_parse;

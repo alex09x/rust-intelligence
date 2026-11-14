@@ -164,6 +164,8 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
                     Err(panic) => {
                         let what = panic.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| panic.downcast_ref::<String>().cloned()).unwrap_or_default();
                         logger::log_info(&format!("request {method} panicked: {what}"));
+                        // The panic may have left a live database half updated (a cache taken out, not put back).
+                        navigation::clear_live_db_cache();
                         if let Some(id) = id {
                             protocol::send_response(
                                 &mut writer,

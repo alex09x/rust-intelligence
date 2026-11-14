@@ -108,9 +108,19 @@ impl LiveState {
         let meta_loaded: Vec<bool> = (0..n).map(|idx| ws.meta_path_at(idx).is_none()).collect();
         let mut sysroot_by_name = HashMap::new();
         let mut units_by_file: HashMap<PathBuf, Vec<(usize, u32)>> = HashMap::new();
+        let mut units_complete = true;
+        let ws_canon = ws_root.canonicalize().unwrap_or_else(|_| ws_root.clone());
+        // A unit left out of the map whose files may still lie under the workspace root: a workspace crate named
+        // like a sysroot one, or a dependency whose source root is spelled other than the root (relative, a link).
+        let may_lie_inside = |meta: &super::meta::ReaderMeta| {
+            !meta.is_sysroot && meta.source_root.as_deref().is_none_or(|sr| !sr.is_absolute() || sr.canonicalize().is_ok_and(|c| c.starts_with(&ws_canon)))
+        };
         for (idx, meta) in metas.iter().enumerate() {
             if matches!(meta.crate_name.as_str(), "core" | "alloc" | "std" | "proc_macro") {
                 sysroot_by_name.entry(meta.crate_name.clone()).or_insert(idx);
+                units_complete &= !may_lie_inside(meta);
+            } else if meta.is_dependency && !meta.source_root.as_deref().is_some_and(|sr| sr.starts_with(&ws_root)) {
+                units_complete &= meta.is_sysroot || !may_lie_inside(meta);
             } else if !meta.is_sysroot && (!meta.is_dependency || meta.source_root.as_deref().is_some_and(|sr| sr.starts_with(&ws_root))) {
                 let rdr = &ws.readers()[idx];
                 let sr = meta.source_root.as_deref().unwrap_or(ws_root.as_path());
@@ -134,6 +144,7 @@ impl LiveState {
             shard_loaded: vec![false; n],
             shard_expanded_depth: vec![u8::MAX; n],
             units_by_file,
+            units_complete,
             sysroot_by_name,
             impls_arena: Vec::new(),
             impls_by_adt: HashMap::new(),

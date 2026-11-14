@@ -41,6 +41,9 @@ pub struct LiveState {
     pub shard_loaded: Vec<bool>,
     pub shard_expanded_depth: Vec<u8>,
     pub units_by_file: HashMap<std::path::PathBuf, Vec<(usize, u32)>>,
+    /// Whether `units_by_file` lists every unit with files under the workspace root: only then does a path
+    /// under it that the map lacks belong to no unit.
+    pub units_complete: bool,
     pub sysroot_by_name: HashMap<String, usize>,
     pub impls_arena: Vec<IndexedImpl>,
     pub impls_by_adt: HashMap<GlobalDefId, (u32, u32)>,
@@ -125,6 +128,7 @@ impl<'a> RidxV5ItemDb<'a> {
             shard_loaded: vec![true; n],
             shard_expanded_depth: vec![0; n],
             units_by_file: HashMap::new(),
+            units_complete: false,
             sysroot_by_name,
             impls_arena: Vec::new(),
             impls_by_adt: HashMap::new(),

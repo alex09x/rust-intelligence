@@ -11,7 +11,7 @@
 //! Canonical type path lookup, candidate expansion, `TyAlias` unwrapping, and homonymous crate
 //! ranking for `textDocument/typeDefinition`.
 
-use super::type_definition::is_type_def_kind;
+use super::type_definition_index::get_ws_type_index;
 use super::type_definition_parse::{extract_rmeta_default_generics, lookup_unstable_sysroot_type};
 use crate::lsp::protocol::{path_to_uri, PositionConverter};
 use memmap2::Mmap;
@@ -20,58 +20,19 @@ use ridx_format::{join_resolving_overlap, DefEntry, DefKind, IndexReader, Worksp
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Mutex, OnceLock};
 
 type BestScore = (bool, bool, bool, bool, bool, bool, bool);
 pub(super) type TypeHit<'a> = (usize, &'a DefEntry, PathBuf, &'a str, (u32, u32, u32, u32));
 type ScoredHit<'a> = (BestScore, TypeHit<'a>);
 
-struct WsTypeIndex {
-    ws_id: u64,
-    by_short_name: HashMap<Box<str>, Vec<(u32, u32)>>,
-}
-
-static WS_TYPE_INDEX: OnceLock<Mutex<Option<Arc<WsTypeIndex>>>> = OnceLock::new();
 static FILE_LOC_META: OnceLock<Mutex<HashMap<PathBuf, String>>> = OnceLock::new();
 
 pub(super) fn clear_ws_type_index() {
-    if let Some(mut guard) = WS_TYPE_INDEX.get().and_then(|l| l.lock().ok()) {
-        *guard = None;
-    }
+    super::type_definition_index::clear_type_indexes();
     if let Some(mut guard) = FILE_LOC_META.get().and_then(|l| l.lock().ok()) {
         guard.clear();
     }
-}
-
-fn get_ws_type_index(ws: &WorkspaceIndex) -> Arc<WsTypeIndex> {
-    let ws_id = ws.instance_id();
-    let lock = WS_TYPE_INDEX.get_or_init(|| Mutex::new(None));
-    let mut guard = lock.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(existing) = guard.as_ref().filter(|idx| idx.ws_id == ws_id) {
-        return Arc::clone(existing);
-    }
-    let mut by_short_name: HashMap<Box<str>, Vec<(u32, u32)>> = HashMap::with_capacity(4096);
-    for (r_idx, reader) in ws.readers().iter().enumerate() {
-        for (d_idx, def) in reader.definitions().iter().enumerate() {
-            if !is_type_def_kind(DefKind::from(def.kind)) {
-                continue;
-            }
-            let raw_file = reader.get_file(def.span().file_id());
-            if raw_file == "external" || raw_file.is_empty() {
-                continue;
-            }
-            if let Some(short) = reader.get_str(def.path_offset()).rsplit("::").next().filter(|s| !s.is_empty()) {
-                by_short_name.entry(short.into()).or_default().push((r_idx as u32, d_idx as u32));
-            }
-            let name = reader.get_str(def.name_offset());
-            if !name.is_empty() && !reader.get_str(def.path_offset()).ends_with(name) {
-                by_short_name.entry(name.into()).or_default().push((r_idx as u32, d_idx as u32));
-            }
-        }
-    }
-    let built = Arc::new(WsTypeIndex { ws_id, by_short_name });
-    *guard = Some(Arc::clone(&built));
-    built
 }
 
 const PRELUDE_TYPES: [(&str, &str); 7] = [
@@ -206,6 +167,10 @@ fn lookup_short_name_fallback<'a>(
             continue;
         }
         let def = &reader.definitions()[d_u32 as usize];
+        // A type parameter has no type definition, and a definition is found under its own name only.
+        if def.kind == DefKind::TyParam as u8 || reader.get_str(def.name_offset()) != short_name {
+            continue;
+        }
         let span = def.span();
         let raw_file = reader.get_file(span.file_id());
         let def_path = reader.get_str(def.path_offset());

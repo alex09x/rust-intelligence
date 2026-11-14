@@ -24,6 +24,8 @@ pub(super) struct AttrSpans {
     derive_args: Vec<Span>,
     /// Attributes no built-in names: derive helpers and attribute macros, whose arguments a macro expands.
     pub macro_attrs: Vec<Span>,
+    /// Where each of `macro_attrs`' path ends (`#[clap::arg` up to `(`): its arguments come after.
+    macro_path_ends: Vec<(u32, u32)>,
 }
 
 /// Attributes the compiler or a tool defines: their arguments are no code a macro expands.
@@ -107,7 +109,7 @@ pub(super) fn attr_spans(text: &str) -> AttrSpans {
         }
         None
     };
-    let mut out = AttrSpans { attrs: Vec::new(), derive_args: Vec::new(), macro_attrs: Vec::new() };
+    let mut out = AttrSpans { attrs: Vec::new(), derive_args: Vec::new(), macro_attrs: Vec::new(), macro_path_ends: Vec::new() };
     let mut i = 0;
     while i < b.len() {
         if b[i] != b'#' {
@@ -127,7 +129,9 @@ pub(super) fn attr_spans(text: &str) -> AttrSpans {
         let body = m[open + 1..close].trim_start();
         let first = body.split(|c: char| !(c.is_ascii_alphanumeric() || c == '_')).next().unwrap_or("");
         if !first.is_empty() && !BUILTIN_ATTRS.contains(&first) {
+            let path_len = body.find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == ':')).unwrap_or(body.len());
             out.macro_attrs.push((pos(i), pos(close + 1)));
+            out.macro_path_ends.push(pos(close - body.len() + path_len));
         }
         // `derive(…)` at the top of the attribute or nested (`cfg_attr(feature = "x", derive(…))`).
         for (at, _) in m[open + 1..close].match_indices("derive") {
@@ -150,14 +154,23 @@ pub(super) fn attr_spans(text: &str) -> AttrSpans {
     out
 }
 
-/// Whether `line` spells, from 1-based char column `col`, the last segment of `target_path` (a reference the source
-/// writes, not one a macro put on another token).
+/// Whether `line` spells, from 0-based UTF-16 column `col`, the last segment of `target_path` (a reference the
+/// source writes, not one a macro put on another token).
 pub(super) fn spells_target(line: Option<&str>, col: u32, target_path: &str) -> bool {
     let name = target_path.rsplit("::").next().unwrap_or(target_path);
     let name = name.strip_prefix("r#").unwrap_or(name);
     let Some(line) = line else { return false };
-    let at: String = line.chars().skip(col.saturating_sub(1) as usize).take(name.chars().count() + 2).collect();
-    let at = at.strip_prefix("r#").unwrap_or(&at);
+    let (mut units, mut start) = (0u32, None);
+    for (b, c) in line.char_indices() {
+        if units == col {
+            start = Some(b);
+            break;
+        }
+        units += c.len_utf16() as u32;
+    }
+    let Some(start) = start else { return false };
+    let at = &line[start..];
+    let at = at.strip_prefix("r#").unwrap_or(at);
     !name.is_empty() && at.starts_with(name) && !at[name.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_')
 }
 
@@ -190,8 +203,8 @@ pub(super) fn apply_attribute_rules(text: &str, tokens: &mut Vec<RawToken>, reso
             t.token_modifiers = 0;
             return true;
         }
-        // The macro attribute's own name (`arg` in `#[arg(…)]`) starts at `#[` + 2; its arguments follow.
+        // The macro attribute's own path (`clap::arg` in `#[clap::arg(…)]`) is no code; its arguments follow it.
         let i = spans.macro_attrs.partition_point(|&(start, _)| start <= (t.line, t.col));
-        idx <= resolved && i > 0 && inside(t, &spans.macro_attrs) && (t.line, t.col) > (spans.macro_attrs[i - 1].0 .0, spans.macro_attrs[i - 1].0 .1 + 2)
+        idx <= resolved && i > 0 && inside(t, &spans.macro_attrs) && (t.line, t.col) >= spans.macro_path_ends[i - 1]
     });
 }

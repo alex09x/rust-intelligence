@@ -199,6 +199,8 @@ pub(crate) enum SkipItem {
 pub(crate) fn skip_item_from_kw(src: &str, bytes: &[u8], after_kw: usize, kind: TokenKind, max_pos: usize) -> SkipItem {
     let len = bytes.len();
     let (mut pos, mut pb, mut prev_eq, mut prev_lt, mut saw_parens) = (after_kw, 0u32, false, false, kind != TokenKind::Fn);
+    // `<…>` depth: a `{ … }` inside it is a const argument (`Matrix<T, { 1 + 1 }>`), not the body.
+    let mut angle = 0u32;
     while pos < max_pos {
         match bytes[pos] {
             b'/' if pos + 1 < len && bytes[pos + 1] == b'/' => pos = scan_line_comment(bytes, pos),
@@ -255,7 +257,7 @@ pub(crate) fn skip_item_from_kw(src: &str, bytes: &[u8], after_kw: usize, kind: 
                 return if saw_parens && !matches!(kind, TokenKind::Enum | TokenKind::Impl | TokenKind::Trait) { SkipItem::Collapsed(pos, pos, b';') } else { SkipItem::Bail };
             }
             b'{' if pb == 0 => {
-                if kind == TokenKind::Use || prev_eq || prev_lt {
+                if kind == TokenKind::Use || prev_eq || prev_lt || angle > 0 {
                     let Some(close) = find_matching_delim(src, bytes, pos, b'{', b'}', max_pos) else {
                         return if max_pos < len { SkipItem::ContainsTarget } else { SkipItem::Bail };
                     };
@@ -277,7 +279,14 @@ pub(crate) fn skip_item_from_kw(src: &str, bytes: &[u8], after_kw: usize, kind: 
                 pos += 1;
             }
             b'<' if pb == 0 => {
-                (prev_eq, prev_lt) = (false, true);
+                (prev_eq, prev_lt, angle) = (false, true, angle + 1);
+                pos += 1;
+            }
+            b'>' if pb == 0 => {
+                if pos == 0 || bytes[pos - 1] != b'-' {
+                    angle = angle.saturating_sub(1);
+                }
+                (prev_eq, prev_lt) = (false, false);
                 pos += 1;
             }
             b' ' | b'\t' | b'\n' | b'\r' | 0x0B | 0x0C => pos += 1,

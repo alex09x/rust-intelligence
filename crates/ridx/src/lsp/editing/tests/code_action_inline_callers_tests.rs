@@ -35,23 +35,13 @@ fn query_actions_with_multi_file_resolve(uri: &str, line: u32, character: u32, w
         }
     });
     let list = handle_code_action_with_options(&req, Some(ws), ov, true).unwrap();
-    let arr = list.as_array().unwrap();
-    let mut resolved_out = Vec::new();
-    for item in arr {
-        let res_req = json!({ "params": item });
-        let resolved = handle_code_action_resolve(&res_req, Some(ws), ov).unwrap();
-        let title = resolved["title"].as_str().unwrap().to_string();
-        let mut changes_map = BTreeMap::new();
-        if let Some(changes) = resolved.get("edit").and_then(|e| e.get("changes")).and_then(|c| c.as_object()) {
-            for (file_uri, edits_val) in changes {
-                if let Some(ed_arr) = edits_val.as_array() {
-                    changes_map.insert(file_uri.clone(), ed_arr.clone());
-                }
-            }
-        }
-        resolved_out.push((title, changes_map));
-    }
-    resolved_out
+    let resolve_one = |item: &Value| {
+        let resolved = handle_code_action_resolve(&json!({ "params": item }), Some(ws), ov).unwrap();
+        let changes = resolved.get("edit").and_then(|e| e.get("changes")).and_then(|c| c.as_object());
+        let map = changes.into_iter().flatten().filter_map(|(uri, edits)| Some((uri.clone(), edits.as_array()?.clone()))).collect();
+        (resolved["title"].as_str().unwrap().to_string(), map)
+    };
+    list.as_array().unwrap().iter().map(resolve_one).collect()
 }
 
 #[test]

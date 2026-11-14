@@ -25,6 +25,21 @@ use super::query_path::query_path_candidates;
 use super::query_state::LiveEngine;
 use super::query_ty_fmt::query_type_at;
 
+/// Whether `line` is only a top-level import (`use …`, `pub use …`, `pub(in a::b) use …`), up to its `;` or open
+/// on the next line: no expression on it has a type. `use a::B; fn f() { … }` holds a function, so it is not.
+pub(crate) fn is_top_level_use_line(line: &str) -> bool {
+    if line.starts_with([' ', '\t']) {
+        return false;
+    }
+    let rest = line.strip_prefix("pub").map_or(line, |r| match r.trim_start().strip_prefix('(') {
+        Some(inner) => inner.split_once(')').map_or("", |(_, after)| after),
+        None if r.starts_with([' ', '\t']) => r,
+        None => "",
+    });
+    let Some(tree) = rest.trim_start().strip_prefix("use ") else { return false };
+    tree.find(';').is_none_or(|semi| tree[semi + 1..].trim().is_empty() || tree[semi + 1..].trim_start().starts_with("//"))
+}
+
 /// Resolved cursor type, candidate units on fallback, and 1-based `(col, line_text)`.
 pub(crate) type CursorTypeResolution = (Option<LiveTy>, Option<Vec<(usize, u32)>>, Option<(u32, String)>);
 
@@ -75,12 +90,12 @@ pub struct LiveDb {
     ws_stamp: Option<(u64, u64, usize)>,
     engine: Option<LiveEngine>,
     manual_overlays: HashMap<PathBuf, String>,
-    /// The last dot completion, under the file, offset, unit, buffer signature and on-disk time it was made for:
+    /// The last dot completion, under the file, offset, unit, signature salt and text hash it was made for:
     /// a request repeated on unchanged text (a re-trigger, a retried cancelled request) is answered from it.
     dot_memo: Option<(DotKey, DotCompletion)>,
 }
 
-type DotKey = (PathBuf, u32, usize, u64, Option<std::time::SystemTime>);
+type DotKey = (PathBuf, u32, usize, u64, u64);
 
 impl fmt::Debug for LiveDb {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -192,9 +207,10 @@ impl LiveDb {
         let Some(env_salt) = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays) else {
             return DotCompletion::default();
         };
-        // A clean file is read from disk: its modification time keeps an edit made outside any buffer apart.
-        let disk_time = (env_salt == 0).then(|| std::fs::metadata(&canon).and_then(|m| m.modified()).ok()).flatten();
-        let key: DotKey = (canon.clone(), byte_offset, r_idx, env_salt, disk_time);
+        // The signature salt covers edits to other items; the parsed text's hash covers an edit inside a body.
+        // A clean file's text is the one the engine loaded once (`u64::MAX`), which no request changes.
+        let text_hash = engine.parsed.as_ref().map_or(0, |p| p.text_hash);
+        let key: DotKey = (canon.clone(), byte_offset, r_idx, env_salt, text_hash);
         if let Some((k, memo)) = &self.dot_memo {
             if *k == key {
                 return memo.clone();
@@ -231,7 +247,11 @@ impl LiveDb {
         if let Some(v) = engine.state.units_by_file.get(file) {
             return Some(v.clone());
         }
-        if engine.src.canon_root == engine.src.ws_root && file.starts_with(&engine.src.ws_root) && ws.readers().iter().any(|r| r.header().files_count > 1) {
+        if engine.state.units_complete
+            && engine.src.canon_root == engine.src.ws_root
+            && file.starts_with(&engine.src.ws_root)
+            && ws.readers().iter().any(|r| r.header().files_count > 1)
+        {
             return Some(Vec::new());
         }
         None
@@ -267,9 +287,7 @@ impl LiveDb {
                 (char_col, byte_idx)
             };
             let trimmed = line_text.trim_start();
-            let is_use = !line_text.starts_with(' ')
-                && !line_text.starts_with('\t')
-                && (trimmed.starts_with("use ") || trimmed.starts_with("pub use ") || trimmed.starts_with("pub(crate) use ") || trimmed.starts_with("pub(super) use "));
+            let is_use = is_top_level_use_line(line_text);
             let lb = line_text.as_bytes();
             let is_id = |b: u8| b.is_ascii_alphanumeric() || b == b'_' || b == b'#' || b >= 0x80;
             let on_ident = lb.get(in_line).copied().is_some_and(is_id) || in_line.checked_sub(1).and_then(|i| lb.get(i).copied()).is_some_and(is_id);

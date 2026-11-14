@@ -30,6 +30,7 @@ mod tests;
 pub mod trait_impl_refs;
 mod trait_item_uses;
 mod trait_rename_ext;
+mod unit_match_check;
 mod workspace_symbol;
 mod workspace_symbol_crates;
 mod workspace_symbol_match;
