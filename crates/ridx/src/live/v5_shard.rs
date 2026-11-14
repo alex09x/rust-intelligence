@@ -42,6 +42,8 @@ pub struct ShardTables {
     pub line_col_defs: HashMap<(u32, u32), Vec<u32>>,
     /// Shard `ridx_file_id` -> workspace `CorpusSourceDb` `FileId`.
     pub file_map: Vec<FileId>,
+    /// Shard `ridx_file_id` -> non-reexport, non-macro-expansion `def_idx`s in that file (for non-dependency shards).
+    pub defs_by_file: Vec<Vec<u32>>,
     /// `(FileId, start_byte, end_byte)` -> `def_idx` for `def_at_byte_span`.
     pub span_to_def_idx: HashMap<(FileId, u32, u32), u32>,
     /// Sysroot `DefEntry::signature` string-pool ref -> `def_idx` (zero `String` copies).
@@ -113,6 +115,7 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
     let defs = reader.definitions();
     let files_count = reader.header().files_count as usize;
     let mut file_map = vec![FileId::NONE; files_count];
+    let mut defs_by_file = if meta.is_dependency { Vec::new() } else { vec![Vec::new(); files_count] };
     let mut has_mapped_files = false;
     if !meta.is_dependency {
         for (fid, slot) in file_map.iter_mut().enumerate() {
@@ -201,6 +204,11 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
             }
         }
 
+        if !d.is_macro_expansion() {
+            if let Some(bucket) = defs_by_file.get_mut(d.span().file_id() as usize) {
+                bucket.push(didx);
+            }
+        }
         if has_mapped_files && !d.is_macro_expansion() && !matches!(dk, DefKind::Use | DefKind::Impl) {
             let sp = d.span();
             if let Some(&cfid) = file_map.get(sp.file_id() as usize).filter(|f| f.is_some()) {
@@ -339,6 +347,7 @@ pub fn build_shard_tables(r_idx: usize, reader: &IndexReader<Mmap>, meta: &Reade
         assoc_to_impl: assoc_pairs.into_boxed_slice(),
         line_col_defs,
         file_map,
+        defs_by_file,
         span_to_def_idx,
         reexport_sig_to_idx,
         synth_macros: Vec::new(),

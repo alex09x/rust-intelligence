@@ -54,7 +54,7 @@ impl<'a, 's> FileResolver<'a, 's> {
     }
 
     #[inline]
-    fn overlaps_target(&self, node: NodeId) -> bool {
+    pub(super) fn overlaps_target(&self, node: NodeId) -> bool {
         self.target_range.is_none_or(|(ts, te)| node.0 < te && ts < self.st.node(node).subtree_end)
     }
 
@@ -78,9 +78,13 @@ impl<'a, 's> FileResolver<'a, 's> {
     }
 
     fn walk_container_items(&mut self, container: NodeId, in_body: bool) {
+        let clean_v5 = self.map.indexed_clean && self.db.crate_root_def(self.map.krate).is_some() && !self.map.is_dirty_file(self.file);
         for ch in self.st.children(container) {
-            if !in_body && !self.overlaps_target(ch) && !matches!(self.st.kind(ch), K::Struct | K::Union | K::Enum | K::TypeAlias | K::Trait) {
-                continue;
+            if !in_body && !self.overlaps_target(ch) {
+                let keep = !clean_v5 && matches!(self.st.kind(ch), K::Struct | K::Union | K::Enum | K::TypeAlias | K::Trait);
+                if !keep {
+                    continue;
+                }
             }
             if self.st.kind(ch).is_item() || self.st.kind(ch) == K::MacroCall {
                 self.walk_item(ch, in_body);
@@ -241,7 +245,7 @@ impl<'a, 's> FileResolver<'a, 's> {
                 self.walk_type(tn);
             }
         }
-        if let Some(body) = self.st.child(fn_node, K::BlockExpr) {
+        if let Some(body) = self.st.child(fn_node, K::BlockExpr).filter(|&b| self.overlaps_target(b)) {
             self.walk_block_expr(body, true);
         }
         self.ribs.locals_active.truncate(loc_mark);

@@ -58,6 +58,13 @@ impl Event {
     }
 
     #[inline]
+    pub(crate) fn tokens(count: u32) -> Self {
+        let mut ev = Self::TOMBSTONE;
+        ev.set_fp(count);
+        ev
+    }
+
+    #[inline]
     pub(crate) fn set_fp(&mut self, fp: u32) {
         debug_assert!(fp < 0xFFFE_FFFF);
         self.fp_lo = (fp & 0xFF) as u8;
@@ -133,6 +140,15 @@ impl<'s> SyntaxTree<'s> {
                         stack.push(nodes_slot.len() as u32);
                         nodes_slot.push(Node { kind: ev.kind, first: u32::MAX, end: 0, parent, subtree_end: 0 });
                     }
+                } else if ev.kind == SyntaxKind::Tombstone {
+                    let first_raw = sig[next_sig];
+                    next_sig += fp0 as usize;
+                    let last_raw = sig[next_sig - 1];
+                    for &id in &stack[unstarted..] {
+                        nodes_slot[id as usize].first = first_raw;
+                    }
+                    unstarted = stack.len();
+                    last_end = last_raw + 1;
                 } else {
                     events[i] = Event::TOMBSTONE;
                     chain.clear();

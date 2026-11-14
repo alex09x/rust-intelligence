@@ -196,6 +196,11 @@ impl FileNameRes {
     }
 
     #[inline]
+    pub fn swap_scratch(&mut self, other: &mut Self) {
+        core::mem::swap(&mut self.ribs, &mut other.ribs);
+    }
+
+    #[inline]
     pub fn clear(&mut self) {
         self.file = FileId::NONE;
         self.refs.clear();

@@ -30,10 +30,11 @@ use super::v5_ty_tables::fnv1a_str;
 pub(crate) struct CachedParsed {
     pub file: ridx_syntax::name_res::FileId,
     pub text_hash: u64,
-    pub src: String,
+    pub src: std::sync::Arc<String>,
     pub lines: LineIndex,
     pub(crate) bufs: std::sync::Mutex<(Vec<ridx_syntax::Token>, Vec<ridx_syntax::tree::Node>)>,
     pub fn_summaries: Vec<FnBodySummary>,
+    pub focused_span: Option<(u32, u32)>,
 }
 
 pub(crate) struct TreeLease<'a> {
@@ -184,6 +185,7 @@ pub(crate) fn resolve_def_location(
     raw_def: GlobalDefId,
 ) -> Option<LiveLocation> {
     if raw_def.krate == CrateId::LOCAL_OVERLAY {
+        let src_path = |fid: u32| db.src.files.get(fid as usize).map(|cf| db.src.ws_root.join(&cf.rel_path));
         if let Some(ld) = local_defs {
             let nraw = ld.fn_node_for_def(raw_def);
             if nraw != u32::MAX {
@@ -192,12 +194,11 @@ pub(crate) fn resolve_def_location(
                 let r = st.range(target_n);
                 let (sl, sc) = parsed.lines.to_line_col(&parsed.src, r.start as u32);
                 let (el, ec) = parsed.lines.to_line_col(&parsed.src, r.end as u32);
-                return Some(LiveLocation { file: active_canon.to_path_buf(), line: sl, col: sc, end_line: el, end_col: ec });
+                return Some(LiveLocation { file: src_path(parsed.file.0).unwrap_or_else(|| active_canon.to_path_buf()), line: sl, col: sc, end_line: el, end_col: ec });
             }
         }
         let it = dm.items.iter().find(|it| it.file.is_some() && (it.index_def == raw_def || (0x8000_0000 | it.id.0) == raw_def.index || it.id.0 == raw_def.index))?;
-        let cf = db.src.files.get(it.file.0 as usize)?;
-        let fpath = if Path::new(&cf.rel_path).is_absolute() { PathBuf::from(&cf.rel_path) } else { db.src.ws_root.join(&cf.rel_path) };
+        let (cf, fpath) = (db.src.files.get(it.file.0 as usize)?, src_path(it.file.0)?);
         let (sl, sc) = cf.lines.to_line_col(&cf.text, it.span_start);
         let (el, ec) = cf.lines.to_line_col(&cf.text, it.span_end);
         return Some(LiveLocation { file: fpath, line: sl, col: sc, end_line: el, end_col: ec });
@@ -355,25 +356,30 @@ pub(crate) fn map_item_kind_to_def_kind(k: IK) -> DefKind {
 }
 
 pub(crate) fn find_enclosing_fn_summary(st: &SyntaxTree<'_>, summaries: &[FnBodySummary], byte_off: u32) -> Option<(NodeId, u64, u64)> {
-    let mut best_fn: Option<&FnBodySummary> = None;
-    for s in summaries {
-        if byte_off >= s.fn_start && byte_off <= s.fn_end && best_fn.is_none_or(|b| (s.fn_end - s.fn_start) <= (b.fn_end - b.fn_start)) {
-            best_fn = Some(s);
-        }
-    }
-    if let Some(s) = best_fn {
+    if let Some(s) = summaries.iter().filter(|s| byte_off >= s.fn_start && byte_off <= s.fn_end).min_by_key(|s| s.fn_end - s.fn_start) {
         return Some((s.fn_node, s.fn_key, s.body_hash ^ s.sig_hash.rotate_left(7)));
     }
-    for nid in (0..st.nodes.len() as u32).map(NodeId) {
-        if matches!(st.kind(nid), K::Const | K::Static) {
-            let r = st.range(nid);
-            if (byte_off as usize) >= r.start && (byte_off as usize) <= r.end {
-                let h = fnv1a_str(st.text(nid));
-                return Some((nid, 0xC057_0000_0000_0000 | u64::from(nid.0), h));
-            }
+    let b = byte_off as usize;
+    let (mut cur, mut best_fn, mut first_cs) = (st.root(), None, None);
+    while let Some(ch) = st.children(cur).find(|&c| (st.range(c).start..=st.range(c).end).contains(&b)) {
+        if summaries.is_empty() && st.kind(ch) == K::Fn && st.child(ch, K::BlockExpr).is_some() {
+            best_fn = Some(ch);
+        } else if first_cs.is_none() && matches!(st.kind(ch), K::Const | K::Static) {
+            first_cs = Some(ch);
         }
+        cur = ch;
     }
-    None
+    let best_fn = best_fn.filter(|&fn_node| {
+        st.child(fn_node, K::BlockExpr).is_none_or(|body| {
+            b >= st.range(body).start
+                || (st.child(fn_node, K::ParamList).is_some_and(|pl| (st.range(pl).start..=st.range(pl).end).contains(&b))
+                    && super::query_cursor::smallest_type_node_at(st, byte_off, None).is_none())
+        })
+    });
+    let first_cs = first_cs.filter(|&cs| st.children(cs).find(|&c| st.kind(c).is_expr() || st.kind(c) == K::MacroCall).is_some_and(|e| b >= st.range(e).start));
+    best_fn
+        .map(|n| (n, (u64::from(st.range(n).start as u32) << 32) | u64::from(n.0), u64::MAX))
+        .or_else(|| first_cs.map(|n| (n, 0xC057_0000_0000_0000 | (u64::from(st.range(n).start as u32) << 20) | u64::from(n.0), fnv1a_str(st.text(n)))))
 }
 
 pub(crate) fn lookup_live_text(abs: &Path, canon: &Path, manual: &HashMap<PathBuf, String>, overlays: Option<&OverlayManager>) -> Option<String> {
@@ -384,13 +390,11 @@ pub(crate) fn lookup_live_text(abs: &Path, canon: &Path, manual: &HashMap<PathBu
     if let Some(s) = canon.to_str().and_then(|s| ov.get(s)).or_else(|| abs.to_str().and_then(|s| ov.get(s))) {
         return Some(s.text.clone());
     }
-    for pstr in ov.open_file_paths() {
-        let p = Path::new(&pstr);
-        if p == abs || p == canon || p.canonicalize().is_ok_and(|c| c == canon) {
-            if let Some(doc) = ov.get(&pstr) {
-                return Some(doc.text.clone());
-            }
-        }
-    }
-    None
+    ov.open_file_paths()
+        .into_iter()
+        .filter(|ps| {
+            let p = Path::new(ps);
+            p == abs || p == canon || p.canonicalize().is_ok_and(|c| c == canon)
+        })
+        .find_map(|ps| ov.get(&ps).map(|d| d.text.clone()))
 }

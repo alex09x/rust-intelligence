@@ -14,28 +14,44 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use ridx_format::WorkspaceIndex;
 use ridx_syntax::name_res::{join_norm_into, join_norm_path, Edition, FileId, SourceDb};
 
 /// Fast `(1-based line, 1-based char_col)` <-> UTF-8 byte offset converter for one source file.
+#[derive(Clone)]
 pub struct LineIndex {
-    line_starts: Vec<u32>,
+    line_starts: Arc<Vec<u32>>,
     is_ascii: bool,
 }
 
 impl LineIndex {
     pub fn new(text: &str) -> Self {
         let bytes = text.as_bytes();
-        let is_ascii = text.is_ascii();
-        let mut line_starts = Vec::with_capacity(bytes.len() / 32 + 2);
+        let is_ascii = bytes.is_ascii();
+        let mut line_starts = Vec::with_capacity(bytes.len() / 28 + 2);
         line_starts.push(0);
         for (i, &b) in bytes.iter().enumerate() {
             if b == b'\n' {
                 line_starts.push((i + 1) as u32);
             }
         }
-        Self { line_starts, is_ascii }
+        Self { line_starts: Arc::new(line_starts), is_ascii }
+    }
+
+    #[inline]
+    pub fn is_ascii(&self) -> bool {
+        self.is_ascii
+    }
+
+    #[inline]
+    pub fn line_str<'a>(&self, text: &'a str, line_1: u32) -> Option<(usize, &'a str)> {
+        let li = line_1.checked_sub(1)? as usize;
+        let start = *self.line_starts.get(li)? as usize;
+        let end = self.line_starts.get(li + 1).map_or(text.len(), |&e| (e as usize).saturating_sub(1));
+        let s = text.get(start..end)?;
+        Some((start, s.strip_suffix('\r').unwrap_or(s)))
     }
 
     /// Converts 1-based `(line, char_col)` (matching `rustc` `SourceMap::lookup_char_pos`) to UTF-8 byte offset.
@@ -74,7 +90,7 @@ impl LineIndex {
 
 pub struct CorpusFile {
     pub rel_path: String,
-    pub text: String,
+    pub text: Arc<String>,
     pub lines: LineIndex,
 }
 
@@ -100,21 +116,16 @@ impl CorpusSourceDb {
         let mut by_abs = HashMap::with_capacity(raw_paths.len() * 2);
 
         for abs in raw_paths {
-            let Ok(text) = fs::read_to_string(&abs) else {
-                continue;
-            };
-            let rel_raw = abs.strip_prefix(ws_root).unwrap_or(&abs).to_string_lossy();
-            let rel_path = join_norm_path("", &rel_raw);
-            let id = FileId(files.len() as u32);
-            let lines = LineIndex::new(&text);
+            let Ok(text) = fs::read_to_string(&abs) else { continue };
+            let rel_path = join_norm_path("", &abs.strip_prefix(ws_root).unwrap_or(&abs).to_string_lossy());
+            let (id, lines) = (FileId(files.len() as u32), LineIndex::new(&text));
             by_rel.insert(rel_path.clone(), id);
             by_abs.insert(abs.clone(), id);
             if let Ok(ca) = abs.canonicalize() {
                 by_abs.entry(ca).or_insert(id);
             }
-            files.push(CorpusFile { rel_path, text, lines });
+            files.push(CorpusFile { rel_path, text: Arc::new(text), lines });
         }
-
         Self { ws_root: ws_root.to_path_buf(), canon_root, files, by_rel, by_abs }
     }
 
@@ -124,35 +135,26 @@ impl CorpusSourceDb {
             if m.is_dependency {
                 continue;
             }
-            let Some(out_dir_str) = m.env.get("OUT_DIR") else {
-                continue;
-            };
-            let out_dir = PathBuf::from(out_dir_str);
+            let Some(out_dir) = m.env.get("OUT_DIR").map(PathBuf::from) else { continue };
             if !seen_dirs.insert(out_dir.clone()) || !out_dir.is_dir() {
                 continue;
             }
-            let mut extra = Vec::new();
-            let mut ancestors = Vec::new();
+            let (mut extra, mut ancestors) = (Vec::new(), Vec::new());
             collect_rs_files(&out_dir, &mut ancestors, &mut extra);
             extra.sort();
             for abs in extra {
                 if self.by_abs.contains_key(&abs) {
                     continue;
                 }
-                let Ok(text) = fs::read_to_string(&abs) else {
-                    continue;
-                };
-                let norm_abs = join_norm_path("", &abs.to_string_lossy());
-                let id = FileId(self.files.len() as u32);
-                let lines = LineIndex::new(&text);
+                let Ok(text) = fs::read_to_string(&abs) else { continue };
+                let (norm_abs, id, lines) = (join_norm_path("", &abs.to_string_lossy()), FileId(self.files.len() as u32), LineIndex::new(&text));
                 self.by_rel.entry(norm_abs.clone()).or_insert(id);
                 self.by_abs.insert(abs.clone(), id);
                 if let Ok(ca) = abs.canonicalize() {
-                    let norm_ca = join_norm_path("", &ca.to_string_lossy());
-                    self.by_rel.entry(norm_ca).or_insert(id);
+                    self.by_rel.entry(join_norm_path("", &ca.to_string_lossy())).or_insert(id);
                     self.by_abs.entry(ca).or_insert(id);
                 }
-                self.files.push(CorpusFile { rel_path: norm_abs, text, lines });
+                self.files.push(CorpusFile { rel_path: norm_abs, text: Arc::new(text), lines });
             }
         }
     }
@@ -268,8 +270,9 @@ pub(crate) fn load_reader_meta_at(ws: &WorkspaceIndex, idx: usize, has_core_sysr
     let mut edition = Edition::Edition2021;
     let mut is_dependency = ws.is_reader_dependency(idx);
     let is_sysroot = has_core_sysroot && ws.meta_path_at(idx).is_none();
-    let mut target_kind = String::new();
-    let mut is_test_harness = false;
+    let tk_opt = ws.target_kind_at(idx);
+    let mut target_kind = tk_opt.map_or_else(String::new, |tk| tk.as_str().to_string());
+    let mut is_test_harness = tk_opt == Some(ridx_format::TargetKind::Test);
     let mut source_root = ws.source_root_at(idx).map(Path::to_path_buf);
     let mut root_rs_abs: Option<PathBuf> = None;
     let mut extern_units: BTreeMap<String, String> = BTreeMap::new();
@@ -371,13 +374,7 @@ fn parse_compiler_args(args: &[&str], source_root: Option<&Path>, edition: &mut 
             *edition = parse_edition(ed);
         } else if !a.starts_with('-') && a.ends_with(".rs") && root_rs.is_none() {
             let p = PathBuf::from(a);
-            *root_rs = Some(if p.is_absolute() {
-                p
-            } else if let Some(sr) = source_root {
-                sr.join(p)
-            } else {
-                p
-            });
+            *root_rs = Some(if p.is_absolute() { p } else { source_root.map_or_else(|| p.clone(), |sr| sr.join(&p)) });
         }
         i += 1;
     }

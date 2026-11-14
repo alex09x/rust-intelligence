@@ -26,6 +26,9 @@ pub(crate) fn item_list(p: &mut Parser<'_>, in_braces: bool) {
             Some(T::RBrace) if in_braces => return,
             _ => {}
         }
+        if super::items_fn::try_skip_non_target_item(p) {
+            continue;
+        }
         let before = p.mark_pos();
         if item(p).is_none() && p.mark_pos() == before {
             p.err_bump();
@@ -192,6 +195,7 @@ fn macro_rules(p: &mut Parser<'_>) -> K {
 }
 
 fn impl_(p: &mut Parser<'_>) -> K {
+    let impl_start = p.tok(0).map_or(0, |t| t.start);
     p.bump();
     if p.at(T::Lt) {
         types::opt_generic_params(p);
@@ -204,11 +208,14 @@ fn impl_(p: &mut Parser<'_>) -> K {
         types::type_(p);
     }
     types::opt_where_clause(p);
-    assoc_items(p);
+    if !p.at(T::LBrace) || !super::items_fn::try_skip_brace_node(p, impl_start, K::ItemList) {
+        assoc_items(p);
+    }
     K::Impl
 }
 
 fn trait_(p: &mut Parser<'_>) -> K {
+    let trait_start = p.tok(0).map_or(0, |t| t.start);
     p.bump();
     name(p);
     types::opt_generic_params(p);
@@ -222,7 +229,9 @@ fn trait_(p: &mut Parser<'_>) -> K {
         return K::Trait;
     }
     types::opt_where_clause(p);
-    assoc_items(p);
+    if !p.at(T::LBrace) || !super::items_fn::try_skip_brace_node(p, trait_start, K::ItemList) {
+        assoc_items(p);
+    }
     K::Trait
 }
 
@@ -294,10 +303,13 @@ fn const_or_static(p: &mut Parser<'_>, kind: K) -> K {
 }
 
 fn module(p: &mut Parser<'_>) -> K {
+    let mod_start = p.tok(0).map_or(0, |t| t.start);
     p.bump();
     name(p);
     if p.at(T::LBrace) {
-        assoc_items(p);
+        if !super::items_fn::try_skip_mod_item_list(p, mod_start) {
+            assoc_items(p);
+        }
     } else {
         p.expect(T::Semi);
     }

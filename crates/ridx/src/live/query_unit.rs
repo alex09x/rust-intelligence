@@ -38,6 +38,20 @@ fn reader_stores_resolved(ws: &WorkspaceIndex, state: &LiveState, idx: usize, ab
     })
 }
 
+fn score_unit(ws: &WorkspaceIndex, state: &mut LiveState, idx: usize) -> Option<(u8, u8, u32)> {
+    state.ensure_meta(ws, idx);
+    let meta = &state.metas[idx];
+    if meta.is_dependency || meta.target_kind == "custom-build" {
+        return None;
+    }
+    let kind_rank = match meta.target_kind.as_str() {
+        "lib" | "rlib" | "proc-macro" | "" if !meta.is_test_harness => 0,
+        _ if !meta.is_test_harness => 1,
+        _ => 2,
+    };
+    Some((kind_rank, u8::from(meta.is_test_harness), u32::MAX - ws.readers()[idx].header().refs_count))
+}
+
 /// The workspace unit that compiles `abs` (`canon` is its canonical form): library targets before other targets
 /// before test harnesses, the unit with more references first; failing that, the unit with the deepest source
 /// root above the file.
@@ -45,34 +59,46 @@ fn reader_stores_resolved(ws: &WorkspaceIndex, state: &LiveState, idx: usize, ab
 /// The units listed for the path in `units_by_file` are ranked first; a scan of every unit's file table follows for
 /// paths the listing misses, and the disk-resolving scan over every stored path of every unit is kept only for
 /// spellings the index cannot map (symlinked roots), because it costs one `canonicalize` per stored file.
-pub(super) fn find_best_unit(ws: &WorkspaceIndex, state: &mut LiveState, units_by_file: &HashMap<PathBuf, Vec<usize>>, abs: &Path, canon: &Path) -> Option<usize> {
-    let listed: Vec<usize> = units_by_file.get(abs).into_iter().chain(units_by_file.get(canon)).flatten().copied().collect();
-    for pass in 0..3u8 {
+pub(super) fn find_best_unit(ws: &WorkspaceIndex, state: &mut LiveState, abs: &Path, canon: &Path, allow_unindexed: bool) -> Option<usize> {
+    if let Some(cands) = state.units_by_file.get(abs).or_else(|| (canon != abs).then(|| state.units_by_file.get(canon)).flatten()).cloned() {
+        if cands.len() == 1 {
+            let idx = cands[0].0;
+            state.ensure_meta(ws, idx);
+            let m = &state.metas[idx];
+            if !m.is_dependency && !m.target_kind.is_empty() && m.target_kind != "custom-build" {
+                return Some(idx);
+            }
+        }
         let mut best: Option<((u8, u8, u32), usize)> = None;
-        let candidates: Vec<usize> = if pass == 0 { listed.clone() } else { (0..ws.crate_count()).collect() };
-        for idx in candidates {
+        for (idx, _) in cands {
+            if !state.metas[idx].is_dependency {
+                if let Some(key) = score_unit(ws, state, idx) {
+                    if best.is_none_or(|(bk, _)| key < bk) {
+                        best = Some((key, idx));
+                    }
+                }
+            }
+        }
+        if let Some((_, idx)) = best {
+            return Some(idx);
+        }
+    }
+    if !allow_unindexed && canon == abs && ws.readers().iter().any(|r| r.header().files_count > 1) {
+        return None;
+    }
+    for resolve_on_disk in [false, true] {
+        let mut best: Option<((u8, u8, u32), usize)> = None;
+        for idx in 0..ws.crate_count() {
             if state.metas[idx].is_dependency {
                 continue;
             }
-            let has_file = match pass {
-                0 => true,
-                1 => reader_stores(ws, idx, abs) || (canon != abs && reader_stores(ws, idx, canon)),
-                _ => reader_stores_resolved(ws, state, idx, abs, canon),
-            };
+            let has_file =
+                if resolve_on_disk { reader_stores_resolved(ws, state, idx, abs, canon) } else { reader_stores(ws, idx, abs) || (canon != abs && reader_stores(ws, idx, canon)) };
             if has_file {
-                state.ensure_meta(ws, idx);
-                let meta = &state.metas[idx];
-                if meta.is_dependency || meta.target_kind == "custom-build" {
-                    continue;
-                }
-                let kind_rank = match meta.target_kind.as_str() {
-                    "lib" | "rlib" | "proc-macro" | "" if !meta.is_test_harness => 0,
-                    _ if !meta.is_test_harness => 1,
-                    _ => 2,
-                };
-                let key = (kind_rank, u8::from(meta.is_test_harness), u32::MAX - ws.readers()[idx].header().refs_count);
-                if best.is_none_or(|(bk, _)| key < bk) {
-                    best = Some((key, idx));
+                if let Some(key) = score_unit(ws, state, idx) {
+                    if best.is_none_or(|(bk, _)| key < bk) {
+                        best = Some((key, idx));
+                    }
                 }
             }
         }
@@ -82,7 +108,7 @@ pub(super) fn find_best_unit(ws: &WorkspaceIndex, state: &mut LiveState, units_b
     }
     let mut best_anc: Option<((usize, u8), usize)> = None;
     for idx in 0..state.metas.len() {
-        if state.metas[idx].is_dependency {
+        if state.metas[idx].is_dependency || (!allow_unindexed && ws.readers()[idx].header().files_count > 1) {
             continue;
         }
         let Some(sr) = state.metas[idx].source_root.clone() else { continue };
@@ -107,41 +133,48 @@ pub(super) fn find_best_unit(ws: &WorkspaceIndex, state: &mut LiveState, units_b
 pub(super) fn register_single_file_spans(ws: &WorkspaceIndex, src: &CorpusSourceDb, state: &mut LiveState, r_idx: usize, fid: FileId, canon: &Path) -> String {
     let rdr = &ws.readers()[r_idx];
     let sr = state.metas[r_idx].source_root.as_deref().or_else(|| ws.workspace_root());
-    let rfid_opt = canon.to_str().and_then(|s| ws.target_file_for_reader(r_idx, s)).and_then(|tf| rdr.find_file_id(tf.as_ref())).or_else(|| {
-        (0..rdr.header().files_count).find(|&i| {
-            let fstr = rdr.get_file(i);
-            !fstr.is_empty() && {
-                let joined = sr.map_or_else(|| PathBuf::from(fstr), |r| join_resolving_overlap(r, Path::new(fstr)));
-                joined == canon || joined.canonicalize().is_ok_and(|c| c == canon)
-            }
-        })
-    });
+    let rfid_opt = state
+        .units_by_file
+        .get(canon)
+        .and_then(|v| v.iter().find(|&&(i, _)| i == r_idx).map(|&(_, rfid)| rfid))
+        .or_else(|| canon.to_str().and_then(|s| ws.target_file_for_reader(r_idx, s)).and_then(|tf| rdr.find_file_id(tf.as_ref())))
+        .or_else(|| {
+            (0..rdr.header().files_count).find(|&i| {
+                let fstr = rdr.get_file(i);
+                !fstr.is_empty() && {
+                    let joined = sr.map_or_else(|| PathBuf::from(fstr), |r| join_resolving_overlap(r, Path::new(fstr)));
+                    joined == canon || joined.canonicalize().is_ok_and(|c| c == canon)
+                }
+            })
+        });
     let Some(rfid) = rfid_opt else { return String::new() };
     let defs = rdr.definitions();
     let shard = &mut state.shards[r_idx];
     if (rfid as usize) < shard.file_map.len() && shard.file_map[rfid as usize] != fid {
         shard.file_map[rfid as usize] = fid;
         let cf = &src.files[fid.0 as usize];
-        for (i, d) in defs.iter().enumerate() {
-            let sp = d.span();
-            if sp.file_id() != rfid || d.is_reexport() || d.is_macro_expansion() || matches!(DefKind::from(d.kind), DefKind::Use | DefKind::Impl) {
-                continue;
-            }
-            if let (Some(sb), Some(eb)) = (cf.lines.to_byte(&cf.text, sp.start_line(), sp.start_col()), cf.lines.to_byte(&cf.text, sp.end_line(), sp.end_col())) {
-                if sb < eb {
-                    shard.span_to_def_idx.entry((fid, sb, eb)).or_insert(i as u32);
+        if let Some(fdefs) = shard.defs_by_file.get(rfid as usize) {
+            for &didx in fdefs {
+                let d = &defs[didx as usize];
+                if matches!(DefKind::from(d.kind), DefKind::Use | DefKind::Impl) {
+                    continue;
+                }
+                let sp = d.span();
+                if let (Some(sb), Some(eb)) = (cf.lines.to_byte(&cf.text, sp.start_line(), sp.start_col()), cf.lines.to_byte(&cf.text, sp.end_line(), sp.end_col())) {
+                    if sb < eb {
+                        shard.span_to_def_idx.entry((fid, sb, eb)).or_insert(didx);
+                    }
                 }
             }
         }
     }
-    if state.metas[r_idx].root_rs_abs.as_deref().is_some_and(|rp| rp == canon || rp.canonicalize().ok().as_deref() == Some(canon)) {
+    let file_defs = shard.defs_by_file.get(rfid as usize).map_or(&[][..], Vec::as_slice);
+    if state.metas[r_idx].root_rs_abs.as_deref().is_some_and(|rp| rp == canon || (src.canon_root != src.ws_root && rp.canonicalize().ok().as_deref() == Some(canon))) {
         return String::new();
     }
     let mut best_mod: Option<&str> = None;
-    for d in defs {
-        if d.span().file_id() != rfid || d.is_reexport() || d.is_macro_expansion() {
-            continue;
-        }
+    for &didx in file_defs {
+        let d = &defs[didx as usize];
         let dk = DefKind::from(d.kind);
         if matches!(
             dk,
@@ -163,6 +196,9 @@ pub(super) fn register_single_file_spans(ws: &WorkspaceIndex, src: &CorpusSource
                 return String::new();
             }
             let parent = raw_p.rsplit_once("::").map_or("", |(p, _)| p);
+            if parent.is_empty() {
+                return String::new();
+            }
             if best_mod.is_none_or(|b| parent.len() < b.len()) {
                 best_mod = Some(parent);
             }
@@ -171,11 +207,13 @@ pub(super) fn register_single_file_spans(ws: &WorkspaceIndex, src: &CorpusSource
     if let Some(m) = best_mod {
         return m.to_string();
     }
-    for (didx, d) in defs.iter().enumerate() {
-        if !d.is_reexport() && DefKind::from(d.kind) == DefKind::Mod {
-            for ue in rdr.uses_for_owner(UseOwner::Def(didx as u32)) {
-                if ue.def_index.and_then(|ui| defs.get(ui as usize)).is_some_and(|ud| ud.span().file_id() == rfid) {
-                    return rdr.get_str(d.path_offset()).to_string();
+    if !file_defs.is_empty() {
+        for (didx, d) in defs.iter().enumerate() {
+            if !d.is_reexport() && DefKind::from(d.kind) == DefKind::Mod {
+                for ue in rdr.uses_for_owner(UseOwner::Def(didx as u32)) {
+                    if ue.def_index.and_then(|ui| defs.get(ui as usize)).is_some_and(|ud| ud.span().file_id() == rfid) {
+                        return rdr.get_str(d.path_offset()).to_string();
+                    }
                 }
             }
         }
@@ -246,45 +284,30 @@ pub(super) fn extend_method_index(
     }
 }
 
-/// Every workspace unit by the absolute path of each file in its file table (stored paths are absolute or relative
-/// to the unit's source root).
-pub(super) fn index_units_by_file(ws: &WorkspaceIndex, state: &LiveState) -> HashMap<PathBuf, Vec<usize>> {
-    let mut out: HashMap<PathBuf, Vec<usize>> = HashMap::new();
-    for (idx, rdr) in ws.readers().iter().enumerate() {
-        let Some(meta) = state.metas.get(idx).filter(|m| !m.is_dependency) else { continue };
-        for fid in 0..rdr.files_count() {
-            let stored = Path::new(rdr.get_file(fid));
-            let abs = if stored.is_absolute() {
-                stored.to_path_buf()
-            } else if let Some(root) = meta.source_root.as_deref() {
-                join_resolving_overlap(root, stored)
-            } else {
-                continue;
-            };
-            let units = out.entry(abs).or_default();
-            if !units.contains(&idx) {
-                units.push(idx);
-            }
-        }
-    }
-    out
-}
-
-/// How many recently queried files keep their syntax tree besides the current one.
-pub(super) const RECENT_PARSED_FILES: usize = 16;
-
 impl super::query_state::LiveEngine {
-    /// Keeps the tree of a file the queries moved away from, so returning to it does not parse it again.
-    pub(super) fn remember_parsed(&mut self, prev: super::query_loc::CachedParsed) {
-        if self.parsed_recent.len() >= RECENT_PARSED_FILES {
-            self.parsed_recent.remove(0);
-        }
-        self.parsed_recent.push(prev);
-    }
-
     /// The unit to answer a query at `off` in: the file's own unit, or another one that compiles the same file when
     /// only that one enables the code at the cursor (`#[cfg(test)]` code goes to the test harness).
-    pub(super) fn unit_for_cursor(&self, ws: &WorkspaceIndex, file_unit: usize, canon: &Path, off: u32) -> usize {
+    pub(super) fn unit_for_cursor(&mut self, ws: &WorkspaceIndex, file_unit: usize, canon: &Path, off: u32) -> usize {
+        if !self.parsed.as_ref().is_some_and(|p| p.src.contains("cfg")) {
+            return file_unit;
+        }
+        self.state.ensure_meta(ws, file_unit);
+        if let Some(units) = self.state.units_by_file.get(canon).cloned() {
+            for (u, _) in units {
+                if !self.state.metas[u].is_dependency {
+                    self.state.ensure_meta(ws, u);
+                }
+            }
+        } else {
+            let p_sr = self.state.metas[file_unit].source_root.clone();
+            let p_cn = self.state.metas[file_unit].crate_name.clone();
+            for u in 0..ws.crate_count() {
+                let m = &self.state.metas[u];
+                if !m.is_dependency && (reader_stores(ws, u, canon) || (m.source_root.is_some() && m.source_root == p_sr && m.crate_name == p_cn)) {
+                    self.state.ensure_meta(ws, u);
+                }
+            }
+        }
         let Some(parsed) = self.parsed.as_ref() else { return file_unit };
         let st = parsed.tree();
         let db = RidxV5ItemDb::view(ws, &self.src, &self.state);

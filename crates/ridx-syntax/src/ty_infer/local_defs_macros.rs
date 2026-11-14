@@ -66,6 +66,12 @@ impl ItemDb for EmptyItemDb {
 
 impl LocalCstDefs {
     #[inline]
+    pub fn swap_macro_caches(&mut self, other: &mut Self) {
+        core::mem::swap(&mut self.macro_cache, &mut other.macro_cache);
+        core::mem::swap(&mut self.failed_macro_keys, &mut other.failed_macro_keys);
+    }
+
+    #[inline]
     pub(super) fn find_body_macro(&self, mac_node: NodeId) -> Option<&PreExpandedMacro> {
         let idx = self.body_macros.binary_search_by_key(&mac_node.0, |m| m.mac_node.0).ok()?;
         self.body_macros.get(idx)
@@ -85,6 +91,9 @@ impl LocalCstDefs {
     }
 
     pub(super) fn scan_body_macros(&mut self, st: &SyntaxTree<'_>, subtree: NodeId, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId) {
+        if !st.nodes[subtree.0 as usize..st.node(subtree).subtree_end as usize].iter().any(|n| n.kind == K::MacroCall) {
+            return;
+        }
         let krate = def_map.map_or(CrateId::NONE, |dm| dm.krate);
         for node in st.descendants(subtree) {
             if st.kind(node) != K::MacroCall || self.body_macros.iter().any(|m| m.mac_node == node) {
@@ -131,7 +140,8 @@ impl LocalCstDefs {
             let Some(inner_src) = st.src.get(inner_s..inner_e) else { continue };
             let in_ty_ctx = st.parent(node).is_some_and(|p| matches!(st.kind(p), K::TypeArg | K::RetType | K::Param | K::TupleType | K::RefType | K::SliceType | K::ArrayType));
             let ckey = macro_cache_key(krate, file, cur_mod, in_ty_ctx, raw_path, inner_src, local_hit.unwrap_or(""));
-            if self.failed_macro_keys.contains(&ckey) {
+            let lkey = macro_cache_key(krate, FileId(u32::MAX), cur_mod, false, raw_path, "", local_hit.unwrap_or(""));
+            if self.failed_macro_keys.contains(&lkey) || self.failed_macro_keys.contains(&ckey) {
                 continue;
             }
             if let Some(pos) = self.macro_cache.iter().position(|m| m.cache_key == ckey) {
@@ -146,7 +156,7 @@ impl LocalCstDefs {
                 continue;
             }
             let Some((body_str, dc)) = local_hit.map(|b| (b, "crate")).or_else(|| lookup_macro_rules(def_map, item_db, cur_mod, raw_path)) else {
-                self.failed_macro_keys.push(ckey);
+                self.failed_macro_keys.push(lkey);
                 continue;
             };
             let mut spans = Vec::new();

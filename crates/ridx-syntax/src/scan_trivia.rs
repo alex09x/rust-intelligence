@@ -10,7 +10,10 @@
 
 //! Trivia scanners: whitespace, line comments, nested block comments, and shebang.
 
-use crate::char_class::{is_ascii_ws, is_whitespace_char};
+use crate::char_class::{is_ascii_ws, is_forbidden_raw_ident, is_ident_start_char, is_whitespace_char, scan_ident_tail};
+use crate::keyword::classify_ident;
+use crate::scan_char::{scan_byte_char, scan_char_or_lifetime};
+use crate::scan_lit::{scan_quoted_str, scan_raw_str};
 use crate::token::{TokenKind, HAS_ERROR};
 
 /// Scans one or more consecutive whitespace characters starting at `start`.
@@ -137,4 +140,238 @@ pub(crate) fn try_scan_shebang(src: &str, bytes: &[u8], start: usize) -> Option<
         None => bytes.len(),
     };
     Some((TokenKind::Shebang, line_end))
+}
+
+pub(crate) fn find_matching_delim(src: &str, bytes: &[u8], open_pos: usize, open_b: u8, close_b: u8, max_pos: usize) -> Option<usize> {
+    let len = bytes.len();
+    let (mut pos, mut depth) = (open_pos + 1, 1u32);
+    while pos < max_pos {
+        match bytes[pos] {
+            b if b == open_b => (depth += 1, pos += 1).1,
+            b if b == close_b => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(pos);
+                }
+                pos += 1;
+            }
+            b'/' if pos + 1 < len && bytes[pos + 1] == b'/' => pos = scan_line_comment(bytes, pos),
+            b'/' if pos + 1 < len && bytes[pos + 1] == b'*' => {
+                let (flags, end) = scan_block_comment(bytes, pos);
+                if flags != 0 {
+                    return None;
+                }
+                pos = end;
+            }
+            b'"' => {
+                let (_, flags, end) = scan_quoted_str(src, bytes, pos, TokenKind::Str);
+                if flags != 0 {
+                    return None;
+                }
+                pos = end;
+            }
+            b'\'' => {
+                let (_, flags, end) = scan_char_or_lifetime(src, bytes, pos);
+                if flags != 0 {
+                    return None;
+                }
+                pos = end;
+            }
+            b'r' if pos + 1 < len && matches!(bytes[pos + 1], b'"' | b'#') => {
+                let (_, flags, end) = scan_r_prefix_or_ident(src, bytes, pos);
+                if flags != 0 {
+                    return None;
+                }
+                pos = end;
+            }
+            _ => pos += 1,
+        }
+    }
+    None
+}
+
+pub(crate) enum SkipItem {
+    Collapsed(usize, usize, u8),
+    ContainsTarget,
+    Bail,
+}
+
+pub(crate) fn skip_item_from_kw(src: &str, bytes: &[u8], after_kw: usize, kind: TokenKind, max_pos: usize) -> SkipItem {
+    let len = bytes.len();
+    let (mut pos, mut pb, mut prev_eq, mut prev_lt, mut saw_parens) = (after_kw, 0u32, false, false, kind != TokenKind::Fn);
+    while pos < max_pos {
+        match bytes[pos] {
+            b'/' if pos + 1 < len && bytes[pos + 1] == b'/' => pos = scan_line_comment(bytes, pos),
+            b'/' if pos + 1 < len && bytes[pos + 1] == b'*' => {
+                let (flags, end) = scan_block_comment(bytes, pos);
+                if flags != 0 {
+                    return SkipItem::Bail;
+                }
+                pos = end;
+            }
+            b'"' => {
+                let (_, flags, end) = scan_quoted_str(src, bytes, pos, TokenKind::Str);
+                if flags != 0 {
+                    return SkipItem::Bail;
+                }
+                (prev_eq, prev_lt) = (false, false);
+                pos = end;
+            }
+            b'\'' => {
+                let (_, flags, end) = scan_char_or_lifetime(src, bytes, pos);
+                if flags != 0 {
+                    return SkipItem::Bail;
+                }
+                (prev_eq, prev_lt) = (false, false);
+                pos = end;
+            }
+            b'r' if pos + 1 < len && matches!(bytes[pos + 1], b'"' | b'#') => {
+                let (_, flags, end) = scan_r_prefix_or_ident(src, bytes, pos);
+                if flags != 0 {
+                    return SkipItem::Bail;
+                }
+                (prev_eq, prev_lt) = (false, false);
+                pos = end;
+            }
+            b'(' => {
+                if pb == 0 {
+                    saw_parens = true;
+                }
+                pb += 1;
+                (prev_eq, prev_lt) = (false, false);
+                pos += 1;
+            }
+            b'[' => {
+                pb += 1;
+                (prev_eq, prev_lt) = (false, false);
+                pos += 1;
+            }
+            b')' | b']' => {
+                pb = pb.saturating_sub(1);
+                (prev_eq, prev_lt) = (false, false);
+                pos += 1;
+            }
+            b';' if pb == 0 => {
+                return if saw_parens && !matches!(kind, TokenKind::Enum | TokenKind::Impl | TokenKind::Trait) { SkipItem::Collapsed(pos, pos, b';') } else { SkipItem::Bail };
+            }
+            b'{' if pb == 0 => {
+                if kind == TokenKind::Use || prev_eq || prev_lt {
+                    let Some(close) = find_matching_delim(src, bytes, pos, b'{', b'}', max_pos) else {
+                        return if max_pos < len { SkipItem::ContainsTarget } else { SkipItem::Bail };
+                    };
+                    (prev_eq, prev_lt) = (false, false);
+                    pos = close + 1;
+                } else if saw_parens && !matches!(kind, TokenKind::Const | TokenKind::Static | TokenKind::Type) {
+                    return match find_matching_delim(src, bytes, pos, b'{', b'}', max_pos) {
+                        Some(close) => SkipItem::Collapsed(pos, close, b'}'),
+                        None if max_pos < len => SkipItem::ContainsTarget,
+                        None => SkipItem::Bail,
+                    };
+                } else {
+                    return SkipItem::Bail;
+                }
+            }
+            b'}' if pb == 0 => return SkipItem::Bail,
+            b'=' if pb == 0 => {
+                (prev_eq, prev_lt) = (true, false);
+                pos += 1;
+            }
+            b'<' if pb == 0 => {
+                (prev_eq, prev_lt) = (false, true);
+                pos += 1;
+            }
+            b' ' | b'\t' | b'\n' | b'\r' | 0x0B | 0x0C => pos += 1,
+            _ => {
+                (prev_eq, prev_lt) = (false, false);
+                pos += 1;
+            }
+        }
+    }
+    if max_pos < len && (kind != TokenKind::Const || prev_eq) {
+        SkipItem::ContainsTarget
+    } else {
+        SkipItem::Bail
+    }
+}
+
+#[inline]
+pub(crate) fn scan_r_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
+    let mut p = start + 1;
+    if p >= bytes.len() || (bytes[p] != b'#' && bytes[p] != b'"') {
+        let end = scan_ident_tail(src, bytes, p);
+        return (classify_ident(&src[start..end]), 0, end);
+    }
+    while p < bytes.len() && bytes[p] == b'#' {
+        p += 1;
+    }
+    let hashes = p - (start + 1);
+    if p < bytes.len() && bytes[p] == b'"' {
+        return scan_raw_str(src, bytes, p, hashes, TokenKind::RawStr);
+    }
+    if hashes == 1 && p < bytes.len() {
+        let ch = src[p..].chars().next().unwrap();
+        if is_ident_start_char(ch) {
+            let end = scan_ident_tail(src, bytes, p + ch.len_utf8());
+            let flags = if is_forbidden_raw_ident(&src[p..end]) { HAS_ERROR } else { 0 };
+            return (TokenKind::RawIdent, flags, end);
+        }
+    }
+    let end = scan_ident_tail(src, bytes, start + 1);
+    (classify_ident(&src[start..end]), 0, end)
+}
+
+#[inline]
+pub(crate) fn scan_b_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
+    if start + 1 < bytes.len() {
+        match bytes[start + 1] {
+            b'\'' => return scan_byte_char(src, bytes, start),
+            b'"' => return scan_quoted_str(src, bytes, start + 1, TokenKind::ByteStr),
+            b'r' => {
+                let mut p = start + 2;
+                while p < bytes.len() && bytes[p] == b'#' {
+                    p += 1;
+                }
+                if p < bytes.len() && bytes[p] == b'"' {
+                    return scan_raw_str(src, bytes, p, p - (start + 2), TokenKind::RawByteStr);
+                }
+            }
+            _ => {}
+        }
+    }
+    let end = scan_ident_tail(src, bytes, start + 1);
+    (classify_ident(&src[start..end]), 0, end)
+}
+
+#[inline]
+pub(crate) fn scan_c_prefix_or_ident(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
+    if start + 1 < bytes.len() {
+        match bytes[start + 1] {
+            b'"' => return scan_quoted_str(src, bytes, start + 1, TokenKind::CStr),
+            b'r' => {
+                let mut p = start + 2;
+                while p < bytes.len() && bytes[p] == b'#' {
+                    p += 1;
+                }
+                if p < bytes.len() && bytes[p] == b'"' {
+                    return scan_raw_str(src, bytes, p, p - (start + 2), TokenKind::RawCStr);
+                }
+            }
+            _ => {}
+        }
+    }
+    let end = scan_ident_tail(src, bytes, start + 1);
+    (classify_ident(&src[start..end]), 0, end)
+}
+
+#[cold]
+pub(crate) fn scan_non_ascii(src: &str, bytes: &[u8], start: usize) -> (TokenKind, u8, usize) {
+    let ch = src[start..].chars().next().unwrap();
+    let after_first = start + ch.len_utf8();
+    if is_whitespace_char(ch) {
+        return (TokenKind::Whitespace, 0, scan_whitespace(src, bytes, after_first));
+    }
+    if is_ident_start_char(ch) {
+        return (TokenKind::Ident, 0, scan_ident_tail(src, bytes, after_first));
+    }
+    (TokenKind::Unknown, HAS_ERROR, after_first)
 }

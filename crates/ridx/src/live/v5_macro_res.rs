@@ -31,6 +31,7 @@ pub fn resolve_v5_macro_rules<'w>(db: &'w RidxV5ItemDb<'w>, krate: CrateId, modu
         return None;
     }
 
+    let mut visited = Vec::with_capacity(16);
     if segs.len() == 1 {
         let mac_name = segs[0];
         if !rooted {
@@ -38,7 +39,7 @@ pub fn resolve_v5_macro_rules<'w>(db: &'w RidxV5ItemDb<'w>, krate: CrateId, modu
             loop {
                 let mgid = mod_gid_from_crate_path(db, r_idx, cur_path);
                 if mgid.is_some() {
-                    if let Some(hit) = find_macro_in_mod(db, r_idx, mgid, mac_name, 0) {
+                    if let Some(hit) = find_macro_in_mod(db, r_idx, mgid, mac_name, 0, &mut visited) {
                         return Some(hit);
                     }
                 }
@@ -48,7 +49,7 @@ pub fn resolve_v5_macro_rules<'w>(db: &'w RidxV5ItemDb<'w>, krate: CrateId, modu
                 }
             }
             if let Some(pre) = db.prelude_module(krate) {
-                if let Some(hit) = find_macro_in_mod(db, r_idx, pre, mac_name, 0) {
+                if let Some(hit) = find_macro_in_mod(db, r_idx, pre, mac_name, 0, &mut visited) {
                     return Some(hit);
                 }
             }
@@ -60,9 +61,11 @@ pub fn resolve_v5_macro_rules<'w>(db: &'w RidxV5ItemDb<'w>, krate: CrateId, modu
     let mac_name = segs[segs.len() - 1];
     let (mut cur_mod, start_idx) = resolve_prefix_head(db, krate, r_idx, module_path, rooted, prefix)?;
     for &seg in &prefix[start_idx..] {
-        cur_mod = step_mod_in_mod(db, cur_mod, seg, 0)?;
+        visited.clear();
+        cur_mod = step_mod_in_mod(db, cur_mod, seg, 0, &mut visited)?;
     }
-    find_macro_in_mod(db, r_idx, cur_mod, mac_name, 0)
+    visited.clear();
+    find_macro_in_mod(db, r_idx, cur_mod, mac_name, 0, &mut visited)
 }
 
 fn resolve_prefix_head(db: &RidxV5ItemDb<'_>, krate: CrateId, r_idx: usize, module_path: &str, rooted: bool, prefix: &[&str]) -> Option<(GlobalDefId, usize)> {
@@ -86,15 +89,16 @@ fn resolve_prefix_head(db: &RidxV5ItemDb<'_>, krate: CrateId, r_idx: usize, modu
             Some((mod_gid_from_crate_path(db, r_idx, cur_path), n_super))
         }
         other => {
+            let mut visited = Vec::with_capacity(16);
             let cur_gid = mod_gid_from_crate_path(db, r_idx, module_path);
             if cur_gid.is_some() {
-                if let Some(m) = step_mod_in_mod(db, cur_gid, other, 0) {
+                if let Some(m) = step_mod_in_mod(db, cur_gid, other, 0, &mut visited) {
                     return Some((m, 1));
                 }
             }
             let root_gid = db.crate_root_gid(r_idx);
             if root_gid != cur_gid {
-                if let Some(m) = step_mod_in_mod(db, root_gid, other, 0) {
+                if let Some(m) = step_mod_in_mod(db, root_gid, other, 0, &mut visited) {
                     return Some((m, 1));
                 }
             }
@@ -102,7 +106,7 @@ fn resolve_prefix_head(db: &RidxV5ItemDb<'_>, krate: CrateId, r_idx: usize, modu
                 return Some((db.crate_root_gid(ext.0 as usize), 1));
             }
             if let Some(pre) = db.prelude_module(krate) {
-                if let Some(m) = step_mod_in_mod(db, pre, other, 0) {
+                if let Some(m) = step_mod_in_mod(db, pre, other, 0, &mut visited) {
                     return Some((m, 1));
                 }
             }
@@ -124,10 +128,11 @@ fn mod_gid_from_crate_path(db: &RidxV5ItemDb<'_>, r_idx: usize, module_path: &st
     }
 }
 
-fn step_mod_in_mod(db: &RidxV5ItemDb<'_>, mod_gid: GlobalDefId, seg: &str, depth: u8) -> Option<GlobalDefId> {
-    if !mod_gid.is_some() || depth > 5 {
+fn step_mod_in_mod(db: &RidxV5ItemDb<'_>, mod_gid: GlobalDefId, seg: &str, depth: u8, visited: &mut Vec<GlobalDefId>) -> Option<GlobalDefId> {
+    if !mod_gid.is_some() || depth > 5 || visited.contains(&mod_gid) {
         return None;
     }
+    visited.push(mod_gid);
     let r_idx = mod_gid.krate.0 as usize;
     let reader = db.ws.readers().get(r_idx)?;
     let shard = db.shards.get(r_idx)?;
@@ -164,7 +169,7 @@ fn step_mod_in_mod(db: &RidxV5ItemDb<'_>, mod_gid: GlobalDefId, seg: &str, depth
                 if g.is_some() {
                     let tgt = db.canonical_def(g);
                     if tgt != mod_gid {
-                        if let Some(hit) = step_mod_in_mod(db, tgt, seg, depth + 1) {
+                        if let Some(hit) = step_mod_in_mod(db, tgt, seg, depth + 1, visited) {
                             return Some(hit);
                         }
                     }
@@ -175,10 +180,18 @@ fn step_mod_in_mod(db: &RidxV5ItemDb<'_>, mod_gid: GlobalDefId, seg: &str, depth
     None
 }
 
-fn find_macro_in_mod<'w>(db: &'w RidxV5ItemDb<'w>, caller_r_idx: usize, mod_gid: GlobalDefId, mac_name: &str, depth: u8) -> Option<(&'w str, &'w str)> {
-    if !mod_gid.is_some() || depth > 5 {
+fn find_macro_in_mod<'w>(
+    db: &'w RidxV5ItemDb<'w>,
+    caller_r_idx: usize,
+    mod_gid: GlobalDefId,
+    mac_name: &str,
+    depth: u8,
+    visited: &mut Vec<GlobalDefId>,
+) -> Option<(&'w str, &'w str)> {
+    if !mod_gid.is_some() || depth > 5 || visited.contains(&mod_gid) {
         return None;
     }
+    visited.push(mod_gid);
     let tr = mod_gid.krate.0 as usize;
     let reader = db.ws.readers().get(tr)?;
     let shard = db.shards.get(tr)?;
@@ -219,7 +232,7 @@ fn find_macro_in_mod<'w>(db: &'w RidxV5ItemDb<'w>, caller_r_idx: usize, mod_gid:
                 if g.is_some() {
                     let tgt = db.canonical_def(g);
                     if tgt != mod_gid {
-                        if let Some(hit) = find_macro_in_mod(db, caller_r_idx, tgt, mac_name, depth + 1) {
+                        if let Some(hit) = find_macro_in_mod(db, caller_r_idx, tgt, mac_name, depth + 1, visited) {
                             return Some(hit);
                         }
                     }

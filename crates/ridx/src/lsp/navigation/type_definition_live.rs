@@ -12,7 +12,6 @@
 //! (`Vec<Foo>` leads to `Vec`, `Foo` and the allocator), on saved and on edited buffers alike, backed by one
 //! [`LiveDb`] per workspace.
 
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use super::type_definition_lookup::format_location;
@@ -52,9 +51,7 @@ pub(crate) fn live_db_for(ws: &WorkspaceIndex) -> Arc<Mutex<LiveDb>> {
 
 /// Drops all derived snapshots, shard tables, and inference caches in every workspace's [`LiveDb`].
 pub(crate) fn clear_live_db_cache() {
-    if let Some(c) = COMPILED_FILES.get() {
-        c.lock().unwrap_or_else(|e| e.into_inner()).clear();
-    }
+    super::type_definition_lookup::clear_ws_type_index();
     if let Some(dbs) = LIVE_DBS.get() {
         for (_, lock) in dbs.lock().unwrap_or_else(|e| e.into_inner()).iter() {
             if let Ok(mut db) = lock.lock() {
@@ -81,41 +78,75 @@ pub(crate) fn byte_offset_from_conv_or_overlay(file: &str, line: u32, col: u32, 
         return byte_offset_at(&overlay.text, line, col);
     }
     let line_text = conv.get_line(file, line)?;
+    if !line_text.starts_with(' ') && !line_text.starts_with('\t') && super::type_definition_qual::is_use_statement_line(line_text) {
+        return None;
+    }
     let in_line = line_text.char_indices().nth(col.saturating_sub(1) as usize).map_or(line_text.len(), |(i, _)| i);
     let (_, starts) = conv.cache.get(file)?;
     let start = *starts.get(line.saturating_sub(1) as usize)?;
     u32::try_from(start + in_line).ok()
 }
 
-static COMPILED_FILES: OnceLock<Mutex<HashMap<String, bool>>> = OnceLock::new();
-
-/// Whether some unit of the index compiles `file`, remembered per file until the index is reloaded.
-fn is_file_compiled_in_ws(ws: &WorkspaceIndex, file: &str) -> bool {
-    let cache = COMPILED_FILES.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some(&hit) = cache.lock().unwrap_or_else(|e| e.into_inner()).get(file) {
-        return hit;
-    }
-    let check = |idx: usize| ws.target_file_for_reader(idx, file).and_then(|tf| ws.readers()[idx].find_file_id(tf.as_ref())).is_some();
-    let compiled = ws.reader_indices_for_file(file).into_iter().any(check) || ws.candidate_reader_indices_for_file(file).into_iter().any(check);
-    cache.lock().unwrap_or_else(|e| e.into_inner()).insert(file.to_string(), compiled);
-    compiled
+#[allow(clippy::too_many_arguments)]
+fn resolve_type_slow(
+    ws: &WorkspaceIndex,
+    file: &str,
+    p: &std::path::Path,
+    line: u32,
+    utf16_col: u32,
+    col_out: &mut Option<u32>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> (Option<crate::live::LiveTy>, Option<Vec<(usize, u32)>>) {
+    let col = *col_out.get_or_insert_with(|| conv.utf16_col_to_char_col(file, line, utf16_col));
+    let Some(offset) = byte_offset_from_conv_or_overlay(file, line, col, overlay_mgr, conv) else {
+        let units = live_db_for(ws).lock().unwrap_or_else(|e| e.into_inner()).units_for_file(ws, p);
+        return (None, units);
+    };
+    let clean_hint = conv.cache.get(file).map(|(s, _)| s.as_str());
+    let db = live_db_for(ws);
+    let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
+    (db.type_at_with_hint(ws, p, offset, Some(overlay_mgr), clean_hint), db.units_for_file(ws, p))
 }
 
+/// Formatted definition locations with completeness flag, plus candidate units on fallback.
+pub(super) type ResolvedInferredType = (Option<(Value, bool)>, Option<Vec<(usize, u32)>>);
+
 /// The definitions of the types in the type inferred at the cursor (plus whether inference was complete without `{unknown}`), or `None`.
-pub(super) fn resolve_inferred_type(ws: &WorkspaceIndex, file: &str, (line, col): (u32, u32), overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Option<(Value, bool)> {
+pub(super) fn resolve_inferred_type(
+    ws: &WorkspaceIndex,
+    file: &str,
+    line: u32,
+    utf16_col: u32,
+    (col_out, line_out): (&mut Option<u32>, &mut Option<String>),
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> ResolvedInferredType {
+    let p = std::path::Path::new(file);
     let is_dirty = overlay_mgr.get(file).is_some_and(|o| o.is_dirty());
-    if !is_dirty && !is_file_compiled_in_ws(ws, file) {
-        return None;
-    }
-    let offset = byte_offset_from_conv_or_overlay(file, line, col, overlay_mgr, conv)?;
-    let ty = {
-        let db = live_db_for(ws);
-        let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
-        db.type_at(ws, file, offset, Some(overlay_mgr))?
+    let (ty_opt, units) = if col_out.is_none() && overlay_mgr.open_count() == 0 {
+        let (ty, u, col_line_fast) = {
+            let db = live_db_for(ws);
+            let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
+            db.resolve_pos_and_type_at(ws, p, line, utf16_col, Some(overlay_mgr))
+        };
+        if let Some((c, l_str)) = col_line_fast {
+            *col_out = Some(c);
+            *line_out = Some(l_str);
+            (ty, u)
+        } else {
+            resolve_type_slow(ws, file, p, line, utf16_col, col_out, overlay_mgr, conv)
+        }
+    } else {
+        resolve_type_slow(ws, file, p, line, utf16_col, col_out, overlay_mgr, conv)
     };
+    let Some(ty) = ty_opt else { return (None, units) };
+    if ty.defs.is_empty() {
+        return (None, units);
+    }
     let complete = is_dirty || !ty.display.contains("{unknown}");
     let locs = ty.defs.iter().map(|d| format_location(&d.file, &d.file.to_string_lossy(), (d.line, d.col, d.end_line, d.end_col), conv)).collect();
-    finalize_locations(locs).map(|v| (v, complete))
+    (finalize_locations(locs).map(|v| (v, complete)), units)
 }
 
 #[cfg(test)]

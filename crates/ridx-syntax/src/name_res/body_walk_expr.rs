@@ -44,24 +44,29 @@ impl<'a, 's> FileResolver<'a, 's> {
             self.record_top_block_rib_traits(block);
         }
 
+        let partial = self.target_range.is_some_and(|(ts, te)| ts > block.0 || te < self.st.node(block).subtree_end);
         for ch in self.st.children(block) {
+            let ck = self.st.kind(ch);
+            if partial && !self.overlaps_target(ch) && !ck.is_item() && ck != K::MacroCall {
+                continue;
+            }
             match self.st.kind(ch) {
                 K::LetStmt => {
                     if !self.expr_cfg_enabled(ch) {
                         continue;
                     }
-                    if let Some(tn) = self.st.children(ch).find(|&c| self.st.kind(c).is_type()) {
+                    if let Some(tn) = self.st.children(ch).find(|&c| self.st.kind(c).is_type()).filter(|&t| !partial || self.overlaps_target(t)) {
                         self.walk_type(tn);
                     }
-                    if let Some(en) = self.st.children(ch).find(|&c| is_expr_or_macro(self.st.kind(c))) {
+                    if let Some(en) = self.st.children(ch).find(|&c| is_expr_or_macro(self.st.kind(c))).filter(|&e| !partial || self.overlaps_target(e)) {
                         self.walk_expr(en);
                     }
-                    if let Some(le) = self.st.child(ch, K::LetElse) {
+                    if let Some(le) = self.st.child(ch, K::LetElse).filter(|&l| !partial || self.overlaps_target(l)) {
                         if let Some(eb) = self.st.child(le, K::BlockExpr) {
                             self.walk_block_expr(eb, false);
                         }
                     }
-                    if let Some(pn) = self.st.children(ch).find(|&c| self.st.kind(c).is_pat()) {
+                    if let Some(pn) = self.st.children(ch).find(|&c| self.st.kind(c).is_pat()).filter(|&p| !partial || self.overlaps_target(p)) {
                         self.walk_pat(pn, None, false);
                     }
                 }

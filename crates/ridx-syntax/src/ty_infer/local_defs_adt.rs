@@ -18,7 +18,7 @@ use super::tok_ty_scan::{for_each_top_comma, is_double_colon, matching_delim, ne
 use super::ty::{InferTyId, InferTyKind};
 use super::uf_table::InlineTyBuf;
 use super::InferenceTable;
-use crate::name_res::{CrateDefMap, CrateId, FileId, FileNameRes, GlobalDefId, ItemKind};
+use crate::name_res::{CrateDefMap, CrateId, FileId, FileNameRes, GlobalDefId, ItemDb, ItemKind};
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::token::{Token, TokenKind as T};
@@ -37,8 +37,9 @@ pub(super) fn detect_struct_shape(st: &SyntaxTree<'_>, node: NodeId) -> CtorShap
 }
 
 impl LocalCstDefs {
-    pub(super) fn index_enum_variants(&mut self, st: &SyntaxTree<'_>, enum_node: NodeId, enum_def: GlobalDefId, enum_gc: u16, def_map: Option<&CrateDefMap>, file: FileId) {
-        let Some(tt) = st.child(enum_node, K::TokenTree) else {
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn index_enum_variants(&mut self, st: &SyntaxTree<'_>, enode: NodeId, edef: GlobalDefId, gc: u16, dm: Option<&CrateDefMap>, idb: Option<&dyn ItemDb>, file: FileId) {
+        let Some(tt) = st.child(enode, K::TokenTree) else {
             return;
         };
         let toks = st.tokens_of(tt);
@@ -68,10 +69,19 @@ impl LocalCstDefs {
                     }
                 }
             }
-            let vdef = def_map
-                .and_then(|dm| dm.items.iter().find(|it| it.file == file && it.kind == ItemKind::Variant && it.span_start == ntok.start && it.span_end == ntok.end))
-                .map_or_else(|| GlobalDefId::new(CrateId::LOCAL_OVERLAY, 0xA000_0000 | ntok.start), |it| effective_local_def_id(it.index_def, it.id));
-            self.variants.push(LocalVariantNode { def: vdef, enum_def, enum_node, enum_generics: enum_gc, shape, tok_start: body_range.0, tok_end: body_range.1 });
+            let (vns, vne) = if st.src.get(ntok.start as usize..ntok.start as usize + 2) == Some("r#") { (ntok.start + 2, ntok.end) } else { (ntok.start, ntok.end) };
+            let sp_hit = |s: u32, e: u32| (s, e) == (ntok.start, ntok.end) || (s, e) == (vns, vne);
+            let vdef = dm
+                .and_then(|dm| {
+                    (!dm.is_dirty_file(file)).then(|| idb.map(|idb| idb.def_at_byte_span(dm.krate, file, vns, vne)).filter(|d| d.is_some())).flatten().or_else(|| {
+                        dm.items
+                            .iter()
+                            .find(|i| i.file == file && i.kind == ItemKind::Variant && sp_hit(i.span_start, i.span_end))
+                            .map(|i| effective_local_def_id(i.index_def, i.id))
+                    })
+                })
+                .unwrap_or_else(|| GlobalDefId::new(CrateId::LOCAL_OVERLAY, 0xA000_0000 | ntok.start));
+            self.variants.push(LocalVariantNode { def: vdef, enum_def: edef, enum_node: enode, enum_generics: gc, shape, tok_start: body_range.0, tok_end: body_range.1 });
         });
     }
 

@@ -38,21 +38,30 @@ pub(crate) fn is_cursor_on_typeable_token(st: &SyntaxTree<'_>, off: u32) -> bool
 
 /// If `off` lies strictly inside the argument `TokenTree` of a `MacroCall`, returns that `TokenTree`'s byte span.
 pub(crate) fn enclosing_macro_tt_span(st: &SyntaxTree<'_>, off: u32) -> Option<(u32, u32)> {
-    let b = off as usize;
-    let mut best: Option<(usize, (u32, u32))> = None;
-    for nid in (0..st.nodes.len() as u32).map(NodeId) {
+    fn walk(st: &SyntaxTree<'_>, nid: NodeId, b: usize, best: &mut Option<(usize, (u32, u32))>) {
         if st.kind(nid) == K::MacroCall {
             if let Some(tt) = st.child(nid, K::TokenTree) {
                 let r = st.range(tt);
                 if r.start < b && b < r.end {
                     let len = r.end - r.start;
                     if best.is_none_or(|(bl, _)| len <= bl) {
-                        best = Some((len, (r.start as u32, r.end as u32)));
+                        *best = Some((len, (r.start as u32, r.end as u32)));
                     }
                 }
             }
         }
+        for ch in st.children(nid) {
+            let cr = st.range(ch);
+            if cr.start > b {
+                break;
+            }
+            if b <= cr.end {
+                walk(st, ch, b, best);
+            }
+        }
     }
+    let mut best = None;
+    walk(st, st.root(), off as usize, &mut best);
     best.map(|(_, sp)| sp)
 }
 
@@ -109,22 +118,32 @@ pub(crate) fn pick_ty_in_fn(st: &SyntaxTree<'_>, file_res: &FileNameRes, res: &F
 }
 
 pub(crate) fn smallest_type_node_at(st: &SyntaxTree<'_>, off: u32, macro_tt: Option<(u32, u32)>) -> Option<(u32, NodeId)> {
-    let b = off as usize;
-    let mut best: Option<(u32, NodeId)> = None;
-    for nid in (0..st.nodes.len() as u32).map(NodeId) {
-        if st.kind(nid).is_type() {
-            let r = st.range(nid);
+    fn walk(st: &SyntaxTree<'_>, nid: NodeId, b: usize, macro_tt: Option<(u32, u32)>, best: &mut Option<(u32, NodeId)>) {
+        let r = st.range(nid);
+        if st.kind(nid).is_type() && r.start < r.end {
             let (s, e) = (r.start as u32, r.end as u32);
-            if macro_tt.is_some_and(|(ts, te)| s <= ts && te <= e) {
-                continue;
-            }
-            if r.start <= b && b <= r.end && r.start < r.end {
+            if !macro_tt.is_some_and(|(ts, te)| s <= ts && te <= e) {
                 let len = e - s;
                 if best.is_none_or(|(bl, _)| len <= bl) {
-                    best = Some((len, nid));
+                    *best = Some((len, nid));
                 }
             }
         }
+        for ch in st.children(nid) {
+            let cr = st.range(ch);
+            if cr.start > b {
+                break;
+            }
+            if b <= cr.end {
+                walk(st, ch, b, macro_tt, best);
+            }
+        }
+    }
+    let mut best = None;
+    let b = off as usize;
+    let rr = st.range(st.root());
+    if rr.start <= b && b <= rr.end {
+        walk(st, st.root(), b, macro_tt, &mut best);
     }
     best
 }

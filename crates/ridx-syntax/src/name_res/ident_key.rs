@@ -16,9 +16,9 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-const INLINE_CAP: usize = 62;
+const INLINE_CAP: usize = 30;
 
-/// 24-byte immutable UTF-8 identifier storing identifiers up to 22 bytes inline without heap allocation.
+/// 32-byte immutable UTF-8 identifier storing identifiers up to 30 bytes inline without heap allocation.
 #[derive(Clone)]
 pub enum IdentKey {
     Inline { len: u8, buf: [u8; INLINE_CAP] },
@@ -35,6 +35,14 @@ impl IdentKey {
             Self::Inline { len: bytes.len() as u8, buf }
         } else {
             Self::Heap(s.into())
+        }
+    }
+
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            Self::Inline { len, buf } => &buf[..*len as usize],
+            Self::Heap(b) => b.as_bytes(),
         }
     }
 
@@ -91,7 +99,7 @@ impl Borrow<str> for IdentKey {
 impl PartialEq for IdentKey {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.as_str() == other.as_str()
+        self.as_bytes() == other.as_bytes()
     }
 }
 
@@ -100,21 +108,22 @@ impl Eq for IdentKey {}
 impl PartialEq<str> for IdentKey {
     #[inline]
     fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
+        self.as_bytes() == other.as_bytes()
     }
 }
 
 impl PartialEq<&str> for IdentKey {
     #[inline]
     fn eq(&self, other: &&str) -> bool {
-        self.as_str() == *other
+        self.as_bytes() == other.as_bytes()
     }
 }
 
 impl Hash for IdentKey {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.as_str().hash(state);
+        state.write(self.as_bytes());
+        state.write_u8(0xff);
     }
 }
 

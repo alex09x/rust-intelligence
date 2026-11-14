@@ -46,16 +46,16 @@ fn check_node_cfg_at(st: &SyntaxTree<'_>, nid: NodeId, b: usize, db: &RidxV5Item
             continue;
         }
         let cr = st.range(ch);
-        if cr.start <= b && b <= cr.end {
+        if cr.start > b {
+            break;
+        }
+        if b <= cr.end {
             for &pa in &pattrs[..plen] {
                 let toks = st.tokens_of(pa);
                 if let Some(open) = toks.iter().position(|t| t.kind == T::LBracket) {
-                    let inner = match toks.iter().rposition(|t| t.kind == T::RBracket) {
-                        Some(c) if c > open => &toks[open + 1..c],
-                        _ => &toks[open + 1..],
-                    };
+                    let close = toks.iter().rposition(|t| t.kind == T::RBracket).filter(|&c| c > open).unwrap_or(toks.len());
                     let mut eff = EffectiveAttrs::default();
-                    eval_attr_bracket_tokens(st.src, inner, db, krate, &mut eff);
+                    eval_attr_bracket_tokens(st.src, &toks[open + 1..close], db, krate, &mut eff);
                     if !eff.enabled {
                         return false;
                     }
@@ -83,8 +83,17 @@ pub(crate) fn is_inside_inactive_target_cfg(st: &SyntaxTree<'_>, off: u32, db: &
 /// The unit whose `cfg` compiles the code at `off`: `primary_r_idx` when it does, otherwise another workspace unit
 /// that compiles the same file (a test harness for `#[cfg(test)]` code), or `None` when no unit does.
 pub(crate) fn unit_enabling_cursor(st: &SyntaxTree<'_>, off: u32, db: &RidxV5ItemDb<'_>, primary_r_idx: usize, canon: &Path) -> Option<usize> {
-    if cursor_cfg_enabled_in_unit(st, off, db, CrateId(primary_r_idx as u32)) {
+    if !st.src.contains("cfg") || cursor_cfg_enabled_in_unit(st, off, db, CrateId(primary_r_idx as u32)) {
         return Some(primary_r_idx);
+    }
+    if let Some(units) = db.units_by_file.get(canon) {
+        for &(u, _) in units {
+            let meta = &db.metas[u];
+            if u != primary_r_idx && !meta.is_dependency && meta.target_kind != "custom-build" && cursor_cfg_enabled_in_unit(st, off, db, CrateId(u as u32)) {
+                return Some(u);
+            }
+        }
+        return None;
     }
     let primary_meta = &db.metas[primary_r_idx];
     for u in 0..db.ws.crate_count() {

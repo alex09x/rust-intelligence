@@ -95,8 +95,9 @@ pub(super) fn def_sort_key(def: GlobalDefId) -> u64 {
 }
 
 impl LocalCstDefs {
+    #[inline]
     pub fn new() -> Self {
-        Self { body_macros: Vec::with_capacity(64), macro_cache: Vec::with_capacity(64), failed_macro_keys: Vec::with_capacity(64), ..Self::default() }
+        Self::default()
     }
 
     pub fn from_file(st: &SyntaxTree<'_>, def_map: Option<&CrateDefMap>, file: FileId) -> Self {
@@ -116,7 +117,7 @@ impl LocalCstDefs {
         if self.macro_cache.len() > 256 {
             self.macro_cache.clear();
         }
-        if self.failed_macro_keys.len() > 256 {
+        if self.failed_macro_keys.len() > 2048 {
             self.failed_macro_keys.clear();
         }
         self.macro_cache.append(&mut self.body_macros);
@@ -176,9 +177,14 @@ impl LocalCstDefs {
         clean_mod_scope: bool,
         target: Option<(u32, u32)>,
     ) {
+        let skip_type_items = clean_mod_scope && def_map.is_some_and(|dm| dm.indexed_clean);
         for ch in st.children(container) {
             let overlaps = target.is_none_or(|(ts, te)| ch.0 < te && ts < st.node(ch).subtree_end);
-            if clean_mod_scope && !overlaps && matches!(st.kind(ch), K::Fn | K::Const | K::Static | K::Impl | K::Module | K::ExternBlock) {
+            if clean_mod_scope
+                && !overlaps
+                && (matches!(st.kind(ch), K::Fn | K::Const | K::Static | K::Impl | K::Module | K::ExternBlock)
+                    || (skip_type_items && matches!(st.kind(ch), K::Struct | K::Union | K::Enum | K::Trait | K::TypeAlias)))
+            {
                 continue;
             }
             match st.kind(ch) {
@@ -216,7 +222,7 @@ impl LocalCstDefs {
                         self.items.push(LocalItemNode { def, node: ch, impl_node, kind, generic_count: gc, shape: CtorShapeKind::None });
                     }
                     if overlaps {
-                        if let Some(body) = st.child(ch, K::BlockExpr) {
+                        if let Some(body) = st.child(ch, K::BlockExpr).filter(|&b| target.is_none_or(|(ts, te)| b.0 < te && ts < st.node(b).subtree_end)) {
                             self.scan_block_items(st, body, def_map, item_db, file, 0);
                             self.scan_body_macros(st, body, def_map, item_db, file);
                         }
@@ -236,7 +242,7 @@ impl LocalCstDefs {
                     if def.is_some() {
                         let gc = count_cst_generics(st, ch);
                         self.items.push(LocalItemNode { def, node: ch, impl_node: None, kind: ItemKind::Enum, generic_count: gc, shape: CtorShapeKind::None });
-                        self.index_enum_variants(st, ch, def, gc, def_map, file);
+                        self.index_enum_variants(st, ch, def, gc, def_map, item_db, file);
                     }
                 }
                 K::TypeAlias => {
@@ -262,7 +268,7 @@ impl LocalCstDefs {
     }
 
     fn scan_block_items(&mut self, st: &SyntaxTree<'_>, block: NodeId, def_map: Option<&CrateDefMap>, item_db: Option<&dyn ItemDb>, file: FileId, depth: u16) {
-        if depth > 96 {
+        if depth > 96 || !st.nodes[block.0 as usize + 1..st.node(block).subtree_end as usize].iter().any(|n| n.kind.is_item()) {
             return;
         }
         self.scan_container(st, block, None, def_map, item_db, file, false, None);

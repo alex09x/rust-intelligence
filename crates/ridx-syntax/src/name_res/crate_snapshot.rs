@@ -14,16 +14,19 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use super::attr::{eval_inner_attrs, eval_outer_attrs, EffectiveAttrs};
 use super::db::{CrateId, FileId, ItemDb, ModuleId, SourceDb};
 use super::def_collect::{collect_crate_items, CollectedCrate};
 use super::def_map::CrateDefMap;
 use super::ext_scope::ExtScopeCache;
 use super::impl_resolve::resolve_local_impls_and_assocs;
 use super::mod_fingerprint::{file_mod_fingerprint, mod_trees_structurally_equal};
-use super::mod_tree::ModuleTree;
+use super::mod_tree::{ModuleTree, MOD_FLAG_INLINE, MOD_FLAG_NO_IMPLICIT_PRELUDE};
 use super::snapshot_incremental::CleanSolverBase;
 use crate::parser::parse;
-use crate::tree::SyntaxTree;
+use crate::sema_fn::norm_ident;
+use crate::syntax_kind::SyntaxKind as K;
+use crate::tree::{NodeId, SyntaxTree};
 
 struct DirtySnapshotBase {
     clean_collected: CollectedCrate,
@@ -45,6 +48,20 @@ impl CrateSnapshot {
     #[inline]
     pub(super) fn from_parts(mod_tree: ModuleTree, clean_def_map: CrateDefMap, ext_cache: ExtScopeCache) -> Self {
         Self { mod_tree, clean_def_map, indexed_only: true, dirty_base: None, ext_cache: RefCell::new(ext_cache) }
+    }
+
+    pub fn build_from_index_with_cache(db: &dyn ItemDb, krate: CrateId, ext_cache: ExtScopeCache) -> Option<Self> {
+        Self::build_from_index_inner(db, krate, ext_cache)
+    }
+
+    #[inline]
+    pub fn take_ext_cache(&self) -> ExtScopeCache {
+        self.ext_cache.take()
+    }
+
+    #[inline]
+    pub fn put_ext_cache(&self, ext_cache: ExtScopeCache) {
+        *self.ext_cache.borrow_mut() = ext_cache;
     }
 
     #[inline]
@@ -214,4 +231,53 @@ fn compute_mod_hashes<'t>(mod_tree: &ModuleTree, db: &dyn ItemDb, sources: &dyn 
         out.insert(m.file, file_mod_fingerprint(st, db, mod_tree.krate));
     }
     out
+}
+
+pub(super) fn apply_bind_indexed_file(tree: &mut ModuleTree, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, root_mid: ModuleId, no_pre: bool) {
+    let m = &mut tree.modules[root_mid.0 as usize];
+    m.file = file;
+    m.decl_end = st.src.len() as u32;
+    if no_pre {
+        m.flags |= MOD_FLAG_NO_IMPLICIT_PRELUDE;
+    }
+    tree.file_to_modules.push((file, root_mid));
+    if !tree.children(root_mid).is_empty() {
+        bind_inline_submodules(tree, db, file, st, st.root(), root_mid);
+    }
+    let mods = &tree.modules;
+    tree.file_to_modules.sort_by_key(|&(f, mid)| {
+        let md = &mods[mid.0 as usize];
+        (f.0, md.is_inline() as u8, md.decl_start)
+    });
+}
+
+pub(super) fn bind_inline_submodules(tree: &mut ModuleTree, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, container: NodeId, parent_mid: ModuleId) {
+    let parent_no_pre = tree.modules[parent_mid.0 as usize].flags & MOD_FLAG_NO_IMPLICIT_PRELUDE;
+    for ch in st.children(container) {
+        if st.kind(ch) != K::Module {
+            continue;
+        }
+        let Some(il) = st.child(ch, K::ItemList) else { continue };
+        let outer = eval_outer_attrs(st, ch, db, tree.krate);
+        if !outer.enabled {
+            continue;
+        }
+        let Some(nn) = st.child(ch, K::Name) else { continue };
+        let Some(child_mid) = tree.find_child(parent_mid, norm_ident(st.text(nn))) else { continue };
+        let mut inner = EffectiveAttrs::default();
+        eval_inner_attrs(st, il, db, tree.krate, &mut inner);
+        if !inner.enabled {
+            continue;
+        }
+        let r = st.range(ch);
+        let cm = &mut tree.modules[child_mid.0 as usize];
+        cm.file = file;
+        cm.decl_file = file;
+        cm.inline_node = ch.0;
+        cm.decl_start = r.start as u32;
+        cm.decl_end = r.end as u32;
+        cm.flags |= MOD_FLAG_INLINE | parent_no_pre | if outer.no_implicit_prelude || inner.no_implicit_prelude { MOD_FLAG_NO_IMPLICIT_PRELUDE } else { 0 };
+        tree.file_to_modules.push((file, child_mid));
+        bind_inline_submodules(tree, db, file, st, il, child_mid);
+    }
 }

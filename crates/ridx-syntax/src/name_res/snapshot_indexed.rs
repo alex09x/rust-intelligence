@@ -14,28 +14,20 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::attr::{eval_inner_attrs, eval_outer_attrs, EffectiveAttrs};
-use super::crate_snapshot::CrateSnapshot;
+use super::attr::{eval_inner_attrs, EffectiveAttrs};
+use super::crate_snapshot::{apply_bind_indexed_file, bind_inline_submodules, CrateSnapshot};
 use super::db::{CrateId, FileId, GlobalDefId, ItemDb, ItemKind, ModuleId, VisKind};
-use super::def_map::{finalize_in_scope_trait_tables, local_mod_binding, CrateDefMap, ModuleScope};
-use super::ext_scope::{indexed_use_to_per_ns, ExtScopeCache};
+use super::def_map::{finalize_in_scope_trait_tables, finalize_module_trait_table, finalize_nonleaf_trait_tables, local_mod_binding, CrateDefMap, ModuleScope};
+use super::ext_scope::ExtScopeCache;
 use super::ident_key::IdentKey;
 use super::impl_collect::LocalImplArena;
-use super::mod_tree::{ModChild, ModuleData, ModuleTree, MOD_FLAG_INLINE, MOD_FLAG_NO_IMPLICIT_PRELUDE};
-use super::per_ns::{compute_vis_mod, is_binding_visible, BindingOrigin, LocalItemId, PerNs, ResolvedBinding};
+use super::mod_tree::{ModChild, ModuleData, ModuleTree};
+use super::per_ns::{BindingOrigin, PerNs};
+use super::snapshot_indexed_pop::{expand_indexed_globs, indexed_vis_mod, populate_mod_items, ModPopBufs};
 use super::use_tree::UseArena;
 use crate::sema_fn::norm_ident;
 use crate::syntax_kind::SyntaxKind as K;
 use crate::tree::{NodeId, SyntaxTree};
-
-#[inline]
-fn indexed_vis_mod(tree: &ModuleTree, mod_id: ModuleId, vis: VisKind) -> (VisKind, ModuleId) {
-    if vis == VisKind::Restricted {
-        (VisKind::Crate, ModuleId::ROOT)
-    } else {
-        compute_vis_mod(tree, mod_id, vis, None)
-    }
-}
 
 #[inline]
 fn blank_mod(id: ModuleId, parent: ModuleId, ns: u32, ne: u32, cs: u32, ce: u32, vis: VisKind) -> ModuleData {
@@ -64,6 +56,10 @@ impl CrateSnapshot {
     /// Builds a clean [`CrateSnapshot`] directly from compiler-indexed `ItemDb` module definitions
     /// and `UseEntry` tables without reading or parsing untouched `.rs` files in `krate`.
     pub fn build_from_index(db: &dyn ItemDb, krate: CrateId) -> Option<Self> {
+        Self::build_from_index_inner(db, krate, ExtScopeCache::new())
+    }
+
+    pub(super) fn build_from_index_inner(db: &dyn ItemDb, krate: CrateId, mut ext_cache: ExtScopeCache) -> Option<Self> {
         let root_def = db.crate_root_def(krate)?;
         let edition = db.crate_edition(krate);
         let mut strings = String::with_capacity(256);
@@ -130,7 +126,6 @@ impl CrateSnapshot {
         }
 
         let mod_tree = ModuleTree { krate, edition, no_std: false, no_core: false, modules, children, file_to_modules: Vec::new(), strings, diagnostics: Vec::new() };
-        let mut ext_cache = ExtScopeCache::new();
         let mut scopes: Vec<ModuleScope> = mod_index_defs.iter().map(|&index_def| ModuleScope { index_def, ..ModuleScope::default() }).collect();
 
         let mut extern_prelude: HashMap<IdentKey, (CrateId, GlobalDefId)> = HashMap::new();
@@ -165,124 +160,20 @@ impl CrateSnapshot {
                 let cdef = scopes[edge.child.0 as usize].index_def;
                 scopes[midx].entries.entry(cname).or_insert(PerNs::EMPTY).merge_explicit(local_mod_binding(edge.child, cdef, v, vmod));
             }
-            defs.clear();
-            db.module_defs(mod_index_defs[midx], &mut defs);
-            for d in &defs {
-                if d.name.is_empty() || matches!(d.kind, ItemKind::Mod | ItemKind::Use | ItemKind::Impl | ItemKind::Field) {
-                    continue;
-                }
-                let (v, vmod) = indexed_vis_mod(&mod_tree, mod_id, d.vis);
-                let b = ResolvedBinding {
-                    def: d.id,
-                    local: LocalItemId::NONE,
-                    local_mod: ModuleId::NONE,
-                    vis_mod: vmod,
-                    kind: d.kind,
-                    vis: v,
-                    origin: BindingOrigin::Explicit,
-                    prim_ty: 0,
-                    ambiguous: false,
-                };
-                scopes[midx].entries.entry(IdentKey::new(norm_ident(d.name))).or_insert(PerNs::EMPTY).merge_explicit(PerNs::from_binding(b, d.kind.ns_mask(d.has_value_ctor)));
-            }
-            uses.clear();
-            db.module_uses(mod_index_defs[midx], &mut uses);
-            for u in &uses {
-                if u.is_prelude {
-                    continue;
-                }
-                let (uvis, vmod) = indexed_vis_mod(&mod_tree, mod_id, u.vis);
-                if u.is_glob {
-                    if u.type_def.is_some() && u.type_def != mod_index_defs[midx] {
-                        globs.push((midx, u.type_def, uvis, vmod));
-                    }
-                    continue;
-                }
-                if u.is_underscore {
-                    if u.type_def.is_some() && db.def_kind(u.type_def) == Some(ItemKind::Trait) {
-                        let tb = ResolvedBinding {
-                            def: u.type_def,
-                            local: LocalItemId::NONE,
-                            local_mod: ModuleId::NONE,
-                            vis_mod: vmod,
-                            kind: ItemKind::Trait,
-                            vis: uvis,
-                            origin: BindingOrigin::Explicit,
-                            prim_ty: 0,
-                            ambiguous: false,
-                        };
-                        let list = &mut scopes[midx].unnamed_traits;
-                        if !list.iter().any(|x| x.same_target(tb)) {
-                            list.push(tb);
-                        }
-                    }
-                    continue;
-                }
-                if u.name.is_empty() {
-                    continue;
-                }
-                let mut pns = indexed_use_to_per_ns(db, u).rebind(uvis, vmod, BindingOrigin::Explicit);
-                if let Some(tb) = pns.types.as_mut().filter(|b| b.kind == ItemKind::Mod) {
-                    if let Some(&lm) = gid_to_mod.get(&tb.def) {
-                        tb.local_mod = lm;
-                    } else if midx == 0 && tb.def.krate != krate && db.crate_root_def(tb.def.krate) == Some(tb.def) {
-                        extern_prelude.entry(IdentKey::new(norm_ident(u.name))).or_insert((tb.def.krate, tb.def));
-                    }
-                }
-                if !pns.is_empty() {
-                    scopes[midx].entries.entry(IdentKey::new(norm_ident(u.name))).or_insert(PerNs::EMPTY).merge_explicit(pns);
-                }
-            }
+            let is_leaf = midx != 0 && mod_tree.children(mod_id).is_empty();
+            let mut bufs = ModPopBufs { scopes: &mut scopes, extern_prelude: &mut extern_prelude, globs: &mut globs, defs: &mut defs, uses: &mut uses };
+            populate_mod_items(db, &mod_tree, krate, midx, is_leaf, false, &gid_to_mod, &mut bufs);
         }
+        expand_indexed_globs(db, &mod_tree, &gid_to_mod, &globs, &mut ext_cache, &mut scopes);
 
-        let mut local_globs: Vec<(usize, usize, VisKind, ModuleId)> = Vec::new();
-        for &(midx, gdef, gvis, gvmod) in &globs {
-            if let Some(&src_m) = gid_to_mod.get(&gdef) {
-                local_globs.push((midx, src_m.0 as usize, gvis, gvmod));
-            } else {
-                let ext_s = ext_cache.module_scope(db, gdef);
-                scopes[midx].entries.reserve(ext_s.entries.len());
-                for (k, &v) in &ext_s.entries {
-                    scopes[midx].entries.entry(k.clone()).or_insert(PerNs::EMPTY).merge_glob(v.rebind(gvis, gvmod, BindingOrigin::Glob));
-                }
-            }
-        }
-        for _ in 0..4 {
-            let mut changed = false;
-            for &(dst, src, gvis, gvmod) in &local_globs {
-                if dst == src {
-                    continue;
-                }
-                let dst_id = ModuleId(dst as u32);
-                let pairs: Vec<(IdentKey, PerNs)> = scopes[src]
-                    .entries
-                    .iter()
-                    .map(|(k, &v)| {
-                        let fv = PerNs {
-                            types: v.types.filter(|&b| is_binding_visible(&mod_tree, b, dst_id)),
-                            values: v.values.filter(|&b| is_binding_visible(&mod_tree, b, dst_id)),
-                            macros: v.macros.filter(|&b| is_binding_visible(&mod_tree, b, dst_id)),
-                        };
-                        (k.clone(), fv.rebind(gvis, gvmod, BindingOrigin::Glob))
-                    })
-                    .filter(|(_, fv)| !fv.is_empty())
-                    .collect();
-                for (k, pns) in pairs {
-                    changed |= scopes[dst].entries.entry(k).or_insert(PerNs::EMPTY).merge_glob(pns);
-                }
-            }
-            if !changed {
-                break;
-            }
-        }
-
+        let (empty_traits, mod_tree_arc): (Arc<[GlobalDefId]>, _) = (Arc::from([]), Arc::new(mod_tree.clone()));
         let mut map = CrateDefMap {
             krate,
             edition,
             prelude_mod,
             prelude,
-            prelude_traits: Arc::from([]),
-            prelude_traits_sorted: Arc::from([]),
+            prelude_traits: Arc::clone(&empty_traits),
+            prelude_traits_sorted: empty_traits,
             extern_prelude,
             items: Vec::new(),
             item_strings: String::new(),
@@ -290,73 +181,72 @@ impl CrateSnapshot {
             scopes,
             resolved_uses: Vec::new(),
             dirty_files: Vec::new(),
-            mod_tree: Arc::new(mod_tree.clone()),
+            indexed_clean: true,
+            mod_tree: mod_tree_arc,
             macro_bodies: Vec::new(),
             local_impls: LocalImplArena::default(),
             local_alias_targets: HashMap::new(),
             diagnostics: Vec::new(),
         };
-        finalize_in_scope_trait_tables(&mut map, &mod_tree);
+        finalize_nonleaf_trait_tables(&mut map, &mod_tree);
         Some(Self::from_parts(mod_tree, map, ext_cache))
     }
 
     /// Binds `file` and any inline `mod sub { ... }` declarations inside `st` onto an index-built [`ModuleTree`].
     pub fn bind_indexed_file(&mut self, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, file_root_mod_path: &str) {
-        if self.mod_tree.modules_for_file(file).next().is_some() {
-            return;
-        }
-        let root_mid = self.mod_tree.find_by_path(file_root_mod_path).unwrap_or(ModuleId::ROOT);
-        let mut inner = EffectiveAttrs::default();
-        eval_inner_attrs(st, st.root(), db, self.mod_tree.krate, &mut inner);
-        {
-            let m = &mut self.mod_tree.modules[root_mid.0 as usize];
-            m.file = file;
-            m.decl_end = st.src.len() as u32;
-            if inner.no_implicit_prelude {
-                m.flags |= MOD_FLAG_NO_IMPLICIT_PRELUDE;
-            }
-        }
-        self.mod_tree.file_to_modules.push((file, root_mid));
-        bind_inline_submodules(&mut self.mod_tree, db, file, st, st.root(), root_mid);
-        let mods = &self.mod_tree.modules;
-        self.mod_tree.file_to_modules.sort_by_key(|&(f, mid)| {
-            let md = &mods[mid.0 as usize];
-            (f.0, md.is_inline() as u8, md.decl_start)
-        });
-        if inner.no_implicit_prelude {
-            finalize_in_scope_trait_tables(&mut self.clean_def_map, &self.mod_tree);
-        }
-        self.clean_def_map.mod_tree = Arc::new(self.mod_tree.clone());
+        self.bind_indexed_file_at(db, file, st, file_root_mod_path, None);
     }
-}
 
-fn bind_inline_submodules(tree: &mut ModuleTree, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, container: NodeId, parent_mid: ModuleId) {
-    let parent_no_pre = tree.modules[parent_mid.0 as usize].flags & MOD_FLAG_NO_IMPLICIT_PRELUDE;
-    for ch in st.children(container) {
-        if st.kind(ch) != K::Module {
-            continue;
+    /// Binds `file` (and any inline modules needed for `byte_offset`) onto an index-built [`ModuleTree`].
+    pub fn bind_indexed_file_at(&mut self, db: &dyn ItemDb, file: FileId, st: &SyntaxTree<'_>, file_root_mod_path: &str, byte_offset: Option<u32>) {
+        let root_mid = self.mod_tree.modules_for_file(file).next().unwrap_or_else(|| self.mod_tree.find_by_path(file_root_mod_path).unwrap_or(ModuleId::ROOT));
+        if self.mod_tree.modules_for_file(file).next().is_none() {
+            let mut inner = EffectiveAttrs::default();
+            eval_inner_attrs(st, st.root(), db, self.mod_tree.krate, &mut inner);
+            apply_bind_indexed_file(&mut self.mod_tree, db, file, st, root_mid, inner.no_implicit_prelude);
+            let mt = Arc::make_mut(&mut self.clean_def_map.mod_tree);
+            mt.modules.clone_from(&self.mod_tree.modules);
+            mt.file_to_modules.clone_from(&self.mod_tree.file_to_modules);
+            if inner.no_implicit_prelude && root_mid == ModuleId::ROOT {
+                finalize_in_scope_trait_tables(&mut self.clean_def_map, &self.mod_tree);
+            }
+        } else if self.mod_tree.children(root_mid).iter().any(|e| self.mod_tree.modules[e.child.0 as usize].file == FileId::NONE)
+            && st.children(st.root()).any(|c| st.kind(c) == K::Module)
+        {
+            bind_inline_submodules(&mut self.mod_tree, db, file, st, st.root(), root_mid);
+            let mods = &self.mod_tree.modules;
+            self.mod_tree.file_to_modules.sort_by_key(|&(f, mid)| (f.0, mods[mid.0 as usize].is_inline() as u8, mods[mid.0 as usize].decl_start));
+            let mt = Arc::make_mut(&mut self.clean_def_map.mod_tree);
+            mt.modules.clone_from(&self.mod_tree.modules);
+            mt.file_to_modules.clone_from(&self.mod_tree.file_to_modules);
         }
-        let Some(il) = st.child(ch, K::ItemList) else { continue };
-        let outer = eval_outer_attrs(st, ch, db, tree.krate);
-        if !outer.enabled {
-            continue;
+        let (empty_gid, mut dummy_ep) = (HashMap::new(), HashMap::new());
+        let (mut globs, mut defs, mut uses, mut named_buf) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let mut ext_cache = self.ext_cache.borrow_mut();
+        for &(f, mid) in &self.mod_tree.file_to_modules {
+            let midx = mid.0 as usize;
+            if f != file || self.clean_def_map.scopes[midx].visible_traits_hash != 0 {
+                continue;
+            }
+            let md = &self.mod_tree.modules[midx];
+            if md.is_inline() && byte_offset.is_some_and(|off| off < md.decl_start || off > md.decl_end) {
+                continue;
+            }
+            if md.is_inline()
+                && byte_offset.is_none()
+                && !st.nodes.iter().enumerate().any(|(i, n)| {
+                    n.kind == K::Module
+                        && st.range(NodeId(i as u32)).start as u32 == md.decl_start
+                        && st.child(NodeId(i as u32), K::ItemList).is_some_and(|il| st.children(il).next().is_some())
+                })
+            {
+                continue;
+            }
+            globs.clear();
+            let mut bufs = ModPopBufs { scopes: &mut self.clean_def_map.scopes, extern_prelude: &mut dummy_ep, globs: &mut globs, defs: &mut defs, uses: &mut uses };
+            populate_mod_items(db, &self.mod_tree, self.mod_tree.krate, midx, false, true, &empty_gid, &mut bufs);
+            expand_indexed_globs(db, &self.mod_tree, &empty_gid, &globs, &mut ext_cache, &mut self.clean_def_map.scopes);
+            finalize_module_trait_table(&mut self.clean_def_map.scopes[midx], &self.mod_tree, mid, &mut named_buf);
         }
-        let Some(nn) = st.child(ch, K::Name) else { continue };
-        let Some(child_mid) = tree.find_child(parent_mid, norm_ident(st.text(nn))) else { continue };
-        let mut inner = EffectiveAttrs::default();
-        eval_inner_attrs(st, il, db, tree.krate, &mut inner);
-        if !inner.enabled {
-            continue;
-        }
-        let r = st.range(ch);
-        let cm = &mut tree.modules[child_mid.0 as usize];
-        cm.file = file;
-        cm.decl_file = file;
-        cm.inline_node = ch.0;
-        cm.decl_start = r.start as u32;
-        cm.decl_end = r.end as u32;
-        cm.flags |= MOD_FLAG_INLINE | parent_no_pre | if outer.no_implicit_prelude || inner.no_implicit_prelude { MOD_FLAG_NO_IMPLICIT_PRELUDE } else { 0 };
-        tree.file_to_modules.push((file, child_mid));
-        bind_inline_submodules(tree, db, file, st, il, child_mid);
     }
 }

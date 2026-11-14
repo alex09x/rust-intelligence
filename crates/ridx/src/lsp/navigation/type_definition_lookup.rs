@@ -18,11 +18,61 @@ use memmap2::Mmap;
 use ridx_format::workspace::std_map::std_path_candidates;
 use ridx_format::{join_resolving_overlap, DefEntry, DefKind, IndexReader, WorkspaceIndex};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, OnceLock};
 
 type BestScore = (bool, bool, bool, bool, bool, bool, bool);
 pub(super) type TypeHit<'a> = (usize, &'a DefEntry, PathBuf, &'a str, (u32, u32, u32, u32));
 type ScoredHit<'a> = (BestScore, TypeHit<'a>);
+
+struct WsTypeIndex {
+    ws_id: u64,
+    by_short_name: HashMap<Box<str>, Vec<(u32, u32)>>,
+}
+
+static WS_TYPE_INDEX: OnceLock<Mutex<Option<Arc<WsTypeIndex>>>> = OnceLock::new();
+static FILE_LOC_META: OnceLock<Mutex<HashMap<PathBuf, String>>> = OnceLock::new();
+
+pub(super) fn clear_ws_type_index() {
+    if let Some(mut guard) = WS_TYPE_INDEX.get().and_then(|l| l.lock().ok()) {
+        *guard = None;
+    }
+    if let Some(mut guard) = FILE_LOC_META.get().and_then(|l| l.lock().ok()) {
+        guard.clear();
+    }
+}
+
+fn get_ws_type_index(ws: &WorkspaceIndex) -> Arc<WsTypeIndex> {
+    let ws_id = ws.instance_id();
+    let lock = WS_TYPE_INDEX.get_or_init(|| Mutex::new(None));
+    let mut guard = lock.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(existing) = guard.as_ref().filter(|idx| idx.ws_id == ws_id) {
+        return Arc::clone(existing);
+    }
+    let mut by_short_name: HashMap<Box<str>, Vec<(u32, u32)>> = HashMap::with_capacity(4096);
+    for (r_idx, reader) in ws.readers().iter().enumerate() {
+        for (d_idx, def) in reader.definitions().iter().enumerate() {
+            if !is_type_def_kind(DefKind::from(def.kind)) {
+                continue;
+            }
+            let raw_file = reader.get_file(def.span().file_id());
+            if raw_file == "external" || raw_file.is_empty() {
+                continue;
+            }
+            if let Some(short) = reader.get_str(def.path_offset()).rsplit("::").next().filter(|s| !s.is_empty()) {
+                by_short_name.entry(short.into()).or_default().push((r_idx as u32, d_idx as u32));
+            }
+            let name = reader.get_str(def.name_offset());
+            if !name.is_empty() && !reader.get_str(def.path_offset()).ends_with(name) {
+                by_short_name.entry(name.into()).or_default().push((r_idx as u32, d_idx as u32));
+            }
+        }
+    }
+    let built = Arc::new(WsTypeIndex { ws_id, by_short_name });
+    *guard = Some(Arc::clone(&built));
+    built
+}
 
 const PRELUDE_TYPES: [(&str, &str); 7] = [
     ("Option", "core::option::Option"),
@@ -46,23 +96,6 @@ fn expand_candidates(path: &str) -> Vec<String> {
     out
 }
 
-fn find_matching_type_defs<'a, B: AsRef<[u8]>>(reader: &'a IndexReader<B>, query_path: &str) -> Vec<&'a DefEntry> {
-    let mut results = Vec::new();
-    if let Some(def) = reader.find_definition_by_path(query_path) {
-        if is_type_def_kind(DefKind::from(def.kind)) {
-            results.push(def);
-        }
-    }
-    if let Some((parent, _)) = query_path.rsplit_once("::") {
-        for def in reader.find_definitions_by_owner(parent) {
-            if reader.get_str(def.path_offset()) == query_path && is_type_def_kind(DefKind::from(def.kind)) && !results.iter().any(|existing| std::ptr::eq(*existing, def)) {
-                results.push(def);
-            }
-        }
-    }
-    results
-}
-
 pub(super) fn lookup_type_hit<'a>(ws: &'a WorkspaceIndex, file_readers: &[usize], query_file: &str, target_path: &str, is_canonical_owner: bool) -> Option<TypeHit<'a>> {
     let query_path = Path::new(query_file);
     let crate_units: Vec<(&str, &str)> = file_readers.iter().filter_map(|&idx| ws.readers().get(idx)).map(|reader| (reader.crate_name(), reader.unit_key())).collect();
@@ -76,36 +109,33 @@ pub(super) fn lookup_type_hit<'a>(ws: &'a WorkspaceIndex, file_readers: &[usize]
 
     let candidates = expand_candidates(target_path);
     let mut best: Option<ScoredHit<'a>> = None;
+    let type_idx = get_ws_type_index(ws);
+    let readers = ws.readers();
 
     for priority_only in [true, false] {
         for cand in &candidates {
             let first_seg = cand.split("::").next().unwrap_or("");
-            for (reader_idx, reader) in ws.readers().iter().enumerate() {
+            let short = cand.rsplit("::").next().unwrap_or(cand);
+            let Some(hits) = type_idx.by_short_name.get(short) else {
+                continue;
+            };
+            for &(r_u32, d_u32) in hits {
+                let reader_idx = r_u32 as usize;
+                let reader = &readers[reader_idx];
                 let crate_name = reader.crate_name();
                 let same_crate = in_same_crate(reader_idx);
                 let crate_match = !first_seg.is_empty() && crate_name == first_seg;
                 if (same_crate || crate_match) != priority_only {
                     continue;
                 }
-                let mut in_dep_opt: Option<bool> = None;
-                for query_cand in &candidate_queries(cand, crate_name) {
-                    for def in find_matching_type_defs(reader, query_cand) {
-                        let span = def.span();
-                        let raw_file = reader.get_file(span.file_id());
-                        if raw_file == "external" || raw_file.is_empty() {
-                            continue;
-                        }
-                        let in_dep_graph = *in_dep_opt.get_or_insert_with(|| ws.is_reader_in_dep_graph(file_readers, reader_idx));
-                        let resolved_path = resolve_reader_file(ws, reader_idx, raw_file);
-                        let is_local = !ws.is_reader_dependency(reader_idx);
-                        let same_file = resolved_path == query_path;
-                        let score = (!def.is_reexport(), true, same_file, same_crate, in_dep_graph, crate_match, is_local);
-                        if best.as_ref().is_none_or(|(best_score, _)| score > *best_score) {
-                            let coords = (span.start_line(), span.start_col(), span.end_line(), span.end_col());
-                            best = Some((score, (reader_idx, def, resolved_path, raw_file, coords)));
-                        }
-                    }
+                let def = &reader.definitions()[d_u32 as usize];
+                let def_path = reader.get_str(def.path_offset());
+                if !candidate_queries(cand, crate_name).iter().any(|q| q == def_path) {
+                    continue;
                 }
+                let raw_file = reader.get_file(def.span().file_id());
+                let in_dep_graph = ws.is_reader_in_dep_graph(file_readers, reader_idx);
+                update_best_hit(ws, reader_idx, def, raw_file, query_path, (true, same_crate, in_dep_graph, crate_match), &mut best);
             }
             if best.as_ref().is_some_and(|(best_score, _)| best_score.0) && is_canonical_owner {
                 break;
@@ -136,6 +166,10 @@ fn lookup_short_name_fallback<'a>(
     let Some(&short_name) = all_segs.last() else {
         return;
     };
+    let type_idx = get_ws_type_index(ws);
+    let Some(hits) = type_idx.by_short_name.get(short_name) else {
+        return;
+    };
     let first_seg = if all_segs.len() > 1 { all_segs[0] } else { "" };
     // A bare name the query file declares as a type parameter (`impl<I, O> … for E<I, O>`) is that parameter, which
     // has no type definition; it is not looked up by name across the workspace.
@@ -156,7 +190,10 @@ fn lookup_short_name_fallback<'a>(
     } else {
         &[]
     };
-    for (reader_idx, reader) in ws.readers().iter().enumerate() {
+    let readers = ws.readers();
+    for &(r_u32, d_u32) in hits {
+        let reader_idx = r_u32 as usize;
+        let reader = &readers[reader_idx];
         let crate_name = reader.crate_name();
         let is_sysroot_reader = matches!(crate_name, "core" | "alloc" | "std");
         if is_sysroot_query && !is_sysroot_reader {
@@ -164,38 +201,41 @@ fn lookup_short_name_fallback<'a>(
         }
         let same_crate = in_same_crate(reader_idx);
         let crate_match = (is_sysroot_query && is_sysroot_reader) || (!first_seg.is_empty() && (crate_name == first_seg || crate_name.starts_with(&format!("{first_seg}_"))));
-        let mut in_dep_opt: Option<bool> = None;
-        for def in reader.definitions() {
-            if !is_type_def_kind(DefKind::from(def.kind)) || def.kind == DefKind::TyParam as u8 || reader.get_str(def.name_offset()) != short_name {
-                continue;
-            }
-            let span = def.span();
-            let raw_file = reader.get_file(span.file_id());
-            if raw_file == "external" || raw_file.is_empty() {
-                continue;
-            }
-            let in_dep_graph = is_sysroot_reader || *in_dep_opt.get_or_insert_with(|| ws.is_reader_in_dep_graph(file_readers, reader_idx));
-            if !same_crate && !crate_match && !in_dep_graph {
-                continue;
-            }
-            let def_path = reader.get_str(def.path_offset());
-            let mod_match = if is_sysroot_query {
-                mod_segs.is_empty() || mod_segs.iter().all(|&m| def_path.contains(&format!("::{m}::")))
-            } else {
-                mod_segs.iter().any(|&s| s != crate_name && (def_path.contains(&format!("::{s}::")) || def_path.starts_with(&format!("{s}::"))))
-            };
-            if is_sysroot_query && !mod_match {
-                continue;
-            }
-            let resolved_path = resolve_reader_file(ws, reader_idx, raw_file);
-            let is_local = !ws.is_reader_dependency(reader_idx);
-            let same_file = resolved_path == query_path;
-            let score = (!def.is_reexport(), mod_match, same_file, same_crate, in_dep_graph, crate_match, is_local);
-            if best.as_ref().is_none_or(|(best_score, _)| score > *best_score) {
-                let coords = (span.start_line(), span.start_col(), span.end_line(), span.end_col());
-                *best = Some((score, (reader_idx, def, resolved_path, raw_file, coords)));
-            }
+        let in_dep_graph = is_sysroot_reader || ws.is_reader_in_dep_graph(file_readers, reader_idx);
+        if !same_crate && !crate_match && !in_dep_graph {
+            continue;
         }
+        let def = &reader.definitions()[d_u32 as usize];
+        let span = def.span();
+        let raw_file = reader.get_file(span.file_id());
+        let def_path = reader.get_str(def.path_offset());
+        let mod_match = if is_sysroot_query {
+            mod_segs.is_empty() || mod_segs.iter().all(|&m| def_path.contains(&format!("::{m}::")))
+        } else {
+            mod_segs.iter().any(|&s| s != crate_name && (def_path.contains(&format!("::{s}::")) || def_path.starts_with(&format!("{s}::"))))
+        };
+        if is_sysroot_query && !mod_match {
+            continue;
+        }
+        update_best_hit(ws, reader_idx, def, raw_file, query_path, (mod_match, same_crate, in_dep_graph, crate_match), best);
+    }
+}
+
+fn update_best_hit<'a>(
+    ws: &'a WorkspaceIndex,
+    reader_idx: usize,
+    def: &'a DefEntry,
+    raw_file: &'a str,
+    query_path: &Path,
+    (mod_match, same_crate, in_dep_graph, crate_match): (bool, bool, bool, bool),
+    best: &mut Option<ScoredHit<'a>>,
+) {
+    let span = def.span();
+    let resolved_path = resolve_reader_file(ws, reader_idx, raw_file);
+    let score = (!def.is_reexport(), mod_match, resolved_path == query_path, same_crate, in_dep_graph, crate_match, !ws.is_reader_dependency(reader_idx));
+    if best.as_ref().is_none_or(|(best_score, _)| score > *best_score) {
+        let coords = (span.start_line(), span.start_col(), span.end_line(), span.end_col());
+        *best = Some((score, (reader_idx, def, resolved_path, raw_file, coords)));
     }
 }
 
@@ -225,17 +265,22 @@ pub(super) fn collect_alias_or_default_targets(
     let file_id = span.file_id();
     let s_line = span.start_line();
     let path_str = resolved_file.to_str().unwrap_or("");
-    let first_line = conv.get_line(path_str, s_line).unwrap_or("").to_string();
 
     if only_default_generics {
         if reader.references().is_empty() {
             return extract_rmeta_default_generics(resolved_file, s_line, conv);
         }
-        let Some((min_col, max_col)) = default_generic_col_bounds(&first_line, span.end_col()) else {
+        if collect_type_refs_in_range(reader, file_id, (s_line, span.end_col()), (s_line, u32::MAX), false).is_empty() {
+            return Vec::new();
+        }
+        let first_line = conv.get_line(path_str, s_line).unwrap_or("");
+        let Some((min_col, max_col)) = default_generic_col_bounds(first_line, span.end_col()) else {
             return Vec::new();
         };
         return collect_type_refs_in_range(reader, file_id, (s_line, min_col), (s_line, max_col), false);
     }
+
+    let first_line = conv.get_line(path_str, s_line).unwrap_or("").to_string();
 
     let mut end_line = span.end_line().max(s_line);
     if !first_line.contains(';') {
@@ -329,24 +374,24 @@ pub(super) fn resolve_reader_file(ws: &WorkspaceIndex, reader_idx: usize, raw_fi
     if rel_path.is_absolute() {
         return rel_path.to_path_buf();
     }
-    let is_dep = ws.is_reader_dependency(reader_idx);
-    let root_opt = if is_dep { ws.source_root_at(reader_idx) } else { ws.source_root_at(reader_idx).or_else(|| ws.workspace_root()) };
-    let primary = root_opt.map_or_else(|| rel_path.to_path_buf(), |root| join_resolving_overlap(root, rel_path));
-    match (!is_dep && !primary.exists(), ws.workspace_root()) {
-        (true, Some(root)) if join_resolving_overlap(root, rel_path).exists() => join_resolving_overlap(root, rel_path),
-        _ => primary,
+    if let Some(root) = ws.source_root_at(reader_idx) {
+        return join_resolving_overlap(root, rel_path);
     }
+    if !ws.is_reader_dependency(reader_idx) {
+        if let Some(root) = ws.workspace_root() {
+            return join_resolving_overlap(root, rel_path);
+        }
+    }
+    rel_path.to_path_buf()
 }
 
 pub(super) fn format_location(resolved_path: &Path, raw_file: &str, (start_line, start_col, end_line, end_col): (u32, u32, u32, u32), conv: &mut PositionConverter) -> Value {
     let path_str = resolved_path.to_str().unwrap_or(raw_file);
-    let start_col_u16 = conv.char_col_to_utf16_col(path_str, start_line, start_col);
-    let end_col_u16 = conv.char_col_to_utf16_col(path_str, end_line, end_col);
-    json!({
-        "uri": path_to_uri(path_str),
-        "range": {
-            "start": { "line": start_line.saturating_sub(1), "character": start_col_u16 },
-            "end": { "line": end_line.saturating_sub(1), "character": end_col_u16 }
-        }
-    })
+    let s_u16 = conv.char_col_to_utf16_col(path_str, start_line, start_col);
+    let e_u16 = conv.char_col_to_utf16_col(path_str, end_line, end_col);
+    let uri = {
+        let mut g = FILE_LOC_META.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap_or_else(|e| e.into_inner());
+        g.entry(resolved_path.to_path_buf()).or_insert_with(|| path_to_uri(path_str)).clone()
+    };
+    json!({ "uri": uri, "range": { "start": { "line": start_line.saturating_sub(1), "character": s_u16 }, "end": { "line": end_line.saturating_sub(1), "character": e_u16 } } })
 }

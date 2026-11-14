@@ -25,6 +25,9 @@ use super::query_path::query_path_candidates;
 use super::query_state::LiveEngine;
 use super::query_ty_fmt::query_type_at;
 
+/// Resolved cursor type, candidate units on fallback, and 1-based `(col, line_text)`.
+pub(crate) type CursorTypeResolution = (Option<LiveTy>, Option<Vec<(usize, u32)>>, Option<(u32, String)>);
+
 /// 1-based `(line, col)` .. `(end_line, end_col)` character span in a resolved file.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct LiveLocation {
@@ -133,20 +136,43 @@ impl LiveDb {
 
     /// Returns the inferred type of the expression, local variable, pattern, or type annotation at `byte_offset`.
     pub fn type_at(&mut self, ws: &WorkspaceIndex, file: impl AsRef<Path>, byte_offset: u32, overlays: Option<&OverlayManager>) -> Option<LiveTy> {
+        self.type_at_with_hint(ws, file.as_ref(), byte_offset, overlays, None)
+    }
+
+    pub(crate) fn type_at_with_hint(&mut self, ws: &WorkspaceIndex, file: &Path, byte_offset: u32, overlays: Option<&OverlayManager>, clean_hint: Option<&str>) -> Option<LiveTy> {
         self.sync_engine(ws);
         let engine = self.engine.as_mut()?;
-        let (file_unit, fid, canon) = engine.locate_and_parse_file(ws, file.as_ref(), &self.manual_overlays, overlays)?;
+        let (file_unit, fid, canon) = engine.locate_and_parse_file_with_hint(ws, file, &self.manual_overlays, overlays, clean_hint, Some(byte_offset))?;
         let r_idx = engine.unit_for_cursor(ws, file_unit, &canon, byte_offset);
-        let on_typeable = {
-            let st = engine.parsed.as_ref()?.tree();
-            super::query_cursor::is_cursor_on_typeable_token(&st, byte_offset)
+        Self::type_at_after_parse(ws, engine, r_idx, fid, &canon, &self.manual_overlays, overlays, byte_offset)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn type_at_after_parse(
+        ws: &WorkspaceIndex,
+        engine: &mut LiveEngine,
+        r_idx: usize,
+        fid: ridx_syntax::name_res::FileId,
+        canon: &Path,
+        manual: &HashMap<PathBuf, String>,
+        overlays: Option<&OverlayManager>,
+        byte_offset: u32,
+    ) -> Option<LiveTy> {
+        let can_infer = {
+            let db = super::v5_db::RidxV5ItemDb::view(ws, &engine.src, &engine.state);
+            let parsed = engine.parsed.as_ref()?;
+            let st = parsed.tree();
+            super::query_cursor::is_cursor_on_typeable_token(&st, byte_offset) && !super::query_cfg::is_inside_inactive_target_cfg(&st, byte_offset, &db, r_idx, canon) && {
+                let macro_tt = super::query_cursor::enclosing_macro_tt_span(&st, byte_offset);
+                super::query_loc::find_enclosing_fn_summary(&st, &parsed.fn_summaries, byte_offset).is_some()
+                    || super::query_cursor::smallest_type_node_at(&st, byte_offset, macro_tt).is_some()
+            }
         };
-        if !on_typeable {
-            engine.ensure_unit_shards(ws, r_idx);
+        if !can_infer {
             return None;
         }
-        let env_salt = engine.activate_unit_and_def_map(ws, r_idx, fid, &canon, &self.manual_overlays, overlays)?;
-        query_type_at(ws, engine, r_idx, fid, &canon, env_salt, byte_offset)
+        let env_salt = engine.activate_unit_and_def_map_at(ws, r_idx, fid, canon, manual, overlays, Some(byte_offset))?;
+        query_type_at(ws, engine, r_idx, fid, canon, env_salt, byte_offset)
     }
 
     /// Returns accessible fields and callable methods (inherent + traits in scope across autoderef)
@@ -197,5 +223,76 @@ impl LiveDb {
     #[inline]
     pub fn cached_fn_count(&self) -> usize {
         self.engine.as_ref().map_or(0, |e| e.fn_cache.len())
+    }
+
+    #[inline]
+    pub(crate) fn units_for_file(&mut self, ws: &WorkspaceIndex, file: &Path) -> Option<Vec<(usize, u32)>> {
+        let engine = self.sync_engine(ws);
+        if let Some(v) = engine.state.units_by_file.get(file) {
+            return Some(v.clone());
+        }
+        if engine.src.canon_root == engine.src.ws_root && file.starts_with(&engine.src.ws_root) && ws.readers().iter().any(|r| r.header().files_count > 1) {
+            return Some(Vec::new());
+        }
+        None
+    }
+
+    /// Resolved cursor type, candidate units on fallback, and 1-based column plus raw line text.
+    pub(crate) fn resolve_pos_and_type_at(&mut self, ws: &WorkspaceIndex, file: &Path, line_1: u32, utf16_col_0: u32, overlays: Option<&OverlayManager>) -> CursorTypeResolution {
+        self.sync_engine(ws);
+        if !self.manual_overlays.is_empty() || overlays.is_some_and(|o| o.open_count() != 0) {
+            return (None, None, None);
+        }
+        let Some((file_unit, fid, canon)) = self.engine.as_mut().and_then(|e| e.resolve_file_entry(ws, file, &self.manual_overlays, overlays, None)) else {
+            return (None, self.units_for_file(ws, file), None);
+        };
+        let (col_1, skip_live, byte_offset) = {
+            let cf = &self.engine.as_ref().unwrap().src.files[fid.0 as usize];
+            let Some((line_start, line_text)) = cf.lines.line_str(&cf.text, line_1) else {
+                return (None, self.units_for_file(ws, file), None);
+            };
+            let (col_1, in_line) = if cf.lines.is_ascii() {
+                let b = (utf16_col_0 as usize).min(line_text.len());
+                (b as u32 + 1, b)
+            } else {
+                let (mut u16_acc, mut char_col, mut byte_idx) = (0u32, 1u32, line_text.len());
+                for (i, ch) in line_text.char_indices() {
+                    if u16_acc >= utf16_col_0 {
+                        byte_idx = i;
+                        break;
+                    }
+                    u16_acc += ch.len_utf16() as u32;
+                    char_col += 1;
+                }
+                (char_col, byte_idx)
+            };
+            let trimmed = line_text.trim_start();
+            let is_use = !line_text.starts_with(' ')
+                && !line_text.starts_with('\t')
+                && (trimmed.starts_with("use ") || trimmed.starts_with("pub use ") || trimmed.starts_with("pub(crate) use ") || trimmed.starts_with("pub(super) use "));
+            let lb = line_text.as_bytes();
+            let is_id = |b: u8| b.is_ascii_alphanumeric() || b == b'_' || b == b'#' || b >= 0x80;
+            let on_ident = lb.get(in_line).copied().is_some_and(is_id) || in_line.checked_sub(1).and_then(|i| lb.get(i).copied()).is_some_and(is_id);
+            let skip = (is_use || trimmed.starts_with("//") || !on_ident).then(|| line_text.to_string());
+            (col_1, skip, (line_start + in_line) as u32)
+        };
+        if let Some(l_str) = skip_live {
+            return (None, self.units_for_file(ws, file), Some((col_1, l_str)));
+        }
+        let ty = {
+            let engine = self.engine.as_mut().unwrap();
+            engine.parse_resolved_file(ws, file_unit, fid, &canon, &self.manual_overlays, overlays, Some(byte_offset));
+            let r_idx = engine.unit_for_cursor(ws, file_unit, &canon, byte_offset);
+            Self::type_at_after_parse(ws, engine, r_idx, fid, &canon, &self.manual_overlays, overlays, byte_offset)
+        };
+        let need_fallback = ty.as_ref().is_none_or(|t| t.display.contains("{unknown}") || t.defs.is_empty());
+        if !need_fallback {
+            return (ty, None, Some((col_1, String::new())));
+        }
+        let l_str = {
+            let cf = &self.engine.as_ref().unwrap().src.files[fid.0 as usize];
+            cf.lines.line_str(&cf.text, line_1).map_or_else(String::new, |(_, s)| s.to_string())
+        };
+        (ty, self.units_for_file(ws, file), Some((col_1, l_str)))
     }
 }

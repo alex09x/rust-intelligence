@@ -93,6 +93,9 @@ pub(super) fn lookup_macro_rules<'a>(def_map: Option<&'a CrateDefMap>, item_db: 
                 }
             }
             if b.def.is_some() {
+                if (b.def.index & 0x4000_0000) != 0 {
+                    return None;
+                }
                 if let Some(idb_real) = item_db {
                     if let Some(hit) = idb_real.macro_rules_by_def(dm.krate, b.def) {
                         return Some(hit);

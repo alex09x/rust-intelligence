@@ -23,7 +23,7 @@ use super::ident_key::IdentKey;
 use super::impl_collect::LocalImplArena;
 use super::impl_resolve::resolve_local_impls_and_assocs;
 use super::mod_tree::ModuleTree;
-use super::per_ns::{BindingOrigin, LocalItemId, PerNs, PrimTy, ResolvedBinding};
+use super::per_ns::{is_binding_visible, BindingOrigin, LocalItemId, PerNs, PrimTy, ResolvedBinding};
 use super::use_tree::{PathAnchor, UseArena};
 use crate::sema_fn::norm_ident;
 use crate::tree::SyntaxTree;
@@ -40,7 +40,7 @@ pub struct ModuleScope {
     /// Sorted copy of `visible_traits` for `O(log T)` membership checks.
     pub(super) visible_traits_sorted: Arc<[GlobalDefId]>,
     /// Precomputed 64-bit hash of `(visible_traits, has_implicit_prelude)` for `O(1)` trait-item cache lookup.
-    pub(super) visible_traits_hash: u64,
+    pub visible_traits_hash: u64,
 }
 
 impl Default for ModuleScope {
@@ -90,6 +90,8 @@ pub struct CrateDefMap {
     /// Per-`FlatUse` resolved `PerNs` (`resolved_uses[i]` corresponds to `uses.uses[i]`).
     pub resolved_uses: Vec<PerNs>,
     pub dirty_files: Vec<FileId>,
+    /// `true` when non-dirty crate definitions come from a pre-indexed `ItemDb` (`build_from_index`).
+    pub indexed_clean: bool,
     pub mod_tree: Arc<ModuleTree>,
     pub macro_bodies: Vec<(LocalItemId, u32, u32)>,
     pub local_impls: LocalImplArena,
@@ -272,6 +274,28 @@ pub(super) fn finalize_in_scope_trait_tables(map: &mut CrateDefMap, mod_tree: &M
     }
 }
 
+pub(super) fn finalize_nonleaf_trait_tables(map: &mut CrateDefMap, mod_tree: &ModuleTree) {
+    let mut prel = Vec::with_capacity(map.prelude.len());
+    for pns in map.prelude.values() {
+        if let Some(tb) = pns.types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
+            prel.push(tb.def);
+        }
+    }
+    prel.sort_unstable();
+    prel.dedup();
+    let prel_arc: Arc<[GlobalDefId]> = prel.into();
+    map.prelude_traits = Arc::clone(&prel_arc);
+    map.prelude_traits_sorted = prel_arc;
+
+    let mut named_buf = Vec::new();
+    for (midx, sc) in map.scopes.iter_mut().enumerate() {
+        let mid = ModuleId(midx as u32);
+        if midx == 0 || !mod_tree.children(mid).is_empty() {
+            finalize_module_trait_table(sc, mod_tree, mid, &mut named_buf);
+        }
+    }
+}
+
 pub(super) fn finalize_module_trait_table(sc: &mut ModuleScope, mod_tree: &ModuleTree, from_mod: ModuleId, named_buf: &mut Vec<GlobalDefId>) {
     let mut vis_list = Vec::with_capacity(sc.unnamed_traits.len() + 16);
     for tb in &sc.unnamed_traits {
@@ -281,7 +305,7 @@ pub(super) fn finalize_module_trait_table(sc: &mut ModuleScope, mod_tree: &Modul
     }
     named_buf.clear();
     for pns in sc.entries.values() {
-        if let Some(tb) = pns.filter_visible(mod_tree, from_mod).types.filter(|b| b.kind == ItemKind::Trait && b.def.is_some()) {
+        if let Some(tb) = pns.types.filter(|&b| b.kind == ItemKind::Trait && b.def.is_some() && is_binding_visible(mod_tree, b, from_mod)) {
             named_buf.push(tb.def);
         }
     }

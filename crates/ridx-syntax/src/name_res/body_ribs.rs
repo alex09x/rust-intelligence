@@ -13,7 +13,7 @@
 
 use std::collections::HashMap;
 
-use super::db::{CrateId, GlobalDefId, ItemKind, NsMask};
+use super::db::{GlobalDefId, ItemKind, NsMask};
 use super::db_impls::ImplTargetKey;
 use super::ident_key::IdentKey;
 use super::path_res::{GenericBindId, LocalBindId};
@@ -87,7 +87,6 @@ pub(super) struct RibStack {
     pub block_aliases_scratch: Vec<(GlobalDefId, crate::tree::NodeId)>,
     pub or_pat_scratch: Vec<(u32, u32, LocalBindId)>,
     pub extra_traits_scratch: Vec<ResolvedBinding>,
-    pub next_synthetic_seq: u32,
 }
 
 impl Default for RibStack {
@@ -113,7 +112,6 @@ impl RibStack {
             block_aliases_scratch: Vec::new(),
             or_pat_scratch: Vec::new(),
             extra_traits_scratch: Vec::new(),
-            next_synthetic_seq: 1 << 24,
         }
     }
 
@@ -135,7 +133,6 @@ impl RibStack {
         self.block_aliases_scratch.clear();
         self.or_pat_scratch.clear();
         self.extra_traits_scratch.clear();
-        self.next_synthetic_seq = 1 << 24;
     }
 
     #[inline]
@@ -144,13 +141,6 @@ impl RibStack {
             r.clear();
             self.block_rib_pool.push(r);
         }
-    }
-
-    #[inline]
-    pub fn alloc_synthetic_def(&mut self) -> GlobalDefId {
-        let seq = self.next_synthetic_seq;
-        self.next_synthetic_seq += 1;
-        GlobalDefId::new(CrateId::LOCAL_OVERLAY, seq)
     }
 
     #[inline]

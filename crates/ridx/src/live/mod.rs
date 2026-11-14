@@ -24,6 +24,7 @@ mod query_path;
 mod query_path_qual;
 mod query_postfix;
 mod query_state;
+mod query_state_files;
 mod query_ty_fmt;
 mod query_unit;
 pub mod v5_db;

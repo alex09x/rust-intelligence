@@ -111,7 +111,7 @@ impl RibStack {
                             let (vns, vne) = if st.src.get(vs as usize..vs as usize + 2) == Some("r#") { (vs + 2, ve) } else { (vs, ve) };
                             let mut vdef = db.def_at_byte_span(map.krate, file, vns, vne);
                             if !vdef.is_some() {
-                                vdef = self.alloc_synthetic_def();
+                                vdef = GlobalDefId::new(super::db::CrateId::LOCAL_OVERLAY, 0xA000_0000 | vs);
                             }
                             let vb = private_block_binding(vdef, module, ItemKind::Variant);
                             rib.enum_variants.push((edef, IdentKey::new(vname), vb, ItemKind::Variant.ns_mask(has_ctor)));

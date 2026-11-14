@@ -24,37 +24,11 @@ use crate::syntax_kind::SyntaxKind;
 use crate::token::{Token, TokenKind};
 use crate::tree::{Event, SyntaxTree};
 
+pub use items_fn::parse_for_offset;
+
 /// Parses `src` into a lossless syntax tree.
 pub fn parse(src: &str) -> SyntaxTree<'_> {
-    let tokens = crate::lex(src);
-    let mut sig: Vec<u32> = Vec::with_capacity(tokens.len() * 3 / 4 + 8);
-    let mut i = 0usize;
-    let tlen = tokens.len();
-    while i < tlen {
-        if !tokens[i].is_trivia() {
-            sig.push(i as u32);
-        }
-        i += 1;
-    }
-    let events_cap = sig.len() * 3 + 16;
-    let mut p = Parser {
-        src,
-        tokens: &tokens,
-        sig: &sig,
-        pos: 0,
-        events: Vec::with_capacity(events_cap),
-        nodes_count: 0,
-        #[cfg(debug_assertions)]
-        fuel: 0,
-    };
-    let m = p.start();
-    items::item_list(&mut p, false);
-    while !p.at_eof() {
-        p.err_bump();
-    }
-    m.complete(&mut p, SyntaxKind::SourceFile);
-    let Parser { events, nodes_count, .. } = p;
-    SyntaxTree::build(src, tokens, &sig, events, nodes_count as usize)
+    items_fn::parse_opt(src, None).0
 }
 
 pub(crate) struct Parser<'a> {
@@ -64,6 +38,9 @@ pub(crate) struct Parser<'a> {
     pos: usize,
     events: Vec<Event>,
     nodes_count: u32,
+    target_offset: Option<u32>,
+    focused_span: Option<(u32, u32)>,
+    skipped_fn: bool,
     /// Lookahead calls since the last consumed token: a loop that stops consuming is a bug, caught in debug.
     #[cfg(debug_assertions)]
     fuel: u32,
@@ -379,6 +356,9 @@ impl ParseScratch {
             pos: 0,
             events: ev,
             nodes_count: 0,
+            target_offset: None,
+            focused_span: None,
+            skipped_fn: false,
             #[cfg(debug_assertions)]
             fuel: 0,
         };

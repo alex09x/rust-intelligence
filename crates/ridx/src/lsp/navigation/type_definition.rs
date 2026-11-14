@@ -49,12 +49,14 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
     let utf16_col = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
 
     let overlay_opt = overlay_mgr.get(&file);
-    let col_1based = match overlay_opt {
-        Some(overlay) => overlay.utf16_col_to_char_col(line_1based, utf16_col),
-        None => conv.utf16_col_to_char_col(&file, line_1based, utf16_col),
-    };
+    let mut col_opt = overlay_opt.map(|overlay| overlay.utf16_col_to_char_col(line_1based, utf16_col));
+    let mut line_opt: Option<String> = None;
     // The inferred type answers on edited buffers too; the indexed tables below describe the saved file only.
-    let live_partial = match workspace.and_then(|ws| super::type_definition_live::resolve_inferred_type(ws, &file, (line_1based, col_1based), overlay_mgr, conv)) {
+    let (live_res, indexed_units) = match workspace {
+        Some(ws) => super::type_definition_live::resolve_inferred_type(ws, &file, line_1based, utf16_col, (&mut col_opt, &mut line_opt), overlay_mgr, conv),
+        None => (None, None),
+    };
+    let live_partial = match live_res {
         Some((loc, true)) => return loc,
         Some((loc, false)) => Some(loc),
         None => None,
@@ -62,10 +64,14 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
     let Some(ws) = workspace.filter(|_| !overlay_opt.is_some_and(|o| o.is_dirty())) else {
         return live_partial.unwrap_or(Value::Null);
     };
+    let col_1based = col_opt.unwrap_or_else(|| conv.utf16_col_to_char_col(&file, line_1based, utf16_col));
 
-    let (file_readers, ctx) = build_file_reader_contexts(ws, &file, line_1based, col_1based);
+    let (file_readers, ctx) = build_file_reader_contexts(ws, &file, line_1based, col_1based, indexed_units);
+    if ctx.is_empty() && ws.readers().iter().any(|r| r.header().files_count > 1) {
+        return live_partial.unwrap_or(Value::Null);
+    }
     let pos = (line_1based, col_1based);
-    let line_str = conv.get_line(&file, line_1based).unwrap_or("").to_string();
+    let line_str = line_opt.unwrap_or_else(|| conv.get_line(&file, line_1based).unwrap_or("").to_string());
     if is_enclosing_macro_or_raw_string(&ctx, &line_str, col_1based) {
         return Value::Null;
     }
@@ -91,7 +97,19 @@ pub fn handle_type_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, o
     resolve_from_definition_at(ws, &file_readers, &ctx, (&file, pos, &line_str), type_entry, conv).or(live_partial).unwrap_or(Value::Null)
 }
 
-fn build_file_reader_contexts<'a>(ws: &'a WorkspaceIndex, file: &str, line: u32, col: u32) -> (Vec<usize>, Vec<FileReaderCtx<'a>>) {
+fn build_file_reader_contexts<'a>(ws: &'a WorkspaceIndex, file: &str, line: u32, col: u32, indexed_units: Option<Vec<(usize, u32)>>) -> (Vec<usize>, Vec<FileReaderCtx<'a>>) {
+    if let Some(mut pairs) = indexed_units {
+        pairs.sort_by_key(|&(idx, _)| usize::from(!ws.target_kind_at(idx).is_some_and(|k| k.is_lib())));
+        let mut file_readers = Vec::with_capacity(pairs.len());
+        let mut ctx = Vec::with_capacity(pairs.len());
+        for (idx, file_id) in pairs {
+            let reader = &ws.readers()[idx];
+            let fstr = reader.get_file(file_id);
+            file_readers.push(idx);
+            ctx.push(FileReaderCtx { idx, reader, file_id, inner_ref: inner_ref_at(ws, idx, file_id, line, col), inner_type: reader.find_innermost_type_entry(fstr, line, col) });
+        }
+        return (file_readers, ctx);
+    }
     let mut raw_indices = ws.reader_indices_for_file(file);
     raw_indices.sort_by_key(|&idx| usize::from(!ws.target_kind_at(idx).is_some_and(|k| k.is_lib())));
     let mut file_readers = Vec::new();

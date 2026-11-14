@@ -32,38 +32,44 @@ impl CorpusSourceDb {
     pub fn upsert_file_text(&mut self, abs_path: &Path, text: String) -> FileId {
         if let Some(&fid) = self.by_abs.get(abs_path) {
             let cf = &mut self.files[fid.0 as usize];
-            if cf.text != text {
+            if *cf.text != text {
                 cf.lines = LineIndex::new(&text);
-                cf.text = text;
+                cf.text = std::sync::Arc::new(text);
             }
             return fid;
         }
-        let canon_opt = abs_path.canonicalize().ok();
-        if let Some(ca) = &canon_opt {
-            if let Some(&fid) = self.by_abs.get(ca) {
-                self.by_abs.insert(abs_path.to_path_buf(), fid);
-                let cf = &mut self.files[fid.0 as usize];
-                if cf.text != text {
-                    cf.lines = LineIndex::new(&text);
-                    cf.text = text;
-                }
-                return fid;
+        let canon = abs_path.canonicalize().unwrap_or_else(|_| abs_path.to_path_buf());
+        self.upsert_canonical_file(abs_path, &canon, text)
+    }
+
+    pub fn upsert_canonical_file(&mut self, abs_path: &Path, canon: &Path, text: String) -> FileId {
+        if let Some(&fid) = self.by_abs.get(canon).or_else(|| (abs_path != canon).then(|| self.by_abs.get(abs_path)).flatten()) {
+            if abs_path != canon {
+                self.by_abs.entry(abs_path.to_path_buf()).or_insert(fid);
             }
+            let cf = &mut self.files[fid.0 as usize];
+            if *cf.text != text {
+                cf.lines = LineIndex::new(&text);
+                cf.text = std::sync::Arc::new(text);
+            }
+            return fid;
         }
-        let rel_raw = abs_path.strip_prefix(&self.ws_root).or_else(|_| abs_path.strip_prefix(&self.canon_root)).unwrap_or(abs_path).to_string_lossy();
+        let rel_raw = abs_path.strip_prefix(&self.ws_root).or_else(|_| canon.strip_prefix(&self.canon_root)).unwrap_or(abs_path).to_string_lossy();
         let rel_path = join_norm_path("", &rel_raw);
         let id = FileId(self.files.len() as u32);
         let lines = LineIndex::new(&text);
         self.by_rel.entry(rel_path.clone()).or_insert(id);
-        self.by_abs.insert(abs_path.to_path_buf(), id);
-        if let Some(ca) = canon_opt {
-            if let Ok(crel) = ca.strip_prefix(&self.canon_root) {
+        self.by_abs.insert(canon.to_path_buf(), id);
+        if abs_path != canon || self.ws_root != self.canon_root {
+            if abs_path != canon {
+                self.by_abs.insert(abs_path.to_path_buf(), id);
+            }
+            if let Ok(crel) = canon.strip_prefix(&self.canon_root) {
                 self.by_rel.entry(join_norm_path("", &crel.to_string_lossy())).or_insert(id);
             }
-            self.by_rel.entry(join_norm_path("", &ca.to_string_lossy())).or_insert(id);
-            self.by_abs.entry(ca).or_insert(id);
         }
-        self.files.push(CorpusFile { rel_path, text, lines });
+        self.by_rel.entry(join_norm_path("", &canon.to_string_lossy())).or_insert(id);
+        self.files.push(CorpusFile { rel_path, text: std::sync::Arc::new(text), lines });
         id
     }
 
@@ -101,9 +107,20 @@ impl LiveState {
         let metas: Vec<_> = (0..n).map(|idx| load_reader_meta_at(ws, idx, has_core, false)).collect();
         let meta_loaded: Vec<bool> = (0..n).map(|idx| ws.meta_path_at(idx).is_none()).collect();
         let mut sysroot_by_name = HashMap::new();
+        let mut units_by_file: HashMap<PathBuf, Vec<(usize, u32)>> = HashMap::new();
         for (idx, meta) in metas.iter().enumerate() {
             if matches!(meta.crate_name.as_str(), "core" | "alloc" | "std" | "proc_macro") {
                 sysroot_by_name.entry(meta.crate_name.clone()).or_insert(idx);
+            } else if !meta.is_sysroot && (!meta.is_dependency || meta.source_root.as_deref().is_some_and(|sr| sr.starts_with(&ws_root))) {
+                let rdr = &ws.readers()[idx];
+                let sr = meta.source_root.as_deref().unwrap_or(ws_root.as_path());
+                for fid in 0..rdr.header().files_count {
+                    let fstr = rdr.get_file(fid);
+                    if !fstr.is_empty() {
+                        let joined = join_resolving_overlap(sr, Path::new(fstr));
+                        units_by_file.entry(joined).or_default().push((idx, fid));
+                    }
+                }
             }
         }
         let mut ty_tables = V5TyTables::default();
@@ -115,6 +132,8 @@ impl LiveState {
             meta_loaded,
             shards: (0..n).map(|_| ShardTables::default()).collect(),
             shard_loaded: vec![false; n],
+            shard_expanded_depth: vec![u8::MAX; n],
+            units_by_file,
             sysroot_by_name,
             impls_arena: Vec::new(),
             impls_by_adt: HashMap::new(),
@@ -227,34 +246,11 @@ impl RidxV5ItemDb<'_> {
         if root_needs_cst {
             self.ensure_crate_sources(root_r_idx, loaded_dirs, src_loaded);
         }
-        let newly = self.collect_reachable_unloaded(root_r_idx, false);
+        let newly = self.collect_reachable_unloaded(root_r_idx);
         self.materialize_shard_batch(newly, loaded_dirs, src_loaded)
     }
 
-    pub(crate) fn prewarm_umbrella_step(&mut self, queue: &mut Option<Vec<usize>>, cursor: &mut usize, loaded_dirs: &mut HashSet<PathBuf>, src_loaded: &mut [bool]) -> Vec<usize> {
-        if queue.is_none() {
-            let ws_root = self.ws.workspace_root();
-            let best = (self.ws.crate_count() > 500)
-                .then(|| {
-                    (0..self.ws.crate_count())
-                        .find(|&i| !self.metas[i].is_dependency && self.ws.target_kind_at(i).is_some_and(|k| k.is_lib()) && self.metas[i].source_root.as_deref() == ws_root)
-                })
-                .flatten();
-            *queue = Some(best.map_or_else(Vec::new, |u| self.collect_reachable_unloaded(u, true)));
-        }
-        let Some(q) = queue.as_ref() else { return Vec::new() };
-        let mut batch = Vec::new();
-        while *cursor < q.len() && batch.len() < 16 {
-            let idx = q[*cursor];
-            *cursor += 1;
-            if !self.shard_loaded[idx] {
-                batch.push(idx);
-            }
-        }
-        self.materialize_shard_batch(batch, loaded_dirs, src_loaded)
-    }
-
-    fn collect_reachable_unloaded(&mut self, root_r_idx: usize, expand_umbrella: bool) -> Vec<usize> {
+    fn collect_reachable_unloaded(&mut self, root_r_idx: usize) -> Vec<usize> {
         let n = self.ws.crate_count();
         let mut visited = vec![false; n];
         let mut q: VecDeque<(usize, u8)> = VecDeque::new();
@@ -267,16 +263,19 @@ impl RidxV5ItemDb<'_> {
         }
         let mut newly = Vec::new();
         while let Some((u, depth)) = q.pop_front() {
-            self.ensure_meta_at(u);
             if !self.shard_loaded[u] {
                 newly.push(u);
             }
-            if self.metas[u].is_sysroot || (u != root_r_idx && self.metas[u].target_kind.contains("proc-macro")) || depth >= 6 {
+            if self.metas[u].is_sysroot || depth >= 6 || (u != root_r_idx && self.shard_loaded[u] && depth >= self.shard_expanded_depth[u]) {
+                continue;
+            }
+            self.ensure_meta_at(u);
+            if u != root_r_idx && self.metas[u].target_kind.contains("proc-macro") {
                 continue;
             }
             let next_d = depth + 1;
             let ws = self.ws;
-            if u == root_r_idx || (expand_umbrella && !self.metas[u].is_dependency && depth <= 2) {
+            if u == root_r_idx {
                 let uks: Vec<String> = self.metas[u].extern_units.values().cloned().collect();
                 for uk in uks {
                     if let Some(v) = self.resolve_unit_to_reader(u, &uk).filter(|&v| !visited[v]) {
@@ -284,8 +283,6 @@ impl RidxV5ItemDb<'_> {
                         q.push_back((v, next_d));
                     }
                 }
-            }
-            if u == root_r_idx {
                 let reader = &ws.readers()[u];
                 let arena = reader.ty_arena();
                 for i in 0..reader.ty_defs().len() {
@@ -294,6 +291,7 @@ impl RidxV5ItemDb<'_> {
                     }
                 }
             } else {
+                self.state.as_mut().shard_expanded_depth[u] = depth;
                 let reader = &ws.readers()[u];
                 let arena = reader.ty_arena();
                 for (didx, d) in reader.definitions().iter().enumerate() {
@@ -350,6 +348,7 @@ impl RidxV5ItemDb<'_> {
         }
         newly.sort_unstable();
         for &idx in &newly {
+            self.ensure_meta_at(idx);
             if !self.metas[idx].is_dependency && self.metas[idx].target_kind.contains("proc-macro") {
                 self.ensure_crate_sources(idx, loaded_dirs, src_loaded);
             }
@@ -371,6 +370,9 @@ impl RidxV5ItemDb<'_> {
 
     #[inline]
     fn enqueue_td(&mut self, u: usize, td: ridx_format::TyDefView<'_>, next_d: u8, visited: &mut [bool], q: &mut VecDeque<(usize, u8)>) {
+        if td.local_def_idx.is_some() {
+            return;
+        }
         let target = td.extern_unit.and_then(|uk| self.resolve_unit_to_reader(u, uk)).or_else(|| {
             let first = td.path.split("::").next().unwrap_or(td.path);
             self.resolve_extern_name_to_reader(u, first)

@@ -172,6 +172,7 @@ impl ImportSolver {
             scopes,
             resolved_uses: vec![PerNs::EMPTY; use_count],
             dirty_files: dirty_files.to_vec(),
+            indexed_clean: false,
             mod_tree: Arc::new(mod_tree.clone()),
             macro_bodies,
             local_impls: collected.local_impls,

@@ -39,7 +39,7 @@ mod tree_dump;
 pub mod ty_infer;
 
 pub use lexer::lex;
-pub use parser::parse;
+pub use parser::{parse, parse_for_offset};
 pub use syntax_kind::SyntaxKind;
 pub use token::{token_at, Token, TokenKind, HAS_ERROR, JOINT_NEXT};
 pub use tree::{NodeId, SyntaxTree};
