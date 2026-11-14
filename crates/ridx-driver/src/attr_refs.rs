@@ -24,6 +24,10 @@ impl<'tcx> HirVisitor<'tcx> {
             return;
         }
         let data = span.ctxt().outer_expn_data();
+        if matches!(data.kind, ExpnKind::Macro(MacroKind::Bang, _)) {
+            self.note_bang_call_site(data);
+            return;
+        }
         let (ExpnKind::Macro(MacroKind::Attr | MacroKind::Derive, _), Some(did)) = (data.kind, data.macro_def_id) else {
             return;
         };
@@ -40,6 +44,39 @@ impl<'tcx> HirVisitor<'tcx> {
         let lo = site.lo() + BytePos(start as u32);
         self.add_ref_from_res(site.with_lo(lo).with_hi(lo + BytePos(len as u32)), Res::Def(self.tcx.def_kind(did), did));
     }
+
+    /// Records the function-like macro written in the source (`tracing::info_span!(..)`, `pin!(x)`) whose expansion
+    /// produced the code. Macros the expansion itself calls (`info_span!` → `span!`) are not written there: the chain
+    /// of call sites is followed out to the first one in the source. Standard-library macros are left out.
+    fn note_bang_call_site(&mut self, mut data: rustc_span::hygiene::ExpnData) {
+        while data.call_site.from_expansion() {
+            data = data.call_site.ctxt().outer_expn_data();
+        }
+        let (ExpnKind::Macro(MacroKind::Bang, _), Some(did)) = (data.kind, data.macro_def_id) else {
+            return;
+        };
+        if matches!(self.tcx.crate_name(did.krate).as_str(), "core" | "std" | "alloc") {
+            return;
+        }
+        let site = data.call_site;
+        let Ok(text) = self.tcx.sess.source_map().span_to_snippet(site) else { return };
+        let Some((start, len)) = bang_macro_name_in(&text) else { return };
+        if self.tcx.opt_item_name(did).is_none_or(|n| n.as_str() != &text[start..start + len]) {
+            return;
+        }
+        let lo = site.lo() + BytePos(start as u32);
+        self.add_ref_from_res(site.with_lo(lo).with_hi(lo + BytePos(len as u32)), Res::Def(self.tcx.def_kind(did), did));
+    }
+}
+
+/// Byte offset and length of the macro's name in the text of a function-like macro call
+/// (`tracing::info_span!("x")` → `info_span`, `pin! (fut)` → `pin`).
+pub(crate) fn bang_macro_name_in(text: &str) -> Option<(usize, usize)> {
+    let path = text[..text.find('!')?].trim_end();
+    let name_start = path.rfind("::").map_or(0, |p| p + 2);
+    let name = path[name_start..].strip_prefix("r#").unwrap_or(&path[name_start..]);
+    let name_start = path.len() - name.len();
+    (!name.is_empty() && name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_')).then_some((name_start, name.len()))
 }
 
 /// Byte offset and length of the macro's name in the text of an attribute or derive path
@@ -56,7 +93,15 @@ pub(crate) fn macro_name_in(text: &str) -> Option<(usize, usize)> {
 
 #[cfg(test)]
 mod tests {
-    use super::macro_name_in;
+    use super::{bang_macro_name_in, macro_name_in};
+
+    #[test]
+    fn finds_the_macro_name_in_function_like_calls() {
+        assert_eq!(bang_macro_name_in("tracing::info_span!(\"x\")"), Some((9, 9)));
+        assert_eq!(bang_macro_name_in("pin! (fut)"), Some((0, 3)));
+        assert_eq!(bang_macro_name_in("snapbox::file![\"a.rs\"]"), Some((9, 4)));
+        assert_eq!(bang_macro_name_in("no_bang(x)"), None);
+    }
 
     #[test]
     fn finds_the_macro_name_in_attribute_and_derive_paths() {
