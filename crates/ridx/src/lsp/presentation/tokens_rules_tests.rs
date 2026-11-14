@@ -66,12 +66,31 @@ fn test_std_traits_enums_type_params_and_assoc_types() {
 fn test_attribute_contents_dropped_and_derive_arguments_are_macros() {
     let text = "#![cfg_attr(not(test), no_std)]\n#[derive(Debug, Serialize)]\nstruct S;\n";
     let mut tokens = scan(text);
-    tokens_attr::apply_attribute_rules(text, &mut tokens);
+    tokens_attr::apply_attribute_rules(text, &mut tokens, 0);
     let got = spans(&tokens);
     assert!(got.iter().all(|t| t.0 != 0), "nothing inside #![cfg_attr(...)]: {got:?}");
     assert!(got.contains(&(1, 9, 5, TOKEN_TYPE_MACRO)), "Debug: {got:?}");
     assert!(got.contains(&(1, 16, 9, TOKEN_TYPE_MACRO)), "Serialize: {got:?}");
     assert!(!got.iter().any(|t| t.0 == 1 && t.1 == 2), "`derive` itself: {got:?}");
+}
+
+#[test]
+fn test_a_macro_attributes_arguments_keep_the_index_tokens_only() {
+    // `#[arg(value_parser = Parser::new())]`: the derive expands its argument; the index's `Parser` and `new` stay,
+    // a textual guess (`value_parser`) and the helper's own name `arg` do not. A built-in `#[allow(x)]` keeps nothing.
+    let text = "#[arg(value_parser = Parser::new())]\n#[allow(dead_code)]\nstruct S;\n";
+    let tok = |line, col, length, token_type| RawToken { line, col, length, token_type, token_modifiers: 0 };
+    let mut tokens = vec![
+        tok(0, 21, 6, TOKEN_TYPE_STRUCT),
+        tok(0, 29, 3, TOKEN_TYPE_FUNCTION),
+        tok(1, 8, 9, TOKEN_TYPE_VARIABLE),
+        tok(0, 6, 12, TOKEN_TYPE_VARIABLE),
+        tok(0, 2, 3, TOKEN_TYPE_MACRO),
+    ];
+    tokens_attr::apply_attribute_rules(text, &mut tokens, 3);
+    let got = spans(&tokens);
+    assert_eq!(got, vec![(0, 21, 6, TOKEN_TYPE_STRUCT), (0, 29, 3, TOKEN_TYPE_FUNCTION)]);
+    assert!(tokens_attr::spells_target(Some("    Parser::new()"), 5, "clap::Parser") && !tokens_attr::spells_target(Some("    Parsers"), 5, "Parser"));
 }
 
 #[test]

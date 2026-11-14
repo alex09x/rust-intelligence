@@ -123,6 +123,8 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
     let src_lines: Vec<&str> = text.map(|t| t.lines().collect()).unwrap_or_default();
     // A `use` item's token yields to the reference the index holds on the same name, which knows what it imports.
     let mut use_tokens = Vec::new();
+    let macro_attrs = text.filter(|t| t.contains("#[")).map(|t| super::tokens_attr::attr_spans(t).macro_attrs);
+    let spells_target = super::tokens_attr::spells_target;
 
     // 1. Overlay symbols (live buffers)
     if let Some(overlay) = overlay_opt {
@@ -190,7 +192,16 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
                 }
 
                 for rf in reader.references() {
-                    if rf.span.file_id == file_id && !rf.is_macro_expansion() && rf.span.start_line == rf.span.end_line {
+                    // A derive helper's argument (`#[arg(value_parser = f(x))]`) is code the derive copied: its
+                    // references are the expansion's, on tokens the source spells.
+                    let attr_arg = rf.is_macro_expansion()
+                        && macro_attrs.as_ref().is_some_and(|spans| {
+                            let probe =
+                                RawToken { line: rf.span.start_line.saturating_sub(1), col: rf.span.start_col.saturating_sub(1), length: 1, token_type: 0, token_modifiers: 0 };
+                            super::tokens_attr::inside(&probe, spans)
+                                && spells_target(src_lines.get(probe.line as usize).copied(), rf.span.start_col, reader.get_str(rf.target_path_offset()))
+                        });
+                    if rf.span.file_id == file_id && (!rf.is_macro_expansion() || attr_arg) && rf.span.start_line == rf.span.end_line {
                         let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
                             if let Some((live_l, live_c)) = overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col) {
                                 let span_len = rf.span.end_col.saturating_sub(rf.span.start_col);
@@ -230,7 +241,7 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
             let mut defs = Vec::new();
             super::tokens_detached::detached_definition_tokens(text, &mut defs);
             super::tokens_scan::scan_source_tokens(text, true, false, &mut tokens);
-            super::tokens_attr::apply_attribute_rules(text, &mut tokens);
+            super::tokens_attr::apply_attribute_rules(text, &mut tokens, 0);
             super::tokens_gated::retype_gated_tokens(text, &defs, &mut tokens);
             super::tokens_doc::scan_doc_comments(text, None, &mut tokens);
             return filter_non_overlapping(tokens);
@@ -244,11 +255,12 @@ pub fn collect_raw_tokens(file: &str, workspace: Option<&WorkspaceIndex>, overla
         // Lines the index has tokens on: an item behind `#[cfg(…)]` without any was left out of the build.
         let compiled: std::collections::HashSet<u32> =
             if indexed && overlay_opt.is_none() && text.contains("#[cfg(") { tokens.iter().map(|t| t.line).collect() } else { Default::default() };
+        let resolved = tokens.len();
         if workspace.is_some_and(|ws| ws.readers().len() > 2) {
             let has_compiled = !tokens.is_empty();
             super::tokens_scan::scan_source_tokens(text, overlay_opt.is_none(), has_compiled, &mut tokens);
         }
-        super::tokens_attr::apply_attribute_rules(text, &mut tokens);
+        super::tokens_attr::apply_attribute_rules(text, &mut tokens, resolved);
         if !compiled.is_empty() {
             super::tokens_inactive::retype_inactive_items(text, &compiled, &mut tokens);
         }
