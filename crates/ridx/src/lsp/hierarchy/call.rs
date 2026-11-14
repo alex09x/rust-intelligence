@@ -154,8 +154,11 @@ pub fn handle_call_hierarchy_incoming_calls(msg: &Value, workspace: Option<&Work
         let c_uri = path_to_uri(c_str);
         let c_sc = conv.char_col_to_utf16_col(c_str, caller.span.start_line(), caller.span.start_col());
         let c_ec = conv.char_col_to_utf16_col(c_str, caller.span.end_line(), caller.span.end_col());
+        // The caller's whole item, as rust-analyzer gives it: from its attributes and the comments attached above.
+        // `find_enclosing_function` found the caller in these very lines.
+        let (head_line0, head_col) = item_head_start(&file_lines, caller.span.start_line()).unwrap_or((caller.span.start_line().saturating_sub(1), c_sc));
         let c_range = json!({
-            "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
+            "start": { "line": head_line0, "character": head_col },
             "end": { "line": c_body_end.saturating_sub(1), "character": 0 }
         });
         let c_sel_range = json!({
@@ -202,6 +205,32 @@ pub fn handle_call_hierarchy_incoming_calls(msg: &Value, workspace: Option<&Work
         .collect();
 
     json!(incoming)
+}
+
+/// Where an item whose name is on 1-based `name_line` starts, as a 0-based line and the column of its first
+/// character: the first of the attributes, doc comments and comments attached above it (no blank line between), a
+/// multi-line attribute from its `#[`. Inner attributes and `//!` docs belong to the module. `None` without text.
+pub(crate) fn item_head_start(lines: &[&str], name_line: u32) -> Option<(u32, u32)> {
+    let mut l = (name_line as usize).checked_sub(1).filter(|&l| l < lines.len())?;
+    let attached = |t: &str| (t.starts_with("#[") || t.starts_with("//")) && !t.starts_with("//!");
+    while l > 0 {
+        let prev = lines[l - 1].trim_start();
+        if attached(prev) {
+            l -= 1;
+            continue;
+        }
+        // The last line of an attribute spread over lines (`    ))]`): back to its `#[`.
+        if prev.ends_with(']') && !prev.is_empty() {
+            let open = (l.saturating_sub(20)..l - 1).rev().take_while(|&k| !lines[k].trim().is_empty()).find(|&k| lines[k].trim_start().starts_with("#["));
+            if let Some(k) = open {
+                l = k;
+                continue;
+            }
+        }
+        break;
+    }
+    let line = lines[l];
+    Some((l as u32, (line.len() - line.trim_start().len()) as u32))
 }
 
 pub fn handle_call_hierarchy_outgoing_calls(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
@@ -304,4 +333,20 @@ pub fn handle_call_hierarchy_outgoing_calls(msg: &Value, workspace: Option<&Work
     }
 
     json!(outgoing)
+}
+
+#[cfg(test)]
+mod item_head_tests {
+    use super::item_head_start;
+
+    #[test]
+    fn an_items_range_starts_at_the_attributes_and_comments_attached_above() {
+        let src = "fn a() {}\n\n    /// Docs.\n    // note\n    #[test]\n    fn b() {}\n\n#[cfg(any(\n    unix,\n))]\nfn c() {}\n\n//! module docs\nfn d() {}\n";
+        let lines: Vec<&str> = src.lines().collect();
+        assert_eq!(item_head_start(&lines, 1), Some((0, 0)), "nothing above");
+        assert_eq!(item_head_start(&lines, 6), Some((2, 4)), "doc comment, comment and attribute");
+        assert_eq!(item_head_start(&lines, 11), Some((7, 0)), "a multi-line attribute from its `#[`");
+        assert_eq!(item_head_start(&lines, 14), Some((13, 0)), "inner docs belong to the module");
+        assert_eq!(item_head_start(&[], 3), None);
+    }
 }
