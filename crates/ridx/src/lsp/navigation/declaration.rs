@@ -48,7 +48,7 @@ pub fn handle_declaration(msg: &Value, workspace: Option<&WorkspaceIndex>, overl
         if query_line > 0 {
             if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
                 if let Some(trait_decl) = ws.find_trait_item_declaration(&def) {
-                    let resolved_path = trait_decl.resolved_path();
+                    let resolved_path = super::type_definition_parse::on_disk(trait_decl.resolved_path());
                     let path_str = resolved_path.to_str().unwrap_or(trait_decl.file);
                     let target_uri = path_to_uri(path_str);
                     let (start_line, end_line, start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str).filter(|o| o.is_dirty()) {

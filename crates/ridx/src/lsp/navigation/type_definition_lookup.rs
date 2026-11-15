@@ -351,6 +351,9 @@ pub(super) fn resolve_reader_file(ws: &WorkspaceIndex, reader_idx: usize, raw_fi
 }
 
 pub(super) fn format_location(resolved_path: &Path, raw_file: &str, (start_line, start_col, end_line, end_col): (u32, u32, u32, u32), conv: &mut PositionConverter) -> Value {
+    // A standard library file is stored relative (`library/…`) and lives in the toolchain's `rust-src`.
+    let on_disk = super::type_definition_parse::on_disk(resolved_path.to_path_buf());
+    let resolved_path = on_disk.as_path();
     let path_str = resolved_path.to_str().unwrap_or(raw_file);
     let s_u16 = conv.char_col_to_utf16_col(path_str, start_line, start_col);
     let e_u16 = conv.char_col_to_utf16_col(path_str, end_line, end_col);

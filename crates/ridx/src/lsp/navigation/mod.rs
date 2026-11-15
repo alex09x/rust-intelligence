@@ -85,7 +85,7 @@ pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
 
         if query_line > 0 {
             if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
-                let resolved_path = def.resolved_path();
+                let resolved_path = type_definition_parse::on_disk(def.resolved_path());
                 if matches!(def.kind, DefKind::Mod | DefKind::Use | DefKind::ExternCrate) && !def.name.is_empty() {
                     if let Some(mod_file) = resolve_backing_module_file(ws, &def, &resolved_path) {
                         if let Some(mod_str) = mod_file.to_str() {
@@ -314,7 +314,7 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                 let is_impl = if r.kind == DefKind::Impl {
                     true
                 } else {
-                    let resolved_path = r.resolved_path();
+                    let resolved_path = type_definition_parse::on_disk(r.resolved_path());
                     let path_str = resolved_path.to_str().unwrap_or(r.file);
                     if let Ok(content) = std::fs::read_to_string(path_str) {
                         let line_text = content.lines().nth(r.span.start_line().saturating_sub(1) as usize).unwrap_or("");
@@ -329,7 +329,7 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
             }
         }
         for r in impl_refs {
-            let resolved_path = r.resolved_path();
+            let resolved_path = type_definition_parse::on_disk(r.resolved_path());
             let path_str = resolved_path.to_str().unwrap_or(r.file);
             let uri = path_to_uri(path_str);
             let span = r.span;
