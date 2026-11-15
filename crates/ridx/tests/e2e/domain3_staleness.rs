@@ -330,3 +330,20 @@ fn test_inlay_type_hints_follow_an_edit() {
     assert_eq!(on_line(at("let c = BoxContainer")), [": BoxContainer"], "an indexed binding's hint moves with its line");
     assert_eq!(on_line(at("let fresh")), [": String"], "a binding typed since the index gets its type from the live engine");
 }
+
+#[test]
+fn test_hover_on_a_use_path_of_a_dependency() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let app_file = fixture_dir("multi_crate").join("crates/app_crate/src/lib.rs");
+    let uri = path_to_uri(app_file.to_str().unwrap());
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let text = fs::read_to_string(&app_file).unwrap();
+    for (needle, decl) in [("use core_lib::Worker;", "Worker"), ("use core_lib::Thing;", "Thing")] {
+        let (line, character) = pos_in_str(&text, needle, decl);
+        let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character + 1 } } });
+        let res = handle_hover(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
+        let value = res["contents"]["value"].as_str().unwrap_or_default();
+        assert!(value.contains(decl) && value.contains("core_lib"), "hover on `{needle}` names the dependency's item: {res}");
+    }
+}

@@ -76,11 +76,14 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                     }
                 }
             }
-            // 4. Code the index has not compiled yet: the name resolved as completion resolves it.
-            if overlay.is_dirty() {
-                if let Some(v) = super::hover_unindexed::hover_unindexed(ws, &file, overlay, line_1based, col_1based, overlay_mgr, conv) {
-                    return Ok(v);
-                }
+        }
+        // 4. A name the index keeps nothing for: code typed since it compiled, or a path it records no reference at
+        // (a `use` item): resolved as completion resolves it.
+        let edited = overlay_opt.is_some_and(|o| o.is_dirty());
+        let line_text = overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
+        if let Some(text) = line_text {
+            if let Some(v) = super::hover_unindexed::hover_unindexed(ws, &file, &text, overlay_opt, edited, line_1based, col_1based, overlay_mgr, conv) {
+                return Ok(v);
             }
         }
     }

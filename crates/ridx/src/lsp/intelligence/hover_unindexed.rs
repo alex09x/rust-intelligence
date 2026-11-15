@@ -23,17 +23,21 @@ fn is_ident(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
-/// The hover of the name at the 1-based `line`/`col` of the dirty buffer `overlay` of `file`, from its definition.
+/// The hover of the name at the 1-based `line`/`col` of `file` (its line `line_text`), from its definition: in an
+/// edited buffer (`edited`) any name, else only a path the index keeps no reference for, as in a `use` item.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn hover_unindexed(
     ws: &WorkspaceIndex,
     file: &str,
-    overlay: &DocumentOverlay,
+    line_text: &str,
+    overlay: Option<&DocumentOverlay>,
+    edited: bool,
     line: u32,
     col: u32,
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> Option<Value> {
-    let text: Vec<char> = overlay.text.lines().nth(line.saturating_sub(1) as usize)?.chars().collect();
+    let text: Vec<char> = line_text.chars().collect();
     let at = (col.saturating_sub(1) as usize).min(text.len());
     let mut s = at;
     while s > 0 && is_ident(text[s - 1]) {
@@ -48,9 +52,9 @@ pub(super) fn hover_unindexed(
     }
     let name: String = text[s..e].iter().collect();
     let def = if s > 0 && text[s - 1] == '.' && (s < 2 || text[s - 2] != '.') {
-        method_def(ws, file, overlay, line, e as u32 + 1, &name, overlay_mgr)
+        method_def(ws, file, overlay.filter(|_| edited)?, line, e as u32 + 1, &name, overlay_mgr)
     } else {
-        path_def(ws, file, &text[..s], &name)
+        path_def(ws, file, &text[..s], &name, edited)
     }?;
     let hover = WorkspaceHover { definition: Some(def), inferred_type: None };
     Some(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(file), HoverCursor::default()))
@@ -74,9 +78,17 @@ fn method_def<'a>(
     ws.find_definition_at(loc.file.to_str()?, loc.line, loc.col).filter(|d| d.name.rsplit("::").next() == Some(name))
 }
 
-/// The item a path ending in `name` names: `std::fs::metadata` and `crate::a::b` through the index, a bare name
-/// through the one item so named in the file's crate.
-fn path_def<'a>(ws: &'a WorkspaceIndex, file: &str, before: &[char], name: &str) -> Option<ResolvedDefinition<'a>> {
+/// The item a path ending in `name` names: `std::fs::metadata`, `crate::a::b` or `dep_crate::Item` through the index
+/// (inside a `use a::b::{X, Y}` group too), and, when `bare` is allowed, a bare name through the one item so named in
+/// the file's crate.
+fn path_def<'a>(ws: &'a WorkspaceIndex, file: &str, before: &[char], name: &str, bare: bool) -> Option<ResolvedDefinition<'a>> {
+    // In a `{..}` group of a `use`, the path continues before the brace.
+    let mut before = before;
+    if let Some(b) = before.iter().rposition(|&c| c == '{').filter(|&b| b >= 2 && before[b - 2..b] == [':', ':']) {
+        if before[b + 1..].iter().all(|&c| is_ident(c) || c == ',' || c == ' ' || c == ':') && !before[b + 1..].ends_with(&[':', ':']) {
+            before = &before[..b];
+        }
+    }
     let mut segs: Vec<String> = Vec::new();
     let mut i = before.len();
     while i >= 2 && before[i - 1] == ':' && before[i - 2] == ':' {
@@ -92,6 +104,9 @@ fn path_def<'a>(ws: &'a WorkspaceIndex, file: &str, before: &[char], name: &str)
     }
     segs.reverse();
     if segs.is_empty() {
+        if !bare {
+            return None;
+        }
         let krate = ws.crate_name_for_file(file);
         let mut found = ws.exact_symbols_by_name(name).into_iter().filter(|s| !matches!(s.kind, DefKind::Local | DefKind::Field) && krate.is_some_and(|k| s.crate_name == k));
         let only = found.next()?;
@@ -101,6 +116,8 @@ fn path_def<'a>(ws: &'a WorkspaceIndex, file: &str, before: &[char], name: &str)
     match segs[0].as_str() {
         "std" | "core" | "alloc" => ws.find_definition_by_path(&path),
         "crate" => ws.find_definition_by_path(path.trim_start_matches("crate::")),
+        // A dependency's path, as `use order_book_rs::ExchangeName` writes it.
+        first if ws.readers().iter().any(|r| r.crate_name() == first) => ws.find_definition_by_path(&path),
         _ => None,
     }
 }
