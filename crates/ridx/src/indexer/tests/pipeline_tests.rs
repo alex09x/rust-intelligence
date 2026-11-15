@@ -302,3 +302,21 @@ fn test_cargo_config_and_manifest_discovery() {
     // Empty target value in config returns None (lines 80-82 in cargo.rs)
     assert_eq!(extract_config_target("[build]\ntarget = \"\"\n"), None);
 }
+
+#[test]
+fn test_indexing_runs_of_one_index_directory_take_turns() {
+    let dir = tempfile::tempdir().unwrap();
+    let first = lock_index_dir(dir.path()).unwrap();
+    let probe = fs::OpenOptions::new().write(true).open(dir.path().join(".index.lock")).unwrap();
+    assert!(matches!(probe.try_lock(), Err(fs::TryLockError::WouldBlock)), "a second run waits while the first holds the directory");
+    let (tx, rx) = std::sync::mpsc::channel();
+    let path = dir.path().to_path_buf();
+    let waiter = std::thread::spawn(move || {
+        let _second = lock_index_dir(&path).unwrap();
+        tx.send(()).unwrap();
+    });
+    assert!(rx.recv_timeout(std::time::Duration::from_millis(200)).is_err(), "the second run is still waiting");
+    drop(first);
+    rx.recv_timeout(std::time::Duration::from_secs(5)).expect("the second run proceeds once the first is done");
+    waiter.join().unwrap();
+}

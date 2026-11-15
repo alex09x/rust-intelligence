@@ -67,6 +67,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         return Err(format!("failed to create output directory {:?}: {e}", base_out_dir));
     }
     let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
+    // One run per index directory at a time, held until this function returns: two runs publishing into the same
+    // variant (the server's reindex on a change and a manual `ridx index`, two editors on one project) overwrite each
+    // other's shards and publish a manifest missing crates.
+    let _index_lock = lock_index_dir(&base_out_dir)?;
 
     let driver_bin = match opts.driver_bin.clone() {
         Some(b) if b.is_file() => b,
@@ -352,6 +356,22 @@ pub(super) fn keep_last_good_shards(dir: &Path, started: std::time::SystemTime, 
             let _ = fs::write(to.join(entry.file_name()), b);
         }
     }
+}
+
+/// Takes the exclusive lock of the index directory `base_out_dir` (`.index.lock`), waiting while another run
+/// holds it. The lock is released when the returned file is dropped, or when the process exits.
+pub(crate) fn lock_index_dir(base_out_dir: &Path) -> Result<fs::File, String> {
+    let path = base_out_dir.join(".index.lock");
+    let file = fs::OpenOptions::new().create(true).truncate(false).write(true).open(&path).map_err(|e| format!("failed to open {path:?}: {e}"))?;
+    match file.try_lock() {
+        Ok(()) => {}
+        Err(fs::TryLockError::WouldBlock) => {
+            eprintln!("  Waiting for another indexing run of {} to finish…", base_out_dir.display());
+            file.lock().map_err(|e| format!("failed to lock {path:?}: {e}"))?;
+        }
+        Err(fs::TryLockError::Error(e)) => return Err(format!("failed to lock {path:?}: {e}")),
+    }
+    Ok(file)
 }
 
 /// Whether the variant directory holds any shard.
