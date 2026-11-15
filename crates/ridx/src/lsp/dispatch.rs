@@ -232,6 +232,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/semanticTokens/range" => Ok(handle_semantic_tokens_range(&msg, mr.doc_ws(&msg), ov, conv)),
         "textDocument/foldingRange" => Ok(handle_folding_range(&msg, ov)),
         "textDocument/codeLens" => Ok(handle_code_lens_for_client(&msg, mr.doc_ws(&msg), ov, conv, ra_commands)),
+        "experimental/runnables" => Ok(crate::lsp::presentation::runnables::handle_runnables(&msg, mr.doc_ws(&msg), ov)),
         "codeLens/resolve" => {
             let uri = msg["params"]["data"]["uri"].as_str().or_else(|| msg["params"]["textDocument"]["uri"].as_str());
             let ws = uri.and_then(|u| mr.find_workspace_for_path(Path::new(&uri_to_path(u))));

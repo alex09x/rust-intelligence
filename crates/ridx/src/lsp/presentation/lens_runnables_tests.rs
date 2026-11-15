@@ -131,3 +131,22 @@ fn index_hints_add_macro_generated_tests_and_main() {
     let got: Vec<_> = runnable_lenses(bench.to_str().unwrap(), "criterion_main!(benches);\n", true, false, &bench_hints).iter().map(summary).collect();
     assert_eq!(got, [("▶︎ Run ".into(), 0, "run speed".into(), ["bench", "--package", "demo-pkg", "--bench", "speed"].map(String::from).to_vec())]);
 }
+
+#[test]
+fn experimental_runnables_list_the_file_and_its_package() {
+    let dir = package(&[("src/main.rs", "fn main() {}\n#[test]\nfn works() {}\n")]);
+    let file = dir.path().join("src/main.rs");
+    let uri = crate::lsp::protocol::path_to_uri(file.to_str().unwrap());
+    let ov = crate::overlay::OverlayManager::new();
+    let ask = |position: Value| {
+        crate::lsp::presentation::runnables::handle_runnables(&serde_json::json!({ "params": { "textDocument": { "uri": uri }, "position": position } }), None, &ov)
+    };
+    let all = ask(Value::Null);
+    let labels: Vec<&str> = all.as_array().unwrap().iter().map(|r| r["label"].as_str().unwrap()).collect();
+    assert_eq!(labels, ["test-mod ", "run demo-pkg", "test works", "cargo check -p demo-pkg --all-targets", "cargo run -p demo-pkg", "cargo test -p demo-pkg --all-targets"]);
+    assert_eq!(all[2]["args"]["executableArgs"], serde_json::json!(["works", "--exact", "--nocapture"]));
+    assert!(all[3]["location"].is_null(), "a package runnable has no location");
+    let at_test = ask(serde_json::json!({ "line": 2, "character": 4 }));
+    let labels: Vec<&str> = at_test.as_array().unwrap().iter().map(|r| r["label"].as_str().unwrap()).collect();
+    assert_eq!(labels, ["test-mod ", "test works"], "the file module spans the whole file");
+}

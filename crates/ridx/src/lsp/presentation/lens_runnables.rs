@@ -275,11 +275,35 @@ pub fn runnable_lenses(file: &str, text: &str, run: bool, debug: bool, hints: &R
     if !run && !debug {
         return Vec::new();
     }
-    let Some(target) = file_target(Path::new(file)) else {
-        return Vec::new();
-    };
-    let uri = path_to_uri(file);
     let mut out = Vec::new();
+    for (kind, arg) in runnables_of(file, text, hints).map(|(_, rs)| rs).unwrap_or_default() {
+        let title = match kind {
+            RunKind::Main => "▶︎ Run ",
+            RunKind::Test => "▶︎ Run Test",
+            RunKind::TestMod => "▶︎ Run Tests",
+            RunKind::Bench => "▶︎ Run Bench",
+            RunKind::Doctest => "▶︎ Run Doctest",
+        };
+        let range = arg["location"]["targetSelectionRange"].clone();
+        if run {
+            out.push(json!({ "range": range, "command": { "title": title, "command": "rust-analyzer.runSingle", "arguments": [arg.clone()] } }));
+        }
+        if debug {
+            out.push(json!({ "range": range, "command": { "title": "⚙︎ Debug", "command": "rust-analyzer.debugSingle", "arguments": [arg] } }));
+        }
+    }
+    out
+}
+
+/// rust-analyzer's `Runnable`s of `file` (`experimental/runnables` items), sorted by position, with the target the
+/// file belongs to.
+pub(super) fn runnable_items(file: &str, text: &str, hints: &RunnableHints) -> Option<(FileTarget, Vec<Value>)> {
+    runnables_of(file, text, hints).map(|(t, rs)| (t, rs.into_iter().map(|(_, arg)| arg).collect()))
+}
+
+fn runnables_of(file: &str, text: &str, hints: &RunnableHints) -> Option<(FileTarget, Vec<(RunKind, Value)>)> {
+    let target = file_target(Path::new(file))?;
+    let uri = path_to_uri(file);
     let mut runnables = collect_runnables(text, &target, hints);
     // A module runs as a whole when it declares a test itself or several test submodules (rust-analyzer's
     // `has_test_function_or_multiple_test_submodules`); the file's own module from a lens spanning the whole file.
@@ -308,24 +332,8 @@ pub fn runnable_lenses(file: &str, text: &str, run: bool, debug: bool, hints: &R
         Runnable { kind: RunKind::TestMod, path, line0: 0, name_col16: 0, name_len16: 0, span: Some((0, 0, end_line, end_col)) }
     });
     runnables.splice(0..0, file_module);
-    for r in runnables {
-        let title = match r.kind {
-            RunKind::Main => "▶︎ Run ",
-            RunKind::Test => "▶︎ Run Test",
-            RunKind::TestMod => "▶︎ Run Tests",
-            RunKind::Bench => "▶︎ Run Bench",
-            RunKind::Doctest => "▶︎ Run Doctest",
-        };
-        let arg = runnable_arg(&r, &target, &uri);
-        let range = arg["location"]["targetSelectionRange"].clone();
-        if run {
-            out.push(json!({ "range": range, "command": { "title": title, "command": "rust-analyzer.runSingle", "arguments": [arg] } }));
-        }
-        if debug {
-            out.push(json!({ "range": range, "command": { "title": "⚙︎ Debug", "command": "rust-analyzer.debugSingle", "arguments": [arg] } }));
-        }
-    }
-    out
+    let args = runnables.iter().map(|r| (r.kind, runnable_arg(r, &target, &uri))).collect();
+    Some((target, args))
 }
 
 #[cfg(test)]
