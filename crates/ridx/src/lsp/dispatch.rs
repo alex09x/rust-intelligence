@@ -158,6 +158,7 @@ pub fn dispatch_lsp_message<W: Write>(
                 .or_else(|| p.ancestors().find(|d| d.join("Cargo.toml").is_file()).map(Path::to_path_buf));
             if let Some(ref root) = ws_root {
                 lifecycle.flycheck.trigger_check(root);
+                lifecycle.reindex.trigger(root);
             }
             return Ok(true);
         }

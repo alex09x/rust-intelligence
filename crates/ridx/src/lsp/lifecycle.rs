@@ -28,6 +28,7 @@ pub enum ServerState {
 pub struct LifecycleManager {
     state: ServerState,
     pub flycheck: Arc<FlycheckState>,
+    pub reindex: crate::lsp::reindex::Reindexer,
     pub conv: crate::lsp::protocol::PositionConverter,
     client_pull_diagnostics: bool,
     client_refresh_diagnostics: bool,
@@ -48,6 +49,7 @@ impl LifecycleManager {
         Self {
             state: ServerState::Uninitialized,
             flycheck: Arc::new(FlycheckState::new()),
+            reindex: crate::lsp::reindex::Reindexer::new(),
             conv: crate::lsp::protocol::PositionConverter::new(),
             client_pull_diagnostics: false,
             client_refresh_diagnostics: false,

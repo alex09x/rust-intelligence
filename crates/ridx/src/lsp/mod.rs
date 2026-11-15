@@ -25,6 +25,7 @@ pub mod navigation;
 pub mod params;
 pub mod presentation;
 pub mod protocol;
+pub mod reindex;
 pub mod symbols;
 pub mod workspace;
 
