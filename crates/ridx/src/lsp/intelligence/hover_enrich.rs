@@ -315,6 +315,12 @@ pub(crate) fn format_provenance_and_blast_radius(d: &ResolvedDefinition<'_>, ws:
     };
 
     let blast = ws.direct_blast_radius(d);
+    // The blast index keys a dependency's item by its own path, which the workspace often reaches through another
+    // (a re-export): BTCR's 475 references to `order_book_rs::ExchangeName` counted as none. A zero for an external
+    // item is no answer, so the line is left out rather than stated wrong.
+    if is_ext && blast.direct_refs == 0 {
+        return Some(format!("**Provenance:** `{}` · crate `{crate_label}`{loc_part}", d.path));
+    }
     let ref_word = if blast.direct_refs == 1 { "reference" } else { "references" };
     let file_word = if blast.files == 1 { "file" } else { "files" };
     let crate_word = if blast.crates == 1 { "crate" } else { "crates" };
