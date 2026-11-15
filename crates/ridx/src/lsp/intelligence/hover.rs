@@ -33,9 +33,14 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
+                let line_text =
+                    overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
+                // A literal names nothing: inside a macro's arguments the index's widest reference there is the call
+                // the macro expands to (`println!(.., f(2))` → `std::io::_print`), which is not what the cursor is on.
+                if hover.definition.is_some() && line_text.as_deref().is_some_and(|l| is_literal_at(l, col_1based)) {
+                    return Ok(hover.inferred_type.map_or(Value::Null, |ty| json!({ "contents": { "kind": "markdown", "value": format!("```rust\n{ty}\n```") } })));
+                }
                 if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
-                    let line_text =
-                        overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
                     let layout_at = |c: u32| ws.note_at(&file, line_1based, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
                     if let Some(text) = line_text.and_then(|l| super::hover_render::let_binding_hover_with_layout(&l, col_1based, ty, &layout_at)) {
                         return Ok(json!({ "contents": { "kind": "markdown", "value": text } }));
@@ -81,6 +86,53 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
     }
 
     Ok(Value::Null)
+}
+
+/// Whether the 1-based character column `col` of `line` is on a literal: a number, or inside a string or char literal.
+fn is_literal_at(line: &str, col: u32) -> bool {
+    let chars: Vec<char> = line.chars().collect();
+    let at = (col.saturating_sub(1) as usize).min(chars.len());
+    let mut in_str = false;
+    let mut k = 0;
+    while k < at {
+        match chars[k] {
+            '\\' if in_str => k += 1,
+            '"' => in_str = !in_str,
+            '/' if !in_str && chars.get(k + 1) == Some(&'/') => return false,
+            _ => {}
+        }
+        k += 1;
+    }
+    if in_str {
+        // `{name}` inside a format string names a binding, as rust-analyzer resolves it.
+        let open_brace = chars[..at].iter().rposition(|&c| c == '{' || c == '}' || c == '"').is_some_and(|i| chars[i] == '{');
+        return !open_brace;
+    }
+    if chars.get(at) == Some(&'"') {
+        return true;
+    }
+    let is_word = |c: char| c.is_alphanumeric() || c == '_';
+    let mut s = at;
+    while s > 0 && is_word(chars[s - 1]) {
+        s -= 1;
+    }
+    chars.get(s).is_some_and(|c| c.is_ascii_digit()) && chars.get(at).is_some_and(|&c| is_word(c))
+}
+
+#[cfg(test)]
+mod literal_tests {
+    #[test]
+    fn test_literals_under_the_cursor() {
+        let line = r#"    println!("{} {x}", s.len(), double(2), 0x1F, "a\"b");"#;
+        let col = |needle: &str, k: usize| line.find(needle).unwrap() as u32 + 1 + k as u32;
+        assert!(super::is_literal_at(line, col("2)", 0)), "a number");
+        assert!(super::is_literal_at(line, col("0x1F", 2)), "a hex number");
+        assert!(super::is_literal_at(line, col("{} ", 0)), "inside a format string");
+        assert!(!super::is_literal_at(line, col("{x}", 1)), "an inline format argument names a binding");
+        assert!(super::is_literal_at(line, col(r#"a\"b"#, 3)), "past an escaped quote");
+        assert!(!super::is_literal_at(line, col("double", 2)));
+        assert!(!super::is_literal_at(line, col("len", 1)));
+    }
 }
 
 #[cfg(test)]
