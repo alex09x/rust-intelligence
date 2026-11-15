@@ -13,8 +13,9 @@
 
 use super::{Hint, SourceMap, TypeSpan};
 
-/// Type hints for the bindings in `masked` (comments and strings blanked) on lines `lines` (0-based, inclusive).
-pub fn binding_hints(src: &SourceMap<'_>, types: &[TypeSpan<'_>], lines: (u32, u32)) -> Vec<Hint> {
+/// Type hints for the bindings in `masked` (comments and strings blanked) on lines `lines` (0-based, inclusive);
+/// `live_type` names the type of a binding (its byte range) the index has none for.
+pub fn binding_hints(src: &SourceMap<'_>, types: &[TypeSpan<'_>], lines: (u32, u32), live_type: &dyn Fn(usize, usize) -> Option<String>) -> Vec<Hint> {
     let mut regions: Vec<(usize, usize)> = Vec::new();
     let m = src.masked.as_bytes();
     for at in keyword_positions(src.masked, "let") {
@@ -46,7 +47,17 @@ pub fn binding_hints(src: &SourceMap<'_>, types: &[TypeSpan<'_>], lines: (u32, u
                 continue;
             }
             let (_, e0) = src.line_col(b_end);
-            let Some(ty) = binding_type(types, l0 + 1, c0 + 1, e0 + 1) else { continue };
+            let live;
+            let ty = match binding_type(types, l0 + 1, c0 + 1, e0 + 1) {
+                Some(ty) => ty,
+                None => match live_type(b_start, b_end) {
+                    Some(t) => {
+                        live = t;
+                        live.as_str()
+                    }
+                    None => continue,
+                },
+            };
             let Some(label) = super::type_label::hint_type(ty) else { continue };
             out.push(Hint::new(src, b_end, format!(": {label}"), Some(1)));
         }

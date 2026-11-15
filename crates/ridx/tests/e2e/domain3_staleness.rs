@@ -306,3 +306,27 @@ fn test_hover_on_a_line_typed_after_indexing() {
     let method = hover("t.len()", "len", &mut conv);
     assert!(method.contains("fn len("), "a method through the receiver's inferred type: {method}");
 }
+
+#[test]
+fn test_inlay_type_hints_follow_an_edit() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let mut overlay_mgr = OverlayManager::new();
+    let original_text = fs::read_to_string(&lib_file).unwrap();
+    let head = "pub fn process_bytes(b: [u8; 4]) -> i32 {\n";
+    let modified_text = original_text.replacen(head, &format!("{head}    let fresh = String::new();\n"), 1);
+    let file_str = lib_file.to_str().unwrap();
+    overlay_mgr.open_with_provenance(&uri, file_str, 2, modified_text.clone(), false);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text);
+
+    let last = modified_text.lines().count() as u32;
+    let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": 0, "character": 0 }, "end": { "line": last, "character": 0 } } } });
+    let hints = ridx::lsp::intelligence::inlay::handle_inlay_hint(&req, Some(ws), &overlay_mgr).unwrap();
+    let at = |needle: &str| pos_in_str(&modified_text, needle, needle).0;
+    let on_line = |line: u32| -> Vec<String> {
+        hints.as_array().unwrap().iter().filter(|h| h["position"]["line"] == line).map(|h| h["label"].as_str().unwrap_or_default().to_string()).collect()
+    };
+    assert_eq!(on_line(at("let c = BoxContainer")), [": BoxContainer"], "an indexed binding's hint moves with its line");
+    assert_eq!(on_line(at("let fresh")), [": String"], "a binding typed since the index gets its type from the live engine");
+}

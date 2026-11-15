@@ -109,12 +109,36 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     let src = SourceMap::new(&text, &masked);
     let lines = (start_line, end_line);
 
-    let types: Vec<TypeSpan<'_>> =
-        workspace.map(|ws| ws.types_in_lines(&file, 1, src.line_count() as u32).into_iter().map(|(start, end, ty)| TypeSpan { start, end, ty }).collect()).unwrap_or_default();
+    // The index's types sit on the lines of the text it compiled; in an edited buffer they move to the live lines
+    // (a span on a line the edit changed or removed is dropped), and a binding on a new line asks the live engine.
+    let line_map = overlay_mgr.get(&file).filter(|o| o.is_dirty()).and_then(|o| o.line_map());
+    let compiled_lines = overlay_mgr.get(&file).and_then(|o| o.compiled_text.as_ref()).map_or(0, |t| t.lines().count());
+    let index_lines = src.line_count().max(compiled_lines) as u32;
+    let types: Vec<TypeSpan<'_>> = workspace
+        .map(|ws| {
+            ws.types_in_lines(&file, 1, index_lines)
+                .into_iter()
+                .filter_map(|(start, end, ty)| match &line_map {
+                    Some(lm) => Some(TypeSpan { start: (lm.to_live(start.0)?, start.1), end: (lm.to_live(end.0)?, end.1), ty }),
+                    None => Some(TypeSpan { start, end, ty }),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let live_type = |b_start: usize, b_end: usize| -> Option<String> {
+        let (ws, lm) = (workspace?, line_map.as_ref()?);
+        let (l0, _) = src.line_col(b_start);
+        if lm.to_baseline(l0 + 1).is_some() || src.masked[b_end..].trim_start().starts_with(':') {
+            return None;
+        }
+        let db = crate::lsp::navigation::live_db_for(ws);
+        let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
+        db.type_at(ws, &file, b_start as u32, Some(overlay_mgr)).map(|t| t.display)
+    };
 
     // The hints read source text with offsets from a masked copy; a slip must cost the hints, not the server.
     let collected = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let mut hints = bindings::binding_hints(&src, &types, lines);
+        let mut hints = bindings::binding_hints(&src, &types, lines, &live_type);
         hints.extend(chaining::chaining_hints(&src, &types, lines));
         hints.extend(closing::closing_brace_hints(&src, lines));
         if let Some(ws) = workspace {
