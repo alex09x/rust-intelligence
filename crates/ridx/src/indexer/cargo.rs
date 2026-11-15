@@ -110,6 +110,20 @@ pub fn collect_all_workspace_manifests(dir: &Path, manifests: &mut Vec<PathBuf>)
     }
 }
 
+/// The rustup toolchain `ridx-driver` was built against (`1.98.1-aarch64-apple-darwin`), from the sysroot recorded
+/// at build time. The driver compiles with that toolchain's `librustc_driver` only, so `cargo check` must run on it
+/// even in a workspace whose `rust-toolchain.toml` pins another.
+pub fn driver_toolchain() -> Option<String> {
+    toolchain_of_sysroot_lib(option_env!("RIDX_BUILD_SYSROOT_LIB")?)
+}
+
+/// `<rustup home>/toolchains/<name>/lib` → `<name>`; `None` for a sysroot outside rustup.
+pub(crate) fn toolchain_of_sysroot_lib(lib: &str) -> Option<String> {
+    let lib = std::path::Path::new(lib);
+    let toolchain = lib.parent()?;
+    (lib.file_name()? == "lib" && toolchain.parent()?.file_name()? == "toolchains" && toolchain.is_dir()).then(|| toolchain.file_name()?.to_str().map(str::to_string)).flatten()
+}
+
 pub fn compute_sysroot_ld_path() -> Option<String> {
     // Prefer the toolchain sysroot recorded when `ridx`/`ridx-driver` was built so CWD
     // outside the workspace cannot resolve a different rustup toolchain whose libLLVM
@@ -129,4 +143,20 @@ pub fn compute_sysroot_ld_path() -> Option<String> {
         }
     }
     Some(ld)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::toolchain_of_sysroot_lib;
+
+    #[test]
+    fn test_the_driver_toolchain_is_read_off_a_rustup_sysroot() {
+        let home = tempfile::tempdir().unwrap();
+        let lib = home.path().join("toolchains/1.98.1-aarch64-apple-darwin/lib");
+        std::fs::create_dir_all(&lib).unwrap();
+        assert_eq!(toolchain_of_sysroot_lib(lib.to_str().unwrap()).as_deref(), Some("1.98.1-aarch64-apple-darwin"));
+        let custom = home.path().join("my-rust/lib");
+        std::fs::create_dir_all(&custom).unwrap();
+        assert_eq!(toolchain_of_sysroot_lib(custom.to_str().unwrap()), None, "a sysroot outside rustup names no toolchain");
+    }
 }

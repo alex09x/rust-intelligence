@@ -97,6 +97,14 @@ fn test_build_check_command_cargo_and_mitts_parity() {
 
     // Envs are identical
     assert_eq!(cargo_envs, mitts_envs);
+    // `cargo check` runs on the driver's own toolchain unless the caller chose one.
+    let toolchain = cargo_envs.iter().find(|(k, _)| k == "RUSTUP_TOOLCHAIN").map(|(_, v)| v.clone());
+    if std::env::var_os("RUSTUP_TOOLCHAIN").is_none() {
+        assert_eq!(toolchain, crate::indexer::cargo::driver_toolchain());
+    } else {
+        assert_eq!(toolchain, None);
+    }
+    let cargo_envs: Vec<(String, String)> = cargo_envs.into_iter().filter(|(k, _)| k != "RUSTUP_TOOLCHAIN").collect();
     assert_eq!(
         cargo_envs,
         vec![

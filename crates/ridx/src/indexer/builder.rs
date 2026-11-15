@@ -203,6 +203,13 @@ pub fn build_check_command_with_no_deps(
         envs.push(("LD_LIBRARY_PATH".to_string(), ld.to_string()));
         envs.push(("DYLD_FALLBACK_LIBRARY_PATH".to_string(), ld.to_string()));
     }
+    // The driver's own toolchain, over a workspace pin to another rustc (whose std it cannot load); an explicit
+    // RUSTUP_TOOLCHAIN still wins.
+    if std::env::var_os("RUSTUP_TOOLCHAIN").is_none() {
+        if let Some(tc) = super::cargo::driver_toolchain() {
+            envs.push(("RUSTUP_TOOLCHAIN".to_string(), tc));
+        }
+    }
 
     (program, args, envs)
 }
