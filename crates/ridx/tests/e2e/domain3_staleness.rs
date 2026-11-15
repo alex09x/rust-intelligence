@@ -12,6 +12,7 @@
 //! and definition fallback chains on real L2 indexed workspaces.
 
 use super::l2_harness::{fixture_dir, get_or_index_l2_fixture, pos_in_str};
+use ridx::lsp::intelligence::handle_hover;
 use ridx::lsp::navigation::handle_definition;
 use ridx::lsp::navigation::references::handle_references;
 use ridx::lsp::protocol::{path_to_uri, PositionConverter};
@@ -274,4 +275,34 @@ fn test_case_9_line_shift_after_did_save_without_reindex() {
     let (expected_line, expected_col) = pos_in_str(&shifted_text, "pub struct Robot;", "Robot");
     assert_eq!(def_res["range"]["start"]["line"], expected_line);
     assert_eq!(def_res["range"]["start"]["character"], expected_col);
+}
+
+#[test]
+fn test_hover_on_a_line_typed_after_indexing() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let mut overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let original_text = fs::read_to_string(&lib_file).unwrap();
+    // Lines just typed into `call_concrete`: the index has no record of them yet.
+    let head = "pub fn call_concrete(r: &Robot) -> &'static str {\n";
+    let typed = "    let n = crate::process_bytes([1, 2, 3, 4]);\n    let d = call_default(r);\n    let s = std::mem::size_of::<u8>();\n    let g = r.wrap_me();\n    let t = String::new(); let u = t.len();\n";
+    let modified_text = original_text.replacen(head, &format!("{head}{typed}"), 1);
+    assert_ne!(modified_text, original_text);
+    let file_str = lib_file.to_str().unwrap();
+    overlay_mgr.open_with_provenance(&uri, file_str, 2, modified_text.clone(), false);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(original_text);
+
+    let hover = |needle: &str, at: &str, conv: &mut PositionConverter| {
+        let (line, character) = pos_in_str(&modified_text, needle, at);
+        let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character + 1 } } });
+        handle_hover(&req, Some(ws), &overlay_mgr, conv).unwrap()["contents"]["value"].as_str().unwrap_or_default().to_string()
+    };
+    let crate_path = hover("crate::process_bytes([1", "process_bytes", &mut conv);
+    assert!(crate_path.contains("fn process_bytes(") && crate_path.contains("-> i32"), "a `crate::` path: {crate_path}");
+    let bare = hover("call_default(r);\n    let s", "call_default", &mut conv);
+    assert!(bare.contains("fn call_default("), "the one item of that name in the crate: {bare}");
+    let method = hover("t.len()", "len", &mut conv);
+    assert!(method.contains("fn len("), "a method through the receiver's inferred type: {method}");
 }

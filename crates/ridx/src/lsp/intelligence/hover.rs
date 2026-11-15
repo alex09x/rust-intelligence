@@ -71,6 +71,12 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                     }
                 }
             }
+            // 4. Code the index has not compiled yet: the name resolved as completion resolves it.
+            if overlay.is_dirty() {
+                if let Some(v) = super::hover_unindexed::hover_unindexed(ws, &file, overlay, line_1based, col_1based, overlay_mgr, conv) {
+                    return Ok(v);
+                }
+            }
         }
     }
 

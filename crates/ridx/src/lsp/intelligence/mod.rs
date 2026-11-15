@@ -25,6 +25,7 @@ pub(crate) mod hover_doc;
 pub mod hover_enrich;
 pub(crate) mod hover_generics;
 pub(crate) mod hover_render;
+mod hover_unindexed;
 pub mod inlay;
 mod live_completion;
 pub mod owner_completion;
