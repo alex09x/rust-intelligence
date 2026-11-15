@@ -86,6 +86,12 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 actions.push(action);
             }
         }
+        if matches_kind("refactor.rewrite") {
+            if let Some(action) = super::action_qualified_use::qualified_use_action(&doc_text, uri, range, doc_version, ws) {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
+        }
     }
 
     if matches_kind("quickfix") {

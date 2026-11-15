@@ -58,6 +58,7 @@ pub mod action_parse_decl;
 pub mod action_parse_enclosing;
 pub mod action_parse_items;
 pub mod action_parse_lex;
+pub mod action_qualified_use;
 pub mod action_raw_string;
 pub mod action_struct_conv;
 mod action_struct_conv_attrs;
