@@ -9,7 +9,7 @@
  */
 
 use super::*;
-use crate::lsp::intelligence::completion_edits::mark_fn_decl;
+use crate::lsp::intelligence::completion_edits::mark_decl;
 use crate::lsp::intelligence::completion_edits::tests::{accept, run, with_snippets};
 use std::path::Path;
 
@@ -18,7 +18,7 @@ const DOC: &str = "struct S;\nimpl S {\n    pub fn push_str(&mut self, string: &
 /// An item for the function declared on `line` of [`DOC`].
 fn declared(label: &str, kind: u32, detail: &str, line: u32) -> Value {
     let mut it = json!({ "label": label, "kind": kind, "detail": detail });
-    mark_fn_decl(&mut it, Path::new("/w/src/lib.rs"), line);
+    mark_decl(&mut it, Path::new("/w/src/lib.rs"), line);
     it
 }
 
@@ -36,7 +36,7 @@ fn test_arguments_are_named_placeholders() {
     assert_eq!(items[0]["textEdit"]["newText"], "push_str(${1:string})$0");
     assert_eq!(accept("    s.pu|", &items[0]), "    s.push_str(${1:string})$0");
     assert_eq!(items[1]["textEdit"]["newText"], "with(${1:n})$0", "a leading `_` is dropped");
-    assert!(items.iter().all(|it| it.get("data").is_none()), "the declaration mark never reaches the client");
+    assert!(items.iter().all(|it| it["data"]["ridxDecl"]["line"].is_u64()), "the declaration stays marked for completionItem/resolve");
     assert!(items[0].get("command").is_none(), "the client did not announce rust-analyzer's commands");
 }
 

@@ -24,21 +24,19 @@ use std::path::Path;
 const METHOD_KIND: u64 = 2;
 const FUNCTION_KIND: u64 = 3;
 const SNIPPET_KIND: u64 = 15;
-const DECL_KEY: &str = "ridxFnDecl";
+pub(crate) const DECL_KEY: &str = "ridxDecl";
 
-/// Marks `item` as the function declared from the 1-based `line` of `file`, whose parameters name the placeholders
-/// of its call. The mark is consumed by [`apply`] and never reaches the client.
-pub(crate) fn mark_fn_decl(item: &mut Value, file: &Path, line: u32) {
+/// Marks `item` as declared from the 1-based `line` of `file`: a function's parameters name the placeholders of its
+/// call ([`apply`]), and `completionItem/resolve` reads the declaration's doc comment from there.
+pub(crate) fn mark_decl(item: &mut Value, file: &Path, line: u32) {
     if let Some(file) = file.to_str() {
         item["data"] = json!({ DECL_KEY: { "file": file, "line": line } });
     }
 }
 
-/// Takes the declaration mark off `item`.
-fn take_fn_decl(item: &mut Value) -> Option<(String, u32)> {
-    let obj = item.as_object_mut()?;
-    let decl = obj.get("data")?.get(DECL_KEY)?.clone();
-    obj.remove("data");
+/// Where `item` is declared, by its mark.
+pub(crate) fn item_decl(item: &Value) -> Option<(String, u32)> {
+    let decl = item.get("data")?.get(DECL_KEY)?;
     Some((decl["file"].as_str()?.to_string(), decl["line"].as_u64()? as u32))
 }
 
@@ -85,7 +83,7 @@ pub fn apply(response: &mut Value, site: &EditSite<'_>) {
     let head: String = site.before.chars().take(site.before.chars().count() - word.prefix_chars).collect();
     let method_call = head.ends_with('.') && !head.ends_with("..");
     for it in items.iter_mut() {
-        let decl = take_fn_decl(it);
+        let decl = item_decl(it);
         if it.get("textEdit").is_some() {
             continue;
         }

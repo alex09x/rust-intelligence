@@ -75,8 +75,37 @@ pub(crate) fn params_on_disk(file: &Path, line: u32, name: &str) -> Option<FnPar
     parsed
 }
 
+/// The 1-based line of `text` declaring `name` nearest to `line`: `line` itself when it declares it (an index line is
+/// exact for the text it was built from), else the closest declaring line within 400 lines (the file changed since
+/// it was indexed).
+pub(crate) fn decl_line_near(text: &str, line: u32, name: &str) -> Option<u32> {
+    let lines: Vec<&str> = text.lines().collect();
+    let at = line.saturating_sub(1) as usize;
+    let declares = |i: usize| lines.get(i).is_some_and(|l| declares_name(l, name));
+    if declares(at) {
+        return Some(line);
+    }
+    (1..=400usize).find_map(|d| [at.checked_sub(d), Some(at + d)].into_iter().flatten().find(|&i| declares(i))).map(|i| i as u32 + 1)
+}
+
+/// Whether `line` declares `name`: an item (`fn name`, `struct name`, …) or a field or variant (`name: T`, `Name(..)`).
+fn declares_name(line: &str, name: &str) -> bool {
+    let bounded = |rest: &str| !rest.starts_with(|c: char| c.is_alphanumeric() || c == '_');
+    let t = line.trim_start();
+    let item = ["fn", "struct", "enum", "union", "trait", "type", "const", "static", "mod"].iter().any(|kw| {
+        let needle = format!("{kw} {name}");
+        t.match_indices(&needle).any(|(i, _)| (i == 0 || !t[..i].ends_with(|c: char| c.is_alphanumeric() || c == '_')) && bounded(&t[i + needle.len()..]))
+    });
+    let member = t.strip_prefix("pub(crate) ").or_else(|| t.strip_prefix("pub ")).unwrap_or(t).strip_prefix(name).is_some_and(|rest| {
+        let rest = rest.trim_start();
+        bounded(rest) && (rest.starts_with(':') && !rest.starts_with("::") || rest.starts_with('(') || rest.starts_with('{') || rest.starts_with(',') || rest.is_empty())
+    });
+    item || member
+}
+
 /// The parameters of the function `name` declared from the 1-based `line` of `text`.
 pub(crate) fn params_in(text: &str, line: u32, name: &str) -> Option<FnParams> {
+    let line = decl_line_near(text, line, name).unwrap_or(line);
     let line_start = text.split_inclusive('\n').take(line.saturating_sub(1) as usize).map(str::len).sum::<usize>();
     let mut end = (line_start + 4000).min(text.len());
     while !text.is_char_boundary(end) {
@@ -102,6 +131,7 @@ pub(crate) fn params_in(text: &str, line: u32, name: &str) -> Option<FnParams> {
 /// The signature of the function `name` declared from the 1-based `line` of `text` as rust-analyzer labels a
 /// signature: `fn name<generics>(params as written) -> Ret`, without visibility, attributes, `where` clause or body.
 pub(crate) fn signature_in(text: &str, line: u32, name: &str) -> Option<String> {
+    let line = decl_line_near(text, line, name).unwrap_or(line);
     let line_start = text.split_inclusive('\n').take(line.saturating_sub(1) as usize).map(str::len).sum::<usize>();
     let mut end = (line_start + 4000).min(text.len());
     while !text.is_char_boundary(end) {
@@ -307,6 +337,17 @@ mod tests {
         assert!(p.params[0].is_self && p.params[0].ty == "Pin<&mut Self>");
         let p = params_in("fn get<'a>(&'a self, k: &std::path::Path) {}", 1, "get").unwrap();
         assert!(p.params[0].is_self && p.params[1].ty == "&std::path::Path");
+    }
+
+    #[test]
+    fn test_a_stale_index_line_finds_the_nearest_declaration() {
+        let src =
+            "struct S {\n    /// The id.\n    pub id: u32,\n    idx: u8,\n}\n// moved\n// moved\nimpl S {\n    pub(crate) fn id(&self) -> u32 { self.id }\n}\nfn identity() {}\n";
+        assert_eq!(decl_line_near(src, 9, "id"), Some(9), "an exact line is kept");
+        assert_eq!(decl_line_near(src, 7, "id"), Some(9), "the method two lines below the stale line");
+        assert_eq!(decl_line_near(src, 2, "id"), Some(3), "the field, not `idx` or `self.id`");
+        assert_eq!(decl_line_near(src, 1, "nothing"), None);
+        assert_eq!(params_in(src, 6, "id").map(|p| p.params.len()), Some(1));
     }
 
     #[test]

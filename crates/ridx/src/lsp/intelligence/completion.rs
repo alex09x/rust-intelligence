@@ -50,8 +50,10 @@ pub fn handle_completion(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     Ok(response)
 }
 
-fn is_fn_kind(kind: ridx_format::DefKind) -> bool {
-    matches!(kind, ridx_format::DefKind::Fn | ridx_format::DefKind::AssocFn)
+/// Whether an item of `kind` is marked with its declaration (for its call's arguments and its doc comment): any
+/// item, not a local binding.
+fn is_documented_kind(kind: ridx_format::DefKind) -> bool {
+    !matches!(kind, ridx_format::DefKind::Local | ridx_format::DefKind::TyParam | ridx_format::DefKind::LifetimeParam | ridx_format::DefKind::ConstParam)
 }
 
 fn line_start_byte(text: &str, line: usize) -> Option<usize> {
@@ -216,9 +218,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                     "kind": lsp_completion_kind(s.kind),
                     "detail": s.signature
                 });
-                if is_fn_kind(s.kind) {
+                if is_documented_kind(s.kind) {
                     let line = overlay.text[..s.decl_start_byte.min(overlay.text.len())].matches('\n').count() as u32 + 1;
-                    super::completion_edits::mark_fn_decl(&mut item, std::path::Path::new(&file), line);
+                    super::completion_edits::mark_decl(&mut item, std::path::Path::new(&file), line);
                 }
                 items.push(item);
             }
@@ -285,9 +287,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                     });
                     item["additionalTextEdits"] = json!([edit]);
                 }
-                if is_fn_kind(s.kind) {
+                if is_documented_kind(s.kind) {
                     let decl_file = crate::lsp::navigation::type_definition_parse::on_disk(s.resolved_path());
-                    super::completion_edits::mark_fn_decl(&mut item, &decl_file, s.span.start_line);
+                    super::completion_edits::mark_decl(&mut item, &decl_file, s.span.start_line);
                 }
 
                 items.push(item);
@@ -317,7 +319,7 @@ pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
     }
 
     let mut resolved = params.clone();
-    if resolved.get("documentation").is_none() {
+    if resolved.get("documentation").is_none() && !super::completion_docs::resolve_documentation(&mut resolved) {
         if let Some(detail) = resolved.get("detail").and_then(|d| d.as_str()) {
             resolved["documentation"] = json!({
                 "kind": "markdown",

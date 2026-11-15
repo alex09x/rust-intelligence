@@ -41,10 +41,11 @@ pub fn item(name: &str, note: Option<&str>, kind: u32, detail: &str) -> Value {
     it
 }
 
-/// `item` for the definition `d`, marked with where a function is declared so its call names the arguments.
+/// `item` for the definition `d`, marked with where it is declared: a function's call names its arguments from
+/// there, and resolving the item reads its doc comment.
 pub fn with_decl(mut item: Value, d: &ridx_format::ResolvedDefinition<'_>) -> Value {
-    if matches!(d.kind, ridx_format::DefKind::Fn | ridx_format::DefKind::AssocFn) {
-        crate::lsp::intelligence::completion_edits::mark_fn_decl(&mut item, &crate::lsp::intelligence::hover_render::def_file(d), d.start_line);
+    if d.start_line > 0 && !d.is_macro_expansion {
+        crate::lsp::intelligence::completion_edits::mark_decl(&mut item, &crate::lsp::intelligence::hover_render::def_file(d), d.start_line);
     }
     item
 }
