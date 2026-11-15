@@ -191,10 +191,9 @@ impl LifecycleManager {
             },
             "documentFormattingProvider": true,
             "documentRangeFormattingProvider": true,
-            "documentOnTypeFormattingProvider": {
-                "firstTriggerCharacter": ";",
-                "moreTriggerCharacter": ["}"]
-            },
+            // No `documentOnTypeFormattingProvider`: its handler formats the whole file, and an editor applies that on
+            // every `;` and `}` typed, reflowing the line being written (`a; b` split in two). rust-analyzer edits
+            // nothing on them either.
             "renameProvider": { "prepareProvider": true },
             "linkedEditingRangeProvider": true,
             "callHierarchyProvider": true,

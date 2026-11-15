@@ -192,11 +192,10 @@ fn test_initialize_formatting_trigger_chars() {
     dispatch_client(msg, &mut out, &mut mr, &mut ov, &mut lc, &can).unwrap();
 
     let val = extract_response(&out);
-    let ont = &val["result"]["capabilities"]["documentOnTypeFormattingProvider"];
-    assert_eq!(ont["firstTriggerCharacter"], ";");
-    let more = ont["moreTriggerCharacter"].as_array().unwrap();
-    assert_eq!(more.len(), 1);
-    assert_eq!(more[0], "}");
+    // Not offered: its handler formats the whole file, which typing `;` or `}` must not do (rust-analyzer edits
+    // nothing on them either). Whole-file formatting stays `textDocument/formatting`.
+    assert!(val["result"]["capabilities"].get("documentOnTypeFormattingProvider").is_none());
+    assert_eq!(val["result"]["capabilities"]["documentFormattingProvider"], true);
 }
 
 #[test]
