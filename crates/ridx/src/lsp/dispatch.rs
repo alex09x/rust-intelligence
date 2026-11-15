@@ -28,6 +28,13 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+/// The root of the workspace `file` belongs to: its loaded workspace, else the nearest directory with a `Cargo.toml`.
+fn workspace_root_of(mr: &MultiRootWorkspace, file: &Path) -> Option<PathBuf> {
+    mr.find_workspace_for_path(file)
+        .and_then(|ws| ws.workspace_root().map(Path::to_path_buf))
+        .or_else(|| file.ancestors().find(|d| d.join("Cargo.toml").is_file()).map(Path::to_path_buf))
+}
+
 pub fn dispatch_lsp_message<W: Write>(
     lsp_msg: impl Into<super::protocol::LspMessage>,
     writer: &mut W,
@@ -100,6 +107,9 @@ pub fn dispatch_lsp_message<W: Write>(
 
         "initialized" => {
             mr.warm_background_caches();
+            if lifecycle.client_watches_files() {
+                send_response(writer, &super::reindex::watch_registration(json!(lifecycle.next_refresh_id())))?;
+            }
             return Ok(true);
         }
 
@@ -151,14 +161,9 @@ pub fn dispatch_lsp_message<W: Write>(
             let file = uri_to_path(uri);
             ov.save_document(&file);
             conv.invalidate(&file);
-            let p = Path::new(&file);
-            let ws_root = mr
-                .find_workspace_for_path(p)
-                .and_then(|ws| ws.workspace_root().map(Path::to_path_buf))
-                .or_else(|| p.ancestors().find(|d| d.join("Cargo.toml").is_file()).map(Path::to_path_buf));
-            if let Some(ref root) = ws_root {
+            if let Some(ref root) = workspace_root_of(mr, Path::new(&file)) {
                 lifecycle.flycheck.trigger_check(root);
-                lifecycle.reindex.trigger(root);
+                lifecycle.reindex.trigger_for_change(root, Path::new(&file));
             }
             return Ok(true);
         }
@@ -184,6 +189,13 @@ pub fn dispatch_lsp_message<W: Write>(
         "workspace/didChangeWatchedFiles" => {
             mr.reload_all_if_modified();
             conv.clear();
+            for change in msg["params"]["changes"].as_array().into_iter().flatten() {
+                let file = uri_to_path(change["uri"].as_str().unwrap_or(""));
+                let p = Path::new(&file);
+                if let Some(root) = workspace_root_of(mr, p) {
+                    lifecycle.reindex.trigger_for_change(&root, p);
+                }
+            }
             return Ok(true);
         }
 

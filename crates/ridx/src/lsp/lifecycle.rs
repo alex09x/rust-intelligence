@@ -33,6 +33,7 @@ pub struct LifecycleManager {
     client_pull_diagnostics: bool,
     client_refresh_diagnostics: bool,
     client_resolve_code_action_edit: bool,
+    client_watches_files: bool,
     ra_client_commands: crate::lsp::presentation::lens::RaClientCommands,
     refresh_counter: AtomicU64,
     pub apply_registry: ApplyEditRegistry,
@@ -54,6 +55,7 @@ impl LifecycleManager {
             client_pull_diagnostics: false,
             client_refresh_diagnostics: false,
             client_resolve_code_action_edit: false,
+            client_watches_files: false,
             ra_client_commands: Default::default(),
             refresh_counter: AtomicU64::new(0),
             apply_registry: ApplyEditRegistry::new(),
@@ -70,6 +72,11 @@ impl LifecycleManager {
 
     pub fn client_resolve_code_action_edit(&self) -> bool {
         self.client_resolve_code_action_edit
+    }
+
+    /// The client registers file watchers on request (`workspace.didChangeWatchedFiles.dynamicRegistration`).
+    pub fn client_watches_files(&self) -> bool {
+        self.client_watches_files
     }
 
     /// The client runs `rust-analyzer.showReferences` itself, as the rust-analyzer VS Code extension and
@@ -125,6 +132,7 @@ impl LifecycleManager {
             .as_array()
             .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
         self.ra_client_commands = crate::lsp::presentation::lens::RaClientCommands::from_initialize(&msg["params"]);
+        self.client_watches_files = msg["params"]["capabilities"]["workspace"]["didChangeWatchedFiles"]["dynamicRegistration"].as_bool().unwrap_or(false);
         crate::lsp::intelligence::owner_completion::item::set_label_details_support(&msg["params"]["capabilities"]);
         crate::lsp::intelligence::completion_call::set_client(&msg["params"]);
 
