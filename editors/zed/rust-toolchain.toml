@@ -1,0 +1,5 @@
+# The extension is built for Zed's wasm runtime, apart from the pinned toolchain of the rust-intelligence workspace
+# (which carries no wasm target).
+[toolchain]
+channel = "stable"
+targets = ["wasm32-wasip2"]
