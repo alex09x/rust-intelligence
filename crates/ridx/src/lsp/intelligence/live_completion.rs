@@ -91,7 +91,12 @@ pub(super) fn live_dot_items(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'
     for c in cands.iter().filter(|c| !is_drop_method(c) && !(only_methods && c.kind == ridx_format::DefKind::Field)) {
         if c.label.starts_with(prefix) && seen.insert(c.label.as_str()) {
             let note = c.from_trait.as_deref().map(item::trait_note);
-            items.push(item::item(&c.label, note.as_deref(), lsp_completion_kind(c.kind), c.detail.as_deref().unwrap_or_default()));
+            let mut it = item::item(&c.label, note.as_deref(), lsp_completion_kind(c.kind), c.detail.as_deref().unwrap_or_default());
+            if let Some(loc) = c.def_location.as_ref().filter(|_| matches!(c.kind, ridx_format::DefKind::Fn | ridx_format::DefKind::AssocFn)) {
+                let file = crate::lsp::navigation::type_definition_parse::on_disk(loc.file.clone());
+                super::completion_edits::mark_fn_decl(&mut it, &file, loc.line);
+            }
+            items.push(it);
         }
     }
     let is_iterator = cands.iter().any(|c| c.label == "next" && c.from_trait.as_deref().is_some_and(|t| t.ends_with("Iterator")));

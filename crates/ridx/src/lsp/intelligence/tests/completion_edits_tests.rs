@@ -10,23 +10,32 @@
 
 use super::*;
 
-fn with_snippets(on: bool) {
-    set_snippet_support(&json!({ "textDocument": { "completion": { "completionItem": { "snippetSupport": on } } } }));
+pub(crate) fn with_snippets(on: bool) {
+    crate::lsp::intelligence::completion_call::set_client(&json!({ "capabilities": { "textDocument": { "completion": { "completionItem": { "snippetSupport": on } } } } }));
 }
 
-/// Applies the edits for the cursor at `|` of `line` (line 3 of `doc`, or of the line alone) to `items`.
-fn run(line: &str, items: Value, doc: Option<&str>) -> Vec<Value> {
+/// Applies the edits for the cursor at `|` of `line` (line 3 of `doc`, or of the line alone) to `items`; `doc` is
+/// the file `/w/src/lib.rs`.
+pub(crate) fn run(line: &str, items: Value, doc: Option<&str>) -> Vec<Value> {
     let cursor = line.find('|').unwrap();
     let text = line.replace('|', "");
     let (before, after) = text.split_at(cursor);
-    let site = EditSite { before, after, line_0based: 3, col_utf16: before.encode_utf16().count() as u32, in_use_item: in_use_item(&text, cursor), doc_text: doc.unwrap_or(&text) };
+    let site = EditSite {
+        before,
+        after,
+        line_0based: 3,
+        col_utf16: before.encode_utf16().count() as u32,
+        in_use_item: in_use_item(&text, cursor),
+        doc_text: doc.unwrap_or(&text),
+        file: Path::new("/w/src/lib.rs"),
+    };
     let mut response = json!({ "isIncomplete": false, "items": items });
     apply(&mut response, &site);
     response["items"].as_array().unwrap().clone()
 }
 
 /// The line `line` becomes once `item`'s edits are applied (all edits sit on that line).
-fn accept(line: &str, item: &Value) -> String {
+pub(crate) fn accept(line: &str, item: &Value) -> String {
     let text: Vec<u16> = line.replace('|', "").encode_utf16().collect();
     let mut edits: Vec<&Value> = vec![&item["textEdit"]];
     edits.extend(item["additionalTextEdits"].as_array().into_iter().flatten().filter(|e| e["range"]["start"]["line"] == 3));
@@ -93,12 +102,10 @@ fn test_no_parentheses_where_a_call_follows_or_in_use_items() {
 }
 
 #[test]
-fn test_without_snippet_support_only_empty_calls_get_parentheses() {
+fn test_without_snippet_support_calls_get_no_parentheses() {
     with_snippets(false);
     let items = run("    s.l|", json!([{ "label": "len", "kind": 2, "detail": "fn(&self) -> usize" }, { "label": "push", "kind": 2, "detail": "fn(&mut self, T)" }]), None);
-    assert_eq!(items[0]["textEdit"]["newText"], "len()");
-    assert!(items[0].get("insertTextFormat").is_none());
-    assert!(items[1].get("textEdit").is_none());
+    assert!(items.iter().all(|it| it.get("textEdit").is_none() && it.get("insertTextFormat").is_none()), "{items:?}");
     with_snippets(true);
 }
 
@@ -161,16 +168,4 @@ fn test_receiver_scan() {
     assert_eq!(receiver_before("    0..", 0), None);
     assert_eq!(receiver_before("    .", 0), None);
     assert_eq!(receiver_before("    \"абв\".", 0), Some(Receiver { start_byte: 4, dot_byte: 12 }));
-}
-
-#[test]
-fn test_call_arg_count() {
-    assert_eq!(call_arg_count("fn(&self) -> usize", true), Some(0));
-    assert_eq!(call_arg_count("fn(&mut self, f: impl Fn(u8, u8) -> u8)", true), Some(1));
-    assert_eq!(call_arg_count("for<'a> fn(&'a Self) -> &'a T", true), Some(0));
-    assert_eq!(call_arg_count("fn(self: Pin<&mut Self>, cx: &mut Context<'_>)", true), Some(1));
-    assert_eq!(call_arg_count("pub fn new(a: HashMap<K, V>, b: [u8; 2]) -> Self", false), Some(2));
-    assert_eq!(call_arg_count("pub const fn len(&self) -> usize", false), Some(1));
-    assert_eq!(call_arg_count("usize", true), None);
-    assert_eq!(call_arg_count("fnord", true), None);
 }

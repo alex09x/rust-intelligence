@@ -12,8 +12,10 @@
 
 pub mod auto_import;
 pub mod completion;
+pub mod completion_call;
 pub mod completion_edits;
 pub mod fallback_completion;
+pub(crate) mod fn_params;
 pub mod generic_completion;
 pub mod hints;
 pub mod hover;

@@ -97,7 +97,7 @@ pub(super) fn collect_extension_and_blanket_items(
                 continue;
             }
             let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-            in_scope_traits.push(item::item(def.name, item::def_note(&def, Some(tr)).as_deref(), lsp_completion_kind(def.kind), &detail));
+            in_scope_traits.push(item::with_decl(item::item(def.name, item::def_note(&def, Some(tr)).as_deref(), lsp_completion_kind(def.kind), &detail), &def));
         }
     }
 
@@ -112,7 +112,7 @@ pub(super) fn collect_extension_and_blanket_items(
                 continue;
             }
             let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-            in_scope_traits.push(item::item(def.name, item::def_note(&def, Some(&tr)).as_deref(), lsp_completion_kind(def.kind), &detail));
+            in_scope_traits.push(item::with_decl(item::item(def.name, item::def_note(&def, Some(&tr)).as_deref(), lsp_completion_kind(def.kind), &detail), &def));
         }
     }
 

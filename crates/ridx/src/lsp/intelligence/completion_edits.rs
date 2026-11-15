@@ -9,26 +9,37 @@
  */
 
 //! What accepting a completion item writes, the way rust-analyzer writes it: a function or method is inserted as a
-//! call (`len()$0`, `push_str($0)`), a postfix snippet rewrites its receiver (`s.dbg` → `dbg!(s)`). The list builders
-//! decide which items exist; this pass gives each one its edit. Edits stay on the cursor's line: the main edit
-//! replaces the word being typed, and the receiver a postfix snippet consumes is removed by an additional edit.
+//! call (`len()$0`, `push_str(${1:string})$0`, see [`completion_call`]), a postfix snippet rewrites its receiver
+//! (`s.dbg` → `dbg!(s)`). The list builders decide which items exist, marking where each function is declared;
+//! this pass gives each item its edit. Edits stay on the cursor's line: the main edit replaces the word being
+//! typed, and the receiver a postfix snippet consumes is removed by an additional edit.
+//!
+//! [`completion_call`]: super::completion_call
 
+use super::completion_call::{call_edit, client};
+use super::fn_params::{params_in, params_on_disk, FnParams};
 use serde_json::{json, Value};
-use std::cell::Cell;
-
-thread_local! {
-    // The server loop answers every request on the thread that handled `initialize`.
-    static SNIPPETS: Cell<bool> = const { Cell::new(false) };
-}
+use std::path::Path;
 
 const METHOD_KIND: u64 = 2;
 const FUNCTION_KIND: u64 = 3;
 const SNIPPET_KIND: u64 = 15;
+const DECL_KEY: &str = "ridxFnDecl";
 
-/// Records whether the client declared `completionItem.snippetSupport` at initialize.
-pub fn set_snippet_support(capabilities: &Value) {
-    let on = capabilities["textDocument"]["completion"]["completionItem"]["snippetSupport"].as_bool().unwrap_or(false);
-    SNIPPETS.with(|c| c.set(on));
+/// Marks `item` as the function declared from the 1-based `line` of `file`, whose parameters name the placeholders
+/// of its call. The mark is consumed by [`apply`] and never reaches the client.
+pub(crate) fn mark_fn_decl(item: &mut Value, file: &Path, line: u32) {
+    if let Some(file) = file.to_str() {
+        item["data"] = json!({ DECL_KEY: { "file": file, "line": line } });
+    }
+}
+
+/// Takes the declaration mark off `item`.
+fn take_fn_decl(item: &mut Value) -> Option<(String, u32)> {
+    let obj = item.as_object_mut()?;
+    let decl = obj.get("data")?.get(DECL_KEY)?.clone();
+    obj.remove("data");
+    Some((decl["file"].as_str()?.to_string(), decl["line"].as_u64()? as u32))
 }
 
 /// The cursor's line split around the cursor, with what the edits need to know about it.
@@ -42,13 +53,25 @@ pub struct EditSite<'a> {
     pub col_utf16: u32,
     /// Whether the cursor is inside a `use` item, where a function is named, not called.
     pub in_use_item: bool,
-    /// The whole document, for the imports a postfix snippet needs.
+    /// The whole document, for the imports a postfix snippet needs and the declarations it holds.
     pub doc_text: &'a str,
+    /// The document's path.
+    pub file: &'a Path,
+}
+
+/// The parameters of the function declared at `decl`: from the open document when it is declared there.
+fn decl_params(site: &EditSite<'_>, decl: &(String, u32), name: &str) -> Option<FnParams> {
+    let file = Path::new(&decl.0);
+    if file == site.file {
+        params_in(site.doc_text, decl.1, name)
+    } else {
+        params_on_disk(file, decl.1, name)
+    }
 }
 
 /// Gives every item of a completion response (`{items: [...]}` or a bare list) the edit accepting it makes.
 pub fn apply(response: &mut Value, site: &EditSite<'_>) {
-    let snippets = SNIPPETS.with(Cell::get);
+    let snippets = client().snippets;
     let items = match response {
         Value::Array(items) => items,
         Value::Object(obj) => match obj.get_mut("items") {
@@ -62,11 +85,17 @@ pub fn apply(response: &mut Value, site: &EditSite<'_>) {
     let head: String = site.before.chars().take(site.before.chars().count() - word.prefix_chars).collect();
     let method_call = head.ends_with('.') && !head.ends_with("..");
     for it in items.iter_mut() {
+        let decl = take_fn_decl(it);
         if it.get("textEdit").is_some() {
             continue;
         }
         match it["kind"].as_u64() {
-            Some(METHOD_KIND | FUNCTION_KIND) if !site.in_use_item && !word.followed_by_call => call_edit(it, site, &word, method_call, snippets),
+            Some(METHOD_KIND | FUNCTION_KIND) if !site.in_use_item && !word.followed_by_call => {
+                let name = it["insertText"].as_str().or_else(|| it["label"].as_str()).unwrap_or_default();
+                let name = name.rsplit('.').next().unwrap_or(name).to_string();
+                let params = decl.as_ref().and_then(|d| decl_params(site, d, &name));
+                call_edit(it, site, &word, method_call, params.as_ref());
+            }
             Some(SNIPPET_KIND) => {
                 if let Some(recv) = receiver.as_ref() {
                     postfix_edit(it, site, &word, recv, snippets);
@@ -78,14 +107,14 @@ pub fn apply(response: &mut Value, site: &EditSite<'_>) {
 }
 
 /// The word under the cursor: its UTF-16 range on the line and whether a call already follows it.
-struct Word {
+pub(super) struct Word {
     start_utf16: u32,
     end_utf16: u32,
     prefix_chars: usize,
     followed_by_call: bool,
 }
 
-fn is_ident(c: char) -> bool {
+pub(super) fn is_ident(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
@@ -107,24 +136,7 @@ fn range(line: u32, start: u32, end: u32) -> Value {
     json!({ "start": { "line": line, "character": start }, "end": { "line": line, "character": end } })
 }
 
-/// `name()` for a call taking nothing beyond its receiver, `name($0)` for one taking arguments.
-fn call_edit(it: &mut Value, site: &EditSite<'_>, word: &Word, method_call: bool, snippets: bool) {
-    let detail = it["detail"].as_str().unwrap_or_default();
-    let Some(args) = call_arg_count(detail, method_call) else { return };
-    let name = it["insertText"].as_str().or_else(|| it["label"].as_str()).unwrap_or_default().to_string();
-    if name.is_empty() || !name.chars().all(|c| is_ident(c) || c == '.' || c == '(' || c == ')') {
-        return;
-    }
-    let text = match (args, snippets) {
-        (0, true) => format!("{name}()$0"),
-        (_, true) => format!("{name}($0)"),
-        (0, false) => format!("{name}()"),
-        (_, false) => return,
-    };
-    set_main_edit(it, site, word, text, snippets);
-}
-
-fn set_main_edit(it: &mut Value, site: &EditSite<'_>, word: &Word, text: String, snippets: bool) {
+pub(super) fn set_main_edit(it: &mut Value, site: &EditSite<'_>, word: &Word, text: String, snippets: bool) {
     if let Some(obj) = it.as_object_mut() {
         obj.remove("insertText");
     }
@@ -136,81 +148,6 @@ fn set_main_edit(it: &mut Value, site: &EditSite<'_>, word: &Word, text: String,
         let label = it["label"].clone();
         it["filterText"] = label;
     }
-}
-
-/// How many arguments a call of the function `detail` describes takes, without the receiver of a method call.
-/// `None` when `detail` is not a function signature.
-pub(crate) fn call_arg_count(detail: &str, method_call: bool) -> Option<usize> {
-    let open = params_open(detail, find_fn_keyword(detail)? + 2)?;
-    let mut depth = 0i32;
-    let mut params: Vec<String> = Vec::new();
-    let mut cur = String::new();
-    let mut prev = ' ';
-    for c in detail[open + 1..].chars() {
-        match c {
-            '(' | '<' | '[' | '{' => depth += 1,
-            ')' if depth == 0 => {
-                if !cur.trim().is_empty() {
-                    params.push(cur.trim().to_string());
-                }
-                let receiver = params.first().is_some_and(|p| is_receiver(p));
-                return Some(params.len() - usize::from(method_call && receiver));
-            }
-            '>' if prev == '-' => {}
-            ')' | '>' | ']' | '}' => depth -= 1,
-            ',' if depth == 0 => {
-                params.push(std::mem::take(&mut cur).trim().to_string());
-                prev = c;
-                continue;
-            }
-            _ => {}
-        }
-        cur.push(c);
-        prev = c;
-    }
-    None
-}
-
-/// The byte offset of the `(` opening the parameter list after `fn` (ending at `from`): past the name and its
-/// generics, whose bounds may hold parentheses of their own (`<I: Iterator<Item = (K, V)>>`).
-fn params_open(detail: &str, from: usize) -> Option<usize> {
-    let mut depth = 0i32;
-    let mut prev = ' ';
-    for (i, c) in detail[from..].char_indices() {
-        match c {
-            '(' if depth == 0 => return Some(from + i),
-            '<' => depth += 1,
-            '>' if prev != '-' => depth -= 1,
-            c if depth == 0 && !(is_ident(c) || c.is_whitespace() || c == '\'') => return None,
-            _ => {}
-        }
-        prev = c;
-    }
-    None
-}
-
-/// The byte offset of the `fn` that starts the signature (`fn(`, `pub fn name(`, `for<'a> fn(`).
-fn find_fn_keyword(detail: &str) -> Option<usize> {
-    let bytes = detail.as_bytes();
-    let mut from = 0;
-    while let Some(i) = detail[from..].find("fn").map(|i| i + from) {
-        let before_ok = i == 0 || !is_ident(bytes[i - 1] as char);
-        let after = bytes.get(i + 2).copied().map(char::from);
-        if before_ok && matches!(after, Some('(' | ' ' | '<')) {
-            return Some(i);
-        }
-        from = i + 2;
-    }
-    None
-}
-
-fn is_receiver(param: &str) -> bool {
-    let p = param.trim_start_matches("mut ").trim();
-    let ty = p.strip_prefix("self:").map(str::trim).unwrap_or(p);
-    let core = ty.trim_start_matches('&').trim_start();
-    let core = if core.starts_with('\'') { core.split_once(' ').map_or(core, |(_, r)| r) } else { core };
-    let core = core.trim_start_matches("mut ").trim();
-    p == "self" || p.starts_with("self:") || core == "self" || core == "Self" || core.starts_with("Self<")
 }
 
 /// The receiver expression ending at the `.` before the word being typed, as the byte range of `before` it spans
@@ -399,4 +336,4 @@ pub fn in_use_item(text: &str, offset: usize) -> bool {
 
 #[cfg(test)]
 #[path = "tests/completion_edits_tests.rs"]
-mod tests;
+pub(crate) mod tests;

@@ -124,7 +124,7 @@ impl LifecycleManager {
             .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
         self.ra_client_commands = crate::lsp::presentation::lens::RaClientCommands::from_initialize(&msg["params"]);
         crate::lsp::intelligence::owner_completion::item::set_label_details_support(&msg["params"]["capabilities"]);
-        crate::lsp::intelligence::completion_edits::set_snippet_support(&msg["params"]["capabilities"]);
+        crate::lsp::intelligence::completion_call::set_client(&msg["params"]);
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {

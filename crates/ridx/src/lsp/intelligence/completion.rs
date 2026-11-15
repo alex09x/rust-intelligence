@@ -44,9 +44,14 @@ pub fn handle_completion(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
         col_utf16: utf16_col_0based,
         in_use_item: super::completion_edits::in_use_item(text, line_start + cursor),
         doc_text: text,
+        file: std::path::Path::new(&file),
     };
     super::completion_edits::apply(&mut response, &site);
     Ok(response)
+}
+
+fn is_fn_kind(kind: ridx_format::DefKind) -> bool {
+    matches!(kind, ridx_format::DefKind::Fn | ridx_format::DefKind::AssocFn)
 }
 
 fn line_start_byte(text: &str, line: usize) -> Option<usize> {
@@ -206,11 +211,16 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             let is_in_scope = if s.scope_id == 0 { true } else { active_scope_ids.contains(&s.scope_id) && s.decl_start_byte <= cursor_byte };
 
             if is_in_scope && seen_names.insert(s.name.clone()) {
-                items.push(json!({
+                let mut item = json!({
                     "label": s.name,
                     "kind": lsp_completion_kind(s.kind),
                     "detail": s.signature
-                }));
+                });
+                if is_fn_kind(s.kind) {
+                    let line = overlay.text[..s.decl_start_byte.min(overlay.text.len())].matches('\n').count() as u32 + 1;
+                    super::completion_edits::mark_fn_decl(&mut item, std::path::Path::new(&file), line);
+                }
+                items.push(item);
             }
         }
     }
@@ -274,6 +284,10 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                         "description": format!("{import_path} (auto-import)")
                     });
                     item["additionalTextEdits"] = json!([edit]);
+                }
+                if is_fn_kind(s.kind) {
+                    let decl_file = crate::lsp::navigation::type_definition_parse::on_disk(s.resolved_path());
+                    super::completion_edits::mark_fn_decl(&mut item, &decl_file, s.span.start_line);
                 }
 
                 items.push(item);

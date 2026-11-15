@@ -187,7 +187,7 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
                 if item::trait_of_def(def.path).is_some_and(item::is_iterator_trait) {
                     is_iterator = true;
                 }
-                let item = item::item(def.name, note.as_deref(), lsp_completion_kind(def.kind), &detail);
+                let item = item::with_decl(item::item(def.name, note.as_deref(), lsp_completion_kind(def.kind), &detail), &def);
 
                 match category {
                     DefScopeCategory::Field => {
@@ -317,7 +317,7 @@ pub fn try_owner_completion(ws: &WorkspaceIndex, ctx: &OwnerCompletionContext<'_
                 let detail = def.signature.map(|sig| format!("{sig} (in {})", def.path)).unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
                 let note =
                     item::def_note(&def, matches!(category, DefScopeCategory::PreludeTrait | DefScopeCategory::InScopeTrait).then(|| item::trait_of_def(def.path)).flatten());
-                let item = item::item(def.name, note.as_deref(), lsp_completion_kind(def.kind), &detail);
+                let item = item::with_decl(item::item(def.name, note.as_deref(), lsp_completion_kind(def.kind), &detail), &def);
 
                 match category {
                     DefScopeCategory::Field => fields.push(item),

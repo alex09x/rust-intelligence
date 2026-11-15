@@ -196,53 +196,9 @@ fn split_args(m: &str, from: usize, to: usize) -> Vec<(usize, usize)> {
 
 /// Parameter names of the function `d` from its declaration: `None` for a pattern parameter; `self` for a receiver.
 fn param_names(d: &ridx_format::ResolvedDefinition<'_>) -> Option<Vec<Option<String>>> {
-    let text = std::fs::read_to_string(crate::lsp::intelligence::hover_render::def_file(d)).ok()?;
-    let line_start = text.split_inclusive('\n').take(d.start_line.saturating_sub(1) as usize).map(str::len).sum::<usize>();
     let name = d.name.rsplit("::").next()?;
-    let mut end = (line_start + 4000).min(text.len());
-    while !text.is_char_boundary(end) {
-        end -= 1;
-    }
-    let window = text.get(line_start..end)?;
-    let fn_at = window.find(&format!("fn {name}"))?;
-    let after = &window[fn_at + 3 + name.len()..];
-    let after = if after.starts_with('<') { skip_generics(after) } else { after };
-    let open = after.find('(')?;
-    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(&after[open..]);
-    let close = matching_paren(masked.as_bytes(), 0)?;
-    let params = split_args(&masked, 1, close);
-    Some(
-        params
-            .into_iter()
-            .filter(|&(s, e)| !after[open + s..open + e].trim().is_empty())
-            .map(|(s, e)| {
-                let p = after[open + s..open + e].trim();
-                let p = p.trim_start_matches('#').trim();
-                if p.trim_start_matches('&').trim_start_matches("mut ").trim_start().starts_with("self") || p.starts_with("&'") && p.contains("self") {
-                    return Some("self".to_string());
-                }
-                let pat = p.split(':').next().unwrap_or(p).trim().trim_start_matches("mut ").trim();
-                (pat.chars().all(|c| c.is_alphanumeric() || c == '_') && !pat.is_empty()).then(|| pat.to_string())
-            })
-            .collect(),
-    )
-}
-
-fn skip_generics(text: &str) -> &str {
-    let mut depth = 0i32;
-    for (i, c) in text.char_indices() {
-        match c {
-            '<' => depth += 1,
-            '>' if i > 0 && &text[i - 1..i] != "-" => {
-                depth -= 1;
-                if depth == 0 {
-                    return &text[i + 1..];
-                }
-            }
-            _ => {}
-        }
-    }
-    text
+    let fp = crate::lsp::intelligence::fn_params::params_on_disk(&crate::lsp::intelligence::hover_render::def_file(d), d.start_line, name)?;
+    Some(fp.params.iter().map(|p| p.binding().map(str::to_string)).collect())
 }
 
 /// rust-analyzer's rules for a parameter hint not worth showing.

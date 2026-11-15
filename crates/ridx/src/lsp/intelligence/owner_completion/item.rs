@@ -41,6 +41,14 @@ pub fn item(name: &str, note: Option<&str>, kind: u32, detail: &str) -> Value {
     it
 }
 
+/// `item` for the definition `d`, marked with where a function is declared so its call names the arguments.
+pub fn with_decl(mut item: Value, d: &ridx_format::ResolvedDefinition<'_>) -> Value {
+    if matches!(d.kind, ridx_format::DefKind::Fn | ridx_format::DefKind::AssocFn) {
+        crate::lsp::intelligence::completion_edits::mark_fn_decl(&mut item, &crate::lsp::intelligence::hover_render::def_file(d), d.start_line);
+    }
+    item
+}
+
 /// An `iter().name` item: filtered by the method name, inserting the call through `iter()`.
 pub fn through_iter_item(name: &str, note: &str, kind: u32, detail: &str) -> Value {
     let mut it = item(&format!("iter().{name}"), Some(note), kind, detail);
