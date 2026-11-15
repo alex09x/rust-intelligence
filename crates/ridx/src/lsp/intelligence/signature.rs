@@ -137,6 +137,9 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
     let is_dot_call = !is_brace_literal && qual_end >= 1 && chars[qual_end - 1] == '.';
 
     let mut sig_opt = None;
+    // The callee's declaration, when found: its source gives the parameter names and the docs.
+    let mut decl_def: Option<ridx_format::ResolvedDefinition<'_>> = None;
+    let mut overlay_decl_line: Option<u32> = None;
 
     if is_macro && matches!(callee_name.as_str(), "assert_eq" | "assert_ne" | "debug_assert_eq" | "debug_assert_ne") {
         sig_opt = Some(format!("fn {callee_name}(left, right)"));
@@ -160,6 +163,7 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                     if def.name == callee_name {
                         sig_opt = format_resolved_def_sig(&def, &callee_name, is_brace_literal, ws, overlay_mgr, conv);
                         if sig_opt.is_some() {
+                            decl_def = Some(def);
                             break;
                         }
                     }
@@ -187,6 +191,31 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                 let method_path = format!("{target_path}::{callee_name}");
                 if let Some(method_def) = ws.find_definition_by_path(&method_path) {
                     sig_opt = format_resolved_def_sig(&method_def, &callee_name, is_brace_literal, ws, overlay_mgr, conv);
+                    decl_def = Some(method_def);
+                }
+            }
+        }
+    }
+
+    // 2b. A method of a receiver the index has no call for (code just written): the receiver's inferred type names it,
+    // as the completion list after `receiver.` does.
+    let mut live_decl: Option<crate::live::LiveLocation> = None;
+    if sig_opt.is_none() && is_dot_call && !is_macro {
+        if let Some(ws) = workspace {
+            let newlines_after = chars[name_end..].iter().filter(|&&c| c == '\n').count() as u32;
+            let end_line = line_1based.saturating_sub(newlines_after);
+            let end_col = match chars[..name_end].iter().rposition(|&c| c == '\n') {
+                Some(nl) => (name_end - nl) as u32,
+                None => col_1based.saturating_sub((chars.len() - name_end) as u32),
+            };
+            if let Some(off) = crate::lsp::navigation::byte_offset_from_conv_or_overlay(&file, end_line, end_col, overlay_mgr, conv) {
+                let db = crate::lsp::navigation::live_db_for(ws);
+                let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
+                let found =
+                    db.dot_completion(ws, &file, off, Some(overlay_mgr)).cands.into_iter().find(|c| c.label == callee_name && matches!(c.kind, DefKind::Fn | DefKind::AssocFn));
+                if let Some(c) = found {
+                    sig_opt = c.detail.as_deref().map(|d| format_signature(&callee_name, d));
+                    live_decl = c.def_location;
                 }
             }
         }
@@ -199,6 +228,7 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                 if s.name == callee_name && s.kind == DefKind::Fn {
                     if let Some(ref sig) = s.signature {
                         sig_opt = Some(format_signature(&callee_name, sig));
+                        overlay_decl_line = Some(overlay.text[..s.decl_start_byte.min(overlay.text.len())].matches('\n').count() as u32 + 1);
                         break;
                     }
                 }
@@ -230,6 +260,9 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                         } else {
                             format_signature(&callee_name, sig)
                         });
+                        if matches!(s.kind, DefKind::Fn | DefKind::AssocFn) {
+                            decl_def = ws.find_definition_by_path(s.path);
+                        }
                         break;
                     }
                 }
@@ -237,19 +270,44 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         }
     }
 
-    let Some(sig) = sig_opt else {
+    let Some(mut sig) = sig_opt else {
         return Ok(Value::Null);
     };
 
+    // As rust-analyzer labels it: the declaration's own parameters (names included), with its docs.
+    let mut documentation = None;
+    if let (Some(loc), Some(ws)) = (live_decl.as_ref(), workspace) {
+        decl_def = ws.find_definition_at(loc.file.to_str().unwrap_or(""), loc.line, loc.col).filter(|d| d.name.rsplit("::").next() == Some(callee_name.as_str()));
+        if decl_def.is_none() {
+            let on_disk = crate::lsp::navigation::type_definition_parse::on_disk(loc.file.clone());
+            if let Some(source_sig) = std::fs::read_to_string(on_disk).ok().and_then(|t| super::fn_params::signature_in(&t, loc.line, &callee_name)) {
+                sig = source_sig;
+            }
+        }
+    }
+    if !is_brace_literal {
+        if let Some(d) = decl_def.as_ref().filter(|d| matches!(d.kind, DefKind::Fn | DefKind::AssocFn)) {
+            let name = d.name.rsplit("::").next().unwrap_or(d.name);
+            let decl_file = super::hover_render::def_file(d);
+            if let Some(source_sig) = std::fs::read_to_string(&decl_file).ok().and_then(|t| super::fn_params::signature_in(&t, d.start_line, name)) {
+                sig = source_sig;
+            }
+            documentation = super::hover_enrich::extract_source_doc_comment(d, workspace, Some(overlay_mgr), conv, Some(&file));
+        } else if let (Some(line), Some(overlay)) = (overlay_decl_line, overlay_opt) {
+            if let Some(source_sig) = super::fn_params::signature_in(&overlay.text, line, &callee_name) {
+                sig = source_sig;
+            }
+        }
+    }
+
     let parameters = extract_parameters_from_sig(&sig, is_dot_call);
+    let mut signature = json!({ "label": sig, "parameters": parameters });
+    if let Some(doc) = documentation {
+        signature["documentation"] = json!({ "kind": "markdown", "value": doc });
+    }
 
     Ok(json!({
-        "signatures": [
-            {
-                "label": sig,
-                "parameters": parameters
-            }
-        ],
+        "signatures": [signature],
         "activeSignature": 0,
         "activeParameter": active_param
     }))

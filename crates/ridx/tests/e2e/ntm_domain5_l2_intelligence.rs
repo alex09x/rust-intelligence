@@ -204,7 +204,9 @@ fn test_l2_signature_help_cross_crate_and_trait() {
     let res_new = handle_signature_help(&req_new, Some(ws_multi), &overlay_mgr, &mut conv).unwrap();
     assert!(!res_new.is_null(), "Signature help for ExternalCoreService::new must be found");
     let sig_new = res_new["signatures"][0]["label"].as_str().unwrap();
-    assert!(sig_new.contains("fn(u32) -> CoreService") || sig_new.contains("pub fn new"), "Expected CoreService::new signature, got: {sig_new}");
+    // The declaration's own parameters, names included, as rust-analyzer labels a signature.
+    assert_eq!(sig_new, "fn new(id: u32) -> Self", "Expected CoreService::new signature");
+    assert_eq!(res_new["signatures"][0]["parameters"][0]["label"], "id: u32");
 
     // 2. Trait method call: `c.extract()`
     let ws_trait = get_or_index_l2_fixture("traits_and_generics");

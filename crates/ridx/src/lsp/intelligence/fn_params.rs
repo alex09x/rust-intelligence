@@ -99,6 +99,63 @@ pub(crate) fn params_in(text: &str, line: u32, name: &str) -> Option<FnParams> {
     Some(FnParams { generics, params })
 }
 
+/// The signature of the function `name` declared from the 1-based `line` of `text` as rust-analyzer labels a
+/// signature: `fn name<generics>(params as written) -> Ret`, without visibility, attributes, `where` clause or body.
+pub(crate) fn signature_in(text: &str, line: u32, name: &str) -> Option<String> {
+    let line_start = text.split_inclusive('\n').take(line.saturating_sub(1) as usize).map(str::len).sum::<usize>();
+    let mut end = (line_start + 4000).min(text.len());
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    let window = text.get(line_start..end)?;
+    let needle = format!("fn {name}");
+    let fn_at = window.match_indices(&needle).map(|(i, _)| i).find(|&i| !window[i + needle.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_'))?;
+    let decl = &window[fn_at..];
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(decl);
+    let mb = masked.as_bytes();
+    let mut i = needle.len();
+    while mb.get(i).is_some_and(u8::is_ascii_whitespace) {
+        i += 1;
+    }
+    let generics = if mb.get(i) == Some(&b'<') { generics_end(&masked[i..]).map(|e| (i, i + e + 1)) } else { None };
+    let open = masked[generics.map_or(i, |g| g.1)..].find('(')? + generics.map_or(i, |g| g.1);
+    let close = open + matching_paren(&mb[open..])?;
+    let params: Vec<String> = top_level_split(&masked, open + 1, close)
+        .into_iter()
+        .map(|(s, e)| {
+            let code: String = decl[s..e].lines().map(|l| l.split_once("//").map_or(l, |(c, _)| c)).collect::<Vec<_>>().join(" ");
+            strip_attrs(code.trim()).split_whitespace().collect::<Vec<_>>().join(" ")
+        })
+        .filter(|p| !p.is_empty())
+        .collect();
+    // The return type runs to the body, the `;` of a declaration or the `where` clause, outside brackets.
+    let mut depth = 0i32;
+    let mut ret_end = masked.len();
+    for (k, &c) in mb.iter().enumerate().skip(close + 1) {
+        match c {
+            b'(' | b'[' | b'<' => depth += 1,
+            b'>' if mb[k - 1] == b'-' => {}
+            b')' | b']' | b'>' => depth -= 1,
+            b'{' | b';' if depth == 0 => {
+                ret_end = k;
+                break;
+            }
+            b'w' if depth == 0
+                && masked[k..].starts_with("where")
+                && mb[k - 1].is_ascii_whitespace()
+                && !mb.get(k + 5).is_some_and(|c| c.is_ascii_alphanumeric() || *c == b'_') =>
+            {
+                ret_end = k;
+                break;
+            }
+            _ => {}
+        }
+    }
+    let ret = decl[close + 1..ret_end].split_whitespace().collect::<Vec<_>>().join(" ");
+    let generics = generics.map(|(s, e)| decl[s..e].split_whitespace().collect::<Vec<_>>().join(" ")).unwrap_or_default();
+    Some(format!("fn {name}{generics}({}){}{ret}", params.join(", "), if ret.is_empty() { "" } else { " " }))
+}
+
 fn param(p: &str) -> Param {
     let core = p.trim_start_matches('&').trim_start();
     let core = if core.starts_with('\'') { core.split_once(' ').map_or(core, |(_, r)| r) } else { core };
@@ -250,5 +307,17 @@ mod tests {
         assert!(p.params[0].is_self && p.params[0].ty == "Pin<&mut Self>");
         let p = params_in("fn get<'a>(&'a self, k: &std::path::Path) {}", 1, "get").unwrap();
         assert!(p.params[0].is_self && p.params[1].ty == "&std::path::Path");
+    }
+
+    #[test]
+    fn test_signature_labels_as_rust_analyzer() {
+        let src = "/// Doc.\npub(crate) fn params_in(text: &str, line: u32, name: &str) -> Option<FnParams> {\n    None\n}\n";
+        assert_eq!(signature_in(src, 2, "params_in").as_deref(), Some("fn params_in(text: &str, line: u32, name: &str) -> Option<FnParams>"));
+        let src = "    pub fn push_str(\n        &mut self,\n        string: &str, // the tail\n    ) {}\n";
+        assert_eq!(signature_in(src, 1, "push_str").as_deref(), Some("fn push_str(&mut self, string: &str)"));
+        let src = "fn map<U, F>(self, f: F) -> Option<U>\nwhere\n    F: FnOnce(T) -> U,\n{\n";
+        assert_eq!(signature_in(src, 1, "map").as_deref(), Some("fn map<U, F>(self, f: F) -> Option<U>"));
+        let src = "fn call(&self, f: impl Fn(u8) -> Vec<u8>) -> Result<(), E>;\n";
+        assert_eq!(signature_in(src, 1, "call").as_deref(), Some("fn call(&self, f: impl Fn(u8) -> Vec<u8>) -> Result<(), E>"));
     }
 }
