@@ -221,6 +221,41 @@ fn test_range_formatting_statements() {
     assert!(formatted.contains("    let t = 1;\n"), "{formatted}");
 }
 
+/// In Zed: a line typed at column 0 in a test function and formatted with Format Selections stayed at column 0. It
+/// gets the indentation of its block; a closing brace that of the block's own line; a line inside a call's
+/// parentheses keeps its own; tabs when the editor indents with tabs.
+#[test]
+fn test_range_formatting_indents_to_the_block() {
+    if !has_rustfmt() {
+        eprintln!("Skipping formatting test: rustfmt is not installed or not in PATH");
+        return;
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let file = temp.path().join("lib.rs");
+    let (file_str, uri) = (file.to_str().unwrap(), path_to_uri(file.to_str().unwrap()));
+    let mut overlay_mgr = OverlayManager::new();
+    let format = |mgr: &mut OverlayManager, v: i32, code: &str, line: u32, options: serde_json::Value| {
+        mgr.open_document(&uri, file_str, v, code.to_string());
+        let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": line, "character": 0 }, "end": { "line": line + 1, "character": 0 } }, "options": options } });
+        apply_text_edits(code, handle_range_formatting(&req, mgr).as_array().expect("edits"))
+    };
+    let spaces = json!({ "tabSize": 4, "insertSpaces": true });
+
+    let code = "mod tests {\n    fn t() {\n        let a = 1;\nlet   other =  [1,2 ,3];\n    }\n}\n";
+    assert_eq!(format(&mut overlay_mgr, 1, code, 3, spaces.clone()), "mod tests {\n    fn t() {\n        let a = 1;\n        let other = [1, 2, 3];\n    }\n}\n");
+
+    let tabs = "fn t() {\nlet   x=1;\n}\n";
+    assert_eq!(format(&mut overlay_mgr, 2, tabs, 1, json!({ "tabSize": 4, "insertSpaces": false })), "fn t() {\n\tlet x = 1;\n}\n");
+
+    let top = "  fn   f() {}\n";
+    assert_eq!(format(&mut overlay_mgr, 3, top, 0, spaces.clone()), "fn f() {}\n", "an item at the file's level");
+
+    let in_call = "fn t() {\n    call(\n          a  +  b,\n    );\n}\n";
+    let formatted = format(&mut overlay_mgr, 4, in_call, 2, spaces);
+    // A bare argument is no snippet rustfmt formats; whatever it gives, the line is not moved to the block.
+    assert!(formatted.lines().nth(2).is_some_and(|l| l.starts_with("          a")), "inside parentheses the line keeps its place: {formatted}");
+}
+
 #[test]
 fn test_range_formatting_out_of_bounds() {
     let temp = tempfile::tempdir().unwrap();

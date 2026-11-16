@@ -233,9 +233,16 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
     let Some(formatted_at_column_0) = format_range_snippet(&orig_text, &edition, &file) else {
         return json!([]);
     };
-    // The snippet is formatted on its own, at column 0: it keeps the indentation it has in the file.
-    // A line inside a multi-line string literal is the literal's text: it gets no indentation.
-    let indent = orig_slice.iter().find(|l| !l.trim().is_empty()).map_or("", |l| &l[..l.len() - l.trim_start().len()]);
+    // The snippet is formatted on its own, at column 0: it gets the indentation of the block it is in (a line typed
+    // at column 0 in a function body moves in, as rustfmt places it), or, inside parentheses or brackets, the one it
+    // has in the file. A line inside a multi-line string literal is the literal's text: it gets no indentation.
+    let first = orig_slice.iter().find(|l| !l.trim().is_empty()).copied().unwrap_or("");
+    let unit = msg["params"]["options"]["insertSpaces"]
+        .as_bool()
+        .filter(|s| !s)
+        .map_or_else(|| " ".repeat(msg["params"]["options"]["tabSize"].as_u64().unwrap_or(4) as usize), |_| "\t".to_string());
+    let block = super::format_indent::block_indent(&doc_lines[..start_line as usize], first.trim_start().starts_with('}'), &unit);
+    let indent = block.as_deref().unwrap_or(&first[..first.len() - first.trim_start().len()]);
     let in_string = lines_starting_in_string(&formatted_at_column_0);
     let formatted_snippet = formatted_at_column_0
         .lines()

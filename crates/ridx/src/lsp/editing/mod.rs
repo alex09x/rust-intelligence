@@ -80,6 +80,7 @@ pub mod commands;
 pub mod detached_rename;
 pub mod extract;
 pub mod format;
+mod format_indent;
 pub mod ident;
 pub mod linked;
 pub mod organize;
