@@ -294,6 +294,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         sysroot_cas_key: sysroot_cas_key.as_deref(),
         cargo_lock_hash: final_lock_hash.as_deref(),
         crate_features,
+        complete: ok,
     })?;
 
     eprintln!("\n{} Indexed workspace in {:.2} s (active variant: {})", "Success:".green().bold(), elapsed.as_secs_f64(), variant_id.cyan().bold());

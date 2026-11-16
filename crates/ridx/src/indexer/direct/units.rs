@@ -32,7 +32,9 @@ pub(super) fn group_by_unit(entries: Vec<(WorkspaceCrateEntry, Option<String>)>)
     let mut aliases = HashMap::new();
     for (object, mut group) in by_object {
         let object_stem = Path::new(&object).file_stem().map(|s| s.to_string_lossy().to_string());
-        group.sort_by(|a, b| a.5.cmp(&b.5));
+        // Without the sidecar named after the object, the bare `name.json` (the one the driver never rewrites) is the
+        // last choice (review of 3690a98d: by path it sorted first, and its stale text was copied over the rest).
+        group.sort_by(|a, b| (a.0 == a.1, &a.5).cmp(&(b.0 == b.1, &b.5)));
         let primary = group.iter().position(|e| Some(&e.0) == object_stem.as_ref()).unwrap_or(0);
         let entry = group.remove(primary);
         aliases.insert(entry.0.clone(), group.into_iter().map(|e| e.5).collect());

@@ -32,6 +32,8 @@ pub struct ManifestParams<'a> {
     pub sysroot_cas_key: Option<&'a str>,
     pub cargo_lock_hash: Option<&'a str>,
     pub crate_features: &'a std::collections::BTreeMap<String, Vec<String>>,
+    /// Whether every crate of the check built: a partial index sends the next run to Cargo again.
+    pub complete: bool,
 }
 
 pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
@@ -61,6 +63,7 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
         "all_features": params.all_features,
         "package_filter": params.package,
         "config_hashes": config_hashes,
+        "complete": params.complete,
         "timestamp_epoch_secs": std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())

@@ -17,8 +17,13 @@ use std::time::Instant;
 
 const VARIANT: &str = "variants/dev-1";
 
-/// An indexed one-crate workspace: its manifest names `active` as the published variant.
+/// An indexed one-crate workspace: its manifest names `active` as the published variant, from a check that built
+/// every crate.
 fn indexed_workspace(root: &Path, active: &str) {
+    partly_indexed_workspace(root, active, true);
+}
+
+fn partly_indexed_workspace(root: &Path, active: &str, complete: bool) {
     fs::create_dir_all(root.join("src")).unwrap();
     fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\n").unwrap();
     let lib = root.join("src/lib.rs");
@@ -32,7 +37,7 @@ fn indexed_workspace(root: &Path, active: &str) {
         "file_hashes": { lib.display().to_string(): ridx_format::fnv1a_64(b"pub fn a() {}\n") },
     });
     fs::write(deps.join("w-1.json"), serde_json::to_vec(&sidecar).unwrap()).unwrap();
-    let manifest = serde_json::json!({ "variant_dir": active, "config_hashes": compute_workspace_config_hashes(root) });
+    let manifest = serde_json::json!({ "variant_dir": active, "config_hashes": compute_workspace_config_hashes(root), "complete": complete });
     fs::write(root.join("target/ridx/ridx_manifest.json"), serde_json::to_vec(&manifest).unwrap()).unwrap();
 }
 
@@ -81,6 +86,10 @@ fn test_an_unchanged_workspace_is_not_rebuilt() {
 
     indexed_workspace(&root, "variants/release-1");
     assert!(!reindex(&root), "another variant is published: this one is built and published");
+
+    // Review of 3690a98d: a crate that failed in the last check has no sidecar, so nothing here sees it change.
+    partly_indexed_workspace(&root, VARIANT, false);
+    assert!(!reindex(&root), "the last check did not build every crate: Cargo runs again");
 }
 
 /// On BTCR an edit of one file compiled 53 sidecars: each of ~20 units under its two or three names, and the bare
@@ -104,8 +113,12 @@ fn test_a_unit_is_compiled_once_and_all_its_names_follow() {
     ids.sort();
     assert_eq!(ids, ["old", "w-aa", "w-bb"], "one entry per object, described by the sidecar named after it");
     let names = |id: &str| aliases[id].iter().map(|p| p.file_stem().unwrap().to_string_lossy().to_string()).collect::<Vec<_>>();
-    assert_eq!(names("w-aa"), ["w", "w_00000000000000ff"]);
+    assert_eq!(names("w-aa"), ["w_00000000000000ff", "w"]);
     assert_eq!(names("w-bb"), ["w_00000000000000ee"]);
+    // Review of 3690a98d: without the sidecar named after the object, the bare `name.json` the driver never rewrites
+    // is not the one copied over the rest.
+    let (units, _) = group_by_unit(vec![(entry("w"), obj("w-cc")), (entry("w_00000000000000dd"), obj("w-cc"))]);
+    assert_eq!(units[0].0, "w_00000000000000dd");
 
     fs::write(dir.path().join("w-aa.json"), "{\"fresh\":1}").unwrap();
     fs::write(dir.path().join("w.json"), "{\"stale\":1}").unwrap();

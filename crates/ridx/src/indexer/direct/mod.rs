@@ -100,6 +100,13 @@ pub fn try_direct_crate_indexing(
 
     // Verify build configuration (Cargo.toml, Cargo.lock, build.rs, options) is unchanged
     let manifest_mtime = verify_build_config_unchanged(work_dir, base_out_dir, opts)?;
+    // A crate that failed in the last check has no sidecar here: neither rebuilt nor seen as changed, it stayed out of
+    // the index for good (review of 3690a98d). Only Cargo builds it.
+    let (active_variant, complete) = published_variant(base_out_dir)?;
+    if !complete {
+        eprintln!("[ridx-direct] fallback to Cargo: the last check did not build every crate");
+        return None;
+    }
 
     // Identify all modified files and tracked files in the workspace
     let mut modified_files = HashSet::new();
@@ -146,7 +153,7 @@ pub fn try_direct_crate_indexing(
     // Nothing to do when no source, no build configuration and no option changed since the published index: Zed reports
     // the whole tree changed after a rescan, and on BTCR each such report cost a full `cargo check` (~70 s, rustc and
     // ridx-driver at 1.5–3 GB) that rebuilt the same index.
-    if modified_files.is_empty() && active_variant_dir(base_out_dir).as_deref() == Some(variant_rel_dir) {
+    if modified_files.is_empty() && active_variant == variant_rel_dir {
         eprintln!("  {} index is up to date in {:.1} ms: no source or build configuration changed", "RIDX Success:".green().bold(), start.elapsed().as_secs_f64() * 1000.0);
         return Some(PublishedVariant { base_out_dir: base_out_dir.to_path_buf(), variant_out_dir: variant_out_dir.to_path_buf(), variant_id: variant_id.to_string() });
     }
@@ -314,6 +321,8 @@ pub fn try_direct_crate_indexing(
         sysroot_cas_key: sysroot_cas_key.as_deref(),
         cargo_lock_hash: direct_lock_hash.as_deref(),
         crate_features: &prev_crate_features,
+        // Reached only from a complete index, with every changed unit rebuilt.
+        complete: true,
     };
 
     publish_manifest(params).ok()?;
@@ -324,10 +333,12 @@ pub fn try_direct_crate_indexing(
     Some(PublishedVariant { base_out_dir: base_out_dir.to_path_buf(), variant_out_dir: variant_out_dir.to_path_buf(), variant_id: variant_id.to_string() })
 }
 
-/// The variant the published manifest names (`variants/<id>`): the index a server reads.
-fn active_variant_dir(base_out_dir: &Path) -> Option<String> {
+/// The variant the published manifest names (`variants/<id>`), the index a server reads, and whether its check built
+/// every crate (a manifest from before the flag counts as partial: one Cargo run settles it).
+fn published_variant(base_out_dir: &Path) -> Option<(String, bool)> {
     let bytes = fs::read(base_out_dir.join("ridx_manifest.json")).ok()?;
-    serde_json::from_slice::<serde_json::Value>(&bytes).ok()?["variant_dir"].as_str().map(str::to_string)
+    let m = serde_json::from_slice::<serde_json::Value>(&bytes).ok()?;
+    Some((m["variant_dir"].as_str().unwrap_or_default().to_string(), m["complete"].as_bool() == Some(true)))
 }
 
 #[cfg(test)]
