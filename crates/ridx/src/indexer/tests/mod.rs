@@ -94,4 +94,5 @@ pub mod failed_build_tests;
 pub mod feature_invalidation_tests;
 pub mod pipeline_tests;
 pub mod shard_tests;
+pub mod snapshot_tests;
 pub mod variant_tests;

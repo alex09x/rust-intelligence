@@ -50,11 +50,13 @@ use std::sync::{Arc, Mutex};
 pub(crate) fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) -> bool {
     if let Ok(true) = ws.reload_manifest_if_modified() {
         for file in overlay_mgr.open_file_paths() {
-            if let Ok(content) = std::fs::read_to_string(&file) {
-                let disk_hash = ridx_format::normalized_source_hash(content.as_bytes());
-                if ws.source_hash_for_file(&file) == Some(disk_hash) {
-                    overlay_mgr.advance_compiled_baseline(&file, content);
-                }
+            let Some(indexed) = ws.source_hash_for_file(&file) else { continue };
+            let disk = std::fs::read_to_string(&file).ok();
+            if let Some(content) = disk.filter(|c| ridx_format::normalized_source_hash(c.as_bytes()) == indexed) {
+                overlay_mgr.advance_compiled_baseline(&file, content);
+            } else if let Some(compiled) = crate::indexer::source_snapshots::compiled_source_snapshot(&file, indexed) {
+                // Edited on disk while the index was built: the buffer maps through the text that was compiled.
+                overlay_mgr.advance_compiled_baseline(&file, compiled);
             }
         }
         true

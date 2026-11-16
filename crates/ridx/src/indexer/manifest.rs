@@ -98,6 +98,7 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
         let _ = fs::remove_file(&tmp_manifest);
         return Err(format!("failed to publish active variant manifest {:?}: {e}", params.manifest_file));
     }
+    super::source_snapshots::write_source_snapshots(params.base_out_dir, params.variant_out_dir, params.work_dir);
 
     Ok(())
 }

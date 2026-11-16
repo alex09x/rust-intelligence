@@ -29,13 +29,13 @@ fn shard_defs(variant: &Path, krate: &str) -> Option<Vec<String>> {
     Some(r.definitions().iter().map(|d| r.get_str(d.name_offset()).to_string()).collect())
 }
 
-fn write(ws: &Path, rel: &str, text: &str) {
+pub(super) fn write(ws: &Path, rel: &str, text: &str) {
     let p = ws.join(rel);
     fs::create_dir_all(p.parent().unwrap()).unwrap();
     fs::write(p, text).unwrap();
 }
 
-fn index_opts(ws: &Path, cas: &Path, driver: &Path) -> IndexOptions {
+pub(super) fn index_opts(ws: &Path, cas: &Path, driver: &Path) -> IndexOptions {
     IndexOptions {
         path: ws.to_path_buf(),
         out_dir_opt: None,
@@ -53,7 +53,7 @@ fn index_opts(ws: &Path, cas: &Path, driver: &Path) -> IndexOptions {
 }
 
 /// `native`, whose build script fails while `native/fail` exists, and `app` on top of it.
-fn write_native_and_app(ws: &Path, app_lib: &str) {
+pub(super) fn write_native_and_app(ws: &Path, app_lib: &str) {
     write(ws, "Cargo.toml", "[workspace]\nmembers = [\"app\", \"native\"]\nresolver = \"2\"\n");
     write(ws, "native/Cargo.toml", "[package]\nname = \"native\"\nversion = \"0.1.0\"\nedition = \"2021\"\n");
     write(

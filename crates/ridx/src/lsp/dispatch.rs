@@ -127,6 +127,12 @@ pub fn dispatch_lsp_message<W: Write>(
             let file = uri_to_path(uri);
             let expected_hash = mr.source_hash_for_file(&file);
             ov.open_with_source_hash(uri, &file, version, text.to_string(), expected_hash);
+            // Changed on disk since it was indexed: the buffer maps onto the index through the text it was compiled from.
+            if let Some(hash) = expected_hash.filter(|_| ov.get(&file).is_some_and(|o| o.compiled_text.is_none())) {
+                if let Some(compiled) = crate::indexer::source_snapshots::compiled_source_snapshot(&file, hash) {
+                    ov.advance_compiled_baseline(&file, compiled);
+                }
+            }
             conv.invalidate(&file);
             return Ok(true);
         }
