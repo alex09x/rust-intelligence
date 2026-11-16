@@ -20,7 +20,10 @@ pub fn hint_type(ty: &str) -> Option<String> {
     if ty.is_empty() || ty == "_" || ty.contains("{unknown}") || ty.contains("{type error}") || ty.contains("{closure") || ty.contains("{coroutine") || ty.contains("{async") {
         return None;
     }
-    Some(truncate(&short_paths(ty), MAX_LENGTH))
+    // A default type argument is not shown, as rustc and rust-analyzer print types: `HashSet<String>`, not
+    // `HashSet<String, RandomState>` (the type a just-typed binding infers carries it).
+    let short = short_paths(ty).replace(", RandomState>", ">").replace(", Global>", ">");
+    Some(truncate(&short, MAX_LENGTH))
 }
 
 /// Every path in `ty` cut to its last segment, except an associated item after a qualified self type
@@ -123,5 +126,7 @@ mod tests {
         assert_eq!(hint_type("&'static str").as_deref(), Some("&'static str"));
         assert_eq!(hint_type("{closure}"), None);
         assert_eq!(hint_type("fn(&str) -> bool").as_deref(), Some("fn(&str) -> bool"));
+        assert_eq!(hint_type("std::collections::HashSet<std::string::String, std::hash::RandomState>").as_deref(), Some("HashSet<String>"));
+        assert_eq!(hint_type("HashMap<u8, Vec<u8, Global>, RandomState>").as_deref(), Some("HashMap<u8, Vec<u8>>"));
     }
 }
