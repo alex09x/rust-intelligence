@@ -198,7 +198,9 @@ where
                     }
                 }
             }
-            if matches_kind("refactor.inline") {
+            // On the function's own declaration only, as rust-analyzer offers it: from anywhere in its body Zed listed
+            // `Inline into all callers` of the enclosing function on every line.
+            if !is_enclosing_fn && matches_kind("refactor.inline") {
                 if let Some((edits, other_files)) = build_inline_into_all_callers_workspace(doc_text, &masked_doc, &starts, &file_path, &item, Some(ws)) {
                     let mut action = make_multi_edit_assist(uri, "Inline into all callers", "refactor.inline", KIND_INLINE_ALL_CALLERS, line0, col_u16, edits, doc_version);
                     if let Some(edit_obj) = action.get_mut("edit") {

@@ -271,10 +271,15 @@ fn test_inline_inherent_method_cursor_inside_body() {
     let uri = format!("file://{}", src_file_str);
     ov.open_document(&uri, &src_file_str, 1, code_cleaned.clone());
 
-    // Line 5 (0-based): inside the body on `let bonus = 10;`!
+    // Line 5 (0-based): inside the body on `let bonus = 10;`. rust-analyzer offers the assist on the function's name
+    // only (`find_node_at_offset::<ast::Name>()` whose parent is the `fn`); from the body Zed listed it on every line.
     let actions = query_actions_with_multi_file_resolve(&uri, 5, 12, &ws, &ov);
+    assert!(actions.iter().all(|(t, _)| t != "Inline into all callers"), "not from inside the body");
+
+    // Line 4 (0-based): on the name `add_ten`.
+    let actions = query_actions_with_multi_file_resolve(&uri, 4, 9, &ws, &ov);
     let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
-    assert!(inline_action.is_some(), "Expected 'Inline into all callers' when cursor is inside body");
+    assert!(inline_action.is_some(), "Expected 'Inline into all callers' on the function's name");
 
     let (_, changes) = inline_action.unwrap();
     let edits = changes.get(&uri).expect("lib.rs edits missing");
