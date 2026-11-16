@@ -47,7 +47,7 @@ fn test_a_jump_into_an_open_std_file_lands_as_into_a_closed_one() {
     assert_eq!(again, first, "the same place, with its file open");
 }
 
-const CART_INDEXED: &str = "pub mod model;\npub mod pricing;\nuse crate::pricing::Discount;\npub fn total(items: &[u64], rule: &dyn Discount) -> u64 {\n    items.iter().map(|p| rule.apply(*p)).sum()\n}\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use std::collections::HashSet;\n    #[test]\n    fn t() {\n        assert_eq!(total(&[3], &crate::pricing::Flat(1)), 2);\n        let _seen: HashSet<u8> = HashSet::new();\n    }\n}\n";
+const CART_INDEXED: &str = "pub mod model;\npub mod pricing;\nuse crate::pricing::Discount;\npub fn total(items: &[u64], rule: &dyn Discount) -> u64 {\n    items.iter().map(|p| rule.apply(*p)).sum()\n}\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use std::collections::HashSet;\n    #[test]\n    fn t() {\n        assert_eq!(total(&[3], &crate::pricing::Flat(1)), 2);\n        let total_price = 3u64;\n        let x = pricing::Flat(total_price);\n        let _ = x.0;\n        let _seen: HashSet<u8> = HashSet::new();\n    }\n}\n";
 
 /// In Zed on shop: `cart.rs` indexed with two lines more than it has now (reverted on disk), and the next reindex
 /// failed on another module. Hover and jumps in `cart.rs` must keep working through the snapshot of the indexed text.
@@ -79,6 +79,13 @@ fn test_a_reverted_file_keeps_the_index_after_a_failed_reindex() {
     let hover = server.send(json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": col } } }));
     assert!(hover["result"]["contents"]["value"].as_str().is_some_and(|v| v.contains("trait Discount")), "hover on `Discount`: {hover}");
     assert!(!server.definition(&uri, line, col).is_null(), "a jump to `Discount`");
+
+    // Inside a binding whose next line on disk has a path at the same column: the index is read against the text it
+    // compiled (the snapshot), not the newer file, which put `pricing::Flat` one line up (Zed showed `Product` there).
+    let line = reverted.lines().position(|l| l.contains("let total_price")).unwrap() as u32;
+    let hover = server.send(json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": 18 } } }));
+    let text = hover["result"]["contents"]["value"].as_str().unwrap_or_default();
+    assert!(text.contains("total_price") && text.contains("u64") && !text.contains("pricing"), "the binding, not the path below it: {hover}");
 }
 
 #[test]

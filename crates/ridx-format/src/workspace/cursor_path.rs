@@ -197,29 +197,43 @@ pub(super) fn is_in_string_or_comment(lines: &[&str], target_line: usize, target
 }
 
 impl WorkspaceIndex {
+    /// The text the index compiled `file` from, whose lines and columns its spans count: the file on disk while it
+    /// hashes as the index records, else the snapshot the indexer kept of the recorded text (the file was edited, saved
+    /// or checked out since). Reading the newer disk text instead put the index's positions on other lines: a hover
+    /// inside `cart` resolved the `Product` one line below.
     pub(crate) fn read_source_file(&self, file: &str) -> Option<String> {
+        let full = self.source_file_path(file)?;
+        let disk = std::fs::read_to_string(&full).ok()?;
+        let Some(recorded) = self.source_hash_for_file(file) else { return Some(disk) };
+        if crate::format::normalized_source_hash(disk.as_bytes()) == recorded || crate::format::fnv1a_64(disk.as_bytes()) == recorded {
+            return Some(disk);
+        }
+        let name = format!("{recorded:016x}.rs");
+        let snapshot = full.ancestors().skip(1).map(|d| d.join("target/ridx/sources").join(&name)).find(|p| p.is_file());
+        Some(snapshot.and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or(disk))
+    }
+
+    /// Where `file` is on disk: as given, or under the workspace, index or crate source roots.
+    fn source_file_path(&self, file: &str) -> Option<std::path::PathBuf> {
         let p = Path::new(file);
         if p.is_absolute() && p.is_file() {
-            return std::fs::read_to_string(p).ok();
+            return Some(p.to_path_buf());
         }
         for root in [self.workspace_root.as_deref(), self.root_dir.as_deref()].into_iter().flatten() {
             let full = join_resolving_overlap(root, p);
             if full.is_file() {
-                return std::fs::read_to_string(full).ok();
+                return Some(full);
             }
         }
         for i in self.candidate_reader_indices_for_file(file) {
             if let Some(Some(root)) = self.source_roots.get(i) {
                 let full = join_resolving_overlap(root, p);
                 if full.is_file() {
-                    return std::fs::read_to_string(full).ok();
+                    return Some(full);
                 }
             }
         }
-        if p.is_file() {
-            return std::fs::read_to_string(p).ok();
-        }
-        None
+        p.is_file().then(|| p.to_path_buf())
     }
 
     pub(crate) fn cursor_ident_at(&self, file: &str, line: u32, col: u32) -> Option<(String, u32, u32)> {
