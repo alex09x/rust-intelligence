@@ -128,20 +128,9 @@ pub fn handle_signature_help(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
         return Ok(Value::Null);
     };
 
-    // An item's own parameter list or body (`fn total(&self, …)`, `struct Cart {`) is no call: rust-analyzer shows
-    // no signature there (in Zed with signature help shown automatically, one appeared on a declaration).
-    let keyword: String = {
-        let mut k = name_start;
-        while k > 0 && chars[k - 1].is_whitespace() {
-            k -= 1;
-        }
-        let end = k;
-        while k > 0 && (chars[k - 1].is_alphanumeric() || chars[k - 1] == '_') {
-            k -= 1;
-        }
-        chars[k..end].iter().collect()
-    };
-    if !is_macro && matches!(keyword.as_str(), "fn" | "struct" | "enum" | "union" | "trait" | "impl" | "mod") {
+    // An item's own parameter list or body (`fn total(&self, …)`, `impl<T> Trait for S<T> {`) or an enum variant's
+    // fields is no call: rust-analyzer shows no signature there (in Zed, one appeared on a declaration).
+    if !is_macro && super::signature_decl::opens_declaration(&chars, name_start) {
         return Ok(Value::Null);
     }
 
