@@ -35,6 +35,9 @@ fn test_flycheck_drops_diagnostics_of_a_file_changed_during_the_check() {
     let (main_file, lib_file) = (src_dir.join("main.rs"), src_dir.join("lib.rs"));
     fs::write(&main_file, "fn main() {\n    let messy = 1;\n}\n").unwrap();
     fs::write(&lib_file, "pub fn f() {}\n").unwrap();
+    // Removed while the check runs (a branch switch): its diagnostics are dropped too.
+    let gone_file = src_dir.join("gone.rs");
+    fs::write(&gone_file, "fn g() {}\n").unwrap();
 
     let mock_cargo = bin_dir.join("cargo");
     #[cfg(unix)]
@@ -45,10 +48,13 @@ fn test_flycheck_drops_diagnostics_of_a_file_changed_during_the_check() {
 sleep 0.05
 printf 'fn main() {{\n    run();\n}}\n' > "{}"
 echo '{{"reason":"compiler-message","message":{{"message":"unused variable: `messy`","level":"warning","spans":[{{"file_name":"src/main.rs","is_primary":true,"line_start":2,"column_start":9,"line_end":2,"column_end":14}}]}}}}'
+rm -f "{}"
+echo '{{"reason":"compiler-message","message":{{"message":"gone file","level":"warning","spans":[{{"file_name":"src/gone.rs","is_primary":true,"line_start":1,"column_start":1,"line_end":1,"column_end":3}}]}}}}'
 echo '{{"reason":"compiler-message","message":{{"message":"lib untouched","level":"warning","spans":[{{"file_name":"src/lib.rs","is_primary":true,"line_start":1,"column_start":8,"line_end":1,"column_end":9}}]}}}}'
 exit 0
 "#,
-            main_file.display()
+            main_file.display(),
+            gone_file.display()
         );
         fs::write(&mock_cargo, script).unwrap();
         fs::set_permissions(&mock_cargo, fs::Permissions::from_mode(0o755)).unwrap();
@@ -70,10 +76,15 @@ exit 0
 
     let notifs = captured.lock().unwrap().clone();
     assert!(!notifs.iter().any(|n| n.to_string().contains("messy")), "a warning about the text no longer on disk: {notifs:?}");
+    assert!(!notifs.iter().any(|n| n.to_string().contains("gone file")), "a warning about a removed file: {notifs:?}");
     let main_uri = path_to_uri(main_file.to_str().unwrap());
     let lib_uri = path_to_uri(lib_file.to_str().unwrap());
     assert!(state.get_latest_diagnostics(&main_uri).is_empty(), "{:?}", state.get_latest_diagnostics(&main_uri));
     assert_eq!(state.get_latest_diagnostics(&lib_uri).len(), 1);
+    // The text the check read goes with its diagnostics, for the server to map them by.
+    assert_eq!(state.get_diagnostic_baseline(&lib_uri).as_deref(), Some("pub fn f() {}\n"));
+    let lib_notif = notifs.iter().find(|n| n.to_string().contains("lib untouched")).unwrap();
+    assert_eq!(lib_notif["params"]["baseline"], "pub fn f() {}\n");
 
     state.cancel();
     state.shutdown();

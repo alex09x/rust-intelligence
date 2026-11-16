@@ -178,9 +178,9 @@ impl FlycheckState {
     }
 }
 
-/// Whether `path` was written after `since`.
+/// Whether `path` was written after `since`, or is gone.
 pub(crate) fn modified_since(path: &Path, since: std::time::SystemTime) -> bool {
-    std::fs::metadata(path).and_then(|m| m.modified()).is_ok_and(|t| t > since)
+    std::fs::metadata(path).and_then(|m| m.modified()).map_or(true, |t| t > since)
 }
 
 fn run_check_internal<F>(
@@ -285,9 +285,20 @@ where
     if generation.load(Ordering::SeqCst) != my_gen {
         return Ok(0);
     }
-    // A file saved again or reverted (`git checkout`) while the check ran: its diagnostics describe a text that is
-    // gone, and the text now on disk was not checked. It gets none rather than ones on the wrong lines.
-    file_diagnostics.retain(|uri, _| !modified_since(Path::new(&super::super::protocol::uri_to_path(uri)), started));
+    // The text each file's diagnostics describe. A file saved again, reverted (`git checkout`) or removed while the
+    // check ran gets none: the text they describe is gone and the one on disk was not checked. The text is read
+    // before the time is compared, so a write after the read shows in the time too.
+    let mut baselines: HashMap<String, String> = HashMap::new();
+    file_diagnostics.retain(|uri, _| {
+        let path = PathBuf::from(super::super::protocol::uri_to_path(uri));
+        let Ok(text) = std::fs::read_to_string(&path) else { return false };
+        if modified_since(&path, started) {
+            return false;
+        }
+        baselines.insert(uri.clone(), text);
+        true
+    });
+    crate::lsp::logger::log_verbose(&format!("flycheck {my_gen}: diagnostics for {} file(s)", file_diagnostics.len()));
 
     let mut published_guard = published_uris.lock().unwrap();
     let prev_published = published_guard.get(workspace_root).cloned().unwrap_or_default();
@@ -302,7 +313,7 @@ where
         let notif = json!({
             "jsonrpc": "2.0",
             "method": "textDocument/publishDiagnostics",
-            "params": { "uri": uri, "diagnostics": diags }
+            "params": { "uri": uri, "diagnostics": diags, "baseline": baselines.get(uri) }
         });
         emit_notif(my_gen, notif)?;
     }
@@ -326,9 +337,7 @@ where
         published_guard.insert(workspace_root.to_path_buf(), current_uris.clone());
         let mut latest_guard = latest_diagnostics.lock().unwrap();
         for (uri, diags) in &file_diagnostics {
-            let path = super::super::protocol::uri_to_path(uri);
-            let baseline = std::fs::read_to_string(&path).ok();
-            latest_guard.insert(uri.clone(), CachedDiagnostic { items: diags.clone(), baseline });
+            latest_guard.insert(uri.clone(), CachedDiagnostic { items: diags.clone(), baseline: baselines.remove(uri) });
         }
         for old_uri in &prev_published {
             if !current_uris.contains(old_uri) {

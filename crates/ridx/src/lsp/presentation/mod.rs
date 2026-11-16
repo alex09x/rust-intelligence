@@ -38,6 +38,8 @@ pub mod tokens_scan;
 pub mod workspace_diag;
 
 #[cfg(test)]
+mod diag_saved_tests;
+#[cfg(test)]
 pub mod lens_filter_tests;
 #[cfg(test)]
 pub mod lens_overlay_tests;

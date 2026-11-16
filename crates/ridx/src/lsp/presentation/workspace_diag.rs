@@ -87,13 +87,18 @@ pub fn handle_workspace_diagnostic_with_flycheck(
     let mut reports = Vec::new();
     let mut seen_uris = HashSet::new();
 
+    // Compiler diagnostics go in the file as saved (see `reconcile::saved_text`), the editor's own in `text`.
     let build_items = |uri: &str, text: &str| -> Vec<Value> {
         let diag_resp = handle_document_diagnostic_text(text);
         let h_items = diag_resp.get("items").and_then(|i| i.as_array()).map(|a| a.as_slice()).unwrap_or(&[]);
         if let Some(fc) = flycheck {
             let auth = fc.get_latest_diagnostics(uri);
+            if auth.is_empty() {
+                return h_items.to_vec();
+            }
             let baseline = fc.get_diagnostic_baseline(uri);
-            let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(&auth, baseline.as_deref(), text, uri);
+            let saved = super::reconcile::saved_text(overlay_mgr, &uri_to_path(uri)).unwrap_or_else(|| text.to_string());
+            let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_text(&auth, baseline.as_deref(), &saved, uri);
             super::reconcile::reconcile_diagnostics(h_items, &mapped_auth)
         } else {
             h_items.to_vec()

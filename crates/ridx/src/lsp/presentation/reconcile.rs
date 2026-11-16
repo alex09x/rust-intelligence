@@ -17,6 +17,14 @@ use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::io::Write;
 
+/// The text of `file` as last saved, which compiler diagnostics are placed in. Their source is `rustc`, which
+/// clients treat as disk-based (Zed under the rust-analyzer adapter, as for rust-analyzer's own check): they move
+/// such diagnostics through the buffer's unsaved edits themselves, so diagnostics already placed in the buffer
+/// would move twice (in Zed a warning sat one line below its name after a line was typed above it).
+pub fn saved_text(overlay_mgr: &OverlayManager, file: &str) -> Option<String> {
+    std::fs::read_to_string(file).ok().or_else(|| overlay_mgr.get(file).and_then(|ov| ov.disk_text.clone()))
+}
+
 /// Checks if two diagnostic ranges overlap.
 pub fn ranges_overlap(r1: &Value, r2: &Value) -> bool {
     let l1_start = r1["start"]["line"].as_u64().unwrap_or(0);
@@ -64,11 +72,12 @@ pub fn reconcile_diagnostics(heuristic: &[Value], authoritative: &[Value]) -> Ve
     result
 }
 
-/// Maps authoritative compiler diagnostics to live buffer coordinates based on line shifts.
+/// Maps compiler diagnostics from the text the check read (`baseline_text`) to `live_text`, by line shifts; callers
+/// pass the file as saved (see [`saved_text`]).
 ///
 /// Diagnostics whose lines fall into modified, inserted, or deleted regions are dropped.
 /// If `baseline_text` is None or equals `live_text`, diagnostics are returned as-is.
-pub fn map_authoritative_diagnostics_to_live(auth_items: &[Value], baseline_text: Option<&str>, live_text: &str, uri: &str) -> Vec<Value> {
+pub fn map_authoritative_diagnostics_to_text(auth_items: &[Value], baseline_text: Option<&str>, live_text: &str, uri: &str) -> Vec<Value> {
     let Some(base_text) = baseline_text else {
         return auth_items.to_vec();
     };
@@ -166,7 +175,8 @@ pub fn publish_reconciled_diagnostics<W: Write>(uri: &str, version: Option<i32>,
     let h_items = heuristic["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
     let raw_auth = flycheck.get_latest_diagnostics(uri);
     let baseline = flycheck.get_diagnostic_baseline(uri);
-    let auth_items = map_authoritative_diagnostics_to_live(&raw_auth, baseline.as_deref(), text, uri);
+    let saved = saved_text(overlay_mgr, &file).unwrap_or_else(|| text.to_string());
+    let auth_items = map_authoritative_diagnostics_to_text(&raw_auth, baseline.as_deref(), &saved, uri);
     let merged = reconcile_diagnostics(h_items, &auth_items);
 
     if !merged.is_empty() {
@@ -212,7 +222,12 @@ pub fn handle_internal_diagnostic<W: Write>(
     let uri = diag["params"]["uri"].as_str().unwrap_or("");
     let diags = diag["params"]["diagnostics"].as_array().cloned().unwrap_or_default();
     let file = uri_to_path(uri);
-    let baseline = overlay_mgr.get(&file).and_then(|ov| ov.disk_text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
+    // The text the check read, sent with its diagnostics; the buffer's idea of the disk may be newer.
+    let baseline = diag["params"]["baseline"]
+        .as_str()
+        .map(str::to_string)
+        .or_else(|| overlay_mgr.get(&file).and_then(|ov| ov.disk_text.clone()))
+        .or_else(|| std::fs::read_to_string(&file).ok());
     lifecycle.flycheck.set_latest_diagnostics_with_baseline(uri, diags, baseline);
     if lifecycle.client_pull_diagnostics() {
         if lifecycle.client_refresh_diagnostics() {
