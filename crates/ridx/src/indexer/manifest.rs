@@ -88,6 +88,9 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
     let variant_manifest_file = params.variant_out_dir.join("variant_manifest.json");
     let _ = fs::write(&variant_manifest_file, &serialized);
 
+    // The snapshots the new manifest's sidecars name exist before a server can read it.
+    super::source_snapshots::write_source_snapshots(params.base_out_dir, params.variant_out_dir, params.work_dir);
+
     // Write to temp file then rename for atomic manifest swap
     let tmp_manifest = params.base_out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
     if let Err(e) = fs::write(&tmp_manifest, serialized) {
@@ -98,7 +101,7 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
         let _ = fs::remove_file(&tmp_manifest);
         return Err(format!("failed to publish active variant manifest {:?}: {e}", params.manifest_file));
     }
-    super::source_snapshots::write_source_snapshots(params.base_out_dir, params.variant_out_dir, params.work_dir);
+    super::source_snapshots::prune_source_snapshots(params.base_out_dir);
 
     Ok(())
 }

@@ -14,10 +14,10 @@ use super::builder::{build_check_command, IndexBuilder};
 use super::cargo::{extract_config_target, find_cargo_configs};
 use super::direct::try_direct_crate_indexing;
 use super::driver::find_driver_binary;
+use super::last_good::settle_after_check;
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
 use super::variant::compute_variant_id;
-use crate::indexer::feature_seed::keep_last_good_shards;
 use colored::*;
 use ridx_format::WorkspaceIndex;
 use std::fs;
@@ -232,13 +232,11 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             }
         }
     }
-    // A crate that did not build keeps the shards it had: those this run set aside before rebuilding it, else those
-    // of the variant active before. The crates that built are indexed even when another failed: publish them.
+    // Units rebuilt replace their earlier shards; a unit that did not build keeps the sidecars this run set aside
+    // before rebuilding it, else those of the variant active before. The crates that built are indexed even when
+    // another failed: publish them.
     let stale = variant_out_dir.join(super::feature_seed::STALE_DIR);
-    if !ok {
-        keep_last_good_shards(&variant_out_dir, check_started, Some(&stale).filter(|s| s.is_dir()).map(PathBuf::as_path));
-        keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
-    }
+    settle_after_check(&variant_out_dir, check_started, ok, &stale, previous_variant.as_deref());
     let _ = fs::remove_dir_all(&stale);
     if !ok && variant_has_shards(&variant_out_dir) {
         eprintln!("  warning: {} check exited with status {status}; publishing the crates that built", builder.as_str());

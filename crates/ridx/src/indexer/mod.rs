@@ -16,6 +16,7 @@ pub mod direct;
 pub mod driver;
 pub mod feature_graph;
 mod feature_seed;
+mod last_good;
 pub mod manifest;
 pub mod orchestrate;
 pub mod required_features;

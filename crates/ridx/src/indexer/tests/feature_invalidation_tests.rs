@@ -12,7 +12,6 @@
 
 use super::*;
 use crate::indexer::driver::find_driver_binary;
-use crate::indexer::feature_seed::keep_last_good_shards;
 use crate::indexer::orchestrate::run_indexing;
 use crate::indexer::variant::compute_variant_id;
 use crate::indexer::{IndexBuilder, IndexOptions};
@@ -20,29 +19,6 @@ use ridx_format::{IndexReader, VariantManifest};
 use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-
-#[test]
-fn test_failed_crates_keep_last_good_shards() {
-    let root = std::env::temp_dir().join(format!("ridx_last_good_{}", std::process::id()));
-    let (prev, cur) = (root.join("prev"), root.join("cur"));
-    for d in [&prev.join(".deps"), &cur.join(".deps")] {
-        fs::create_dir_all(d).unwrap();
-    }
-    fs::write(prev.join("test_suite-aa.ridx"), b"old").unwrap();
-    fs::write(prev.join("serde-aa.ridx"), b"old").unwrap();
-    fs::write(prev.join(".deps/test_suite-aa.json"), serde_json::json!({ "object_path": prev.join("test_suite-aa.ridx").display().to_string() }).to_string()).unwrap();
-    fs::write(cur.join("serde-old.ridx"), b"stale").unwrap();
-    let started = SystemTime::now();
-    std::thread::sleep(Duration::from_millis(20));
-    fs::write(cur.join("serde-new.ridx"), b"fresh").unwrap();
-    keep_last_good_shards(&cur, started, Some(&prev));
-    let mut names: Vec<String> = fs::read_dir(&cur).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).filter(|n| n.ends_with(".ridx")).collect();
-    names.sort();
-    assert_eq!(names, ["serde-new.ridx", "test_suite-aa.ridx"]);
-    let side: serde_json::Value = serde_json::from_slice(&fs::read(cur.join(".deps/test_suite-aa.json")).unwrap()).unwrap();
-    assert_eq!(side["object_path"], cur.join("test_suite-aa.ridx").display().to_string());
-    let _ = fs::remove_dir_all(&root);
-}
 
 #[test]
 fn test_feature_order_normalization_in_variant_id() {
