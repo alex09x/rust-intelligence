@@ -128,6 +128,19 @@ pub fn watch_registration(id: Value) -> Value {
     })
 }
 
+/// Whether a watched-file event for `file` under `root` is a Rust source changed outside the editor: not in a build
+/// directory, and not the text of its open buffer (`buffer`; a save in the editor writes exactly that, and Zed reports
+/// it as a watched change just before `didSave`, which checks it anyway). A removed file counts.
+pub fn changed_outside_editor(root: &Path, file: &Path, buffer: Option<&str>) -> bool {
+    if file.extension().is_none_or(|e| e != "rs") || file.strip_prefix(root).unwrap_or(file).components().any(|c| c.as_os_str() == "target") {
+        return false;
+    }
+    match (std::fs::read_to_string(file), buffer) {
+        (Ok(disk), Some(buffer)) => disk != buffer,
+        _ => true,
+    }
+}
+
 /// The `workspace/*/refresh` requests a client announces in its workspace capabilities, sent once a reindex is
 /// loaded: what it shows from the old index is fetched again only when it is told.
 pub fn refresh_methods(workspace_caps: &Value) -> Vec<&'static str> {
@@ -170,6 +183,24 @@ mod tests {
         assert_eq!(r["method"], "workspace/didChangeWatchedFiles");
         let globs: Vec<&str> = r["registerOptions"]["watchers"].as_array().unwrap().iter().map(|w| w["globPattern"].as_str().unwrap()).collect();
         assert_eq!(globs, ["**/*.rs", "**/Cargo.toml", "**/Cargo.lock"]);
+    }
+
+    /// In Zed: a saved buffer reverted by `git checkout` kept "unused import" from the check of the saved text. A
+    /// change outside the editor is checked again; a save from the editor is not counted twice.
+    #[test]
+    fn test_changes_outside_the_editor() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let src = root.join("src/lib.rs");
+        std::fs::create_dir_all(src.parent().unwrap()).unwrap();
+        std::fs::write(&src, "pub fn a() {}\n").unwrap();
+        assert!(!changed_outside_editor(root, &src, Some("pub fn a() {}\n")), "a save: the disk has the buffer");
+        assert!(changed_outside_editor(root, &src, Some("pub fn a() { let x = 1; }\n")), "a checkout under an open buffer");
+        assert!(changed_outside_editor(root, &src, None), "a closed file");
+        std::fs::remove_file(&src).unwrap();
+        assert!(changed_outside_editor(root, &src, Some("pub fn a() {}\n")), "a removed file");
+        assert!(!changed_outside_editor(root, &root.join("target/ridx/sources/1.rs"), None), "build output");
+        assert!(!changed_outside_editor(root, &root.join("Cargo.toml"), None), "not a source");
     }
 
     /// A picked-up reindex asks the client to fetch again what came from the old index, for each kind it can refresh.

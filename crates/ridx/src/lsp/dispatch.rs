@@ -197,12 +197,21 @@ pub fn dispatch_lsp_message<W: Write>(
         "workspace/didChangeWatchedFiles" => {
             mr.reload_all_if_modified();
             conv.clear();
+            let mut to_check = Vec::new();
             for change in msg["params"]["changes"].as_array().into_iter().flatten() {
                 let file = uri_to_path(change["uri"].as_str().unwrap_or(""));
                 let p = Path::new(&file);
                 if let Some(root) = workspace_root_of(mr, p) {
                     lifecycle.reindex.trigger_for_change(&root, p);
+                    if super::reindex::changed_outside_editor(&root, p, ov.get(&file).map(|o| o.text.as_str())) && !to_check.contains(&root) {
+                        to_check.push(root);
+                    }
                 }
+            }
+            // A source changed outside the editor (a checkout, a pull) is checked again: the compiler's diagnostics
+            // of the text before stayed until the next save (in Zed "unused import" on an import used again).
+            for root in to_check {
+                lifecycle.flycheck.trigger_check(&root);
             }
             return Ok(true);
         }
