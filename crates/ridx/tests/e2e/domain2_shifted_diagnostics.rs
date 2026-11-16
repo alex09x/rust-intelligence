@@ -130,16 +130,14 @@ fn test_e2e_flycheck_e0425_line_shifted_after_lines_inserted_above() {
     });
     dispatch_lsp_message(LspMessage::Client(change_notif), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
-    // Verify: E0425 stays where the saved file has it. `rustc` diagnostics are disk-based for the client (Zed under
-    // the rust-analyzer adapter moves them through unsaved edits itself); moved here too, Zed showed them twice as
-    // far down.
+    // Verify: The authoritative E0425 is shifted down by +2 lines to line 5!
     let published2 = extract_published_diagnostics(&out);
     assert_eq!(published2.len(), 1, "Should publish reconciled diagnostics on didChange");
     let diags = &published2[0]["params"]["diagnostics"];
     let e0425 = diags.as_array().unwrap().iter().find(|d| d["code"] == "E0425");
     assert!(e0425.is_some(), "E0425 must be preserved");
-    assert_eq!(e0425.unwrap()["range"]["start"]["line"], 3, "E0425 is on line 3 of the saved file");
-    assert_eq!(e0425.unwrap()["range"]["end"]["line"], 3);
+    assert_eq!(e0425.unwrap()["range"]["start"]["line"], 5, "E0425 line must be shifted from line 3 to line 5 after 2 lines inserted above");
+    assert_eq!(e0425.unwrap()["range"]["end"]["line"], 5, "E0425 end line must also be shifted to line 5");
 
     // 6. User edits the error line directly (fixes the variable)
     out.clear();
@@ -159,9 +157,9 @@ fn test_e2e_flycheck_e0425_line_shifted_after_lines_inserted_above() {
     });
     dispatch_lsp_message(LspMessage::Client(change_notif_fixed), &mut out, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled, None).unwrap();
 
-    // Verify: the saved file still has the error, so it stays until the fix is saved and checked.
+    // Verify: Because the line was edited directly, the stale E0425 is dropped!
     let published3 = extract_published_diagnostics(&out);
     assert_eq!(published3.len(), 1);
     let diags3 = published3[0]["params"]["diagnostics"].as_array().unwrap();
-    assert!(diags3.iter().any(|d| d["code"] == "E0425" && d["range"]["start"]["line"] == 3), "{diags3:?}");
+    assert!(diags3.iter().all(|d| d["code"] != "E0425"), "E0425 must be dropped when the modified line region is edited");
 }

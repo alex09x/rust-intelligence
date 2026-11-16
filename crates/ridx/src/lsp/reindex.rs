@@ -128,6 +128,16 @@ pub fn watch_registration(id: Value) -> Value {
     })
 }
 
+/// The `workspace/*/refresh` requests a client announces in its workspace capabilities, sent once a reindex is
+/// loaded: what it shows from the old index is fetched again only when it is told.
+pub fn refresh_methods(workspace_caps: &Value) -> Vec<&'static str> {
+    [("inlayHint", "workspace/inlayHint/refresh"), ("semanticTokens", "workspace/semanticTokens/refresh"), ("codeLens", "workspace/codeLens/refresh")]
+        .into_iter()
+        .filter(|(cap, _)| workspace_caps[cap]["refreshSupport"].as_bool() == Some(true))
+        .map(|(_, method)| method)
+        .collect()
+}
+
 /// This server's own executable when it is `ridx` (a test binary runs no indexing).
 fn ridx_exe() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;

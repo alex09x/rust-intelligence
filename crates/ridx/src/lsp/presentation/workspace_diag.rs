@@ -87,24 +87,17 @@ pub fn handle_workspace_diagnostic_with_flycheck(
     let mut reports = Vec::new();
     let mut seen_uris = HashSet::new();
 
-    // Compiler diagnostics go in the file as saved (see `reconcile::saved_text`), the editor's own in `text`.
-    let build_items = |uri: &str, text: &str| -> Vec<Value> {
+    // `text` is the buffer of an open file, or the file itself when closed: then it is also the text as saved.
+    let build_items = |uri: &str, text: &str, open: bool| -> Vec<Value> {
         let diag_resp = handle_document_diagnostic_text(text);
         let h_items = diag_resp.get("items").and_then(|i| i.as_array()).map(|a| a.as_slice()).unwrap_or(&[]);
-        if let Some(fc) = flycheck {
-            let auth = fc.get_latest_diagnostics(uri);
-            if auth.is_empty() {
-                return h_items.to_vec();
-            }
-            let baseline = fc.get_diagnostic_baseline(uri);
-            let saved = super::reconcile::saved_text(overlay_mgr, &uri_to_path(uri)).unwrap_or_else(|| text.to_string());
-            let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_text(&auth, baseline.as_deref(), &saved, uri);
-            super::reconcile::reconcile_diagnostics(h_items, &mapped_auth)
-        } else {
-            h_items.to_vec()
+        match flycheck {
+            Some(fc) if open => super::compiler_merge::merge_with_compiler(uri, h_items, text, || super::reconcile::saved_text(overlay_mgr, &uri_to_path(uri)), fc),
+            Some(fc) => super::compiler_merge::merge_with_compiler(uri, h_items, text, || Some(text.to_string()), fc),
+            None => h_items.to_vec(),
         }
     };
-    let auth_hash = |uri: &str| flycheck.map_or(0, |fc| hash_of(&serde_json::to_string(&fc.get_latest_diagnostics(uri)).unwrap_or_default()));
+    let auth_hash = |uri: &str| flycheck.map_or(0, |fc| hash_of(&(serde_json::to_string(&fc.get_latest_diagnostics(uri)).unwrap_or_default(), fc.get_diagnostic_baseline(uri))));
 
     // A closed file's items, recomputed only when the file or its compiler diagnostics changed.
     let closed_items = |path: &Path, uri: &str| -> Option<Vec<Value>> {
@@ -116,7 +109,7 @@ pub fn handle_workspace_diagnostic_with_flycheck(
             }
         }
         let text = std::fs::read_to_string(path).ok()?;
-        let items = build_items(uri, &text);
+        let items = build_items(uri, &text, false);
         let mut cache = closed_cache().lock().unwrap_or_else(|e| e.into_inner());
         if cache.len() >= MAX_CLOSED_ENTRIES {
             cache.clear();
@@ -129,7 +122,7 @@ pub fn handle_workspace_diagnostic_with_flycheck(
     for file_path in overlay_mgr.open_file_paths() {
         if let Some(overlay) = overlay_mgr.get(&file_path) {
             seen_uris.insert(overlay.uri.clone());
-            let items = build_items(&overlay.uri, &overlay.text);
+            let items = build_items(&overlay.uri, &overlay.text, true);
             reports.push(report(&overlay.uri, json!(overlay.version), items, &prev));
         }
     }

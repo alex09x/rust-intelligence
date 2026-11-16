@@ -11,6 +11,7 @@
 //! LSP presentation handlers: selection range, document links, diagnostics, moniker, and content.
 
 pub mod color;
+pub mod compiler_merge;
 pub mod compiler_message;
 pub mod diagnostics;
 pub mod flycheck;

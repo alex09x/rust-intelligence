@@ -8,8 +8,9 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Compiler diagnostics are placed in the file as saved, not in the edited buffer.
+//! Compiler diagnostics are placed in the file as saved for Zed, in the edited buffer for other clients.
 
+use super::compiler_merge::set_client_moves_rustc;
 use super::diagnostics::handle_diagnostic_with_flycheck;
 use super::flycheck::FlycheckState;
 use super::workspace_diag::handle_workspace_diagnostic_with_flycheck;
@@ -43,6 +44,7 @@ fn lines(items: &Value) -> Vec<(u64, String)> {
 /// placing them in the buffer put `messy` a line below its name once Zed moved it again.
 #[test]
 fn test_compiler_diagnostics_use_saved_coordinates() {
+    set_client_moves_rustc(true);
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("lib.rs");
     let (path, uri) = (file.to_str().unwrap().to_string(), path_to_uri(file.to_str().unwrap()));
@@ -65,4 +67,34 @@ fn test_compiler_diagnostics_use_saved_coordinates() {
     overlay_mgr.open_document(&uri, &path, 4, format!("// one\n{saved_above}"));
     let doc = handle_diagnostic_with_flycheck(&json!({ "params": { "textDocument": { "uri": uri } } }), &overlay_mgr, Some(&fc));
     assert_eq!(lines(&doc["items"]), vec![(2, "unused variable: `messy`".to_string()), (3, "unused variable: `other`".to_string())], "{doc}");
+
+    // Another client takes them in the buffer: one line further down, under the line typed above.
+    set_client_moves_rustc(false);
+    let doc = handle_diagnostic_with_flycheck(&json!({ "params": { "textDocument": { "uri": uri } } }), &overlay_mgr, Some(&fc));
+    assert_eq!(lines(&doc["items"]), vec![(3, "unused variable: `messy`".to_string()), (4, "unused variable: `other`".to_string())], "{doc}");
+}
+
+/// The editor's own mismatch check and the compiler's report of it meet in the buffer, where both sit: saved with
+/// the error, a line typed above, Zed got the compiler's (saved line 1, moved by Zed to 2) and ridx's own (line 2)
+/// both, as the two were compared across coordinates.
+#[test]
+fn test_editor_mismatch_shadowed_by_the_compiler_after_an_edit_above() {
+    set_client_moves_rustc(true);
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("lib.rs");
+    let (path, uri) = (file.to_str().unwrap().to_string(), path_to_uri(file.to_str().unwrap()));
+    let saved = "fn f() {\n    let x: u32 = \"abc\";\n}\n";
+    std::fs::write(&file, saved).unwrap();
+    let mut overlay_mgr = OverlayManager::new();
+    overlay_mgr.open_document(&uri, &path, 2, format!("// typed\n{saved}"));
+    let fc = FlycheckState::new();
+    let e0308 = json!({ "range": { "start": { "line": 1, "character": 4 }, "end": { "line": 1, "character": 24 } }, "severity": 1, "source": "rustc", "code": "E0308", "message": "mismatched types" });
+    fc.set_latest_diagnostics_with_baseline(&uri, vec![e0308], Some(saved.to_string()));
+
+    let own = handle_diagnostic_with_flycheck(&json!({ "params": { "textDocument": { "uri": uri } } }), &overlay_mgr, None);
+    assert!(own["items"].as_array().unwrap().iter().any(|d| d["code"] == "E0308" && d["source"] == "ridx" && d["range"]["start"]["line"] == 2), "{own}");
+    let doc = handle_diagnostic_with_flycheck(&json!({ "params": { "textDocument": { "uri": uri } } }), &overlay_mgr, Some(&fc));
+    let e0308: Vec<&Value> = doc["items"].as_array().unwrap().iter().filter(|d| d["code"] == "E0308").collect();
+    assert_eq!(e0308.len(), 1, "{doc}");
+    assert_eq!((e0308[0]["source"].as_str(), e0308[0]["range"]["start"]["line"].as_u64()), (Some("rustc"), Some(1)), "{doc}");
 }

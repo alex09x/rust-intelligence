@@ -25,12 +25,10 @@ pub fn handle_diagnostic_with_flycheck(msg: &Value, overlay_mgr: &OverlayManager
     let syntax_res = publish_syntax_diagnostics(msg, overlay_mgr);
     let h_items = syntax_res["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
     if let Some(fc) = flycheck {
-        let auth_items = fc.get_latest_diagnostics(uri);
         let file = uri_to_path(uri);
-        let saved = super::reconcile::saved_text(overlay_mgr, &file).unwrap_or_default();
-        let baseline = fc.get_diagnostic_baseline(uri);
-        let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_text(&auth_items, baseline.as_deref(), &saved, uri);
-        let merged = super::reconcile::reconcile_diagnostics(h_items, &mapped_auth);
+        let saved = || super::reconcile::saved_text(overlay_mgr, &file);
+        let live = overlay_mgr.get(&file).map(|ov| ov.text.clone()).or_else(saved).unwrap_or_default();
+        let merged = super::compiler_merge::merge_with_compiler(uri, h_items, &live, saved, fc);
         json!({ "kind": "full", "items": merged })
     } else {
         syntax_res

@@ -141,15 +141,10 @@ impl LifecycleManager {
             .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
         self.ra_client_commands = crate::lsp::presentation::lens::RaClientCommands::from_initialize(&msg["params"]);
         self.client_watches_files = msg["params"]["capabilities"]["workspace"]["didChangeWatchedFiles"]["dynamicRegistration"].as_bool().unwrap_or(false);
-        let ws_caps = &msg["params"]["capabilities"]["workspace"];
-        self.client_refresh_methods =
-            [("inlayHint", "workspace/inlayHint/refresh"), ("semanticTokens", "workspace/semanticTokens/refresh"), ("codeLens", "workspace/codeLens/refresh")]
-                .into_iter()
-                .filter(|(cap, _)| ws_caps[cap]["refreshSupport"].as_bool() == Some(true))
-                .map(|(_, method)| method)
-                .collect();
+        self.client_refresh_methods = crate::lsp::reindex::refresh_methods(&msg["params"]["capabilities"]["workspace"]);
         crate::lsp::intelligence::owner_completion::item::set_label_details_support(&msg["params"]["capabilities"]);
         crate::lsp::intelligence::completion_call::set_client(&msg["params"]);
+        crate::lsp::presentation::compiler_merge::set_client(&msg["params"]);
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {

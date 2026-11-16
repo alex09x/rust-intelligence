@@ -17,10 +17,8 @@ use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::io::Write;
 
-/// The text of `file` as last saved, which compiler diagnostics are placed in. Their source is `rustc`, which
-/// clients treat as disk-based (Zed under the rust-analyzer adapter, as for rust-analyzer's own check): they move
-/// such diagnostics through the buffer's unsaved edits themselves, so diagnostics already placed in the buffer
-/// would move twice (in Zed a warning sat one line below its name after a line was typed above it).
+/// The text of `file` as last saved, which compiler diagnostics are placed in for a client that moves them through
+/// unsaved edits itself (see `compiler_merge`).
 pub fn saved_text(overlay_mgr: &OverlayManager, file: &str) -> Option<String> {
     std::fs::read_to_string(file).ok().or_else(|| overlay_mgr.get(file).and_then(|ov| ov.disk_text.clone()))
 }
@@ -173,11 +171,7 @@ pub fn publish_reconciled_diagnostics<W: Write>(uri: &str, version: Option<i32>,
 
     let heuristic = handle_document_diagnostic_text(text);
     let h_items = heuristic["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
-    let raw_auth = flycheck.get_latest_diagnostics(uri);
-    let baseline = flycheck.get_diagnostic_baseline(uri);
-    let saved = saved_text(overlay_mgr, &file).unwrap_or_else(|| text.to_string());
-    let auth_items = map_authoritative_diagnostics_to_text(&raw_auth, baseline.as_deref(), &saved, uri);
-    let merged = reconcile_diagnostics(h_items, &auth_items);
+    let merged = super::compiler_merge::merge_with_compiler(uri, h_items, text, || saved_text(overlay_mgr, &file), flycheck);
 
     if !merged.is_empty() {
         flycheck.mark_published(uri);
@@ -223,11 +217,11 @@ pub fn handle_internal_diagnostic<W: Write>(
     let diags = diag["params"]["diagnostics"].as_array().cloned().unwrap_or_default();
     let file = uri_to_path(uri);
     // The text the check read, sent with its diagnostics; the buffer's idea of the disk may be newer.
-    let baseline = diag["params"]["baseline"]
-        .as_str()
-        .map(str::to_string)
-        .or_else(|| overlay_mgr.get(&file).and_then(|ov| ov.disk_text.clone()))
-        .or_else(|| std::fs::read_to_string(&file).ok());
+    let baseline = (!diags.is_empty())
+        .then(|| diag["params"]["baseline"].as_str().map(str::to_string))
+        .flatten()
+        .or_else(|| (!diags.is_empty()).then(|| overlay_mgr.get(&file).and_then(|ov| ov.disk_text.clone())).flatten())
+        .or_else(|| (!diags.is_empty()).then(|| std::fs::read_to_string(&file).ok()).flatten());
     lifecycle.flycheck.set_latest_diagnostics_with_baseline(uri, diags, baseline);
     if lifecycle.client_pull_diagnostics() {
         if lifecycle.client_refresh_diagnostics() {
