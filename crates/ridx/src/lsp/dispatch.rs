@@ -35,6 +35,32 @@ fn workspace_root_of(mr: &MultiRootWorkspace, file: &Path) -> Option<PathBuf> {
         .or_else(|| file.ancestors().find(|d| d.join("Cargo.toml").is_file()).map(Path::to_path_buf))
 }
 
+/// Loads an index written since it was last read (a background reindex, `ridx index` by hand, a variant switch):
+/// rebases the open buffers, drops what was derived from the old one, and has the client fetch again what it shows
+/// from it (in Zed the parameter hints of lines saved since stayed missing). Nothing goes out after `shutdown`.
+pub(crate) fn reload_changed_index<W: Write>(
+    writer: &mut W,
+    lifecycle: &mut LifecycleManager,
+    mr: &mut MultiRootWorkspace,
+    ov: &mut crate::overlay::OverlayManager,
+) -> io::Result<()> {
+    let mut any_reloaded = false;
+    for ws in mr.all_workspaces_mut() {
+        any_reloaded |= sync_reloaded_index(ws, ov);
+    }
+    if any_reloaded {
+        lifecycle.conv.clear();
+        super::hierarchy::clear_impl_table_cache();
+        super::navigation::clear_live_db_cache();
+        if !lifecycle.is_shutdown() {
+            for refresh in lifecycle.index_refresh_requests() {
+                super::protocol::send_response(writer, &refresh)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn dispatch_lsp_message<W: Write>(
     lsp_msg: impl Into<super::protocol::LspMessage>,
     writer: &mut W,
@@ -69,17 +95,7 @@ pub fn dispatch_lsp_message<W: Write>(
     }
 
     // 5. Automatic index reload: fast stat check (sub-microsecond) on manifest
-    let mut any_reloaded = false;
-    for ws in mr.all_workspaces_mut() {
-        if sync_reloaded_index(ws, ov) {
-            any_reloaded = true;
-        }
-    }
-    if any_reloaded {
-        lifecycle.conv.clear();
-        super::hierarchy::clear_impl_table_cache();
-        super::navigation::clear_live_db_cache();
-    }
+    reload_changed_index(writer, lifecycle, mr, ov)?;
 
     let ra_commands = lifecycle.ra_client_commands();
     let ra_show_references = ra_commands.show_references;

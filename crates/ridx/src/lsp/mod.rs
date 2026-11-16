@@ -125,12 +125,9 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
     })?;
 
     loop {
-        // A background reindex ended: have the client fetch again what it shows from the old index (in Zed the
-        // parameter hints of lines saved since stayed missing). Its requests load the new one (`sync_reloaded_index`).
+        // A background reindex ended: load it now, rather than on the client's next request.
         if lifecycle.reindex.take_finished() {
-            for refresh in lifecycle.index_refresh_requests() {
-                protocol::send_response(&mut writer, &refresh)?;
-            }
+            dispatch::reload_changed_index(&mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr)?;
         }
         while let Ok((gen, diag)) = rx_diag.try_recv() {
             dispatch::dispatch_lsp_message(

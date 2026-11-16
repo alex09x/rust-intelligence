@@ -22,17 +22,20 @@ pub fn handle_diagnostic(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
 
 pub fn handle_diagnostic_with_flycheck(msg: &Value, overlay_mgr: &OverlayManager, flycheck: Option<&super::flycheck::FlycheckState>) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let syntax_res = publish_syntax_diagnostics(msg, overlay_mgr);
+    let Some(fc) = flycheck else { return publish_syntax_diagnostics(msg, overlay_mgr) };
+    // The buffer, or the file itself when closed, read once: then it is also the text as saved.
+    let file = uri_to_path(uri);
+    let open = overlay_mgr.get(&file).map(|ov| ov.text.clone());
+    let Some(live) = open.clone().or_else(|| std::fs::read_to_string(&file).ok()) else {
+        return json!({ "kind": "full", "items": [] });
+    };
+    let syntax_res = handle_document_diagnostic_text(&live);
     let h_items = syntax_res["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
-    if let Some(fc) = flycheck {
-        let file = uri_to_path(uri);
-        let saved = || super::reconcile::saved_text(overlay_mgr, &file);
-        let live = overlay_mgr.get(&file).map(|ov| ov.text.clone()).or_else(saved).unwrap_or_default();
-        let merged = super::compiler_merge::merge_with_compiler(uri, h_items, &live, saved, fc);
-        json!({ "kind": "full", "items": merged })
-    } else {
-        syntax_res
-    }
+    let merged = match open {
+        Some(_) => super::compiler_merge::merge_with_compiler(uri, h_items, &live, || super::reconcile::saved_text(overlay_mgr, &file), fc),
+        None => super::compiler_merge::merge_with_compiler(uri, h_items, &live, || Some(live.clone()), fc),
+    };
+    json!({ "kind": "full", "items": merged })
 }
 
 pub fn publish_syntax_diagnostics(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
