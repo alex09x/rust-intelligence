@@ -54,8 +54,13 @@ pub(crate) fn write_source_snapshots(base_out_dir: &Path, variant_out_dir: &Path
             if !path.is_absolute() || !path.starts_with(work_dir) || seen_files.contains(file) {
                 continue;
             }
-            let Ok(bytes) = fs::read(path) else { continue };
             let recorded = recorded.as_u64();
+            // A text the variant still names stays, though the file moved on: a crate that failed to rebuild keeps its
+            // last good shards, whose text this is.
+            if let Some(h) = recorded {
+                kept.insert(snapshot_name(h));
+            }
+            let Ok(bytes) = fs::read(path) else { continue };
             let norm = normalized_source_hash(&bytes);
             if recorded != Some(fnv1a_64(&bytes)) && recorded != Some(norm) {
                 continue; // changed since it was compiled: the index holds an older text
@@ -127,6 +132,11 @@ mod tests {
         let mut expected = vec![snapshot_name(a), snapshot_name(compiled_b)];
         expected.sort();
         assert_eq!(names, expected, "one snapshot per compiled text, none left over");
+
+        // A run in which the crate does not build keeps its last good sidecar, which still names the old text: the
+        // snapshot of that text stays, the file on disk having moved on.
+        write_source_snapshots(&base, &variant, &root);
+        assert_eq!(compiled_source_snapshot(&edited.display().to_string(), compiled_b).as_deref(), Some("pub fn b() {}\n"));
 
         // The next run, from the edited file, drops the snapshot of the text no index names any more.
         let side = serde_json::json!({ "is_dependency": false, "file_hashes": { edited.display().to_string(): fnv1a_64(b"pub fn b() {}\n// edited on disk\n") } });
