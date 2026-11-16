@@ -15,7 +15,9 @@ use super::{Hint, SourceMap};
 use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashMap;
 
-pub fn parameter_hints(src: &SourceMap<'_>, ws: &WorkspaceIndex, file: &str, lines: (u32, u32)) -> Vec<Hint> {
+/// `to_index` gives the line (1-based) of the index's text for a live line, `None` for a line the edit added or changed:
+/// the index records each call on the line it compiled it at.
+pub fn parameter_hints(src: &SourceMap<'_>, ws: &WorkspaceIndex, file: &str, lines: (u32, u32), to_index: &dyn Fn(u32) -> Option<u32>) -> Vec<Hint> {
     let mut out = Vec::new();
     let mut names_cache: HashMap<(String, u32), Option<Vec<Option<String>>>> = HashMap::new();
     let (Some(from), to) = (src.line_start(lines.0 as usize), src.line_start(lines.1 as usize + 1).unwrap_or(src.masked.len())) else { return out };
@@ -44,7 +46,8 @@ pub fn parameter_hints(src: &SourceMap<'_>, ws: &WorkspaceIndex, file: &str, lin
             continue;
         }
         let (l0, c0) = src.line_col(name_start);
-        let Some(hover) = ws.hover_at(file, l0 + 1, c0 + 1) else { continue };
+        let Some(index_line) = to_index(l0 + 1) else { continue };
+        let Some(hover) = ws.hover_at(file, index_line, c0 + 1) else { continue };
         let Some(def) = hover.definition else { continue };
         if !matches!(def.kind, DefKind::Fn | DefKind::AssocFn) || def.name.rsplit("::").next() != Some(name) {
             continue;

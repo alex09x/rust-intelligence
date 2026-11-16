@@ -94,6 +94,7 @@ pub mod error_tests;
 pub mod explicit_type_tests;
 pub mod failed_build_tests;
 pub mod feature_invalidation_tests;
+pub mod inlay_shift_tests;
 pub mod last_good_tests;
 pub mod lsp_server;
 pub mod pipeline_tests;

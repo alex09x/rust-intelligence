@@ -142,7 +142,8 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
         hints.extend(chaining::chaining_hints(&src, &types, lines));
         hints.extend(closing::closing_brace_hints(&src, lines));
         if let Some(ws) = workspace {
-            hints.extend(params::parameter_hints(&src, ws, &file, lines));
+            let to_index = |live: u32| line_map.as_ref().map_or(Some(live), |lm| lm.to_baseline(live));
+            hints.extend(params::parameter_hints(&src, ws, &file, lines, &to_index));
         }
         hints
     }));
