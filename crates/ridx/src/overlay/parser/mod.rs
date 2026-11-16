@@ -11,6 +11,7 @@
 //! Lexical scope tree and error-tolerant pure-Rust AST parser for document overlay.
 
 pub mod items;
+mod patterns;
 pub(crate) mod trivia;
 
 pub use super::OverlaySymbol;
@@ -24,6 +25,8 @@ pub(crate) struct Scope {
     pub(crate) end_byte: usize,
     pub(crate) sel_start_byte: usize,
     pub(crate) body_start_byte: Option<usize>,
+    /// A scope of what a pattern binds (a closure, loop, branch or match arm), not a block: no selection range.
+    pub(crate) pattern: bool,
 }
 
 #[inline]
@@ -147,11 +150,13 @@ pub(crate) struct OverlayParser<'a> {
     pub(crate) pending_fn_scope: Option<usize>,
     /// Comment and string/char literal spans in text order, recorded by the main parse loop.
     pub(crate) opaque: Vec<(usize, usize)>,
+    /// Pattern scopes not yet open, by start byte.
+    pending_patterns: std::collections::BinaryHeap<std::cmp::Reverse<(usize, usize)>>,
 }
 
 impl<'a> OverlayParser<'a> {
     pub(crate) fn new(text: &'a str, line_starts: &'a [usize]) -> Self {
-        Self { text, line_starts, scopes: Vec::new(), symbols: Vec::new(), pending_fn_scope: None, opaque: Vec::new() }
+        Self { text, line_starts, scopes: Vec::new(), symbols: Vec::new(), pending_fn_scope: None, opaque: Vec::new(), pending_patterns: Default::default() }
     }
 
     pub(crate) fn byte_to_char_line_col(&self, byte_offset: usize) -> (u32, u32) {
@@ -173,11 +178,12 @@ impl<'a> OverlayParser<'a> {
         let mut pos = 0;
 
         // Root scope
-        self.scopes.push(Scope { id: 0, parent: None, start_byte: 0, end_byte: len, sel_start_byte: 0, body_start_byte: None });
+        self.scopes.push(Scope { id: 0, parent: None, start_byte: 0, end_byte: len, sel_start_byte: 0, body_start_byte: None, pattern: false });
 
         let mut scope_stack = vec![0];
 
         while pos < len {
+            self.sync_pattern_scopes(pos, &mut scope_stack);
             let prev = pos;
             self.skip_whitespace_and_comments(&mut pos);
             if pos != prev {
@@ -202,7 +208,7 @@ impl<'a> OverlayParser<'a> {
                 } else {
                     let new_id = self.scopes.len();
                     let parent = scope_stack.last().copied();
-                    self.scopes.push(Scope { id: new_id, parent, start_byte: pos, end_byte: len, sel_start_byte: pos, body_start_byte: None });
+                    self.scopes.push(Scope { id: new_id, parent, start_byte: pos, end_byte: len, sel_start_byte: pos, body_start_byte: None, pattern: false });
                     new_id
                 };
                 scope_stack.push(sid);
@@ -210,7 +216,16 @@ impl<'a> OverlayParser<'a> {
                 continue;
             }
 
+            if b == b'|' {
+                pos = self.parse_closure(pos).unwrap_or(pos + 1);
+                continue;
+            }
+
             if b == b'}' {
+                // A pattern scope still open here ends with the block around it.
+                while scope_stack.len() > 1 && scope_stack.last().is_some_and(|&id| self.scopes[id].pattern) {
+                    scope_stack.pop();
+                }
                 if scope_stack.len() > 1 {
                     if let Some(id) = scope_stack.pop() {
                         if id < self.scopes.len() {
@@ -283,8 +298,17 @@ impl<'a> OverlayParser<'a> {
                             self.parse_named_item(&mut pos, DefKind::Mod, current_scope);
                         }
                         "let" => {
-                            self.parse_let_binding(&mut pos, current_scope);
+                            let before = self.text[..start].trim_end();
+                            let conditional = before.ends_with("&&")
+                                || ["if", "while"].iter().any(|w| before.ends_with(w) && !before[..before.len() - w.len()].ends_with(is_rust_ident_continue));
+                            if conditional {
+                                self.parse_conditional_let(pos);
+                            } else {
+                                self.parse_let_binding(&mut pos, current_scope);
+                            }
                         }
+                        "for" => self.parse_for(pos),
+                        "match" if !self.text[..start].trim_end().ends_with('.') => self.parse_match(pos),
                         _ => {}
                     }
                     continue;

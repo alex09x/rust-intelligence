@@ -123,7 +123,7 @@ fn selection_ranges_for_overlay(overlay: &DocumentOverlay, pos_list: &[Value]) -
 
         let mut candidates: Vec<(usize, usize)> = Vec::with_capacity(overlay.scopes.len() * 2 + 1);
         candidates.extend(token_range_at(overlay, line_0based, utf16_col_0based));
-        for s in &overlay.scopes {
+        for s in overlay.scopes.iter().filter(|s| !s.pattern) {
             if let Some(body_start) = s.body_start_byte {
                 if byte_pos >= body_start && byte_pos <= s.end_byte {
                     candidates.push((body_start, s.end_byte));

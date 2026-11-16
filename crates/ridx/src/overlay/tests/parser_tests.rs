@@ -152,7 +152,8 @@ fn test_overlay_parser_lifetimes_and_static_do_not_swallow_or_emit_keywords() {
     let mut parser = OverlayParser::new(code, &ls);
     parser.parse();
     let syms: Vec<(&str, DefKind)> = parser.symbols.iter().map(|s| (s.name.as_str(), s.kind)).collect();
-    assert_eq!(syms, vec![("T", DefKind::Const), ("f", DefKind::Fn), ("s", DefKind::Local), ("_", DefKind::Local), ("Some", DefKind::Local), ("_w", DefKind::Local),]);
+    // `if let Some(v)` binds `v` (never a local named `Some`).
+    assert_eq!(syms, vec![("T", DefKind::Const), ("f", DefKind::Fn), ("s", DefKind::Local), ("_", DefKind::Local), ("v", DefKind::Local), ("_w", DefKind::Local),]);
 }
 
 #[test]

@@ -141,7 +141,7 @@ fn test_prepare_rename_crlf_line_endings_preserved() {
 }
 
 #[test]
-fn test_prepare_rename_while_let_unsupported_pattern_rejected_with_32803() {
+fn test_prepare_rename_while_let_binding_is_renamable() {
     let mut dsp = TestDispatcher::new();
     let file = std::env::temp_dir().join(format!("ridx_prep_p6_while_{}.rs", PREP_P6_COUNTER.fetch_add(1, Ordering::Relaxed)));
 
@@ -166,12 +166,12 @@ fn test_prepare_rename_while_let_unsupported_pattern_rejected_with_32803() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 603);
-    assert_eq!(resp["error"]["code"], -32803);
-    assert_eq!(resp["error"]["message"], "Cannot prepare rename: no identifier found at this position");
+    // A `while let` binding is a local the overlay knows, as rust-analyzer renames it.
+    assert_eq!(resp["result"]["placeholder"], "val");
 }
 
 #[test]
-fn test_prepare_rename_if_let_unsupported_pattern_rejected_with_32803() {
+fn test_prepare_rename_if_let_binding_is_renamable() {
     let mut dsp = TestDispatcher::new();
     let file = std::env::temp_dir().join(format!("ridx_prep_p6_iflet_{}.rs", PREP_P6_COUNTER.fetch_add(1, Ordering::Relaxed)));
 
@@ -196,8 +196,7 @@ fn test_prepare_rename_if_let_unsupported_pattern_rejected_with_32803() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 604);
-    assert_eq!(resp["error"]["code"], -32803);
-    assert_eq!(resp["error"]["message"], "Cannot prepare rename: no identifier found at this position");
+    assert_eq!(resp["result"]["placeholder"], "res");
 }
 
 #[test]

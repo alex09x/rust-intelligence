@@ -62,7 +62,7 @@ impl<'a> OverlayParser<'a> {
         // Allocate a dedicated scope for this function's parameters and body
         let sel_start_byte = self.find_fn_item_start(start);
         let fn_scope_id = self.scopes.len();
-        self.scopes.push(Scope { id: fn_scope_id, parent: Some(current_scope), start_byte: start, end_byte: len, sel_start_byte, body_start_byte: None });
+        self.scopes.push(Scope { id: fn_scope_id, parent: Some(current_scope), start_byte: start, end_byte: len, sel_start_byte, body_start_byte: None, pattern: false });
 
         // Parse parameters inside `(...)` and assign them to fn_scope_id
         if let Some(open_paren) = self.text[start..sig_end].find('(') {
@@ -151,17 +151,40 @@ impl<'a> OverlayParser<'a> {
             }
         }
 
+        // A destructuring pattern (`let (a, b) = …`, `let Some(x) = … else { … }`) binds every name in it.
+        if let Some((names, pattern_end)) = self.let_pattern(*pos) {
+            let scope_start = self.let_statement_end(pattern_end);
+            self.push_locals(names, current_scope, scope_start);
+            return;
+        }
         let Some((name, start, end)) = self.parse_ident(pos) else {
             return;
         };
         let (s_line, s_col) = self.byte_to_char_line_col(start);
         let (e_line, e_col) = self.byte_to_char_line_col(end);
+        let scope_start = self.let_statement_end(*pos);
 
-        // Scan ahead to find the end of the entire let statement (';') or enclosing block end ('}').
-        // In Rust, a let binding's scope starts AFTER its entire initializer statement.
+        self.symbols.push(OverlaySymbol {
+            name: name.to_string(),
+            kind: DefKind::Local,
+            signature: None,
+            start_line: s_line,
+            start_col: s_col,
+            end_line: e_line,
+            end_col: e_col,
+            scope_id: current_scope,
+            decl_start_byte: decl_start,
+            decl_end_byte: end,
+            scope_start_byte: scope_start,
+        });
+    }
+
+    /// The byte after the `let` statement whose pattern ends at `from`: its `;`, or the `}` of the enclosing block.
+    /// In Rust, a let binding's scope starts AFTER its entire initializer statement.
+    fn let_statement_end(&self, from: usize) -> usize {
         let bytes = self.text.as_bytes();
         let len = bytes.len();
-        let mut cur = *pos;
+        let mut cur = from;
         let mut brace_depth: usize = 0;
         let mut paren_depth: usize = 0;
         let mut bracket_depth: usize = 0;
@@ -224,20 +247,6 @@ impl<'a> OverlayParser<'a> {
             cur += 1;
         }
 
-        let scope_start = cur;
-
-        self.symbols.push(OverlaySymbol {
-            name: name.to_string(),
-            kind: DefKind::Local,
-            signature: None,
-            start_line: s_line,
-            start_col: s_col,
-            end_line: e_line,
-            end_col: e_col,
-            scope_id: current_scope,
-            decl_start_byte: decl_start,
-            decl_end_byte: end,
-            scope_start_byte: scope_start,
-        });
+        cur
     }
 }

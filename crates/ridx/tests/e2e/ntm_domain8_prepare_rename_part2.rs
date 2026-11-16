@@ -115,9 +115,9 @@ fn test_prepare_rename_parameter_binding_in_closure() {
     let uri = "file:///tmp/prep_closure.rs";
     open_test_file(&mut ov, uri, 1, "fn main() {\n    let f = |item| item + 1;\n}\n");
 
+    // Closure, match-arm and loop bindings are locals the overlay knows, as rust-analyzer renames them.
     let val = send_prepare_rename_req(uri, 1, 14, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
+    assert_eq!(val["result"]["placeholder"], "item");
 }
 
 #[test]
@@ -127,8 +127,7 @@ fn test_prepare_rename_match_arm_binding() {
     open_test_file(&mut ov, uri, 1, "fn test(opt: Option<i32>) {\n    match opt {\n        Some(val) => val,\n        None => 0,\n    };\n}\n");
 
     let val = send_prepare_rename_req(uri, 2, 14, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
+    assert_eq!(val["result"]["placeholder"], "val");
 }
 
 #[test]
@@ -138,8 +137,7 @@ fn test_prepare_rename_for_loop_binding() {
     open_test_file(&mut ov, uri, 1, "fn main() {\n    for loop_idx in 0..10 {\n    }\n}\n");
 
     let val = send_prepare_rename_req(uri, 1, 9, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
+    assert_eq!(val["result"]["placeholder"], "loop_idx");
 }
 
 #[test]

@@ -12,5 +12,6 @@ pub mod line_map_tests;
 pub mod mapping_tests;
 pub mod overlay_tests;
 pub mod parser_tests;
+pub mod pattern_scope_tests;
 pub mod position_tests;
 pub mod query_tests;
