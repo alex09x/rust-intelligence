@@ -142,8 +142,10 @@ pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<
             let line_slice_before = &text[line_start_byte..start_byte];
             let char_col = line_slice_before.chars().count() as u32 + 1;
 
-            let mut ident_len = 0;
-            for c in text[start_byte..].chars() {
+            // A raw identifier (`r#type`) is one name, as the parser records it.
+            let raw = text[start_byte..].starts_with("r#") && text[start_byte + 2..].chars().next().is_some_and(is_rust_ident_start);
+            let mut ident_len = if raw { 2 } else { 0 };
+            for c in text[start_byte + ident_len..].chars() {
                 if is_rust_ident_continue(c) {
                     ident_len += c.len_utf8();
                 } else {

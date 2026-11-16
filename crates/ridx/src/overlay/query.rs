@@ -15,6 +15,23 @@ use super::parser::{is_rust_ident_continue, is_rust_ident_start};
 use super::{DocumentOverlay, OverlayDefinition, OverlaySymbol};
 use ridx_format::DefKind;
 
+/// The identifier `line[start..end]` widened to its raw form (`r#type`), whether `start..end` covers the `r` or the
+/// name after `#`; any other identifier as it is.
+fn widen_raw_ident(line: &str, start: usize, end: usize) -> (usize, usize) {
+    let name_follows = |at: usize| line[at..].starts_with('#') && line[at + 1..].chars().next().is_some_and(is_rust_ident_start);
+    if &line[start..end] == "r" && name_follows(end) {
+        let after = end + 1;
+        let len = line[after..].find(|c: char| !is_rust_ident_continue(c)).unwrap_or(line.len() - after);
+        return (start, after + len);
+    }
+    let raw_prefix = line[..start].ends_with("r#") && !line[..start - 2].chars().next_back().is_some_and(is_rust_ident_continue);
+    if raw_prefix {
+        (start - 2, end)
+    } else {
+        (start, end)
+    }
+}
+
 impl DocumentOverlay {
     /// Finds a symbol definition at a cursor location within the active buffer.
     pub fn find_definition_at(&self, line: u32, col: u32) -> Option<OverlayDefinition> {
@@ -29,6 +46,15 @@ impl DocumentOverlay {
             if line == sym.end_line && col > sym.end_col {
                 continue;
             }
+            // `Ok(v) | Err(v)` binds one `v`: each branch's name resolves to the first.
+            let sym = if sym.kind == DefKind::Local {
+                self.symbols
+                    .iter()
+                    .find(|o| o.kind == DefKind::Local && o.name == sym.name && o.scope_id == sym.scope_id && o.scope_start_byte == sym.scope_start_byte)
+                    .unwrap_or(sym)
+            } else {
+                sym
+            };
             return Some(OverlayDefinition {
                 name: sym.name.clone(),
                 kind: sym.kind,
@@ -183,8 +209,7 @@ impl DocumentOverlay {
                     start_i -= 1;
                 }
                 if is_rust_ident_start(char_indices[start_i].1) {
-                    let start_b = char_indices[start_i].0;
-                    let end_b = char_indices[idx].0;
+                    let (start_b, end_b) = widen_raw_ident(line_text, char_indices[start_i].0, char_indices[idx].0);
                     return Some((line_text[start_b..end_b].to_string(), start_b, end_b));
                 }
             }
@@ -203,6 +228,7 @@ impl DocumentOverlay {
         if is_rust_ident_start(char_indices[start_i].1) {
             let start_b = char_indices[start_i].0;
             let end_b = if end_i < char_indices.len() { char_indices[end_i].0 } else { line_text.len() };
+            let (start_b, end_b) = widen_raw_ident(line_text, start_b, end_b);
             Some((line_text[start_b..end_b].to_string(), start_b, end_b))
         } else {
             None
