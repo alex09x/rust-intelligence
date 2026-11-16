@@ -13,6 +13,7 @@
 pub mod args;
 pub mod config;
 pub mod graph;
+mod units;
 
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
@@ -51,7 +52,7 @@ pub fn try_direct_crate_indexing(
     }
 
     let mut dep_shards = Vec::new();
-    let mut workspace_crates: Vec<WorkspaceCrateEntry> = Vec::new();
+    let mut sidecars: Vec<(WorkspaceCrateEntry, Option<String>)> = Vec::new();
 
     let entries = fs::read_dir(deps_dir).ok()?;
     for entry in entries.flatten() {
@@ -84,10 +85,13 @@ pub fn try_direct_crate_indexing(
             let env_vars: HashMap<String, String> =
                 val.get("env").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect()).unwrap_or_default();
 
+            let object = val.get("object_path").and_then(|v| v.as_str()).map(str::to_string);
             let target_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or(&crate_name).to_string();
-            workspace_crates.push((target_id, crate_name, args, env_vars, file_hashes, path));
+            sidecars.push(((target_id, crate_name, args, env_vars, file_hashes, path), object));
         }
     }
+    // On BTCR an edit of one file compiled 53 sidecars, each of the ~20 units two or three times over.
+    let (workspace_crates, aliases) = units::group_by_unit(sidecars);
 
     if workspace_crates.is_empty() {
         eprintln!("[ridx-direct] fallback to Cargo: no workspace crates found in .deps");
@@ -109,8 +113,7 @@ pub fn try_direct_crate_indexing(
             if !p.is_file() {
                 modified_files.insert(file_str.clone());
             } else if let Ok(bytes) = fs::read(p) {
-                let current_hash = ridx_format::fnv1a_64(&bytes);
-                if current_hash != recorded_hash {
+                if !units::hash_matches(&bytes, recorded_hash) {
                     modified_files.insert(file_str.clone());
                 }
             } else {
@@ -138,6 +141,14 @@ pub fn try_direct_crate_indexing(
                 return None;
             }
         }
+    }
+
+    // Nothing to do when no source, no build configuration and no option changed since the published index: Zed reports
+    // the whole tree changed after a rescan, and on BTCR each such report cost a full `cargo check` (~70 s, rustc and
+    // ridx-driver at 1.5–3 GB) that rebuilt the same index.
+    if modified_files.is_empty() && active_variant_dir(base_out_dir).as_deref() == Some(variant_rel_dir) {
+        eprintln!("  {} index is up to date in {:.1} ms: no source or build configuration changed", "RIDX Success:".green().bold(), start.elapsed().as_secs_f64() * 1000.0);
+        return Some(PublishedVariant { base_out_dir: base_out_dir.to_path_buf(), variant_out_dir: variant_out_dir.to_path_buf(), variant_id: variant_id.to_string() });
     }
 
     // Build dependency and reverse-dependency graphs among workspace targets
@@ -235,7 +246,7 @@ pub fn try_direct_crate_indexing(
     let direct_lock_hash = super::feature_graph::compute_cargo_lock_hash(work_dir);
     // Execute direct indexing on changed targets in topological order
     for target_id in &sorted_target_ids {
-        let (crate_name, args, env_vars, _, _) = crate_map.get(target_id)?;
+        let (crate_name, args, env_vars, _, sidecar) = crate_map.get(target_id)?;
         let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
 
         let mut cmd = Command::new(driver_bin);
@@ -269,6 +280,7 @@ pub fn try_direct_crate_indexing(
             eprintln!("[ridx-direct] fallback to Cargo: direct rustc execution failed for '{crate_name}'");
             return None;
         }
+        units::refresh_aliases(sidecar, aliases.get(target_id).map_or(&[], Vec::as_slice));
     }
 
     let ws = WorkspaceIndex::open(variant_out_dir).ok()?;
@@ -311,3 +323,12 @@ pub fn try_direct_crate_indexing(
 
     Some(PublishedVariant { base_out_dir: base_out_dir.to_path_buf(), variant_out_dir: variant_out_dir.to_path_buf(), variant_id: variant_id.to_string() })
 }
+
+/// The variant the published manifest names (`variants/<id>`): the index a server reads.
+fn active_variant_dir(base_out_dir: &Path) -> Option<String> {
+    let bytes = fs::read(base_out_dir.join("ridx_manifest.json")).ok()?;
+    serde_json::from_slice::<serde_json::Value>(&bytes).ok()?["variant_dir"].as_str().map(str::to_string)
+}
+
+#[cfg(test)]
+mod tests;
