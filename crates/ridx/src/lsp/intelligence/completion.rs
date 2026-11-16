@@ -311,6 +311,11 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
         Some(_) => 2,
     };
     items.sort_by_key(import_rank);
+    // The editor orders equal matches by `sortText`: the same name by several paths lists the standard library's first.
+    for item in items.iter_mut().filter(|i| i.get("sortText").is_none()) {
+        let key = format!("{}{}", import_rank(item), item["label"].as_str().unwrap_or_default());
+        item["sortText"] = json!(key);
+    }
 
     Ok(json!({
         "isIncomplete": is_capped,
