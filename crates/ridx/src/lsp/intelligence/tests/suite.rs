@@ -124,6 +124,33 @@ fn test_signature_help_multiline() {
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
+/// In Zed on BTCR a click on `usize` in `pub samples: usize` did nothing, and hover there was empty: no item declares
+/// a primitive. As rust-analyzer does, both go to its documentation module in `core`.
+#[test]
+fn test_a_primitive_type_goes_to_its_docs_in_core() {
+    let (temp_dir, ws, mut overlay_mgr, mut conv) = setup_test_intelligence();
+    let file_path = temp_dir.join("src/lib.rs");
+    let uri = format!("file://{}", file_path.to_str().unwrap());
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, "pub struct M {\n    pub samples: usize,\n    pub u8: u8,\n}\n".to_string());
+    let req = |line: u32, character: u32| json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character } } });
+
+    let def = crate::lsp::navigation::handle_definition(&req(1, 19), Some(&ws), &overlay_mgr, &mut conv);
+    assert!(def["uri"].as_str().unwrap().ends_with("library/core/src/primitive_docs.rs"), "{def}");
+    let docs = std::fs::read_to_string(super::super::super::protocol::uri_to_path(def["uri"].as_str().unwrap())).unwrap();
+    let line = docs.lines().nth(def["range"]["start"]["line"].as_u64().unwrap() as usize).unwrap();
+    let (s, e) = (def["range"]["start"]["character"].as_u64().unwrap() as usize, def["range"]["end"]["character"].as_u64().unwrap() as usize);
+    assert_eq!(&line[s..e], "prim_usize");
+
+    let hover = handle_hover(&req(1, 19), Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let text = hover["contents"]["value"].as_str().unwrap();
+    assert!(text.starts_with("```rust\nusize\n```") && text.contains("pointer-sized unsigned integer"), "{text}");
+
+    let field = crate::lsp::navigation::handle_definition(&req(2, 9), Some(&ws), &overlay_mgr, &mut conv);
+    assert!(field.is_null() || !field["uri"].as_str().unwrap_or("").ends_with("primitive_docs.rs"), "a field named `u8` is no primitive: {field}");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
 #[test]
 fn test_inlay_hints_and_inline() {
     let (temp_dir, ws, mut overlay_mgr, _conv) = setup_test_intelligence();

@@ -96,7 +96,9 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         }
     }
 
-    Ok(Value::Null)
+    // 4. A primitive type (`usize`): its docs in `core`, as in rust-analyzer.
+    let line_text = overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
+    Ok(line_text.and_then(|l| crate::lsp::navigation::primitive::hover(&l, col_1based)).unwrap_or(Value::Null))
 }
 
 /// Keywords whose hover is no name of the program (`self`, `Self`, `crate`, `super` name something and are not here).

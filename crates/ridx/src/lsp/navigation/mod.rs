@@ -14,6 +14,7 @@ mod cursor_literal;
 pub mod declaration;
 mod highlight_ext;
 mod impl_line;
+pub(crate) mod primitive;
 pub mod references;
 mod references_gated;
 mod references_inactive;
@@ -160,7 +161,9 @@ pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
         }
     }
 
-    Value::Null
+    // 4. A primitive type (`usize`): its documentation module in `core`, as in rust-analyzer.
+    let line_text = overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
+    line_text.and_then(|l| primitive::definition(&l, col_1based)).unwrap_or(Value::Null)
 }
 
 fn resolve_backing_module_file(ws: &WorkspaceIndex, def: &ridx_format::ResolvedDefinition<'_>, decl_file: &std::path::Path) -> Option<std::path::PathBuf> {
