@@ -134,6 +134,16 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
     })?;
 
     loop {
+        // A background reindex ended: load it, and have the client fetch again what it shows from the old one (in
+        // Zed the parameter hints of lines saved since stayed missing).
+        if lifecycle.reindex.take_finished() {
+            multi_root.reload_all_if_modified();
+            overlay_mgr.rebase_on_index(|file| multi_root.source_hash_for_file(file));
+            lifecycle.conv.clear();
+            for refresh in lifecycle.index_refresh_requests() {
+                protocol::send_response(&mut writer, &refresh)?;
+            }
+        }
         while let Ok((gen, diag)) = rx_diag.try_recv() {
             dispatch::dispatch_lsp_message(
                 protocol::LspMessage::InternalDiagnostic(gen, diag),

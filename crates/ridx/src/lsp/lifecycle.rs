@@ -34,6 +34,8 @@ pub struct LifecycleManager {
     client_refresh_diagnostics: bool,
     client_resolve_code_action_edit: bool,
     client_watches_files: bool,
+    /// The `workspace/*/refresh` requests the client supports, asked for when the index is reloaded.
+    client_refresh_methods: Vec<&'static str>,
     ra_client_commands: crate::lsp::presentation::lens::RaClientCommands,
     refresh_counter: AtomicU64,
     pub apply_registry: ApplyEditRegistry,
@@ -56,6 +58,7 @@ impl LifecycleManager {
             client_refresh_diagnostics: false,
             client_resolve_code_action_edit: false,
             client_watches_files: false,
+            client_refresh_methods: Vec::new(),
             ra_client_commands: Default::default(),
             refresh_counter: AtomicU64::new(0),
             apply_registry: ApplyEditRegistry::new(),
@@ -88,6 +91,11 @@ impl LifecycleManager {
     /// All rust-analyzer client commands the client announced; lenses follow them.
     pub fn ra_client_commands(&self) -> crate::lsp::presentation::lens::RaClientCommands {
         self.ra_client_commands
+    }
+
+    /// The refresh requests to send once a reindex is picked up, one per kind the client supports.
+    pub fn index_refresh_requests(&self) -> Vec<Value> {
+        self.client_refresh_methods.iter().map(|m| serde_json::json!({ "jsonrpc": "2.0", "id": self.next_refresh_id(), "method": m, "params": null })).collect()
     }
 
     pub fn next_refresh_id(&self) -> String {
@@ -133,6 +141,13 @@ impl LifecycleManager {
             .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
         self.ra_client_commands = crate::lsp::presentation::lens::RaClientCommands::from_initialize(&msg["params"]);
         self.client_watches_files = msg["params"]["capabilities"]["workspace"]["didChangeWatchedFiles"]["dynamicRegistration"].as_bool().unwrap_or(false);
+        let ws_caps = &msg["params"]["capabilities"]["workspace"];
+        self.client_refresh_methods =
+            [("inlayHint", "workspace/inlayHint/refresh"), ("semanticTokens", "workspace/semanticTokens/refresh"), ("codeLens", "workspace/codeLens/refresh")]
+                .into_iter()
+                .filter(|(cap, _)| ws_caps[cap]["refreshSupport"].as_bool() == Some(true))
+                .map(|(_, method)| method)
+                .collect();
         crate::lsp::intelligence::owner_completion::item::set_label_details_support(&msg["params"]["capabilities"]);
         crate::lsp::intelligence::completion_call::set_client(&msg["params"]);
 

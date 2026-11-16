@@ -331,6 +331,29 @@ fn test_inlay_type_hints_follow_an_edit() {
     assert_eq!(on_line(at("let fresh")), [": String"], "a binding typed since the index gets its type from the live engine");
 }
 
+/// In Zed: rename a local, save; the reindex records the saved text, but the open buffer kept mapping onto the text
+/// compiled before, so the renamed lines counted as edited and lost their parameter hints until reopened. A loaded
+/// index rebases the open buffers onto the text it compiled.
+#[test]
+fn test_open_buffer_rebases_on_a_new_index() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let (file_str, uri) = (lib_file.to_str().unwrap(), path_to_uri(lib_file.to_str().unwrap()));
+    let indexed = fs::read_to_string(&lib_file).unwrap();
+    let mut overlay_mgr = OverlayManager::new();
+    overlay_mgr.open_with_provenance(&uri, file_str, 2, indexed.clone(), false);
+    // The text an older index compiled: one line since changed.
+    let older = indexed.replacen("pub fn process_bytes(b: [u8; 4]) -> i32 {\n", "pub fn process_bytes(b: [u8; 4]) -> i32 { // old\n", 1);
+    assert_ne!(older, indexed);
+    overlay_mgr.get_mut(file_str).unwrap().advance_compiled_baseline(older);
+    assert!(overlay_mgr.get(file_str).unwrap().is_dirty());
+
+    overlay_mgr.rebase_on_index(|f| ws.source_hash_for_file(f));
+    let ov = overlay_mgr.get(file_str).unwrap();
+    assert_eq!(ov.compiled_text.as_deref(), Some(indexed.as_str()));
+    assert!(!ov.is_dirty());
+}
+
 #[test]
 fn test_hover_on_a_use_path_of_a_dependency() {
     let ws = get_or_index_l2_fixture("multi_crate");

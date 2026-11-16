@@ -266,10 +266,24 @@ impl OverlayManager {
         self.get(file_path)?.map_compiled_line_to_live(compiled_line)
     }
 
-    #[allow(dead_code)]
     pub fn advance_compiled_baseline(&mut self, file_path: &str, text: String) {
         if let Some(overlay) = self.get_mut(file_path) {
             overlay.advance_compiled_baseline(text);
+        }
+    }
+
+    /// After a new index is loaded: each open buffer maps onto it through the text it compiled, found by the hash it
+    /// records for the file (`hash_for`), as `didOpen` finds it. Kept on the old text, the lines saved since stayed
+    /// "edited" until the file was reopened (in Zed: no parameter hints on them after a save).
+    pub fn rebase_on_index(&mut self, hash_for: impl Fn(&str) -> Option<u64>) {
+        for file in self.open_file_paths() {
+            let Some(hash) = hash_for(&file) else { continue };
+            let Some(o) = self.get(&file) else { continue };
+            let compiled = super::resolve_compiled_text(o.content_hash, &o.text, o.disk_text.as_deref(), Some(hash))
+                .or_else(|| crate::indexer::source_snapshots::compiled_source_snapshot(&file, hash));
+            if let Some(text) = compiled.filter(|t| o.compiled_text.as_deref() != Some(t.as_str())) {
+                self.advance_compiled_baseline(&file, text);
+            }
         }
     }
 

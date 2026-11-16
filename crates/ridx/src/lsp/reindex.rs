@@ -18,6 +18,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
@@ -38,11 +39,19 @@ struct RootState {
 #[derive(Default)]
 pub struct Reindexer {
     roots: Arc<Mutex<HashMap<PathBuf, RootState>>>,
+    /// Runs that ended successfully since the server last looked.
+    finished: Arc<AtomicU64>,
 }
 
 impl Reindexer {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Whether a run ended successfully since the last call: the server then loads the new index and asks the
+    /// client to fetch again what came from the old one (the watched-file events of a run arrive while it runs).
+    pub fn take_finished(&self) -> bool {
+        self.finished.swap(0, Ordering::SeqCst) > 0
     }
 
     /// Reindexes `root` in the background for the file `changed` on disk (a save, or a watched-file event), when it
@@ -77,6 +86,7 @@ impl Reindexer {
             st.last_start = Some(now);
         }
         let roots = Arc::clone(&self.roots);
+        let finished = Arc::clone(&self.finished);
         let root = root.to_path_buf();
         std::thread::spawn(move || loop {
             let started = std::time::Instant::now();
@@ -86,6 +96,9 @@ impl Reindexer {
             let ok = Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(out).status().is_ok_and(|s| s.success());
             let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
             crate::lsp::logger::log_info(&msg);
+            if ok {
+                finished.fetch_add(1, Ordering::SeqCst);
+            }
             let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
             let st = roots.entry(root.clone()).or_default();
             if std::mem::take(&mut st.again) {
@@ -147,5 +160,24 @@ mod tests {
         assert_eq!(r["method"], "workspace/didChangeWatchedFiles");
         let globs: Vec<&str> = r["registerOptions"]["watchers"].as_array().unwrap().iter().map(|w| w["globPattern"].as_str().unwrap()).collect();
         assert_eq!(globs, ["**/*.rs", "**/Cargo.toml", "**/Cargo.lock"]);
+    }
+
+    /// A picked-up reindex asks the client to fetch again what came from the old index, for each kind it can refresh.
+    #[test]
+    fn test_refresh_requests_follow_the_client_capabilities() {
+        let methods = |workspace_caps: serde_json::Value| {
+            let mut lc = crate::lsp::lifecycle::LifecycleManager::new();
+            let init = serde_json::json!({ "params": { "capabilities": { "workspace": workspace_caps } } });
+            lc.handle_initialize(&init).unwrap();
+            lc.index_refresh_requests().iter().map(|r| r["method"].as_str().unwrap().to_string()).collect::<Vec<_>>()
+        };
+        let zed = serde_json::json!({ "inlayHint": { "refreshSupport": true }, "semanticTokens": { "refreshSupport": true }, "codeLens": { "refreshSupport": true } });
+        assert_eq!(methods(zed), ["workspace/inlayHint/refresh", "workspace/semanticTokens/refresh", "workspace/codeLens/refresh"]);
+        assert_eq!(methods(serde_json::json!({ "inlayHint": { "refreshSupport": true }, "codeLens": { "refreshSupport": false } })), ["workspace/inlayHint/refresh"]);
+        assert!(methods(serde_json::json!({})).is_empty());
+        let r = Reindexer::new();
+        assert!(!r.take_finished());
+        r.finished.fetch_add(2, Ordering::SeqCst);
+        assert!(r.take_finished() && !r.take_finished(), "taken once");
     }
 }
