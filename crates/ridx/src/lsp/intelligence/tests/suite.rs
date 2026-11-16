@@ -103,6 +103,18 @@ fn test_signature_help_multiline() {
     assert!(!sig_res.is_null());
     assert_eq!(sig_res["activeParameter"], 1);
 
+    // In Zed with signature help shown automatically: the cursor in a function's own parameter list showed its
+    // signature. A declaration is no call (rust-analyzer shows nothing); the call below it still is.
+    let decl = "pub fn calculate(a: i32, b: i32) -> i32 { a + b }\nstruct Cart { items: u8 }\nfn t() { calculate(1, 2); }\n";
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 2, decl.to_string());
+    let at = |line: u32, character: u32, conv: &mut _| {
+        let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character } } });
+        handle_signature_help(&req, Some(&ws), &overlay_mgr, conv).unwrap()
+    };
+    assert!(at(0, 21, &mut conv).is_null(), "in `fn calculate(a: i32, …)`");
+    assert!(at(1, 16, &mut conv).is_null(), "in `struct Cart {{ … }}`");
+    assert!(!at(2, 22, &mut conv).is_null(), "in the call `calculate(1, 2)`");
+
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
