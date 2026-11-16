@@ -39,15 +39,19 @@ pub(crate) fn write_source_snapshots(base_out_dir: &Path, variant_out_dir: &Path
     }
     let mut kept = HashSet::new();
     let mut seen_files = HashSet::new();
-    for entry in fs::read_dir(variant_out_dir.join(".deps")).into_iter().flatten().flatten() {
-        let Some(side) = fs::read(entry.path()).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { continue };
+    let mut sidecars: Vec<PathBuf> = fs::read_dir(variant_out_dir.join(".deps")).into_iter().flatten().flatten().map(|e| e.path()).collect();
+    sidecars.sort();
+    for sidecar in sidecars {
+        let Some(side) = fs::read(&sidecar).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { continue };
         if side["is_dependency"].as_bool() != Some(false) {
             continue;
         }
         let Some(hashes) = side["file_hashes"].as_object() else { continue };
         for (file, recorded) in hashes {
             let path = Path::new(file);
-            if !path.is_absolute() || !path.starts_with(work_dir) || !seen_files.insert(file.clone()) {
+            // A file is done once one sidecar's hash matched it: an older sidecar left in `.deps` for the same file
+            // records a hash from before the edit.
+            if !path.is_absolute() || !path.starts_with(work_dir) || seen_files.contains(file) {
                 continue;
             }
             let Ok(bytes) = fs::read(path) else { continue };
@@ -66,6 +70,7 @@ pub(crate) fn write_source_snapshots(base_out_dir: &Path, variant_out_dir: &Path
                 }
             }
             kept.insert(name);
+            seen_files.insert(file.clone());
         }
     }
     for entry in fs::read_dir(&dir).into_iter().flatten().flatten() {
@@ -104,6 +109,9 @@ mod tests {
         }});
         fs::write(variant.join(".deps/app.json"), side.to_string()).unwrap();
         fs::write(variant.join(".deps/dep.json"), serde_json::json!({ "is_dependency": true, "file_hashes": { "/elsewhere/x.rs": 1 } }).to_string()).unwrap();
+        // An older sidecar of the same crate, read first, records `edited.rs` as it was before.
+        let older = serde_json::json!({ "is_dependency": false, "file_hashes": { edited.display().to_string(): 42 } });
+        fs::write(variant.join(".deps/aaa_app_older.json"), older.to_string()).unwrap();
         fs::create_dir_all(snapshot_dir(&base)).unwrap();
         fs::write(snapshot_dir(&base).join("0000000000000001.rs"), "old").unwrap();
         write_source_snapshots(&base, &variant, &root);

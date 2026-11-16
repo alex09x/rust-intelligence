@@ -47,13 +47,17 @@ fn test_a_file_changed_on_disk_before_it_is_opened_maps_onto_its_compiled_text()
 
     let (mut mr, mut ov, mut lc) = (MultiRootWorkspace::new(), OverlayManager::new(), LifecycleManager::new());
     let can = Arc::new(Mutex::new(HashSet::new()));
-    assert!(mr.add_root(ws.clone()));
     let mut send = |msg: Value| {
         let mut out = Vec::new();
         dispatch_lsp_message(LspMessage::Client(msg), &mut out, &mut lc, &mut mr, &mut ov, &can, None).unwrap();
         response(&out)
     };
-    send(json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "capabilities": {} } }));
+    // As an editor opens the workspace: its folder in `initialize`.
+    let root_uri = path_to_uri(ws.to_str().unwrap());
+    send(
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "capabilities": {}, "rootUri": root_uri, "workspaceFolders": [{ "uri": root_uri, "name": "ws" }] } }),
+    );
+    send(json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }));
     let uri = path_to_uri(lib.to_str().unwrap());
     send(json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": text } } }));
 
