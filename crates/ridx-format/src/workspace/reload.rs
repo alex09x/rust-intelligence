@@ -220,7 +220,8 @@ impl WorkspaceIndex {
                                 continue;
                             }
                         }
-                        let is_dep = meta.source_root.is_some();
+                        // As `open` reads it: a workspace crate's sidecar names its source root too.
+                        let is_dep = meta.is_dependency;
                         self.readers.push(reader);
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);

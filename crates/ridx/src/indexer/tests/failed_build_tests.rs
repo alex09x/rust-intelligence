@@ -35,6 +35,60 @@ fn write(ws: &Path, rel: &str, text: &str) {
     fs::write(p, text).unwrap();
 }
 
+fn index_opts(ws: &Path, cas: &Path, driver: &Path) -> IndexOptions {
+    IndexOptions {
+        path: ws.to_path_buf(),
+        out_dir_opt: None,
+        package: None,
+        release: false,
+        features: None,
+        no_default_features: false,
+        all_features: false,
+        target: None,
+        cache_dir: Some(cas.to_path_buf()),
+        driver_bin: Some(driver.to_path_buf()),
+        capture_child_output: true,
+        builder: Some(IndexBuilder::Cargo),
+    }
+}
+
+/// `native`, whose build script fails while `native/fail` exists, and `app` on top of it.
+fn write_native_and_app(ws: &Path, app_lib: &str) {
+    write(ws, "Cargo.toml", "[workspace]\nmembers = [\"app\", \"native\"]\nresolver = \"2\"\n");
+    write(ws, "native/Cargo.toml", "[package]\nname = \"native\"\nversion = \"0.1.0\"\nedition = \"2021\"\n");
+    write(
+        ws,
+        "native/build.rs",
+        "fn main() {\n    println!(\"cargo:rerun-if-changed=fail\");\n    if std::path::Path::new(\"fail\").exists() {\n        panic!(\"no cmake\");\n    }\n}\n",
+    );
+    write(ws, "native/src/lib.rs", "pub fn native_api() -> u32 { 1 }\n");
+    write(ws, "app/Cargo.toml", "[package]\nname = \"app\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nnative = { path = \"../native\" }\n");
+    write(ws, "app/src/lib.rs", app_lib);
+}
+
+/// A server that opened the index while a crate was missing from it (it did not build) takes the crate, once it
+/// builds, as the workspace crate it is: its references are searched, as a server opening the index anew does.
+#[test]
+fn test_a_crate_that_appears_on_reload_is_a_workspace_crate() {
+    let _lock = lock_indexer_test();
+    let Some(driver) = find_driver_binary() else { return };
+    let dir = new_test_dir("ridx_reload_appears");
+    let (ws, cas) = (dir.0.join("ws"), dir.0.join("cas"));
+    write_native_and_app(&ws, "pub struct Loader { n: u32 }\nimpl Loader {\n    pub fn run(&mut self) -> u32 { self.finish(1) + native::native_api() }\n    fn finish(&mut self, x: u32) -> u32 { self.n + x }\n}\n");
+    write(&ws, "native/fail", "");
+    let _ = try_run_indexing(index_opts(&ws, &cas, &driver));
+    let mut index = ridx_format::WorkspaceIndex::open(&ws).expect("index opens");
+    let lib = ws.join("app/src/lib.rs").display().to_string();
+    assert!(index.find_references_at(&lib, 4, 9).is_none_or(|r| r.references.len() < 2), "app is not indexed yet");
+
+    fs::remove_file(ws.join("native/fail")).unwrap();
+    try_run_indexing(index_opts(&ws, &cas, &driver)).expect("app builds");
+    assert!(index.reload_manifest_if_modified().expect("reload"), "the new manifest is picked up");
+    let refs = index.find_references_at(&lib, 4, 9).expect("references of `finish`");
+    let lines: Vec<u32> = refs.references.iter().map(|r| r.span.start_line).collect();
+    assert!(lines.contains(&3), "the call in `run` is found: {lines:?}");
+}
+
 #[test]
 fn test_a_crate_that_cannot_be_rebuilt_keeps_its_last_good_index() {
     let _lock = lock_indexer_test();
@@ -59,20 +113,7 @@ fn test_a_crate_that_cannot_be_rebuilt_keeps_its_last_good_index() {
         "[package]\nname = \"app\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nnative = { path = \"../native\" }\npm = { path = \"../pm\" }\n",
     );
     write(&ws, "app/src/lib.rs", "pm::noop!();\npub fn app_api() -> u32 { native::native_api() }\n");
-    let opts = || IndexOptions {
-        path: ws.clone(),
-        out_dir_opt: None,
-        package: None,
-        release: false,
-        features: None,
-        no_default_features: false,
-        all_features: false,
-        target: None,
-        cache_dir: Some(cas.clone()),
-        driver_bin: Some(driver.clone()),
-        capture_child_output: true,
-        builder: Some(IndexBuilder::Cargo),
-    };
+    let opts = || index_opts(&ws, &cas, &driver);
     // The first run writes `Cargo.lock`, which names the variant: the second one stands for the workspace as it is.
     try_run_indexing(opts()).expect("lockfile run");
     let first = try_run_indexing(opts()).expect("first index");

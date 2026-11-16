@@ -110,7 +110,8 @@ impl WorkspaceIndex {
                                             let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
                                             let embedded = r.embedded_file_hashes();
                                             let meta = Self::load_file_metadata(&fp, &new_vdir, r.crate_name(), r.unit_key(), r.generation(), &embedded);
-                                            let is_dep = meta.source_root.is_some();
+                                            // As `open` reads it: a workspace crate's sidecar names its source root too.
+                                            let is_dep = meta.is_dependency;
                                             new_readers.push(r);
                                             new_paths.push(fp);
                                             new_mtimes.push(mt);
