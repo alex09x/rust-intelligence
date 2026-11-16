@@ -36,8 +36,8 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     let Some(driver) = find_driver_binary() else { return };
     let dir = new_test_dir("ridx_completion_import");
     let (ws, cas) = (dir.0.join("ws"), dir.0.join("cas"));
-    let app =
-        "use std::collections::HashMap;\nmod util;\npub fn uses_map(m: HashMap<u8, u8>) -> usize { util::helper(Default::default()); m.len() + native::native_api() as usize }\n";
+    // `Reexported` is imported inside `mod tests` only: a function outside it still needs its own `use`.
+    let app = "use std::collections::HashMap;\nmod util;\npub fn uses_map(m: HashMap<u8, u8>) -> usize { util::helper(Default::default()); m.len() + native::native_api() as usize }\n#[cfg(test)]\nmod tests {\n    #[allow(unused_imports)]\n    use native::Reexported;\n}\n";
     write_native_and_app(&ws, app);
     // Another module of the crate, with a private import of `HashSet` and a private function.
     write(&ws, "app/src/util.rs", "use std::collections::HashSet;\npub fn helper(_: HashSet<u8>) {}\n#[allow(dead_code)]\nfn private_helper() {}\n");

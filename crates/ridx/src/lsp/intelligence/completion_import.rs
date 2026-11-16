@@ -96,9 +96,57 @@ pub(super) fn name_imported(doc: &str, name: &str) -> bool {
     false
 }
 
+/// The byte ranges of the inline modules of `text` (`mod tests { … }`, nested ones too), braces included: what is
+/// declared in one is seen inside it only (a `use` of `mod tests` brings nothing into the functions above it).
+pub(super) fn inline_mod_ranges(text: &str) -> Vec<(usize, usize)> {
+    let b = text.as_bytes();
+    let mut out = Vec::new();
+    for (p, _) in text.match_indices("mod ") {
+        if p > 0 && (b[p - 1].is_ascii_alphanumeric() || b[p - 1] == b'_') {
+            continue;
+        }
+        let line_start = text[..p].rfind('\n').map_or(0, |i| i + 1);
+        if text[line_start..p].contains("//") {
+            continue;
+        }
+        let rest = &text[p + 4..];
+        let name_len = rest.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(rest.len());
+        let after = &rest[name_len..];
+        if name_len == 0 || !after.trim_start().starts_with('{') {
+            continue;
+        }
+        let open = p + 4 + name_len + after.find('{').unwrap_or(0);
+        let mut depth = 0usize;
+        for (i, c) in text[open..].char_indices() {
+            match c {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        out.push((open, open + i));
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_inline_module_ranges() {
+        let text = "use a::B;\nfn f() {}\n#[cfg(test)]\nmod tests {\n    use crate::x::Flat;\n    mod inner { fn g() {} }\n}\n// mod commented {\nmod file_mod;\n";
+        let ranges = inline_mod_ranges(text);
+        assert_eq!(ranges.len(), 2, "{ranges:?}");
+        let flat = text.find("Flat").unwrap();
+        assert!(ranges.iter().any(|&(s, e)| s < flat && flat < e));
+        assert!(!ranges.iter().any(|&(s, e)| s < text.find("fn f").unwrap() && text.find("fn f").unwrap() < e));
+    }
 
     #[test]
     fn test_a_name_imported_by_any_path_is_in_scope() {

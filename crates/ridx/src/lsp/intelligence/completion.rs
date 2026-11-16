@@ -202,6 +202,10 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             set
         };
 
+        // A name declared in an inline module (a `use` of `mod tests { … }`) is seen inside that module only.
+        let mod_ranges = super::completion_import::inline_mod_ranges(&overlay.text);
+        let hidden_in_module = |at: usize| mod_ranges.iter().any(|&(s, e)| s < at && at < e && !(s < cursor_byte && cursor_byte < e));
+
         for s in &overlay.symbols {
             if s.name.contains("{closure") || s.name.contains("{block}") {
                 continue;
@@ -210,7 +214,7 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                 continue;
             }
 
-            let is_in_scope = if s.scope_id == 0 { true } else { active_scope_ids.contains(&s.scope_id) && s.decl_start_byte <= cursor_byte };
+            let is_in_scope = if s.scope_id == 0 { !hidden_in_module(s.decl_start_byte) } else { active_scope_ids.contains(&s.scope_id) && s.decl_start_byte <= cursor_byte };
 
             if is_in_scope && seen_names.insert(s.name.clone()) {
                 let mut item = json!({
@@ -274,7 +278,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             let in_scope = import_path.is_none();
             if (in_scope && seen_names.insert(s.name.to_string())) || (!in_scope && !seen_names.contains(s.name) && seen_imports.insert(import_path.clone())) {
                 let import_path = import_path.unwrap_or_default();
-                let auto_import_edit = if in_scope { None } else { overlay_opt.and_then(|ov| super::auto_import::compute_auto_import_edit(&ov.text, &import_path)) };
+                // `name_imported` decided: the file's own level does not import the name (a `use` of `mod tests` does
+                // not count), so the edit is inserted without looking at the nested ones again.
+                let auto_import_edit = if in_scope { None } else { overlay_opt.and_then(|ov| super::auto_import::insert_use_edit(&ov.text, &import_path)) };
 
                 let detail = if let Some(sig) = s.signature { sig.to_string() } else { s.path.to_string() };
 

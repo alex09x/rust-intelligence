@@ -76,6 +76,15 @@ pub fn compute_auto_import_edit(doc_text: &str, symbol_path: &str) -> Option<Val
         return None;
     }
 
+    insert_use_edit(doc_text, symbol_path)
+}
+
+/// The edit inserting `use {symbol_path};` among the file's imports, for a caller that already knows the file's own
+/// level does not import it (a `use` of `mod tests` does not count).
+pub fn insert_use_edit(doc_text: &str, symbol_path: &str) -> Option<Value> {
+    if is_prelude_symbol(symbol_path) {
+        return None;
+    }
     let insert_line = find_use_insert_line(doc_text);
     let new_text = format!("use {symbol_path};\n");
 
@@ -278,10 +287,9 @@ pub fn find_use_insert_line(doc_text: &str) -> u32 {
             continue;
         }
 
-        // Hit first non-header, non-use code
-        if last_use_line.is_some() {
-            break;
-        }
+        // The first code that is neither header nor `use` ends the file's import block: a `use` further down belongs
+        // to an item (`mod tests { use … }`), not to the file.
+        break;
     }
 
     if let Some(last_use) = last_use_line {
