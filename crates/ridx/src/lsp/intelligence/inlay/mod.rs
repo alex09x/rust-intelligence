@@ -112,9 +112,13 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     // The index's types sit on the lines of the text it compiled; in an edited buffer they move to the live lines
     // (a span on a line the edit changed or removed is dropped), and a binding on a new line asks the live engine.
     let line_map = overlay_mgr.get(&file).filter(|o| o.is_dirty()).and_then(|o| o.line_map());
+    // An edited buffer with no baseline to map through (changed on disk before it was opened, no snapshot) has no line
+    // the index's types or calls are known to sit on: none of them is shown, rather than shifted ones.
+    let unmappable = overlay_mgr.get(&file).is_some_and(|o| o.is_dirty()) && line_map.is_none();
     let compiled_lines = overlay_mgr.get(&file).and_then(|o| o.compiled_text.as_ref()).map_or(0, |t| t.lines().count());
     let index_lines = src.line_count().max(compiled_lines) as u32;
     let types: Vec<TypeSpan<'_>> = workspace
+        .filter(|_| !unmappable)
         .map(|ws| {
             ws.types_in_lines(&file, 1, index_lines)
                 .into_iter()
@@ -142,7 +146,7 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
         hints.extend(chaining::chaining_hints(&src, &types, lines));
         hints.extend(closing::closing_brace_hints(&src, lines));
         if let Some(ws) = workspace {
-            let to_index = |live: u32| line_map.as_ref().map_or(Some(live), |lm| lm.to_baseline(live));
+            let to_index = |live: u32| if unmappable { None } else { line_map.as_ref().map_or(Some(live), |lm| lm.to_baseline(live)) };
             hints.extend(params::parameter_hints(&src, ws, &file, lines, &to_index));
         }
         hints
@@ -156,8 +160,8 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
 /// (in an edited buffer, the line the index compiled it at), as a hint shows it but never cut with `…`: what
 /// `Add explicit type` writes for a type too long for the hint.
 pub(crate) fn binding_type_full(ws: &WorkspaceIndex, overlay_mgr: &OverlayManager, file: &str, line: u32, start: u32, end: u32) -> Option<String> {
-    let index_line = match overlay_mgr.get(file).filter(|o| o.is_dirty()).and_then(|o| o.line_map()) {
-        Some(lm) => lm.to_baseline(line)?,
+    let index_line = match overlay_mgr.get(file).filter(|o| o.is_dirty()) {
+        Some(o) => o.line_map()?.to_baseline(line)?,
         None => line,
     };
     let spans: Vec<TypeSpan<'_>> = ws
