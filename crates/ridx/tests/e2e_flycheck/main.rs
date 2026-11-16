@@ -12,5 +12,6 @@
 
 pub static PATH_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+mod ntm_flycheck_changed_file;
 mod ntm_flycheck_nonblocking;
 mod ntm_flycheck_saturation;

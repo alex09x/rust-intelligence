@@ -178,6 +178,11 @@ impl FlycheckState {
     }
 }
 
+/// Whether `path` was written after `since`.
+pub(crate) fn modified_since(path: &Path, since: std::time::SystemTime) -> bool {
+    std::fs::metadata(path).and_then(|m| m.modified()).is_ok_and(|t| t > since)
+}
+
 fn run_check_internal<F>(
     workspace_root: &Path,
     my_gen: u64,
@@ -217,6 +222,7 @@ where
         }
     }
 
+    let started = std::time::SystemTime::now();
     let mut child = cmd.spawn()?;
     let Some(stdout) = child.stdout.take() else {
         return Ok(0);
@@ -279,6 +285,9 @@ where
     if generation.load(Ordering::SeqCst) != my_gen {
         return Ok(0);
     }
+    // A file saved again or reverted (`git checkout`) while the check ran: its diagnostics describe a text that is
+    // gone, and the text now on disk was not checked. It gets none rather than ones on the wrong lines.
+    file_diagnostics.retain(|uri, _| !modified_since(Path::new(&super::super::protocol::uri_to_path(uri)), started));
 
     let mut published_guard = published_uris.lock().unwrap();
     let prev_published = published_guard.get(workspace_root).cloned().unwrap_or_default();
