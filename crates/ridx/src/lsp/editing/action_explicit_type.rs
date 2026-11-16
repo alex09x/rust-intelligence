@@ -77,24 +77,33 @@ fn untyped_let_name_end(line: &str) -> Option<usize> {
 
 /// Whether every name the type text `ty` uses is seen at the file's own level, so that writing it compiles.
 fn nameable(ty: &str, doc: &str) -> bool {
-    if ty.is_empty() || ty.contains(['{', '?', '\'']) || ty.contains("impl ") || ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_") {
+    // `…` is the inlay hint's truncation of a long type: never text to write.
+    if ty.is_empty() || ty.contains(['{', '?', '\'', '…']) || ty.contains("impl ") || ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_") {
         return false;
     }
     let mut words = ty.split(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':')).filter(|w| !w.is_empty());
     words.all(|w| {
         let head = w.split("::").next().unwrap_or(w);
         if w.contains("::") {
-            return matches!(head, "std" | "core" | "alloc" | "crate");
+            return matches!(head, "std" | "core" | "alloc" | "crate" | "Self");
         }
-        PRIMITIVES.contains(&w) || PRELUDE.contains(&w) || matches!(w, "dyn" | "mut" | "fn") || declared_or_imported(doc, w)
+        w.starts_with(|c: char| c.is_ascii_digit()) // an array length
+            || PRIMITIVES.contains(&w)
+            || PRELUDE.contains(&w)
+            || matches!(w, "dyn" | "mut" | "fn" | "const")
+            || declared_or_imported(doc, w)
     })
 }
 
-/// Whether the file declares `name` (a struct, enum, union, trait or type alias) or imports it at its own level.
+/// Whether the file declares `name` (a struct, enum, union, trait or type alias) or imports it, at its own level: an
+/// item starting at column 0, so neither a comment, a string nor an item of `mod tests` or of a function counts.
 fn declared_or_imported(doc: &str, name: &str) -> bool {
-    let declared = ["struct ", "enum ", "union ", "trait ", "type "]
-        .iter()
-        .any(|kw| doc.match_indices(&format!("{kw}{name}")).any(|(p, m)| !doc[p + m.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_')));
+    let declared = doc.lines().any(|line| {
+        let item = ["pub(crate) ", "pub "].iter().find_map(|v| line.strip_prefix(v)).unwrap_or(line);
+        ["struct ", "enum ", "union ", "trait ", "type "]
+            .iter()
+            .any(|kw| item.strip_prefix(kw).and_then(|rest| rest.strip_prefix(name)).is_some_and(|after| !after.starts_with(|c: char| c.is_alphanumeric() || c == '_')))
+    });
     declared || crate::lsp::intelligence::completion_import::name_imported(doc, name)
 }
 
@@ -124,5 +133,16 @@ mod tests {
         assert!(!nameable("Vec<_>", doc));
         assert!(!nameable("&'a str", doc));
         assert!(!nameable("{closure}", doc));
+        assert!(!nameable("Result<Option<String>, …>", doc), "a truncated hint");
+        assert!(!nameable("(String, String, String, …)", doc));
+        assert!(nameable("[u8; 32]", doc), "an array length");
+        assert!(nameable("*const u8", doc));
+        assert!(nameable("Self::Item", doc));
+        let nested = "// struct Commented;\nconst S: &str = \"struct InString\";\nmod tests {\n    struct Inner;\n}\nfn f() {\n    struct Local;\n}\npub(crate) struct Top;\n";
+        assert!(!nameable("Commented", nested), "a comment declares nothing");
+        assert!(!nameable("InString", nested), "nor a string");
+        assert!(!nameable("Inner", nested), "an item of `mod tests` is not seen outside it");
+        assert!(!nameable("Local", nested), "nor an item of a function");
+        assert!(nameable("Top", nested));
     }
 }
