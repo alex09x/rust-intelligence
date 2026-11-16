@@ -36,15 +36,28 @@ pub(super) fn import_path(s: &WorkspaceSymbol<'_>, current_crate: Option<&str>, 
     let full = if first == s.crate_name || matches!(first, "std" | "core" | "alloc") { s.path.to_string() } else { format!("{}::{}", s.crate_name, s.path) };
     let (krate, _) = full.split_once("::")?;
     let in_crate = Some(krate) == current_crate;
-    let key = format!("{in_crate}:{full}");
+    let def = defining_file(s);
+    // A binary (`src/main.rs`, `src/bin/*`) shares the package's crate name, but its `crate::` is the binary: an item
+    // of the package's library is reached through the library, as from another crate.
+    let from_bin = in_crate && is_bin_root(Path::new(current_file)) && def != Path::new(current_file);
+    let key = format!("{in_crate}:{from_bin}:{full}");
     if let Some(found) = roots.get(&key) {
         return found.clone();
     }
+    let via_lib = || {
+        let lib = lib_root(&def)?;
+        match visibility(s) {
+            Vis::ExportedMacro => Some(format!("{krate}::{}", s.name)),
+            Vis::Pub => public_path(&lib, &full),
+            _ => None,
+        }
+    };
     let found = match krate {
         "std" | "core" | "alloc" if !in_crate => std_path(krate, &full, current_file),
+        _ if from_bin && via_lib().is_some() => via_lib(),
         _ => {
             let vis = visibility(s);
-            let root = crate_root(&defining_file(s));
+            let root = if from_bin { Some(PathBuf::from(current_file)) } else { crate_root(&def) };
             // An item of the crate root is reached by `krate::item` with no module on the way to read.
             let via_root = |find: fn(&Path, &str) -> Option<String>| match &root {
                 Some(r) => find(r, &full),
@@ -86,15 +99,30 @@ fn is_no_std(file: &Path) -> bool {
     crate_root(file).and_then(|r| std::fs::read_to_string(r).ok()).is_some_and(|t| t.contains("#![no_std]"))
 }
 
-/// The library root of the package above `file`: its `Cargo.toml`'s `[lib] path`, else `src/lib.rs`, else `src/main.rs`.
+/// The root file of the package above `file`: its library's, else `src/main.rs`.
 fn crate_root(file: &Path) -> Option<PathBuf> {
-    let dir = file.ancestors().skip(1).find(|d| d.join("Cargo.toml").is_file())?;
+    lib_root(file).or_else(|| Some(package_dir(file)?.join("src/main.rs")).filter(|p| p.is_file()))
+}
+
+fn package_dir(file: &Path) -> Option<&Path> {
+    file.ancestors().skip(1).find(|d| d.join("Cargo.toml").is_file())
+}
+
+/// The library root of the package above `file`: its `Cargo.toml`'s `[lib] path`, else `src/lib.rs`.
+fn lib_root(file: &Path) -> Option<PathBuf> {
+    let dir = package_dir(file)?;
     let manifest = std::fs::read_to_string(dir.join("Cargo.toml")).unwrap_or_default();
     let lib_path = manifest.split("[lib]").nth(1).and_then(|sec| {
         let sec = sec.split("\n[").next().unwrap_or(sec);
         sec.lines().find_map(|l| l.trim().strip_prefix("path").map(str::trim).and_then(|v| v.strip_prefix('=')).map(|v| v.trim().trim_matches('"').to_string()))
     });
-    [lib_path.map(|p| dir.join(p)), Some(dir.join("src/lib.rs")), Some(dir.join("src/main.rs"))].into_iter().flatten().find(|p| p.is_file())
+    [lib_path.map(|p| dir.join(p)), Some(dir.join("src/lib.rs"))].into_iter().flatten().find(|p| p.is_file())
+}
+
+/// Whether `file` is the root of a binary target: `src/main.rs` or a file under `src/bin/`.
+fn is_bin_root(file: &Path) -> bool {
+    let s = file.to_string_lossy();
+    s.ends_with("/src/main.rs") || s.contains("/src/bin/")
 }
 
 /// The file `s` is declared in, on disk (a crate's source root and its file path overlap: `ws/native` + `native/src/lib.rs`).

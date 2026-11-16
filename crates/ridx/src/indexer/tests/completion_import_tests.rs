@@ -87,4 +87,15 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     assert_eq!(edit["range"]["start"]["line"], line, "right after `mod tests`' last use");
     let re_in = server.completion(&uri, line, col - 4);
     assert!(offered(&re_in).iter().all(|(l, u)| l != "Reexported" || u.is_none()), "imported by `mod tests` itself");
+
+    // The package's binary uses its library as another crate: `app::util::helper` is not `crate::` from `main.rs`.
+    write(&ws, "app/src/lib.rs", &app.replace("mod util;", "pub mod util;"));
+    let main = ws.join("app/src/main.rs");
+    write(&ws, "app/src/main.rs", "fn main() {}\n");
+    try_run_indexing(index_opts(&ws, &cas, &driver)).expect("reindex");
+    let mut server = Server::start(&ws);
+    let text = "fn main() {}\nfn typed() { helpe";
+    let uri = server.open_with(&main, text);
+    let items = offered(&server.completion(&uri, 1, text.lines().last().unwrap().len() as u32));
+    assert!(items.contains(&("helper".into(), Some("use app::util::helper;".into()))), "through the library: {items:?}");
 }
