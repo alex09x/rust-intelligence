@@ -20,6 +20,14 @@ pub(crate) fn opens_declaration(chars: &[char], name_start: usize) -> bool {
     header_declares(&item_header(&code, code.len()), false) || in_enum_variant_list(&code, code.len())
 }
 
+/// Whether the `r` at `i` starts a token, alone or after a `b`/`c` prefix (review of 29944322: `br"C:\"` was lexed as
+/// an ordinary string, whose `\"` did not close it).
+fn raw_prefix_starts_token(chars: &[char], i: usize) -> bool {
+    let ident = |c: char| c.is_alphanumeric() || c == '_';
+    let start = if i > 0 && matches!(chars[i - 1], 'b' | 'c') { i - 1 } else { i };
+    start == 0 || !ident(chars[start - 1])
+}
+
 /// `chars` with comments, string and char literals turned into spaces (line breaks kept): the same length, so
 /// positions still match.
 fn blank_comments_and_literals(chars: &[char]) -> Vec<char> {
@@ -55,8 +63,8 @@ fn blank_comments_and_literals(chars: &[char]) -> Vec<char> {
                     i += 1;
                 }
             }
-        } else if chars[i] == 'r' && (at(i + 1, "\"") || at(i + 1, "#")) && (i == 0 || !(chars[i - 1].is_alphanumeric() || chars[i - 1] == '_')) {
-            // A raw string `r#"…"#`; `r#ident` is a raw identifier.
+        } else if chars[i] == 'r' && (at(i + 1, "\"") || at(i + 1, "#")) && raw_prefix_starts_token(chars, i) {
+            // A raw string `r#"…"#` (or `br"…"`, `cr"…"`); `r#ident` is a raw identifier.
             let hashes = chars[i + 1..].iter().take_while(|&&c| c == '#').count();
             if chars.get(i + 1 + hashes) != Some(&'"') {
                 i += 1;
@@ -233,6 +241,8 @@ mod tests {
             "fn t() {\n    /* impl /* nested */ struct */ ",
             "fn t() { let s = \"impl X for\"; let r = r#\"struct \"S\" {\"#; let c = '{'; let l: &'a str = ",
             "fn t() { x.f('\\'', \"fn \\\"q\\\" \"); ",
+            "fn t() { if check(br#\" \" struct x \"#) {\n    ",
+            "fn t() { let p = br\"C:\\\"; let q = cr\"struct \"; ",
         ] {
             assert!(!decl(c), "a call or literal: {c:?}");
         }
