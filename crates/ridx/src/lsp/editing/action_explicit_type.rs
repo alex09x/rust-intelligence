@@ -51,7 +51,7 @@ pub fn explicit_type_action(doc: &str, uri: &str, range: &Value, doc_version: Op
     for d in DEFAULT_PARAMS {
         ty = ty.replace(d, ">");
     }
-    if !nameable(&ty, doc) {
+    if !nameable(&ty, doc, line0 as usize) {
         return None;
     }
     let edit = json!({ "range": { "start": { "line": line0, "character": name_end }, "end": { "line": line0, "character": name_end } }, "newText": format!(": {ty}") });
@@ -81,8 +81,9 @@ fn untyped_let_name_end(line: &str) -> Option<usize> {
     (after.starts_with('=') && !after.starts_with("==")).then_some(indent + 4 + skip + name_len)
 }
 
-/// Whether every name the type text `ty` uses is seen at the file's own level, so that writing it compiles.
-fn nameable(ty: &str, doc: &str) -> bool {
+/// Whether every name the type text `ty` uses is seen on line `line0` (0-based) of `doc`, so that writing it there
+/// compiles: declared or imported at the file's own level, or imported in a block around the line.
+fn nameable(ty: &str, doc: &str, line0: usize) -> bool {
     // `…` is the inlay hint's truncation of a long type: never text to write.
     if ty.is_empty() || ty.contains(['{', '?', '\'', '…']) || ty.contains("impl ") || ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_") {
         return false;
@@ -98,7 +99,55 @@ fn nameable(ty: &str, doc: &str) -> bool {
             || PRELUDE.contains(&w)
             || matches!(w, "dyn" | "mut" | "fn" | "const")
             || declared_or_imported(doc, w)
+            || imported_around(doc, line0, w)
     })
+}
+
+/// Whether a `use` in a block enclosing line `line0` of `doc` (a `mod tests`, a function) brings `name` in: in Zed,
+/// `HashSet` imported in `mod tests` got no `Add explicit type` on a `let` in a test there.
+fn imported_around(doc: &str, line0: usize, name: &str) -> bool {
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(doc);
+    let b = masked.as_bytes();
+    let at: usize = doc.split_inclusive('\n').take(line0).map(str::len).sum();
+    // Whether the block opened at `open` is still open at byte `at`.
+    let encloses = |open: usize| {
+        let mut depth = 0usize;
+        for (i, &c) in b.iter().enumerate().skip(open) {
+            match c {
+                b'{' => depth += 1,
+                b'}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return i > at;
+                    }
+                }
+                _ => {}
+            }
+        }
+        true
+    };
+    let mut open_braces: Vec<usize> = Vec::new();
+    let mut p = 0;
+    while p < b.len() {
+        match b[p] {
+            b'{' => open_braces.push(p),
+            b'}' => {
+                open_braces.pop();
+            }
+            b'u' if b[p..].starts_with(b"use ") && (p == 0 || !(b[p - 1].is_ascii_alphanumeric() || b[p - 1] == b'_')) => {
+                if let Some(end) = masked[p..].find(';').map(|i| p + i) {
+                    let in_scope = open_braces.last().is_some_and(|&open| open < at && encloses(open));
+                    if in_scope && crate::lsp::intelligence::use_tree::use_leaves(&masked[p + 4..end]).iter().any(|l| l.name.as_deref() == Some(name)) {
+                        return true;
+                    }
+                    p = end;
+                }
+            }
+            _ => {}
+        }
+        p += 1;
+    }
+    false
 }
 
 /// Whether the file declares `name` (a struct, enum, union, trait or type alias) or imports it, at its own level: an
@@ -129,26 +178,39 @@ mod tests {
     #[test]
     fn test_nameable_types() {
         let doc = "use std::collections::HashSet;\nuse crate::pricing::Flat;\npub struct Cart;\n";
-        assert!(nameable("Flat", doc));
-        assert!(nameable("HashSet<String>", doc));
-        assert!(nameable("Vec<(u8, &str)>", doc));
-        assert!(nameable("Option<Box<dyn std::error::Error>>", doc));
-        assert!(nameable("Cart", doc));
-        assert!(!nameable("HashMap<u8, u8>", doc), "not imported");
-        assert!(!nameable("impl Iterator<Item = u8>", doc));
-        assert!(!nameable("Vec<_>", doc));
-        assert!(!nameable("&'a str", doc));
-        assert!(!nameable("{closure}", doc));
-        assert!(!nameable("Result<Option<String>, …>", doc), "a truncated hint");
-        assert!(!nameable("(String, String, String, …)", doc));
-        assert!(nameable("[u8; 32]", doc), "an array length");
-        assert!(nameable("*const u8", doc));
-        assert!(nameable("Self::Item", doc));
+        assert!(nameable("Flat", doc, 0));
+        assert!(nameable("HashSet<String>", doc, 0));
+        assert!(nameable("Vec<(u8, &str)>", doc, 0));
+        assert!(nameable("Option<Box<dyn std::error::Error>>", doc, 0));
+        assert!(nameable("Cart", doc, 0));
+        assert!(!nameable("HashMap<u8, u8>", doc, 0), "not imported");
+        assert!(!nameable("impl Iterator<Item = u8>", doc, 0));
+        assert!(!nameable("Vec<_>", doc, 0));
+        assert!(!nameable("&'a str", doc, 0));
+        assert!(!nameable("{closure}", doc, 0));
+        assert!(!nameable("Result<Option<String>, …>", doc, 0), "a truncated hint");
+        assert!(!nameable("(String, String, String, …)", doc, 0));
+        assert!(nameable("[u8; 32]", doc, 0), "an array length");
+        assert!(nameable("*const u8", doc, 0));
+        assert!(nameable("Self::Item", doc, 0));
         let nested = "// struct Commented;\nconst S: &str = \"struct InString\";\nmod tests {\n    struct Inner;\n}\nfn f() {\n    struct Local;\n}\npub(crate) struct Top;\n";
-        assert!(!nameable("Commented", nested), "a comment declares nothing");
-        assert!(!nameable("InString", nested), "nor a string");
-        assert!(!nameable("Inner", nested), "an item of `mod tests` is not seen outside it");
-        assert!(!nameable("Local", nested), "nor an item of a function");
-        assert!(nameable("Top", nested));
+        assert!(!nameable("Commented", nested, 0), "a comment declares nothing");
+        assert!(!nameable("InString", nested, 0), "nor a string");
+        assert!(!nameable("Inner", nested, 0), "an item of `mod tests` is not seen outside it");
+        assert!(!nameable("Local", nested, 0), "nor an item of a function");
+        assert!(nameable("Top", nested, 0));
+    }
+
+    /// In Zed: `HashSet` imported in `mod tests` and a `let` in a test there got no `Add explicit type`.
+    #[test]
+    fn test_types_imported_in_a_block_around_the_line() {
+        let doc = "pub struct Cart;\n#[cfg(test)]\nmod tests {\n    use std::collections::{HashMap, HashSet};\n    #[test]\n    fn t() {\n        use std::rc::Rc;\n        let tags = HashSet::<u8>::new();\n    }\n}\nfn outside() {\n    let x = 1;\n}\n";
+        let at = |needle: &str| doc.lines().position(|l| l.contains(needle)).unwrap();
+        assert!(nameable("HashSet<u8>", doc, at("let tags")), "the module's import");
+        assert!(nameable("HashMap<u8, Rc<Cart>>", doc, at("let tags")), "and the function's own");
+        assert!(!nameable("HashSet<u8>", doc, at("let x")), "not seen outside the module");
+        assert!(!nameable("Rc<u8>", doc, at("let x")));
+        let commented = "mod tests {\n    // use std::collections::HashSet;\n    fn t() {\n        let tags = 1;\n    }\n}\n";
+        assert!(!nameable("HashSet<u8>", commented, 3), "a commented-out import brings nothing");
     }
 }
