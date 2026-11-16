@@ -84,8 +84,10 @@ pub fn dispatch_lsp_message<W: Write>(
     let ra_commands = lifecycle.ra_client_commands();
     let ra_show_references = ra_commands.show_references;
     let conv = &mut lifecycle.conv;
+    let off_token = super::off_token::POSITION_METHODS.contains(&method) && super::off_token::is_off_token(&msg, ov, conv);
 
     let result: super::error::LspResult<Value> = match method {
+        _ if off_token => Ok(Value::Null),
         "initialize" => match lifecycle.handle_initialize(&msg) {
             Ok((capabilities, folders)) => {
                 if !folders.is_empty() {
