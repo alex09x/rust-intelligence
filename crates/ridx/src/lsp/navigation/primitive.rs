@@ -50,11 +50,34 @@ pub(crate) fn primitive_at(line: &str, col: u32) -> Option<&'static str> {
     let word: String = chars[s..e].iter().collect();
     let before = chars[..s].iter().rev().find(|c| !c.is_whitespace());
     let path_segment = s >= 2 && chars[s - 2] == ':' && chars[s - 1] == ':';
-    let after = chars[e..].iter().find(|c| !c.is_whitespace());
-    if before == Some(&'.') || path_segment || matches!(after, Some('!' | '(')) {
+    let rest: String = chars[e..].iter().collect::<String>().trim_start().to_string();
+    // A field (`u8: u8`, `M { u8: 1 }`) is followed by one `:`, a type's associated item (`f32::MAX`) by two.
+    let field = rest.starts_with(':') && !rest.starts_with("::");
+    // Review of 19d427d9: a raw identifier (`r#str`) names no primitive, nor does a word in a string or comment.
+    if matches!(before, Some('.' | '#')) || path_segment || field || rest.starts_with(['!', '(']) || in_string_or_comment(&chars, s) {
         return None;
     }
     PRIMITIVES.iter().find(|p| **p == word).copied()
+}
+
+/// Whether character `at` of a line lies in a string literal, a `//` comment or a block comment's continuation line.
+fn in_string_or_comment(chars: &[char], at: usize) -> bool {
+    let first = chars.iter().position(|c| !c.is_whitespace()).unwrap_or(0);
+    if chars.get(first) == Some(&'*') || chars[first..].starts_with(&['/', '*']) {
+        return true;
+    }
+    let mut in_str = false;
+    let mut k = 0;
+    while k < at {
+        match chars[k] {
+            '\\' if in_str => k += 1,
+            '"' => in_str = !in_str,
+            '/' if !in_str && chars.get(k + 1) == Some(&'/') => return true,
+            _ => {}
+        }
+        k += 1;
+    }
+    in_str
 }
 
 /// The documentation of primitive `name` in `primitive_docs.rs` (`text`): the `///` lines above `mod prim_<name> {}`,
@@ -68,8 +91,9 @@ fn parse_primitive_doc(text: &str, name: &str) -> Option<(u32, u32, u32, String)
     for l in lines[..at].iter().rev().map(|l| l.trim()) {
         if let Some(d) = l.strip_prefix("///") {
             docs.push(d.strip_prefix(' ').unwrap_or(d));
-        } else if l.starts_with("#[rustc_doc_primitive") || !(l.starts_with("#[") || l == "//") {
-            // The docs start below the primitive's own attribute; a blank line or code ends them as well.
+        } else if l.starts_with("#[rustc_doc_primitive") || !(l.starts_with("#[") || l.starts_with("//")) {
+            // The docs start below the primitive's own attribute; a blank line or code ends them as well. A plain
+            // comment inside them does not (review of 19d427d9: `f32`'s `// Sorted alphabetically` cut its docs).
             break;
         }
     }
@@ -132,6 +156,20 @@ mod tests {
         assert_eq!(primitive_at(line, col("u8(2", 0)), None, "a call");
         assert_eq!(primitive_at(line, col("usizes", 1)), None);
         assert_eq!(primitive_at(line, col("samples", 1)), None);
+
+        // Review of 19d427d9.
+        let line = r#"    pub u8: u8, M { u8: 1 }, r#str, x.r#char, "usize", s.f("a\"bool"), y // a usize"#;
+        let col = |needle: &str, k: usize| line.find(needle).unwrap() as u32 + 1 + k as u32;
+        assert_eq!(primitive_at(line, col("u8: u8", 0)), None, "a field's declaration");
+        assert_eq!(primitive_at(line, col("u8: u8", 4)), Some("u8"), "its type");
+        assert_eq!(primitive_at(line, col("u8: 1", 0)), None, "a field in a literal");
+        assert_eq!(primitive_at(line, col("str,", 0)), None, "a raw identifier");
+        assert_eq!(primitive_at(line, col("char", 0)), None);
+        assert_eq!(primitive_at(line, col("usize\"", 0)), None, "a string");
+        assert_eq!(primitive_at(line, col("bool", 0)), None, "a string past an escaped quote");
+        assert_eq!(primitive_at(line, line.rfind("usize").unwrap() as u32 + 1), None, "a comment");
+        assert_eq!(primitive_at(" * the usize of a block comment", 10), None);
+        assert_eq!(primitive_at("let s: &str = \"\";", 9), Some("str"), "a string after it is no matter");
     }
 
     #[test]

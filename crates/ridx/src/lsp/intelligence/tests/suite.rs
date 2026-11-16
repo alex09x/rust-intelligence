@@ -145,8 +145,19 @@ fn test_a_primitive_type_goes_to_its_docs_in_core() {
     let text = hover["contents"]["value"].as_str().unwrap();
     assert!(text.starts_with("```rust\nusize\n```") && text.contains("pointer-sized unsigned integer"), "{text}");
 
-    let field = crate::lsp::navigation::handle_definition(&req(2, 9), Some(&ws), &overlay_mgr, &mut conv);
-    assert!(field.is_null() || !field["uri"].as_str().unwrap_or("").ends_with("primitive_docs.rs"), "a field named `u8` is no primitive: {field}");
+    // Review of 19d427d9: in `src/lib.rs` the index answered at (2, 9) before step 4 ran; a file it never compiled
+    // reaches it. A field named `u8`, a string and a raw identifier name no primitive; the field's type does.
+    let other = temp_dir.join("src/other.rs");
+    let other_uri = format!("file://{}", other.to_str().unwrap());
+    overlay_mgr.open_document(&other_uri, other.to_str().unwrap(), 1, "pub struct N {\n    pub u8: u8,\n}\nconst S: &str = \"usize\";\nfn r#str() {}\n".to_string());
+    let def_at = |line: u32, character: u32, conv: &mut _| {
+        let r = json!({ "params": { "textDocument": { "uri": &other_uri }, "position": { "line": line, "character": character } } });
+        crate::lsp::navigation::handle_definition(&r, Some(&ws), &overlay_mgr, conv)["uri"].as_str().unwrap_or("").to_string()
+    };
+    assert!(def_at(1, 13, &mut conv).ends_with("primitive_docs.rs"), "the field's type");
+    assert!(!def_at(1, 8, &mut conv).ends_with("primitive_docs.rs"), "a field named `u8`");
+    assert!(!def_at(3, 19, &mut conv).ends_with("primitive_docs.rs"), "a string");
+    assert!(!def_at(4, 6, &mut conv).ends_with("primitive_docs.rs"), "a raw identifier");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
