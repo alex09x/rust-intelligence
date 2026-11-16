@@ -144,3 +144,28 @@ fn test_an_import_edit_blocks_the_index_only_for_the_names_it_imports() {
     ov.update(3, live.replace("    use super::*;\n", ""));
     assert!(ov.imports_changed_for("Discount"));
 }
+
+#[test]
+fn test_an_import_edit_reaches_paths_methods_local_uses_and_raw_names() {
+    let edit = |compiled: &str, live: &str| {
+        let mut ov = crate::overlay::DocumentOverlay::new("file:///x.rs", "/x.rs", 1, compiled.to_string());
+        ov.update(2, live.to_string());
+        ov
+    };
+    // `use v1::models` → `use v2::models`: `RemoteItem` in `models::RemoteItem` follows the changed first segment.
+    let ov = edit("use crate::v1::models;\nfn f() { let _ = models::RemoteItem; }\n", "use crate::v2::models;\nfn f() { let _ = models::RemoteItem; }\n");
+    assert!(ov.imports_changed_at(2, 28), "the path's first segment changed");
+    // An anonymous trait import changes what a method call resolves to.
+    let ov = edit("use a::Old as _;\nfn f(x: u8) { x.run(); }\n", "use a::New as _;\nfn f(x: u8) { x.run(); }\n");
+    assert!(ov.imports_changed_at(2, 17), "`run` after `.`");
+    // A function's own `use` counts as well.
+    let ov = edit("fn f() { use a::Foo; let _ = Foo; }\n", "fn f() { use b::Foo; let _ = Foo; }\n");
+    assert!(ov.imports_changed_for("Foo"));
+    // A raw name compares without its `r#`.
+    let ov = edit("use a::r#type;\nfn f() { r#type(); }\n", "use b::r#type;\nfn f() { r#type(); }\n");
+    assert!(ov.imports_changed_at(2, 10));
+    // A comment names nothing; adding another inline module above `mod tests` moves no key.
+    let tests = "mod tests {\n    use super::*;\n}\n";
+    let ov = edit(&format!("// use a::Foo;\nfn g() {{}}\n{tests}"), &format!("// use b::Foo;\nmod extra {{}}\nfn g() {{}}\n{tests}"));
+    assert!(!ov.imports_changed_for("Foo") && !ov.imports_changed_for("g"), "no glob and no name changed");
+}

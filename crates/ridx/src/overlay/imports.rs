@@ -12,37 +12,66 @@
 
 use std::collections::HashSet;
 
-/// What the `use` items and file module declarations of `text` bring in (`mod tests { … }` bodies are not imports):
-/// every `(name, path)`, and the paths of its globs (`super` for `use super::*;`), whose names cannot be listed.
+/// What `text` brings into scope by name: every `(name, path)` of its `use` items at any depth (a function's own
+/// `use` too), `extern crate` and `mod name;` declarations, and the paths of its globs (`super` for `use super::*;`),
+/// whose names cannot be listed. An anonymous import (`use a::Trait as _;`) is named `_`: it changes what methods
+/// resolve to. Each path carries the block it is declared in, keyed by the text of the line opening that block
+/// (`mod tests {`, `fn f() {`): the same import in two blocks counts twice, and an edit elsewhere moves no key.
+/// Comments and strings name nothing.
 pub fn imported_names(text: &str) -> (HashSet<(String, String)>, HashSet<String>) {
-    use crate::lsp::intelligence::{completion_import::inline_mod_ranges, use_tree};
+    use crate::lsp::intelligence::use_tree;
+    let masked = crate::lsp::editing::action_parse::mask_comments_and_strings(text);
+    let b = masked.as_bytes();
     let (mut names, mut globs) = (HashSet::new(), HashSet::new());
-    // The file's own level and that of each inline module (`mod tests { use super::*; … }`), the module's ordinal kept
-    // in the path so that the same import in two modules counts twice (an ordinal, unlike an offset, survives edits).
-    let levels = std::iter::once((0, text.len())).chain(inline_mod_ranges(text).into_iter().map(|(s, e)| (s + 1, e)));
-    for (ordinal, level) in levels.enumerate() {
-        for (_, tree) in use_tree::level_uses(text, level) {
-            for leaf in use_tree::use_leaves(&tree) {
-                let path = format!("{}@{ordinal}", leaf.path);
-                match leaf.name {
-                    _ if leaf.glob => {
+    let mut blocks: Vec<String> = Vec::new();
+    let word_at = |p: usize, w: &str| {
+        masked[p..].starts_with(w) && (p == 0 || !(b[p - 1].is_ascii_alphanumeric() || b[p - 1] == b'_')) && b.get(p + w.len()).is_some_and(u8::is_ascii_whitespace)
+    };
+    let mut p = 0;
+    while p < b.len() {
+        match b[p] {
+            b'{' => {
+                let line_start = masked[..p].rfind('\n').map_or(0, |i| i + 1);
+                blocks.push(masked[line_start..p].trim().to_string());
+            }
+            b'}' => {
+                blocks.pop();
+            }
+            _ => {}
+        }
+        let statement_end = || masked[p..].find(';').map(|i| p + i);
+        if word_at(p, "use") {
+            let block = blocks.join("/");
+            if let Some(end) = statement_end() {
+                for leaf in use_tree::use_leaves(&masked[p + 3..end]) {
+                    let path = format!("{}@{block}", leaf.path);
+                    if leaf.glob {
                         globs.insert(path);
+                    } else {
+                        names.insert((leaf.name.unwrap_or_else(|| "_".to_string()), path));
                     }
-                    Some(name) => {
-                        names.insert((name, path));
-                    }
-                    None => {}
                 }
+                p = end;
+                continue;
+            }
+        } else if word_at(p, "extern") && masked[p + 6..].trim_start().starts_with("crate") {
+            let block = blocks.join("/");
+            if let Some(end) = statement_end() {
+                let decl: Vec<&str> = masked[p..end].split_whitespace().collect();
+                let name = if decl.len() >= 5 && decl[3] == "as" { decl[4] } else { decl.get(2).copied().unwrap_or_default() };
+                names.insert((name.to_string(), format!("extern crate {}@{block}", decl.get(2).copied().unwrap_or_default())));
+                p = end;
+                continue;
+            }
+        } else if word_at(p, "mod") {
+            let rest = &masked[p + 3..];
+            let name_len = rest.trim_start().find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(0);
+            let name = rest.trim_start()[..name_len].to_string();
+            if rest.trim_start()[name_len..].trim_start().starts_with(';') {
+                names.insert((name.clone(), format!("self::{name}@{}", blocks.join("/"))));
             }
         }
-    }
-    // File modules (`mod util;`) bring their names in too.
-    for line in text.lines() {
-        let t = line.trim();
-        let t = t.strip_prefix("pub ").or_else(|| t.strip_prefix("pub(crate) ")).unwrap_or(t);
-        if let Some(m) = t.strip_prefix("mod ").and_then(|r| r.strip_suffix(';')) {
-            names.insert((m.trim().to_string(), format!("self::{}", m.trim())));
-        }
+        p += masked[p..].chars().next().map_or(1, char::len_utf8);
     }
     (names, globs)
 }

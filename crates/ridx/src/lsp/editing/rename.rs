@@ -199,12 +199,14 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
 
                     let ref_ov = overlay_mgr.get(r_str);
                     let (mut mapped_line, mut mapped_col) = if let Some(rov) = ref_ov.filter(|o| o.is_dirty()) {
-                        if rov.imports_changed_for(target_name) {
-                            return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
-                        }
                         let pos = rov
                             .map_compiled_to_live(r.span.start_line(), r.span.start_col())
                             .ok_or_else(|| LspError::request_failed("Cannot map symbol position in modified file"))?;
+                        // The reference as it stands now: its name, its path's first segment, or the trait a method
+                        // comes from may be imported otherwise than when the index was built.
+                        if rov.imports_changed_for(target_name) || rov.imports_changed_at(pos.0, pos.1) {
+                            return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
+                        }
                         if let Some(local_def) = rov.find_definition_at(pos.0, pos.1) {
                             if r_str != decl_str || decl_final_line != Some(local_def.start_line) {
                                 return Err(LspError::request_failed("Symbol shadowed by local definition"));
