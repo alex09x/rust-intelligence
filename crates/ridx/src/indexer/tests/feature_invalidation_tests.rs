@@ -12,7 +12,8 @@
 
 use super::*;
 use crate::indexer::driver::find_driver_binary;
-use crate::indexer::orchestrate::{keep_last_good_shards, run_indexing};
+use crate::indexer::feature_seed::keep_last_good_shards;
+use crate::indexer::orchestrate::run_indexing;
 use crate::indexer::variant::compute_variant_id;
 use crate::indexer::{IndexBuilder, IndexOptions};
 use ridx_format::{IndexReader, VariantManifest};

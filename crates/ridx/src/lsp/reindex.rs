@@ -21,6 +21,9 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
+/// Where a background run writes its output, under the workspace root.
+const REINDEX_LOG: &str = "target/ridx/reindex.log";
+
 #[derive(Default)]
 struct RootState {
     /// When the current run started; `None` while idle.
@@ -77,9 +80,12 @@ impl Reindexer {
         let root = root.to_path_buf();
         std::thread::spawn(move || loop {
             let started = std::time::Instant::now();
-            let ok =
-                Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).status().is_ok_and(|s| s.success());
-            crate::lsp::logger::log_info(&format!("reindexed {} in {:.1} s ({})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }));
+            // The run's output goes to `target/ridx/reindex.log`: why a crate did not build stays readable.
+            let log = root.join(REINDEX_LOG);
+            let out = std::fs::File::create(&log).map_or_else(|_| Stdio::null(), Stdio::from);
+            let ok = Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(out).status().is_ok_and(|s| s.success());
+            let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
+            crate::lsp::logger::log_info(&msg);
             let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
             let st = roots.entry(root.clone()).or_default();
             if std::mem::take(&mut st.again) {

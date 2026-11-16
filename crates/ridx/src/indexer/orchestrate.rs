@@ -17,6 +17,7 @@ use super::driver::find_driver_binary;
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
 use super::variant::compute_variant_id;
+use crate::indexer::feature_seed::keep_last_good_shards;
 use colored::*;
 use ridx_format::WorkspaceIndex;
 use std::fs;
@@ -231,10 +232,16 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             }
         }
     }
-    // The crates that built are indexed even when another failed: publish them.
+    // A crate that did not build keeps the shards it had: those this run set aside before rebuilding it, else those
+    // of the variant active before. The crates that built are indexed even when another failed: publish them.
+    let stale = variant_out_dir.join(super::feature_seed::STALE_DIR);
+    if !ok {
+        keep_last_good_shards(&variant_out_dir, check_started, Some(&stale).filter(|s| s.is_dir()).map(PathBuf::as_path));
+        keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
+    }
+    let _ = fs::remove_dir_all(&stale);
     if !ok && variant_has_shards(&variant_out_dir) {
         eprintln!("  warning: {} check exited with status {status}; publishing the crates that built", builder.as_str());
-        keep_last_good_shards(&variant_out_dir, check_started, previous_variant.as_deref());
     } else if !ok {
         if stderr_tail.is_empty() {
             return Err(format!("{} check exited with status {status}", builder.as_str()));
@@ -307,55 +314,6 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     }
 
     Ok(PublishedVariant { base_out_dir, variant_out_dir, variant_id })
-}
-
-/// After a check that failed for some crates: the shards it wrote replace the earlier shards of the same crates,
-/// and a crate that did not build keeps its last good shards.
-pub(super) fn keep_last_good_shards(dir: &Path, started: std::time::SystemTime, previous: Option<&Path>) {
-    let shards: Vec<(PathBuf, String, bool)> = fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.extension().is_some_and(|x| x == "ridx"))
-        .filter_map(|p| {
-            let stem = p.file_stem()?.to_str()?.to_string();
-            let krate = stem.rsplit_once('-').map_or(stem.clone(), |(c, _)| c.to_string());
-            let fresh = fs::metadata(&p).and_then(|m| m.modified()).is_ok_and(|t| t >= started);
-            Some((p, krate, fresh))
-        })
-        .collect();
-    let rebuilt: std::collections::HashSet<&str> = shards.iter().filter(|s| s.2).map(|s| s.1.as_str()).collect();
-    for (path, krate, fresh) in &shards {
-        if !fresh && rebuilt.contains(krate.as_str()) {
-            let _ = fs::remove_file(path);
-        }
-    }
-    // Crates with no shard here take theirs, with their sidecars, from the variant active before.
-    let Some(prev) = previous else { return };
-    let present: std::collections::HashSet<String> = shards.iter().map(|s| s.1.clone()).collect();
-    let mut adopted = std::collections::HashSet::new();
-    for entry in fs::read_dir(prev).into_iter().flatten().flatten() {
-        let p = entry.path();
-        let Some(name) = p.file_name().and_then(|n| n.to_str()).map(str::to_string) else { continue };
-        let Some(stem) = name.strip_suffix(".ridx") else { continue };
-        let krate = stem.rsplit_once('-').map_or(stem, |(c, _)| c);
-        if !present.contains(krate) && fs::copy(&p, dir.join(&name)).is_ok() {
-            adopted.insert(name);
-        }
-    }
-    let (from, to) = (prev.join(".deps"), dir.join(".deps"));
-    for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
-        let Some(mut j) = fs::read(entry.path()).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { continue };
-        let shard = j["object_path"].as_str().and_then(|o| Path::new(o).file_name()).and_then(|f| f.to_str()).map(str::to_string);
-        if !shard.as_ref().is_some_and(|s| adopted.contains(s)) || to.join(entry.file_name()).exists() {
-            continue;
-        }
-        j["object_path"] = serde_json::json!(dir.join(shard.unwrap_or_default()).display().to_string());
-        if let Ok(b) = serde_json::to_vec(&j) {
-            let _ = fs::write(to.join(entry.file_name()), b);
-        }
-    }
 }
 
 /// Takes the exclusive lock of the index directory `base_out_dir` (`.index.lock`), waiting while another run

@@ -15,6 +15,9 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// The subdirectory of a variant holding, during a run, the shards of the crates that run rebuilds.
+pub(crate) const STALE_DIR: &str = ".stale";
+
 pub(super) fn variant_node_feature_state(vm: Option<&ridx_format::VariantManifest>, node: &ResolvedPackageNode, effective_target: &str, host_triple: Option<&str>) -> Option<bool> {
     let vm = vm?;
     if vm.crate_features.is_empty() {
@@ -149,6 +152,10 @@ pub(super) fn prune_invalidated_artifacts(
     }
 
     if variant_out_dir.join("variant_manifest.json").is_file() {
+        // The invalidated shards and sidecars move aside to `STALE_DIR`, not away: a crate that then fails to build
+        // takes them back (`keep_last_good_shards`) instead of dropping out of the index.
+        let stale = variant_out_dir.join(STALE_DIR);
+        let _ = fs::create_dir_all(stale.join(".deps"));
         let ddir = variant_out_dir.join(".deps");
         if let Ok(entries) = fs::read_dir(&ddir) {
             for entry in entries.flatten() {
@@ -162,11 +169,15 @@ pub(super) fn prune_invalidated_artifacts(
                 let canon_sr = Path::new(sr).canonicalize().unwrap_or_else(|_| PathBuf::from(sr));
                 if inv_roots.contains(&canon_sr) {
                     if val.get("is_dependency").and_then(|v| v.as_bool()) == Some(false) {
-                        if let Some(obj) = val.get("object_path").and_then(|v| v.as_str()) {
-                            let _ = fs::remove_file(obj);
+                        if let Some(obj) = val.get("object_path").and_then(|v| v.as_str()).map(Path::new) {
+                            if obj.file_name().is_none_or(|f| fs::rename(obj, stale.join(f)).is_err()) {
+                                let _ = fs::remove_file(obj);
+                            }
                         }
                     }
-                    let _ = fs::remove_file(&sp);
+                    if fs::rename(&sp, stale.join(".deps").join(entry.file_name())).is_err() {
+                        let _ = fs::remove_file(&sp);
+                    }
                 }
             }
         }
@@ -260,4 +271,53 @@ pub(super) fn copy_seeded_group(group: &[(PathBuf, PathBuf, serde_json::Value)],
         }
     }
     copied_any
+}
+
+/// After a check that failed for some crates: the shards it wrote replace the earlier shards of the same crates,
+/// and a crate that did not build keeps its last good shards.
+pub(super) fn keep_last_good_shards(dir: &Path, started: std::time::SystemTime, previous: Option<&Path>) {
+    let shards: Vec<(PathBuf, String, bool)> = fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "ridx"))
+        .filter_map(|p| {
+            let stem = p.file_stem()?.to_str()?.to_string();
+            let krate = stem.rsplit_once('-').map_or(stem.clone(), |(c, _)| c.to_string());
+            let fresh = fs::metadata(&p).and_then(|m| m.modified()).is_ok_and(|t| t >= started);
+            Some((p, krate, fresh))
+        })
+        .collect();
+    let rebuilt: std::collections::HashSet<&str> = shards.iter().filter(|s| s.2).map(|s| s.1.as_str()).collect();
+    for (path, krate, fresh) in &shards {
+        if !fresh && rebuilt.contains(krate.as_str()) {
+            let _ = fs::remove_file(path);
+        }
+    }
+    // Crates with no shard here take theirs, with their sidecars, from the variant active before.
+    let Some(prev) = previous else { return };
+    let present: std::collections::HashSet<String> = shards.iter().map(|s| s.1.clone()).collect();
+    let mut adopted = std::collections::HashSet::new();
+    for entry in fs::read_dir(prev).into_iter().flatten().flatten() {
+        let p = entry.path();
+        let Some(name) = p.file_name().and_then(|n| n.to_str()).map(str::to_string) else { continue };
+        let Some(stem) = name.strip_suffix(".ridx") else { continue };
+        let krate = stem.rsplit_once('-').map_or(stem, |(c, _)| c);
+        if !present.contains(krate) && fs::copy(&p, dir.join(&name)).is_ok() {
+            adopted.insert(name);
+        }
+    }
+    let (from, to) = (prev.join(".deps"), dir.join(".deps"));
+    for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
+        let Some(mut j) = fs::read(entry.path()).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { continue };
+        let shard = j["object_path"].as_str().and_then(|o| Path::new(o).file_name()).and_then(|f| f.to_str()).map(str::to_string);
+        if !shard.as_ref().is_some_and(|s| adopted.contains(s)) || to.join(entry.file_name()).exists() {
+            continue;
+        }
+        j["object_path"] = serde_json::json!(dir.join(shard.unwrap_or_default()).display().to_string());
+        if let Ok(b) = serde_json::to_vec(&j) {
+            let _ = fs::write(to.join(entry.file_name()), b);
+        }
+    }
 }
