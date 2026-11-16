@@ -201,6 +201,9 @@ pub(super) fn following_angle_bracket_cols(line_str: &str, col_1based: u32) -> O
     Some(((end as u32) + 1, (close_char_idx as u32) + 2, &line_str[open_byte + 1..close_byte]))
 }
 
+/// The standard library sources the index's sysroot shards were compiled from: those of the toolchain `ridx-driver`
+/// runs on, which is not the workspace's own when its `rust-toolchain.toml` pins another (BTCR pins 1.97.1, the
+/// driver runs 1.98.1, and `Vec::new` lies two lines lower in 1.97.1's `vec/mod.rs`).
 pub(crate) fn sysroot_rust_src() -> Option<&'static Path> {
     static RUST_SRC: OnceLock<Option<PathBuf>> = OnceLock::new();
     RUST_SRC
@@ -210,12 +213,21 @@ pub(crate) fn sysroot_rust_src() -> Option<&'static Path> {
                     return Some(env_p);
                 }
             }
+            if let Some(src) = driver_rust_src() {
+                return Some(src);
+            }
             let out = std::process::Command::new("rustc").arg("--print").arg("sysroot").output().ok()?;
             let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
             let p = PathBuf::from(sysroot).join("lib/rustlib/src/rust");
             p.is_dir().then_some(p)
         })
         .as_deref()
+}
+
+/// `rust-src` of the toolchain whose `lib` the driver was built against.
+fn driver_rust_src() -> Option<PathBuf> {
+    let lib = Path::new(option_env!("RIDX_BUILD_SYSROOT_LIB")?);
+    Some(lib.parent()?.join("lib/rustlib/src/rust")).filter(|p| p.is_dir())
 }
 
 /// `path` as found on disk: a standard library file (`library/…`, stored relative by the sysroot shards) lives in the toolchain's `rust-src`.
@@ -328,4 +340,19 @@ pub(super) fn still_open_at(conv: &mut PositionConverter, file: &str, from: u32,
         }
     }
     true
+}
+
+#[cfg(test)]
+mod rust_src_tests {
+    use super::*;
+
+    #[test]
+    fn test_std_sources_are_the_drivers_toolchain() {
+        if std::env::var_os("RUST_SRC_PATH").is_some() {
+            return;
+        }
+        if let Some(driver_src) = driver_rust_src() {
+            assert_eq!(sysroot_rust_src(), Some(driver_src.as_path()), "the toolchain that compiled the sysroot shards, not the workspace's");
+        }
+    }
 }

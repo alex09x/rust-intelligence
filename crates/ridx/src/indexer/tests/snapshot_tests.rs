@@ -96,6 +96,9 @@ fn test_a_jump_into_an_open_std_file_lands_as_into_a_closed_one() {
     let Some(target) = first["uri"].as_str().and_then(|u| u.strip_prefix("file://")).map(std::path::PathBuf::from).filter(|p| p.is_file()) else {
         return; // no std sources on this host
     };
+    let line = first["range"]["start"]["line"].as_u64().unwrap() as usize;
+    let text = fs::read_to_string(&target).unwrap();
+    assert!(text.lines().nth(line).is_some_and(|l| l.contains("fn new")), "the line of `fn new` in the file opened: {first}");
     server.open(&target);
     let again = server.definition(&uri, 1, 34);
     assert_eq!(again, first, "the same place, with its file open");
