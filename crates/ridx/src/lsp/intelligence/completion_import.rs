@@ -75,7 +75,7 @@ fn declared_pub(s: &WorkspaceSymbol<'_>, in_crate: bool) -> bool {
 
 /// Whether the file's `use` items already bring a name `name` into scope, by whatever path: importing another
 /// `name` would clash with it (E0252).
-pub(super) fn name_imported(doc: &str, name: &str) -> bool {
+pub(crate) fn name_imported(doc: &str, name: &str) -> bool {
     let mut in_use = false;
     for line in doc.lines() {
         let t = line.trim_start();

@@ -91,6 +91,7 @@ pub mod direct_tests;
 pub mod driver_tests;
 pub mod edge_tests;
 pub mod error_tests;
+pub mod explicit_type_tests;
 pub mod failed_build_tests;
 pub mod feature_invalidation_tests;
 pub mod lsp_server;

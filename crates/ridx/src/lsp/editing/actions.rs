@@ -93,6 +93,10 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
+            if let Some(action) = super::action_explicit_type::explicit_type_action(&doc_text, uri, range, doc_version, ws, overlay_mgr) {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
         }
     }
 

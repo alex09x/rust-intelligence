@@ -76,6 +76,15 @@ impl Server {
             .clone()
     }
 
+    /// The titles and actions offered at `line:character` (an empty range).
+    pub(super) fn code_actions(&mut self, uri: &str, line: u32, character: u32) -> Vec<Value> {
+        let at = json!({ "line": line, "character": character });
+        let res = self.send(
+            json!({ "method": "textDocument/codeAction", "params": { "textDocument": { "uri": uri }, "range": { "start": at, "end": at }, "context": { "diagnostics": [] } } }),
+        );
+        res["result"].as_array().cloned().unwrap_or_default()
+    }
+
     /// The completion items at `line:character`.
     pub(super) fn completion(&mut self, uri: &str, line: u32, character: u32) -> Vec<Value> {
         let res = self.send(json!({ "method": "textDocument/completion", "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": character } } }));
