@@ -74,4 +74,17 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     assert!(at("Priva").iter().all(|(l, _)| l != "Private"), "not pub");
     assert!(at("helpe").contains(&("helper".into(), Some("use crate::util::helper;".into()))), "the crate's own pub fn");
     assert!(at("private_he").iter().all(|(l, _)| l != "private_helper"), "the crate's own private fn");
+
+    // Typed inside `mod tests`: its own `use` counts, and a new one goes there, at its indentation.
+    let in_tests = app.replace("    use native::Reexported;\n}\n", "    use native::Reexported;\n    fn t() { let _ = Show }\n}\n");
+    let uri = server.open_with(&lib, &in_tests);
+    let line = in_tests.lines().position(|l| l.contains("fn t()")).unwrap() as u32;
+    let col = in_tests.lines().nth(line as usize).unwrap().find("Show").unwrap() as u32 + 4;
+    let items = server.completion(&uri, line, col);
+    let shown = items.iter().find(|i| i["label"] == "Shown").expect("Shown offered");
+    let edit = &shown["additionalTextEdits"][0];
+    assert_eq!(edit["newText"], "    use native::shown::Shown;\n", "indented as the module's items");
+    assert_eq!(edit["range"]["start"]["line"], line, "right after `mod tests`' last use");
+    let re_in = server.completion(&uri, line, col - 4);
+    assert!(offered(&re_in).iter().all(|(l, u)| l != "Reexported" || u.is_none()), "imported by `mod tests` itself");
 }

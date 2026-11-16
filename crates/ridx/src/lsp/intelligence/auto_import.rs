@@ -79,6 +79,26 @@ pub fn compute_auto_import_edit(doc_text: &str, symbol_path: &str) -> Option<Val
     insert_use_edit(doc_text, symbol_path)
 }
 
+/// The edit inserting `use {symbol_path};` among the imports of the module level at `cursor`: the file's, or those of
+/// the inline module around it (`mod tests { … }`), after its last `use` or first in its body, at its indentation.
+pub fn insert_use_edit_at(doc_text: &str, cursor: usize, symbol_path: &str) -> Option<Value> {
+    let level = super::use_tree::level_at(doc_text, cursor);
+    if level.0 == 0 {
+        return insert_use_edit(doc_text, symbol_path);
+    }
+    if is_prelude_symbol(symbol_path) {
+        return None;
+    }
+    let after = super::use_tree::level_uses(doc_text, level).last().map_or(level.0, |&(end, _)| end);
+    let line = doc_text[..after].matches('\n').count() as u32 + 1;
+    let body = &doc_text[level.0..level.1];
+    let indent = body.lines().skip(1).find(|l| !l.trim().is_empty()).map_or("    ".to_string(), |l| l[..l.len() - l.trim_start().len()].to_string());
+    Some(json!({
+        "range": { "start": { "line": line, "character": 0 }, "end": { "line": line, "character": 0 } },
+        "newText": format!("{indent}use {symbol_path};\n")
+    }))
+}
+
 /// The edit inserting `use {symbol_path};` among the file's imports, for a caller that already knows the file's own
 /// level does not import it (a `use` of `mod tests` does not count).
 pub fn insert_use_edit(doc_text: &str, symbol_path: &str) -> Option<Value> {

@@ -35,6 +35,7 @@ pub mod self_completion;
 pub mod signature;
 pub(crate) mod signature_fmt;
 pub mod syntax_pos;
+pub(crate) mod use_tree;
 
 #[cfg(test)]
 pub mod tests;

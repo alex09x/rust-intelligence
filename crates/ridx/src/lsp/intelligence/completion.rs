@@ -237,6 +237,8 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
         let current_crate = ws.crate_name_for_file(&file);
         let ws_symbols = if prefix.is_empty() { ws.search_local_symbols(&prefix) } else { ws.search_symbols(&prefix) };
         let doc_text = overlay_opt.map(|o| o.text.as_str()).unwrap_or("");
+        // The module level the name is typed at: an import goes there (`mod tests { … }` has its own).
+        let cursor_byte = overlay_opt.map_or(0, |o| o.line_char_col_to_byte(line_1based, col_1based));
         let mut public_paths = std::collections::HashMap::new();
         let mut seen_imports = HashSet::new();
 
@@ -267,10 +269,10 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             let is_same_module = is_same_file || is_symbol_in_current_module(&file, s.file);
             // A name from elsewhere comes with its `use`, by a path that surely reaches it; a name the file already
             // imports (by whatever path) is offered as it is, without a second, clashing import.
-            let import_path = if is_same_module || super::completion_import::name_imported(doc_text, s.name) {
+            let import_path = if is_same_module || super::completion_import::name_imported_at(doc_text, cursor_byte, s.name) {
                 None
             } else {
-                match super::completion_import::import_path(&s, current_crate, &mut public_paths) {
+                match super::completion_import::import_path(&s, current_crate, &file, &mut public_paths) {
                     Some(p) => Some(p),
                     None => continue,
                 }
@@ -278,9 +280,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             let in_scope = import_path.is_none();
             if (in_scope && seen_names.insert(s.name.to_string())) || (!in_scope && !seen_names.contains(s.name) && seen_imports.insert(import_path.clone())) {
                 let import_path = import_path.unwrap_or_default();
-                // `name_imported` decided: the file's own level does not import the name (a `use` of `mod tests` does
-                // not count), so the edit is inserted without looking at the nested ones again.
-                let auto_import_edit = if in_scope { None } else { overlay_opt.and_then(|ov| super::auto_import::insert_use_edit(&ov.text, &import_path)) };
+                // `name_imported_at` decided: the level typed at does not import the name, so the edit goes into that
+                // level's imports without looking at the others again.
+                let auto_import_edit = if in_scope { None } else { overlay_opt.and_then(|ov| super::auto_import::insert_use_edit_at(&ov.text, cursor_byte, &import_path)) };
 
                 let detail = if let Some(sig) = s.signature { sig.to_string() } else { s.path.to_string() };
 

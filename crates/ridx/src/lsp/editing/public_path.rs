@@ -63,39 +63,71 @@ fn inline_module_body(text: &str, m: &str) -> Option<String> {
 /// at `root_file`: the crate root's `pub use` re-export of `Item` when it has one, else `full` itself when every
 /// module on the way is declared `pub mod`; `None` when neither can be shown.
 pub(crate) fn public_path(root_file: &Path, full: &str) -> Option<String> {
+    reachable_path(root_file, full, false)
+}
+
+/// A path that reaches `full` (`krate::m1::Item`) from anywhere inside its own crate: as `public_path`, but a module
+/// the crate root declares privately (`mod m1;`) or one restricted to the crate (`pub(crate) mod`) is on the way too.
+pub(crate) fn crate_path(root_file: &Path, full: &str) -> Option<String> {
+    reachable_path(root_file, full, true)
+}
+
+/// Whether the module text `masked` declares `pub use` items one of which is known as `name` (`pub use a::{B as
+/// Name}` exports `Name`, not `B`), at its own level.
+fn reexports(masked: &str, text: &str, name: &str) -> bool {
+    masked.match_indices("pub use ").any(|(p, _)| {
+        let b = masked.as_bytes();
+        let tree = text[p + 8..].split(';').next().unwrap_or("");
+        (p == 0 || !is_ident_byte(b[p - 1])) && at_module_level(masked, p) && crate::lsp::intelligence::use_tree::use_leaves(tree).iter().any(|l| l.name.as_deref() == Some(name))
+    })
+}
+
+/// Whether the module text `masked` re-exports everything of its module `m` (`pub use m::*;`, `pub use self::m::*;`).
+fn reexports_all_of(masked: &str, text: &str, m: &str) -> bool {
+    masked.match_indices("pub use ").any(|(p, _)| {
+        let tree = text[p + 8..].split(';').next().unwrap_or("");
+        at_module_level(masked, p) && crate::lsp::intelligence::use_tree::use_leaves(tree).iter().any(|l| l.glob && (l.path == m || l.path == format!("self::{m}")))
+    })
+}
+
+/// Whether `masked` declares module `m` at its own level: `pub mod m`, or, `in_crate`, also `pub(crate) mod m` and
+/// friends, and a private `mod m` when `private_ok` (a module of the crate root is seen by the whole crate).
+fn declares_mod(masked: &str, m: &str, in_crate: bool, private_ok: bool) -> bool {
+    let b = masked.as_bytes();
+    masked.match_indices("mod ").any(|(p, _)| {
+        let rest = &masked[p + 4..];
+        if (p > 0 && is_ident_byte(b[p - 1])) || !rest.starts_with(m) || rest[m.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_') || !at_module_level(masked, p) {
+            return false;
+        }
+        let line_start = masked[..p].rfind('\n').map_or(0, |i| i + 1);
+        let vis = masked[line_start..p].trim();
+        let vis = vis.rsplit(']').next().unwrap_or(vis).trim(); // after an attribute on the same line
+        vis == "pub" || in_crate && vis.starts_with("pub(") || private_ok && vis.is_empty()
+    })
+}
+
+fn reachable_path(root_file: &Path, full: &str, in_crate: bool) -> Option<String> {
     let segs: Vec<&str> = full.split("::").collect();
     let (krate, item) = (*segs.first()?, *segs.last()?);
     if segs.len() <= 2 {
         return Some(full.to_string());
     }
-    let declares = |text: &str, kw: &str, name: &str| {
-        let masked = mask_comments_and_strings(text);
-        masked.match_indices(kw).any(|(p, _)| {
-            let rest = &masked[p + kw.len()..];
-            let b = masked.as_bytes();
-            (p == 0 || !is_ident_byte(b[p - 1]))
-                && at_module_level(&masked, p)
-                && (kw != "pub mod " || rest.starts_with(name) && !rest[name.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_'))
-                && (kw != "pub use " || rest.split(';').next().is_some_and(|u| u.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == name)))
-        })
-    };
     let root_text = std::fs::read_to_string(root_file).ok()?;
-    if declares(&root_text, "pub use ", item) {
+    if reexports(&mask_comments_and_strings(&root_text), &root_text, item) {
         return Some(format!("{krate}::{item}"));
     }
     let (mut dir, mut text) = (root_file.parent()?.to_path_buf(), root_text);
     for (k, m) in segs[1..segs.len() - 1].iter().enumerate() {
+        let masked = mask_comments_and_strings(&text);
         // A module that re-exports the item by name (`pub use join_set::JoinSet;`) gives the shortest public path,
         // whichever `cfg` makes the module below public (`mod join_set;` in one branch, `pub mod` in another).
-        if k > 0 && declares(&text, "pub use ", item) {
+        if k > 0 && reexports(&masked, &text, item) {
             return Some(format!("{}::{item}", segs[..=k].join("::")));
         }
-        if !declares(&text, "pub mod ", m) {
+        if !declares_mod(&masked, m, in_crate, in_crate && k == 0) {
             // A private module whose items the module above re-exports (`mod access; pub use access::*;`, or by
             // name): the item is reached there.
-            let masked = mask_comments_and_strings(&text);
-            let glob = [format!("pub use {m}::*"), format!("pub use self::{m}::*")].iter().any(|g| masked.contains(g.as_str()));
-            return (glob || declares(&text, "pub use ", item)).then(|| format!("{}::{item}", segs[..=k].join("::")));
+            return (reexports_all_of(&masked, &text, m) || reexports(&masked, &text, item)).then(|| format!("{}::{item}", segs[..=k].join("::")));
         }
         // The module's text: its body when declared inline (`pub mod shown { … }`), else its file.
         if let Some(body) = inline_module_body(&text, m) {
@@ -131,6 +163,24 @@ mod tests {
         assert_eq!(public_path(&root, "searcher::sink::Hidden"), None, "private module, no re-export");
         assert_eq!(public_path(&root, "searcher::inline::Shown").as_deref(), Some("searcher::inline::Shown"), "an inline pub module");
         assert_eq!(public_path(&root, "searcher::inline::deep::Deeper"), None, "a private module inside an inline one");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_aliased_reexports_and_paths_inside_the_crate() {
+        let dir = std::env::temp_dir().join(format!("ridx_pubpath_alias_{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("src")).unwrap();
+        let lib = "mod sink;\npub(crate) mod inner;\npub use crate::sink::{Sink as Drain};\n";
+        std::fs::write(dir.join("src/lib.rs"), lib).unwrap();
+        std::fs::write(dir.join("src/sink.rs"), "pub struct Sink;\nmod deep { pub struct Deep; }\n").unwrap();
+        std::fs::write(dir.join("src/inner.rs"), "pub struct Inner;\n").unwrap();
+        let root = dir.join("src/lib.rs");
+        assert_eq!(public_path(&root, "app::sink::Sink"), None, "`Sink as Drain` exports `Drain`, not `Sink`");
+        assert_eq!(public_path(&root, "app::sink::Drain").as_deref(), Some("app::Drain"));
+        assert_eq!(super::crate_path(&root, "app::sink::Sink").as_deref(), Some("app::sink::Sink"), "the crate sees its root's private module");
+        assert_eq!(super::crate_path(&root, "app::inner::Inner").as_deref(), Some("app::inner::Inner"));
+        assert_eq!(super::crate_path(&root, "app::sink::deep::Deep"), None, "a private module of a module is not seen from the crate");
+        assert_eq!(public_path(&root, "app::inner::Inner"), None, "nor is a `pub(crate)` one from outside");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
