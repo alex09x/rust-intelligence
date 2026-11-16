@@ -213,7 +213,10 @@ fn test_l2_signature_help_cross_crate_and_trait() {
     let trait_file = fixture_dir("traits_and_generics").join("src/lib.rs");
     let trait_uri = path_to_uri(trait_file.to_str().unwrap());
 
-    let (line_ext, col_ext) = pos_in_file(&trait_file, "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()", ")");
+    // Inside the call's parentheses: the first `)` of the whole needle closes `(c: &C)`, the declaration's own
+    // parameter list, where no signature is shown (as with rust-analyzer).
+    let (line_ext, col_ext) = pos_in_file(&trait_file, "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()", "extract()");
+    let col_ext = col_ext + "extract(".len() as u32;
     let req_ext = json!({
         "params": {
             "textDocument": { "uri": &trait_uri },
