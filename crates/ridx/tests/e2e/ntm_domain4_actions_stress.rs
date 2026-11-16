@@ -127,7 +127,7 @@ fn test_domain4_real_l2_external_dependency_rejection() {
 
     let ext_uri = format!("file://{}", ext_service_path.display());
 
-    // 1. codeAction on external path rejected
+    // 1. codeAction on an external path offers nothing (an empty list, as rust-analyzer answers, not an error)
     let req_action = json!({
         "params": {
             "textDocument": { "uri": &ext_uri },
@@ -135,9 +135,8 @@ fn test_domain4_real_l2_external_dependency_rejection() {
             "context": { "only": ["source.organizeImports"], "diagnostics": [] }
         }
     });
-    let err_action = ridx::lsp::editing::actions::handle_code_action(&req_action, Some(&ws), &overlay_mgr).unwrap_err();
-    assert_eq!(err_action.code, REQUEST_FAILED);
-    assert!(err_action.message.contains("external dependency"));
+    let actions = ridx::lsp::editing::actions::handle_code_action(&req_action, Some(&ws), &overlay_mgr).unwrap();
+    assert_eq!(actions, json!([]));
 
     // 2. codeAction/resolve targeting external path rejected
     let req_resolve = json!({

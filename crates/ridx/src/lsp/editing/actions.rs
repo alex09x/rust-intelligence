@@ -37,8 +37,10 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
     }
 
     let file = uri_to_path(uri);
+    // A dependency's source is read-only: nothing to offer there, as rust-analyzer answers. (An error made Zed log one
+    // on every cursor move in a std file opened by a jump.)
     if is_readonly_dependency(Path::new(&file), workspace) {
-        return Err(LspError::request_failed(format!("Cannot perform code action on external dependency: {file}")));
+        return Ok(serde_json::json!([]));
     }
 
     let (doc_text, doc_version) =

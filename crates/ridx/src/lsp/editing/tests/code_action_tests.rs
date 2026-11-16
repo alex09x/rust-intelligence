@@ -12,7 +12,7 @@
 
 use super::setup_test_editing;
 use crate::lsp::editing::actions::handle_code_action;
-use crate::lsp::error::{INVALID_PARAMS, REQUEST_FAILED};
+use crate::lsp::error::INVALID_PARAMS;
 use crate::overlay::OverlayManager;
 use ridx_test_support::apply_text_edits;
 use serde_json::json;
@@ -64,7 +64,7 @@ fn test_code_action_missing_range_rejected() {
 }
 
 #[test]
-fn test_code_action_external_dependency_rejected() {
+fn test_code_action_in_an_external_dependency_offers_nothing() {
     let (_temp, ws, overlay_mgr, _conv) = setup_test_editing();
     let ext_uri = "file:///.cargo/registry/src/ext_service-0.5.0/src/lib.rs";
     let req = json!({
@@ -74,9 +74,7 @@ fn test_code_action_external_dependency_rejected() {
             "context": { "diagnostics": [] }
         }
     });
-    let err = handle_code_action(&req, Some(&ws), &overlay_mgr).unwrap_err();
-    assert_eq!(err.code, REQUEST_FAILED);
-    assert!(err.message.contains("external dependency"));
+    assert_eq!(handle_code_action(&req, Some(&ws), &overlay_mgr).unwrap(), json!([]), "no actions, and no error, as rust-analyzer answers");
 }
 
 #[test]
