@@ -15,6 +15,7 @@ pub mod completion;
 pub mod completion_call;
 pub(crate) mod completion_docs;
 pub mod completion_edits;
+mod completion_import;
 pub mod fallback_completion;
 pub(crate) mod fn_params;
 pub mod generic_completion;

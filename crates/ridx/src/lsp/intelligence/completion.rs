@@ -232,9 +232,13 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
     if let Some(ws) = workspace {
         let current_crate = ws.crate_name_for_file(&file);
         let ws_symbols = if prefix.is_empty() { ws.search_local_symbols(&prefix) } else { ws.search_symbols(&prefix) };
+        let doc_text = overlay_opt.map(|o| o.text.as_str()).unwrap_or("");
+        let mut public_paths = std::collections::HashMap::new();
+        let mut seen_imports = HashSet::new();
 
         for s in ws_symbols {
-            if s.kind == ridx_format::DefKind::Local {
+            // Only what a name brings in: no impl block, associated item, field, local or another module's import.
+            if !super::completion_import::importable(&s) {
                 continue;
             }
             let resolved = s.resolved_path();
@@ -256,22 +260,21 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                     }
                 }
             }
-            if seen_names.insert(s.name.to_string()) {
-                // Normalize symbol import path for same-crate items (e.g. my_crate::foo -> crate::foo)
-                let import_path = if let Some(cname) = current_crate {
-                    let prefix = format!("{cname}::");
-                    if s.path.starts_with(&prefix) {
-                        format!("crate::{}", &s.path[prefix.len()..])
-                    } else {
-                        s.path.to_string()
-                    }
-                } else {
-                    s.path.to_string()
-                };
-
-                let is_same_module = is_same_file || is_symbol_in_current_module(&file, s.file);
-
-                let auto_import_edit = if is_same_module { None } else { overlay_opt.and_then(|ov| super::auto_import::compute_auto_import_edit(&ov.text, &import_path)) };
+            let is_same_module = is_same_file || is_symbol_in_current_module(&file, s.file);
+            // A name from elsewhere comes with its `use`, by a path that surely reaches it; a name the file already
+            // imports (by whatever path) is offered as it is, without a second, clashing import.
+            let import_path = if is_same_module || super::completion_import::name_imported(doc_text, s.name) {
+                None
+            } else {
+                match super::completion_import::import_path(&s, current_crate, &mut public_paths) {
+                    Some(p) => Some(p),
+                    None => continue,
+                }
+            };
+            let in_scope = import_path.is_none();
+            if (in_scope && seen_names.insert(s.name.to_string())) || (!in_scope && !seen_names.contains(s.name) && seen_imports.insert(import_path.clone())) {
+                let import_path = import_path.unwrap_or_default();
+                let auto_import_edit = if in_scope { None } else { overlay_opt.and_then(|ov| super::auto_import::compute_auto_import_edit(&ov.text, &import_path)) };
 
                 let detail = if let Some(sig) = s.signature { sig.to_string() } else { s.path.to_string() };
 

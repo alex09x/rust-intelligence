@@ -12,70 +12,13 @@
 //! index: the server maps the buffer through the source snapshot the indexer kept of the text it compiled.
 
 use super::failed_build_tests::{index_opts, write_native_and_app};
+use super::lsp_server::Server;
 use super::*;
 use crate::indexer::driver::find_driver_binary;
 use crate::indexer::orchestrate::try_run_indexing;
-use crate::lsp::dispatch::dispatch_lsp_message;
-use crate::lsp::lifecycle::LifecycleManager;
-use crate::lsp::protocol::{path_to_uri, LspMessage};
-use crate::lsp::workspace::MultiRootWorkspace;
-use crate::overlay::OverlayManager;
-use serde_json::{json, Value};
-use std::collections::HashSet;
-use std::sync::{Arc, Mutex};
+use serde_json::json;
 
 const LOADER: &str = "pub struct Loader { n: u32 }\nimpl Loader {\n    pub fn run(&mut self) -> u32 { self.finish(1) + native::native_api() }\n    fn finish(&mut self, x: u32) -> u32 { self.n + x }\n}\n";
-
-fn response(out: &[u8]) -> Value {
-    let s = String::from_utf8_lossy(out);
-    s.split("Content-Length: ").filter_map(|part| part.find("\r\n\r\n").and_then(|i| serde_json::from_str::<Value>(part[i + 4..].trim()).ok())).last().unwrap_or(Value::Null)
-}
-
-/// A server driven through `dispatch_lsp_message`, opened on a workspace folder as an editor opens it.
-struct Server {
-    mr: MultiRootWorkspace,
-    ov: OverlayManager,
-    lc: LifecycleManager,
-    can: Arc<Mutex<HashSet<Value>>>,
-    next_id: u64,
-}
-
-impl Server {
-    fn start(ws: &std::path::Path) -> Self {
-        let mut s = Server { mr: MultiRootWorkspace::new(), ov: OverlayManager::new(), lc: LifecycleManager::new(), can: Arc::new(Mutex::new(HashSet::new())), next_id: 0 };
-        let root = path_to_uri(ws.to_str().unwrap());
-        s.send(json!({ "method": "initialize", "params": { "capabilities": {}, "rootUri": root, "workspaceFolders": [{ "uri": root, "name": "ws" }] } }));
-        s.notify(json!({ "method": "initialized", "params": {} }));
-        s
-    }
-
-    fn send(&mut self, mut msg: Value) -> Value {
-        self.next_id += 1;
-        msg["jsonrpc"] = json!("2.0");
-        msg["id"] = json!(self.next_id);
-        self.notify(msg)
-    }
-
-    fn notify(&mut self, mut msg: Value) -> Value {
-        msg["jsonrpc"] = json!("2.0");
-        let mut out = Vec::new();
-        dispatch_lsp_message(LspMessage::Client(msg), &mut out, &mut self.lc, &mut self.mr, &mut self.ov, &self.can, None).unwrap();
-        response(&out)
-    }
-
-    /// Opens `file` with its text on disk, as an editor does; its URI.
-    fn open(&mut self, file: &std::path::Path) -> String {
-        let uri = path_to_uri(file.to_str().unwrap());
-        let text = fs::read_to_string(file).unwrap();
-        self.notify(json!({ "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": text } } }));
-        uri
-    }
-
-    fn definition(&mut self, uri: &str, line: u32, character: u32) -> Value {
-        self.send(json!({ "method": "textDocument/definition", "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": character } } }))["result"]
-            .clone()
-    }
-}
 
 /// After a jump into std the editor keeps that file open; the next jump into it lands as the first did. (The open
 /// std buffer has no compiled text the workspace index records, and mapping a location through it gave nothing:

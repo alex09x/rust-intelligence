@@ -86,12 +86,14 @@ fn new_test_dir(prefix: &str) -> TestDir {
 
 pub mod builder_tests;
 pub mod cargo_tests;
+pub mod completion_import_tests;
 pub mod direct_tests;
 pub mod driver_tests;
 pub mod edge_tests;
 pub mod error_tests;
 pub mod failed_build_tests;
 pub mod feature_invalidation_tests;
+pub mod lsp_server;
 pub mod pipeline_tests;
 pub mod shard_tests;
 pub mod snapshot_tests;

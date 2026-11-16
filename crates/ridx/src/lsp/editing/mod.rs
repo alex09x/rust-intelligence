@@ -83,6 +83,7 @@ pub mod ident;
 pub mod linked;
 pub mod organize;
 pub mod prepare_rename;
+pub(crate) mod public_path;
 pub mod ref_span;
 pub mod rename;
 pub mod rename_alias_mod;
