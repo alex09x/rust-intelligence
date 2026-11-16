@@ -186,7 +186,10 @@ pub fn dispatch_lsp_message<W: Write>(
             ov.save_document(&file);
             conv.invalidate(&file);
             if let Some(ref root) = workspace_root_of(mr, Path::new(&file)) {
-                lifecycle.flycheck.trigger_check(root);
+                // Not again when the watched-file event for this save already started the check of this text.
+                if lifecycle.flycheck.mark_saved_for_check(Path::new(&file)) {
+                    lifecycle.flycheck.trigger_check(root);
+                }
                 lifecycle.reindex.trigger_for_change(root, Path::new(&file));
             }
             return Ok(true);
@@ -211,7 +214,8 @@ pub fn dispatch_lsp_message<W: Write>(
         }
 
         "workspace/didChangeWatchedFiles" => {
-            mr.reload_all_if_modified();
+            // The index itself is reloaded before every message (`reload_changed_index`), with the buffers' rebase
+            // and the client's refresh; a reload here would take the change from it.
             conv.clear();
             let mut to_check = Vec::new();
             for change in msg["params"]["changes"].as_array().into_iter().flatten() {
@@ -219,13 +223,14 @@ pub fn dispatch_lsp_message<W: Write>(
                 let p = Path::new(&file);
                 if let Some(root) = workspace_root_of(mr, p) {
                     lifecycle.reindex.trigger_for_change(&root, p);
-                    if super::reindex::changed_outside_editor(&root, p, ov.get(&file).map(|o| o.text.as_str())) && !to_check.contains(&root) {
+                    if super::reindex::is_checked_source(&root, p) && lifecycle.flycheck.mark_changed_for_check(p) && !to_check.contains(&root) {
                         to_check.push(root);
                     }
                 }
             }
-            // A source changed outside the editor (a checkout, a pull) is checked again: the compiler's diagnostics
-            // of the text before stayed until the next save (in Zed "unused import" on an import used again).
+            // A source whose text differs from the one last checked (a checkout, a pull, an edit elsewhere) is checked
+            // again: the compiler's diagnostics of the text before stayed until the next save (in Zed "unused import"
+            // on an import used again).
             for root in to_check {
                 lifecycle.flycheck.trigger_check(&root);
             }

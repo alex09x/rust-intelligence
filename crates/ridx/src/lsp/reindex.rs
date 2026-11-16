@@ -128,17 +128,10 @@ pub fn watch_registration(id: Value) -> Value {
     })
 }
 
-/// Whether a watched-file event for `file` under `root` is a Rust source changed outside the editor: not in a build
-/// directory, and not the text of its open buffer (`buffer`; a save in the editor writes exactly that, and Zed reports
-/// it as a watched change just before `didSave`, which checks it anyway). A removed file counts.
-pub fn changed_outside_editor(root: &Path, file: &Path, buffer: Option<&str>) -> bool {
-    if file.extension().is_none_or(|e| e != "rs") || file.strip_prefix(root).unwrap_or(file).components().any(|c| c.as_os_str() == "target") {
-        return false;
-    }
-    match (std::fs::read_to_string(file), buffer) {
-        (Ok(disk), Some(buffer)) => disk != buffer,
-        _ => true,
-    }
+/// Whether a watched-file event for `file` under `root` is about a Rust source the compiler checks: not one in a build
+/// directory (the index's own snapshots under `target/`).
+pub fn is_checked_source(root: &Path, file: &Path) -> bool {
+    file.extension().is_some_and(|e| e == "rs") && !file.strip_prefix(root).unwrap_or(file).components().any(|c| c.as_os_str() == "target")
 }
 
 /// The `workspace/*/refresh` requests a client announces in its workspace capabilities, sent once a reindex is
@@ -185,22 +178,32 @@ mod tests {
         assert_eq!(globs, ["**/*.rs", "**/Cargo.toml", "**/Cargo.lock"]);
     }
 
-    /// In Zed: a saved buffer reverted by `git checkout` kept "unused import" from the check of the saved text. A
-    /// change outside the editor is checked again; a save from the editor is not counted twice.
+    /// In Zed: a saved buffer reverted by `git checkout` kept "unused import" from the check of the saved text. A text
+    /// not checked yet is checked once, whichever of a save and its watched-file event comes first, and whether or not
+    /// the editor already reloaded or edited the buffer (review of 3902e41c: comparing with the buffer restarted the
+    /// check after a save and further typing, and missed a checkout the editor reloaded before reporting it).
     #[test]
-    fn test_changes_outside_the_editor() {
+    fn test_each_text_of_a_source_is_checked_once() {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
         let src = root.join("src/lib.rs");
         std::fs::create_dir_all(src.parent().unwrap()).unwrap();
+        let fc = crate::lsp::presentation::flycheck::FlycheckState::new();
         std::fs::write(&src, "pub fn a() {}\n").unwrap();
-        assert!(!changed_outside_editor(root, &src, Some("pub fn a() {}\n")), "a save: the disk has the buffer");
-        assert!(changed_outside_editor(root, &src, Some("pub fn a() { let x = 1; }\n")), "a checkout under an open buffer");
-        assert!(changed_outside_editor(root, &src, None), "a closed file");
+        assert!(fc.mark_saved_for_check(&src), "a save: checked");
+        assert!(!fc.mark_changed_for_check(&src), "its watched-file event after didSave: not again");
+        assert!(fc.mark_saved_for_check(&src), "saved again: checked again, as rust-analyzer does");
+        std::fs::write(&src, "pub fn a() { let y = 2; }\n").unwrap();
+        assert!(fc.mark_changed_for_check(&src), "Zed's watched-file event before didSave");
+        assert!(!fc.mark_saved_for_check(&src), "then its didSave: the check of this text is running");
+        std::fs::write(&src, "pub fn a() { let x = 1; }\n").unwrap();
+        assert!(fc.mark_changed_for_check(&src), "a checkout, reloaded into the buffer or not");
         std::fs::remove_file(&src).unwrap();
-        assert!(changed_outside_editor(root, &src, Some("pub fn a() {}\n")), "a removed file");
-        assert!(!changed_outside_editor(root, &root.join("target/ridx/sources/1.rs"), None), "build output");
-        assert!(!changed_outside_editor(root, &root.join("Cargo.toml"), None), "not a source");
+        assert!(fc.mark_changed_for_check(&src), "a removed file");
+        assert!(!fc.mark_changed_for_check(&src));
+        assert!(is_checked_source(root, &src));
+        assert!(!is_checked_source(root, &root.join("target/ridx/sources/1.rs")), "build output");
+        assert!(!is_checked_source(root, &root.join("Cargo.toml")), "not a source");
     }
 
     /// A picked-up reindex asks the client to fetch again what came from the old index, for each kind it can refresh.

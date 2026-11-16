@@ -53,6 +53,9 @@ pub struct FlycheckState {
     active_diagnostic_uris: Arc<Mutex<HashSet<String>>>,
     worker_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     notifier: Arc<Mutex<Option<FlycheckCallback>>>,
+    /// The hash of each source's text on disk when a check was last started for it (0: the file was gone), and
+    /// whether a save started it.
+    checked_sources: Arc<Mutex<HashMap<PathBuf, (u64, bool)>>>,
 }
 
 impl Default for FlycheckState {
@@ -65,6 +68,7 @@ impl Default for FlycheckState {
             active_diagnostic_uris: Arc::default(),
             worker_handle: Arc::new(Mutex::new(None)),
             notifier: Arc::new(Mutex::new(None)),
+            checked_sources: Arc::default(),
         }
     }
 }
@@ -72,6 +76,32 @@ impl Default for FlycheckState {
 impl FlycheckState {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Whether a save of `file` starts a check, recording its text as checked. Every save does, as with
+    /// rust-analyzer, but the one whose watched-file event (Zed sends it just before `didSave`) already started the
+    /// check of this very text.
+    pub fn mark_saved_for_check(&self, file: &Path) -> bool {
+        let hash = Self::disk_hash(file);
+        let mut checked = self.checked_sources.lock().unwrap_or_else(|e| e.into_inner());
+        checked.insert(file.to_path_buf(), (hash, true)) != Some((hash, false))
+    }
+
+    /// Whether a watched-file event for `file` starts a check: when its text on disk is not the one last checked
+    /// (a checkout or a pull, reloaded into the buffer or not), never again for a text a save already checked (the
+    /// event of that save, even once the buffer is edited again).
+    pub fn mark_changed_for_check(&self, file: &Path) -> bool {
+        let hash = Self::disk_hash(file);
+        let mut checked = self.checked_sources.lock().unwrap_or_else(|e| e.into_inner());
+        if checked.get(file).is_some_and(|&(h, _)| h == hash) {
+            return false;
+        }
+        checked.insert(file.to_path_buf(), (hash, false));
+        true
+    }
+
+    fn disk_hash(file: &Path) -> u64 {
+        std::fs::read(file).map_or(0, |b| ridx_format::normalized_source_hash(&b))
     }
 
     pub fn current_generation(&self) -> u64 {

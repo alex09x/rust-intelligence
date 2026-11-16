@@ -171,11 +171,11 @@ impl WorkspaceIndex {
     pub fn units_agree_on_source(&self, file_path: &str) -> bool {
         let mut seen: Option<u64> = None;
         for idx in self.candidate_reader_indices_for_file(file_path) {
-            let reader = &self.readers[idx];
-            let target = self.target_file_for_reader(idx, file_path);
-            let name = target.as_ref().map_or(file_path, |t| t.as_ref());
+            // Only the units the file belongs to: another crate's `src/lib.rs` is another file.
+            let Some(target) = self.target_file_for_reader(idx, file_path) else { continue };
+            let (reader, name) = (&self.readers[idx], target.as_ref());
             let from_reader = reader.find_file_id(name).map(|fid| reader.file_source_hash(fid)).filter(|&h| h != 0);
-            let h = from_reader.or_else(|| self.reader_file_hashes.get(idx).and_then(|m| m.get(name).or_else(|| m.get(file_path))).copied().filter(|&h| h != 0));
+            let h = from_reader.or_else(|| self.reader_file_hashes.get(idx).and_then(|m| m.get(name)).copied().filter(|&h| h != 0));
             match (h, seen) {
                 (Some(h), Some(s)) if h != s => return false,
                 (Some(h), None) => seen = Some(h),
