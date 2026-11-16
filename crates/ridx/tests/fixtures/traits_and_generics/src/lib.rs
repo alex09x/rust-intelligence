@@ -72,3 +72,19 @@ impl<W: Greeter> Wrapper<W> {
     }
 }
 
+pub fn labels_of(items: &[u32]) -> Vec<String> {
+    let mut labels_out = Vec::new();
+    for item in items {
+        let mut loop_local: Vec<String> = Vec::new();
+        loop_local.push(item.to_string());
+        labels_out.extend(loop_local);
+    }
+    labels_out
+}
+
+pub async fn async_count() -> usize {
+    let mut async_local: Vec<u8> = Vec::new();
+    async_local.push(1);
+    async_local.len()
+}
+

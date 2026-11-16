@@ -330,6 +330,11 @@ impl WorkspaceIndex {
             Some(resolved)
         } else if let Some(cursor_def) = self.resolve_cursor_path_at(file, line, col) {
             Some(cursor_def)
+        } else if self.type_entry_at_in_pairs(&pairs, line, col).is_some() {
+            // A reference spanning more than the name under the cursor, and named otherwise (a `for` loop's
+            // `into_iter`, an `async` body's `ResumeTy`), encloses a binding here that has its own type: the
+            // hover is the binding's.
+            None
         } else {
             fallback_wide_ref.or(fallback_mod)
         };

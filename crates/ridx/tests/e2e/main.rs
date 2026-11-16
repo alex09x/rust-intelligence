@@ -140,6 +140,7 @@ mod ntm_domain5_inline_value_part5;
 mod ntm_domain5_intelligence_stress;
 mod ntm_domain5_l2_cas_and_macros;
 mod ntm_domain5_l2_cfg_test;
+mod ntm_domain5_l2_hover_bindings;
 mod ntm_domain5_l2_intelligence;
 mod ntm_domain5_moniker;
 mod ntm_domain5_moniker_part2;
