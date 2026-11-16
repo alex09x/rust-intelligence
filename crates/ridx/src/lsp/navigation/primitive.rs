@@ -62,22 +62,32 @@ pub(crate) fn primitive_at(line: &str, col: u32) -> Option<&'static str> {
 
 /// Whether character `at` of a line lies in a string literal, a `//` comment or a block comment's continuation line.
 fn in_string_or_comment(chars: &[char], at: usize) -> bool {
+    // A block comment's continuation line (` * text`, ` */`), not a pointer type or a dereference (`*const u8`, `*p`)
+    // (review of be9cc081).
     let first = chars.iter().position(|c| !c.is_whitespace()).unwrap_or(0);
-    if chars.get(first) == Some(&'*') || chars[first..].starts_with(&['/', '*']) {
+    if chars.get(first) == Some(&'*') && chars.get(first + 1).is_none_or(|c| c.is_whitespace()) {
         return true;
     }
-    let mut in_str = false;
+    // A line opening with `*/` ends a comment begun above; what follows it is code.
+    let (mut in_str, mut in_block) = (false, chars[first..].starts_with(&['*', '/']));
     let mut k = 0;
     while k < at {
+        let next = chars.get(k + 1).copied();
         match chars[k] {
+            '*' if in_block && next == Some('/') => (in_block, k) = (false, k + 1),
+            _ if in_block => {}
             '\\' if in_str => k += 1,
             '"' => in_str = !in_str,
-            '/' if !in_str && chars.get(k + 1) == Some(&'/') => return true,
+            '/' if !in_str && next == Some('/') => return true,
+            '/' if !in_str && next == Some('*') => (in_block, k) = (true, k + 1),
+            // A char literal (`'"'`, `'\''`) holds no string; a lifetime (`'a`) is left as it is.
+            '\'' if !in_str && next == Some('\\') => k = (k + 2..chars.len()).find(|&j| chars[j] == '\'').unwrap_or(k),
+            '\'' if !in_str && chars.get(k + 2) == Some(&'\'') => k += 2,
             _ => {}
         }
         k += 1;
     }
-    in_str
+    in_str || in_block
 }
 
 /// The documentation of primitive `name` in `primitive_docs.rs` (`text`): the `///` lines above `mod prim_<name> {}`,
@@ -170,6 +180,18 @@ mod tests {
         assert_eq!(primitive_at(line, line.rfind("usize").unwrap() as u32 + 1), None, "a comment");
         assert_eq!(primitive_at(" * the usize of a block comment", 10), None);
         assert_eq!(primitive_at("let s: &str = \"\";", 9), Some("str"), "a string after it is no matter");
+
+        // Review of be9cc081.
+        let first = |line: &str, needle: &str| primitive_at(line, line.find(needle).unwrap() as u32 + 1);
+        assert_eq!(first("    *const u8,", "u8"), Some("u8"), "a pointer type");
+        assert_eq!(first("    *p as usize", "usize"), Some("usize"), "a dereference");
+        assert_eq!(first("/* tag */ pub n: usize", "usize"), Some("usize"), "past a closed block comment");
+        assert_eq!(first("let a = 1; /* the usize */", "usize"), None, "inside one");
+        assert_eq!(first(" */ usize", "usize"), Some("usize"), "code after a block comment's end");
+        assert_eq!(first(" * see usize", "usize"), None, "a block comment's continuation line");
+        assert_eq!(first("let q = '\"'; let n: usize = 1;", "usize"), Some("usize"), "a char literal holds no string");
+        assert_eq!(first("let q = '\\''; let n: usize = 1;", "usize"), Some("usize"));
+        assert_eq!(first("fn f<'a>(x: &'a str) {}", "str"), Some("str"), "a lifetime");
     }
 
     #[test]
