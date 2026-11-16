@@ -47,6 +47,40 @@ fn test_a_jump_into_an_open_std_file_lands_as_into_a_closed_one() {
     assert_eq!(again, first, "the same place, with its file open");
 }
 
+const CART_INDEXED: &str = "pub mod model;\npub mod pricing;\nuse crate::pricing::Discount;\npub fn total(items: &[u64], rule: &dyn Discount) -> u64 {\n    items.iter().map(|p| rule.apply(*p)).sum()\n}\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use std::collections::HashSet;\n    #[test]\n    fn t() {\n        assert_eq!(total(&[3], &crate::pricing::Flat(1)), 2);\n        let _seen: HashSet<u8> = HashSet::new();\n    }\n}\n";
+
+/// In Zed on shop: `cart.rs` indexed with two lines more than it has now (reverted on disk), and the next reindex
+/// failed on another module. Hover and jumps in `cart.rs` must keep working through the snapshot of the indexed text.
+#[test]
+fn test_a_reverted_file_keeps_the_index_after_a_failed_reindex() {
+    let _lock = lock_indexer_test();
+    let Some(driver) = find_driver_binary() else { return };
+    let dir = new_test_dir("ridx_snapshot_failed");
+    let (ws, cas) = (dir.0.join("ws"), dir.0.join("cas"));
+    write_native_and_app(&ws, CART_INDEXED);
+    super::failed_build_tests::write(&ws, "app/src/model.rs", "pub fn ok() -> u32 { 1 }\n");
+    super::failed_build_tests::write(
+        &ws,
+        "app/src/pricing.rs",
+        "pub trait Discount { fn apply(&self, p: u64) -> u64; }\npub struct Flat(pub u64);\nimpl Discount for Flat { fn apply(&self, p: u64) -> u64 { p - self.0 } }\n",
+    );
+    try_run_indexing(index_opts(&ws, &cas, &driver)).expect("index");
+
+    let reverted = CART_INDEXED.replace("    use std::collections::HashSet;\n", "").replace("        let _seen: HashSet<u8> = HashSet::new();\n", "");
+    let lib = ws.join("app/src/lib.rs");
+    fs::write(&lib, &reverted).unwrap();
+    super::failed_build_tests::write(&ws, "app/src/model.rs", "pub fn ok() -> u32 { 1 }\npub fn broken() -> u32 { \"x\" }\n");
+    let _ = try_run_indexing(index_opts(&ws, &cas, &driver));
+
+    let mut server = Server::start(&ws);
+    let uri = server.open(&lib);
+    let line = reverted.lines().position(|l| l.starts_with("pub fn total")).unwrap() as u32;
+    let col = reverted.lines().nth(line as usize).unwrap().find("Discount").unwrap() as u32 + 2;
+    let hover = server.send(json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": col } } }));
+    assert!(hover["result"]["contents"]["value"].as_str().is_some_and(|v| v.contains("trait Discount")), "hover on `Discount`: {hover}");
+    assert!(!server.definition(&uri, line, col).is_null(), "a jump to `Discount`");
+}
+
 #[test]
 fn test_a_file_changed_on_disk_before_it_is_opened_maps_onto_its_compiled_text() {
     let _lock = lock_indexer_test();

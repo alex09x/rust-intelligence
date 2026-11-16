@@ -136,7 +136,7 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
                     let decl_uri = path_to_uri(decl_str);
                     let decl_ov = overlay_mgr.get(decl_str);
                     if let Some(dov) = decl_ov {
-                        if dov.is_dirty() && dov.has_modified_imports() {
+                        if dov.is_dirty() && dov.imports_changed_for(target_name) {
                             return Err(LspError::request_failed("Cannot rename symbol in file with modified imports; save document first"));
                         }
                     }
@@ -199,7 +199,7 @@ pub fn handle_rename(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mg
 
                     let ref_ov = overlay_mgr.get(r_str);
                     let (mut mapped_line, mut mapped_col) = if let Some(rov) = ref_ov.filter(|o| o.is_dirty()) {
-                        if rov.has_modified_imports() {
+                        if rov.imports_changed_for(target_name) {
                             return Err(LspError::request_failed("Cannot rename symbol in caller file with modified imports; save document first"));
                         }
                         let pos = rov

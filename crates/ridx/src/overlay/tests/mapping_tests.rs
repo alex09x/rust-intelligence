@@ -129,3 +129,18 @@ fn test_overlay_query_additional_coverage() {
     let refs = ov_binding.find_local_binding_references(2, 9);
     assert!(!refs.is_empty());
 }
+
+#[test]
+fn test_an_import_edit_blocks_the_index_only_for_the_names_it_imports() {
+    let compiled = "use crate::pricing::Discount;\npub fn f(_: &dyn Discount) {}\nmod tests {\n    use super::*;\n    use std::collections::HashSet;\n    fn t() { let _s: HashSet<u8> = HashSet::new(); }\n}\n";
+    let live = compiled.replace("    use std::collections::HashSet;\n", "").replace(" let _s: HashSet<u8> = HashSet::new(); ", " ");
+    let mut ov = crate::overlay::DocumentOverlay::new("file:///x.rs", "/x.rs", 1, compiled.to_string());
+    ov.update(2, live.clone());
+    assert!(ov.has_modified_imports());
+    assert!(!ov.imports_changed_for("Discount"), "an import of `mod tests` changes nothing for `Discount`");
+    assert!(ov.imports_changed_for("HashSet"));
+    assert!(!ov.imports_changed_at(2, 18), "`Discount` in the signature keeps its index answers");
+    // A glob that changed may bring in any name.
+    ov.update(3, live.replace("    use super::*;\n", ""));
+    assert!(ov.imports_changed_for("Discount"));
+}

@@ -10,6 +10,43 @@
 
 //! Import scanner and normalization for dirty buffer dependency tracking.
 
+use std::collections::HashSet;
+
+/// What the `use` items and file module declarations of `text` bring in (`mod tests { … }` bodies are not imports):
+/// every `(name, path)`, and the paths of its globs (`super` for `use super::*;`), whose names cannot be listed.
+pub fn imported_names(text: &str) -> (HashSet<(String, String)>, HashSet<String>) {
+    use crate::lsp::intelligence::{completion_import::inline_mod_ranges, use_tree};
+    let (mut names, mut globs) = (HashSet::new(), HashSet::new());
+    // The file's own level and that of each inline module (`mod tests { use super::*; … }`), the module's ordinal kept
+    // in the path so that the same import in two modules counts twice (an ordinal, unlike an offset, survives edits).
+    let levels = std::iter::once((0, text.len())).chain(inline_mod_ranges(text).into_iter().map(|(s, e)| (s + 1, e)));
+    for (ordinal, level) in levels.enumerate() {
+        for (_, tree) in use_tree::level_uses(text, level) {
+            for leaf in use_tree::use_leaves(&tree) {
+                let path = format!("{}@{ordinal}", leaf.path);
+                match leaf.name {
+                    _ if leaf.glob => {
+                        globs.insert(path);
+                    }
+                    Some(name) => {
+                        names.insert((name, path));
+                    }
+                    None => {}
+                }
+            }
+        }
+    }
+    // File modules (`mod util;`) bring their names in too.
+    for line in text.lines() {
+        let t = line.trim();
+        let t = t.strip_prefix("pub ").or_else(|| t.strip_prefix("pub(crate) ")).unwrap_or(t);
+        if let Some(m) = t.strip_prefix("mod ").and_then(|r| r.strip_suffix(';')) {
+            names.insert((m.trim().to_string(), format!("self::{}", m.trim())));
+        }
+    }
+    (names, globs)
+}
+
 /// Extracts and normalizes import statements from Rust source text,
 /// safely respecting UTF-8 character boundaries and comment structures.
 pub fn extract_normalized_imports(text: &str) -> Vec<String> {

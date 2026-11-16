@@ -178,7 +178,7 @@ pub(super) fn name_imported_at(doc: &str, cursor: usize, name: &str) -> bool {
 
 /// The byte ranges of the inline modules of `text` (`mod tests { … }`, nested ones too), braces included: what is
 /// declared in one is seen inside it only (a `use` of `mod tests` brings nothing into the functions above it).
-pub(super) fn inline_mod_ranges(text: &str) -> Vec<(usize, usize)> {
+pub(crate) fn inline_mod_ranges(text: &str) -> Vec<(usize, usize)> {
     let b = text.as_bytes();
     let mut out = Vec::new();
     for (p, _) in text.match_indices("mod ") {

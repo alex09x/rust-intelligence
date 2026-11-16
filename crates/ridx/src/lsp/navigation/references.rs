@@ -64,7 +64,7 @@ pub fn handle_references(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     // 2. Workspace compiled references
     if let Some(ws) = workspace {
         let (query_line, query_col) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
-            if overlay.has_modified_imports() {
+            if overlay.imports_changed_at(line_1based, col_1based) {
                 (0, 0)
             } else if let Some((cl, cc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                 (cl, cc)

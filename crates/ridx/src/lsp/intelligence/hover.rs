@@ -69,7 +69,7 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
     // 3. Fallback to mapped compiled hover if dirty buffer preserves valid mapping
     if let Some(ws) = workspace {
         if let Some(overlay) = overlay_opt {
-            if overlay.is_dirty() && !overlay.has_modified_imports() {
+            if overlay.is_dirty() && !overlay.imports_changed_at(line_1based, col_1based) {
                 if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                     if let Some(hover) = ws.hover_at(&file, ml, mc) {
                         return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file), HoverCursor::default()));

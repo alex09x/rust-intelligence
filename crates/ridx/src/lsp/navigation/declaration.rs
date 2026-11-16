@@ -36,7 +36,7 @@ pub fn handle_declaration(msg: &Value, workspace: Option<&WorkspaceIndex>, overl
 
     if let Some(ws) = workspace {
         let (query_line, query_col) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
-            if overlay.has_modified_imports() {
+            if overlay.imports_changed_at(line_1based, col_1based) {
                 (0, 0)
             } else {
                 overlay.map_live_to_compiled(line_1based, col_1based).unwrap_or((0, 0))

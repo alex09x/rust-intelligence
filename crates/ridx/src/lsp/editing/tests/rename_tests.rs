@@ -169,10 +169,15 @@ fn test_rename_and_prepare_rename() {
         }
     });
 
-    // 11. Rename when caller overlay is dirty with modified imports
+    // 11. A caller with an import added since: one of another name (`HashMap`) changes nothing for `add_values`, the
+    // call is renamed at its shifted line; an import of `add_values` itself may change what it resolves to: refused.
     let mut ov_caller_imports = OverlayManager::new();
     ov_caller_imports.open_document(&caller_uri, caller_file.to_str().unwrap(), 1, "pub fn call() { test_edit::add_values(1, 2); }\n".to_string());
     ov_caller_imports.update(caller_file.to_str().unwrap(), 2, "use std::collections::HashMap;\npub fn call() { test_edit::add_values(1, 2); }\n".to_string());
+    let res_caller_imports = handle_rename(&rename_from_def, Some(&ws), &ov_caller_imports, &mut conv).expect("an unrelated import does not block");
+    let caller_edits = res_caller_imports["changes"][caller_uri.as_str()].as_array().cloned().unwrap_or_default();
+    assert!(caller_edits.iter().all(|e| e["range"]["start"]["line"] == 1), "the call on its shifted line: {res_caller_imports}");
+    ov_caller_imports.update(caller_file.to_str().unwrap(), 3, "use other::add_values;\npub fn call() { test_edit::add_values(1, 2); }\n".to_string());
     let res_caller_imports = handle_rename(&rename_from_def, Some(&ws), &ov_caller_imports, &mut conv);
     assert_eq!(res_caller_imports.unwrap_err().code, -32803);
 

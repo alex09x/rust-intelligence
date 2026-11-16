@@ -218,6 +218,27 @@ impl DocumentOverlay {
         };
         extract_normalized_imports(&self.text) != extract_normalized_imports(compiled_text)
     }
+
+    /// Whether the name at `line:col` (1-based) may resolve otherwise than the index recorded because of an import
+    /// edited since: its own `use` changed, a glob changed, or there is no baseline to compare with. An import of other
+    /// names (a `use` added in `mod tests`) changes nothing for it.
+    pub fn imports_changed_at(&self, line: u32, col: u32) -> bool {
+        if !self.has_modified_imports() {
+            return false;
+        }
+        self.get_ident_at(line, col).is_none_or(|name| self.imports_changed_for(&name))
+    }
+
+    /// Whether an import edited since the index was built may change what `name` resolves to in this file.
+    pub fn imports_changed_for(&self, name: &str) -> bool {
+        if !self.has_modified_imports() {
+            return false;
+        }
+        let Some(compiled) = self.compiled_text.as_deref() else { return true };
+        let ((names_before, globs_before), (names_now, globs_now)) = (super::imports::imported_names(compiled), super::imports::imported_names(&self.text));
+        // A glob import that changed may bring in any name.
+        globs_before != globs_now || names_before.symmetric_difference(&names_now).any(|(n, _)| n == name)
+    }
 }
 pub use super::imports::extract_normalized_imports;
 

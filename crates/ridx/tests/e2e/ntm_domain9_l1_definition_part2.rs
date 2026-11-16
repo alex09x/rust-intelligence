@@ -231,15 +231,15 @@ fn test_l1_definition_modified_imports_skips_workspace_index() {
     assert_eq!(res_clean["uri"], models_uri);
     assert_range(&res_clean["range"], 0, 11, 0, 21);
 
-    // 2. Adding `use external_crate::Foo;\n` marks overlay as has_modified_imports() == true
+    // 2. An added import of another name (`Foo`) changes nothing for `RemoteItem`: the index still answers, mapped.
     let dirty_code = "use external_crate::Foo;\nmod models;\npub fn run() { let _ = models::RemoteItem; }\n";
     overlay_mgr.update(lib_str, 2, dirty_code.to_string());
+    let res = handle_definition(&make_pos_req(&lib_uri, 2, 32), Some(&index), &overlay_mgr, &mut conv);
+    assert_eq!(res["uri"], models_uri, "an unrelated import keeps the index answer");
 
-    // When has_modified_imports() is true, query_line is set to 0, skipping compiled index lookup.
-    // Query on line 2, character 32 (models::RemoteItem in dirty text)
-    let req = make_pos_req(&lib_uri, 2, 32);
-    let res = handle_definition(&req, Some(&index), &overlay_mgr, &mut conv);
-
-    // Falls through to fallback which cannot find unindexed Foo/RemoteItem in overlay_mgr globals -> returns Null.
+    // 3. An import of that very name may change what it resolves to: the index is skipped.
+    let shadowing = "use external_crate::RemoteItem;\nmod models;\npub fn run() { let _ = models::RemoteItem; }\n";
+    overlay_mgr.update(lib_str, 3, shadowing.to_string());
+    let res = handle_definition(&make_pos_req(&lib_uri, 2, 32), Some(&index), &overlay_mgr, &mut conv);
     assert_eq!(res, Value::Null);
 }
