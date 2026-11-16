@@ -202,6 +202,13 @@ fn test_range_formatting_statements() {
     let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 3, "character": 0 } } } });
     let formatted = apply_text_edits(messy, handle_range_formatting(&req, &overlay_mgr).as_array().expect("edits"));
     assert_eq!(formatted, "fn compute() {\n    let a = 1;\n    let b = 2;\n    println!(\"{}\",   a + b);\n}\n");
+
+    // A multi-line string literal keeps its text: its continuation line gets no indentation.
+    let literal = "fn compute() {\n    let   s =\"a\nb\";\n    let   r = r#\"x\ny\"#;\n}\n";
+    overlay_mgr.open_document(&uri, file_str, 3, literal.to_string());
+    let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 5, "character": 0 } } } });
+    let formatted = apply_text_edits(literal, handle_range_formatting(&req, &overlay_mgr).as_array().expect("edits"));
+    assert_eq!(formatted, "fn compute() {\n    let s = \"a\nb\";\n    let r = r#\"x\ny\"#;\n}\n");
 }
 
 #[test]

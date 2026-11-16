@@ -55,4 +55,13 @@ fn test_add_explicit_type_writes_the_hinted_type_when_it_names_it() {
     assert!(hover(3, 5).is_null(), "`let`");
     assert!(hover(4, 9).is_null(), "`mut`");
     assert!(!hover(4, 13).is_null(), "`seen` itself");
+
+    // A line typed since the index was built: the live engine gives the whole type the hint cuts.
+    let typed = APP.replace("    long.0.len()", "    let fresh = (String::new(), String::new(), String::new(), String::new());\n    long.0.len()");
+    let uri = server.open_with(&ws.join("app/src/lib.rs"), &typed);
+    let line = typed.lines().position(|l| l.contains("let fresh")).unwrap() as u32;
+    let actions = server.code_actions(&uri, line, 9);
+    let fresh = actions.iter().find(|a| a["title"] == "Add explicit type").expect("offered on a typed line");
+    let edit = &fresh["edit"]["documentChanges"][0]["edits"][0];
+    assert_eq!(edit["newText"], ": (String, String, String, String)", "{fresh}");
 }

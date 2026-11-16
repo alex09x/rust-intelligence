@@ -159,9 +159,18 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
 /// The whole type the index records for the binding named by 1-based chars `start..end` on 1-based `line` of `file`
 /// (in an edited buffer, the line the index compiled it at), as a hint shows it but never cut with `…`: what
 /// `Add explicit type` writes for a type too long for the hint.
+/// On a line typed or changed since the index was built, the live engine infers it, as the hint's own type is.
 pub(crate) fn binding_type_full(ws: &WorkspaceIndex, overlay_mgr: &OverlayManager, file: &str, line: u32, start: u32, end: u32) -> Option<String> {
     let index_line = match overlay_mgr.get(file).filter(|o| o.is_dirty()) {
-        Some(o) => o.line_map()?.to_baseline(line)?,
+        Some(o) => match o.line_map()?.to_baseline(line) {
+            Some(l) => l,
+            None => {
+                let at = o.line_char_col_to_byte(line, start) as u32;
+                let db = crate::lsp::navigation::live_db_for(ws);
+                let mut db = db.lock().unwrap_or_else(|e| e.into_inner());
+                return type_label::full_type(&db.type_at(ws, file, at, Some(overlay_mgr))?.display);
+            }
+        },
         None => line,
     };
     let spans: Vec<TypeSpan<'_>> = ws

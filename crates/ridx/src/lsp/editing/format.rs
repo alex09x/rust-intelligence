@@ -234,8 +234,15 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
         return json!([]);
     };
     // The snippet is formatted on its own, at column 0: it keeps the indentation it has in the file.
+    // A line inside a multi-line string literal is the literal's text: it gets no indentation.
     let indent = orig_slice.iter().find(|l| !l.trim().is_empty()).map_or("", |l| &l[..l.len() - l.trim_start().len()]);
-    let formatted_snippet = formatted_at_column_0.lines().map(|l| if l.is_empty() { String::new() } else { format!("{indent}{l}") }).collect::<Vec<_>>().join("\n");
+    let in_string = lines_starting_in_string(&formatted_at_column_0);
+    let formatted_snippet = formatted_at_column_0
+        .lines()
+        .enumerate()
+        .map(|(i, l)| if l.is_empty() || in_string.contains(&i) { l.to_string() } else { format!("{indent}{l}") })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     if formatted_snippet == orig_text {
         return json!([]);
@@ -253,6 +260,64 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
             "newText": formatted_snippet
         }
     ])
+}
+
+/// The 0-based lines of `text` that start inside a string literal (`"…"`, `r#"…"#`, `b"…"`) opened on a line above.
+fn lines_starting_in_string(text: &str) -> std::collections::HashSet<usize> {
+    let b = text.as_bytes();
+    let (mut out, mut line, mut i) = (std::collections::HashSet::new(), 0usize, 0usize);
+    while i < b.len() {
+        let rest = &b[i..];
+        if rest.starts_with(b"//") {
+            i += rest.iter().position(|&c| c == b'\n').unwrap_or(rest.len());
+            continue;
+        }
+        // A char literal (`'"'`, `'\''`) holds no string.
+        if rest[0] == b'\'' {
+            let len = if rest.get(1) == Some(&b'\\') { rest.iter().skip(2).position(|&c| c == b'\'').map(|p| p + 3) } else { (rest.get(2) == Some(&b'\'')).then_some(3) };
+            i += len.unwrap_or(1);
+            continue;
+        }
+        // A raw string: `r` (or `br`), hashes, `"`, up to `"` and as many hashes.
+        let prev_is_ident = i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_');
+        let after_r = rest.strip_prefix(b"br").or_else(|| rest.strip_prefix(b"r")).filter(|_| !prev_is_ident);
+        let raw_hashes = after_r.and_then(|r| {
+            let hashes = r.iter().take_while(|&&c| c == b'#').count();
+            (r.get(hashes) == Some(&b'"')).then_some(hashes)
+        });
+        let (open_len, close) = match raw_hashes {
+            Some(h) => (rest.len() - after_r.map_or(0, <[u8]>::len) + h + 1, [b"\"".as_slice(), &b"#".repeat(h)].concat()),
+            None if rest[0] == b'"' => (1, b"\"".to_vec()),
+            None => {
+                if rest[0] == b'\n' {
+                    line += 1;
+                }
+                i += 1;
+                continue;
+            }
+        };
+        let mut j = i + open_len;
+        while j < b.len() {
+            if raw_hashes.is_none() && b[j] == b'\\' {
+                if b.get(j + 1) == Some(&b'\n') {
+                    line += 1;
+                    out.insert(line);
+                }
+                j += 2;
+                continue;
+            }
+            if b[j..].starts_with(&close) {
+                break;
+            }
+            if b[j] == b'\n' {
+                line += 1;
+                out.insert(line);
+            }
+            j += 1;
+        }
+        i = (j + close.len()).min(b.len());
+    }
+    out
 }
 
 fn format_range_snippet(snippet: &str, edition: &str, file: &str) -> Option<String> {

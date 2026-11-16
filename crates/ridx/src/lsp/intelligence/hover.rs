@@ -123,6 +123,8 @@ fn word_at(line: &str, col: u32) -> Option<String> {
     while e + 1 < chars.len() && is_word(chars[e + 1]) {
         e += 1;
     }
+    // A raw identifier (`r#type`) is a name, not the keyword after its `r#`.
+    let s = if s >= 2 && chars[s - 2] == 'r' && chars[s - 1] == '#' && (s == 2 || !is_word(chars[s - 3])) { s - 2 } else { s };
     Some(chars[s..=e].iter().collect())
 }
 
@@ -159,6 +161,18 @@ fn is_literal_at(line: &str, col: u32) -> bool {
 
 #[cfg(test)]
 mod literal_tests {
+    #[test]
+    fn test_keywords_and_raw_identifiers_under_the_cursor() {
+        let line = "    let r#type = r#match + mut_count;";
+        assert_eq!(super::word_at(line, 6).as_deref(), Some("let"));
+        assert!(super::is_keyword("let"));
+        let raw = super::word_at(line, 12).unwrap();
+        assert_eq!(raw, "r#type", "a raw identifier keeps its `r#`");
+        assert!(!super::is_keyword(&raw));
+        assert!(!super::is_keyword(&super::word_at(line, 22).unwrap()), "`r#match`");
+        assert!(!super::is_keyword(&super::word_at(line, 30).unwrap()), "`mut_count` is no `mut`");
+    }
+
     #[test]
     fn test_literals_under_the_cursor() {
         let line = r#"    println!("{} {x}", s.len(), double(2), 0x1F, "a\"b");"#;
