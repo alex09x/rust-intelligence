@@ -202,15 +202,19 @@ impl WorkspaceIndex {
     /// or checked out since). Reading the newer disk text instead put the index's positions on other lines: a hover
     /// inside `cart` resolved the `Product` one line below.
     pub(crate) fn read_source_file(&self, file: &str) -> Option<String> {
-        let full = self.source_file_path(file)?;
-        let disk = std::fs::read_to_string(&full).ok()?;
-        let Some(recorded) = self.source_hash_for_file(file) else { return Some(disk) };
-        if crate::format::normalized_source_hash(disk.as_bytes()) == recorded || crate::format::fnv1a_64(disk.as_bytes()) == recorded {
-            return Some(disk);
+        let full = self.source_file_path(file);
+        let disk = full.as_ref().and_then(|f| std::fs::read_to_string(f).ok());
+        let Some(recorded) = self.source_hash_for_file(file) else { return disk };
+        if let Some(d) = disk.as_ref().filter(|d| crate::format::normalized_source_hash(d.as_bytes()) == recorded || crate::format::fnv1a_64(d.as_bytes()) == recorded) {
+            return Some(d.clone());
         }
+        // Changed, moved or deleted since: the snapshot, next to the index (`<out dir>/sources`, wherever `--out-dir`
+        // put it) or in a `target/ridx` above the file.
         let name = format!("{recorded:016x}.rs");
-        let snapshot = full.ancestors().skip(1).map(|d| d.join("target/ridx/sources").join(&name)).find(|p| p.is_file());
-        Some(snapshot.and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or(disk))
+        let near_index = self.root_dir.iter().flat_map(|d| d.ancestors().take(4)).map(|d| d.join("sources").join(&name));
+        let near_file = full.iter().flat_map(|f| f.ancestors().skip(1)).map(|d| d.join("target/ridx/sources").join(&name));
+        let snapshot = near_index.chain(near_file).find(|p| p.is_file());
+        snapshot.and_then(|p| std::fs::read_to_string(p).ok()).or(disk)
     }
 
     /// Where `file` is on disk: as given, or under the workspace, index or crate source roots.
