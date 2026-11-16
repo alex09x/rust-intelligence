@@ -209,6 +209,16 @@ fn test_range_formatting_statements() {
     let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 5, "character": 0 } } } });
     let formatted = apply_text_edits(literal, handle_range_formatting(&req, &overlay_mgr).as_array().expect("edits"));
     assert_eq!(formatted, "fn compute() {\n    let s = \"a\nb\";\n    let r = r#\"x\ny\"#;\n}\n");
+
+    // An indented continuation keeps its spaces (they are the literal's text); a quote in a block comment opens no
+    // string, and `cr#".."#` is a raw string.
+    let indented = "fn compute() {\n    let   s =\"first\n    second\";\n    /* \" */ let   t = 1;\n    let   c = cr#\"x\n  y\"#;\n}\n";
+    overlay_mgr.open_document(&uri, file_str, 4, indented.to_string());
+    let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 6, "character": 0 } } } });
+    let formatted = apply_text_edits(indented, handle_range_formatting(&req, &overlay_mgr).as_array().expect("edits"));
+    assert!(formatted.contains("    let s = \"first\n    second\";\n"), "{formatted}");
+    assert!(formatted.contains("    let c = cr#\"x\n  y\"#;\n"), "{formatted}");
+    assert!(formatted.contains("    let t = 1;\n"), "{formatted}");
 }
 
 #[test]

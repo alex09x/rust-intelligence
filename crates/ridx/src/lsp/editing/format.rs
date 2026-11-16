@@ -272,15 +272,33 @@ fn lines_starting_in_string(text: &str) -> std::collections::HashSet<usize> {
             i += rest.iter().position(|&c| c == b'\n').unwrap_or(rest.len());
             continue;
         }
+        // A block comment (nested ones too) holds no string: `/* " */`.
+        if rest.starts_with(b"/*") {
+            let (mut depth, mut j) = (1usize, i + 2);
+            while j < b.len() && depth > 0 {
+                if b[j..].starts_with(b"/*") {
+                    depth += 1;
+                    j += 2;
+                } else if b[j..].starts_with(b"*/") {
+                    depth -= 1;
+                    j += 2;
+                } else {
+                    line += usize::from(b[j] == b'\n');
+                    j += 1;
+                }
+            }
+            i = j;
+            continue;
+        }
         // A char literal (`'"'`, `'\''`) holds no string.
         if rest[0] == b'\'' {
             let len = if rest.get(1) == Some(&b'\\') { rest.iter().skip(2).position(|&c| c == b'\'').map(|p| p + 3) } else { (rest.get(2) == Some(&b'\'')).then_some(3) };
             i += len.unwrap_or(1);
             continue;
         }
-        // A raw string: `r` (or `br`), hashes, `"`, up to `"` and as many hashes.
+        // A raw string: `r` (or `br`, `cr`), hashes, `"`, up to `"` and as many hashes.
         let prev_is_ident = i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_');
-        let after_r = rest.strip_prefix(b"br").or_else(|| rest.strip_prefix(b"r")).filter(|_| !prev_is_ident);
+        let after_r = rest.strip_prefix(b"br").or_else(|| rest.strip_prefix(b"cr")).or_else(|| rest.strip_prefix(b"r")).filter(|_| !prev_is_ident);
         let raw_hashes = after_r.and_then(|r| {
             let hashes = r.iter().take_while(|&&c| c == b'#').count();
             (r.get(hashes) == Some(&b'"')).then_some(hashes)
@@ -361,8 +379,17 @@ fn format_range_snippet(snippet: &str, edition: &str, file: &str) -> Option<Stri
                     let lines: Vec<&str> = formatted.lines().collect();
                     if lines.len() >= 2 && lines.first().map(|l| l.contains("__ridx_wrap")).unwrap_or(false) && lines.last() == Some(&"}") {
                         let inner_lines = &lines[1..lines.len() - 1];
-                        let unwrapped: Vec<String> =
-                            inner_lines.iter().map(|l| if let Some(stripped) = l.strip_prefix("    ") { stripped.to_string() } else { l.to_string() }).collect();
+                        // The wrapper's indentation comes off the code; a line inside a multi-line string literal is
+                        // the literal's text and keeps every space.
+                        let in_string = lines_starting_in_string(&inner_lines.join("\n"));
+                        let unwrapped: Vec<String> = inner_lines
+                            .iter()
+                            .enumerate()
+                            .map(|(i, l)| match l.strip_prefix("    ") {
+                                Some(stripped) if !in_string.contains(&i) => stripped.to_string(),
+                                _ => l.to_string(),
+                            })
+                            .collect();
                         let res = unwrapped.join("\n").trim_end().to_string();
                         if !res.is_empty() {
                             return Some(res);
