@@ -34,7 +34,15 @@ pub(crate) fn is_off_token(msg: &Value, ov: &OverlayManager, conv: &mut Position
     let Ok((uri, line0, col16)) = super::params::text_document_position(msg) else { return false };
     let file = uri_to_path(uri);
     let text = match ov.get(&file) {
-        Some(o) => o.text.lines().nth(line0 as usize).map(str::to_string),
+        Some(o) => {
+            // A `/* … */` comment may span lines: the buffer's parser records where each comment lies.
+            let at = o.position_to_byte_offset(line0, col16);
+            let plain_block = |&(s, e): &(usize, usize)| s <= at && at < e && o.text[s..].starts_with("/*") && !o.text[s..].starts_with("/**") && !o.text[s..].starts_with("/*!");
+            if o.opaque.iter().any(plain_block) {
+                return true;
+            }
+            o.text.lines().nth(line0 as usize).map(str::to_string)
+        }
         None => conv.get_line(&file, line0 + 1).map(str::to_string),
     };
     text.is_some_and(|t| off_token_in(&t, col16))
@@ -77,6 +85,15 @@ fn in_comment_text(line: &str, at: usize) -> bool {
                 let close = chars[i..at].iter().rposition(|&c| c == ']');
                 return !open.is_some_and(|o| close.is_none_or(|c| c < o));
             }
+            // A `/* … */` comment within the line (one open at the line's start is the buffer parser's to find).
+            '/' if !in_str && chars[i + 1] == '*' => {
+                let close = (i + 2..chars.len().saturating_sub(1)).find(|&k| chars[k] == '*' && chars[k + 1] == '/').map_or(chars.len(), |k| k + 2);
+                if at < close {
+                    return true;
+                }
+                i = close;
+                continue;
+            }
             _ => {}
         }
         i += 1;
@@ -114,6 +131,20 @@ mod tests {
         assert!(!off_token_in(doc, 17), "an intra-doc link");
         assert!(off_token_in(doc, 30), "prose after the link");
         assert!(off_token_in("//// a separator, not a doc comment", 8));
+        let block = "    let n = /* the count */ v.len();";
+        assert!(off_token_in(block, 19), "a word of an inline block comment");
+        assert!(!off_token_in(block, 31), "`len` after it");
+    }
+
+    #[test]
+    fn test_a_block_comment_over_several_lines_is_off_token() {
+        let mut ov = OverlayManager::new();
+        let uri = "file:///tmp/off_token_block.rs";
+        ov.open_or_update(uri, &uri_to_path(uri), 1, "fn f() {\n    /* counts\n       items */\n    let y = 1;\n}\n".to_string());
+        let mut conv = PositionConverter::new();
+        let at = |line: u32, character: u32| serde_json::json!({ "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": character } } });
+        assert!(is_off_token(&at(2, 9), &ov, &mut conv), "`items` on the comment's second line");
+        assert!(!is_off_token(&at(3, 8), &ov, &mut conv), "on `y`");
     }
 
     #[test]
