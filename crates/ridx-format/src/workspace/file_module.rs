@@ -65,6 +65,17 @@ impl WorkspaceIndex {
         indices.iter().copied().find(|&i| is_lib(i)).or_else(|| indices.first().copied())
     }
 
+    /// Whether `file_path` is compiled into a binary target (`src/main.rs`, a module of it, a `[[bin]]` path) and not
+    /// into the package's library: its `crate::` is the binary, the library is another crate to it.
+    pub fn file_in_bin_only(&self, file_path: &str) -> bool {
+        let indices = self.reader_indices_for_file(file_path);
+        let kind = |i: usize| self.target_kinds.get(i).copied().flatten();
+        let has_file = |i: usize| self.target_file_id_for_reader(i, file_path).is_some();
+        let in_lib = indices.iter().any(|&i| kind(i).is_some_and(|k| k.is_lib()) && has_file(i));
+        let in_bin = indices.iter().any(|&i| kind(i) == Some(super::target_kind::TargetKind::Bin) && has_file(i));
+        in_bin && !in_lib
+    }
+
     /// Returns the target kind for the reader at index `idx` if known.
     pub fn target_kind_at(&self, idx: usize) -> Option<super::target_kind::TargetKind> {
         self.target_kinds.get(idx).copied().flatten()

@@ -272,7 +272,7 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             let import_path = if is_same_module || super::completion_import::name_imported_at(doc_text, cursor_byte, s.name) {
                 None
             } else {
-                match super::completion_import::import_path(&s, current_crate, &file, &mut public_paths) {
+                match super::completion_import::import_path(&s, current_crate, &file, ws, &mut public_paths) {
                     Some(p) => Some(p),
                     None => continue,
                 }

@@ -89,13 +89,22 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     assert!(offered(&re_in).iter().all(|(l, u)| l != "Reexported" || u.is_none()), "imported by `mod tests` itself");
 
     // The package's binary uses its library as another crate: `app::util::helper` is not `crate::` from `main.rs`.
-    write(&ws, "app/src/lib.rs", &app.replace("mod util;", "pub mod util;"));
+    write(&ws, "app/src/lib.rs", &app.replace("mod util;", "pub mod util;").replace("pub fn uses_map", "pub(crate) fn lib_secret() {}\npub fn uses_map"));
     let main = ws.join("app/src/main.rs");
-    write(&ws, "app/src/main.rs", "fn main() {}\n");
+    write(&ws, "app/src/main.rs", "mod cli;\nfn main() { cli::run(); }\n");
+    write(&ws, "app/src/cli.rs", "pub fn run() {}\n");
     try_run_indexing(index_opts(&ws, &cas, &driver)).expect("reindex");
     let mut server = Server::start(&ws);
-    let text = "fn main() {}\nfn typed() { helpe";
-    let uri = server.open_with(&main, text);
-    let items = offered(&server.completion(&uri, 1, text.lines().last().unwrap().len() as u32));
+    let mut in_file = |file: &std::path::Path, text: &str, typed: &str| {
+        let text = format!("{text}fn typed() {{ {typed}");
+        let uri = server.open_with(file, &text);
+        let line = text.lines().count() as u32 - 1;
+        offered(&server.completion(&uri, line, text.lines().last().unwrap().len() as u32))
+    };
+    let items = in_file(&main, "mod cli;\nfn main() { cli::run(); }\n", "helpe");
     assert!(items.contains(&("helper".into(), Some("use app::util::helper;".into()))), "through the library: {items:?}");
+    let items = in_file(&ws.join("app/src/cli.rs"), "pub fn run() {}\n", "helpe");
+    assert!(items.contains(&("helper".into(), Some("use app::util::helper;".into()))), "from a module of the binary too: {items:?}");
+    let items = in_file(&main, "mod cli;\nfn main() { cli::run(); }\n", "lib_sec");
+    assert!(items.iter().all(|(l, u)| l != "lib_secret" || u.is_none()), "the library's pub(crate) item is no import of the binary: {items:?}");
 }

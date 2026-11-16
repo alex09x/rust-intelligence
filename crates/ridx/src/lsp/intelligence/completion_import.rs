@@ -31,16 +31,24 @@ pub(super) fn importable(s: &WorkspaceSymbol<'_>) -> bool {
 
 /// The path a `use` of `s` writes from a file of crate `current_crate`; `None` when no path is known to reach it.
 /// `roots` caches the public path found per definition path.
-pub(super) fn import_path(s: &WorkspaceSymbol<'_>, current_crate: Option<&str>, current_file: &str, roots: &mut HashMap<String, Option<String>>) -> Option<String> {
+pub(super) fn import_path(
+    s: &WorkspaceSymbol<'_>,
+    current_crate: Option<&str>,
+    current_file: &str,
+    ws: &ridx_format::WorkspaceIndex,
+    roots: &mut HashMap<String, Option<String>>,
+) -> Option<String> {
     let first = s.path.split("::").next().unwrap_or("");
     let full = if first == s.crate_name || matches!(first, "std" | "core" | "alloc") { s.path.to_string() } else { format!("{}::{}", s.crate_name, s.path) };
     let (krate, _) = full.split_once("::")?;
     let in_crate = Some(krate) == current_crate;
     let def = defining_file(s);
-    // A binary (`src/main.rs`, `src/bin/*`) shares the package's crate name, but its `crate::` is the binary: an item
-    // of the package's library is reached through the library, as from another crate.
-    let from_bin = in_crate && is_bin_root(Path::new(current_file)) && def != Path::new(current_file);
-    let key = format!("{in_crate}:{from_bin}:{full}");
+    // A binary (`src/main.rs`, a module of it, a `[[bin]]` path) shares the package's crate name, but its `crate::` is
+    // the binary: an item of the package's library is reached through the library, as from another crate, and an
+    // item of a binary is seen from nowhere else.
+    let current_in_bin = in_crate && ws.file_in_bin_only(current_file);
+    let def_in_bin = in_crate && ws.file_in_bin_only(&def.to_string_lossy());
+    let key = format!("{in_crate}:{current_in_bin}:{def_in_bin}:{full}");
     if let Some(found) = roots.get(&key) {
         return found.clone();
     }
@@ -54,10 +62,13 @@ pub(super) fn import_path(s: &WorkspaceSymbol<'_>, current_crate: Option<&str>, 
     };
     let found = match krate {
         "std" | "core" | "alloc" if !in_crate => std_path(krate, &full, current_file),
-        _ if from_bin && via_lib().is_some() => via_lib(),
+        _ if current_in_bin && !def_in_bin => via_lib(),
+        _ if def_in_bin && !current_in_bin => None,
         _ => {
             let vis = visibility(s);
-            let root = if from_bin { Some(PathBuf::from(current_file)) } else { crate_root(&def) };
+            // Within a binary its root is the file the binary starts at; from a module of it, only an item of the
+            // root (`crate::name`) is known to be reached.
+            let root = if current_in_bin { is_bin_root(Path::new(current_file)).then(|| PathBuf::from(current_file)) } else { crate_root(&def) };
             // An item of the crate root is reached by `krate::item` with no module on the way to read.
             let via_root = |find: fn(&Path, &str) -> Option<String>| match &root {
                 Some(r) => find(r, &full),
