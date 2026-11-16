@@ -16,6 +16,7 @@
 //! or compilation errors.
 
 pub mod imports;
+mod line_anchors;
 pub mod line_map;
 pub mod manager;
 pub mod mapping;

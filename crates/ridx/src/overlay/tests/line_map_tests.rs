@@ -69,21 +69,32 @@ const CASES: &[(&str, &str)] = &[
     ("fn a() {}\nfn b() {}\n", "fn a() {}\n\nfn b() {}\n"),
 ];
 
+/// Wherever the prefix-and-suffix algorithm answered, the map answers the same; between edits it may answer more, with
+/// a line of the same text, both directions agreeing.
 #[test]
-fn test_line_map_matches_the_per_line_algorithm_in_both_directions() {
+fn test_line_map_extends_the_per_line_algorithm_in_both_directions() {
     for (baseline, live) in CASES {
         let map = LineMap::new(baseline, live);
         let span = baseline.lines().count().max(live.lines().count()) as u32 + 2;
+        let (b_lines, l_lines): (Vec<&str>, Vec<&str>) = (baseline.lines().collect(), live.lines().collect());
         for line in 0..=span {
-            assert_eq!(map.to_live(line), reference_to_live(baseline, live, line), "to_live({line}) for {baseline:?} -> {live:?}");
-            assert_eq!(map.to_baseline(line), reference_to_live(live, baseline, line), "to_baseline({line}) for {baseline:?} -> {live:?}");
+            if let Some(expected) = reference_to_live(baseline, live, line) {
+                assert_eq!(map.to_live(line), Some(expected), "to_live({line}) for {baseline:?} -> {live:?}");
+            }
+            if let Some(expected) = reference_to_live(live, baseline, line) {
+                assert_eq!(map.to_baseline(line), Some(expected), "to_baseline({line}) for {baseline:?} -> {live:?}");
+            }
+            if let Some(l) = map.to_live(line).filter(|_| line > 0) {
+                assert_eq!(b_lines[line as usize - 1], l_lines[l as usize - 1], "the same text");
+                assert_eq!(map.to_baseline(l), Some(line), "both directions agree");
+            }
             assert_eq!(map_text_line_to_live(baseline, live, line), map.to_live(line), "map_text_line_to_live({line}) for {baseline:?} -> {live:?}");
         }
     }
 }
 
-/// The map is prefix and suffix only: lines inserted at the top shift everything below them,
-/// an edited line loses its counterpart, and a line between two edits is lost as well.
+/// Lines inserted at the top shift everything below them, an edited line loses its counterpart, and a line between
+/// two edits keeps it.
 #[test]
 fn test_line_map_shift_edit_and_removal() {
     let shifted = LineMap::new("a\nb\nc\n", "x\ny\na\nb\nc\n");
@@ -108,10 +119,11 @@ fn test_line_map_shift_edit_and_removal() {
     assert_eq!(removed.to_baseline(2), Some(3));
 
     let two_edits = LineMap::new("a\nb\nc\nd\n", "x\ny\na\nB\nc\nd\n");
-    assert_eq!(two_edits.to_live(1), None);
-    assert_eq!(two_edits.to_live(2), None);
+    assert_eq!(two_edits.to_live(1), Some(3), "`a`, between the lines added above and the line edited below");
+    assert_eq!(two_edits.to_live(2), None, "the edited line");
     assert_eq!(two_edits.to_live(3), Some(5));
     assert_eq!(two_edits.to_live(4), Some(6));
+    assert_eq!(two_edits.to_baseline(3), Some(1));
 }
 
 #[test]
