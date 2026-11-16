@@ -40,18 +40,48 @@ pub(crate) fn is_off_token(msg: &Value, ov: &OverlayManager, conv: &mut Position
     text.is_some_and(|t| off_token_in(&t, col16))
 }
 
-/// `is_off_token` on the line `line` at the UTF-16 column `col16`.
+/// `is_off_token` on the line `line` at the UTF-16 column `col16`: whitespace with no name ending before it, or the
+/// text of a comment (an intra-doc link `[Name]` in a doc comment excepted). The index answers inside a comment for
+/// whatever expression spans it: a function body's type showed over `// …` lines.
 fn off_token_in(line: &str, col16: u32) -> bool {
-    let (mut units, mut before, mut at) = (0u32, None, None);
-    for c in line.chars() {
+    let (mut units, mut before, mut at, mut at_char) = (0u32, None, None, 0usize);
+    for (i, c) in line.chars().enumerate() {
         if units >= col16 {
             at = Some(c);
+            at_char = i;
             break;
         }
         units += c.len_utf16() as u32;
         before = Some(c);
+        at_char = i + 1;
     }
-    at.is_none_or(char::is_whitespace) && !before.is_some_and(|c| c.is_alphanumeric() || c == '_')
+    let blank = at.is_none_or(char::is_whitespace) && !before.is_some_and(|c| c.is_alphanumeric() || c == '_');
+    blank || in_comment_text(line, at_char)
+}
+
+/// Whether the character at index `at` lies in a `//` comment of `line` (outside string literals), and not inside
+/// `[…]` of a doc comment (`///`, `//!`).
+fn in_comment_text(line: &str, at: usize) -> bool {
+    let chars: Vec<char> = line.chars().collect();
+    let (mut i, mut in_str) = (0, false);
+    while i + 1 < chars.len() && i < at {
+        match chars[i] {
+            '\\' if in_str => i += 1,
+            '"' => in_str = !in_str,
+            '/' if !in_str && chars[i + 1] == '/' => {
+                let doc = matches!(chars.get(i + 2), Some('/' | '!')) && chars.get(i + 3) != Some(&'/');
+                if !doc {
+                    return true;
+                }
+                let open = chars[i..at].iter().rposition(|&c| c == '[');
+                let close = chars[i..at].iter().rposition(|&c| c == ']');
+                return !open.is_some_and(|o| close.is_none_or(|c| c < o));
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    false
 }
 
 #[cfg(test)]
@@ -70,6 +100,20 @@ mod tests {
         assert!(!off_token_in("x", 1), "the end of a line right after a name");
         assert!(!off_token_in("«é» x", 4), "`x` past non-ASCII characters");
         assert!(off_token_in("😀  x", 3), "a UTF-16 column past a two-unit character, in the spaces");
+    }
+
+    #[test]
+    fn test_comment_text_is_off_token_but_a_doc_link_is_not() {
+        let code = "    let n = v.len(); // count the items";
+        assert!(!off_token_in(code, 14), "`len` before the comment");
+        assert!(off_token_in(code, 26), "a word of the comment");
+        assert!(off_token_in("    // Укороченный прогон", 9), "a comment line, past non-ASCII text");
+        assert!(!off_token_in("    let s = \"a // b\";", 16), "`//` inside a string literal is no comment");
+        let doc = "/// Returns a [`Loader`] built from the config.";
+        assert!(off_token_in(doc, 6), "doc comment prose");
+        assert!(!off_token_in(doc, 17), "an intra-doc link");
+        assert!(off_token_in(doc, 30), "prose after the link");
+        assert!(off_token_in("//// a separator, not a doc comment", 8));
     }
 
     #[test]
