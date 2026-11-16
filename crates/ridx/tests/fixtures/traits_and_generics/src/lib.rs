@@ -82,6 +82,10 @@ pub fn labels_of(items: &[u32]) -> Vec<String> {
     labels_out
 }
 
+pub fn failure_text(n: usize) -> String {
+    format!("failed to download ({}) // not a comment", n.min(9))
+}
+
 pub async fn async_count() -> usize {
     let mut async_local: Vec<u8> = Vec::new();
     async_local.push(1);

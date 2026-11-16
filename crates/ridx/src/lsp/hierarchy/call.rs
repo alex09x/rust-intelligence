@@ -295,7 +295,10 @@ pub fn handle_call_hierarchy_outgoing_calls(msg: &Value, workspace: Option<&Work
                 let trimmed = full_rest.trim_start();
                 let is_call = trimmed.starts_with('(') || (trimmed.starts_with("::<") && trimmed.contains('('));
 
-                if is_call && !is_decl && !is_rust_keyword(ident) {
+                // A word in a string literal or a comment is no call, even when `(` follows it (`"download ({})"` in a
+                // `format!`, where the index finds the macro expansion's `must_use`).
+                let in_text = crate::overlay::mapping::is_byte_in_string_or_comment(line_str, start_byte);
+                if is_call && !is_decl && !in_text && !is_rust_keyword(ident) {
                     let col_1based = (start_c + 1) as u32;
                     let end_col_1based = (i + 1) as u32;
 

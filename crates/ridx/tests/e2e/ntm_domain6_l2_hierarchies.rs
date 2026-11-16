@@ -250,6 +250,25 @@ fn test_l2_call_hierarchy_outgoing_with_array_and_braces() {
     assert!(target_names.contains(&"extract"), "Outgoing calls from process_bytes must contain extract, got: {target_names:?}");
 }
 
+/// Words in a string literal are no calls: `"failed to download ({})"` inside `format!` lies in the macro's
+/// expansion, whose `must_use` wrapper Zed listed as a call of `download`.
+#[test]
+fn test_l2_call_hierarchy_outgoing_skips_words_in_string_literals() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let (line, col) = pos_in_file(&lib_file, "pub fn failure_text(n: usize)", "failure_text");
+    let prep =
+        handle_prepare_call_hierarchy(&json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": col } } }), Some(ws), &overlay_mgr, &mut conv)
+            .unwrap();
+    let item = &prep.as_array().unwrap()[0];
+    let out = handle_call_hierarchy_outgoing_calls(&json!({ "params": { "item": item } }), Some(ws), &overlay_mgr, &mut conv);
+    let names: Vec<&str> = out.as_array().unwrap().iter().filter_map(|c| c["to"]["name"].as_str()).collect();
+    assert_eq!(names, ["min"], "only the call the source spells");
+}
+
 #[test]
 fn test_l2_type_hierarchy_cross_crate_impl() {
     let ws = get_or_index_l2_fixture("multi_crate");
