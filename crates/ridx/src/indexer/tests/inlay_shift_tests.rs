@@ -42,4 +42,9 @@ fn test_parameter_hints_follow_lines_added_above() {
         .collect();
     let call_line = edited.lines().position(|l| l.contains("price(\"tea\"")).unwrap() as u64;
     assert_eq!(params, [(call_line, "name:".to_string()), (call_line, "cents:".to_string())], "on the call's live line: {res}");
+
+    // Hover on the binding of that line shows its type, as in a clean buffer.
+    let hover = server.send(json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": call_line, "character": 8 } } }));
+    let text = hover["result"]["contents"]["value"].as_str().unwrap_or_default();
+    assert!(text.contains("let a: u64"), "the binding's type: {hover}");
 }

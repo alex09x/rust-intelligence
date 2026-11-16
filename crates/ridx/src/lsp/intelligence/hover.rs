@@ -28,11 +28,17 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
     };
 
-    // 1. Check workspace compiled hover and type-at for clean buffers
+    // 1. The index's hover: at the cursor in a clean buffer; in an edited one, at the line the index compiled for a line
+    // the edit left as it was (and whose names no edited import may have changed), so a binding there shows its type
+    // as in a clean buffer (`let mut cart: Cart`, not the bare `let cart` of the buffer's own parse).
     if let Some(ws) = workspace {
-        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
-        if !is_dirty {
-            if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
+        let index_pos = match overlay_opt.filter(|o| o.is_dirty()) {
+            None => Some((line_1based, col_1based)),
+            Some(o) if o.imports_changed_at(line_1based, col_1based) => None,
+            Some(o) => o.map_live_to_compiled(line_1based, col_1based),
+        };
+        if let Some((il, ic)) = index_pos {
+            if let Some(hover) = ws.hover_at(&file, il, ic) {
                 let line_text =
                     overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
                 // A literal names nothing: inside a macro's arguments the index's widest reference there is the call
@@ -41,15 +47,14 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                     return Ok(hover.inferred_type.map_or(Value::Null, |ty| json!({ "contents": { "kind": "markdown", "value": format!("```rust\n{ty}\n```") } })));
                 }
                 if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
-                    let layout_at = |c: u32| ws.note_at(&file, line_1based, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
+                    let layout_at = |c: u32| ws.note_at(&file, il, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
                     if let Some(text) = line_text.and_then(|l| super::hover_render::let_binding_hover_with_layout(&l, col_1based, ty, &layout_at)) {
                         return Ok(json!({ "contents": { "kind": "markdown", "value": text } }));
                     }
                 }
                 let start_col = word_start_col(conv, overlay_opt, &file, line_1based, col_1based);
-                let call_args = ws.note_at(&file, line_1based, start_col, ridx_format::NOTE_CALL_ARGS);
-                let at_definition =
-                    hover.definition.as_ref().is_some_and(|d| d.start_line == line_1based && d.start_col == start_col && file.ends_with(d.file.trim_start_matches("./")));
+                let call_args = ws.note_at(&file, il, start_col, ridx_format::NOTE_CALL_ARGS);
+                let at_definition = hover.definition.as_ref().is_some_and(|d| d.start_line == il && d.start_col == start_col && file.ends_with(d.file.trim_start_matches("./")));
                 return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file), HoverCursor { call_args, at_definition }));
             }
         }
@@ -66,18 +71,8 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         }));
     }
 
-    // 3. Fallback to mapped compiled hover if dirty buffer preserves valid mapping
     if let Some(ws) = workspace {
-        if let Some(overlay) = overlay_opt {
-            if overlay.is_dirty() && !overlay.imports_changed_at(line_1based, col_1based) {
-                if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
-                    if let Some(hover) = ws.hover_at(&file, ml, mc) {
-                        return Ok(format_hover_full(&hover, Some(ws), Some(overlay_mgr), Some(conv), Some(&file), HoverCursor::default()));
-                    }
-                }
-            }
-        }
-        // 4. A name the index keeps nothing for: code typed since it compiled, or a path it records no reference at
+        // 3. A name the index keeps nothing for: code typed since it compiled, or a path it records no reference at
         // (a `use` item): resolved as completion resolves it.
         let edited = overlay_opt.is_some_and(|o| o.is_dirty());
         let line_text = overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
