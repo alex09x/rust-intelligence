@@ -60,6 +60,8 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     let hash_set = at("HashSe");
     assert!(hash_set.iter().all(|(l, _)| l.chars().all(|c| c.is_alphanumeric() || c == '_')), "names only, no impl blocks: {hash_set:?}");
     assert!(hash_set.contains(&("HashSet".into(), Some("use std::collections::HashSet;".into()))), "std's public path: {hash_set:?}");
+    let first_import = hash_set.iter().find_map(|(_, u)| u.clone());
+    assert_eq!(first_import.as_deref(), Some("use std::collections::HashSet;"), "std first among imports: {hash_set:?}");
     assert!(hash_set.iter().all(|(_, u)| u.as_deref().is_none_or(|u| !u.contains("util::HashSet"))), "not another module's private import: {hash_set:?}");
 
     let map = at("HashMa");

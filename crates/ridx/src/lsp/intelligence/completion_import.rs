@@ -79,7 +79,8 @@ pub(super) fn name_imported(doc: &str, name: &str) -> bool {
     let mut in_use = false;
     for line in doc.lines() {
         let t = line.trim_start();
-        if t.starts_with("use ") || t.starts_with("pub use ") || t.starts_with("pub(crate) use ") {
+        // The file's own level only: a `use` inside `mod tests { … }` or a function brings nothing in elsewhere.
+        if line.starts_with("use ") || line.starts_with("pub use ") || line.starts_with("pub(crate) use ") {
             in_use = true;
         }
         if in_use {
@@ -101,11 +102,11 @@ mod tests {
 
     #[test]
     fn test_a_name_imported_by_any_path_is_in_scope() {
-        let doc = "use hashbrown::HashMap;\nuse std::{fmt, collections::{BTreeMap as Tree, VecDeque}};\nfn f() {}\n";
+        let doc = "use hashbrown::HashMap;\nuse std::{fmt, collections::{BTreeMap as Tree, VecDeque}};\nfn f() {}\nmod tests {\n    use std::collections::HashSet;\n}\n";
         assert!(name_imported(doc, "HashMap"));
         assert!(name_imported(doc, "VecDeque"));
         assert!(name_imported(doc, "Tree"), "an alias");
-        assert!(!name_imported(doc, "HashSet"));
+        assert!(!name_imported(doc, "HashSet"), "imported inside `mod tests` only");
         assert!(!name_imported(doc, "collections"), "a path segment is no import of that name");
         assert!(!name_imported(doc, "f"), "a function of the file is no import");
     }

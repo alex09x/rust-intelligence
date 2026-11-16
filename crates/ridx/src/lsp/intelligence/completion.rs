@@ -285,9 +285,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                 });
 
                 if let Some(edit) = auto_import_edit {
-                    item["labelDetails"] = json!({
-                        "description": format!("{import_path} (auto-import)")
-                    });
+                    // As rust-analyzer labels an import completion: the editor shows `detail` next to the name, so
+                    // the same name by several paths reads `HashSet (use std::collections::HashSet)`.
+                    item["labelDetails"] = json!({ "detail": format!(" (use {import_path})"), "description": detail });
                     item["additionalTextEdits"] = json!([edit]);
                 }
                 if is_documented_kind(s.kind) {
@@ -303,6 +303,14 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
             }
         }
     }
+
+    // Among the names that come with an import, the standard library's first.
+    let import_rank = |i: &Value| match i["labelDetails"]["detail"].as_str() {
+        None => 0,
+        Some(d) if d.starts_with(" (use std::") => 1,
+        Some(_) => 2,
+    };
+    items.sort_by_key(import_rank);
 
     Ok(json!({
         "isIncomplete": is_capped,
