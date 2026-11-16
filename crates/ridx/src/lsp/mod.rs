@@ -49,16 +49,7 @@ use std::sync::{Arc, Mutex};
 
 pub(crate) fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) -> bool {
     if let Ok(true) = ws.reload_manifest_if_modified() {
-        for file in overlay_mgr.open_file_paths() {
-            let Some(indexed) = ws.source_hash_for_file(&file) else { continue };
-            let disk = std::fs::read_to_string(&file).ok();
-            if let Some(content) = disk.filter(|c| ridx_format::normalized_source_hash(c.as_bytes()) == indexed) {
-                overlay_mgr.advance_compiled_baseline(&file, content);
-            } else if let Some(compiled) = crate::indexer::source_snapshots::compiled_source_snapshot(&file, indexed) {
-                // Edited on disk while the index was built: the buffer maps through the text that was compiled.
-                overlay_mgr.advance_compiled_baseline(&file, compiled);
-            }
-        }
+        overlay_mgr.rebase_on_index(|file| ws.units_agree_on_source(file).then(|| ws.source_hash_for_file(file)).flatten());
         true
     } else {
         false
@@ -134,12 +125,9 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
     })?;
 
     loop {
-        // A background reindex ended: load it, and have the client fetch again what it shows from the old one (in
-        // Zed the parameter hints of lines saved since stayed missing).
+        // A background reindex ended: have the client fetch again what it shows from the old index (in Zed the
+        // parameter hints of lines saved since stayed missing). Its requests load the new one (`sync_reloaded_index`).
         if lifecycle.reindex.take_finished() {
-            multi_root.reload_all_if_modified();
-            overlay_mgr.rebase_on_index(|file| multi_root.source_hash_for_file(file));
-            lifecycle.conv.clear();
             for refresh in lifecycle.index_refresh_requests() {
                 protocol::send_response(&mut writer, &refresh)?;
             }

@@ -165,6 +165,26 @@ impl WorkspaceIndex {
         self.path_index.shard_mtime_slow(self, file_path)
     }
 
+    /// Whether every compilation unit recording a source hash for `file_path` recorded the same one. A failed build of
+    /// one unit (`lib test` with an error in `mod tests`) leaves that unit's data from the text before while the units
+    /// that built record the new text: no single text then matches all of the file's data.
+    pub fn units_agree_on_source(&self, file_path: &str) -> bool {
+        let mut seen: Option<u64> = None;
+        for idx in self.candidate_reader_indices_for_file(file_path) {
+            let reader = &self.readers[idx];
+            let target = self.target_file_for_reader(idx, file_path);
+            let name = target.as_ref().map_or(file_path, |t| t.as_ref());
+            let from_reader = reader.find_file_id(name).map(|fid| reader.file_source_hash(fid)).filter(|&h| h != 0);
+            let h = from_reader.or_else(|| self.reader_file_hashes.get(idx).and_then(|m| m.get(name).or_else(|| m.get(file_path))).copied().filter(|&h| h != 0));
+            match (h, seen) {
+                (Some(h), Some(s)) if h != s => return false,
+                (Some(h), None) => seen = Some(h),
+                _ => {}
+            }
+        }
+        true
+    }
+
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         // Fast path: query candidate readers prioritized for this file using in-memory indices

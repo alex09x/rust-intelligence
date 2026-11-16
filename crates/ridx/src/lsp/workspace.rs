@@ -197,7 +197,6 @@ impl MultiRootWorkspace {
     pub fn source_hash_for_file(&self, file: &str) -> Option<u64> {
         self.find_workspace_for_path(Path::new(file)).and_then(|ws| ws.source_hash_for_file(file))
     }
-
     pub fn handle_file_event(&mut self, method: &str, msg: &Value, overlay_mgr: &mut crate::overlay::OverlayManager, conv: &mut super::protocol::PositionConverter) {
         if method == "workspace/didRenameFiles" {
             if let Some(files) = msg["params"]["files"].as_array() {
