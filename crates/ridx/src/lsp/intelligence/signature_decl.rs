@@ -14,7 +14,80 @@
 
 /// Whether the name starting at `name_start` in `chars` (the text before the cursor) is declared by the delimiter after it.
 pub(crate) fn opens_declaration(chars: &[char], name_start: usize) -> bool {
-    header_declares(&item_header(chars, name_start), false) || in_enum_variant_list(chars, name_start)
+    // Words in comments and literals declare nothing (review of 30240473: `// check trait bounds` above a call, and a
+    // `/// doc` above a variant).
+    let code = blank_comments_and_literals(&chars[..name_start.min(chars.len())]);
+    header_declares(&item_header(&code, code.len()), false) || in_enum_variant_list(&code, code.len())
+}
+
+/// `chars` with comments, string and char literals turned into spaces (line breaks kept): the same length, so
+/// positions still match.
+fn blank_comments_and_literals(chars: &[char]) -> Vec<char> {
+    let mut out = chars.to_vec();
+    let blank = |out: &mut Vec<char>, from: usize, to: usize| {
+        for c in &mut out[from..to.min(chars.len())] {
+            if *c != '\n' {
+                *c = ' ';
+            }
+        }
+    };
+    let at = |i: usize, s: &str| s.chars().enumerate().all(|(k, c)| chars.get(i + k) == Some(&c));
+    let mut i = 0;
+    while i < chars.len() {
+        let start = i;
+        if at(i, "//") {
+            while i < chars.len() && chars[i] != '\n' {
+                i += 1;
+            }
+        } else if at(i, "/*") {
+            let mut depth = 0usize;
+            while i < chars.len() {
+                if at(i, "/*") {
+                    depth += 1;
+                    i += 2;
+                } else if at(i, "*/") {
+                    i += 2;
+                    depth -= 1;
+                    if depth == 0 {
+                        break;
+                    }
+                } else {
+                    i += 1;
+                }
+            }
+        } else if chars[i] == 'r' && (at(i + 1, "\"") || at(i + 1, "#")) && (i == 0 || !(chars[i - 1].is_alphanumeric() || chars[i - 1] == '_')) {
+            // A raw string `r#"…"#`; `r#ident` is a raw identifier.
+            let hashes = chars[i + 1..].iter().take_while(|&&c| c == '#').count();
+            if chars.get(i + 1 + hashes) != Some(&'"') {
+                i += 1;
+                continue;
+            }
+            let close: String = std::iter::once('"').chain(std::iter::repeat_n('#', hashes)).collect();
+            i += hashes + 2;
+            while i < chars.len() && !at(i, &close) {
+                i += 1;
+            }
+            i += close.len();
+        } else if chars[i] == '"' {
+            i += 1;
+            while i < chars.len() && chars[i] != '"' {
+                i += if chars[i] == '\\' { 2 } else { 1 };
+            }
+            i += 1;
+        } else if chars[i] == '\'' && (at(i + 1, "\\") || chars.get(i + 2) == Some(&'\'')) {
+            // A char literal; `'a` alone is a lifetime.
+            i += 1;
+            while i < chars.len() && chars[i] != '\'' {
+                i += if chars[i] == '\\' { 2 } else { 1 };
+            }
+            i += 1;
+        } else {
+            i += 1;
+            continue;
+        }
+        blank(&mut out, start, i);
+    }
+    out
 }
 
 /// The text before `end` back to the start of its item or statement: a `;`, `{` or `}`, or a `(`, `[`, `<` or `=` not
@@ -134,6 +207,9 @@ mod tests {
             "enum E { ",
             "pub enum E<T> where T: Clone {\n    A(u8),\n    #[default]\n    ",
             "enum E {\n    A { x: u8 },\n    ",
+            "pub enum E {\n    /// Docs.\n    ",
+            "pub enum E {\n    /// Docs.\n    A(i32), // the first\n    /* a } ( */\n    ",
+            "/* fn x() { */ impl<'a> S<'a> for ",
         ] {
             assert!(decl(d), "a declaration: {d:?}");
         }
@@ -151,6 +227,12 @@ mod tests {
             "enum E { A(Vec<u8>), B = f(1, ",
             "fn t() { let f: fn(i32) -> u8 = ",
             "fn t() { for p in ",
+            "fn demo() {\n    // check trait bounds\n    ",
+            "fn demo() {\n    // use fn helper\n    ",
+            "fn t() { let u = User {\n    // mod id\n    id: ",
+            "fn t() {\n    /* impl /* nested */ struct */ ",
+            "fn t() { let s = \"impl X for\"; let r = r#\"struct \"S\" {\"#; let c = '{'; let l: &'a str = ",
+            "fn t() { x.f('\\'', \"fn \\\"q\\\" \"); ",
         ] {
             assert!(!decl(c), "a call or literal: {c:?}");
         }
