@@ -127,3 +127,20 @@ fn test_overlay_line_map_follows_the_compiled_baseline() {
     assert_eq!(map.to_live(2), None);
     assert_eq!(map.to_live(3), Some(3));
 }
+
+#[test]
+fn test_a_stale_workspace_file_synced_with_disk_has_no_line_map() {
+    let dir = std::env::temp_dir().join(format!("ridx_line_map_stale_{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("lib.rs");
+    let text = "fn changed_on_disk() {}\n";
+    std::fs::write(&file, text).unwrap();
+    let path = file.to_str().unwrap();
+    // A workspace file the index hashed differently: changed on disk, no snapshot. Its spans are stale.
+    let stale = DocumentOverlay::new_with_source_hash("file:///x/lib.rs", path, 1, text.to_string(), Some(0x1234));
+    assert!(stale.line_map().is_none(), "a stale workspace file must abstain, not map 1:1 onto old spans");
+    // A std or dependency source the index recorded no hash for maps line for line.
+    let unhashed = DocumentOverlay::new_with_source_hash("file:///x/lib.rs", path, 1, text.to_string(), None);
+    assert_eq!(unhashed.line_map().and_then(|m| m.to_baseline(1)), Some(1));
+    let _ = std::fs::remove_dir_all(&dir);
+}

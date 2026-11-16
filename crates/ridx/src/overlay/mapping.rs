@@ -182,9 +182,9 @@ impl DocumentOverlay {
     ///
     /// A buffer with no known baseline that matches the file on disk (a std or dependency source opened after a
     /// jump into it: the workspace index records no hash for it) maps line for line, as the file would if it were
-    /// not open.
+    /// not open. A workspace file whose recorded hash matches neither the buffer nor the disk is stale: no map.
     pub fn line_map(&self) -> Option<LineMap> {
-        let baseline = self.compiled_text.as_deref().or_else(|| self.is_synced_with_disk().then_some(self.text.as_str()))?;
+        let baseline = self.compiled_text.as_deref().or_else(|| (self.unhashed_source && self.is_synced_with_disk()).then_some(self.text.as_str()))?;
         Some(LineMap::new(baseline, &self.text))
     }
 

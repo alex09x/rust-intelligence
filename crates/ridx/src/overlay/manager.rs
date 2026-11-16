@@ -128,6 +128,7 @@ impl OverlayManager {
             existing.update(version, text);
             existing.compiled_text = super::resolve_compiled_text(existing.content_hash, &existing.text, disk_text.as_deref(), expected_hash);
             existing.disk_text = disk_text;
+            existing.unhashed_source = expected_hash.is_none();
         } else {
             let overlay = DocumentOverlay::new_with_source_hash(uri, file_path, version, text, expected_hash);
             self.insert_overlay(file_path, overlay);

@@ -98,6 +98,9 @@ pub struct DocumentOverlay {
     pub text: String,
     pub compiled_text: Option<String>,
     pub disk_text: Option<String>,
+    /// The index recorded no source hash for this file (a std or dependency source): its text on disk is what was
+    /// indexed. A workspace file whose hash does not match is stale instead, and has no baseline.
+    pub unhashed_source: bool,
     pub line_starts: Vec<usize>,
     pub symbols: Vec<OverlaySymbol>,
     pub(crate) scopes: Vec<Scope>,
@@ -129,6 +132,7 @@ impl DocumentOverlay {
             text,
             compiled_text: None,
             disk_text: None,
+            unhashed_source: false,
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
@@ -158,6 +162,7 @@ impl DocumentOverlay {
             text,
             compiled_text,
             disk_text,
+            unhashed_source: false,
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
@@ -187,6 +192,7 @@ impl DocumentOverlay {
             text,
             compiled_text,
             disk_text,
+            unhashed_source: expected_hash.is_none(),
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
