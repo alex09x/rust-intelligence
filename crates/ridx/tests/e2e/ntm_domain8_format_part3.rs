@@ -117,8 +117,11 @@ fn test_formatting_overlay_active_buffer_precedes_disk() {
     assert_eq!(edits[0]["newText"], "fn overlay_unformatted(a: i32, b: i32) -> i32 {\n    a + b\n}\n");
 }
 
+/// A document the editor has not opened is not formatted from disk: its buffer may be ahead of the file. Zed asks to
+/// format a file it saves right after a rename edited it, before opening it, and the text on disk wrote the old names
+/// back.
 #[test]
-fn test_formatting_disk_fallback_when_not_in_overlay() {
+fn test_formatting_no_disk_fallback_when_not_in_overlay() {
     if !is_rustfmt_installed() {
         return;
     }
@@ -138,10 +141,7 @@ fn test_formatting_disk_fallback_when_not_in_overlay() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 302);
-
-    let edits = resp["result"].as_array().unwrap();
-    assert_eq!(edits.len(), 1);
-    assert_eq!(edits[0]["newText"], "pub fn disk_calc(x: i32, y: i32) -> i32 {\n    x + y\n}\n");
+    assert_eq!(resp["result"], json!([]));
 }
 
 #[test]

@@ -127,11 +127,9 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
 
-    let doc_text = if let Some(overlay) = overlay_mgr.get(&file) {
-        overlay.text.clone()
-    } else if let Ok(t) = std::fs::read_to_string(&file) {
-        t
-    } else {
+    // Only a buffer the editor opened: the file on disk may be behind it. Zed asks to format a file it saves before it
+    // opens it, right after a rename edited that buffer; formatting the text on disk wrote the old names back.
+    let Some(doc_text) = overlay_mgr.get(&file).map(|o| o.text.clone()) else {
         return json!([]);
     };
 

@@ -147,8 +147,9 @@ fn test_on_type_formatting_overlay_active_buffer_precedes_disk() {
     let _ = std::fs::remove_file(&file);
 }
 
+/// A document the editor has not opened is not formatted from disk: its buffer may be ahead of the file.
 #[test]
-fn test_on_type_formatting_disk_fallback_when_not_in_overlay() {
+fn test_on_type_formatting_no_disk_fallback_when_not_in_overlay() {
     if !is_rustfmt_installed() {
         return;
     }
@@ -169,17 +170,14 @@ fn test_on_type_formatting_disk_fallback_when_not_in_overlay() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 703);
-
-    let edits = resp["result"].as_array().unwrap();
-    assert_eq!(edits.len(), 1);
-    let new_text = edits[0]["newText"].as_str().unwrap();
-    assert_eq!(new_text, "fn on_disk_only() {\n    let x = 100;\n}\n");
+    assert_eq!(resp["result"], json!([]));
 
     let _ = std::fs::remove_file(&file);
 }
 
+/// After `didClose` the buffer is no longer the server's to know: nothing is formatted.
 #[test]
-fn test_on_type_formatting_did_close_falls_back_to_disk() {
+fn test_on_type_formatting_after_did_close_formats_nothing() {
     if !is_rustfmt_installed() {
         return;
     }
@@ -219,11 +217,7 @@ fn test_on_type_formatting_did_close_falls_back_to_disk() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 704);
-
-    let edits = resp["result"].as_array().unwrap();
-    assert_eq!(edits.len(), 1);
-    let new_text = edits[0]["newText"].as_str().unwrap();
-    assert_eq!(new_text, "fn on_disk_saved() {\n    let y = 200;\n}\n");
+    assert_eq!(resp["result"], json!([]));
 
     let _ = std::fs::remove_file(&file);
 }

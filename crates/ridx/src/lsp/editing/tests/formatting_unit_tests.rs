@@ -79,7 +79,9 @@ fn test_formatting_whole_document() {
     let unformatted = "fn   add(  x:i32,y:i32  )->i32{x+y}\n";
     fs::write(&file, unformatted).unwrap();
 
-    let overlay_mgr = OverlayManager::new();
+    // The editor formats a document it opened.
+    let mut overlay_mgr = OverlayManager::new();
+    overlay_mgr.open_document(&uri, file_str, 1, unformatted.to_string());
     let req = json!({
         "params": {
             "textDocument": { "uri": &uri }
