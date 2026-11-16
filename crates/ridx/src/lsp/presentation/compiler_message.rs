@@ -90,6 +90,12 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
     };
 
     let mut message_text = actual_msg.get("message")?.as_str()?.to_string();
+    // The primary span's label says what is wrong there ("expected `u32`, found `&str`" under "mismatched types"):
+    // rust-analyzer puts it on the line after the message.
+    if let Some(label) = raw_primary.get("label").and_then(|l| l.as_str()).filter(|l| !l.is_empty()) {
+        message_text.push('\n');
+        message_text.push_str(label);
+    }
 
     // Capture child notes and help messages
     if let Some(children) = actual_msg.get("children").and_then(|c| c.as_array()) {

@@ -137,7 +137,8 @@ fn test_parse_compiler_message_error_with_spans() {
     assert_eq!(diag["severity"].as_u64().unwrap(), 1, "Error severity must be 1");
     assert_eq!(diag["code"].as_str().unwrap(), "E0308");
     assert_eq!(diag["source"].as_str().unwrap(), "rustc");
-    assert_eq!(diag["message"].as_str().unwrap(), "mismatched types");
+    // The primary span's label on the next line, as rust-analyzer shows it.
+    assert_eq!(diag["message"].as_str().unwrap(), "mismatched types\nexpected `u32`, found `&str`");
 
     // 0-based range conversion
     assert_eq!(diag["range"]["start"]["line"].as_u64().unwrap(), 0);
