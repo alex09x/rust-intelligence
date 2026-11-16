@@ -45,6 +45,9 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         let index_pos = match overlay_opt.filter(|o| o.is_dirty()) {
             None => Some((line_1based, col_1based)),
             Some(o) if o.imports_changed_at(line_1based, col_1based) => None,
+            // A name the buffer declares on a line the edit added or changed (a new `let x` shadowing the old one)
+            // is not what the index recorded here, though this line reads as it did.
+            Some(o) if o.find_definition_at(line_1based, col_1based).is_some_and(|d| o.map_line_to_compiled(d.start_line).is_none()) => None,
             Some(o) => o.map_live_to_compiled(line_1based, col_1based),
         };
         if let Some((il, ic)) = index_pos {

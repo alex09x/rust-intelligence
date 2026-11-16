@@ -47,4 +47,13 @@ fn test_parameter_hints_follow_lines_added_above() {
     let hover = server.send(json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": call_line, "character": 8 } } }));
     let text = hover["result"]["contents"]["value"].as_str().unwrap_or_default();
     assert!(text.contains("let a: u64"), "the binding's type: {hover}");
+
+    // A `let a` typed above, shadowing the indexed one: `a` on the unchanged line below is the new binding, which the
+    // index does not know, not the old `u64`.
+    let shadowed = edited.replace("    let b = 7;\n", "    let a = \"shadow\";\n    let b = 7;\n");
+    let uri = server.open_with(&ws.join("app/src/lib.rs"), &shadowed);
+    let use_line = shadowed.lines().position(|l| l.trim_start().starts_with("a + b")).unwrap() as u32;
+    let hover = server.send(json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": use_line, "character": 4 } } }));
+    let text = hover["result"]["contents"]["value"].as_str().unwrap_or_default();
+    assert!(!text.contains("u64"), "not the shadowed binding's type: {hover}");
 }
