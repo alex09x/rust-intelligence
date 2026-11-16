@@ -347,7 +347,9 @@ fn test_lsp_hover_inferred_type_and_signature_help_workspace() {
 
     let hover_resp = &responses[1];
     assert_eq!(hover_resp["id"], 10);
-    assert!(hover_resp["result"]["contents"]["value"].as_str().unwrap().contains("Type: fn() -> ()"));
+    // The type the fixture records sits on the keyword `fn`, which names nothing: no hover (the index answered the
+    // enclosing span's type under `let` and `mut` that way).
+    assert!(hover_resp["result"].is_null(), "{hover_resp}");
 
     let sig_resp = &responses[2];
     assert_eq!(sig_resp["id"], 11);

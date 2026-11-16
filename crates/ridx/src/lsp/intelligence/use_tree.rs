@@ -130,7 +130,8 @@ pub(crate) fn level_uses(doc: &str, (start, end): (usize, usize)) -> Vec<(usize,
                 && b.get(p + 3).is_some_and(u8::is_ascii_whitespace) =>
             {
                 let Some(semi) = masked[p..end].find(';') else { break };
-                out.push((p + semi + 1, doc[p + 3..p + semi].to_string()));
+                // The masked text: a comment inside a multi-line `use { … }` names nothing.
+                out.push((p + semi + 1, masked[p + 3..p + semi].to_string()));
                 p += semi + 1;
                 continue;
             }
@@ -183,5 +184,8 @@ mod tests {
         assert!(level_imports(doc, tests, "Flat"));
         assert!(level_globs_super(doc, tests));
         assert!(!level_imports(doc, tests, "Unix"));
+        let commented = "use a::{\n    B,\n    // Foo was here\n    C,\n};\n";
+        assert!(level_imports(commented, (0, commented.len()), "C"));
+        assert!(!level_imports(commented, (0, commented.len()), "Foo"), "a comment in a use tree names nothing");
     }
 }

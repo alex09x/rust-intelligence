@@ -73,19 +73,19 @@ pub(crate) fn crate_path(root_file: &Path, full: &str) -> Option<String> {
 }
 
 /// Whether the module text `masked` declares `pub use` items one of which is known as `name` (`pub use a::{B as
-/// Name}` exports `Name`, not `B`), at its own level.
-fn reexports(masked: &str, text: &str, name: &str) -> bool {
+/// Name}` exports `Name`, not `B`), at its own level. The tree is read masked: a comment in it names nothing.
+fn reexports(masked: &str, name: &str) -> bool {
     masked.match_indices("pub use ").any(|(p, _)| {
         let b = masked.as_bytes();
-        let tree = text[p + 8..].split(';').next().unwrap_or("");
+        let tree = masked[p + 8..].split(';').next().unwrap_or("");
         (p == 0 || !is_ident_byte(b[p - 1])) && at_module_level(masked, p) && crate::lsp::intelligence::use_tree::use_leaves(tree).iter().any(|l| l.name.as_deref() == Some(name))
     })
 }
 
 /// Whether the module text `masked` re-exports everything of its module `m` (`pub use m::*;`, `pub use self::m::*;`).
-fn reexports_all_of(masked: &str, text: &str, m: &str) -> bool {
+fn reexports_all_of(masked: &str, m: &str) -> bool {
     masked.match_indices("pub use ").any(|(p, _)| {
-        let tree = text[p + 8..].split(';').next().unwrap_or("");
+        let tree = masked[p + 8..].split(';').next().unwrap_or("");
         at_module_level(masked, p) && crate::lsp::intelligence::use_tree::use_leaves(tree).iter().any(|l| l.glob && (l.path == m || l.path == format!("self::{m}")))
     })
 }
@@ -113,7 +113,7 @@ fn reachable_path(root_file: &Path, full: &str, in_crate: bool) -> Option<String
         return Some(full.to_string());
     }
     let root_text = std::fs::read_to_string(root_file).ok()?;
-    if reexports(&mask_comments_and_strings(&root_text), &root_text, item) {
+    if reexports(&mask_comments_and_strings(&root_text), item) {
         return Some(format!("{krate}::{item}"));
     }
     let (mut dir, mut text) = (root_file.parent()?.to_path_buf(), root_text);
@@ -121,13 +121,13 @@ fn reachable_path(root_file: &Path, full: &str, in_crate: bool) -> Option<String
         let masked = mask_comments_and_strings(&text);
         // A module that re-exports the item by name (`pub use join_set::JoinSet;`) gives the shortest public path,
         // whichever `cfg` makes the module below public (`mod join_set;` in one branch, `pub mod` in another).
-        if k > 0 && reexports(&masked, &text, item) {
+        if k > 0 && reexports(&masked, item) {
             return Some(format!("{}::{item}", segs[..=k].join("::")));
         }
         if !declares_mod(&masked, m, in_crate, in_crate && k == 0) {
             // A private module whose items the module above re-exports (`mod access; pub use access::*;`, or by
             // name): the item is reached there.
-            return (reexports_all_of(&masked, &text, m) || reexports(&masked, &text, item)).then(|| format!("{}::{item}", segs[..=k].join("::")));
+            return (reexports_all_of(&masked, m) || reexports(&masked, item)).then(|| format!("{}::{item}", segs[..=k].join("::")));
         }
         // The module's text: its body when declared inline (`pub mod shown { … }`), else its file.
         if let Some(body) = inline_module_body(&text, m) {

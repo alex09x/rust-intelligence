@@ -28,6 +28,16 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
         conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
     };
 
+    // A keyword names nothing the index keeps: under `let` it found the enclosing block's `()`, under `mut` the
+    // binding's type labelled `let mut: Cart`.
+    let word = overlay_opt.and_then(|o| o.get_ident_at(line_1based, col_1based)).or_else(|| {
+        let line = conv.get_line(&file, line_1based)?.to_string();
+        word_at(&line, col_1based)
+    });
+    if word.as_deref().is_some_and(is_keyword) {
+        return Ok(Value::Null);
+    }
+
     // 1. The index's hover: at the cursor in a clean buffer; in an edited one, at the line the index compiled for a line
     // the edit left as it was (and whose names no edited import may have changed), so a binding there shows its type
     // as in a clean buffer (`let mut cart: Cart`, not the bare `let cart` of the buffer's own parse).
@@ -84,6 +94,33 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
     }
 
     Ok(Value::Null)
+}
+
+/// Keywords whose hover is no name of the program (`self`, `Self`, `crate`, `super` name something and are not here).
+fn is_keyword(word: &str) -> bool {
+    const KEYWORDS: &[&str] = &[
+        "as", "async", "await", "break", "const", "continue", "dyn", "else", "enum", "extern", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut",
+        "pub", "ref", "return", "static", "struct", "trait", "type", "unsafe", "use", "where", "while",
+    ];
+    KEYWORDS.contains(&word)
+}
+
+/// The identifier at the 1-based character column `col` of `line`.
+fn word_at(line: &str, col: u32) -> Option<String> {
+    let chars: Vec<char> = line.chars().collect();
+    let is_word = |c: char| c.is_alphanumeric() || c == '_';
+    let at = (col.saturating_sub(1) as usize).min(chars.len().checked_sub(1)?);
+    if !is_word(chars[at]) {
+        return None;
+    }
+    let (mut s, mut e) = (at, at);
+    while s > 0 && is_word(chars[s - 1]) {
+        s -= 1;
+    }
+    while e + 1 < chars.len() && is_word(chars[e + 1]) {
+        e += 1;
+    }
+    Some(chars[s..=e].iter().collect())
 }
 
 /// Whether the 1-based character column `col` of `line` is on a literal: a number, or inside a string or char literal.

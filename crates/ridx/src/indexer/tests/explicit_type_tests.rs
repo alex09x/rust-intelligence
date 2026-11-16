@@ -17,7 +17,7 @@ use super::*;
 use crate::indexer::driver::find_driver_binary;
 use crate::indexer::orchestrate::try_run_indexing;
 
-const APP: &str = "use std::collections::HashSet;\npub struct Flat(pub u64);\npub fn make() -> usize {\n    let rule = Flat(10);\n    let mut seen = HashSet::new();\n    seen.insert(rule.0);\n    let typed: u64 = 1;\n    let map = std::collections::HashMap::<u8, u8>::new();\n    seen.len() + typed as usize + map.len() + native::native_api() as usize\n}\n";
+const APP: &str = "use std::collections::HashSet;\npub struct Flat(pub u64);\npub fn make() -> usize {\n    let rule = Flat(10);\n    let mut seen = HashSet::new();\n    seen.insert(rule.0);\n    let typed: u64 = 1;\n    let map = std::collections::HashMap::<u8, u8>::new();\n    let long = (String::new(), String::new(), String::new(), String::new());\n    long.0.len() + seen.len() + typed as usize + map.len() + native::native_api() as usize\n}\n";
 
 #[test]
 fn test_add_explicit_type_writes_the_hinted_type_when_it_names_it() {
@@ -43,4 +43,16 @@ fn test_add_explicit_type_writes_the_hinted_type_when_it_names_it() {
     assert_eq!(text, ": HashSet<u64>", "the default hasher left out");
     assert!(explicit(6, 9).is_none(), "already typed");
     assert!(explicit(7, 9).is_none(), "HashMap is not imported: writing it would not compile");
+    let (_, text) = explicit(8, 9).expect("offered on `long`");
+    assert_eq!(text, ": (String, String, String, String)", "written whole, not cut as its hint is");
+
+    // A keyword hovers nothing: not the enclosing block's `()` under `let`, not `let mut: HashSet<..>` under `mut`.
+    let mut hover = |line: u32, character: u32| {
+        server.send(serde_json::json!({ "method": "textDocument/hover", "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": character } } }))
+            ["result"]
+            .clone()
+    };
+    assert!(hover(3, 5).is_null(), "`let`");
+    assert!(hover(4, 9).is_null(), "`mut`");
+    assert!(!hover(4, 13).is_null(), "`seen` itself");
 }

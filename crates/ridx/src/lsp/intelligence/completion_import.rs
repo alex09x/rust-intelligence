@@ -152,7 +152,9 @@ fn visibility(s: &WorkspaceSymbol<'_>) -> Vis {
     }
     let attrs_above = lines[..at].iter().rev().map(|l| l.trim()).take_while(|l| l.starts_with("#[") || l.starts_with("///") || *l == "pub").collect::<Vec<_>>();
     if head.starts_with("macro_rules!") {
-        return if attrs_above.iter().any(|l| l.starts_with("#[macro_export")) { Vis::ExportedMacro } else { Vis::Private };
+        // `#[macro_export]` on the line above, or on the macro's own line before `macro_rules!`.
+        let exported = line.contains("#[macro_export") || attrs_above.iter().any(|l| l.starts_with("#[macro_export"));
+        return if exported { Vis::ExportedMacro } else { Vis::Private };
     }
     if head.starts_with("pub(") {
         Vis::Crate

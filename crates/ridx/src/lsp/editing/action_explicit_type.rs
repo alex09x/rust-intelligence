@@ -42,6 +42,12 @@ pub fn explicit_type_action(doc: &str, uri: &str, range: &Value, doc_version: Op
         _ => return None,
     };
     let mut ty = label.strip_prefix(':')?.trim().to_string();
+    // The hint cuts a long type with `…`; the action writes it whole, as rust-analyzer does.
+    if ty.contains('…') {
+        let name_start = line[..name_end].rfind(|c: char| !(c.is_alphanumeric() || c == '_')).map_or(0, |i| i + 1);
+        let file = crate::lsp::protocol::uri_to_path(uri);
+        ty = crate::lsp::intelligence::inlay::binding_type_full(ws, ov, &file, line0 + 1, name_start as u32 + 1, name_end as u32 + 1)?;
+    }
     for d in DEFAULT_PARAMS {
         ty = ty.replace(d, ">");
     }

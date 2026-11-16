@@ -67,7 +67,7 @@ pub fn binding_hints(src: &SourceMap<'_>, types: &[TypeSpan<'_>], lines: (u32, u
 
 /// The type recorded for the binding spanning 1-based chars `start..end` on `line` (or a `mut`/`ref` binding
 /// whose span starts earlier on that line and ends with the name).
-fn binding_type<'a>(types: &[TypeSpan<'a>], line: u32, start: u32, end: u32) -> Option<&'a str> {
+pub(super) fn binding_type<'a>(types: &[TypeSpan<'a>], line: u32, start: u32, end: u32) -> Option<&'a str> {
     types
         .iter()
         .filter(|t| t.start.0 == line && t.end.0 == line && (t.end.1 == end || t.end.1 + 1 == end) && t.start.1 <= start && start - t.start.1 <= 8)

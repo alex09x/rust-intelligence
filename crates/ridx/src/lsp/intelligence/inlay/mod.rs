@@ -151,3 +151,20 @@ pub fn handle_inlay_hint(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     hints.sort_by_key(|h| (h.line, h.character));
     Ok(json!(hints.iter().map(Hint::to_json).collect::<Vec<_>>()))
 }
+
+/// The whole type the index records for the binding named by 1-based chars `start..end` on 1-based `line` of `file`
+/// (in an edited buffer, the line the index compiled it at), as a hint shows it but never cut with `…`: what
+/// `Add explicit type` writes for a type too long for the hint.
+pub(crate) fn binding_type_full(ws: &WorkspaceIndex, overlay_mgr: &OverlayManager, file: &str, line: u32, start: u32, end: u32) -> Option<String> {
+    let index_line = match overlay_mgr.get(file).filter(|o| o.is_dirty()).and_then(|o| o.line_map()) {
+        Some(lm) => lm.to_baseline(line)?,
+        None => line,
+    };
+    let spans: Vec<TypeSpan<'_>> = ws
+        .types_in_lines(file, index_line, index_line)
+        .into_iter()
+        .filter(|(s, e, _)| s.0 == index_line && e.0 == index_line)
+        .map(|(s, e, ty)| TypeSpan { start: (line, s.1), end: (line, e.1), ty })
+        .collect();
+    type_label::full_type(bindings::binding_type(&spans, line, start, end)?)
+}

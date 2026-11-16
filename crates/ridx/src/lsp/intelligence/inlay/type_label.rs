@@ -16,14 +16,18 @@ pub const MAX_LENGTH: usize = 25;
 
 /// `ty` (as the index records it) in rust-analyzer's inlay-hint form, or `None` for a type not worth a hint.
 pub fn hint_type(ty: &str) -> Option<String> {
+    full_type(ty).map(|short| truncate(&short, MAX_LENGTH))
+}
+
+/// `ty` as `hint_type` shows it but whole, never cut with `…`: what `Add explicit type` writes.
+pub fn full_type(ty: &str) -> Option<String> {
     let ty = ty.trim();
     if ty.is_empty() || ty == "_" || ty.contains("{unknown}") || ty.contains("{type error}") || ty.contains("{closure") || ty.contains("{coroutine") || ty.contains("{async") {
         return None;
     }
     // A default type argument is not shown, as rustc and rust-analyzer print types: `HashSet<String>`, not
     // `HashSet<String, RandomState>` (the type a just-typed binding infers carries it).
-    let short = short_paths(ty).replace(", RandomState>", ">").replace(", Global>", ">");
-    Some(truncate(&short, MAX_LENGTH))
+    Some(short_paths(ty).replace(", RandomState>", ">").replace(", Global>", ">"))
 }
 
 /// Every path in `ty` cut to its last segment, except an associated item after a qualified self type
