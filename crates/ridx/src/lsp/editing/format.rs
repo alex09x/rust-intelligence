@@ -216,6 +216,9 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
 
     let start_line = msg["params"]["range"]["start"]["line"].as_u64().unwrap_or(0) as u32;
     let end_line = msg["params"]["range"]["end"]["line"].as_u64().unwrap_or(u32::MAX as u64) as u32;
+    // A selection of whole lines ends at the start of the next one (`character: 0`), which it does not include.
+    let end_at_line_start = msg["params"]["range"]["end"]["character"].as_u64() == Some(0);
+    let end_line = if end_at_line_start && end_line > start_line { end_line - 1 } else { end_line };
 
     let doc_lines: Vec<&str> = doc_text.lines().collect();
     if doc_lines.is_empty() || start_line as usize >= doc_lines.len() {
@@ -227,9 +230,12 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
     let orig_text = orig_slice.join("\n");
     let edition = find_crate_edition(&file);
 
-    let Some(formatted_snippet) = format_range_snippet(&orig_text, &edition, &file) else {
+    let Some(formatted_at_column_0) = format_range_snippet(&orig_text, &edition, &file) else {
         return json!([]);
     };
+    // The snippet is formatted on its own, at column 0: it keeps the indentation it has in the file.
+    let indent = orig_slice.iter().find(|l| !l.trim().is_empty()).map_or("", |l| &l[..l.len() - l.trim_start().len()]);
+    let formatted_snippet = formatted_at_column_0.lines().map(|l| if l.is_empty() { String::new() } else { format!("{indent}{l}") }).collect::<Vec<_>>().join("\n");
 
     if formatted_snippet == orig_text {
         return json!([]);

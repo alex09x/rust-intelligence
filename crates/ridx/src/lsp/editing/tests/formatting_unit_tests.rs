@@ -194,6 +194,14 @@ fn test_range_formatting_statements() {
     assert!(formatted.contains("let a = 1;"));
     assert!(formatted.contains("let b = 2;"));
     syn::parse_file(&formatted).expect("Valid Rust");
+
+    // In Zed (Format Selections on two whole lines): the lines keep their indentation, and the line the selection
+    // ends at the start of is not part of it.
+    let messy = "fn compute() {\n    let   a=1;\n    let   b=2;\n    println!(\"{}\",   a + b);\n}\n";
+    overlay_mgr.open_document(&uri, file_str, 2, messy.to_string());
+    let req = json!({ "params": { "textDocument": { "uri": &uri }, "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 3, "character": 0 } } } });
+    let formatted = apply_text_edits(messy, handle_range_formatting(&req, &overlay_mgr).as_array().expect("edits"));
+    assert_eq!(formatted, "fn compute() {\n    let a = 1;\n    let b = 2;\n    println!(\"{}\",   a + b);\n}\n");
 }
 
 #[test]
