@@ -2,6 +2,24 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.6] - 2026-11-15
+
+Verified by the workspace test suite and by hand in Zed (hover, Cmd+click, references, rename, completion with auto-import, code actions, signature help, inlay hints, linked editing, document links, formatting, runnables) on edited, reverted and failed-to-build workspaces. The benchmark suite was not re-run for this release. The index format is unchanged; a re-index is recommended (source snapshots are written from this release on).
+
+### Added
+- **Zed**: an extension registering `ridx lsp`; `experimental/runnables` for Zed's run buttons; a background reindex on save and when sources change outside the editor.
+- **Code actions**: `Add explicit type` (the whole type, default type arguments left out, offered only where every name in it is in scope); `Replace qualified path with use`; `Inline macro`; documentation templates on trait impl methods; many more `Inline into all callers`, `Implement default members` and `Convert to tuple/named struct` cases.
+- **Completion**: name completions import what they offer by a path that compiles (public path, crate root, `std` re-exports, the module level typed at, a package's library from its binaries), labelled `(use path)` with `std` first; completion items show their declaration's doc comment.
+- **Hover** on code typed since the last index.
+
+### Fixed
+- **Edited, reverted and failed builds**: a crate that fails to rebuild keeps its last good shards (by unit, dependencies included, with no window where a running server loses them); a file changed on disk before it is opened maps onto the text it was compiled from (source snapshots); lines between two edits, and parameter hints, follow the edit; an edited import blocks the index only for the names it may change; hover in an edited buffer answers as in a clean one; nothing is answered from a stale workspace file with no snapshot.
+- **Local bindings**: closure parameters, `for`, `if let`/`while let` and match-arm patterns, destructuring `let`s and or-patterns bind their names in their own scope, so rename, references, highlight and linked editing no longer reach a shadowed name.
+- **Hover**: nothing on whitespace, comments, block comments or keywords; a loop's or an async fn's binding shows its own type; a literal shows its type; never an answer read off a newer text of the file than the index compiled.
+- **Navigation**: jumps into an open std or dependency file land; std locations point into the driver toolchain's sources; a crate appearing on reload is a workspace crate.
+- **Formatting**: a document the editor has not opened is never formatted from the disk; `Format Selections` keeps indentation, the selection's end and the text of multi-line literals; typing `;` or `}` no longer reformats the whole file.
+- **Other**: code actions in a dependency's source offer nothing; outgoing calls skip strings and comments; a compiler diagnostic carries its primary span's label; inlay hints leave out default type arguments; a panicking request no longer ends the LSP session.
+
 ## [0.3.5] - 2026-11-11
 
 Figures: the suite on the `0.3.5` and `0.3.4` release builds on one index (the driver is unchanged; no re-index needed). Every `Convert to tuple struct` edit `0.3.5` offers on the 7 corpora was applied and compiled (`bench/code_action_compile.py`): `93` of `93` compile; rust-analyzer's compile in `105` of `141`.
