@@ -172,7 +172,9 @@ fn test_range_formatting_statements() {
     let code = "fn compute() {\n    let   a=1;\n    let   b=2;\n    println!(\"{}\", a + b);\n}\n";
     fs::write(&file, code).unwrap();
 
-    let overlay_mgr = OverlayManager::new();
+    // Only an open document is formatted.
+    let mut overlay_mgr = OverlayManager::new();
+    overlay_mgr.open_document(&uri, file_str, 1, code.to_string());
     // Range format lines 1..=2 (`let a=1; let b=2;`)
     let req = json!({
         "params": {

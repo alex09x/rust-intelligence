@@ -189,7 +189,7 @@ fn test_range_formatting_overlay_active_buffer_precedes_disk() {
 }
 
 #[test]
-fn test_range_formatting_disk_fallback_when_not_in_overlay() {
+fn test_range_formatting_no_disk_fallback_when_not_in_overlay() {
     if !is_rustfmt_installed() {
         return;
     }
@@ -215,10 +215,8 @@ fn test_range_formatting_disk_fallback_when_not_in_overlay() {
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 304);
 
-    let edits = resp["result"].as_array().unwrap();
-    assert_eq!(edits.len(), 1);
-    assert_eq!(edits[0]["range"]["start"]["line"], 1);
-    assert_eq!(edits[0]["range"]["end"]["line"], 1);
+    // A document the editor has not opened is not formatted from the disk: its buffer may differ.
+    assert_eq!(resp["result"], json!([]));
 }
 
 #[test]

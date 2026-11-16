@@ -208,11 +208,9 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
 
-    let doc_text = if let Some(overlay) = overlay_mgr.get(&file) {
-        overlay.text.clone()
-    } else if let Ok(t) = std::fs::read_to_string(&file) {
-        t
-    } else {
+    // Only an open buffer is formatted, as in `handle_formatting`: a buffer edited before its didOpen (a multi-file
+    // rename) differs from the disk, and edits computed from the disk would revert it.
+    let Some(doc_text) = overlay_mgr.get(&file).map(|o| o.text.clone()) else {
         return json!([]);
     };
 
