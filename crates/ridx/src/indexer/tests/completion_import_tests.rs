@@ -93,6 +93,7 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     let main = ws.join("app/src/main.rs");
     write(&ws, "app/src/main.rs", "mod cli;\nfn main() { cli::run(); }\n");
     write(&ws, "app/src/cli.rs", "pub fn run() {}\n");
+    write(&ws, "app/src/bin/tool.rs", "pub fn tool_only() {}\nfn main() { tool_only(); }\n");
     try_run_indexing(index_opts(&ws, &cas, &driver)).expect("reindex");
     let mut server = Server::start(&ws);
     let mut in_file = |file: &std::path::Path, text: &str, typed: &str| {
@@ -107,4 +108,9 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     assert!(items.contains(&("helper".into(), Some("use app::util::helper;".into()))), "from a module of the binary too: {items:?}");
     let items = in_file(&main, "mod cli;\nfn main() { cli::run(); }\n", "lib_sec");
     assert!(items.iter().all(|(l, u)| l != "lib_secret" || u.is_none()), "the library's pub(crate) item is no import of the binary: {items:?}");
+    // An item of another binary (`src/bin/tool.rs`) is seen from neither the main binary nor the library.
+    let items = in_file(&main, "mod cli;\nfn main() { cli::run(); }\n", "tool_on");
+    assert!(items.iter().all(|(l, u)| l != "tool_only" || u.is_none()), "from main.rs: {items:?}");
+    let items = in_file(&lib, app, "tool_on");
+    assert!(items.iter().all(|(l, u)| l != "tool_only" || u.is_none()), "from the library: {items:?}");
 }

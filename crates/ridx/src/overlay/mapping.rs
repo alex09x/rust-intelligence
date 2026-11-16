@@ -232,7 +232,7 @@ impl DocumentOverlay {
         let Some(name) = self.get_ident_at(line, col) else { return true };
         let line_text = self.text.lines().nth(line.saturating_sub(1) as usize).unwrap_or("");
         let segments = path_segments_at(line_text, col);
-        let after_dot = segments.len() <= 1 && method_position(line_text, col);
+        let after_dot = segments.len() <= 1 && method_position(&self.text, self.line_char_col_to_byte(line, col));
         let Some(changed) = self.changed_import_names() else { return true };
         let hit = |n: &str| changed.contains(n.trim_start_matches("r#"));
         hit(&name) || segments.iter().any(|s| hit(s)) || after_dot && !changed.is_empty()
@@ -274,14 +274,12 @@ fn path_segments_at(line: &str, col: u32) -> Vec<String> {
     chars[start..end].iter().collect::<String>().split("::").filter(|s| !s.is_empty()).map(str::to_string).collect()
 }
 
-/// Whether the name at 1-based char `col` of `line` follows a `.`: a method or field.
-fn method_position(line: &str, col: u32) -> bool {
-    let chars: Vec<char> = line.chars().collect();
-    let mut s = (col.saturating_sub(1) as usize).min(chars.len());
-    while s > 0 && (chars[s - 1].is_alphanumeric() || chars[s - 1] == '_') {
-        s -= 1;
-    }
-    chars[..s].iter().rev().find(|c| !c.is_whitespace()) == Some(&'.')
+/// Whether the name at byte `at` of `text` follows a `.`, on its line or one above (`x.\n    run()`): a method or
+/// field. A raw name (`x.r#match()`) counts with its `r#`.
+fn method_position(text: &str, at: usize) -> bool {
+    let before = &text[..at.min(text.len())];
+    let name_start = before.trim_end_matches(|c: char| c.is_alphanumeric() || c == '_' || c == '#');
+    name_start.trim_end().ends_with('.') && !name_start.trim_end().ends_with("..")
 }
 
 pub use super::imports::extract_normalized_imports;

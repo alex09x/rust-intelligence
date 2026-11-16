@@ -47,7 +47,8 @@ pub(super) fn import_path(
     // the binary: an item of the package's library is reached through the library, as from another crate, and an
     // item of a binary is seen from nowhere else.
     let current_in_bin = in_crate && ws.file_in_bin_only(current_file);
-    let def_in_bin = in_crate && ws.file_in_bin_only(&def.to_string_lossy());
+    // An item of any binary (this package's or another's) is reached from that binary only.
+    let def_in_bin = ws.file_in_bin_only(&def.to_string_lossy());
     let key = format!("{in_crate}:{current_in_bin}:{def_in_bin}:{full}");
     if let Some(found) = roots.get(&key) {
         return found.clone();
@@ -66,13 +67,18 @@ pub(super) fn import_path(
         _ if def_in_bin && !current_in_bin => None,
         _ => {
             let vis = visibility(s);
-            // Within a binary its root is the file the binary starts at; from a module of it, only an item of the
-            // root (`crate::name`) is known to be reached.
-            let root = if current_in_bin { is_bin_root(Path::new(current_file)).then(|| PathBuf::from(current_file)) } else { crate_root(&def) };
+            // Within a binary its root is the file the binary starts at (`src/main.rs`, `src/bin/*`, a `[[bin]]`
+            // path); it must be the binary that defines the item (a package's binaries do not see each other), and
+            // from a module of a binary, whose root is not known, nothing is offered.
+            let bin_root = current_in_bin.then(|| bin_root_of(Path::new(current_file))).flatten();
+            let root = if current_in_bin { bin_root.clone() } else { crate_root(&def) };
+            let at_crate_root = full.matches("::").count() == 1;
             // An item of the crate root is reached by `krate::item` with no module on the way to read.
             let via_root = |find: fn(&Path, &str) -> Option<String>| match &root {
+                Some(r) if current_in_bin && at_crate_root => (def == *r).then(|| full.clone()),
                 Some(r) => find(r, &full),
-                None => (full.matches("::").count() == 1).then(|| full.clone()),
+                None if current_in_bin => None,
+                None => at_crate_root.then(|| full.clone()),
             };
             let path = match vis {
                 // `#[macro_export]` puts a `macro_rules!` at the crate root, whatever module defines it.
@@ -130,10 +136,21 @@ fn lib_root(file: &Path) -> Option<PathBuf> {
     [lib_path.map(|p| dir.join(p)), Some(dir.join("src/lib.rs"))].into_iter().flatten().find(|p| p.is_file())
 }
 
-/// Whether `file` is the root of a binary target: `src/main.rs` or a file under `src/bin/`.
-fn is_bin_root(file: &Path) -> bool {
-    let s = file.to_string_lossy();
-    s.ends_with("/src/main.rs") || s.contains("/src/bin/")
+/// `file` itself when it is the root of a binary target: `src/main.rs`, `src/bin/<name>.rs`, `src/bin/<name>/main.rs`,
+/// or the `path` of a `[[bin]]` of the package's `Cargo.toml`; `None` for a module of a binary.
+fn bin_root_of(file: &Path) -> Option<PathBuf> {
+    let dir = package_dir(file)?;
+    let rel = file.strip_prefix(dir).ok()?.to_string_lossy().replace('\\', "/");
+    let parts: Vec<&str> = rel.split('/').collect();
+    let conventional = rel == "src/main.rs" || matches!(parts.as_slice(), ["src", "bin", f] if f.ends_with(".rs")) || matches!(parts.as_slice(), ["src", "bin", _, "main.rs"]);
+    let manifest = std::fs::read_to_string(dir.join("Cargo.toml")).unwrap_or_default();
+    let declared = manifest.split("[[bin]]").skip(1).any(|sec| {
+        let sec = sec.split("\n[").next().unwrap_or(sec);
+        sec.lines()
+            .filter_map(|l| l.trim().strip_prefix("path")?.trim().strip_prefix('=').map(|v| v.trim().trim_matches('"').trim_start_matches("./").to_string()))
+            .any(|p| p == rel)
+    });
+    (conventional || declared).then(|| file.to_path_buf())
 }
 
 /// The file `s` is declared in, on disk (a crate's source root and its file path overlap: `ws/native` + `native/src/lib.rs`).

@@ -169,3 +169,16 @@ fn test_an_import_edit_reaches_paths_methods_local_uses_and_raw_names() {
     let ov = edit(&format!("// use a::Foo;\nfn g() {{}}\n{tests}"), &format!("// use b::Foo;\nmod extra {{}}\nfn g() {{}}\n{tests}"));
     assert!(!ov.imports_changed_for("Foo") && !ov.imports_changed_for("g"), "no glob and no name changed");
 }
+
+#[test]
+fn test_a_changed_trait_import_reaches_raw_and_wrapped_method_calls() {
+    let edit = |compiled: &str, live: &str| {
+        let mut ov = crate::overlay::DocumentOverlay::new("file:///x.rs", "/x.rs", 1, compiled.to_string());
+        ov.update(2, live.to_string());
+        ov
+    };
+    let ov = edit("use a::Old as _;\nfn f(x: u8) { x.r#match(); }\n", "use a::New as _;\nfn f(x: u8) { x.r#match(); }\n");
+    assert!(ov.imports_changed_at(2, 19), "`match` of `x.r#match()`");
+    let ov = edit("use a::Old as _;\nfn f(x: u8) {\n    x.\n        run();\n}\n", "use a::New as _;\nfn f(x: u8) {\n    x.\n        run();\n}\n");
+    assert!(ov.imports_changed_at(4, 10), "`run` after a `.` on the line above");
+}

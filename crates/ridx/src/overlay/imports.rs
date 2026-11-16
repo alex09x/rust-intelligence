@@ -65,7 +65,8 @@ pub fn imported_names(text: &str) -> (HashSet<(String, String)>, HashSet<String>
             }
         } else if word_at(p, "mod") {
             let rest = &masked[p + 3..];
-            let name_len = rest.trim_start().find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(0);
+            // `#` too: `mod r#type;` declares a module named `r#type`.
+            let name_len = rest.trim_start().find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '#')).unwrap_or(0);
             let name = rest.trim_start()[..name_len].to_string();
             if rest.trim_start()[name_len..].trim_start().starts_with(';') {
                 names.insert((name.clone(), format!("self::{name}@{}", blocks.join("/"))));
