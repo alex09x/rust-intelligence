@@ -179,8 +179,13 @@ pub fn is_byte_in_string_or_comment(line_str: &str, target_byte: usize) -> bool 
 impl DocumentOverlay {
     /// Line correspondence between the compiled baseline and the live text; `None` while the
     /// buffer has no known baseline. Callers that map many lines build it once.
+    ///
+    /// A buffer with no known baseline that matches the file on disk (a std or dependency source opened after a
+    /// jump into it: the workspace index records no hash for it) maps line for line, as the file would if it were
+    /// not open.
     pub fn line_map(&self) -> Option<LineMap> {
-        Some(LineMap::new(self.compiled_text.as_deref()?, &self.text))
+        let baseline = self.compiled_text.as_deref().or_else(|| self.is_synced_with_disk().then_some(self.text.as_str()))?;
+        Some(LineMap::new(baseline, &self.text))
     }
 
     pub fn map_line_to_compiled(&self, live_line: u32) -> Option<u32> {
