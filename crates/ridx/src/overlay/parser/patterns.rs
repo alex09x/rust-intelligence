@@ -93,7 +93,9 @@ fn header_body_brace(text: &str, from: usize, suffixed: bool) -> Option<usize> {
         let end = block_end(text, brace);
         let mut next = end;
         skip_trivia(text, &mut next);
-        let continues = text[next..].starts_with('{') || suffixed && text[next..].starts_with(['.', '?']);
+        // The expression goes on past the block: another block, an `else` (`if c { a } else { b }`), a let chain's
+        // `&&`, or a binary operator.
+        let continues = text[next..].starts_with('{') || word_at(text, next, "else") || continues_expression(&text[next..]) || suffixed && text[next..].starts_with(['.', '?']);
         if !continues {
             return Some(brace);
         }
@@ -121,7 +123,7 @@ fn arm_end(text: &str, body: usize) -> usize {
         }
         let mut next = p + 1;
         skip_trivia(text, &mut next);
-        closed_block = !(word_at(text, next, "else") || text[next..].starts_with(['.', '?']));
+        closed_block = !(word_at(text, next, "else") || text[next..].starts_with(['.', '?']) || continues_expression(&text[next..]));
         closed_block
     });
     match hit {
@@ -129,6 +131,12 @@ fn arm_end(text: &str, body: usize) -> usize {
         Some(p) => p,
         None => text.len(),
     }
+}
+
+/// Whether `rest` (after a block) goes on with a binary operator, so the block is an operand: `&&`, `||`, a
+/// comparison, arithmetic, `as`. A `-`, `&`, `*` or `|` alone may start the next statement or pattern instead.
+fn continues_expression(rest: &str) -> bool {
+    ["&&", "||", "==", "!=", "<=", ">=", "<", ">", "+", "/", "%", "^", "as "].iter().any(|op| rest.starts_with(op)) && !rest.starts_with("=>")
 }
 
 /// Whether `word` stands as a whole word at `p`.

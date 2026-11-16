@@ -98,3 +98,14 @@ fn test_for_if_let_match_and_destructuring_bind_their_names() {
     assert_eq!(linked(code, 12, 13), vec![(12, 13), (13, 9)], "the destructured `v`");
     assert_eq!(linked(code, 12, 10), vec![(12, 10), (13, 5)]);
 }
+
+#[test]
+fn test_header_blocks_with_else_chains_and_operators() {
+    let code = "fn f(x: Vec<u8>, c: bool, v: Option<u8>, other: u8) -> u8 {\n    for x in if c { x.clone() } else { vec![] } {\n        let _ = x;\n    }\n    if let Some(v) = { v } && v > 0 {\n        return v;\n    }\n    match v {\n        Some(v) => { v } + other,\n        None => other,\n    }\n}\n";
+    // `x`: 0 param, 1 loop binding, 2 `x.clone()` (the param), 3 the body's.
+    assert_eq!(linked_word(code, "x", 1), occurrences(code, "x", &[1, 3]), "the loop body after `if .. else ..`");
+    // `v`: 0 param, 1 `Some(v)` of the if let, 2 `{ v }` (the param), 3 after `&&`, 4 `return v`.
+    assert_eq!(linked_word(code, "v", 1), occurrences(code, "v", &[1, 3, 4]), "the body after a block scrutinee and a let chain");
+    // `other`: 0 param, 1 the arm `{ v } + other`, 2 the `None` arm's: no false binding from `+ other`.
+    assert_eq!(linked_word(code, "other", 0), occurrences(code, "other", &[0, 1, 2]));
+}
