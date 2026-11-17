@@ -1,0 +1,251 @@
+# Cross-crate go-to-definition scenarios for bench/ra_fixtures.py (`extract --tests` on this file).
+# Each case starts with `=== name`; files as `//- /path crate:name deps:a,b` (`deps:alias=crate` renames a
+# dependency), `$0` marks the cursor and `//^^^` under a line marks the expected target.
+
+=== reexport_through_one_hop
+//- /app/lib.rs crate:app deps:mid
+pub fn make() -> mid::Wid$0get { mid::Widget }
+//- /mid/lib.rs crate:mid deps:base
+pub use base::Widget;
+//- /base/lib.rs crate:base
+pub struct Widget;
+         //^^^^^^
+
+=== reexport_renamed_on_the_way
+//- /app/lib.rs crate:app deps:mid
+pub fn make() -> mid::Gadg$0et { mid::Gadget }
+//- /mid/lib.rs crate:mid deps:base
+pub use base::Widget as Gadget;
+//- /base/lib.rs crate:base
+pub struct Widget;
+         //^^^^^^
+
+=== glob_reexport
+//- /app/lib.rs crate:app deps:mid
+pub fn pick() -> mid::Thi$0ng { mid::Thing(1) }
+//- /mid/lib.rs crate:mid deps:base
+pub use base::*;
+//- /base/lib.rs crate:base
+pub struct Thing(pub u8);
+         //^^^^^
+
+=== three_crates_and_a_prelude_module
+//- /app/lib.rs crate:app deps:top
+use top::prelude::*;
+pub fn grow() -> Leaf { Le$0af::new() }
+//- /top/lib.rs crate:top deps:mid
+pub mod prelude {
+    pub use mid::Leaf;
+}
+//- /mid/lib.rs crate:mid deps:base
+pub use base::deep::deeper::Leaf;
+//- /base/lib.rs crate:base
+pub mod deep {
+    pub mod deeper {
+        pub struct Leaf;
+                 //^^^^
+        impl Leaf {
+            pub fn new() -> Self { Leaf }
+        }
+    }
+}
+
+=== method_through_reexports
+//- /app/lib.rs crate:app deps:top
+use top::prelude::*;
+pub fn grow() -> Leaf { Leaf::ne$0w() }
+//- /top/lib.rs crate:top deps:mid
+pub mod prelude {
+    pub use mid::Leaf;
+}
+//- /mid/lib.rs crate:mid deps:base
+pub use base::deep::Leaf;
+//- /base/lib.rs crate:base
+pub mod deep {
+    pub struct Leaf;
+    impl Leaf {
+        pub fn new() -> Self { Leaf }
+             //^^^
+    }
+}
+
+=== renamed_dependency
+//- /app/lib.rs crate:app deps:engine=base
+pub fn start() -> u32 { engine::ign$0ite() }
+//- /base/lib.rs crate:base
+pub fn ignite() -> u32 { 1 }
+     //^^^^^^
+
+=== use_alias_of_a_reexported_fn
+//- /app/lib.rs crate:app deps:mid
+use mid::run as go;
+pub fn main_loop() { g$0o(); }
+//- /mid/lib.rs crate:mid deps:base
+pub use base::tasks::run;
+//- /base/lib.rs crate:base
+pub mod tasks {
+    pub fn run() {}
+         //^^^
+}
+
+=== trait_method_impl_in_dependency
+//- /app/lib.rs crate:app deps:base
+use base::Speak;
+pub fn hello(d: &base::Dog) -> String { d.spe$0ak() }
+//- /base/lib.rs crate:base
+pub trait Speak { fn speak(&self) -> String; }
+pub struct Dog;
+impl Speak for Dog {
+    fn speak(&self) -> String { "woof".into() }
+     //^^^^^
+}
+
+=== trait_default_method_in_dependency
+//- /app/lib.rs crate:app deps:base
+use base::Greet;
+pub struct Me;
+impl Greet for Me {}
+pub fn hi() -> String { Me.gre$0et() }
+//- /base/lib.rs crate:base
+pub trait Greet {
+    fn greet(&self) -> String { "hi".into() }
+     //^^^^^
+}
+
+=== extension_trait_imported_as_underscore
+//- /app/lib.rs crate:app deps:base
+use base::Double as _;
+pub fn four() -> u8 { 2u8.dou$0ble() }
+//- /base/lib.rs crate:base
+pub trait Double { fn double(self) -> Self; }
+impl Double for u8 {
+    fn double(self) -> Self { self * 2 }
+     //^^^^^^
+}
+
+=== dyn_trait_method_from_dependency
+//- /app/lib.rs crate:app deps:base
+pub fn total(shapes: &[Box<dyn base::Shape>]) -> f64 { shapes.iter().map(|s| s.ar$0ea()).sum() }
+//- /base/lib.rs crate:base
+pub trait Shape {
+    fn area(&self) -> f64;
+     //^^^^
+}
+
+=== exported_macro_imported_by_use
+//- /app/lib.rs crate:app deps:base
+use base::make_pair;
+pub fn pair() -> (u8, u8) { make$0_pair!(1) }
+//- /base/lib.rs crate:base
+#[macro_export]
+macro_rules! make_pair {
+           //^^^^^^^^^
+    ($x:expr) => { ($x, $x) };
+}
+
+=== exported_macro_by_path
+//- /app/lib.rs crate:app deps:base
+pub fn pair() -> (u8, u8) { base::make$0_pair!(1) }
+//- /base/lib.rs crate:base
+#[macro_export]
+macro_rules! make_pair {
+           //^^^^^^^^^
+    ($x:expr) => { ($x, $x) };
+}
+
+=== macro_reexported_by_another_crate
+//- /app/lib.rs crate:app deps:mid
+pub fn pair() -> (u8, u8) { mid::twin$0s!(1) }
+//- /mid/lib.rs crate:mid deps:base
+pub use base::twins;
+//- /base/lib.rs crate:base
+#[macro_export]
+macro_rules! twins {
+           //^^^^^
+    ($x:expr) => { ($x, $x) };
+}
+
+=== associated_const_of_dependency_type
+//- /app/lib.rs crate:app deps:base
+pub fn port() -> u16 { base::Config::DEFAULT_P$0ORT }
+//- /base/lib.rs crate:base
+pub struct Config;
+impl Config {
+    pub const DEFAULT_PORT: u16 = 8080;
+            //^^^^^^^^^^^^
+}
+
+=== enum_variant_through_reexport
+//- /app/lib.rs crate:app deps:mid
+pub fn fast() -> mid::Mode { mid::Mode::Fa$0st }
+//- /mid/lib.rs crate:mid deps:base
+pub use base::Mode;
+//- /base/lib.rs crate:base
+pub enum Mode { Slow, Fast }
+                    //^^^^
+
+=== field_of_dependency_struct
+//- /app/lib.rs crate:app deps:base
+pub fn port(c: &base::Settings) -> u16 { c.po$0rt }
+//- /base/lib.rs crate:base
+pub struct Settings {
+    pub port: u16,
+      //^^^^
+}
+
+=== type_alias_across_crates
+//- /app/lib.rs crate:app deps:mid
+pub fn handle() -> mid::Han$0dle { todo!() }
+//- /mid/lib.rs crate:mid deps:base
+pub type Handle = base::Inner<u8>;
+       //^^^^^^
+//- /base/lib.rs crate:base
+pub struct Inner<T>(pub T);
+
+=== method_through_type_alias
+//- /app/lib.rs crate:app deps:mid
+pub fn handle() -> mid::Handle { mid::Handle::wr$0ap(1) }
+//- /mid/lib.rs crate:mid deps:base
+pub type Handle = base::Inner<u8>;
+//- /base/lib.rs crate:base
+pub struct Inner<T>(pub T);
+impl<T> Inner<T> {
+    pub fn wrap(t: T) -> Self { Inner(t) }
+         //^^^^
+}
+
+=== generic_bound_trait_from_dependency
+//- /app/lib.rs crate:app deps:base
+pub fn show<T: base::Render>(t: &T) -> String { t.ren$0der() }
+//- /base/lib.rs crate:base
+pub trait Render {
+    fn render(&self) -> String;
+     //^^^^^^
+}
+
+=== const_and_static_from_dependency
+//- /app/lib.rs crate:app deps:base
+pub fn limit() -> usize { base::LIM$0IT + base::NAME.len() * 0 }
+//- /base/lib.rs crate:base
+pub const LIMIT: usize = 64;
+        //^^^^^
+pub static NAME: &str = "x";
+
+=== crate_name_in_a_path_opens_its_root
+//- /app/lib.rs crate:app deps:base
+pub fn f() -> u8 { ba$0se::ONE }
+//- /base/lib.rs crate:base
+//^file
+pub const ONE: u8 = 1;
+
+=== function_in_a_nested_module_of_a_dependency
+//- /app/lib.rs crate:app deps:base
+use base::net::wire::encode;
+pub fn bytes() -> Vec<u8> { enc$0ode(7) }
+//- /base/lib.rs crate:base
+pub mod net;
+//- /base/net.rs
+pub mod wire;
+//- /base/net/wire.rs
+pub fn encode(x: u8) -> Vec<u8> { vec![x] }
+     //^^^^^^

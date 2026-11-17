@@ -37,6 +37,7 @@ CHECK = re.compile(r'\n\s*(check|check_unresolved|check_no_definition|check_name
 TEST = re.compile(r"#\[test\]\s*fn (\w+)\(\)")
 SYSROOT = {"std", "core", "alloc", "proc_macro", "test"}
 ON_WORD = False
+RA_BIN = ""
 
 
 def dedent(text):
@@ -48,6 +49,10 @@ def dedent(text):
 
 def extract(tests_file):
     src = Path(tests_file).read_text()
+    if tests_file.endswith(".txt"):
+        # Our own scenarios: `=== name` then the fixture, up to the next case; `#` lines before the first are notes.
+        blocks = re.split(r"^=== (\S+)\s*$", src, flags=re.M)[1:]
+        return [{"name": f"{n}#1", "kind": "check", "expected_name": None, "fixture": b.strip("\n") + "\n"} for n, b in zip(blocks[::2], blocks[1::2])]
     tests = [(m.start(), m.group(1)) for m in TEST.finditer(src)]
     cases, per_test = [], {}
     for m in CHECK.finditer(src):
@@ -126,7 +131,8 @@ def materialize(case, root):
     for path, meta, _ in files:
         if "crate" in meta:
             name = meta["crate"].split(":")[-1].split("@")[0].replace("-", "_")
-            deps = [d.replace("-", "_") for d in meta.get("deps", "").split(",") if d]
+            # `deps:alias=crate` depends on `crate` under the name `alias`.
+            deps = [tuple(d.replace("-", "_").split("=", 1)) if "=" in d else (d.replace("-", "_"),) * 2 for d in meta.get("deps", "").split(",") if d]
             crates.append((name, path, deps, meta.get("edition", "2021")))
     if not crates:
         crates = [("main", files[0][0], [], files[0][1].get("edition", "2021"))]
@@ -151,7 +157,7 @@ def materialize(case, root):
     for name, croot, deps, edition in crates:
         pkg = pkg_dirs[name]
         pkg.mkdir(parents=True, exist_ok=True)
-        dep_lines = "".join(f'{d} = {{ package = "fx_{d}", path = "{os.path.relpath(pkg_dirs[d], pkg)}" }}\n' for d in deps if d not in SYSROOT and d in pkg_dirs)
+        dep_lines = "".join(f'{alias} = {{ package = "fx_{d}", path = "{os.path.relpath(pkg_dirs[d], pkg)}" }}\n' for alias, d in deps if d not in SYSROOT and d in pkg_dirs)
         lib = os.path.relpath(vfs / croot.lstrip("/"), pkg)
         (pkg / "Cargo.toml").write_text(
             f'[package]\nname = "fx_{name}"\nversion = "0.1.0"\nedition = "{edition}"\nautobins = false\nautoexamples = false\nautotests = false\nautobenches = false\n\n'
@@ -179,9 +185,14 @@ def run_case(case, ridx, work, driver):
     root.mkdir(parents=True)
     cursor, expected = materialize(case, root)
     t0 = time.time()
-    idx = subprocess.run([ridx, "index", str(root)], cwd=root, capture_output=True, text=True, timeout=300)
+    if RA_BIN:
+        # rust-analyzer itself, for comparison: it needs no index, only `cargo check` to report errors.
+        idx = subprocess.run(["cargo", "check", "--quiet"], cwd=root, capture_output=True, text=True, timeout=300)
+        compiled = idx.returncode == 0
+    else:
+        idx = subprocess.run([ridx, "index", str(root)], cwd=root, capture_output=True, text=True, timeout=300)
+        compiled = idx.returncode == 0 and (root / "target/ridx/ridx_manifest.json").is_file()
     index_s = time.time() - t0
-    compiled = idx.returncode == 0 and (root / "target/ridx/ridx_manifest.json").is_file()
     errors = [l for l in idx.stderr.splitlines() if l.startswith("error")][:3]
     vfs = root / "vfs"
     cpath = vfs / cursor[0].lstrip("/")
@@ -194,7 +205,7 @@ def run_case(case, ridx, work, driver):
     if ON_WORD and off > 0 and word(raw[off - 1]) and (off == len(raw) or not word(raw[off])):
         off -= 1
     line, col = offset_to_pos(ctext, off)
-    lsp = SimpleLspProcess([ridx, "lsp"], cwd=str(root))
+    lsp = SimpleLspProcess([RA_BIN], cwd=str(root), is_ra=True) if RA_BIN else SimpleLspProcess([ridx, "lsp"], cwd=str(root))
     try:
         lsp.notify("textDocument/didOpen", {"textDocument": {"uri": cpath.as_uri(), "languageId": "rust", "version": 0, "text": ctext}})
         res, _, err = lsp.request("textDocument/definition", {"textDocument": {"uri": cpath.as_uri()}, "position": {"line": line, "character": col}}, timeout=10)
@@ -244,6 +255,7 @@ def main():
     rn.add_argument("--jobs", type=int, default=6)
     rn.add_argument("--only", default="")
     rn.add_argument("--on-word", action="store_true", help="put a cursor just past an identifier on it")
+    rn.add_argument("--ra", default="", help="ask this rust-analyzer binary instead of ridx")
     rn.add_argument("--out", required=True)
     a = ap.parse_args()
     if a.cmd == "extract":
@@ -251,8 +263,8 @@ def main():
         Path(a.out).write_text(json.dumps(cases, indent=1))
         print(f"{len(cases)} cases")
         return
-    global ON_WORD
-    ON_WORD = a.on_word
+    global ON_WORD, RA_BIN
+    ON_WORD, RA_BIN = a.on_word, a.ra
     cases = json.loads(Path(a.cases).read_text())
     if a.only:
         keep = set(a.only.split(","))

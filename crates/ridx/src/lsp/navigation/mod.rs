@@ -14,6 +14,7 @@ mod cursor_literal;
 pub mod declaration;
 mod highlight_ext;
 mod impl_line;
+mod module_file;
 pub(crate) mod primitive;
 pub mod references;
 mod references_gated;
@@ -103,7 +104,7 @@ fn definition_at(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &
             if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
                 let resolved_path = type_definition_parse::on_disk(def.resolved_path());
                 if matches!(def.kind, DefKind::Mod | DefKind::Use | DefKind::ExternCrate) && !def.name.is_empty() {
-                    if let Some(mod_file) = resolve_backing_module_file(ws, &def, &resolved_path) {
+                    if let Some(mod_file) = module_file::resolve_backing_module_file(ws, &def, &resolved_path) {
                         if let Some(mod_str) = mod_file.to_str() {
                             return json!({
                                 "uri": path_to_uri(mod_str),
@@ -190,78 +191,6 @@ fn definition_at(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &
     // 4. A primitive type (`usize`): its documentation module in `core`, as in rust-analyzer.
     let line_text = overlay_opt.and_then(|o| o.text.lines().nth(line_0based as usize)).map(str::to_string).or_else(|| conv.get_line(&file, line_1based).map(str::to_string));
     line_text.and_then(|l| primitive::definition(&l, col_1based)).unwrap_or(Value::Null)
-}
-
-fn resolve_backing_module_file(ws: &WorkspaceIndex, def: &ridx_format::ResolvedDefinition<'_>, decl_file: &std::path::Path) -> Option<std::path::PathBuf> {
-    let mod_name = def.name;
-    if def.kind == DefKind::Mod {
-        let parent = decl_file.parent()?;
-        let stem = decl_file.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-        let mut dirs = Vec::new();
-        if !stem.is_empty() && !matches!(stem, "lib" | "main" | "mod") {
-            dirs.push(parent.join(stem));
-        }
-        dirs.push(parent.to_path_buf());
-        for dir in &dirs {
-            for cand in [dir.join(format!("{mod_name}.rs")), dir.join(mod_name).join("mod.rs")] {
-                if cand != decl_file && cand.is_file() {
-                    return Some(cand);
-                }
-            }
-        }
-        if let Some(reader) = def.reader_idx.and_then(|idx| ws.readers().get(idx)) {
-            let raw_path = std::path::Path::new(def.file);
-            if let Some(raw_parent) = raw_path.parent() {
-                let raw_stem = raw_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-                let mut raw_dirs = Vec::new();
-                if !raw_stem.is_empty() && !matches!(raw_stem, "lib" | "main" | "mod") {
-                    raw_dirs.push(raw_parent.join(raw_stem));
-                }
-                raw_dirs.push(raw_parent.to_path_buf());
-                for dir in &raw_dirs {
-                    for cand in [dir.join(format!("{mod_name}.rs")), dir.join(mod_name).join("mod.rs")] {
-                        if let Some(cs) = cand.to_str() {
-                            if cs != def.file && reader.find_file_id(cs).is_some() {
-                                return Some(cand);
-                            }
-                        }
-                    }
-                    let sub_prefix = format!("{}/", dir.join(mod_name).display());
-                    if (0..reader.files_count()).any(|fid| reader.get_file(fid).starts_with(&sub_prefix)) {
-                        return Some(dir.join(mod_name).join("mod.rs"));
-                    }
-                }
-                if def.file.starts_with("library/") && def.start_line == def.end_line {
-                    return Some(raw_parent.join(format!("{mod_name}.rs")));
-                }
-            }
-        }
-    }
-    if decl_file.is_file() && def.start_line > 0 {
-        if let Ok(src) = std::fs::read_to_string(decl_file) {
-            if let Some(ln) = src.lines().nth(def.start_line.saturating_sub(1) as usize) {
-                if let Some((_, after)) = ln.split_once("extern crate ") {
-                    if let Some((real_crate, _)) = after.split_once(" as ") {
-                        let rc = real_crate.trim().trim_end_matches(';').trim();
-                        if let Some(ed) = ws.find_definition_by_path(rc) {
-                            if ed.kind == DefKind::Mod {
-                                return Some(ed.resolved_path());
-                            }
-                        }
-                        for r in ws.readers() {
-                            if r.crate_name() == rc && r.files_count() > 0 {
-                                let f0 = r.get_file(0);
-                                if !f0.is_empty() {
-                                    return Some(ws.resolve_path_for_crate(rc, f0));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    None
 }
 
 fn is_ident_on_line(text: &str, line_starts: &[usize], line_1based: u32, name: &str) -> bool {

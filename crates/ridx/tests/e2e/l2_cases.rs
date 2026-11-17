@@ -327,3 +327,17 @@ fn test_case_sysroot_atomic_tyalias_navigation_and_refs() {
     assert_eq!(store_def.name, "store");
     assert_eq!(store_def.path, "core::sync::atomic::Atomic::<bool>::store");
 }
+
+/// Found with our cross-crate scenarios (`bench/fixtures/cross_crate_definition.txt`): a dependency's crate name in a
+/// path went to the line of its first item, not the start of its root file as rust-analyzer opens it.
+#[test]
+fn test_case_a_crate_name_in_a_path_opens_its_root() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let app = fixture_dir("multi_crate").join("crates/app_crate/src/lib.rs");
+    let uri = path_to_uri(app.to_str().unwrap());
+    let (line, col) = pos_in_file(&app, "use core_lib::CoreService", "core_lib");
+    let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": col + 2 } } });
+    let res = handle_definition(&req, Some(ws), &OverlayManager::new(), &mut PositionConverter::new());
+    assert!(res["uri"].as_str().is_some_and(|u| u.ends_with("crates/core_lib/src/lib.rs")), "{res}");
+    assert_eq!((res["range"]["start"]["line"].clone(), res["range"]["start"]["character"].clone()), (json!(0), json!(0)), "{res}");
+}
