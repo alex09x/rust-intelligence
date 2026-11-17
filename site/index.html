@@ -22,64 +22,61 @@
 <body>
 <header class="nav">
   <a class="lockup" href="#top" style="gap:10px"><img src="assets/logo-minimal.svg" width="32" height="32" alt=""><span class="wm" style="font-size:22px">ridx<span class="rust">.</span></span></a>
-  <nav><a href="#why">Why</a><a href="#bench">Benchmarks</a><a href="#arch">Architecture</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
+  <nav><a href="#why">Why</a><a href="#resources">Numbers</a><a href="#arch">Architecture</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
 </header>
 
 <main id="top">
 <section class="bggrid">
   <div class="wrap hero">
     <div class="hero-text rise">
-      <div class="lockup"><img src="assets/logo-minimal.svg" width="64" height="64" alt="ridx"><span class="wm" style="font-size:52px">ridx<span class="rust">.</span></span><span class="eye">v2.2</span></div>
-      <h1 class="h1">Rust navigation in <span class="rust">microseconds</span>, straight from the compiler.</h1>
-      <p class="lead">rustc already resolves every definition, reference and type during <span class="mono">cargo check</span>. ridx records that once into a binary index and reads it from the page cache — no second analyzer, no syntax trees held in RAM.</p>
-      <div class="cta"><a class="btnp" href="#start">Get Started</a><a class="btns" href="#bench">View Benchmarks</a></div>
+      <div class="lockup"><img src="assets/logo-minimal.svg" width="64" height="64" alt="ridx"><span class="wm" style="font-size:52px">ridx<span class="rust">.</span></span><span class="eye">v0.3</span></div>
+      <h1 class="h1">Rust code intelligence at a <span class="rust">tenth of the memory</span>.</h1>
+      <p class="lead">ridx is a language server for Rust that answers from what rustc already worked out. It records definitions, references and types once during <span class="mono">cargo check</span> and reads them straight from disk, so your editor gets navigation, hover and completion without a second compiler in RAM.</p>
+      <div class="cta"><a class="btnp" href="#start">Get Started</a><a class="btns" href="#resources">See the numbers</a></div>
     </div>
     <div class="term rise d2">
       <div class="termbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mono mute" style="font-size:12px;margin-left:8px">~/src/tokio</span></div>
-<pre><span class="mute"># index once — rustc does the analysis</span>
-<span class="rust">$</span> ridx index .
+<pre><span class="mute"># the language server: Zed, VS Code, Neovim, Helix</span>
+<span class="rust">$</span> ridx lsp
+<span class="mute">  no index yet? ridx builds one and reports progress</span>
 
-<span class="mute"># go to definition</span>
+<span class="mute"># or ask from the shell</span>
 <span class="rust">$</span> ridx def . runtime::context::blocking::try_enter_blocking_region
-
-<span class="mute"># every reference in the workspace and its dependencies</span>
-<span class="rust">$</span> ridx refs . runtime::context::blocking::try_enter_blocking_region
-
-<span class="mute"># or run it as your editor's language server</span>
-<span class="rust">$</span> ridx lsp</pre>
+<span class="rust">$</span> ridx refs . src/main.rs:12:15
+<span class="rust">$</span> ridx hover . src/main.rs:12:15</pre>
     </div>
   </div>
-  <div class="wrap stats rise d3">
-    <div class="stat"><span class="big rust">rustc</span>is the source of truth<br>no second analyzer to disagree</div>
-    <div class="stat"><span class="big amber">mmap</span>index read in place<br>nothing parsed into the heap</div>
-    <div class="stat"><span class="big cyan">once</span>each dependency indexed once<br>shared by every project</div>
-    <div class="stat"><span class="big violet">LSP</span>works with VS Code, Neovim,<br>Helix and Zed</div>
-  </div>
+  <div class="wrap stats rise d3" id="hero-stats"></div>
 </section>
 
 <section id="why" class="wrap sec">
   <div class="head"><span class="eye">The problem</span><h2 class="h2">rust-analyzer re-does the compiler's job, and keeps it all in RAM</h2></div>
   <div class="row-wrap">
-    <div class="card prob"><span class="big rust">GBs</span>of resident heap on large workspaces such as Tokio or rust-analyzer itself.</div>
+    <div class="card prob"><span class="big rust">GBs</span>of resident memory on large workspaces such as Tokio, Bevy or rust-analyzer itself.</div>
     <div class="card prob"><span class="big amber">Trees</span>Much of that memory holds syntax trees and raw text for thousands of files.</div>
     <div class="card prob"><span class="big cyan">Deps</span>Most of those files are crates.io dependencies and std — code nobody edits.</div>
     <div class="card prob"><span class="big violet">Twice</span>Parsing, macro expansion and inference run again in a separate database, after cargo already did them.</div>
   </div>
 </section>
 
-<section id="bench" class="wrap sec">
+<section id="resources" class="wrap sec">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
-    <div class="head"><div style="display:flex;gap:12px;align-items:center"><span class="eye">Benchmarks</span><span class="pre-badge">matrix</span></div><h2 class="h2">78 LSP methods measured on 5 open-source codebases</h2></div>
-    <div class="chips" id="ws-tabs"></div>
+    <div class="head"><span class="eye">Measured</span><h2 class="h2">Same editor session, two servers</h2>
+      <p class="lead">Each server opened the same 40 files of a repository and answered the same requests: symbols, highlighting, folding, inlay hints, then hover, definition, type definition, highlights, references and completion at sampled positions, and an edit. Memory includes child processes.</p></div>
+    <div class="chips" id="res-tabs"></div>
   </div>
   <div class="card bench">
-    <div class="bench-head"><span class="mono" id="ws-meta"></span><span class="mono mute" id="ws-target" style="font-size:12px"></span></div>
-    <div id="ws-rows"></div>
+    <div class="bench-head"><span class="mono" id="res-meta"></span><span class="mono mute" id="res-src" style="font-size:12px"></span></div>
+    <div id="res-rows"></div>
     <div class="bench-note">
-      <span><b class="cyan">Methodology &amp; Workload:</b> <span class="mute" id="ws-method"></span></span>
-      <span><b class="amber">Coverage &amp; Known Limitations:</b> <span class="mute" id="ws-limits"></span></span>
-      <span class="mute">Raw data: <a href="bench.json" class="mono" style="color:var(--cyan)">bench.json</a>. All 78 methods per repository: <a href="https://github.com/alex09x/rust-intelligence/blob/main/docs/BENCHMARK_MATRIX.md" class="mono" style="color:var(--cyan)">docs/BENCHMARK_MATRIX.md</a>. Report: <a href="https://github.com/alex09x/rust-intelligence/blob/main/LSP_BENCHMARK_COMPARISON_REPORT.md" class="mono" style="color:var(--cyan)">LSP_BENCHMARK_COMPARISON_REPORT.md</a>.</span>
+      <span><b class="cyan">Latency, ms (p50 / p95)</b></span>
+      <div class="lat" id="res-lat"></div>
     </div>
+  </div>
+  <div class="row-wrap">
+    <div class="card prob"><b class="amber">What is not counted</b><span>ridx answers from an index built beforehand by <span class="mono">ridx index</span> (a <span class="mono">cargo check</span> with the ridx driver). That build takes minutes on a large workspace the first time; dependencies are then shared by every project on the machine. rust-analyzer analyzes the workspace each time it starts, and that time is in its numbers.</span></div>
+    <div class="card prob"><b class="amber">How to read memory</b><span>ridx's memory includes index pages mapped from disk. The kernel can drop them under pressure and read them again later. rust-analyzer's memory is its own heap.</span></div>
+    <div class="card prob"><b class="amber">Reproduce it</b><span>Script: <a class="mono" href="https://github.com/alex09x/rust-intelligence/blob/main/bench/measure_resources.py">bench/measure_resources.py</a>. Raw results: <a class="mono" id="res-raw" href="#">jsonl</a>. Linux, one machine, both servers run one after another.</span></div>
   </div>
 </section>
 
@@ -101,7 +98,7 @@
       <div class="wire"><i></i></div>
       <div class="lane">disk · page cache</div>
       <div class="grid2">
-        <button class="box" data-arch="t1"><b>Tier 1 · Global CAS</b><div class="path">~/.cache/ridx/v2/objects/</div><span class="tag disk">shared, immutable</span></button>
+        <button class="box" data-arch="t1"><b>Tier 1 · Global CAS</b><div class="path">~/.cache/ridx/v3/objects/</div><span class="tag disk">shared, immutable</span></button>
         <button class="box" data-arch="t2"><b>Tier 2 · Workspace variant</b><div class="path">target/ridx/variants/&lt;id&gt;/</div><span class="tag disk">per project</span></button>
       </div>
       <div class="wire"><i></i></div>
@@ -136,15 +133,13 @@
 </section>
 
 <section id="start" class="wrap sec">
-  <div class="head"><span class="eye">Quickstart</span><h2 class="h2">Two minutes to first answer</h2></div>
-  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">git clone https://github.com/alex09x/rust-intelligence
+  <div class="head"><span class="eye">Quickstart</span><h2 class="h2">Install, point your editor at it, open a project</h2>
+    <p class="lead">ridx-driver runs inside rustc, so it is built with the pinned toolchain from the repository. Open a Cargo workspace and ridx indexes it on first use; your editor shows the progress.</p></div>
+  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">rustup toolchain install 1.98.1 --component rustc-dev llvm-tools-preview rust-src
+git clone https://github.com/alex09x/rust-intelligence
 cd rust-intelligence
-cargo install --path crates/ridx
-
-ridx index .                 # build the index
-ridx def . my_crate::run     # go to definition
-ridx refs . src/main.rs:12:15
-ridx compare -c all . my_crate::run   # side-by-side vs rust-analyzer</pre></div>
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked</pre></div>
   <div class="chips" id="ed-tabs"></div>
   <div class="card code"><button class="chip copy" data-copy="ed-code">Copy</button><pre id="ed-code"></pre></div>
 </section>
@@ -159,7 +154,7 @@ ridx compare -c all . my_crate::run   # side-by-side vs rust-analyzer</pre></div
     </div>
   </div>
 </footer>
-<script src="bench.data.js"></script>
+<script src="resources.data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

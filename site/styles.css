@@ -77,6 +77,12 @@ a:hover { color: var(--amber); }
 .fr { height: 100%; background: linear-gradient(90deg, var(--rust), var(--amber)); box-shadow: 0 0 14px rgba(247,76,0,.6); border-radius: 6px; transition: width .7s cubic-bezier(.2,.8,.2,1); }
 .fa { height: 100%; background: #3b475c; border-radius: 6px; transition: width .7s cubic-bezier(.2,.8,.2,1); }
 .bench-note { padding: 20px 22px; background: var(--panel); display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.6; }
+.cap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lat { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); font-size: 13px; }
+.lat > div { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.lat .th { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.lat .th.rust { color: var(--rust); }
+.prob b { color: var(--amber); font-size: 15px; }
 
 /* architecture */
 .arch-wrap { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
