@@ -109,7 +109,7 @@ pub fn dispatch_lsp_message<W: Write>(
     cancelled_requests: &Arc<Mutex<HashSet<Value>>>,
     index_path: Option<&PathBuf>,
 ) -> io::Result<bool> {
-    let msg = match lsp_msg.into() {
+    let mut msg = match lsp_msg.into() {
         super::protocol::LspMessage::InternalDiagnostic(gen, diag) => {
             if lifecycle.state() != ServerState::ShutDown && gen == lifecycle.flycheck.current_generation() {
                 super::presentation::reconcile::handle_internal_diagnostic(&diag, lifecycle, ov, writer)?;
@@ -136,6 +136,10 @@ pub fn dispatch_lsp_message<W: Write>(
     // 5. Automatic index reload: fast stat check (sub-microsecond) on manifest
     reload_changed_index(writer, lifecycle, mr, ov)?;
 
+    if super::off_token::POSITION_METHODS.contains(&msg["method"].as_str().unwrap_or("")) {
+        super::off_token::snap_to_word(&mut msg, ov, &mut lifecycle.conv);
+    }
+    let method = msg["method"].as_str().unwrap_or("");
     let ra_commands = lifecycle.ra_client_commands();
     let ra_show_references = ra_commands.show_references;
     let conv = &mut lifecycle.conv;

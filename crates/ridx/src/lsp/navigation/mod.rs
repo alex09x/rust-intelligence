@@ -18,6 +18,7 @@ pub(crate) mod primitive;
 pub mod references;
 mod references_gated;
 mod references_inactive;
+pub(crate) mod syntactic;
 pub mod type_definition;
 mod type_definition_index;
 mod type_definition_live;
@@ -42,6 +43,11 @@ use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
 pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
+    let found = definition_at(msg, workspace, overlay_mgr, conv);
+    syntactic::with_shorthand_field(found, msg, workspace, overlay_mgr, conv)
+}
+
+fn definition_at(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
@@ -55,8 +61,17 @@ pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
         conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
     };
 
-    // 1. Overlay definition
-    if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+    // 0. What the syntax answers: control-flow keywords, labels, lifetimes, `mod foo;`, macro calls.
+    if let Some(v) = syntactic::answer(&file, overlay_opt.map(|o| o.text.as_str()), line_0based, utf16_col_0based, workspace, conv) {
+        return v;
+    }
+
+    // 1. Overlay definition. An item it finds by name yields to the index when the buffer is the indexed text: it
+    // took `type T1` for the `const T1` a `match` pattern names. A local stays the buffer's: the compiler's span of
+    // `let mut x` starts at `mut`, and a `for` pattern lies in the loop's desugaring.
+    let clean = overlay_opt.is_none_or(|o| !o.is_dirty());
+    let indexed = || clean && workspace.is_some_and(|ws| ws.find_definition_at(&file, line_1based, col_1based).is_some());
+    if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based).filter(|d| d.kind == DefKind::Local || !indexed()) {
         let uri = path_to_uri(&def.file);
         let ov = overlay_opt.unwrap();
         let start_char = ov.char_col_to_utf16_col(def.start_line, def.start_col);
@@ -134,6 +149,12 @@ pub fn handle_definition(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
                 }
             }
         }
+    }
+
+    // A binding the index did not resolve to a constant is its own definition, not an item of its name elsewhere
+    // (`T1 => …` went to `trait T1`).
+    if let Some(v) = overlay_opt.and_then(|o| syntactic::binding(&file, &o.text, line_0based, utf16_col_0based)) {
+        return v;
     }
 
     // 3. Fallback: cross-file or live overlay definition lookup

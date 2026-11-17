@@ -203,13 +203,17 @@ fn test_case_6_field_shorthand_and_destructuring() {
             "position": { "line": cur_line, "character": cur_col }
         }
     });
+    // Both the field and the binding it is written as, as rust-analyzer answers (the binding came alone).
     let res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
-    assert!(!res.is_null());
-    assert_eq!(res["uri"], uri);
+    let locs = res.as_array().unwrap_or_else(|| panic!("the field and the binding: {res}"));
+    assert_eq!(locs.len(), 2, "{res}");
     let (def_line, def_col) = pos_in_file(&lib_file, "pub fn make_point(x: i32", "x");
-    assert_eq!(res["range"]["start"]["line"], def_line);
-    assert_eq!(res["range"]["start"]["character"], def_col);
-    assert_eq!(res["range"]["end"]["character"], def_col + 1);
+    let binding = &locs[1];
+    assert_eq!(binding["uri"], uri);
+    assert_eq!((binding["range"]["start"]["line"].clone(), binding["range"]["start"]["character"].clone()), (json!(def_line), json!(def_col)));
+    assert_eq!(binding["range"]["end"]["character"], def_col + 1);
+    let (field_line, field_col) = pos_in_file(&lib_file, "pub struct Point {\n    pub x", "x");
+    assert_eq!((locs[0]["range"]["start"]["line"].clone(), locs[0]["range"]["start"]["character"].clone()), (json!(field_line), json!(field_col)), "{res}");
 }
 
 #[test]

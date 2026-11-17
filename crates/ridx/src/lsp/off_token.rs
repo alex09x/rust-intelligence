@@ -48,6 +48,36 @@ pub(crate) fn is_off_token(msg: &Value, ov: &OverlayManager, conv: &mut Position
     text.is_some_and(|t| off_token_in(&t, col16))
 }
 
+/// Moves a request's position from just past a name onto the name's last character when nothing of a name lies under
+/// it (`foo.spam|;`): rust-analyzer takes the token left of a caret, and an editor's F12 sends the caret's position.
+/// Found with rust-analyzer's goto-definition fixtures run against ridx (`bench/ra_fixtures.py`), where such a caret
+/// answered nothing.
+pub(crate) fn snap_to_word(msg: &mut Value, ov: &OverlayManager, conv: &mut PositionConverter) {
+    let Ok((uri, line0, col16)) = super::params::text_document_position(msg) else { return };
+    let file = uri_to_path(uri);
+    let line = match ov.get(&file) {
+        Some(o) => o.text.lines().nth(line0 as usize).map(str::to_string),
+        None => conv.get_line(&file, line0 + 1).map(str::to_string),
+    };
+    if let Some(back) = line.and_then(|l| word_end_before(&l, col16)) {
+        msg["params"]["position"]["character"] = Value::from(col16 - back);
+    }
+}
+
+/// The UTF-16 width of the name character right before column `col16` of `line` when no name character is at it.
+fn word_end_before(line: &str, col16: u32) -> Option<u32> {
+    let word = |c: char| c.is_alphanumeric() || c == '_';
+    let (mut units, mut before) = (0u32, None);
+    for c in line.chars() {
+        if units >= col16 {
+            return (!word(c)).then_some(before.filter(|&b: &char| word(b))?.len_utf16() as u32);
+        }
+        units += c.len_utf16() as u32;
+        before = Some(c);
+    }
+    (units == col16).then_some(before.filter(|&b| word(b))?.len_utf16() as u32)
+}
+
 /// `is_off_token` on the line `line` at the UTF-16 column `col16`: whitespace with no name ending before it, or the
 /// text of a comment (an intra-doc link `[Name]` in a doc comment excepted). The index answers inside a comment for
 /// whatever expression spans it: a function body's type showed over `// …` lines.
@@ -63,7 +93,9 @@ fn off_token_in(line: &str, col16: u32) -> bool {
         before = Some(c);
         at_char = i + 1;
     }
-    let blank = at.is_none_or(char::is_whitespace) && !before.is_some_and(|c| c.is_alphanumeric() || c == '_');
+    // A caret just past a match arm's `=>` is on it: it goes to its `match`'s arm.
+    let fat_arrow = before == Some('>') && line.chars().nth(at_char.wrapping_sub(2)) == Some('=');
+    let blank = at.is_none_or(char::is_whitespace) && !before.is_some_and(|c| c.is_alphanumeric() || c == '_') && !fat_arrow;
     blank || in_comment_text(line, at_char)
 }
 
@@ -106,6 +138,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_a_caret_just_past_a_name_is_on_it() {
+        let line = "    foo.spam; Self {} é";
+        assert_eq!(word_end_before(line, 12), Some(1), "`spam|;`");
+        assert_eq!(word_end_before(line, 11), None, "on the name");
+        assert_eq!(word_end_before(line, 18), Some(1), "`Self| {{}}`");
+        assert_eq!(word_end_before(line, 8), None, "`foo.|spam`: on `s`");
+        assert_eq!(word_end_before(line, 4), None, "indentation");
+        assert_eq!(word_end_before(line, 23), Some(1), "the line's end after `é`");
+        assert_eq!(word_end_before("x𝔸", 3), Some(2), "a name of two-unit characters");
+    }
+
+    #[test]
     fn test_whitespace_with_no_name_before_it_is_off_token() {
         let line = "        storage_failed.push(day); ";
         assert!(off_token_in(line, 3), "indentation");
@@ -114,6 +158,8 @@ mod tests {
         assert!(!off_token_in(line, 22 + 1), "the method");
         assert!(off_token_in(line, line.len() as u32), "past `;` and its space");
         assert!(off_token_in("", 0), "an empty line");
+        assert!(!off_token_in("    0 => {}", 8), "just past `=>`");
+        assert!(off_token_in("    0 >= 1", 8), "past `>=`");
         assert!(!off_token_in("x", 1), "the end of a line right after a name");
         assert!(!off_token_in("«é» x", 4), "`x` past non-ASCII characters");
         assert!(off_token_in("😀  x", 3), "a UTF-16 column past a two-unit character, in the spaces");
