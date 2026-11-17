@@ -69,12 +69,13 @@
     <div class="bench-head"><span class="mono" id="res-meta"></span><span class="mono mute" id="res-src" style="font-size:12px"></span></div>
     <div id="res-rows"></div>
     <div class="bench-note">
-      <span><b class="cyan">Latency, ms (p50 / p95)</b></span>
+      <span><b class="cyan">Latency, ms (p50 / p95)</b> <span class="mute">· requests that came back with an error are included</span></span>
       <div class="lat" id="res-lat"></div>
     </div>
   </div>
   <div class="row-wrap">
     <div class="card prob"><b class="amber">What is not counted</b><span>ridx answers from an index built beforehand by <span class="mono">ridx index</span> (a <span class="mono">cargo check</span> with the ridx driver). That build takes minutes on a large workspace the first time; dependencies are then shared by every project on the machine. rust-analyzer analyzes the workspace each time it starts, and that time is in its numbers.</span></div>
+    <div class="card prob"><b class="amber">What “ready” means</b><span>For ridx: the reply to <span class="mono">initialize</span>; caches keep warming in the background after it. For rust-analyzer: the moment it reports that analysis is done, plus 0.5 s without messages to be sure.</span></div>
     <div class="card prob"><b class="amber">How to read memory</b><span>ridx's memory includes index pages mapped from disk. The kernel can drop them under pressure and read them again later. rust-analyzer's memory is its own heap.</span></div>
     <div class="card prob"><b class="amber">Reproduce it</b><span>Script: <a class="mono" href="https://github.com/alex09x/rust-intelligence/blob/main/bench/measure_resources.py">bench/measure_resources.py</a>. Raw results: <a class="mono" id="res-raw" href="#">jsonl</a>. Linux, one machine, both servers run one after another.</span></div>
   </div>
@@ -98,7 +99,7 @@
       <div class="wire"><i></i></div>
       <div class="lane">disk · page cache</div>
       <div class="grid2">
-        <button class="box" data-arch="t1"><b>Tier 1 · Global CAS</b><div class="path">~/.cache/ridx/v3/objects/</div><span class="tag disk">shared, immutable</span></button>
+        <button class="box" data-arch="t1"><b>Tier 1 · Global CAS</b><div class="path">~/.cache/ridx/v5/objects/</div><span class="tag disk">shared, immutable</span></button>
         <button class="box" data-arch="t2"><b>Tier 2 · Workspace variant</b><div class="path">target/ridx/variants/&lt;id&gt;/</div><span class="tag disk">per project</span></button>
       </div>
       <div class="wire"><i></i></div>

@@ -18,17 +18,17 @@ const ARCH = {
   overlay: ["RAM · only what you have open", "OverlayManager", "Holds the buffers you are editing right now. Answers reflect what is on screen, before you save.", ["Live incremental edits", "Lexical scoping for rename", "Transactional WorkspaceEdit with rollback"]],
   index: ["mmap · OS page cache", "WorkspaceIndex", "Maps the .ridx shards for this workspace. The kernel pages data in as queries touch it and can drop it under memory pressure.", ["O(log N) binary search", "Scoped strictly to Cargo.lock", "Shard files closed after mapping"]],
   fly: ["background thread", "Flycheck", "On save, runs cargo check in the background and publishes compiler diagnostics without blocking requests.", ["Separate target/ridx-flycheck dir", "Previous run cancelled on new save", "Clears fixed errors"]],
-  t1: ["disk · shared by all projects", "Tier 1 · Global CAS", "crates.io and git dependencies are indexed once per source hash and target, then reused by every workspace and worktree on the machine.", ["~/.cache/ridx/v3/objects/", "Immutable, content-addressed", "Linked into a project, not rebuilt"]],
+  t1: ["disk · shared by all projects", "Tier 1 · Global CAS", "crates.io and git dependencies are indexed once per source hash and target, then reused by every workspace and worktree on the machine.", ["~/.cache/ridx/v5/objects/", "Immutable, content-addressed", "Linked into a project, not rebuilt"]],
   t2: ["disk · inside your project", "Tier 2 · Workspace variant", "Shards for your own workspace members, plus a manifest that whitelists exactly the crates in your Cargo.lock.", ["target/ridx/variants/<id>/", "ridx_manifest.json whitelist", "No symbols leak between projects"]],
   driver: ["build time · inside rustc", "ridx-driver", "A rustc wrapper. While cargo check compiles, it records definitions, references and inferred types straight from the compiler and writes .ridx shards.", ["Uses rustc’s own resolution", "No second analyzer to disagree", "Shards can ship via a CAS build cache"]],
 };
 
 const FORMAT = [
-  ["Header · magic RIDX, v3", "offsets & counts"], ["String intern pool", "UTF-8, deduped"],
-  ["File path table", "16 B / entry"], ["Definitions table", "44 B / entry"],
+  ["Header · magic RIDX, v5", "offsets & counts"], ["String intern pool", "UTF-8, deduped"],
+  ["File path table", "16 B / entry"], ["Definitions table", "40 B / entry"],
   ["Definitions hash index", "FNV-1a, 16 B"], ["Owner index & deref table", "receiver chains"],
   ["References table (sorted by span)", "48 B / entry"], ["References target hash index", "16 B"],
-  ["Types table", "28 B / entry"],
+  ["Types, impls, fields, generics", "16–32 B / entry"],
 ];
 const TONES = ["#f74c00", "#ff9900", "#ffb347", "#00d2ff", "#38bdf8", "#7dd3fc", "#bae6fd", "#c4b5fd", "#a78bfa"];
 
@@ -62,7 +62,8 @@ const EDITORS = {
   "Neovim": `vim.lsp.config("ridx", {
   cmd = { "ridx" },
   filetypes = { "rust" },
-  root_markers = { "Cargo.toml" },
+  -- Cargo.lock first: a workspace member's own Cargo.toml is not the workspace root
+  root_markers = { "Cargo.lock", "Cargo.toml" },
 })
 vim.lsp.enable("ridx")`,
   "Helix": `# languages.toml
@@ -102,7 +103,8 @@ function tabs(boxId, keys, onSelect) {
 
 const mb = (v) => (v >= 1000 ? `${(v / 1024).toFixed(1)} GB` : `${v} MB`);
 const sec = (v) => `${v < 10 ? v.toFixed(2) : v.toFixed(1)} s`;
-const times = (r) => `${r < 10 ? r.toFixed(1) : Math.round(r)}×`;
+// Rounded down, so a shown multiple never exceeds the measured one.
+const times = (r) => `${r < 10 ? (Math.floor(r * 10) / 10).toFixed(1) : Math.floor(r)}×`;
 const METRICS = [
   ["Peak memory", "peak_rss_mb", mb, "less memory"],
   ["CPU time for the session", "cpu_work_s", sec, "less CPU"],
@@ -112,16 +114,18 @@ const METRICS = [
 // The smallest advantage over all repositories, so the headline holds for each of them.
 function renderHero(repos) {
   const box = document.getElementById("hero-stats");
-  const big = repos[repos.length - 1];
-  const least = (k) => Math.min(...repos.map((r) => r.ra[k] / r.ridx[k]));
+  // The repository where the advantage is smallest, named with its own figures.
+  const least = (k) => repos.reduce((a, r) => (r.ra[k] / r.ridx[k] < a.ra[k] / a.ridx[k] ? r : a));
   const tones = ["rust", "amber", "cyan"];
-  box.replaceChildren(...METRICS.map(([, k, f, word], i) => el("div", "stat",
-    `<span class="big ${tones[i]}">${times(least(k))}</span>${word} than rust-analyzer<br>${esc(big.name)}: ${f(big.ridx[k])} vs ${f(big.ra[k])}`)),
+  box.replaceChildren(...METRICS.map(([, k, f, word], i) => {
+    const r = least(k);
+    return el("div", "stat", `<span class="big ${tones[i]}">${times(r.ra[k] / r.ridx[k])}</span>${word} than rust-analyzer, at least<br>smallest gap, ${esc(r.name)}: ${f(r.ridx[k])} vs ${f(r.ra[k])}`);
+  }),
     el("div", "stat", `<span class="big violet">${repos.length}</span>open-source repositories<br>${repos.map((r) => esc(r.name)).join(" · ")}`));
 }
 
 function renderRepo(r) {
-  document.getElementById("res-meta").textContent = `${r.name} · ${r.ridx.files} files · ${r.ridx.requests} requests`;
+  document.getElementById("res-meta").textContent = `${r.name} · ${r.ridx.files} files · ${r.ridx.requests} requests · errors: ridx ${r.ridx.errors}, rust-analyzer ${r.ra.errors}`;
   const rows = document.getElementById("res-rows");
   rows.replaceChildren(...METRICS.map(([label, k, f, word]) => el("div", "cap",
     `<div class="cap-head"><b>${label}</b><span class="mono rust">${times(r.ra[k] / r.ridx[k])} ${word}</span></div>
