@@ -341,3 +341,23 @@ fn test_case_a_crate_name_in_a_path_opens_its_root() {
     assert!(res["uri"].as_str().is_some_and(|u| u.ends_with("crates/core_lib/src/lib.rs")), "{res}");
     assert_eq!((res["range"]["start"]["line"].clone(), res["range"]["start"]["character"].clone()), (json!(0), json!(0)), "{res}");
 }
+
+/// Review of 54d1023c: a registry or git dependency records its root relative to its manifest's directory, and a
+/// sysroot crate keys its root at its own name: their names in a path opened at the first item.
+#[test]
+fn test_case_a_dependency_or_sysroot_crate_name_opens_its_root() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let app = fixture_dir("multi_crate").join("crates/app_crate/src/lib.rs");
+    let uri = path_to_uri(app.to_str().unwrap());
+    let def_at = |snippet: &str, needle: &str| {
+        let (line, col) = pos_in_file(&app, snippet, needle);
+        let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": col + 1 } } });
+        handle_definition(&req, Some(ws), &OverlayManager::new(), &mut PositionConverter::new())
+    };
+    let ext = def_at("    ext_service::external_compute()", "ext_service");
+    assert!(ext["uri"].as_str().is_some_and(|u| u.ends_with("ext_service-0.5.0/src/lib.rs")), "{ext}");
+    assert_eq!((ext["range"]["start"]["line"].clone(), ext["range"]["start"]["character"].clone()), (json!(0), json!(0)), "{ext}");
+    let std_root = def_at("    std::mem::size_of", "std");
+    assert!(std_root["uri"].as_str().is_some_and(|u| u.ends_with("library/std/src/lib.rs")), "{std_root}");
+    assert_eq!(std_root["range"]["start"]["line"], json!(0), "{std_root}");
+}

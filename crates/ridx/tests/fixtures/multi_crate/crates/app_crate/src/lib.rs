@@ -51,3 +51,7 @@ pub fn invoke_reexported_thing() -> u32 {
     thing.get_value()
 }
 
+
+pub fn sysroot_crate_root() -> usize {
+    std::mem::size_of::<u8>()
+}
