@@ -25,9 +25,10 @@ pub(crate) enum Target {
     Here(Range<usize>),
     /// A whole file (a module's).
     File(PathBuf),
-    /// A macro named so, not defined in this file before the call: the index's `macro_rules!` of that name, preferably
-    /// the one a `use` of the file at these byte offsets imports.
-    Macro { name: String, use_sites: Vec<usize> },
+    /// A macro named so, not defined in this file before the call: the one the index resolves the call to, else the
+    /// one a `use` of the file at these byte offsets imports, else one of that name in the index, of the crate the
+    /// call's path names (`qualifier`, `dep::m` of `dep::m::mac!`) when it names one.
+    Macro { name: String, use_sites: Vec<usize>, qualifier: Option<String> },
     /// Item `member` of what the name at byte `anchor` of this file resolves to in the index (a trait's item, from its
     /// implementation's).
     Member { anchor: usize, member: String, kinds: &'static [ridx_format::DefKind] },
@@ -35,9 +36,31 @@ pub(crate) enum Target {
     Nothing,
 }
 
-/// The name a path type is known by: its last segment before generic arguments (`Foo` of `crate::m::Foo<T>`).
+/// The name a path is known by: its last segment outside generic arguments (`Foo` of `crate::m::Foo<T>`, `Assoc` of
+/// `<T as B>::Assoc`, `Self` of `Self`).
 fn type_name(tree: &SyntaxTree, ty: ridx_syntax::NodeId) -> Option<Range<usize>> {
-    tree.tokens_of(ty).iter().take_while(|t| t.kind != T::Lt).filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).last().map(|t| t.range())
+    let mut depth = 0u32;
+    let mut last = None;
+    for t in tree.tokens_of(ty) {
+        match t.kind {
+            T::Lt => depth += 1,
+            T::Gt => depth = depth.saturating_sub(1),
+            T::Ident | T::RawIdent | T::SelfType if depth == 0 => last = Some(t.range()),
+            _ => {}
+        }
+    }
+    last
+}
+
+/// The 1-based line and character column the index knows byte `offset` of the live `text` by: mapped onto the
+/// compiled text when the buffer was edited since (review of 2bca7861: a line added above an `impl` shifted it).
+fn index_position(text: &str, overlay: Option<&crate::overlay::DocumentOverlay>, offset: usize) -> Option<(u32, u32)> {
+    let line = position(text, offset).0 + 1;
+    let col = text[..offset].rsplit('\n').next().map_or(0, |s| s.chars().count()) as u32 + 1;
+    match overlay.filter(|o| o.is_dirty()) {
+        Some(o) => o.map_live_to_compiled(line, col),
+        None => Some((line, col)),
+    }
 }
 
 /// The type children of an `impl` header: `[trait, self type]` with `for`, else `[self type]`.
@@ -145,15 +168,7 @@ pub(crate) fn definition(file: &Path, text: &str, offset: usize) -> Option<Targe
             Some(Target::Here(tree.tokens[i - 1].start as usize..tok.end as usize))
         }
         T::SelfKw if up().any(|a| tree.kind(a) == K::SelfParam) => Some(Target::Here(tok.range())),
-        // `Self`: the type its `impl` names (rust-analyzer's), or the trait it is used in.
-        T::SelfType => {
-            let owner = up().find(|&a| matches!(tree.kind(a), K::Impl | K::Trait | K::Struct | K::Enum | K::Union))?;
-            let r = match tree.kind(owner) {
-                K::Impl => impl_types(&tree, owner).last().and_then(|&t| type_name(&tree, t)),
-                _ => tree.child(owner, K::Name).map(|n| tree.range(n)),
-            };
-            Some(r.map_or(Target::Nothing, Target::Here))
-        }
+        // `Self` is the index's (it records the type itself, in any file): see `self_type` for when it has none.
         T::Ident | T::RawIdent => ident_target(file, text, &tree, i, node),
         k if is_keyword(k) && !matches!(k, T::SelfKw | T::SelfType | T::Crate | T::Super) => Some(Target::Nothing),
         _ => None,
@@ -206,23 +221,33 @@ fn ident_target(file: &Path, text: &str, tree: &SyntaxTree, i: usize, node: ridx
         .chain(tree.ancestors(node))
         .take_while(|&a| matches!(tree.kind(a), K::Path | K::PathSegment | K::Name | K::MacroCall))
         .any(|a| tree.kind(a) == K::MacroCall);
-    let in_macro_use = std::iter::once(node).chain(tree.ancestors(node)).any(|a| tree.kind(a) == K::Attr && tree.text(a).contains("macro_use"));
+    // A name inside `#[macro_use(…)]`'s parentheses, not `macro_use` itself nor another attribute's word.
+    let in_macro_use = std::iter::once(node).chain(tree.ancestors(node)).find(|&a| tree.kind(a) == K::Attr).is_some_and(|attr| {
+        let toks: Vec<_> = tree.tokens_of(attr).iter().filter(|t| !t.is_trivia()).copied().collect();
+        toks.windows(2).enumerate().any(|(k, w)| {
+            w[0].text(text) == "macro_use"
+                && w[1].kind == T::LParen
+                && toks[k + 2..].iter().position(|t| t.kind == T::RParen).is_some_and(|close| w[1].end <= tok.start && tok.end <= toks[k + 2 + close].start)
+        })
+    });
     if !(next.is_some_and(|t| t.kind == T::Bang) && in_macro_path || in_macro_use) {
         return None;
     }
-    // A `macro_rules!` of the file: the nearest one above the call (textual scope), else any.
-    let defs: Vec<Range<usize>> = tree
-        .descendants(tree.root())
-        .filter(|&d| tree.kind(d) == K::MacroRules)
-        .filter_map(|d| tree.child(d, K::Name))
-        .filter(|&n| tree.text(n) == name)
-        .map(|n| tree.range(n))
-        .collect();
-    // A path (`m::mac!`) names a macro elsewhere; a bare name, one in textual scope first.
-    let qualified = tree.covering_of(tok.start as usize, K::MacroCall).and_then(|c| tree.child(c, K::Path)).is_some_and(|p| tree.text(p).contains("::"));
-    if !in_macro_use && !qualified {
-        if let Some(r) = defs.iter().rev().find(|r| r.start < tok.start as usize).or(defs.first()) {
-            return Some(Target::Here(r.clone()));
+    // A path (`m::mac!`) names a macro elsewhere; a bare name, one in textual scope first: a `macro_rules!` above the
+    // call in a module or block enclosing it (review of 2bca7861: one in a sibling `mod` or below the call was taken).
+    let path = tree.covering_of(tok.start as usize, K::MacroCall).and_then(|c| tree.child(c, K::Path));
+    let qualifier = path.map(|p| tree.text(p)).and_then(|p| p.rsplit_once("::")).map(|(q, _)| q.trim().to_string());
+    if !in_macro_use && qualifier.is_none() {
+        let in_scope = tree
+            .descendants(tree.root())
+            .filter(|&d| tree.kind(d) == K::MacroRules && tree.range(d).end <= tok.start as usize)
+            .filter(|&d| tree.parent(d).is_some_and(|s| tree.range(s).contains(&(tok.start as usize)) || s == tree.root()))
+            .filter_map(|d| tree.child(d, K::Name))
+            .filter(|&n| tree.text(n) == name)
+            .map(|n| tree.range(n))
+            .last();
+        if let Some(r) = in_scope {
+            return Some(Target::Here(r));
         }
     }
     let use_sites = tree
@@ -236,7 +261,7 @@ fn ident_target(file: &Path, text: &str, tree: &SyntaxTree, i: usize, node: ridx
                 .collect::<Vec<_>>()
         })
         .collect();
-    Some(Target::Macro { name: name.to_string(), use_sites })
+    Some(Target::Macro { name: name.to_string(), use_sites, qualifier })
 }
 
 /// The file of `mod name;` declared in `file`: `name.rs` or `name/mod.rs` beside a crate root or `mod.rs`, else in
@@ -253,7 +278,7 @@ pub(crate) fn module_file(file: &Path, name: &str) -> Option<PathBuf> {
 /// the other steps decide.
 pub(crate) fn answer(
     file: &str,
-    text: Option<&str>,
+    overlay: Option<&crate::overlay::DocumentOverlay>,
     line: u32,
     character: u32,
     ws: Option<&ridx_format::WorkspaceIndex>,
@@ -262,8 +287,8 @@ pub(crate) fn answer(
     use crate::lsp::protocol::path_to_uri;
     use serde_json::{json, Value};
     let disk;
-    let text = match text {
-        Some(t) => t,
+    let text = match overlay {
+        Some(o) => o.text.as_str(),
         None => {
             disk = std::fs::read_to_string(file).ok()?;
             &disk
@@ -275,32 +300,58 @@ pub(crate) fn answer(
         Target::Here(r) => Some(loc(path_to_uri(file), position(text, r.start), position(text, r.end))),
         Target::File(p) => Some(loc(path_to_uri(&p.to_string_lossy()), (0, 0), (0, 0))),
         Target::Nothing => Some(Value::Null),
-        Target::Member { anchor, member, kinds } => member_location(file, text, anchor, &member, kinds, ws?, conv),
-        Target::Macro { name, use_sites } => {
+        Target::Member { anchor, member, kinds } => member_location(file, text, overlay, anchor, &member, kinds, ws?, conv),
+        Target::Macro { name, use_sites, qualifier } => {
+            use ridx_format::DefKind;
             let ws = ws?;
             let mut at = |path: &str, sl: u32, sc: u32, el: u32, ec: u32| {
                 let (s, e) = (conv.char_col_to_utf16_col(path, sl, sc), conv.char_col_to_utf16_col(path, el, ec));
                 loc(path_to_uri(path), (sl.saturating_sub(1), s), (el.saturating_sub(1), e))
             };
-            // The macro a `use` of the file imports, as the index resolved that `use`.
-            for site in use_sites {
-                let l = position(text, site).0;
-                let char_col = text[..site].rsplit('\n').next().map_or(0, |s| s.chars().count()) as u32 + 1;
-                if let Some(def) = ws.find_definition_at(file, l + 1, char_col).filter(|d| d.kind == ridx_format::DefKind::Macro && d.name == name) {
-                    let p = super::type_definition_parse::on_disk(def.resolved_path());
-                    let ps = p.to_string_lossy().into_owned();
+            // The macro the index resolves the call to (the driver records a call of a non-std bang macro, and a
+            // qualified path resolves through the index), then the one a `use` of the file imports.
+            let sites = std::iter::once(offset).chain(use_sites);
+            for site in sites {
+                let resolved = index_position(text, overlay, site).and_then(|(l, c)| ws.find_definition_at(file, l, c)).filter(|d| d.kind == DefKind::Macro && d.name == name);
+                if let Some(def) = resolved {
+                    let ps = super::type_definition_parse::on_disk(def.resolved_path()).to_string_lossy().into_owned();
                     return Some(at(&ps, def.start_line, def.start_col, def.end_line, def.end_col));
                 }
             }
-            // Else a `macro_rules!` of that name the index holds: the workspace's own before a dependency's.
-            let mut syms: Vec<_> = ws.search_symbols(&name).into_iter().filter(|s| s.kind == ridx_format::DefKind::Macro && s.name == name).collect();
-            syms.sort_by_key(|s| !ws.workspace_root().is_some_and(|r| symbol_file(s).starts_with(r)));
+            // Else a `macro_rules!` of that name the index holds: of the crate the call's path names, else the
+            // workspace's own before a dependency's.
+            let mut syms: Vec<_> = ws.search_symbols(&name).into_iter().filter(|s| s.kind == DefKind::Macro && s.name == name).collect();
+            let own = |s: &ridx_format::workspace::WorkspaceSymbol| ws.workspace_root().is_some_and(|r| symbol_file(s).starts_with(r));
+            match qualifier.as_deref().map(|q| q.trim_start_matches("::").split("::").next().unwrap_or("")) {
+                Some("crate" | "self" | "super" | "$crate") => syms.retain(own),
+                Some(krate) => syms.retain(|s| s.crate_name.replace('-', "_") == krate),
+                None => syms.sort_by_key(|s| !own(s)),
+            }
             let s = syms.first()?;
-            let p = symbol_file(s);
-            let ps = p.to_string_lossy().into_owned();
+            let ps = symbol_file(s).to_string_lossy().into_owned();
             Some(at(&ps, s.span.start_line(), s.span.start_col(), s.span.end_line(), s.span.end_col()))
         }
     }
+}
+
+/// The definition of `Self` at LSP position (`line`, `character`) when the index has none (a dirty buffer, a trait,
+/// an impl of a type the index does not hold): the type its `impl` names, as rust-analyzer goes, or the trait or
+/// type it is used in. The index records `Self` as the type itself, in whatever file: it goes first (review of
+/// 2bca7861: `Self` stopped at the impl's header instead of `pub struct Grid`).
+pub(crate) fn self_type(file: &str, text: &str, line: u32, character: u32) -> Option<serde_json::Value> {
+    let tree = parse(text);
+    let i = token_index(&tree, byte_offset(text, line, character)?)?;
+    if tree.tokens[i].kind != T::SelfType {
+        return None;
+    }
+    let node = tree.covering(tree.tokens[i].start as usize);
+    let owner = std::iter::once(node).chain(tree.ancestors(node)).find(|&a| matches!(tree.kind(a), K::Impl | K::Trait | K::Struct | K::Enum | K::Union))?;
+    let r = match tree.kind(owner) {
+        K::Impl => impl_types(&tree, owner).last().filter(|&&t| tree.kind(t) == K::PathType).and_then(|&t| type_name(&tree, t)),
+        _ => tree.child(owner, K::Name).map(|n| tree.range(n)),
+    }?;
+    let (s, e) = (position(text, r.start), position(text, r.end));
+    Some(serde_json::json!({ "uri": crate::lsp::protocol::path_to_uri(file), "range": { "start": { "line": s.0, "character": s.1 }, "end": { "line": e.0, "character": e.1 } } }))
 }
 
 /// The file on disk of a symbol the index holds. A symbol of the standard library is recorded relative to the
@@ -314,17 +365,18 @@ fn symbol_file(s: &ridx_format::workspace::WorkspaceSymbol) -> PathBuf {
 
 /// The location of `member` of what the name at byte `anchor` of `file` resolves to in the index: a field of a struct
 /// or variant, an item of a trait.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn member_location(
     file: &str,
     text: &str,
+    overlay: Option<&crate::overlay::DocumentOverlay>,
     anchor: usize,
     member: &str,
     kinds: &[ridx_format::DefKind],
     ws: &ridx_format::WorkspaceIndex,
     conv: &mut crate::lsp::protocol::PositionConverter,
 ) -> Option<serde_json::Value> {
-    let line = position(text, anchor).0 + 1;
-    let char_col = text[..anchor].rsplit('\n').next().map_or(0, |s| s.chars().count()) as u32 + 1;
+    let (line, char_col) = index_position(text, overlay, anchor)?;
     let owner = ws.find_definition_at(file, line, char_col)?;
     let full = format!("{}::{member}", owner.path);
     let same_path = |p: &str| p == full || p.ends_with(&format!("::{full}")) || full.ends_with(&format!("::{p}"));
@@ -352,7 +404,7 @@ pub(crate) fn with_shorthand_field(
     let field = ws.and_then(|ws| {
         let text = overlay_mgr.get(&file).map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok())?;
         let (anchor, name) = shorthand(&text, byte_offset(&text, line, character)?)?;
-        member_location(&file, &text, anchor, &name, &[ridx_format::DefKind::Field], ws, conv)
+        member_location(&file, &text, overlay_mgr.get(&file), anchor, &name, &[ridx_format::DefKind::Field], ws, conv)
     });
     match field {
         Some(f) if f != found && !found.is_null() => serde_json::json!([f, found]),

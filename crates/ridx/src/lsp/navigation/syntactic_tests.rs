@@ -20,7 +20,7 @@ fn at(marked: &str) -> Option<String> {
     match definition(Path::new("/x/lib.rs"), &text, offset)? {
         Target::Here(r) => Some(format!("{}@{}", &text[r.clone()], position(&text, r.start).0)),
         Target::File(p) => Some(format!("file {}", p.display())),
-        Target::Macro { name, use_sites } => Some(format!("macro {name} {}", use_sites.len())),
+        Target::Macro { name, use_sites, qualifier } => Some(format!("macro {name} {}{}", use_sites.len(), qualifier.map(|q| format!(" in {q}")).unwrap_or_default())),
         Target::Member { anchor, member, .. } => Some(format!("member {member} of {}", text[anchor..].split(|c: char| !c.is_alphanumeric()).next().unwrap())),
         Target::Nothing => Some("nothing".into()),
     }
@@ -60,9 +60,23 @@ fn test_lifetimes_labels_and_self_param() {
 
 #[test]
 fn test_self_and_the_items_of_a_trait_impl() {
-    assert_eq!(at("struct Grid<T>(T);\nimpl<T> Grid<T> {\n    fn new(t: T) -> Se$0lf { Grid(t) }\n}\n").as_deref(), Some("Grid@1"), "the impl's type");
-    assert_eq!(at("trait Make { fn make() -> Self; }\nimpl Make for crate::Grid {\n    fn make() -> Self$0 { todo!() }\n}\n").as_deref(), Some("Grid@1"), "not the trait");
-    assert_eq!(at("trait Make { fn make() -> Se$0lf; }\n").as_deref(), Some("Make@0"));
+    // `Self` is the index's first (it records the type itself): the syntax answers only when the index has none.
+    assert_eq!(at("struct Grid<T>(T);\nimpl<T> Grid<T> {\n    fn new(t: T) -> Se$0lf { Grid(t) }\n}\n"), None, "review of 2bca7861: not before the index");
+    let self_at = |m: &str| {
+        let t = m.replacen("$0", "", 1);
+        let (l, c) = position(&t, m.find("$0").unwrap());
+        self_type("/x/lib.rs", &t, l, c).map(|v| {
+            let s = &v["range"]["start"];
+            let line = t.lines().nth(s["line"].as_u64().unwrap() as usize).unwrap();
+            let c = s["character"].as_u64().unwrap() as usize;
+            format!("{}@{}", line[c..].split(|ch: char| !ch.is_alphanumeric()).next().unwrap(), s["line"])
+        })
+    };
+    assert_eq!(self_at("struct Grid<T>(T);\nimpl<T> Grid<T> {\n    fn new(t: T) -> Se$0lf { Grid(t) }\n}\n").as_deref(), Some("Grid@1"), "the impl's type");
+    assert_eq!(self_at("trait Make { fn make() -> Self; }\nimpl Make for crate::Grid {\n    fn make() -> Self$0 { todo!() }\n}\n").as_deref(), Some("Grid@1"), "not the trait");
+    assert_eq!(self_at("trait Make { fn make() -> Se$0lf; }\n").as_deref(), Some("Make@0"));
+    assert_eq!(self_at("impl<T: B> Make for <T as B>::Out {\n    fn make() -> Se$0lf {}\n}\n").as_deref(), Some("Out@0"), "a qualified path's last segment");
+    assert_eq!(self_at("impl<const N: usize> Make for [u8; N] {\n    fn make() -> Se$0lf {}\n}\n"), None, "an array type has no name: not `N`");
     assert_eq!(at("impl Make for Grid {\n    const SI$0ZE: u8 = 1;\n}\n").as_deref(), Some("member SIZE of Make"), "the trait's declaration");
     assert_eq!(at("impl Grid {\n    fn ma$0ke() {}\n}\n"), None, "an inherent item is its own definition");
 }
@@ -82,9 +96,15 @@ fn test_a_macro_call_goes_to_its_macro_rules() {
     let f = "macro_rules! twice { ($e:expr) => { $e * 2 } }\nfn f() -> u8 {\n    macro_rules! twice { () => { 4 } }\n    twi$0ce!()\n}\n";
     assert_eq!(at(f).as_deref(), Some("twice@2"), "the nearest one above the call");
     assert_eq!(at("use dep::shout;\nfn f() { sho$0ut!(); }\n").as_deref(), Some("macro shout 1"), "imported: the index resolves the `use`");
-    assert_eq!(at("fn f() { dep::m::sho$0ut!(); }\nmacro_rules! shout { () => {} }\n").as_deref(), Some("macro shout 0"), "a path: not the local one");
+    assert_eq!(at("fn f() { dep::m::sho$0ut!(); }\nmacro_rules! shout { () => {} }\n").as_deref(), Some("macro shout 0 in dep::m"), "a path: not the local one");
     assert_eq!(at("#[macro_use(sho$0ut)]\nextern crate dep;\n").as_deref(), Some("macro shout 0"));
     assert_eq!(at("fn f() { twi$0ce(); }\n"), None, "a function call: the index decides");
+    // Review of 2bca7861.
+    let f = "use dep::foo;\nfn caller() { fo$0o!(); }\nmod private { macro_rules! foo { () => {} } }\n";
+    assert_eq!(at(f).as_deref(), Some("macro foo 1"), "one in a sibling `mod` is out of scope");
+    assert_eq!(at("fn f() { fo$0o!(); }\nmacro_rules! foo { () => {} }\n").as_deref(), Some("macro foo 0"), "one below the call is not in textual scope");
+    assert_eq!(at("#[macro_u$0se(shout)]\nextern crate dep;\n"), None, "`macro_use` itself");
+    assert_eq!(at("#[cfg_attr(un$0ix, macro_use)]\nextern crate dep;\n"), None, "another word of the attribute");
 }
 
 #[test]

@@ -62,7 +62,7 @@ fn definition_at(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &
     };
 
     // 0. What the syntax answers: control-flow keywords, labels, lifetimes, `mod foo;`, macro calls.
-    if let Some(v) = syntactic::answer(&file, overlay_opt.map(|o| o.text.as_str()), line_0based, utf16_col_0based, workspace, conv) {
+    if let Some(v) = syntactic::answer(&file, overlay_opt, line_0based, utf16_col_0based, workspace, conv) {
         return v;
     }
 
@@ -154,6 +154,11 @@ fn definition_at(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr: &
     // A binding the index did not resolve to a constant is its own definition, not an item of its name elsewhere
     // (`T1 => …` went to `trait T1`).
     if let Some(v) = overlay_opt.and_then(|o| syntactic::binding(&file, &o.text, line_0based, utf16_col_0based)) {
+        return v;
+    }
+    // `Self` the index has no answer for: the type its `impl` names.
+    let text = overlay_opt.map(|o| o.text.clone()).or_else(|| std::fs::read_to_string(&file).ok());
+    if let Some(v) = text.and_then(|t| syntactic::self_type(&file, &t, line_0based, utf16_col_0based)) {
         return v;
     }
 
