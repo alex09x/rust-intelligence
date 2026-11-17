@@ -325,7 +325,7 @@ pub(crate) fn answer(
             match qualifier.as_deref().map(|q| q.trim_start_matches("::").split("::").next().unwrap_or("")) {
                 Some("crate" | "self" | "super" | "$crate") => syms.retain(own),
                 Some(krate) => syms.retain(|s| s.crate_name.replace('-', "_") == krate),
-                None => syms.sort_by_key(|s| !own(s)),
+                None => syms.sort_by_key(|s| macro_rank(own(s), s.crate_name)),
             }
             let s = syms.first()?;
             let ps = symbol_file(s).to_string_lossy().into_owned();
@@ -352,6 +352,17 @@ pub(crate) fn self_type(file: &str, text: &str, line: u32, character: u32) -> Op
     }?;
     let (s, e) = (position(text, r.start), position(text, r.end));
     Some(serde_json::json!({ "uri": crate::lsp::protocol::path_to_uri(file), "range": { "start": { "line": s.0, "character": s.1 }, "end": { "line": e.0, "character": e.1 } } }))
+}
+
+/// The order of the macros of a name an unqualified call may mean, with no `use` of it: the workspace's own, then the
+/// standard library's (its macros are in every crate's prelude), then a dependency's. In Zed on BTCR `println!` went
+/// to `anstream`'s, a dependency's macro of the same name the code never imports.
+fn macro_rank(own: bool, crate_name: &str) -> u8 {
+    match (own, crate_name) {
+        (true, _) => 0,
+        (_, "std" | "core" | "alloc") => 1,
+        _ => 2,
+    }
 }
 
 /// The file on disk of a symbol the index holds. A symbol of the standard library is recorded relative to the

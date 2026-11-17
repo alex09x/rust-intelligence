@@ -130,6 +130,14 @@ fn test_lsp_positions_round_trip() {
     assert_eq!(byte_offset(t, 1, 99), Some(t.len() - 1), "past the line's end: its end");
 }
 
+/// In Zed on BTCR `println!` went to `anstream`'s `println!`, a dependency's macro the code never imports.
+#[test]
+fn test_an_unimported_macro_is_the_standard_librarys_before_a_dependencys() {
+    let mut crates = [("anstream", false), ("std", false), ("btcr", true), ("core", false)];
+    crates.sort_by_key(|&(c, own)| macro_rank(own, c));
+    assert_eq!(crates.iter().map(|c| c.0).collect::<Vec<_>>(), ["btcr", "std", "core", "anstream"]);
+}
+
 /// In Zed on BTCR `include!` went to `BTCR/library/core/src/macros/mod.rs`: a standard library symbol is recorded
 /// relative to the sysroot's sources, and the symbol search joined it to the workspace's root.
 #[test]
