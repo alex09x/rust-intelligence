@@ -275,6 +275,17 @@ impl OverlayManager {
     /// After a new index is loaded: each open buffer maps onto it through the text it compiled, found by the hash it
     /// records for the file (`hash_for`; `None` keeps the buffer's baseline): the buffer, the file on disk, or the
     /// snapshot of a text edited since. Kept on the old text, the lines saved since stayed "edited".
+    /// A buffer opened while no index recorded its file reads as a library source, whose text on disk is what was
+    /// indexed; once an index records it, it is a workspace file again (review of 30e62913: a buffer opened before the
+    /// first index mapped its lines 1:1 onto spans of another text).
+    pub fn mark_recorded(&mut self, recorded: impl Fn(&str) -> bool) {
+        for file in self.open_file_paths() {
+            if let Some(o) = self.get_mut(&file).filter(|o| o.unhashed_source && recorded(&file)) {
+                o.unhashed_source = false;
+            }
+        }
+    }
+
     pub fn rebase_on_index(&mut self, hash_for: impl Fn(&str) -> Option<u64>) {
         for file in self.open_file_paths() {
             let Some(hash) = hash_for(&file) else { continue };

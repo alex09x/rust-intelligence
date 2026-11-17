@@ -85,6 +85,7 @@ fn test_a_first_index_joins_the_workspace_when_its_run_ends() {
     let file = src.to_str().unwrap();
     ov.open_with_source_hash(&format!("file://{file}"), file, 0, "pub fn a() {}\n".to_string(), mr.source_hash_for_file(file));
     assert!(ov.get(file).unwrap().compiled_text.is_none());
+    assert!(ov.get(file).unwrap().unhashed_source, "no index records it yet");
 
     std::fs::create_dir_all(root.join("target/ridx")).unwrap();
     write_index(&root.join("target/ridx/demo.ridx"), file, ridx_format::normalized_source_hash(b"pub fn a() {}\n"));
@@ -94,6 +95,7 @@ fn test_a_first_index_joins_the_workspace_when_its_run_ends() {
     assert_eq!(refreshes(&out), 1, "and the client fetches again");
     // The E2E run on a copy of hl-order-book-server: the file opened before the index still answered nothing.
     assert_eq!(ov.get(file).unwrap().compiled_text.as_deref(), Some("pub fn a() {}\n"), "a buffer opened before takes the index as its base");
+    assert!(!ov.get(file).unwrap().unhashed_source, "review of 30e62913: a workspace file again, not a library source");
     load_finished_index(&mut out, &mut lifecycle, &mut mr, &mut ov, std::slice::from_ref(&root)).unwrap();
     assert_eq!((mr.len(), refreshes(&out)), (1, 1), "a root is added once");
 }

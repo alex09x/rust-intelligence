@@ -51,6 +51,7 @@ use std::sync::{Arc, Mutex};
 /// Takes the text the index compiled as the base of each open buffer it describes: what was typed since is mapped onto
 /// it.
 pub(crate) fn rebase_open_buffers(ws: &WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) {
+    overlay_mgr.mark_recorded(|file| ws.source_hash_for_file(file).is_some());
     overlay_mgr.rebase_on_index(|file| ws.units_agree_on_source(file).then(|| ws.source_hash_for_file(file)).flatten());
 }
 

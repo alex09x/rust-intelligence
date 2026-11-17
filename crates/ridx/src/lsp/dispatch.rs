@@ -28,11 +28,18 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-/// The root of the workspace `file` belongs to: its loaded workspace, else the nearest directory with a `Cargo.toml`.
-fn workspace_root_of(mr: &MultiRootWorkspace, file: &Path) -> Option<PathBuf> {
-    mr.find_workspace_for_path(file)
-        .and_then(|ws| ws.workspace_root().map(Path::to_path_buf))
-        .or_else(|| file.ancestors().find(|d| d.join("Cargo.toml").is_file()).map(Path::to_path_buf))
+/// The root of the workspace `file` belongs to: the innermost loaded workspace holding it, else the root being indexed
+/// for the first time that holds it, else the nearest directory with a `Cargo.toml` (not in a library's sources),
+/// else the workspace a single-root session falls back to. Review of 30e62913: a file of an unindexed second root
+/// went to the first one, and one of a member crate to that crate rather than to its workspace being indexed.
+pub(crate) fn workspace_root_of(mr: &MultiRootWorkspace, reindex: &super::reindex::Reindexer, file: &Path) -> Option<PathBuf> {
+    let file = ridx_format::canonicalize_best_effort(file);
+    let loaded = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort).filter(|r| file.starts_with(r));
+    loaded
+        .max_by_key(|r| r.as_os_str().len())
+        .or_else(|| reindex.root_for(&file))
+        .or_else(|| (!super::reindex::is_cached_source(&file)).then(|| file.ancestors().find(|d| d.join("Cargo.toml").is_file()).map(Path::to_path_buf)).flatten())
+        .or_else(|| mr.find_workspace_for_path(&file).and_then(|ws| ws.workspace_root().map(Path::to_path_buf)))
 }
 
 /// Loads an index written since it was last read (a background reindex, `ridx index` by hand, a variant switch):
@@ -144,10 +151,11 @@ pub fn dispatch_lsp_message<W: Write>(
                     }
                     mr.open_from_folders(&folders);
                     for folder in &folders {
-                        lifecycle.reindex.index_if_missing(folder);
+                        lifecycle.reindex.queue_first_index(folder);
                     }
                 } else if index_path.is_none() && mr.is_empty() {
                     if let Ok(cur) = std::env::current_dir() {
+                        lifecycle.reindex.queue_first_index(&cur);
                         mr.add_root(cur);
                     }
                 }
@@ -160,6 +168,7 @@ pub fn dispatch_lsp_message<W: Write>(
 
         "initialized" => {
             mr.warm_background_caches();
+            lifecycle.reindex.start_queued();
             if lifecycle.client_watches_files() {
                 send_response(writer, &super::reindex::watch_registration(json!(lifecycle.next_refresh_id())))?;
             }
@@ -220,7 +229,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let file = uri_to_path(uri);
             ov.save_document(&file);
             conv.invalidate(&file);
-            if let Some(ref root) = workspace_root_of(mr, Path::new(&file)) {
+            if let Some(ref root) = workspace_root_of(mr, &lifecycle.reindex, Path::new(&file)) {
                 // Not again when the watched-file event for this save already started the check of this text.
                 if lifecycle.flycheck.mark_saved_for_check(Path::new(&file)) {
                     lifecycle.flycheck.trigger_check(root);
@@ -245,6 +254,9 @@ pub fn dispatch_lsp_message<W: Write>(
 
         "workspace/didChangeWorkspaceFolders" => {
             mr.handle_did_change_workspace_folders(&msg);
+            for folder in msg["params"]["event"]["added"].as_array().into_iter().flatten() {
+                lifecycle.reindex.index_if_missing(Path::new(&uri_to_path(folder["uri"].as_str().unwrap_or(""))));
+            }
             return Ok(true);
         }
 
@@ -256,7 +268,7 @@ pub fn dispatch_lsp_message<W: Write>(
             for change in msg["params"]["changes"].as_array().into_iter().flatten() {
                 let file = uri_to_path(change["uri"].as_str().unwrap_or(""));
                 let p = Path::new(&file);
-                if let Some(root) = workspace_root_of(mr, p) {
+                if let Some(root) = workspace_root_of(mr, &lifecycle.reindex, p) {
                     lifecycle.reindex.trigger_for_change(&root, p);
                     if super::reindex::is_checked_source(&root, p) && lifecycle.flycheck.mark_changed_for_check(p) && !to_check.contains(&root) {
                         to_check.push(root);

@@ -43,6 +43,8 @@ pub struct Reindexer {
     roots: Arc<Mutex<HashMap<PathBuf, RootState>>>,
     /// The roots whose run ended successfully since the server last looked.
     finished: Arc<Mutex<Vec<PathBuf>>>,
+    /// Workspace folders from `initialize`, indexed once the client is `initialized` (its progress then shows).
+    queued: Mutex<Vec<PathBuf>>,
 }
 
 impl Reindexer {
@@ -68,27 +70,52 @@ impl Reindexer {
     /// Builds the first index of `root` when it is a Cargo workspace without one, once per session. In Zed on
     /// hl-order-book-server, never indexed, a click on `NativeExecutor` went nowhere: the index answers navigation,
     /// and nothing built it.
+    /// Roots are keyed canonical, as the workspace keys them (review of 30e62913: a folder given as `/var/…` and its
+    /// files as `/private/var/…` were two roots).
     pub fn index_if_missing(&self, root: &Path) {
-        if needs_first_index(root) && !self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(root) {
+        let root = ridx_format::canonicalize_best_effort(root);
+        if needs_first_index(&root) && !self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&root) {
             crate::lsp::logger::log_info(&format!("no index in {}: indexing it", root.display()));
-            self.start(root, None);
+            self.start(&root, None);
         }
+    }
+
+    /// Keeps a workspace folder from `initialize` for `start_queued`.
+    pub fn queue_first_index(&self, root: &Path) {
+        self.queued.lock().unwrap_or_else(|e| e.into_inner()).push(root.to_path_buf());
+    }
+
+    /// Indexes the folders queued at `initialize` that have no index, now that the client is `initialized`.
+    pub fn start_queued(&self) {
+        let queued = std::mem::take(&mut *self.queued.lock().unwrap_or_else(|e| e.into_inner()));
+        for root in queued {
+            self.index_if_missing(&root);
+        }
+    }
+
+    /// The root indexed this session that holds `file` (canonical), the innermost: during a first run it is in no
+    /// loaded workspace yet, and the nearest `Cargo.toml` above a file is its member crate's.
+    pub fn root_for(&self, file: &Path) -> Option<PathBuf> {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.keys().filter(|r| file.starts_with(r)).max_by_key(|r| r.as_os_str().len()).cloned()
     }
 
     /// Reindexes `root` in the background for the file `changed` on disk (a save, or a watched-file event), when it
     /// has an index, unless the file lies in a build directory or a run that started after it was written already
     /// covers it: Zed reports a save as a watched-file change too, just before `didSave`.
     pub fn trigger_for_change(&self, root: &Path, changed: &Path) {
-        if changed.strip_prefix(root).unwrap_or(changed).components().any(|c| c.as_os_str() == "target") {
+        let (root, changed) = (ridx_format::canonicalize_best_effort(root), ridx_format::canonicalize_best_effort(changed));
+        if changed.strip_prefix(&root).unwrap_or(&changed).components().any(|c| c.as_os_str() == "target") {
             return;
         }
-        // A save while the first index of `root` is built: one more run after it.
-        let first_run = self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(root);
-        if reindex_off() || !(root.join(MANIFEST).is_file() || first_run) {
+        // A root whose first index was asked for this session: a save while it runs is one more run after it, and a
+        // save after a run that failed (a compile error, say) tries again.
+        let first_index_asked = self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&root);
+        if reindex_off() || !(root.join(MANIFEST).is_file() || first_index_asked) {
             return;
         }
-        let written = std::fs::metadata(changed).and_then(|m| m.modified()).ok();
-        self.start(root, written);
+        let written = std::fs::metadata(&changed).and_then(|m| m.modified()).ok();
+        self.start(&root, written);
     }
 
     /// Runs `ridx index root` in the background, for a change written at `written`.
@@ -176,9 +203,13 @@ fn reindex_off() -> bool {
 /// Whether `root` is a Cargo workspace of the user's without an index: not one the toolchain or Cargo's caches hold
 /// (a library's sources opened as a folder).
 fn needs_first_index(root: &Path) -> bool {
-    let s = root.to_string_lossy();
-    let cached = [".cargo/registry/", ".cargo/git/", ".rustup/toolchains/"].iter().any(|c| s.contains(c));
-    !reindex_off() && !cached && root.join("Cargo.toml").is_file() && !root.join(MANIFEST).is_file()
+    !reindex_off() && !is_cached_source(root) && root.join("Cargo.toml").is_file() && !root.join(MANIFEST).is_file()
+}
+
+/// Whether `path` lies in sources the toolchain or Cargo's caches hold, not the user's.
+pub fn is_cached_source(path: &Path) -> bool {
+    let s = path.to_string_lossy();
+    [".cargo/registry/", ".cargo/git/", ".rustup/toolchains/"].iter().any(|c| s.contains(c))
 }
 
 /// This server's own executable when it is `ridx` (a test binary runs no indexing).
@@ -287,5 +318,50 @@ mod tests {
         r.roots.lock().unwrap().entry(PathBuf::from("/a")).or_default().running_since = Some(SystemTime::now());
         r.roots.lock().unwrap().entry(PathBuf::from("/idle")).or_default();
         assert_eq!(r.running(), [PathBuf::from("/a"), PathBuf::from("/b")]);
+
+        r.queue_first_index(dir.path());
+        r.start_queued();
+        assert!(r.queued.lock().unwrap().is_empty(), "the folders of `initialize` are taken at `initialized`");
+    }
+
+    /// Review of 30e62913: during a first run a save in a member crate went to that crate, a save in an unindexed second
+    /// root to the indexed first one, and a root reached through a symlink was a second root.
+    #[test]
+    fn test_a_saved_file_goes_to_the_root_being_indexed() {
+        use crate::lsp::dispatch::workspace_root_of;
+        let dir = tempfile::tempdir().unwrap();
+        let base = ridx_format::canonicalize_best_effort(dir.path());
+        let (a, b) = (base.join("a"), base.join("b"));
+        for (root, member) in [(&a, "core"), (&b, "server")] {
+            std::fs::create_dir_all(root.join(member).join("src")).unwrap();
+            std::fs::write(root.join("Cargo.toml"), "[workspace]\n").unwrap();
+            std::fs::write(root.join(member).join("Cargo.toml"), "[package]\n").unwrap();
+            std::fs::write(root.join(member).join("src/lib.rs"), "pub fn f() {}\n").unwrap();
+        }
+        let a_src = a.join("core/src/lib.rs");
+        let mut w = ridx_format::writer::IndexWriter::new("core", "0.1.0");
+        w.get_or_insert_file(a_src.to_str().unwrap());
+        std::fs::create_dir_all(a.join("target/ridx")).unwrap();
+        w.write_to(&mut std::fs::File::create(a.join("target/ridx/core.ridx")).unwrap()).unwrap();
+        let mut mr = crate::lsp::workspace::MultiRootWorkspace::new();
+        mr.open_from_folders(&[a.clone(), b.clone()]);
+        assert_eq!(mr.len(), 1, "only the indexed root opens");
+        let loaded = mr.all_workspaces().next().and_then(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort);
+
+        let r = Reindexer::new();
+        let b_src = b.join("server/src/lib.rs");
+        assert_eq!(workspace_root_of(&mr, &r, &b_src), Some(b.join("server")), "nothing indexes b: its nearest Cargo.toml");
+        r.roots.lock().unwrap().entry(b.clone()).or_default().running_since = Some(SystemTime::now());
+        assert_eq!(workspace_root_of(&mr, &r, &b_src), Some(b.clone()), "b's first run: b, not its member crate");
+        assert_eq!(r.root_for(&b_src), Some(b.clone()));
+        let a_root = workspace_root_of(&mr, &r, &a_src).unwrap();
+        assert!(a_root.starts_with(&a) && loaded.is_none_or(|l| l == a_root), "a file of a stays with a: {a_root:?}");
+
+        #[cfg(unix)]
+        {
+            let link = base.join("link");
+            std::os::unix::fs::symlink(&b, &link).unwrap();
+            assert_eq!(workspace_root_of(&mr, &r, &link.join("server/src/lib.rs")), Some(b.clone()), "one root through a symlink");
+        }
     }
 }
