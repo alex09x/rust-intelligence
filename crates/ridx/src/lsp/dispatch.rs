@@ -48,6 +48,38 @@ pub(crate) fn reload_changed_index<W: Write>(
     for ws in mr.all_workspaces_mut() {
         any_reloaded |= sync_reloaded_index(ws, ov);
     }
+    refresh_after_load(writer, lifecycle, any_reloaded)
+}
+
+/// Loads what the background runs of `finished` built: a root indexed for the first time joins the workspace (it
+/// could not be opened without an index), the others reload.
+pub(crate) fn load_finished_index<W: Write>(
+    writer: &mut W,
+    lifecycle: &mut LifecycleManager,
+    mr: &mut MultiRootWorkspace,
+    ov: &mut crate::overlay::OverlayManager,
+    finished: &[PathBuf],
+) -> io::Result<()> {
+    // `add_root` keeps a root it already has. The buffers opened before take the new index as their base, as a reload
+    // rebases them: else each read as edited since and answered nothing.
+    let mut added = false;
+    for root in finished {
+        if mr.add_root(root.clone()) {
+            added = true;
+            if let Some(ws) = mr.all_workspaces().last() {
+                super::rebase_open_buffers(ws, ov);
+            }
+        }
+    }
+    if added {
+        super::logger::log_info(&format!("loaded the first index of {}", finished.iter().map(|r| r.display().to_string()).collect::<Vec<_>>().join(", ")));
+    }
+    refresh_after_load(writer, lifecycle, added)?;
+    reload_changed_index(writer, lifecycle, mr, ov)
+}
+
+/// After an index is loaded: what came from the one before is dropped and the client asked to fetch it again.
+fn refresh_after_load<W: Write>(writer: &mut W, lifecycle: &mut LifecycleManager, any_reloaded: bool) -> io::Result<()> {
     if any_reloaded {
         lifecycle.conv.clear();
         super::hierarchy::clear_impl_table_cache();
@@ -111,6 +143,9 @@ pub fn dispatch_lsp_message<W: Write>(
                         mr.clear();
                     }
                     mr.open_from_folders(&folders);
+                    for folder in &folders {
+                        lifecycle.reindex.index_if_missing(folder);
+                    }
                 } else if index_path.is_none() && mr.is_empty() {
                     if let Ok(cur) = std::env::current_dir() {
                         mr.add_root(cur);

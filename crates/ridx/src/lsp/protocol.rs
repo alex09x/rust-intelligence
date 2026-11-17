@@ -256,7 +256,6 @@ pub fn send_log_message<W: Write>(writer: &mut W, msg_type: i32, message: &str) 
     send_response(writer, &notif)
 }
 
-#[allow(dead_code)]
 pub fn send_work_done_progress<W: Write>(writer: &mut W, token: &Value, kind: &str, title: Option<&str>, message: Option<&str>, percentage: Option<u32>) -> io::Result<()> {
     let mut value = serde_json::json!({
         "kind": kind

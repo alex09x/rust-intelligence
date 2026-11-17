@@ -18,6 +18,7 @@ pub mod editing;
 pub mod error;
 pub mod handlers;
 pub mod hierarchy;
+mod index_progress;
 pub mod intelligence;
 pub mod lifecycle;
 pub mod logger;
@@ -47,9 +48,15 @@ use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+/// Takes the text the index compiled as the base of each open buffer it describes: what was typed since is mapped onto
+/// it.
+pub(crate) fn rebase_open_buffers(ws: &WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) {
+    overlay_mgr.rebase_on_index(|file| ws.units_agree_on_source(file).then(|| ws.source_hash_for_file(file)).flatten());
+}
+
 pub(crate) fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) -> bool {
     if let Ok(true) = ws.reload_manifest_if_modified() {
-        overlay_mgr.rebase_on_index(|file| ws.units_agree_on_source(file).then(|| ws.source_hash_for_file(file)).flatten());
+        rebase_open_buffers(ws, overlay_mgr);
         true
     } else {
         false
@@ -124,10 +131,15 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         }
     })?;
 
+    let mut index_progress = index_progress::IndexProgress::default();
     loop {
         // A background reindex ended: load it now, rather than on the client's next request.
-        if lifecycle.reindex.take_finished() {
-            dispatch::reload_changed_index(&mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr)?;
+        let finished = lifecycle.reindex.take_finished();
+        if !finished.is_empty() {
+            dispatch::load_finished_index(&mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &finished)?;
+        }
+        if lifecycle.client_work_done_progress && !lifecycle.is_shutdown() {
+            index_progress.sync(&mut writer, lifecycle.reindex.running(), || lifecycle.next_refresh_id())?;
         }
         while let Ok((gen, diag)) = rx_diag.try_recv() {
             dispatch::dispatch_lsp_message(

@@ -34,6 +34,7 @@ pub struct LifecycleManager {
     client_refresh_diagnostics: bool,
     client_resolve_code_action_edit: bool,
     client_watches_files: bool,
+    pub client_work_done_progress: bool,
     /// The `workspace/*/refresh` requests the client supports, asked for when the index is reloaded.
     client_refresh_methods: Vec<&'static str>,
     ra_client_commands: crate::lsp::presentation::lens::RaClientCommands,
@@ -58,6 +59,7 @@ impl LifecycleManager {
             client_refresh_diagnostics: false,
             client_resolve_code_action_edit: false,
             client_watches_files: false,
+            client_work_done_progress: false,
             client_refresh_methods: Vec::new(),
             ra_client_commands: Default::default(),
             refresh_counter: AtomicU64::new(0),
@@ -141,6 +143,7 @@ impl LifecycleManager {
             .is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some("edit")));
         self.ra_client_commands = crate::lsp::presentation::lens::RaClientCommands::from_initialize(&msg["params"]);
         self.client_watches_files = msg["params"]["capabilities"]["workspace"]["didChangeWatchedFiles"]["dynamicRegistration"].as_bool().unwrap_or(false);
+        self.client_work_done_progress = msg["params"]["capabilities"]["window"]["workDoneProgress"].as_bool().unwrap_or(false);
         self.client_refresh_methods = crate::lsp::reindex::refresh_methods(&msg["params"]["capabilities"]["workspace"]);
         crate::lsp::intelligence::owner_completion::item::set_label_details_support(&msg["params"]["capabilities"]);
         crate::lsp::intelligence::completion_call::set_client(&msg["params"]);

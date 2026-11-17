@@ -12,18 +12,20 @@
 //! it once `ridx index` has run again, which the server then picks up by itself (the manifest changes on disk). So a
 //! save in an indexed workspace, or a source file changed outside the editor (a checkout, a pull), starts
 //! `ridx index <root>` in the background: one run per root at a time, the changes made while it runs folded into one
-//! more run after it. `RIDX_REINDEX_ON_SAVE=0` turns it off.
+//! more run after it. A Cargo workspace opened without an index gets its first one the same way, as rust-analyzer
+//! analyzes any project it opens. `RIDX_REINDEX_ON_SAVE=0` turns both off.
 
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 /// Where a background run writes its output, under the workspace root.
 const REINDEX_LOG: &str = "target/ridx/reindex.log";
+/// What a finished `ridx index` publishes: a root without it has no index.
+const MANIFEST: &str = "target/ridx/ridx_manifest.json";
 
 #[derive(Default)]
 struct RootState {
@@ -39,8 +41,8 @@ struct RootState {
 #[derive(Default)]
 pub struct Reindexer {
     roots: Arc<Mutex<HashMap<PathBuf, RootState>>>,
-    /// Runs that ended successfully since the server last looked.
-    finished: Arc<AtomicU64>,
+    /// The roots whose run ended successfully since the server last looked.
+    finished: Arc<Mutex<Vec<PathBuf>>>,
 }
 
 impl Reindexer {
@@ -48,10 +50,29 @@ impl Reindexer {
         Self::default()
     }
 
-    /// Whether a run ended successfully since the last call: the server then loads the new index and asks the
-    /// client to fetch again what came from the old one (the watched-file events of a run arrive while it runs).
-    pub fn take_finished(&self) -> bool {
-        self.finished.swap(0, Ordering::SeqCst) > 0
+    /// The roots whose run ended successfully since the last call: the server then loads the new index (a first one
+    /// as a new root) and asks the client to fetch again what came from the old one (the watched-file events of a
+    /// run arrive while it runs).
+    pub fn take_finished(&self) -> Vec<PathBuf> {
+        std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
+    }
+
+    /// The roots being indexed now, for the client's progress.
+    pub fn running(&self) -> Vec<PathBuf> {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        let mut running: Vec<PathBuf> = roots.iter().filter(|(_, st)| st.running_since.is_some()).map(|(r, _)| r.clone()).collect();
+        running.sort();
+        running
+    }
+
+    /// Builds the first index of `root` when it is a Cargo workspace without one, once per session. In Zed on
+    /// hl-order-book-server, never indexed, a click on `NativeExecutor` went nowhere: the index answers navigation,
+    /// and nothing built it.
+    pub fn index_if_missing(&self, root: &Path) {
+        if needs_first_index(root) && !self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(root) {
+            crate::lsp::logger::log_info(&format!("no index in {}: indexing it", root.display()));
+            self.start(root, None);
+        }
     }
 
     /// Reindexes `root` in the background for the file `changed` on disk (a save, or a watched-file event), when it
@@ -61,14 +82,17 @@ impl Reindexer {
         if changed.strip_prefix(root).unwrap_or(changed).components().any(|c| c.as_os_str() == "target") {
             return;
         }
-        let written = std::fs::metadata(changed).and_then(|m| m.modified()).ok();
-        self.request(root, written);
-    }
-
-    fn request(&self, root: &Path, written: Option<SystemTime>) {
-        if std::env::var("RIDX_REINDEX_ON_SAVE").is_ok_and(|v| v == "0") || !root.join("target/ridx/ridx_manifest.json").is_file() {
+        // A save while the first index of `root` is built: one more run after it.
+        let first_run = self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(root);
+        if reindex_off() || !(root.join(MANIFEST).is_file() || first_run) {
             return;
         }
+        let written = std::fs::metadata(changed).and_then(|m| m.modified()).ok();
+        self.start(root, written);
+    }
+
+    /// Runs `ridx index root` in the background, for a change written at `written`.
+    fn start(&self, root: &Path, written: Option<SystemTime>) {
         let Some(exe) = ridx_exe() else { return };
         {
             let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
@@ -92,12 +116,13 @@ impl Reindexer {
             let started = std::time::Instant::now();
             // The run's output goes to `target/ridx/reindex.log`: why a crate did not build stays readable.
             let log = root.join(REINDEX_LOG);
+            let _ = log.parent().map(std::fs::create_dir_all);
             let out = std::fs::File::create(&log).map_or_else(|_| Stdio::null(), Stdio::from);
             let ok = Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(out).status().is_ok_and(|s| s.success());
             let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
             crate::lsp::logger::log_info(&msg);
             if ok {
-                finished.fetch_add(1, Ordering::SeqCst);
+                finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             }
             let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
             let st = roots.entry(root.clone()).or_default();
@@ -142,6 +167,18 @@ pub fn refresh_methods(workspace_caps: &Value) -> Vec<&'static str> {
         .filter(|(cap, _)| workspace_caps[cap]["refreshSupport"].as_bool() == Some(true))
         .map(|(_, method)| method)
         .collect()
+}
+
+fn reindex_off() -> bool {
+    std::env::var("RIDX_REINDEX_ON_SAVE").is_ok_and(|v| v == "0")
+}
+
+/// Whether `root` is a Cargo workspace of the user's without an index: not one the toolchain or Cargo's caches hold
+/// (a library's sources opened as a folder).
+fn needs_first_index(root: &Path) -> bool {
+    let s = root.to_string_lossy();
+    let cached = [".cargo/registry/", ".cargo/git/", ".rustup/toolchains/"].iter().any(|c| s.contains(c));
+    !reindex_off() && !cached && root.join("Cargo.toml").is_file() && !root.join(MANIFEST).is_file()
 }
 
 /// This server's own executable when it is `ridx` (a test binary runs no indexing).
@@ -220,8 +257,35 @@ mod tests {
         assert_eq!(methods(serde_json::json!({ "inlayHint": { "refreshSupport": true }, "codeLens": { "refreshSupport": false } })), ["workspace/inlayHint/refresh"]);
         assert!(methods(serde_json::json!({})).is_empty());
         let r = Reindexer::new();
-        assert!(!r.take_finished());
-        r.finished.fetch_add(2, Ordering::SeqCst);
-        assert!(r.take_finished() && !r.take_finished(), "taken once");
+        assert!(r.take_finished().is_empty());
+        r.finished.lock().unwrap().extend([PathBuf::from("/w"), PathBuf::from("/v")]);
+        assert_eq!(r.take_finished(), [PathBuf::from("/w"), PathBuf::from("/v")]);
+        assert!(r.take_finished().is_empty(), "taken once");
+    }
+
+    /// In Zed on hl-order-book-server, never indexed, a click on `NativeExecutor` went nowhere: a Cargo workspace
+    /// without an index gets its first one, not a folder without `Cargo.toml`, nor a library's sources in a cache.
+    #[test]
+    fn test_a_cargo_workspace_without_an_index_is_indexed() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        assert!(!needs_first_index(root), "no Cargo.toml");
+        std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\n").unwrap();
+        assert!(needs_first_index(root));
+        let registry = root.join(".cargo/registry/src/index.crates.io-1/serde-1.0.0");
+        std::fs::create_dir_all(&registry).unwrap();
+        std::fs::write(registry.join("Cargo.toml"), "[package]\nname = \"serde\"\n").unwrap();
+        assert!(!needs_first_index(&registry), "a dependency's sources");
+        std::fs::create_dir_all(root.join("target/ridx")).unwrap();
+        std::fs::write(root.join(MANIFEST), "{}").unwrap();
+        assert!(!needs_first_index(root), "indexed");
+
+        let r = Reindexer::new();
+        r.index_if_missing(dir.path());
+        assert!(r.running().is_empty(), "the test binary runs no indexing");
+        r.roots.lock().unwrap().entry(PathBuf::from("/b")).or_default().running_since = Some(SystemTime::now());
+        r.roots.lock().unwrap().entry(PathBuf::from("/a")).or_default().running_since = Some(SystemTime::now());
+        r.roots.lock().unwrap().entry(PathBuf::from("/idle")).or_default();
+        assert_eq!(r.running(), [PathBuf::from("/a"), PathBuf::from("/b")]);
     }
 }
