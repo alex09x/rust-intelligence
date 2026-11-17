@@ -249,3 +249,26 @@ pub mod wire;
 //- /base/net/wire.rs
 pub fn encode(x: u8) -> Vec<u8> { vec![x] }
      //^^^^^^
+
+=== module_named_like_its_crate
+//- /app/lib.rs crate:app deps:shapes
+pub fn unit() -> shapes::sha$0pes::Square { shapes::shapes::Square }
+//- /shapes/lib.rs crate:shapes
+pub mod shapes;
+//- /shapes/shapes.rs
+//^file
+pub struct Square;
+
+=== crate_root_in_a_custom_lib_path
+//- /app/lib.rs crate:app deps:base
+pub fn f() -> u8 { ba$0se::ONE }
+//- /base/custom.rs crate:base
+//^file
+pub const ONE: u8 = 1;
+
+=== renamed_dependency_name_opens_its_root
+//- /app/lib.rs crate:app deps:engine=base
+pub fn start() -> u32 { eng$0ine::ignite() }
+//- /base/lib.rs crate:base
+//^file
+pub fn ignite() -> u32 { 1 }

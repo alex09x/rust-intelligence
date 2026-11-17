@@ -17,8 +17,18 @@ pub(super) fn resolve_backing_module_file(ws: &WorkspaceIndex, def: &ridx_format
     let mod_name = def.name;
     // A crate's root (`base` of `base::ONE`): its file, from the start, as rust-analyzer opens it (it went to the line
     // of the first item).
-    let crate_root = def.reader_idx.and_then(|i| ws.readers().get(i)).is_some_and(|r| r.crate_name() == def.name && def.path == def.name);
-    if def.kind == DefKind::Mod && crate_root && decl_file.file_stem().is_some_and(|s| s == "lib" || s == "main") {
+    // The root is the entry its crate keys at `""`, in whatever file `[lib] path` names. A `pub mod foo;` of crate `foo`
+    // shares the root's name and path but not its span: it opens `foo.rs` below (review of 14e0f41f).
+    // A dependency's root reached from another crate (`engine::…` of a renamed `base`) is recorded in that crate's
+    // index: the root compared is the one of the crate the module names.
+    let is_root_of = |r: &ridx_format::IndexReader<memmap2::Mmap>| {
+        r.find_definition_by_path("").is_some_and(|root| {
+            let s = root.span();
+            s.start_line() == def.start_line && s.start_col() == def.start_col && r.get_file(s.file_id()) == def.file
+        })
+    };
+    let crate_root = def.reader_idx.and_then(|i| ws.readers().get(i)).is_some_and(is_root_of) || ws.readers().iter().any(|r| r.crate_name() == def.name && is_root_of(r));
+    if def.kind == DefKind::Mod && crate_root {
         return Some(decl_file.to_path_buf());
     }
     if def.kind == DefKind::Mod {
