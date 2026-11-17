@@ -357,7 +357,14 @@ fn test_case_a_dependency_or_sysroot_crate_name_opens_its_root() {
     let ext = def_at("    ext_service::external_compute()", "ext_service");
     assert!(ext["uri"].as_str().is_some_and(|u| u.ends_with("ext_service-0.5.0/src/lib.rs")), "{ext}");
     assert_eq!((ext["range"]["start"]["line"].clone(), ext["range"]["start"]["character"].clone()), (json!(0), json!(0)), "{ext}");
+    // The whole range at the file's start: 54d1023c gave `std` a start at line 0 but the module's end.
+    let at_start = json!({ "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } });
     let std_root = def_at("    std::mem::size_of", "std");
     assert!(std_root["uri"].as_str().is_some_and(|u| u.ends_with("library/std/src/lib.rs")), "{std_root}");
-    assert_eq!(std_root["range"]["start"]["line"], json!(0), "{std_root}");
+    assert_eq!(std_root["range"], at_start, "{std_root}");
+    // A renamed registry-style dependency: no crate is named `tool_alias`, so the module comes from the reference,
+    // with the full path, while the dependency records `src/lib.rs` (54d1023c opened past its header).
+    let renamed = def_at("    tool_alias::tool_compute()", "tool_alias");
+    assert!(renamed["uri"].as_str().is_some_and(|u| u.ends_with("ext_tool-0.1.0/src/lib.rs")), "{renamed}");
+    assert_eq!(renamed["range"], at_start, "{renamed}");
 }

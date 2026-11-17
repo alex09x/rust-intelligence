@@ -8,3 +8,4 @@ core_lib = { path = "../core_lib" }
 calc_v1 = { package = "calc", path = "../../../_vendor/calc_v1" }
 calc_v2 = { package = "calc", path = "../../../_vendor/calc_v2" }
 ext_service = { path = "../../../_vendor/.cargo/registry/src/ext_service-0.5.0" }
+tool_alias = { package = "ext_tool", path = "../../../_vendor/.cargo/registry/src/ext_tool-0.1.0" }

@@ -33,7 +33,7 @@ pub(super) fn resolve_backing_module_file(ws: &WorkspaceIndex, def: &ridx_format
             let s = root.span();
             let rel = std::path::Path::new(r.get_file(s.file_id()));
             let file = match ws.source_root_at(idx).or(ws.workspace_root()) {
-                Some(base) if rel.is_relative() && !rel.starts_with("library/") => ridx_format::join_resolving_overlap(base, rel),
+                Some(base) if rel.is_relative() && !sysroot => ridx_format::join_resolving_overlap(base, rel),
                 _ => rel.to_path_buf(),
             };
             s.start_line() == def.start_line && s.start_col() == def.start_col && same_file(&super::type_definition_parse::on_disk(file), decl_file)

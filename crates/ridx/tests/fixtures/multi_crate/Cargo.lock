@@ -10,6 +10,7 @@ dependencies = [
  "calc 2.0.0",
  "core_lib",
  "ext_service",
+ "ext_tool",
 ]
 
 [[package]]
@@ -27,3 +28,7 @@ version = "0.1.0"
 [[package]]
 name = "ext_service"
 version = "0.5.0"
+
+[[package]]
+name = "ext_tool"
+version = "0.1.0"

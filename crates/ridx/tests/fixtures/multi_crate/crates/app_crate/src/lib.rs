@@ -55,3 +55,7 @@ pub fn invoke_reexported_thing() -> u32 {
 pub fn sysroot_crate_root() -> usize {
     std::mem::size_of::<u8>()
 }
+
+pub fn invoke_renamed_external() -> u32 {
+    tool_alias::tool_compute()
+}
