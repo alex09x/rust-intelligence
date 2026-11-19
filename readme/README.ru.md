@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -155,7 +155,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Ссылки | `references`, `documentHighlight` |
 | Подсказки | `hover`, `completion` (с автоимпортом), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | Иерархии | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| Рефакторинг | `prepareRename`, `rename`, `codeAction` (правки, проверенные компиляцией), `executeCommand` |
+| Рефакторинг | `prepareRename`, `rename`, `codeAction` (правки, не ломающие компиляцию), `executeCommand` |
 | Форматирование | `formatting`, `rangeFormatting` |
 | Символы | `documentSymbol`, `workspace/symbol` |
 | Диагностика | `publishDiagnostics` из фонового `cargo check` при сохранении, pull-диагностика |
@@ -171,7 +171,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -187,12 +187,12 @@ rustc и так на каждом `cargo check` разрешает все име
   как обычно, так что сама проверка не меняется.
 - **Зависимости индексируются один раз на машину.** Шард зависимости кладётся в хранилище с адресацией по
   содержимому, с ключом из крейта, версии, целевой платформы, флагов cfg и хэшей того, с чем он собран; если
-  там уже есть годный шард, драйвер пропускает крейт. Проекты и worktree делят эти шарды, а `std`, `core`
+  там уже есть годный шард, драйвер не извлекает крейт заново. Проекты и worktree делят эти шарды, а `std`, `core`
   и `alloc` индексируются один раз на тулчейн.
 - **Чтение — это отображение в память, а не разбор.** Шард v5 — little-endian, записи фиксированного размера
-  с выравниванием по 8 байтам: пул строк, файлы (16 B), определения (40 B) с хэш-индексом FNV-1a, ссылки,
+  в секциях, выровненных по 8 байтам: пул строк, файлы (16 B), определения (40 B) с хэш-индексом FNV-1a, ссылки,
   отсортированные по позиции (48 B), с хэш-индексом целей, и таблицы типов, impl, полей и обобщённых
-  параметров. Поиск — хэш-проба или двоичный поиск по отображённым страницам. Страницы, которые никто не
+  параметров. Поиск — хэш-проба, двоичный поиск или просмотр отображённых страниц. Страницы, которые никто не
   запрашивал, не читаются вовсе, а остальные ядро может выгрузить при нехватке памяти.
 - **Пересборка инкрементальная и безопасная.** После сохранения сервер переиндексирует в фоне; если
   изменились только исходники воркспейса, он вызывает драйвер на изменённых крейтах напрямую, без Cargo.
@@ -214,8 +214,6 @@ rustc и так на каждом `cargo check` разрешает все име
 - **Windows** пока не поддерживается.
 - **Стандартная библиотека**: навигация и hover в `std`, `core` и `alloc` работают; ссылки на них ищутся
   только в воркспейсе, и переименовать их нельзя.
-- **Входящие вызовы** показывают вызывающего там, где функция вызвана (`name(` или `name::<…>(`); rust-analyzer
-  показывает и функции, переданные как значения, например систему в `add_systems`.
 - `vec![]` считается ссылкой на `Vec`; rust-analyzer так не считает.
 
 ---

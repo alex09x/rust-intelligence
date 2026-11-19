@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -155,7 +155,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Referencias | `references`, `documentHighlight` |
 | Inteligencia | `hover`, `completion` (con importación automática), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | Jerarquías | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| Refactorización | `prepareRename`, `rename`, `codeAction` (asistencias verificadas por compilación), `executeCommand` |
+| Refactorización | `prepareRename`, `rename`, `codeAction` (asistencias seguras para la compilación), `executeCommand` |
 | Formato | `formatting`, `rangeFormatting` |
 | Símbolos | `documentSymbol`, `workspace/symbol` |
 | Diagnósticos | `publishDiagnostics` de un `cargo check` en segundo plano al guardar, diagnósticos pull |
@@ -171,7 +171,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -188,12 +188,12 @@ guarda esas respuestas en lugar de calcularlas de nuevo.
   comprobación en sí no cambia.
 - **Las dependencias se indexan una vez por máquina.** El shard de una dependencia va a un almacén
   direccionado por contenido, con una clave formada por crate, versión, plataforma de destino, flags de cfg
-  y los resúmenes de aquello contra lo que se compiló; si ahí hay un shard válido, el driver salta el crate.
+  y los resúmenes de aquello contra lo que se compiló; si ahí hay un shard válido, el driver no vuelve a extraer el crate.
   Proyectos y worktrees comparten esos shards, y `std`, `core` y `alloc` se indexan una vez por toolchain.
-- **Leer es mapear, no analizar.** El shard v5 es little-endian con registros de tamaño fijo alineados a 8
-  bytes: un pool de cadenas, archivos (16 B), definiciones (40 B) con un índice hash FNV-1a, referencias
+- **Leer es mapear, no analizar.** El shard v5 es little-endian con registros de tamaño fijo en secciones
+  alineadas a 8 bytes: un pool de cadenas, archivos (16 B), definiciones (40 B) con un índice hash FNV-1a, referencias
   ordenadas por posición (48 B) con un índice hash de destinos, y tablas de tipos, impl, campos y genéricos.
-  Una búsqueda es un sondeo hash o una búsqueda binaria sobre páginas mapeadas. Las páginas que nadie pide
+  Una búsqueda es un sondeo hash, una búsqueda binaria o un recorrido sobre páginas mapeadas. Las páginas que nadie pide
   nunca se leen, y el kernel puede descartar las demás si falta memoria.
 - **Las reconstrucciones son incrementales y seguras.** Tras guardar, el servidor reindexa en segundo
   plano; si solo cambiaron fuentes del workspace, llama al driver directamente sobre los crates cambiados,
@@ -216,8 +216,6 @@ El diseño completo, con la estructura del shard y dónde vive cada parte en el 
 - **Windows** aún no está soportado.
 - **Biblioteca estándar**: la navegación y el hover hacia `std`, `core` y `alloc` funcionan; las referencias a
   ellas se buscan solo en el workspace y no se pueden renombrar.
-- **Llamadas entrantes** lista a quien llama donde la función se invoca (`name(` o `name::<…>(`); rust-analyzer
-  también lista funciones pasadas como valores, como un sistema dado a `add_systems`.
 - `vec![]` cuenta como referencia a `Vec`; rust-analyzer no lo cuenta.
 
 ---

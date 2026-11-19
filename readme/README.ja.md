@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> これはコミット [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
+> これはコミット [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -151,7 +151,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | 参照 | `references`, `documentHighlight` |
 | インテリジェンス | `hover`, `completion` (自動インポート付き), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | 階層 | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| リファクタリング | `prepareRename`, `rename`, `codeAction` (コンパイルで検証済みのアシスト), `executeCommand` |
+| リファクタリング | `prepareRename`, `rename`, `codeAction` (コンパイルを壊さないアシスト), `executeCommand` |
 | フォーマット | `formatting`, `rangeFormatting` |
 | シンボル | `documentSymbol`, `workspace/symbol` |
 | 診断 | 保存時のバックグラウンド `cargo check` による `publishDiagnostics`、プル型診断 |
@@ -167,7 +167,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -183,12 +183,12 @@ rustc は `cargo check` のたびに、すべての名前を解決し、すべ�
   項目です。その後コンパイルは通常どおり続くので、チェック自体は変わりません。
 - **依存クレートはマシンごとに一度だけインデックスされます。** 依存のシャードは内容アドレス方式のストアに
   置かれ、キーはクレート、バージョン、ターゲット、cfg フラグ、ビルド時に参照した成果物のダイジェストから
-  作られます。有効なシャードがあればドライバーはそのクレートをスキップします。プロジェクトや worktree は
+  作られます。有効なシャードがあればドライバーはそのクレートを再抽出しません。プロジェクトや worktree は
   これらのシャードを共有し、`std`、`core`、`alloc` はツールチェーンごとに一度だけインデックスされます。
 - **読み込みはパースではなくマッピングです。** v5 シャードはリトルエンディアンで、8 バイト境界に揃えた
-  固定長レコードからなります。文字列プール、ファイル(16 B)、FNV-1a ハッシュインデックス付きの定義
+  セクションに固定長レコードが並びます。文字列プール、ファイル(16 B)、FNV-1a ハッシュインデックス付きの定義
   (40 B)、位置順に並びターゲットのハッシュインデックスを持つ参照(48 B)、そして型、impl、フィールド、
-  ジェネリクスのテーブルです。検索はハッシュの探索か、マップされたページ上の二分探索です。誰も要求しない
+  ジェネリクスのテーブルです。検索は、マップされたページ上でのハッシュの探索、二分探索、または走査です。誰も要求しない
   ページは一度も読まれず、それ以外のページもメモリが逼迫すればカーネルが破棄できます。
 - **再ビルドはインクリメンタルで安全です。** 保存後、サーバーはバックグラウンドで再インデックスします。
   ワークスペースのソースだけが変わった場合は、Cargo を介さず変更されたクレートに直接ドライバーを
@@ -210,8 +210,6 @@ rustc は `cargo check` のたびに、すべての名前を解決し、すべ�
 - **Windows** はまだサポートしていません。
 - **標準ライブラリ**：`std`、`core`、`alloc` へのジャンプとホバーは動作します。それらへの参照はワークスペース内だけを
   検索し、リネームはできません。
-- **着信呼び出し** は関数が呼び出されている箇所（`name(` または `name::<…>(`）の呼び出し元を列挙します。rust-analyzer は
-  `add_systems` に渡すシステムのように、値として渡された関数も列挙します。
 - `vec![]` は `Vec` への参照として数えます。rust-analyzer は数えません。
 
 ---

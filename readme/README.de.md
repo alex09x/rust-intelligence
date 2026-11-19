@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> Dies ist eine Übersetzung der englischen README im Commit [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Dies ist eine Übersetzung der englischen README im Commit [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -154,7 +154,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Referenzen | `references`, `documentHighlight` |
 | Intelligenz | `hover`, `completion` (mit Auto-Import), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | Hierarchien | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| Refactoring | `prepareRename`, `rename`, `codeAction` (per Kompilierung geprüfte Assists), `executeCommand` |
+| Refactoring | `prepareRename`, `rename`, `codeAction` (kompiliersichere Assists), `executeCommand` |
 | Formatierung | `formatting`, `rangeFormatting` |
 | Symbole | `documentSymbol`, `workspace/symbol` |
 | Diagnosen | `publishDiagnostics` aus einem `cargo check` im Hintergrund beim Speichern, Pull-Diagnosen |
@@ -170,7 +170,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -186,13 +186,13 @@ rustc löst ohnehin bei jedem `cargo check` jeden Namen auf, expandiert jedes Ma
   und `use`-Einträge. Danach läuft die Kompilierung normal weiter, der Check selbst bleibt also unverändert.
 - **Abhängigkeiten werden einmal pro Rechner indexiert.** Der Shard einer Abhängigkeit kommt in einen
   inhaltsadressierten Speicher, mit einem Schlüssel aus Crate, Version, Zielplattform, cfg-Flags und den
-  Digests dessen, wogegen sie kompiliert wurde; liegt dort ein gültiger Shard, überspringt der Treiber das
-  Crate. Projekte und Worktrees teilen sich diese Shards, und `std`, `core` und `alloc` werden einmal pro
+  Digests dessen, wogegen sie kompiliert wurde; liegt dort ein gültiger Shard, extrahiert der Treiber das
+  Crate nicht erneut. Projekte und Worktrees teilen sich diese Shards, und `std`, `core` und `alloc` werden einmal pro
   Toolchain indexiert.
-- **Lesen heißt abbilden, nicht parsen.** Der v5-Shard ist Little-Endian mit Datensätzen fester Größe,
-  ausgerichtet auf 8 Byte: ein String-Pool, Dateien (16 B), Definitionen (40 B) mit FNV-1a-Hashindex, nach
+- **Lesen heißt abbilden, nicht parsen.** Der v5-Shard ist Little-Endian mit Datensätzen fester Größe in
+  Abschnitten, die auf 8 Byte ausgerichtet sind: ein String-Pool, Dateien (16 B), Definitionen (40 B) mit FNV-1a-Hashindex, nach
   Position sortierte Referenzen (48 B) mit Hashindex der Ziele sowie Tabellen für Typen, Impls, Felder und
-  Generics. Eine Abfrage ist eine Hash-Probe oder eine binäre Suche über abgebildete Seiten. Seiten, nach
+  Generics. Eine Abfrage ist eine Hash-Probe, eine binäre Suche oder ein Durchlauf über abgebildete Seiten. Seiten, nach
   denen niemand fragt, werden nie gelesen, und die übrigen kann der Kernel bei Speicherdruck verwerfen.
 - **Neubauten sind inkrementell und sicher.** Nach dem Speichern indexiert der Server im Hintergrund neu;
   haben sich nur Quellen des Workspace geändert, ruft er den Treiber direkt für die geänderten Crates auf,
@@ -215,8 +215,6 @@ Das ganze Design, mit dem Aufbau eines Shards und wo jeder Teil im Code liegt:
 - **Windows** wird noch nicht unterstützt.
 - **Standardbibliothek**: Navigation und Hover nach `std`, `core` und `alloc` funktionieren; Referenzen darauf
   werden nur im Workspace gesucht, und sie lassen sich nicht umbenennen.
-- **Eingehende Aufrufe** listen einen Aufrufer dort, wo die Funktion aufgerufen wird (`name(` oder `name::<…>(`);
-  rust-analyzer listet auch als Wert übergebene Funktionen, etwa ein an `add_systems` übergebenes System.
 - `vec![]` zählt als Referenz auf `Vec`; rust-analyzer zählt es nicht.
 
 ---

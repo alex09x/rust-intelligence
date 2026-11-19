@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -151,7 +151,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | 참조 | `references`, `documentHighlight` |
 | 인텔리전스 | `hover`, `completion` (자동 임포트 포함), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | 계층 | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| 리팩터링 | `prepareRename`, `rename`, `codeAction` (컴파일로 검증한 어시스트), `executeCommand` |
+| 리팩터링 | `prepareRename`, `rename`, `codeAction` (컴파일을 깨뜨리지 않는 어시스트), `executeCommand` |
 | 서식 | `formatting`, `rangeFormatting` |
 | 심볼 | `documentSymbol`, `workspace/symbol` |
 | 진단 | 저장 시 백그라운드 `cargo check`의 `publishDiagnostics`, 풀 방식 진단 |
@@ -167,7 +167,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -183,12 +183,12 @@ rustc는 이미 `cargo check`를 할 때마다 모든 이름을 해석하고, �
   자체는 달라지지 않습니다.
 - **의존성은 머신당 한 번만 인덱싱됩니다.** 의존성의 샤드는 내용 주소 기반 저장소에 들어가며, 키는
   크레이트, 버전, 타깃, cfg 플래그, 그리고 컴파일할 때 참조한 산출물의 다이제스트로 만들어집니다. 유효한
-  샤드가 이미 있으면 드라이버는 그 크레이트를 건너뜁니다. 프로젝트와 worktree가 이 샤드를 공유하고,
+  샤드가 이미 있으면 드라이버는 그 크레이트를 다시 추출하지 않습니다. 프로젝트와 worktree가 이 샤드를 공유하고,
   `std`, `core`, `alloc`은 툴체인마다 한 번만 인덱싱됩니다.
-- **읽기는 파싱이 아니라 매핑입니다.** v5 샤드는 리틀 엔디언이며 8바이트로 정렬된 고정 크기 레코드로
-  이루어집니다. 문자열 풀, 파일(16 B), FNV-1a 해시 인덱스가 있는 정의(40 B), 위치순으로 정렬되고 대상
-  해시 인덱스가 있는 참조(48 B), 그리고 타입, impl, 필드, 제네릭 테이블입니다. 조회는 해시 탐색이거나
-  매핑된 페이지 위의 이진 탐색입니다. 아무도 요청하지 않는 페이지는 한 번도 읽히지 않고, 나머지는
+- **읽기는 파싱이 아니라 매핑입니다.** v5 샤드는 리틀 엔디언이며 8바이트로 정렬된 섹션에 고정 크기 레코드가
+  담깁니다. 문자열 풀, 파일(16 B), FNV-1a 해시 인덱스가 있는 정의(40 B), 위치순으로 정렬되고 대상
+  해시 인덱스가 있는 참조(48 B), 그리고 타입, impl, 필드, 제네릭 테이블입니다. 조회는 매핑된 페이지 위의
+  해시 탐색, 이진 탐색 또는 순차 탐색입니다. 아무도 요청하지 않는 페이지는 한 번도 읽히지 않고, 나머지는
   메모리가 부족할 때 커널이 내보낼 수 있습니다.
 - **재빌드는 증분 방식이고 안전합니다.** 저장하면 서버가 백그라운드에서 다시 인덱싱합니다. 워크스페이스
   소스만 바뀌었다면 Cargo 없이 바뀐 크레이트에 드라이버를 직접 호출합니다. 빌드에 실패한 크레이트는
@@ -210,8 +210,6 @@ rustc는 이미 `cargo check`를 할 때마다 모든 이름을 해석하고, �
 - **Windows**는 아직 지원하지 않습니다.
 - **표준 라이브러리**: `std`, `core`, `alloc`으로의 이동과 호버는 동작합니다. 이에 대한 참조는 워크스페이스
   안에서만 찾으며 이름을 바꿀 수 없습니다.
-- **들어오는 호출**은 함수가 호출된 곳(`name(` 또는 `name::<…>(`)의 호출자를 나열합니다. rust-analyzer는
-  `add_systems`에 넘긴 시스템처럼 값으로 전달된 함수도 나열합니다.
 - `vec![]`는 `Vec`에 대한 참조로 셉니다. rust-analyzer는 세지 않습니다.
 
 ---

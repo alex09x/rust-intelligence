@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> هذه ترجمة لملف README الإنجليزي عند الإيداع [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -179,7 +179,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | المراجع | `references`, `documentHighlight` |
 | الذكاء | `hover`, `completion` (مع الاستيراد التلقائي), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | التسلسلات الهرمية | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| إعادة الهيكلة | `prepareRename`, `rename`, `codeAction` (مساعدات مُتحقَّق منها بالترجمة), `executeCommand` |
+| إعادة الهيكلة | `prepareRename`, `rename`, `codeAction` (مساعدات آمنة للترجمة), `executeCommand` |
 | التنسيق | `formatting`, `rangeFormatting` |
 | الرموز | `documentSymbol`, `workspace/symbol` |
 | التشخيصات | `publishDiagnostics` من `cargo check` في الخلفية عند الحفظ، وتشخيصات السحب |
@@ -199,7 +199,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -218,13 +218,13 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
   الـ trait)، والأنواع، وكتل impl، والحقول، والمعاملات العامة، والماكرو، وعناصر `use`. ثم تستمر الترجمة
   كالمعتاد، فلا يتغير الفحص نفسه.
 - **تُفهرس الاعتماديات مرة واحدة لكل جهاز.** تذهب شظية الاعتمادية إلى مخزن معنون بالمحتوى، مفتاحه مؤلف من
-  الـ crate والإصدار والمنصة الهدف وأعلام cfg وبصمات ما تُرجمت مقابله؛ وإذا وُجدت فيه شظية صالحة يتخطى
-  المشغّل الـ crate. تتشارك المشاريع ونسخ worktree هذه الشظايا، وتُفهرس `std` و`core` و`alloc` مرة واحدة
+  الـ crate والإصدار والمنصة الهدف وأعلام cfg وبصمات ما تُرجمت مقابله؛ وإذا وُجدت فيه شظية صالحة لا يعيد
+  المشغّل استخراج الـ crate. تتشارك المشاريع ونسخ worktree هذه الشظايا، وتُفهرس `std` و`core` و`alloc` مرة واحدة
   لكل سلسلة أدوات.
-- **القراءة ربط بالذاكرة لا تحليل.** شظية v5 بترتيب little-endian وسجلاتها ثابتة الحجم ومحاذاة على 8 بايت:
+- **القراءة ربط بالذاكرة لا تحليل.** شظية v5 بترتيب little-endian وسجلاتها ثابتة الحجم في أقسام محاذاة على 8 بايت:
   مجمّع سلاسل نصية، والملفات (16 B)، والتعريفات (40 B) مع فهرس تجزئة FNV-1a، والمراجع مرتبة حسب الموضع
   (48 B) مع فهرس تجزئة للأهداف، وجداول للأنواع وكتل impl والحقول والمعاملات العامة. البحث هو سبر تجزئة أو
-  بحث ثنائي على صفحات مربوطة. الصفحات التي لا يطلبها أحد لا تُقرأ أبدًا، ويمكن للنواة التخلص من غيرها عند
+  بحث ثنائي أو مسح على صفحات مربوطة. الصفحات التي لا يطلبها أحد لا تُقرأ أبدًا، ويمكن للنواة التخلص من غيرها عند
   ضغط الذاكرة.
 - **إعادة البناء تزايدية وآمنة.** بعد الحفظ يعيد الخادم الفهرسة في الخلفية؛ وإذا تغيرت مصادر مساحة العمل
   فقط فإنه يستدعي المشغّل مباشرة على الـ crates المتغيرة دون Cargo. الـ crate الذي يفشل بناؤه يحتفظ بآخر
@@ -245,8 +245,6 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 - **Windows** غير مدعوم بعد.
 - **المكتبة القياسية**: يعمل التنقّل والمرور إلى `std` و`core` و`alloc`؛ ويُبحث عن المراجع إليها داخل مساحة
   العمل فقط، ولا يمكن إعادة تسميتها.
-- **الاستدعاءات الواردة** تسرد المستدعي حيث تُستدعى الدالة (`name(` أو `name::<…>(`)؛ ويسرد rust-analyzer
-  أيضًا الدوال المُمرَّرة كقيم، مثل نظام يُعطى إلى `add_systems`.
 - يُحتسب `vec![]` مرجعًا إلى `Vec`؛ ولا يحتسبه rust-analyzer.
 
 ---

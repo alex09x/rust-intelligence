@@ -1,7 +1,7 @@
-<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
+<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -148,7 +148,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | 引用 | `references`, `documentHighlight` |
 | 智能 | `hover`, `completion` (带自动导入), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | 层次结构 | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| 重构 | `prepareRename`, `rename`, `codeAction` (经编译检查的辅助操作), `executeCommand` |
+| 重构 | `prepareRename`, `rename`, `codeAction` (不破坏编译的辅助操作), `executeCommand` |
 | 格式化 | `formatting`, `rangeFormatting` |
 | 符号 | `documentSymbol`, `workspace/symbol` |
 | 诊断 | 保存时由后台 `cargo check` 产生的 `publishDiagnostics`，拉取式诊断 |
@@ -164,7 +164,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -178,11 +178,11 @@ rustc 在每次 `cargo check` 时本来就会解析所有名称、展开所有�
   (方法调用和字段按 rustc 的解析结果,经过自动解引用和 trait 选择)、类型、impl、字段、泛型、宏和
   `use` 项。随后编译照常进行,检查本身不受影响。
 - **依赖在每台机器上只索引一次。** 依赖的分片存入按内容寻址的存储,键由 crate、版本、目标平台、cfg
-  标志以及其编译所依据的产物摘要组成;存在有效分片时,驱动跳过该 crate。多个项目和 worktree 共享这些
+  标志以及其编译所依据的产物摘要组成;存在有效分片时,驱动不会再次提取该 crate。多个项目和 worktree 共享这些
   分片,`std`、`core` 和 `alloc` 每个工具链只索引一次。
-- **读取就是内存映射,而不是解析。** v5 分片为小端序,记录定长并按 8 字节对齐:字符串池、文件(16 B)、
+- **读取就是内存映射,而不是解析。** v5 分片为小端序,定长记录位于按 8 字节对齐的段中:字符串池、文件(16 B)、
   带 FNV-1a 哈希索引的定义(40 B)、按位置排序并带目标哈希索引的引用(48 B),以及类型、impl、字段和
-  泛型表。查找就是一次哈希探测或在映射页上的二分查找。没人访问的页根本不会被读取,其余的页在内存紧张时
+  泛型表。查找就是在映射页上的一次哈希探测、二分查找或顺序扫描。没人访问的页根本不会被读取,其余的页在内存紧张时
   可由内核换出。
 - **重建是增量且安全的。** 保存后服务器在后台重新索引;如果只有工作区源码变化,它会直接对变化的 crate
   调用驱动,不经过 Cargo。构建失败的 crate 保留上一次成功的分片,另一组 features 或另一个目标平台
@@ -203,8 +203,6 @@ rustc 在每次 `cargo check` 时本来就会解析所有名称、展开所有�
 - 暂不支持 **Windows**。
 - **标准库**：可以跳转到 `std`、`core` 和 `alloc` 并显示悬停；对它们的引用只在工作区内查找，
   且不能重命名。
-- **传入调用** 只在函数被调用处列出调用者（`name(` 或 `name::<…>(`）；rust-analyzer
-  还会列出作为值传递的函数，例如传给 `add_systems` 的系统。
 - `vec![]` 被算作对 `Vec` 的引用；rust-analyzer 不这样算。
 
 ---
