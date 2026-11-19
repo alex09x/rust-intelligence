@@ -1,7 +1,7 @@
-<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
+<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -177,11 +177,35 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-El shard `.ridx` v5 es little-endian, con registros de tamaño fijo alineados a 8 bytes: una cabecera, un pool de
-cadenas, la tabla de archivos (16 B por entrada), definiciones (40 B) con un índice hash FNV-1a, tablas de owner y
-deref para cadenas de receptores, referencias ordenadas por posición (48 B) con un índice hash de destinos, y
-tablas de tipos, impl, campos y genéricos. Las búsquedas son binarias sobre memoria mapeada; nada se parsea al
-heap y los archivos de shard se cierran una vez mapeados.
+rustc ya resuelve cada nombre, expande cada macro e infiere cada tipo en cada `cargo check`. `ridx`
+guarda esas respuestas en lugar de calcularlas de nuevo.
+
+- **El índice lo escribe el compilador.** `ridx index` ejecuta `cargo check` con `ridx-driver` como
+  envoltorio de rustc. Tras el análisis, el driver recorre el HIR y los resultados de la comprobación de
+  tipos de rustc y escribe un shard `.ridx` por crate: definiciones, cada referencia resuelta (llamadas a
+  métodos y campos tal como los resolvió rustc, a través de auto-deref y la selección de traits), tipos,
+  impl, campos, genéricos, macros y elementos `use`. Después la compilación sigue como siempre, así que la
+  comprobación en sí no cambia.
+- **Las dependencias se indexan una vez por máquina.** El shard de una dependencia va a un almacén
+  direccionado por contenido, con una clave formada por crate, versión, plataforma de destino, flags de cfg
+  y los resúmenes de aquello contra lo que se compiló; si ahí hay un shard válido, el driver salta el crate.
+  Proyectos y worktrees comparten esos shards, y `std`, `core` y `alloc` se indexan una vez por toolchain.
+- **Leer es mapear, no analizar.** El shard v5 es little-endian con registros de tamaño fijo alineados a 8
+  bytes: un pool de cadenas, archivos (16 B), definiciones (40 B) con un índice hash FNV-1a, referencias
+  ordenadas por posición (48 B) con un índice hash de destinos, y tablas de tipos, impl, campos y genéricos.
+  Una búsqueda es un sondeo hash o una búsqueda binaria sobre páginas mapeadas. Las páginas que nadie pide
+  nunca se leen, y el kernel puede descartar las demás si falta memoria.
+- **Las reconstrucciones son incrementales y seguras.** Tras guardar, el servidor reindexa en segundo
+  plano; si solo cambiaron fuentes del workspace, llama al driver directamente sobre los crates cambiados,
+  sin Cargo. Un crate que no compila conserva su último shard bueno, y otro conjunto de features u otra
+  plataforma obtiene su propia variante junto a la primera.
+- **El código escrito entre compilaciones** se mapea línea a línea sobre el texto compilado, y el código
+  editado lo analiza un pequeño front-end sin compilador ([`crates/ridx-syntax`](../crates/ridx-syntax):
+  lexer, parser, resolución de nombres, inferencia de tipos) que lee del índice todos los demás tipos y
+  elementos.
+
+El diseño completo, con la estructura del shard y dónde vive cada parte en el código:
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Limitaciones conocidas
 

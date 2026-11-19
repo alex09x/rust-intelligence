@@ -1,7 +1,7 @@
-<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
+<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -170,9 +170,29 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-`.ridx` v5 分片采用小端序、8 字节对齐的定长记录：头部、字符串池、文件表（每项 16 B）、带 FNV-1a 哈希
-索引的定义（40 B）、用于接收者链的 owner 与 deref 表、按位置排序并带目标哈希索引的引用（48 B），以及类型、
-impl、字段和泛型表。查找是在映射内存上的二分查找；不会把任何内容解析到堆中，分片文件映射后即关闭。
+rustc 在每次 `cargo check` 时本来就会解析所有名称、展开所有宏、推断所有类型。`ridx` 保存这些结果,
+而不是重新计算一遍。
+
+- **索引由编译器写出。** `ridx index` 以 `ridx-driver` 作为 rustc 包装器运行 `cargo check`。分析完成后,
+  驱动遍历 HIR 和 rustc 的类型检查结果,为每个 crate 写出一个 `.ridx` 分片:定义、每一处已解析的引用
+  (方法调用和字段按 rustc 的解析结果,经过自动解引用和 trait 选择)、类型、impl、字段、泛型、宏和
+  `use` 项。随后编译照常进行,检查本身不受影响。
+- **依赖在每台机器上只索引一次。** 依赖的分片存入按内容寻址的存储,键由 crate、版本、目标平台、cfg
+  标志以及其编译所依据的产物摘要组成;存在有效分片时,驱动跳过该 crate。多个项目和 worktree 共享这些
+  分片,`std`、`core` 和 `alloc` 每个工具链只索引一次。
+- **读取就是内存映射,而不是解析。** v5 分片为小端序,记录定长并按 8 字节对齐:字符串池、文件(16 B)、
+  带 FNV-1a 哈希索引的定义(40 B)、按位置排序并带目标哈希索引的引用(48 B),以及类型、impl、字段和
+  泛型表。查找就是一次哈希探测或在映射页上的二分查找。没人访问的页根本不会被读取,其余的页在内存紧张时
+  可由内核换出。
+- **重建是增量且安全的。** 保存后服务器在后台重新索引;如果只有工作区源码变化,它会直接对变化的 crate
+  调用驱动,不经过 Cargo。构建失败的 crate 保留上一次成功的分片,另一组 features 或另一个目标平台
+  会在第一个旁边得到自己的变体。
+- **两次构建之间输入的代码** 按行映射到已编译的文本上,被修改的代码由一个不依赖编译器的小型前端
+  分析([`crates/ridx-syntax`](../crates/ridx-syntax):词法分析、语法分析、名称解析、类型推断),
+  其他所有类型和项都从索引中读取。
+
+完整设计、分片布局以及各部分在代码中的位置:
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)。
 
 ## 已知限制
 

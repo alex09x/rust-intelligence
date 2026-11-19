@@ -1,7 +1,7 @@
-<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
+<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
 
 > [!NOTE]
-> Ceci est une traduction du README anglais au commit [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Ceci est une traduction du README anglais au commit [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -176,11 +176,37 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-Le shard `.ridx` v5 est little-endian, avec des enregistrements de taille fixe alignés sur 8 octets : un en-tête, un
-pool de chaînes, la table des fichiers (16 B par entrée), les définitions (40 B) avec un index de hachage FNV-1a,
-des tables owner et deref pour les chaînes de récepteurs, les références triées par position (48 B) avec un index
-de hachage des cibles, et des tables de types, d'impl, de champs et de génériques. Les recherches sont binaires en
-mémoire mappée ; rien n'est analysé dans le tas, et les fichiers de shard sont fermés une fois mappés.
+rustc résout déjà chaque nom, développe chaque macro et infère chaque type à chaque `cargo check`. `ridx`
+conserve ces réponses au lieu de les recalculer.
+
+- **C'est le compilateur qui écrit l'index.** `ridx index` lance `cargo check` avec `ridx-driver` comme
+  wrapper de rustc. Après l'analyse, le driver parcourt le HIR et les résultats de la vérification de types
+  de rustc et écrit un shard `.ridx` par crate : définitions, chaque référence résolue (appels de méthode et
+  champs tels que rustc les a résolus, via l'auto-déréférencement et la sélection de traits), types, impls,
+  champs, génériques, macros et éléments `use`. La compilation continue ensuite normalement, la
+  vérification elle-même ne change donc pas.
+- **Les dépendances sont indexées une fois par machine.** Le shard d'une dépendance va dans un magasin
+  adressé par contenu, avec une clé formée du crate, de la version, de la cible, des flags cfg et des
+  empreintes de ce contre quoi elle a été compilée ; si un shard valide s'y trouve, le driver saute le
+  crate. Projets et worktrees partagent ces shards, et `std`, `core` et `alloc` sont indexés une fois par
+  toolchain.
+- **Lire, c'est mapper, pas analyser.** Le shard v5 est little-endian, avec des enregistrements de taille
+  fixe alignés sur 8 octets : un pool de chaînes, les fichiers (16 B), les définitions (40 B) avec un index
+  de hachage FNV-1a, les références triées par position (48 B) avec un index de hachage des cibles, et des
+  tables de types, d'impls, de champs et de génériques. Une recherche est une sonde de hachage ou une
+  recherche dichotomique sur des pages mappées. Les pages que personne ne demande ne sont jamais lues, et le
+  noyau peut libérer les autres en cas de manque de mémoire.
+- **Les reconstructions sont incrémentales et sûres.** Après un enregistrement, le serveur réindexe en
+  arrière-plan ; si seules des sources du workspace ont changé, il appelle directement le driver sur les
+  crates modifiés, sans Cargo. Un crate qui ne compile pas garde son dernier bon shard, et un autre jeu de
+  features ou une autre cible obtient sa propre variante à côté de la première.
+- **Le code tapé entre deux builds** est mis en correspondance ligne à ligne avec le texte compilé, et le
+  code modifié est analysé par un petit front-end sans compilateur
+  ([`crates/ridx-syntax`](../crates/ridx-syntax) : lexer, parser, résolution de noms, inférence de types)
+  qui lit tous les autres types et éléments dans l'index.
+
+La conception complète, avec la structure d'un shard et l'emplacement de chaque partie dans le code :
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Limites connues
 

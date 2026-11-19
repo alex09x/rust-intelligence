@@ -1,7 +1,7 @@
-<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
+<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
 
 > [!NOTE]
-> Esta é uma tradução do README em inglês no commit [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta é uma tradução do README em inglês no commit [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -175,11 +175,34 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-O shard `.ridx` v5 é little-endian, com registros de tamanho fixo alinhados a 8 bytes: um cabeçalho, um pool de
-strings, a tabela de arquivos (16 B por entrada), definições (40 B) com um índice hash FNV-1a, tabelas de owner e
-deref para cadeias de receptores, referências ordenadas por posição (48 B) com um índice hash de alvos, e tabelas
-de tipos, impl, campos e genéricos. As buscas são binárias sobre memória mapeada; nada é parseado para o heap e
-os arquivos de shard são fechados assim que mapeados.
+O rustc já resolve cada nome, expande cada macro e infere cada tipo a cada `cargo check`. O `ridx`
+guarda essas respostas em vez de calculá-las de novo.
+
+- **O índice é escrito pelo compilador.** `ridx index` executa `cargo check` com `ridx-driver` como
+  wrapper do rustc. Depois da análise, o driver percorre o HIR e os resultados da verificação de tipos do
+  rustc e grava um shard `.ridx` por crate: definições, cada referência resolvida (chamadas de método e
+  campos como o rustc os resolveu, passando por auto-deref e seleção de traits), tipos, impls, campos,
+  genéricos, macros e itens `use`. Em seguida a compilação continua normalmente, então a verificação em si
+  não muda.
+- **Dependências são indexadas uma vez por máquina.** O shard de uma dependência vai para um armazenamento
+  endereçado por conteúdo, com chave formada por crate, versão, plataforma-alvo, flags de cfg e os digests
+  daquilo com que foi compilada; se já houver ali um shard válido, o driver pula o crate. Projetos e
+  worktrees compartilham esses shards, e `std`, `core` e `alloc` são indexados uma vez por toolchain.
+- **Ler é mapear, não analisar.** O shard v5 é little-endian, com registros de tamanho fixo alinhados a 8
+  bytes: um pool de strings, arquivos (16 B), definições (40 B) com índice hash FNV-1a, referências
+  ordenadas por posição (48 B) com índice hash de destinos, e tabelas de tipos, impls, campos e genéricos.
+  Uma busca é uma sondagem de hash ou uma busca binária sobre páginas mapeadas. Páginas que ninguém pede
+  nunca são lidas, e o kernel pode descartar as outras quando falta memória.
+- **Reconstruções são incrementais e seguras.** Depois de salvar, o servidor reindexa em segundo plano;
+  quando só fontes do workspace mudaram, ele chama o driver diretamente nos crates alterados, sem o Cargo.
+  Um crate que não compila mantém seu último shard bom, e outro conjunto de features ou outra plataforma
+  ganha sua própria variante ao lado da primeira.
+- **O código digitado entre builds** é mapeado linha a linha sobre o texto compilado, e o código editado é
+  analisado por um pequeno front-end sem compilador ([`crates/ridx-syntax`](../crates/ridx-syntax): lexer,
+  parser, resolução de nomes, inferência de tipos) que lê do índice todos os outros tipos e itens.
+
+O design completo, com o layout do shard e onde cada parte fica no código:
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Limitações conhecidas
 

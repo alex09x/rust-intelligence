@@ -1,7 +1,7 @@
-<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
+<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
 
 > [!NOTE]
-> Dies ist eine Übersetzung der englischen README im Commit [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Dies ist eine Übersetzung der englischen README im Commit [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -176,11 +176,35 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-Der `.ridx`-v5-Shard ist Little-Endian mit 8-Byte-ausgerichteten Datensätzen fester Größe: ein Header, ein
-String-Pool, die Dateitabelle (16 B pro Eintrag), Definitionen (40 B) mit einem FNV-1a-Hashindex, Owner- und
-Deref-Tabellen für Empfängerketten, nach Position sortierte Referenzen (48 B) mit einem Ziel-Hashindex sowie
-Tabellen für Typen, Impls, Felder und Generics. Suchen sind binäre Suchen im gemappten Speicher; nichts wird in den
-Heap geparst, und die Shard-Dateien werden nach dem Mappen geschlossen.
+rustc löst ohnehin bei jedem `cargo check` jeden Namen auf, expandiert jedes Makro und inferiert jeden Typ.
+`ridx` behält diese Antworten, statt sie neu zu berechnen.
+
+- **Der Compiler schreibt den Index.** `ridx index` führt `cargo check` mit `ridx-driver` als rustc-Wrapper
+  aus. Nach der Analyse durchläuft der Treiber das HIR und die Ergebnisse der Typprüfung von rustc und
+  schreibt pro Crate einen `.ridx`-Shard: Definitionen, jede aufgelöste Referenz (Methodenaufrufe und Felder
+  so, wie rustc sie über Auto-Deref und Trait-Auswahl aufgelöst hat), Typen, Impls, Felder, Generics, Makros
+  und `use`-Einträge. Danach läuft die Kompilierung normal weiter, der Check selbst bleibt also unverändert.
+- **Abhängigkeiten werden einmal pro Rechner indexiert.** Der Shard einer Abhängigkeit kommt in einen
+  inhaltsadressierten Speicher, mit einem Schlüssel aus Crate, Version, Zielplattform, cfg-Flags und den
+  Digests dessen, wogegen sie kompiliert wurde; liegt dort ein gültiger Shard, überspringt der Treiber das
+  Crate. Projekte und Worktrees teilen sich diese Shards, und `std`, `core` und `alloc` werden einmal pro
+  Toolchain indexiert.
+- **Lesen heißt abbilden, nicht parsen.** Der v5-Shard ist Little-Endian mit Datensätzen fester Größe,
+  ausgerichtet auf 8 Byte: ein String-Pool, Dateien (16 B), Definitionen (40 B) mit FNV-1a-Hashindex, nach
+  Position sortierte Referenzen (48 B) mit Hashindex der Ziele sowie Tabellen für Typen, Impls, Felder und
+  Generics. Eine Abfrage ist eine Hash-Probe oder eine binäre Suche über abgebildete Seiten. Seiten, nach
+  denen niemand fragt, werden nie gelesen, und die übrigen kann der Kernel bei Speicherdruck verwerfen.
+- **Neubauten sind inkrementell und sicher.** Nach dem Speichern indexiert der Server im Hintergrund neu;
+  haben sich nur Quellen des Workspace geändert, ruft er den Treiber direkt für die geänderten Crates auf,
+  ohne Cargo. Ein Crate, das nicht baut, behält seinen letzten guten Shard, und ein anderes Feature-Set oder
+  Ziel bekommt eine eigene Variante neben der ersten.
+- **Code, der zwischen zwei Builds getippt wird,** wird zeilenweise auf den kompilierten Text abgebildet,
+  und den bearbeiteten Code analysiert ein kleines Frontend ohne Compiler
+  ([`crates/ridx-syntax`](../crates/ridx-syntax): Lexer, Parser, Namensauflösung, Typinferenz), das alle
+  anderen Typen und Einträge aus dem Index liest.
+
+Das ganze Design, mit dem Aufbau eines Shards und wo jeder Teil im Code liegt:
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Bekannte Einschränkungen
 

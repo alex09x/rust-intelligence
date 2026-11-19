@@ -1,7 +1,7 @@
-<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
+<!-- translation-source: 5d4c00a8977396a3368d5230e90ac8eb6d6e63dc -->
 
 > [!NOTE]
-> 이 문서는 커밋 [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [5d4c00a](https://github.com/alex09x/rust-intelligence/blob/5d4c00a8977396a3368d5230e90ac8eb6d6e63dc/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -173,10 +173,33 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-`.ridx` v5 샤드는 리틀 엔디언이며 8바이트로 정렬된 고정 크기 레코드로 이루어집니다: 헤더, 문자열 풀, 파일 테이블
-(항목당 16 B), FNV-1a 해시 인덱스가 있는 정의(40 B), 리시버 체인을 위한 owner 및 deref 테이블, 위치순으로
-정렬되고 대상 해시 인덱스가 있는 참조(48 B), 그리고 타입·impl·필드·제네릭 테이블. 조회는 매핑된 메모리에서의
-이진 탐색이며, 힙으로 파싱하는 것은 없고 샤드 파일은 매핑 후 바로 닫습니다.
+rustc는 이미 `cargo check`를 할 때마다 모든 이름을 해석하고, 모든 매크로를 확장하고, 모든 타입을 추론합니다.
+`ridx`는 그 답을 다시 계산하지 않고 저장해 둡니다.
+
+- **인덱스는 컴파일러가 씁니다.** `ridx index`는 `ridx-driver`를 rustc 래퍼로 삼아 `cargo check`를 실행합니다.
+  분석이 끝나면 드라이버가 HIR과 rustc의 타입 검사 결과를 순회해 크레이트마다 `.ridx` 샤드를 하나씩
+  씁니다. 정의, 해석된 모든 참조(메서드 호출과 필드는 자동 역참조와 트레이트 선택을 거쳐 rustc가 해석한
+  그대로), 타입, impl, 필드, 제네릭, 매크로, `use` 항목입니다. 그다음 컴파일은 평소대로 이어지므로 검사
+  자체는 달라지지 않습니다.
+- **의존성은 머신당 한 번만 인덱싱됩니다.** 의존성의 샤드는 내용 주소 기반 저장소에 들어가며, 키는
+  크레이트, 버전, 타깃, cfg 플래그, 그리고 컴파일할 때 참조한 산출물의 다이제스트로 만들어집니다. 유효한
+  샤드가 이미 있으면 드라이버는 그 크레이트를 건너뜁니다. 프로젝트와 worktree가 이 샤드를 공유하고,
+  `std`, `core`, `alloc`은 툴체인마다 한 번만 인덱싱됩니다.
+- **읽기는 파싱이 아니라 매핑입니다.** v5 샤드는 리틀 엔디언이며 8바이트로 정렬된 고정 크기 레코드로
+  이루어집니다. 문자열 풀, 파일(16 B), FNV-1a 해시 인덱스가 있는 정의(40 B), 위치순으로 정렬되고 대상
+  해시 인덱스가 있는 참조(48 B), 그리고 타입, impl, 필드, 제네릭 테이블입니다. 조회는 해시 탐색이거나
+  매핑된 페이지 위의 이진 탐색입니다. 아무도 요청하지 않는 페이지는 한 번도 읽히지 않고, 나머지는
+  메모리가 부족할 때 커널이 내보낼 수 있습니다.
+- **재빌드는 증분 방식이고 안전합니다.** 저장하면 서버가 백그라운드에서 다시 인덱싱합니다. 워크스페이스
+  소스만 바뀌었다면 Cargo 없이 바뀐 크레이트에 드라이버를 직접 호출합니다. 빌드에 실패한 크레이트는
+  마지막으로 성공한 샤드를 유지하고, 다른 feature 조합이나 타깃은 첫 번째 것 옆에 자신만의 변형을
+  갖습니다.
+- **빌드 사이에 입력한 코드**는 컴파일된 텍스트에 줄 단위로 대응되고, 편집된 코드는 컴파일러 없이 동작하는
+  작은 프런트엔드([`crates/ridx-syntax`](../crates/ridx-syntax): 렉서, 파서, 이름 해석, 타입 추론)가
+  분석하며, 다른 모든 타입과 항목은 인덱스에서 읽습니다.
+
+샤드 레이아웃과 각 부분이 코드의 어디에 있는지를 포함한 전체 설계:
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## 알려진 제한
 
