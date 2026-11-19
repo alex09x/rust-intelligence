@@ -34,11 +34,13 @@ def verify_editor_configs(editors_dir):
     zed = json.loads((editors_dir / "zed-settings.json").read_text(encoding="utf-8"))
     nvim = (editors_dir / "neovim-lspconfig.lua").read_text(encoding="utf-8")
     assert vscode.get("rust-analyzer.server.path") == "ridx", "vscode config must set rust-analyzer.server.path = ridx"
-    assert zed["lsp"]["rust-analyzer"]["binary"]["path"] == "ridx", "zed config must set binary.path = ridx"
+    # Zed runs ridx as the `rust-intelligence` server of the editors/zed extension, selected for Rust.
+    assert zed["lsp"]["rust-intelligence"]["binary"]["path"] == "ridx", "zed config must set binary.path = ridx"
+    assert "rust-intelligence" in zed["languages"]["Rust"]["language_servers"], "zed config must select rust-intelligence for Rust"
     assert 'cmd = { "ridx" }' in nvim, "neovim config must set cmd = { 'ridx' }"
     return {
         "vscode_server_path": vscode["rust-analyzer.server.path"],
-        "zed_binary_path": zed["lsp"]["rust-analyzer"]["binary"]["path"],
+        "zed_binary_path": zed["lsp"]["rust-intelligence"]["binary"]["path"],
         "neovim_cmd": ["ridx"],
     }
 
