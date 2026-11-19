@@ -64,6 +64,18 @@ say "installed $("$INSTALL_DIR/ridx" --version) into $INSTALL_DIR"
 
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
-  *) say "add $INSTALL_DIR to PATH, e.g. echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.profile" ;;
+  *)
+    case "${SHELL:-}" in
+      */zsh) rc="$HOME/.zshrc" ;;
+      */bash) if [ "$(uname -s)" = Darwin ]; then rc="$HOME/.bash_profile"; else rc="$HOME/.bashrc"; fi ;;
+      */fish) rc="" ;;
+      *) rc="$HOME/.profile" ;;
+    esac
+    if [ -n "$rc" ]; then
+      say "add $INSTALL_DIR to PATH: echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> $rc, then open a new terminal"
+    else
+      say "add $INSTALL_DIR to PATH: fish_add_path $INSTALL_DIR"
+    fi
+    ;;
 esac
 say "next: point your editor at ridx — https://rust-intelligence.com/#start"

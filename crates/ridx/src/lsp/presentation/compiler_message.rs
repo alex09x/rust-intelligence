@@ -186,7 +186,8 @@ pub fn char_col_to_utf16(line_str: &str, char_col: u64) -> u64 {
 
 pub fn find_ridx_driver(root: &Path) -> Option<PathBuf> {
     let env_driver = std::env::var("RIDX_DRIVER_BIN").ok();
-    find_ridx_driver_with(root, env_driver.as_deref().map(Path::new))
+    // The workspace's own build, else the driver the index build uses (beside the running ridx, then PATH).
+    find_ridx_driver_with(root, env_driver.as_deref().map(Path::new)).or_else(|| crate::indexer::driver::find_driver_binary_internal(std::env::current_exe().ok().as_deref()))
 }
 
 pub fn find_ridx_driver_with(root: &Path, env_override: Option<&Path>) -> Option<PathBuf> {

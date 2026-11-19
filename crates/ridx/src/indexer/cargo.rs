@@ -133,7 +133,8 @@ fn toolchain_name_of_lib(lib: &std::path::Path) -> Option<String> {
 /// for a release binary built on another machine, the same rustup toolchain under this machine's rustup home.
 pub(crate) fn build_sysroot_lib() -> Option<std::path::PathBuf> {
     let recorded = option_env!("RIDX_BUILD_SYSROOT_LIB").filter(|s| !s.is_empty())?;
-    let home = std::env::var_os("RUSTUP_HOME").map(std::path::PathBuf::from).or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".rustup")));
+    let set = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
+    let home = set("RUSTUP_HOME").or_else(|| set("HOME").map(|h| h.join(".rustup")));
     relocate_sysroot_lib(recorded, home.as_deref())
 }
 

@@ -248,7 +248,15 @@ where
     // Only inject RUSTC_WRAPPER if explicitly requested via environment opt-in
     if std::env::var("RIDX_FLYCHECK_DRIVER").is_ok_and(|v| v == "1") {
         if let Some(driver) = find_ridx_driver(workspace_root) {
-            cmd.env("RUSTC_WRAPPER", driver);
+            // The driver loads its toolchain's compiler libraries and needs that toolchain's cargo check, as in
+            // the index build (indexer/builder.rs).
+            cmd.env("RUSTC_WRAPPER", driver).env("RUSTC_BOOTSTRAP", "1");
+            if let Some(ld) = crate::indexer::cargo::compute_sysroot_ld_path() {
+                cmd.env("LD_LIBRARY_PATH", &ld).env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
+            }
+            if let (None, Some(tc)) = (std::env::var_os("RUSTUP_TOOLCHAIN"), crate::indexer::cargo::driver_toolchain()) {
+                cmd.env("RUSTUP_TOOLCHAIN", tc);
+            }
         }
     }
 
