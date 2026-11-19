@@ -38,7 +38,7 @@ const LSP = [
   ["Intelligence", "hover · completion · signatureHelp · inlayHint"],
   ["Hierarchies", "call hierarchy · type hierarchy"],
   ["Refactoring", "rename · codeAction · executeCommand"],
-  ["Formatting", "formatting · rangeFormatting · onTypeFormatting"],
+  ["Formatting", "formatting · rangeFormatting"],
   ["Symbols", "documentSymbol · workspace/symbol"],
   ["Diagnostics", "publishDiagnostics (background cargo check) · pull diagnostics"],
   ["Workspaces", "didChangeWorkspaceFolders · watched files"],

@@ -12,9 +12,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ridx — Rust Intelligence</title>
-  <meta name="description" content="Compiler-driven code intelligence for Rust: a binary index built by rustc and read in place through mmap.">
+  <meta name="color-scheme" content="dark">
+  <title>Rust Intelligence (ridx) — a Rust language server at a tenth of the memory</title>
+  <meta name="description" content="ridx is a language server for Rust that answers from what rustc already worked out: an index recorded during cargo check and read from disk. Measured against rust-analyzer on serde, tokio, rust-analyzer and bevy.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Rust Intelligence (ridx)">
+  <meta property="og:description" content="A Rust language server at a tenth of rust-analyzer's memory, answering from what rustc already worked out.">
+  <meta property="og:image" content="assets/social.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600;800&display=swap">
   <link rel="stylesheet" href="styles.css">
@@ -22,7 +32,7 @@
 <body>
 <header class="nav">
   <a class="lockup" href="#top" style="gap:10px"><img src="assets/logo-minimal.svg" width="32" height="32" alt=""><span class="wm" style="font-size:22px">ridx<span class="rust">.</span></span></a>
-  <nav><a href="#why">Why</a><a href="#resources">Numbers</a><a href="#arch">Architecture</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
+  <nav><a href="#why">Why</a><a href="#resources">Numbers</a><a href="#arch">Architecture</a><a href="#limits">Trade-offs</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
 </header>
 
 <main id="top">
@@ -36,12 +46,12 @@
     </div>
     <div class="term rise d2">
       <div class="termbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mono mute" style="font-size:12px;margin-left:8px">~/src/tokio</span></div>
-<pre><span class="mute"># the language server: Zed, VS Code, Neovim, Helix</span>
+<pre><span class="mute"># as a language server: Zed, VS Code, Neovim, Helix</span>
 <span class="rust">$</span> ridx lsp
-<span class="mute">  no index yet? ridx builds one and reports progress</span>
+<span class="mute">  no index yet? it builds one, with progress</span>
 
 <span class="mute"># or ask from the shell</span>
-<span class="rust">$</span> ridx def . runtime::context::blocking::try_enter_blocking_region
+<span class="rust">$</span> ridx def . tokio::runtime::Builder
 <span class="rust">$</span> ridx refs . src/main.rs:12:15
 <span class="rust">$</span> ridx hover . src/main.rs:12:15</pre>
     </div>
@@ -50,12 +60,12 @@
 </section>
 
 <section id="why" class="wrap sec">
-  <div class="head"><span class="eye">The problem</span><h2 class="h2">rust-analyzer re-does the compiler's job, and keeps it all in RAM</h2></div>
+  <div class="head"><span class="eye">The idea</span><h2 class="h2">The compiler already knows the answers</h2></div>
   <div class="row-wrap">
-    <div class="card prob"><span class="big rust">GBs</span>of resident memory on large workspaces such as Tokio, Bevy or rust-analyzer itself.</div>
-    <div class="card prob"><span class="big amber">Trees</span>Much of that memory holds syntax trees and raw text for thousands of files.</div>
-    <div class="card prob"><span class="big cyan">Deps</span>Most of those files are crates.io dependencies and std — code nobody edits.</div>
-    <div class="card prob"><span class="big violet">Twice</span>Parsing, macro expansion and inference run again in a separate database, after cargo already did them.</div>
+    <div class="card prob"><span class="big rust">GBs</span>rust-analyzer keeps its own analysis of the whole workspace in memory: 1.5 to 11.3 GB in our run, from serde to Bevy.</div>
+    <div class="card prob"><span class="big amber">Twice</span>That analysis repeats work rustc does anyway on every <span class="mono">cargo check</span>: name resolution, macro expansion, type inference.</div>
+    <div class="card prob"><span class="big cyan">Deps</span>Most of what is analyzed is crates.io dependencies and std, code nobody edits. ridx indexes each dependency once and shares it between projects.</div>
+    <div class="card prob"><span class="big violet">Live</span>Unsaved edits are answered from an in-memory overlay on top of the index, so code you are typing still navigates, hovers and completes.</div>
   </div>
 </section>
 
@@ -77,7 +87,7 @@
     <div class="card prob"><b class="amber">What is not counted</b><span>ridx answers from an index built beforehand by <span class="mono">ridx index</span> (a <span class="mono">cargo check</span> with the ridx driver). That build takes minutes on a large workspace the first time; dependencies are then shared by every project on the machine. rust-analyzer analyzes the workspace each time it starts, and that time is in its numbers.</span></div>
     <div class="card prob"><b class="amber">What “ready” means</b><span>For ridx: the reply to <span class="mono">initialize</span>; caches keep warming in the background after it. For rust-analyzer: the moment it reports that analysis is done, plus 0.5 s without messages to be sure.</span></div>
     <div class="card prob"><b class="amber">How to read memory</b><span>ridx's memory includes index pages mapped from disk. The kernel can drop them under pressure and read them again later. rust-analyzer's memory is its own heap.</span></div>
-    <div class="card prob"><b class="amber">Reproduce it</b><span>Script: <a class="mono" href="https://github.com/alex09x/rust-intelligence/blob/main/bench/measure_resources.py">bench/measure_resources.py</a>. Raw results: <a class="mono" id="res-raw" href="#">jsonl</a>. Linux, one machine, both servers run one after another.</span></div>
+    <div class="card prob"><b class="amber">Reproduce it</b><span>Script: <a class="mono" href="https://github.com/alex09x/rust-intelligence/blob/main/bench/measure_resources.py">bench/measure_resources.py</a>. Raw results: <a class="mono" id="res-raw" href="#">jsonl</a>. One run (n = 1) on Linux 6.8, AMD Ryzen 9 7950X, 64 GB, the two servers one after another. The harness counts a request as an error when the server replies with one; their kinds were not recorded.</span></div>
   </div>
 </section>
 
@@ -104,7 +114,7 @@
       </div>
       <div class="wire"><i></i></div>
       <div class="lane">build time</div>
-      <button class="box" data-arch="driver"><div class="top"><b>ridx-driver</b><span class="tag proc">RUSTC_WRAPPER</span></div><div class="sub">runs inside cargo check, writes .ridx shards</div></button>
+      <button class="box" data-arch="driver"><div class="top"><b>ridx-driver</b><span class="tag proc">rustc wrapper</span></div><div class="sub">runs inside cargo check, writes .ridx shards</div></button>
     </div>
     <div class="card detail" id="arch-detail"></div>
   </div>
@@ -112,8 +122,8 @@
   <div style="display:flex;flex-direction:column;gap:16px;margin-top:40px">
     <span class="h3">How an index is built and queried</span>
     <div class="row-wrap" style="gap:12px">
-      <div class="card step"><span class="num">01</span><b>cargo check</b><span>ridx-driver runs as RUSTC_WRAPPER. rustc resolves everything as it normally would.</span></div>
-      <div class="card step"><span class="num">02</span><b>Write shards</b><span>Definitions, references and types for each crate go into a compact .ridx v2 file.</span></div>
+      <div class="card step"><span class="num">01</span><b>cargo check</b><span>ridx-driver runs as the rustc wrapper. rustc resolves everything as it normally would.</span></div>
+      <div class="card step"><span class="num">02</span><b>Write shards</b><span>Definitions, references and types for each crate go into a compact .ridx v5 file.</span></div>
       <div class="card step"><span class="num">03</span><b>Store by hash</b><span>Dependencies land in the global CAS once; your crates go to the workspace variant.</span></div>
       <div class="card step"><span class="num">04</span><b>Map and query</b><span>Queries mmap the shards and binary-search sorted tables. No parse, no copy, no daemon.</span></div>
     </div>
@@ -121,10 +131,20 @@
 
   <div class="row-wrap" style="gap:24px;margin-top:40px;align-items:flex-start">
     <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:12px">
-      <span class="h3">The .ridx v2 file</span>
+      <span class="h3">The .ridx v5 file</span>
       <p class="mute" style="margin:0;font-size:14px;line-height:1.65">Little-endian, 8-byte aligned, fixed-size records. Lookups are binary searches over sorted tables in mapped memory — nothing is parsed or copied into the heap.</p>
     </div>
     <div class="fmt" id="fmt"></div>
+  </div>
+</section>
+
+<section id="limits" class="wrap sec">
+  <div class="head"><span class="eye">Trade-offs</span><h2 class="h2">What to know before you switch</h2></div>
+  <div class="row-wrap">
+    <div class="card prob"><b>Answers come from the last build</b><span>Navigation, references and types come from what rustc recorded. Code typed since then is answered from the open buffer and catches up when the project builds again; a crate that fails to build keeps its last good index.</span></div>
+    <div class="card prob"><b>The active cfg only</b><span>Like <span class="mono">cargo check</span>, the index sees one target and one feature set. Code behind other <span class="mono">#[cfg]</span>s or features is not indexed.</span></div>
+    <div class="card prob"><b>First index takes a build</b><span>The first time, ridx runs <span class="mono">cargo check</span> with its driver: minutes on a large workspace. Dependencies are indexed once and shared by every project on the machine.</span></div>
+    <div class="card prob"><b>Linux and macOS</b><span>Windows is not supported yet. ridx-driver links to the Rust 1.98.1 compiler, so keep that toolchain installed; your own projects can use any toolchain.</span></div>
   </div>
 </section>
 
@@ -135,8 +155,8 @@
 
 <section id="start" class="wrap sec">
   <div class="head"><span class="eye">Quickstart</span><h2 class="h2">Install, point your editor at it, open a project</h2>
-    <p class="lead">ridx-driver runs inside rustc, so it is built with the pinned toolchain from the repository. Open a Cargo workspace and ridx indexes it on first use; your editor shows the progress.</p></div>
-  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">rustup toolchain install 1.98.1 --component rustc-dev llvm-tools-preview rust-src
+    <p class="lead">Linux and macOS. ridx-driver runs inside rustc, so both binaries are built with the toolchain pinned in the repository, and that toolchain stays installed. Open a Cargo workspace and ridx indexes it on first use; your editor shows the progress. If a desktop editor cannot find <span class="mono">ridx</span>, give it the full path from <span class="mono">which ridx</span>.</p></div>
+  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">rustup toolchain install 1.98.1 --component rustc-dev llvm-tools-preview rust-src rustfmt clippy
 git clone https://github.com/alex09x/rust-intelligence
 cd rust-intelligence
 RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
@@ -152,6 +172,7 @@ RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked</pre>
     <div class="meta">
       <span>© 2026 Alexander Panasenko · <a href="mailto:alex@prod.codes">alex@prod.codes</a></span>
       <span>MIT / Apache-2.0 · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a></span>
+      <span>Not affiliated with the Rust Project or the Rust Foundation.</span>
     </div>
   </div>
 </footer>

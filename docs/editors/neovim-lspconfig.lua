@@ -21,7 +21,8 @@ else
       vim.lsp.start({
         name = "ridx",
         cmd = { "ridx" },
-        root_dir = vim.fs.root(args.buf, { "Cargo.toml" }),
+        -- Cargo.lock first: a workspace member's own Cargo.toml is not the workspace root.
+        root_dir = vim.fs.root(args.buf, { "Cargo.lock" }) or vim.fs.root(args.buf, { "Cargo.toml" }),
       })
     end,
   })

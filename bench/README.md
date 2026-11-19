@@ -13,7 +13,9 @@ python3 bench/matrix_runner.py --repo <corpus dir> --ridx-bin target/release/rid
 python3 bench/publish_results.py --src bench/results --pub bench/published
 python3 bench/matrix_report.py            # docs/BENCHMARK_MATRIX.md from published matrix runs
 python3 bench/comparison_report.py        # LSP_BENCHMARK_COMPARISON_REPORT.md from published matrix runs
-python3 bench/export_site.py              # site/bench.json and site/bench.data.js from published matrix runs
+python3 bench/export_site.py              # bench.json and bench.data.js from published matrix runs (no longer on the site)
+python3 bench/measure_resources.py ...    # RSS and CPU of one server under an editor session (Linux)
+python3 bench/export_resources.py bench/published/resources_<commit>.jsonl <commit> <date>   # site/resources.data.js
 ```
 
 | File | Role |
@@ -31,7 +33,8 @@ python3 bench/export_site.py              # site/bench.json and site/bench.data.
 | `matrix_report.py` | Renders `docs/BENCHMARK_MATRIX.md` (all 78 methods per repository, provenance, known harness defects) from the published runs only. |
 | `comparison_report.py` | Renders `LSP_BENCHMARK_COMPARISON_REPORT.md` (setup, resources, headline methods, coverage differences, earlier publications) from the published runs only. |
 | `matrix_headline.py` | Headline method list, latency formatting and the coverage sets shared by the report and the site export. |
-| `export_site.py` | Builds `site/bench.json` and `site/bench.data.js` for the website from the published runs; the page types no number by hand. |
+| `export_site.py` | Builds `bench.json` and `bench.data.js` from the published matrix runs (the site showed them until `d13fbd23`). |
+| `measure_resources.py`, `export_resources.py` | Peak memory, CPU and start-up of ridx and rust-analyzer under the same editor session; the site's numbers (`site/resources.data.js`) are exported from the published run and none is typed by hand. |
 | `selection_range_fidelity.py` | `textDocument/selectionRange` chains of one or more ridx binaries against rust-analyzer on a corpus (methodology, section 9). |
 | `position_ab.py`, `position_ab_classify.py` | Per-position A/B of the matrix requests between ridx binaries and, optionally, rust-analyzer: outcome by the matrix rule, answer digest, target kind of the file and token kind under the cursor per position (methodology, section 10). |
 | `test_*.py` | Harness unit tests: `python3 -m pytest bench`. |
