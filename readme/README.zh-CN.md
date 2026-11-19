@@ -1,7 +1,7 @@
-<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
   <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
 <p align="center">
@@ -196,6 +197,25 @@ impl、字段和泛型表。查找是在映射内存上的二分查找；不会�
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+```
+
+## 引用
+
+如果你在研究或文档中使用 ridx，请引用 Zenodo 上的归档版本：
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817) 用于精确引用 0.3.7。
+[`CITATION.cff`](../CITATION.cff) 包含 GitHub “Cite this repository” 所使用的元数据。
+
+```bibtex
+@software{panasenko_2026_24379817,
+  author    = {Panasenko, Alexander},
+  title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
+  month     = nov,
+  year      = 2026,
+  publisher = {Zenodo},
+  version   = {0.3.7},
+  doi       = {10.5281/zenodo.24379817},
+  url       = {https://doi.org/10.5281/zenodo.24379817},
+}
 ```
 
 ## 许可证

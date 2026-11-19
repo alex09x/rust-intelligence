@@ -1,7 +1,7 @@
-<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
   <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
 <p align="center">
@@ -200,6 +201,25 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+```
+
+## 인용
+
+연구나 문서에서 ridx를 사용한다면 Zenodo에 보관된 릴리스를 인용해 주세요:
+프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.7은 [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817).
+[`CITATION.cff`](../CITATION.cff)에 GitHub의 "Cite this repository"가 사용하는 메타데이터가 있습니다.
+
+```bibtex
+@software{panasenko_2026_24379817,
+  author    = {Panasenko, Alexander},
+  title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
+  month     = nov,
+  year      = 2026,
+  publisher = {Zenodo},
+  version   = {0.3.7},
+  doi       = {10.5281/zenodo.24379817},
+  url       = {https://doi.org/10.5281/zenodo.24379817},
+}
 ```
 
 ## 라이선스

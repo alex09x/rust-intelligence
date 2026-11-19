@@ -1,7 +1,7 @@
-<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
   <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
 <p align="center">
@@ -205,6 +206,25 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+```
+
+## Цитирование
+
+Если вы используете ridx в исследованиях или документации, пожалуйста, цитируйте архивный релиз в Zenodo:
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) — для проекта (ведёт на последнюю версию), [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817) — ровно для 0.3.7.
+[`CITATION.cff`](../CITATION.cff) содержит метаданные, которые использует кнопка GitHub «Cite this repository».
+
+```bibtex
+@software{panasenko_2026_24379817,
+  author    = {Panasenko, Alexander},
+  title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
+  month     = nov,
+  year      = 2026,
+  publisher = {Zenodo},
+  version   = {0.3.7},
+  doi       = {10.5281/zenodo.24379817},
+  url       = {https://doi.org/10.5281/zenodo.24379817},
+}
 ```
 
 ## Лицензия

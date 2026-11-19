@@ -1,7 +1,7 @@
-<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+<!-- translation-source: 46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540 -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [46dfbad](https://github.com/alex09x/rust-intelligence/blob/46dfbadec54a2f01ab5d8cb2b05bfbed4c7f2540/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
   <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
 <p align="center">
@@ -205,6 +206,25 @@ Ningún archivo fuente supera las 400 líneas.
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+```
+
+## Cómo citar
+
+Si usas ridx en investigación o documentación, cita la versión archivada en Zenodo:
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para el proyecto (apunta a la última versión), [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817) para exactamente 0.3.7.
+[`CITATION.cff`](../CITATION.cff) contiene los metadatos que usa "Cite this repository" de GitHub.
+
+```bibtex
+@software{panasenko_2026_24379817,
+  author    = {Panasenko, Alexander},
+  title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
+  month     = nov,
+  year      = 2026,
+  publisher = {Zenodo},
+  version   = {0.3.7},
+  doi       = {10.5281/zenodo.24379817},
+  url       = {https://doi.org/10.5281/zenodo.24379817},
+}
 ```
 
 ## Licencia
