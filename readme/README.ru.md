@@ -1,0 +1,217 @@
+<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+
+> [!NOTE]
+> Это перевод англоязычного README на коммите [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+
+<p align="center">
+  <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
+</p>
+
+<h1 align="center">Rust Intelligence (<code>ridx</code>)</h1>
+
+<p align="center">
+  <b>Анализ Rust-кода за десятую часть памяти.</b><br>
+  Языковой сервер для Rust, который отвечает тем, что rustc уже вычислил.
+</p>
+
+<p align="center">
+  <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
+  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+</p>
+
+<p align="center">
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/README.md">English</a> ·
+  <b><a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ru.md">Русский</a></b> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.zh-CN.md">简体中文</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.es.md">Español</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ja.md">日本語</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.de.md">Deutsch</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.fr.md">Français</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ko.md">한국어</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ar.md">العربية</a>
+</p>
+
+`ridx` один раз, во время `cargo check`, записывает определения, ссылки и типы в бинарный индекс и читает
+этот индекс прямо с диска. Редактор получает навигацию, подсказки при наведении, автодополнение, поиск ссылок
+и переименование без второго компилятора в памяти.
+
+Linux и macOS. Проект не связан с Rust Project и Rust Foundation.
+
+---
+
+## Зачем
+
+- **rust-analyzer держит в памяти собственный анализ всего воркспейса**: 1.5 GB на serde и
+  11.3 GB на Bevy в замере ниже. Он заново выполняет разрешение имён, раскрытие макросов и вывод типов,
+  которые rustc и так делает при каждом `cargo check`.
+- **Большая часть анализируемого кода — зависимости и std**, которые никто не редактирует. `ridx` индексирует
+  каждую зависимость один раз и делит её между всеми проектами и worktree на машине.
+- **То, что вы набираете, тоже работает**: на несохранённые правки отвечает слой в памяти поверх индекса,
+  пока проект не соберётся снова.
+
+## Замеры
+
+Одна и та же сессия редактора против обоих серверов: по 40 файлов каждого репозитория открываются по очереди,
+с символами документа, семантической подсветкой, сворачиванием, inlay-подсказками, затем hover, переходом к
+определению и к типу, подсветкой вхождений, ссылками и автодополнением в выбранных позициях, и одной правкой.
+Память учитывает дочерние процессы.
+
+| Репозиторий | Пик памяти, ridx / rust-analyzer | CPU за сессию | От старта до готовности |
+|---|---:|---:|---:|
+| serde | 72 MB / 1.5 GB | 2.34 s / 6.97 s | 0.06 s / 3.27 s |
+| tokio | 221 MB / 3.2 GB | 1.90 s / 35.9 s | 0.24 s / 4.77 s |
+| rust-analyzer | 434 MB / 4.6 GB | 4.44 s / 66.7 s | 0.64 s / 5.22 s |
+| bevy | 917 MB / 11.3 GB | 5.38 s / 170.5 s | 1.26 s / 15.5 s |
+
+- ridx `f7105fcc`, 2026-11-14; один прогон (n = 1) на Linux 6.8, AMD Ryzen 9 7950X, 64 GB. Сырые результаты:
+  [`bench/published/resources_f7105fcc.jsonl`](../bench/published/resources_f7105fcc.jsonl), скрипт:
+  [`bench/measure_resources.py`](../bench/measure_resources.py); задержки по методам — в сырых результатах и
+  на сайте.
+- **Не учтено**: ridx отвечает из индекса, построенного заранее (`ridx index` — это `cargo check` с
+  драйвером ridx); в первый раз на большом воркспейсе это занимает минуты. rust-analyzer анализирует
+  воркспейс при каждом запуске, и это время входит в его цифры.
+- **«Готов»** — для ridx это ответ на `initialize` (кэши после него догреваются в фоне), для rust-analyzer —
+  конец его анализа плюс 0.5 s без сообщений.
+- **Память**: у ridx в цифру входят страницы индекса, отображённые с диска; ядро может выгрузить их при
+  нехватке памяти и прочитать снова. У rust-analyzer это его собственная куча.
+- rust-analyzer ответил ошибкой на 26–31 запрос в каждом репозитории, ridx — ни на один; виды ошибок не
+  записывались. Запросы с ошибками входят в цифры задержек.
+
+Совпадение ответов с rust-analyzer по каждому методу LSP измеряется набором в [`bench/`](../bench/)
+и записывается для каждого релиза в [`CHANGELOG.md`](../CHANGELOG.md). Полная матрица из 78 методов для `v0.2.0` — в
+[`docs/BENCHMARK_MATRIX.md`](../docs/BENCHMARK_MATRIX.md) и
+[`LSP_BENCHMARK_COMPARISON_REPORT.md`](../LSP_BENCHMARK_COMPARISON_REPORT.md).
+
+---
+
+## Установка
+
+Linux (x86_64, arm64) и macOS на Apple Silicon, с [rustup](https://rustup.rs):
+
+```bash
+curl -fsSL https://rust-intelligence.com/install.sh | sh
+```
+
+Установщик ставит Rust 1.98.1 — toolchain, внутри которого работает `ridx-driver` (он линкуется с
+библиотеками этого компилятора; ваши проекты остаются на любом своём toolchain, ridx сам запускает сборку
+индекса на нужном), скачивает с GitHub архив релиза для вашей платформы, проверяет его SHA-256 и кладёт
+`ridx` и `ridx-driver` в `~/.local/bin` (`RIDX_INSTALL_DIR` меняет каталог, `RIDX_VERSION=v0.3.7` фиксирует релиз).
+
+Чтобы собрать из исходников:
+
+```bash
+rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
+git clone https://github.com/alex09x/rust-intelligence
+cd rust-intelligence
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+```
+
+Затем откройте Cargo-воркспейс в редакторе. Если индекса ещё нет, `ridx` строит его при первом использовании и
+показывает прогресс в редакторе; когда сборка заканчивается, он перезагружает индекс, а после сохранений
+переиндексирует в фоне. Из терминала индекс строит `ridx index .` (`--all-features`, `--target <triple>`
+выбирают cfg).
+
+Если десктопный редактор не находит `ridx`, укажите ему полный путь из `which ridx`.
+
+## Редакторы
+
+`ridx` без подкоманды ведёт себя в командной строке как `rust-analyzer` (`--version`, `--stdio`,
+`--log-file`, `--print-config-schema`), поэтому редактор, настроенный на rust-analyzer, может запускать его вместо него.
+
+- **Zed**: расширение [`editors/zed`](../editors/zed) регистрирует `ridx lsp` как языковой сервер
+  `rust-intelligence` (палитра команд: `zed: install dev extension`), а
+  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) выбирает его для Rust.
+- **VS Code**: [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) направляет
+  расширение rust-analyzer на `ridx` (`"rust-analyzer.server.path": "ridx"`).
+- **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
+  корень ищется сначала по `Cargo.lock`, поэтому крейт воркспейса открывает индекс всего воркспейса).
+- **Helix**: `[language-server.ridx]` с `command = "ridx"`, `args = ["lsp"]` в `languages.toml`.
+
+## Из терминала
+
+```bash
+ridx index .                     # build or refresh the index
+ridx def . my_crate::run         # go to definition, by path or file:line:col
+ridx refs . src/main.rs:12:15    # references across the workspace and its dependencies
+ridx hover . src/main.rs:12:15
+ridx type-at . src/main.rs:12:15
+ridx symbols . Config
+ridx inspect .                   # shards, crates and record counts
+ridx compare -c all . my_crate::run   # side by side with rust-analyzer
+```
+
+---
+
+## Методы LSP
+
+| Категория | Методы |
+|---|---|
+| Навигация | `definition`, `declaration`, `implementation`, `typeDefinition` |
+| Ссылки | `references`, `documentHighlight` |
+| Подсказки | `hover`, `completion` (с автоимпортом), `signatureHelp`, `inlayHint`, `semanticTokens` |
+| Иерархии | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
+| Рефакторинг | `prepareRename`, `rename`, `codeAction` (правки, проверенные компиляцией), `executeCommand` |
+| Форматирование | `formatting`, `rangeFormatting` |
+| Символы | `documentSymbol`, `workspace/symbol` |
+| Диагностика | `publishDiagnostics` из фонового `cargo check` при сохранении, pull-диагностика |
+| Воркспейсы | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, несколько корней |
+
+## Как это устроено
+
+```
+ editor ──JSON-RPC (stdio)──► ridx lsp
+                               ├─ OverlayManager (RAM): open buffers, live edits
+                               ├─ WorkspaceIndex (mmap): shards of this workspace
+                               └─ flycheck thread: cargo check on save
+                                        │
+              ┌─────────────────────────┴─────────────────────────┐
+   ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
+   dependencies, once per source hash and target      the workspace's own crates
+   shared by every project                            + a manifest scoped to Cargo.lock
+                                        ▲
+                         ridx-driver (rustc wrapper inside cargo check)
+```
+
+Шард `.ridx` v5 — little-endian, записи фиксированного размера с выравниванием по 8 байтам: заголовок, пул строк,
+таблица файлов (16 B на запись), определения (40 B) с хэш-индексом FNV-1a, таблицы владельцев и deref для
+цепочек получателей, ссылки, отсортированные по позиции (48 B), с хэш-индексом целей, и таблицы типов, impl,
+полей и обобщённых параметров. Поиск — двоичный по отображённой памяти; ничего не разбирается в кучу, а файлы
+шардов закрываются сразу после отображения.
+
+## Известные ограничения
+
+- **Ответы берутся из последней сборки.** На код, набранный после неё, отвечает открытый буфер, и он догоняет,
+  когда проект соберётся снова; крейт, который не собрался, сохраняет последний удачный индекс.
+- **Один cfg.** Как и `cargo check`, индекс видит одну цель и один набор фич; код под другими
+  `#[cfg]` или фичами не индексируется. Они выбираются через `ridx index --all-features` / `--target`.
+- **Windows** пока не поддерживается.
+- **Стандартная библиотека**: навигация и hover в `std`, `core` и `alloc` работают; ссылки на них ищутся
+  только в воркспейсе, и переименовать их нельзя.
+- **Входящие вызовы** показывают вызывающего там, где функция вызвана (`name(` или `name::<…>(`); rust-analyzer
+  показывает и функции, переданные как значения, например систему в `add_systems`.
+- `vec![]` считается ссылкой на `Vec`; rust-analyzer так не считает.
+
+---
+
+## Разработка
+
+Каждый исходный файл — не длиннее 400 строк.
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
+## Лицензия
+
+Лицензируется под одной из лицензий:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) или http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](../LICENSE-MIT) или http://opensource.org/licenses/MIT)
+
+по вашему выбору.

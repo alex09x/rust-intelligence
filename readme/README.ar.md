@@ -1,0 +1,258 @@
+<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+
+> [!NOTE]
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+
+<p align="center">
+  <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
+</p>
+
+<h1 align="center">Rust Intelligence (<code>ridx</code>)</h1>
+
+<p align="center">
+  <b>ذكاء شيفرة Rust بعُشر الذاكرة.</b><br>
+  خادم لغة لـ Rust يجيب بما حسبه rustc بالفعل.
+</p>
+
+<p align="center">
+  <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
+  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+</p>
+
+<p align="center">
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/README.md">English</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ru.md">Русский</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.zh-CN.md">简体中文</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.es.md">Español</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ja.md">日本語</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.de.md">Deutsch</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.fr.md">Français</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ko.md">한국어</a> ·
+  <b><a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ar.md">العربية</a></b>
+</p>
+
+<div dir="rtl">
+
+يسجّل `ridx` التعريفات والمراجع والأنواع مرة واحدة، أثناء `cargo check`، في فهرس ثنائي، ثم يقرأ هذا الفهرس
+مباشرة من القرص. يحصل محرّرك على التنقّل والتلميحات عند المرور والإكمال التلقائي والمراجع وإعادة التسمية من دون
+مترجم ثانٍ مقيم في الذاكرة.
+
+يعمل على Linux وmacOS. لا ينتمي إلى Rust Project ولا إلى Rust Foundation.
+
+---
+
+## لماذا
+
+- **يحتفظ rust-analyzer في الذاكرة بتحليله الخاص لمساحة العمل كلها**: ‏1.5 GB على serde و
+  11.3 GB على Bevy في القياس أدناه. وهو يكرّر حلّ الأسماء وتوسيع الماكرو واستنتاج الأنواع التي ينفّذها rustc
+  على أي حال في كل `cargo check`.
+- **معظم ما يُحلَّل هو الاعتماديات وstd**، وهي شيفرة لا يعدّلها أحد. يفهرس `ridx` كل اعتمادية مرة واحدة
+  ويشاركها بين كل المشاريع وworktree على الجهاز.
+- **ما تكتبه الآن يعمل أيضًا**: تُجاب التعديلات غير المحفوظة من طبقة في الذاكرة فوق الفهرس حتى يُبنى
+  المشروع من جديد.
+
+## القياسات
+
+جلسة المحرّر نفسها على الخادمَين: تُفتح 40 ملفًا من كل مستودع واحدًا تلو الآخر، مع رموز المستند والرموز الدلالية
+والطيّ والتلميحات المضمّنة، ثم المرور والتعريف وتعريف النوع والتظليل والمراجع والإكمال في مواضع مختارة، وتعديل واحد.
+تشمل الذاكرة العمليات الفرعية.
+
+| المستودع | ذروة الذاكرة، ridx / rust-analyzer | وقت المعالج للجلسة | من البدء حتى الجاهزية |
+|---|---:|---:|---:|
+| serde | 72 MB / 1.5 GB | 2.34 s / 6.97 s | 0.06 s / 3.27 s |
+| tokio | 221 MB / 3.2 GB | 1.90 s / 35.9 s | 0.24 s / 4.77 s |
+| rust-analyzer | 434 MB / 4.6 GB | 4.44 s / 66.7 s | 0.64 s / 5.22 s |
+| bevy | 917 MB / 11.3 GB | 5.38 s / 170.5 s | 1.26 s / 15.5 s |
+
+- ridx `f7105fcc`، ‏2026-11-14؛ تشغيل واحد (n = 1) على Linux 6.8 وAMD Ryzen 9 7950X و64 GB. النتائج الخام:
+  [`bench/published/resources_f7105fcc.jsonl`](../bench/published/resources_f7105fcc.jsonl)، السكربت:
+  [`bench/measure_resources.py`](../bench/measure_resources.py)؛ زمن الاستجابة لكل طريقة موجود في النتائج الخام
+  وعلى الموقع.
+- **غير محتسب**: يجيب ridx من فهرس مبني مسبقًا (`ridx index`، وهو `cargo check` مع مشغّل ridx)، ويستغرق ذلك
+  دقائق في المرة الأولى على مساحة عمل كبيرة. أما rust-analyzer فيحلّل مساحة العمل في كل مرة يبدأ فيها، وهذا الوقت
+  داخل أرقامه.
+- **«الجاهزية»** هي الرد على `initialize` بالنسبة إلى ridx (تستمر الذواكر المخبئية في الإحماء في الخلفية بعده)،
+  وبالنسبة إلى rust-analyzer نهاية تحليله مضافًا إليها 0.5 s بلا رسائل.
+- **الذاكرة**: يشمل رقم ridx صفحات الفهرس المعيّنة من القرص، ويمكن للنواة التخلّي عنها عند الضغط ثم قراءتها
+  مجددًا. أما رقم rust-analyzer فهو الكومة الخاصة به.
+- ردّ rust-analyzer بخطأ على 26–31 طلبًا في كل مستودع، وridx على لا شيء؛ لم تُسجَّل أنواع الأخطاء.
+  الطلبات التي انتهت بخطأ محتسبة في أرقام زمن الاستجابة.
+
+يُقاس تطابق الإجابات مع rust-analyzer لكل طريقة من طرق LSP بمجموعة الاختبارات في [`bench/`](../bench/)
+ويُسجَّل لكل إصدار في [`CHANGELOG.md`](../CHANGELOG.md). المصفوفة الكاملة للطرق الـ 78 في `v0.2.0` موجودة في
+[`docs/BENCHMARK_MATRIX.md`](../docs/BENCHMARK_MATRIX.md) و
+[`LSP_BENCHMARK_COMPARISON_REPORT.md`](../LSP_BENCHMARK_COMPARISON_REPORT.md).
+
+---
+
+## التثبيت
+
+على Linux ‏(x86_64، arm64) وmacOS على Apple Silicon، مع [rustup](https://rustup.rs):
+
+</div>
+
+<div dir="ltr">
+
+```bash
+curl -fsSL https://rust-intelligence.com/install.sh | sh
+```
+
+</div>
+
+<div dir="rtl">
+
+يضيف المثبّت Rust 1.98.1، وهي سلسلة الأدوات التي يعمل داخلها `ridx-driver` (يرتبط بمكتبات ذلك المترجم؛ تحتفظ
+مشاريعك بأي سلسلة أدوات، ويبني ridx الفهرس بالسلسلة الصحيحة)، وينزّل من GitHub أرشيف الإصدار لمنصتك، ويتحقق من
+SHA-256 الخاص به، ويضع `ridx` و`ridx-driver` في `~/.local/bin` (يغيّره `RIDX_INSTALL_DIR`، ويثبّت
+`RIDX_VERSION=v0.3.7` إصدارًا محددًا).
+
+للبناء من المصدر بدلًا من ذلك:
+
+</div>
+
+<div dir="ltr">
+
+```bash
+rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
+git clone https://github.com/alex09x/rust-intelligence
+cd rust-intelligence
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+```
+
+</div>
+
+<div dir="rtl">
+
+ثم افتح مساحة عمل Cargo في محرّرك. إن لم يكن هناك فهرس بعد، يبنيه `ridx` عند أول استخدام ويعرض التقدّم في
+المحرّر؛ ويعيد تحميل الفهرس عند انتهاء البناء ويعيد الفهرسة في الخلفية بعد الحفظ. يبنيه `ridx index .` من الطرفية
+(`--all-features` و`--target <triple>` يختاران cfg).
+
+إذا لم يعثر محرّر سطح المكتب على `ridx`، فأعطه المسار الكامل الذي يعيده `which ridx`.
+
+## المحرّرات
+
+يتصرّف `ridx` من دون أمر فرعي مثل `rust-analyzer` في سطر الأوامر (`--version` و`--stdio` و
+`--log-file` و`--print-config-schema`)، لذا يمكن لمحرّر مُعدّ لـ rust-analyzer أن يشغّله بدلًا منه.
+
+- **Zed**: تسجّل الإضافة [`editors/zed`](../editors/zed) الأمر `ridx lsp` بوصفه خادم اللغة
+  `rust-intelligence` (لوحة الأوامر: `zed: install dev extension`)، ويختاره
+  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) للغة Rust.
+- **VS Code**: يوجّه [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)
+  إضافة rust-analyzer إلى `ridx` (`"rust-analyzer.server.path": "ridx"`).
+- **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`،
+  يُبحث عن الجذر أولًا عبر `Cargo.lock`، فيفتح عضو مساحة العمل فهرس مساحة العمل كلها).
+- **Helix**: ‏`[language-server.ridx]` مع `command = "ridx"` و`args = ["lsp"]` في `languages.toml`.
+
+## من الطرفية
+
+</div>
+
+<div dir="ltr">
+
+```bash
+ridx index .                     # build or refresh the index
+ridx def . my_crate::run         # go to definition, by path or file:line:col
+ridx refs . src/main.rs:12:15    # references across the workspace and its dependencies
+ridx hover . src/main.rs:12:15
+ridx type-at . src/main.rs:12:15
+ridx symbols . Config
+ridx inspect .                   # shards, crates and record counts
+ridx compare -c all . my_crate::run   # side by side with rust-analyzer
+```
+
+</div>
+
+<div dir="rtl">
+
+---
+
+## طرق LSP
+
+| الفئة | الطرق |
+|---|---|
+| التنقّل | `definition`, `declaration`, `implementation`, `typeDefinition` |
+| المراجع | `references`, `documentHighlight` |
+| الذكاء | `hover`, `completion` (مع الاستيراد التلقائي), `signatureHelp`, `inlayHint`, `semanticTokens` |
+| التسلسلات الهرمية | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
+| إعادة الهيكلة | `prepareRename`, `rename`, `codeAction` (مساعدات مُتحقَّق منها بالترجمة), `executeCommand` |
+| التنسيق | `formatting`, `rangeFormatting` |
+| الرموز | `documentSymbol`, `workspace/symbol` |
+| التشخيصات | `publishDiagnostics` من `cargo check` في الخلفية عند الحفظ، وتشخيصات السحب |
+| مساحات العمل | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, جذور متعددة |
+
+## كيف يعمل
+
+</div>
+
+<div dir="ltr">
+
+```
+ editor ──JSON-RPC (stdio)──► ridx lsp
+                               ├─ OverlayManager (RAM): open buffers, live edits
+                               ├─ WorkspaceIndex (mmap): shards of this workspace
+                               └─ flycheck thread: cargo check on save
+                                        │
+              ┌─────────────────────────┴─────────────────────────┐
+   ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
+   dependencies, once per source hash and target      the workspace's own crates
+   shared by every project                            + a manifest scoped to Cargo.lock
+                                        ▲
+                         ridx-driver (rustc wrapper inside cargo check)
+```
+
+</div>
+
+<div dir="rtl">
+
+شظية `.ridx` v5 بترتيب little-endian وسجلات ثابتة الحجم محاذاة على 8 بايت: ترويسة، ومجمّع سلاسل، وجدول الملفات
+(16 B لكل مدخل)، والتعريفات (40 B) مع فهرس تجزئة FNV-1a، وجداول owner وderef لسلاسل المستقبِلات، والمراجع مرتبة
+حسب الموضع (48 B) مع فهرس تجزئة للأهداف، وجداول الأنواع وimpl والحقول والمعاملات العامة. البحث ثنائي في الذاكرة
+المعيّنة؛ لا يُحلَّل شيء إلى الكومة، وتُغلق ملفات الشظايا بعد تعيينها.
+
+## قيود معروفة
+
+- **الإجابات من آخر بناء.** الشيفرة المكتوبة بعده تُجاب من المخزن المؤقت المفتوح وتلحق بالركب عند البناء التالي؛
+  والصندوق (crate) الذي يفشل بناؤه يحتفظ بآخر فهرس سليم له.
+- **cfg واحد.** مثل `cargo check`، يرى الفهرس هدفًا واحدًا ومجموعة ميزات واحدة؛ الشيفرة خلف
+  `#[cfg]` أو ميزات أخرى لا تُفهرَس. اخترها عبر `ridx index --all-features` / `--target`.
+- **Windows** غير مدعوم بعد.
+- **المكتبة القياسية**: يعمل التنقّل والمرور إلى `std` و`core` و`alloc`؛ ويُبحث عن المراجع إليها داخل مساحة
+  العمل فقط، ولا يمكن إعادة تسميتها.
+- **الاستدعاءات الواردة** تسرد المستدعي حيث تُستدعى الدالة (`name(` أو `name::<…>(`)؛ ويسرد rust-analyzer
+  أيضًا الدوال المُمرَّرة كقيم، مثل نظام يُعطى إلى `add_systems`.
+- يُحتسب `vec![]` مرجعًا إلى `Vec`؛ ولا يحتسبه rust-analyzer.
+
+---
+
+## التطوير
+
+لا يتجاوز أي ملف مصدر 400 سطر.
+
+</div>
+
+<div dir="ltr">
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
+</div>
+
+<div dir="rtl">
+
+## الترخيص
+
+مرخّص بموجب أيٍّ من:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) أو http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](../LICENSE-MIT) أو http://opensource.org/licenses/MIT)
+
+حسب اختيارك.
+
+</div>

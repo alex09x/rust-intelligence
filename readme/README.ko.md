@@ -1,0 +1,212 @@
+<!-- translation-source: 738fe46bc60249e59fb9064428b6d11d56d32014 -->
+
+> [!NOTE]
+> 이 문서는 커밋 [738fe46](https://github.com/alex09x/rust-intelligence/blob/738fe46bc60249e59fb9064428b6d11d56d32014/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+
+<p align="center">
+  <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
+</p>
+
+<h1 align="center">Rust Intelligence (<code>ridx</code>)</h1>
+
+<p align="center">
+  <b>10분의 1 메모리로 동작하는 Rust 코드 인텔리전스.</b><br>
+  rustc가 이미 계산한 결과로 답하는 Rust 언어 서버.
+</p>
+
+<p align="center">
+  <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
+  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+</p>
+
+<p align="center">
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/README.md">English</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ru.md">Русский</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.zh-CN.md">简体中文</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.es.md">Español</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ja.md">日本語</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.de.md">Deutsch</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.fr.md">Français</a> ·
+  <b><a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ko.md">한국어</a></b> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ar.md">العربية</a>
+</p>
+
+`ridx`는 `cargo check` 중에 정의, 참조, 타입을 한 번만 바이너리 인덱스에 기록하고, 그 인덱스를 디스크에서
+바로 읽습니다. 에디터는 두 번째 컴파일러를 메모리에 띄우지 않고도 이동, 호버, 자동 완성, 참조 찾기,
+이름 바꾸기를 사용할 수 있습니다.
+
+Linux와 macOS를 지원합니다. Rust Project 및 Rust Foundation과 무관합니다.
+
+---
+
+## 왜 ridx인가
+
+- **rust-analyzer는 워크스페이스 전체에 대한 자체 분석을 메모리에 유지합니다**: 아래 측정에서 serde는 1.5 GB,
+  Bevy는 11.3 GB였습니다. rustc가 `cargo check` 때마다 어차피 수행하는 이름 해석, 매크로 확장, 타입 추론을 반복합니다.
+- **분석 대상의 대부분은 의존성과 std**로, 아무도 편집하지 않는 코드입니다. `ridx`는 의존성마다 한 번만
+  인덱싱하고 머신의 모든 프로젝트와 worktree에서 공유합니다.
+- **입력 중인 코드도 동작합니다**: 저장하지 않은 편집은 프로젝트가 다시 빌드될 때까지 인덱스 위의 메모리
+  오버레이가 답합니다.
+
+## 측정
+
+두 서버에 같은 에디터 세션을 실행했습니다. 각 저장소의 파일 40개를 하나씩 열어 문서 심볼, 시맨틱 토큰, 접기,
+인레이 힌트를 요청하고, 샘플링한 위치에서 호버, 정의, 타입 정의, 하이라이트, 참조, 자동 완성을 요청한 뒤
+한 번 편집합니다. 메모리에는 자식 프로세스가 포함됩니다.
+
+| 저장소 | 최대 메모리, ridx / rust-analyzer | 세션 CPU 시간 | 시작부터 준비까지 |
+|---|---:|---:|---:|
+| serde | 72 MB / 1.5 GB | 2.34 s / 6.97 s | 0.06 s / 3.27 s |
+| tokio | 221 MB / 3.2 GB | 1.90 s / 35.9 s | 0.24 s / 4.77 s |
+| rust-analyzer | 434 MB / 4.6 GB | 4.44 s / 66.7 s | 0.64 s / 5.22 s |
+| bevy | 917 MB / 11.3 GB | 5.38 s / 170.5 s | 1.26 s / 15.5 s |
+
+- ridx `f7105fcc`, 2026-11-14; Linux 6.8, AMD Ryzen 9 7950X, 64 GB에서 1회 실행(n = 1). 원시 결과:
+  [`bench/published/resources_f7105fcc.jsonl`](../bench/published/resources_f7105fcc.jsonl), 스크립트:
+  [`bench/measure_resources.py`](../bench/measure_resources.py). 메서드별 지연 시간은 원시 결과와 사이트에 있습니다.
+- **포함되지 않은 것**: ridx는 미리 만든 인덱스(`ridx index`, ridx 드라이버를 쓰는 `cargo check`)에서
+  답하며, 큰 워크스페이스에서는 처음에 몇 분이 걸립니다. rust-analyzer는 시작할 때마다 워크스페이스를 분석하고,
+  그 시간은 rust-analyzer의 수치에 포함됩니다.
+- **"준비"** 는 ridx의 경우 `initialize`에 대한 응답(그 후에도 캐시는 백그라운드에서 예열됨)이고,
+  rust-analyzer의 경우 분석 종료 후 메시지가 없는 0.5 s까지입니다.
+- **메모리**: ridx의 수치에는 디스크에서 매핑한 인덱스 페이지가 포함되며, 커널은 메모리가 부족하면 이를
+  버리고 다시 읽을 수 있습니다. rust-analyzer의 수치는 자체 힙입니다.
+- rust-analyzer는 저장소마다 26–31개의 요청에 오류로 응답했고 ridx는 하나도 없었습니다. 오류 종류는 기록하지
+  않았습니다. 오류가 난 요청도 지연 시간 수치에 포함됩니다.
+
+LSP 메서드별로 rust-analyzer와 답이 일치하는 정도는 [`bench/`](../bench/)의 테스트 모음으로 측정하고
+릴리스마다 [`CHANGELOG.md`](../CHANGELOG.md)에 기록합니다. `v0.2.0`의 78개 메서드 전체 매트릭스는
+[`docs/BENCHMARK_MATRIX.md`](../docs/BENCHMARK_MATRIX.md)와
+[`LSP_BENCHMARK_COMPARISON_REPORT.md`](../LSP_BENCHMARK_COMPARISON_REPORT.md)에 있습니다.
+
+---
+
+## 설치
+
+Linux(x86_64, arm64)와 Apple Silicon의 macOS, [rustup](https://rustup.rs)이 필요합니다:
+
+```bash
+curl -fsSL https://rust-intelligence.com/install.sh | sh
+```
+
+설치 스크립트는 Rust 1.98.1(`ridx-driver`가 그 안에서 실행되는 툴체인으로, 해당 컴파일러의 라이브러리에
+링크됩니다. 여러분의 프로젝트는 어떤 툴체인을 써도 되며, ridx가 올바른 툴체인으로 인덱스를 빌드합니다)을
+추가하고, GitHub에서 플랫폼용 릴리스 아카이브를 받아 SHA-256을 확인한 뒤 `ridx`와 `ridx-driver`를
+`~/.local/bin`에 둡니다(`RIDX_INSTALL_DIR`로 변경, `RIDX_VERSION=v0.3.7`로 릴리스 고정).
+
+소스에서 빌드하려면:
+
+```bash
+rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
+git clone https://github.com/alex09x/rust-intelligence
+cd rust-intelligence
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
+RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+```
+
+그다음 에디터에서 Cargo 워크스페이스를 엽니다. 아직 인덱스가 없으면 `ridx`가 처음 사용할 때 만들고 진행 상황을
+에디터에 표시합니다. 빌드가 끝나면 인덱스를 다시 불러오고, 저장 후에는 백그라운드에서 다시 인덱싱합니다.
+셸에서는 `ridx index .`로 만듭니다(`--all-features`, `--target <triple>`로 cfg 선택).
+
+데스크톱 에디터가 `ridx`를 찾지 못하면 `which ridx`가 알려 주는 전체 경로를 지정하세요.
+
+## 에디터
+
+하위 명령 없이 실행한 `ridx`는 명령줄에서 `rust-analyzer`처럼 동작하므로(`--version`, `--stdio`,
+`--log-file`, `--print-config-schema`), rust-analyzer용으로 설정한 에디터가 대신 ridx를 실행할 수 있습니다.
+
+- **Zed**: [`editors/zed`](../editors/zed) 확장이 `ridx lsp`를 `rust-intelligence` 언어 서버로 등록하고
+  (명령 팔레트: `zed: install dev extension`),
+  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json)이 Rust에 이를 선택합니다.
+- **VS Code**: [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)이
+  rust-analyzer 확장을 `ridx`로 향하게 합니다(`"rust-analyzer.server.path": "ridx"`).
+- **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)(`cmd = { "ridx" }`,
+  루트를 먼저 `Cargo.lock`으로 찾으므로 워크스페이스 멤버를 열어도 워크스페이스 전체 인덱스를 씁니다).
+- **Helix**: `languages.toml`에 `command = "ridx"`, `args = ["lsp"]`를 가진 `[language-server.ridx]`를 추가합니다.
+
+## 셸에서
+
+```bash
+ridx index .                     # build or refresh the index
+ridx def . my_crate::run         # go to definition, by path or file:line:col
+ridx refs . src/main.rs:12:15    # references across the workspace and its dependencies
+ridx hover . src/main.rs:12:15
+ridx type-at . src/main.rs:12:15
+ridx symbols . Config
+ridx inspect .                   # shards, crates and record counts
+ridx compare -c all . my_crate::run   # side by side with rust-analyzer
+```
+
+---
+
+## LSP 메서드
+
+| 분류 | 메서드 |
+|---|---|
+| 탐색 | `definition`, `declaration`, `implementation`, `typeDefinition` |
+| 참조 | `references`, `documentHighlight` |
+| 인텔리전스 | `hover`, `completion` (자동 임포트 포함), `signatureHelp`, `inlayHint`, `semanticTokens` |
+| 계층 | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
+| 리팩터링 | `prepareRename`, `rename`, `codeAction` (컴파일로 검증한 어시스트), `executeCommand` |
+| 서식 | `formatting`, `rangeFormatting` |
+| 심볼 | `documentSymbol`, `workspace/symbol` |
+| 진단 | 저장 시 백그라운드 `cargo check`의 `publishDiagnostics`, 풀 방식 진단 |
+| 워크스페이스 | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, 다중 루트 |
+
+## 동작 방식
+
+```
+ editor ──JSON-RPC (stdio)──► ridx lsp
+                               ├─ OverlayManager (RAM): open buffers, live edits
+                               ├─ WorkspaceIndex (mmap): shards of this workspace
+                               └─ flycheck thread: cargo check on save
+                                        │
+              ┌─────────────────────────┴─────────────────────────┐
+   ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
+   dependencies, once per source hash and target      the workspace's own crates
+   shared by every project                            + a manifest scoped to Cargo.lock
+                                        ▲
+                         ridx-driver (rustc wrapper inside cargo check)
+```
+
+`.ridx` v5 샤드는 리틀 엔디언이며 8바이트로 정렬된 고정 크기 레코드로 이루어집니다: 헤더, 문자열 풀, 파일 테이블
+(항목당 16 B), FNV-1a 해시 인덱스가 있는 정의(40 B), 리시버 체인을 위한 owner 및 deref 테이블, 위치순으로
+정렬되고 대상 해시 인덱스가 있는 참조(48 B), 그리고 타입·impl·필드·제네릭 테이블. 조회는 매핑된 메모리에서의
+이진 탐색이며, 힙으로 파싱하는 것은 없고 샤드 파일은 매핑 후 바로 닫습니다.
+
+## 알려진 제한
+
+- **답은 마지막 빌드에서 나옵니다.** 그 이후 입력한 코드는 열린 버퍼에서 답하고, 프로젝트가 다시 빌드되면
+  따라잡습니다. 빌드에 실패한 크레이트는 마지막으로 성공한 인덱스를 유지합니다.
+- **cfg는 하나뿐입니다.** `cargo check`처럼 인덱스는 하나의 타깃과 하나의 피처 집합만 봅니다. 다른
+  `#[cfg]`나 피처 뒤의 코드는 인덱싱되지 않습니다. `ridx index --all-features` / `--target`으로 선택합니다.
+- **Windows**는 아직 지원하지 않습니다.
+- **표준 라이브러리**: `std`, `core`, `alloc`으로의 이동과 호버는 동작합니다. 이에 대한 참조는 워크스페이스
+  안에서만 찾으며 이름을 바꿀 수 없습니다.
+- **들어오는 호출**은 함수가 호출된 곳(`name(` 또는 `name::<…>(`)의 호출자를 나열합니다. rust-analyzer는
+  `add_systems`에 넘긴 시스템처럼 값으로 전달된 함수도 나열합니다.
+- `vec![]`는 `Vec`에 대한 참조로 셉니다. rust-analyzer는 세지 않습니다.
+
+---
+
+## 개발
+
+모든 소스 파일은 400줄 이하입니다.
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
+## 라이선스
+
+다음 중 하나의 라이선스로 제공됩니다:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) 또는 http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](../LICENSE-MIT) 또는 http://opensource.org/licenses/MIT)
+
+원하는 쪽을 선택할 수 있습니다.

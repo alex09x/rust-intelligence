@@ -8,6 +8,10 @@ The first set covers Russian (`ru`), Simplified Chinese (`zh-CN`), Spanish (`es`
 Brazilian Portuguese (`pt-BR`), Japanese (`ja`), German (`de`), French (`fr`),
 Korean (`ko`) and Arabic (`ar`), alongside English.
 
+The translations are generated: `tools/readme_i18n/tr_<locale>.py` holds each language's prose, and
+`python3 tools/readme_i18n/gen.py` writes `readme/README.<locale>.md` around the English README's fenced
+blocks, badges and links. Edit the prose there, not in the generated files.
+
 When changing the English README:
 
 1. Update the corresponding explanations in every translation. Keep the distinction
