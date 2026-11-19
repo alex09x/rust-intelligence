@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn test_a_binary_built_elsewhere_finds_its_toolchain_under_this_rustup_home() {
         let home = tempfile::tempdir().unwrap();
-        let built_on = "/home/runner/.rustup/toolchains/1.98.1-x86_64-unknown-linux-gnu/lib";
+        let built_on = "/nonexistent-build-host/.rustup/toolchains/1.98.1-x86_64-unknown-linux-gnu/lib";
         assert_eq!(relocate_sysroot_lib(built_on, Some(home.path())), None, "the toolchain is not installed here");
         let here = home.path().join("toolchains/1.98.1-x86_64-unknown-linux-gnu/lib");
         std::fs::create_dir_all(&here).unwrap();
