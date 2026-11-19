@@ -170,11 +170,33 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                          ridx-driver (rustc wrapper inside cargo check)
 ```
 
-The `.ridx` v5 shard is little-endian with 8-byte aligned, fixed-size records: a header, a string pool, the
-file table (16 B per entry), definitions (40 B) with an FNV-1a hash index, owner and deref tables for
-receiver chains, references sorted by span (48 B) with a target hash index, and type, impl, field and
-generic tables. Lookups are binary searches over mapped memory; nothing is parsed into the heap, and the
-shard files are closed once mapped.
+rustc already resolves every name, expands every macro and infers every type on each `cargo check`. `ridx`
+keeps those answers instead of computing them again.
+
+- **The compiler writes the index.** `ridx index` runs `cargo check` with `ridx-driver` as the rustc wrapper.
+  After analysis the driver walks the HIR and rustc's type-check results and writes one `.ridx` shard per
+  crate: definitions, every resolved reference (method calls and fields as rustc resolved them, through
+  auto-deref and trait selection), types, impls, fields, generics, macros and `use` items. Compilation then
+  goes on as usual, so the check itself is unchanged.
+- **Dependencies are indexed once per machine.** A dependency's shard goes to a content-addressed store,
+  keyed by crate, version, target, cfg flags and the digests of what it was compiled against; when a valid
+  shard is there, the driver skips the crate. Projects and worktrees share these shards, and `std`, `core`
+  and `alloc` are indexed once per toolchain.
+- **Reading is mapping, not parsing.** The v5 shard is little-endian with fixed-size records aligned to 8
+  bytes: a string pool, files (16 B), definitions (40 B) with an FNV-1a hash index, references sorted by
+  span (48 B) with a target hash index, and type, impl, field and generic tables. A lookup is a hash probe or
+  a binary search over mapped pages. Pages nobody asks for are never read, and the kernel can drop the
+  others under memory pressure.
+- **Rebuilds are incremental and safe.** After a save the server reindexes in the background; when only
+  workspace sources changed, it calls the driver on the changed crates directly, without Cargo. A crate
+  that fails to build keeps its last good shard, and another feature set or target gets its own variant
+  next to the first.
+- **Code typed between builds** is mapped onto the compiled text line by line, and the edited code is
+  analyzed by a small compiler-free front end ([`crates/ridx-syntax`](crates/ridx-syntax): lexer, parser,
+  name resolution, type inference) that reads every other type and item from the index.
+
+The whole design, with the shard layout and where each part lives in the code:
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Known limitations
 
