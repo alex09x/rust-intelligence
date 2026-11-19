@@ -60,7 +60,7 @@ and recorded per release in [`CHANGELOG.md`](CHANGELOG.md). The full 78-method m
 compiler libraries. Your own projects can use any toolchain; ridx runs the index build with the right one.
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev llvm-tools-preview rust-src rustfmt clippy
+rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
 git clone https://github.com/alex09x/rust-intelligence
 cd rust-intelligence
 RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
@@ -109,14 +109,12 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Navigation | `definition`, `declaration`, `implementation`, `typeDefinition` |
 | References | `references`, `documentHighlight` |
 | Intelligence | `hover`, `completion` (with auto-import), `signatureHelp`, `inlayHint`, `semanticTokens` |
-| Hierarchies | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `supertypes`, `subtypes` |
+| Hierarchies | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
 | Refactoring | `prepareRename`, `rename`, `codeAction` (compile-checked assists), `executeCommand` |
 | Formatting | `formatting`, `rangeFormatting` |
 | Symbols | `documentSymbol`, `workspace/symbol` |
 | Diagnostics | `publishDiagnostics` from a background `cargo check` on save, pull diagnostics |
 | Workspaces | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, multi-root |
-
-[ROADMAP.md](ROADMAP.md) has the per-method status.
 
 ## How it works
 

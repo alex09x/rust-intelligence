@@ -156,7 +156,7 @@
 <section id="start" class="wrap sec">
   <div class="head"><span class="eye">Quickstart</span><h2 class="h2">Install, point your editor at it, open a project</h2>
     <p class="lead">Linux and macOS. ridx-driver runs inside rustc, so both binaries are built with the toolchain pinned in the repository, and that toolchain stays installed. Open a Cargo workspace and ridx indexes it on first use; your editor shows the progress. If a desktop editor cannot find <span class="mono">ridx</span>, give it the full path from <span class="mono">which ridx</span>.</p></div>
-  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">rustup toolchain install 1.98.1 --component rustc-dev llvm-tools-preview rust-src rustfmt clippy
+  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
 git clone https://github.com/alex09x/rust-intelligence
 cd rust-intelligence
 RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
