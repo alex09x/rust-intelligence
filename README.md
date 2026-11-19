@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
   <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
 <p align="center">
@@ -198,6 +199,26 @@ Every source file stays at or under 400 lines.
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+```
+
+## Citing
+
+If you use ridx in research or documentation, please cite the archived release on Zenodo:
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) for the project (it resolves to the latest
+version), [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817) for exactly 0.3.7.
+[`CITATION.cff`](CITATION.cff) holds the metadata GitHub's "Cite this repository" uses.
+
+```bibtex
+@software{panasenko_2026_24379817,
+  author    = {Panasenko, Alexander},
+  title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
+  month     = nov,
+  year      = 2026,
+  publisher = {Zenodo},
+  version   = {0.3.7},
+  doi       = {10.5281/zenodo.24379817},
+  url       = {https://doi.org/10.5281/zenodo.24379817},
+}
 ```
 
 ## License

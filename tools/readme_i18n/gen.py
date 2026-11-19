@@ -19,7 +19,7 @@ from pathlib import Path
 REPO = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
 HERE = Path(__file__).parent
 FENCES = re.findall(r"^```[^\n]*\n.*?^```[ \t]*$", (REPO / "README.md").read_text(), re.MULTILINE | re.DOTALL)
-assert len(FENCES) == 5, len(FENCES)
+assert len(FENCES) == 6, len(FENCES)
 SHA = subprocess.check_output(["git", "-C", str(REPO), "log", "-1", "--format=%H", "--", "README.md"], text=True).strip()
 BASE = "https://github.com/alex09x/rust-intelligence/blob/main/"
 LANGS = [("en", "English", "README.md"), ("ru", "Русский", "readme/README.ru.md"), ("zh-CN", "简体中文", "readme/README.zh-CN.md"),
@@ -59,6 +59,7 @@ def render(code, t):
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
   <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
 {selector(code)}
@@ -163,6 +164,12 @@ def render(code, t):
 {t['dev']}{c}
 
 {fence(4)}
+
+{o}## {t['h_cite']}
+
+{t['cite']}{c}
+
+{fence(5)}
 
 {o}## {t['h_license']}
 

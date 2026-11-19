@@ -56,6 +56,8 @@ T = {
     "lim6": "`vec![]`는 `Vec`에 대한 참조로 셉니다. rust-analyzer는 세지 않습니다.",
     "h_dev": "개발",
     "dev": "모든 소스 파일은 400줄 이하입니다.",
+    "h_cite": "인용",
+    "cite": "연구나 문서에서 ridx를 사용한다면 Zenodo에 보관된 릴리스를 인용해 주세요:\n프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.7은 [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817).\n[`CITATION.cff`](../CITATION.cff)에 GitHub의 \"Cite this repository\"가 사용하는 메타데이터가 있습니다.",
     "h_license": "라이선스",
     "license_intro": "다음 중 하나의 라이선스로 제공됩니다:",
     "apache": "Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) 또는 http://www.apache.org/licenses/LICENSE-2.0)",
