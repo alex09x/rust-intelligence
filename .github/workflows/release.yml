@@ -1,0 +1,119 @@
+# rust-intelligence — release archives of ridx and ridx-driver for each supported platform.
+# Copyright (c) 2026 Alexander Panasenko
+# Contact: alex@prod.codes
+# Author: https://prod.codes/about/
+# Project: https://github.com/alex09x/rust-intelligence
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
+# A pushed tag vX.Y.Z builds both binaries from that tag on every platform, smoke-tests them on a small
+# crate, and attaches ridx-<target>.tar.gz, its .sha256 and SHA256SUMS to the GitHub release of the tag
+# (created as a draft when it does not exist yet). Existing assets are never overwritten.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+      - name: Toolchain pinned in rust-toolchain.toml
+        run: |
+          set -euo pipefail
+          rustup show active-toolchain || rustup toolchain install
+          rustc --version
+      - name: Build
+        run: |
+          set -euo pipefail
+          # No checkout path in the binaries.
+          export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=/ridx --remap-path-prefix=$HOME=/home"
+          export RIDX_BUILD_DIRTY=false
+          cargo build --release --locked -p ridx -p ridx-driver
+      - name: Smoke test on a small crate
+        run: |
+          set -euo pipefail
+          bin="$GITHUB_WORKSPACE/target/release"
+          work="$RUNNER_TEMP/smoke"
+          mkdir -p "$work/src"
+          printf '[package]\nname = "smoke"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' > "$work/Cargo.toml"
+          printf 'pub struct Greeter;\nimpl Greeter {\n    pub fn hello(&self) -> String { String::from("hi") }\n}\npub fn run() -> String { Greeter.hello() }\n' > "$work/src/lib.rs"
+          cd "$work"
+          "$bin/ridx" --version
+          "$bin/ridx" index .
+          out=$("$bin/ridx" def . src/lib.rs:5:35)
+          echo "$out"
+          echo "$out" | grep -q 'lib.rs:3'
+      - name: Package
+        run: |
+          set -euo pipefail
+          name="ridx-${{ matrix.target }}"
+          mkdir -p "dist/$name"
+          cp target/release/ridx target/release/ridx-driver LICENSE-MIT LICENSE-APACHE README.md "dist/$name/"
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          (cd dist && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256")
+          cat "dist/$name.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Attach to the release of the tag
+        run: |
+          set -euo pipefail
+          cd dist
+          cat ./*.sha256 | sort -k2 > SHA256SUMS
+          cat SHA256SUMS
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --draft --verify-tag --title "ridx ${TAG#v}" --notes "Release notes: CHANGELOG.md"
+          fi
+          existing=$(gh release view "$TAG" --json assets -q '.assets[].name')
+          for f in ./*.tar.gz ./*.sha256 SHA256SUMS; do
+            name=$(basename "$f")
+            if grep -qx "$name" <<<"$existing"; then
+              echo "keeping the existing $name"
+            else
+              gh release upload "$TAG" "$f"
+            fi
+          done

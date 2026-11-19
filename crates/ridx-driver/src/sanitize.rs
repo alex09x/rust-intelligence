@@ -15,7 +15,7 @@
 ///
 /// Specifically:
 /// 1. Strips span locations from unnameable closure/coroutine types:
-///    `{closure@/Users/alex09x/project/src/lib.rs:42:15}` -> `{closure}`
+///    `{closure@/Users/me/project/src/lib.rs:42:15}` -> `{closure}`
 ///    `{async fn body@/home/runner/...:10:20}` -> `{async fn body}`
 /// 2. Redacts any accidental user home directory path fragments (`/Users/<user>/` or `/home/<user>/`).
 pub fn sanitize_type_name(s: &str) -> String {

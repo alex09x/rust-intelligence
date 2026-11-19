@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -59,8 +60,8 @@ def main() -> int:
     )
     ap.add_argument(
         "--repos-root",
-        default="/home/alex09x/prod-code-storage/bench_repos",
-        help="Directory containing benchmark repositories",
+        default=os.environ.get("RIDX_BENCH_REPOS", "bench_repos"),
+        help="Directory containing benchmark repositories (default: $RIDX_BENCH_REPOS or ./bench_repos)",
     )
     ap.add_argument(
         "corpora",

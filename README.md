@@ -1,9 +1,37 @@
-# Rust Intelligence (`ridx`)
+<p align="center">
+  <img src="site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
+</p>
 
-A language server for Rust that answers from what rustc already worked out. `ridx` records definitions,
-references and types once, during `cargo check`, into a binary index, and reads that index straight from
-disk. Your editor gets navigation, hover, completion, references and rename without a second compiler
-held in memory.
+<h1 align="center">Rust Intelligence (<code>ridx</code>)</h1>
+
+<p align="center">
+  <b>Rust code intelligence at a tenth of the memory.</b><br>
+  A language server for Rust that answers from what rustc already worked out.
+</p>
+
+<p align="center">
+  <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
+  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+</p>
+
+<p align="center">
+  <b>English</b> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ru.md">Русский</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.zh-CN.md">简体中文</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.es.md">Español</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ja.md">日本語</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.de.md">Deutsch</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.fr.md">Français</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ko.md">한국어</a> ·
+  <a href="https://github.com/alex09x/rust-intelligence/blob/main/readme/README.ar.md">العربية</a>
+</p>
+
+`ridx` records definitions, references and types once, during `cargo check`, into a binary index, and
+reads that index straight from disk. Your editor gets navigation, hover, completion, references and rename
+without a second compiler held in memory.
 
 Linux and macOS. Not affiliated with the Rust Project or the Rust Foundation.
 
@@ -55,9 +83,18 @@ and recorded per release in [`CHANGELOG.md`](CHANGELOG.md). The full 78-method m
 
 ## Install
 
-`ridx-driver` runs inside rustc, so both binaries are built with the toolchain pinned in
-[`rust-toolchain.toml`](rust-toolchain.toml), and that toolchain stays installed: the driver links to its
-compiler libraries. Your own projects can use any toolchain; ridx runs the index build with the right one.
+Linux (x86_64, arm64) and macOS on Apple Silicon, with [rustup](https://rustup.rs):
+
+```bash
+curl -fsSL https://rust-intelligence.com/install.sh | sh
+```
+
+The installer adds Rust 1.98.1, the toolchain `ridx-driver` runs inside (it links to that compiler's
+libraries; your own projects keep any toolchain, ridx runs the index build with the right one), downloads
+the release archive for your platform from GitHub, checks its SHA-256 and puts `ridx` and `ridx-driver`
+into `~/.local/bin` (`RIDX_INSTALL_DIR` changes it, `RIDX_VERSION=v0.3.7` pins a release).
+
+To build from source instead:
 
 ```bash
 rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy

@@ -18,7 +18,9 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Rust Intelligence (ridx)">
   <meta property="og:description" content="A Rust language server at a tenth of rust-analyzer's memory, answering from what rustc already worked out.">
-  <meta property="og:image" content="assets/social.png">
+  <link rel="canonical" href="https://rust-intelligence.com/">
+  <meta property="og:url" content="https://rust-intelligence.com/">
+  <meta property="og:image" content="https://rust-intelligence.com/assets/social.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -39,7 +41,7 @@
 <section class="bggrid">
   <div class="wrap hero">
     <div class="hero-text rise">
-      <div class="lockup"><img src="assets/logo-minimal.svg" width="64" height="64" alt="ridx"><span class="wm" style="font-size:52px">ridx<span class="rust">.</span></span><span class="eye">v0.3</span></div>
+      <div class="lockup"><img src="assets/logo-minimal.svg" width="64" height="64" alt="ridx"><span class="wm" style="font-size:52px">ridx<span class="rust">.</span></span><span class="eye">v0.3.7</span></div>
       <h1 class="h1">Rust code intelligence at a <span class="rust">tenth of the memory</span>.</h1>
       <p class="lead">ridx is a language server for Rust that answers from what rustc already worked out. It records definitions, references and types once during <span class="mono">cargo check</span> and reads them straight from disk, so your editor gets navigation, hover and completion without a second compiler in RAM.</p>
       <div class="cta"><a class="btnp" href="#start">Get Started</a><a class="btns" href="#resources">See the numbers</a></div>
@@ -154,13 +156,10 @@
 </section>
 
 <section id="start" class="wrap sec">
-  <div class="head"><span class="eye">Quickstart</span><h2 class="h2">Install, point your editor at it, open a project</h2>
-    <p class="lead">Linux and macOS. ridx-driver runs inside rustc, so both binaries are built with the toolchain pinned in the repository, and that toolchain stays installed. Open a Cargo workspace and ridx indexes it on first use; your editor shows the progress. If a desktop editor cannot find <span class="mono">ridx</span>, give it the full path from <span class="mono">which ridx</span>.</p></div>
-  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked</pre></div>
+  <div class="head"><span class="eye">Quickstart</span><h2 class="h2">One command, then point your editor at it</h2>
+    <p class="lead">Linux (x86_64, arm64) and macOS on Apple Silicon, with <a href="https://rustup.rs">rustup</a>. The installer adds Rust 1.98.1, the compiler ridx-driver runs on (your projects keep their own toolchain), checks the release archive's SHA-256 and puts <span class="mono">ridx</span> and <span class="mono">ridx-driver</span> into <span class="mono">~/.local/bin</span>. Open a Cargo workspace and ridx indexes it on first use; your editor shows the progress.</p></div>
+  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">curl -fsSL https://rust-intelligence.com/install.sh | sh</pre></div>
+  <p class="mute" style="margin:0;font-size:14px;line-height:1.6">Prefer to build it? <span class="mono">rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src</span>, clone the repository and <span class="mono">cargo +1.98.1 install --locked --path crates/ridx</span> and <span class="mono">--path crates/ridx-driver</span>. If a desktop editor cannot find <span class="mono">ridx</span>, give it the full path from <span class="mono">which ridx</span>.</p>
   <div class="chips" id="ed-tabs"></div>
   <div class="card code"><button class="chip copy" data-copy="ed-code">Copy</button><pre id="ed-code"></pre></div>
 </section>

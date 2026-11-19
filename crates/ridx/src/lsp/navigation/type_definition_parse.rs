@@ -226,7 +226,7 @@ pub(crate) fn sysroot_rust_src() -> Option<&'static Path> {
 
 /// `rust-src` of the toolchain whose `lib` the driver was built against.
 fn driver_rust_src() -> Option<PathBuf> {
-    let lib = Path::new(option_env!("RIDX_BUILD_SYSROOT_LIB")?);
+    let lib = crate::indexer::cargo::build_sysroot_lib()?;
     Some(lib.parent()?.join("lib/rustlib/src/rust")).filter(|p| p.is_dir())
 }
 

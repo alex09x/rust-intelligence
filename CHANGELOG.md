@@ -2,6 +2,24 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.7] - 2026-11-19
+
+The first public release. Verified by the workspace test suite, by Zed's LSP traffic replayed against the server, by hand in Zed, and by rust-analyzer's own go-to-definition fixtures and 26 cross-crate scenarios run against both servers (`bench/ra_fixtures.py`, `bench/fixtures/cross_crate_definition.txt`). The per-method agreement suite was not re-run for this release. The index format is unchanged.
+
+### Added
+- **Release binaries and an installer**: `curl -fsSL https://rust-intelligence.com/install.sh | sh` installs `ridx` and `ridx-driver` for Linux x86_64, Linux arm64 and macOS on Apple Silicon, with the Rust 1.98.1 toolchain the driver runs on. A binary built on another machine finds that toolchain under the local rustup home.
+- **Indexing on first use**: a workspace opened without an index is indexed in the background, with progress shown in the editor; buffers opened before it finishes are answered as soon as it loads. Workspace folders added later are indexed the same way.
+- **Definitions the index cannot give**, found in the syntax tree: keywords, labels and lifetimes, `mod foo;` (its file), macro calls (local `macro_rules!` in scope, `#[macro_use]`, qualified and unimported calls, the standard library before a dependency), `Self`, the items of an `impl Trait for`, a shorthand field (`Point { x }` gives the field and the binding), and a crate name, which opens the crate's root (a renamed or registry dependency, `std`).
+- **Primitive types**: definition and hover of `u8`, `str`, `bool` and the rest open the standard library's documentation of the primitive.
+- **A caret just past a name** (where an editor leaves it after a double click or typing) answers as on the name, for definition, hover, highlights, references and the other position requests.
+- **The site** (https://rust-intelligence.com) with the measured memory, CPU and start-up against rust-analyzer, their raw results and script (`bench/measure_resources.py`, `bench/published/resources_f7105fcc.jsonl`).
+
+### Fixed
+- **Compiler diagnostics**: none for a file changed while the check ran; positions in the saved file's coordinates for Zed, which shifts them itself; a source changed outside the editor is checked again.
+- **Background reindex**: reaches open buffers and the client (inlay hints, semantic tokens and code lenses refresh); an open buffer is rebased only onto a text every one of its units built; an unchanged index is not rebuilt, and each unit compiles once.
+- **Signature help** stays silent on declarations: an item's own parameter list, `impl`, enum variants, bodies after `-> S`, comments and string, raw, byte and C-string literals.
+- **Add explicit type** sees the imports of the block around the `let`; **Format Selections** indents a line to its block.
+
 ## [0.3.6] - 2026-11-15
 
 Verified by the workspace test suite and by hand in Zed (hover, Cmd+click, references, rename, completion with auto-import, code actions, signature help, inlay hints, linked editing, document links, formatting, runnables) on edited, reverted and failed-to-build workspaces. The benchmark suite was not re-run for this release. The index format is unchanged; a re-index is recommended (source snapshots are written from this release on).
