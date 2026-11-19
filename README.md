@@ -148,7 +148,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | References | `references`, `documentHighlight` |
 | Intelligence | `hover`, `completion` (with auto-import), `signatureHelp`, `inlayHint`, `semanticTokens` |
 | Hierarchies | `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`, `prepareTypeHierarchy`, `supertypes`, `subtypes` |
-| Refactoring | `prepareRename`, `rename`, `codeAction` (compile-checked assists), `executeCommand` |
+| Refactoring | `prepareRename`, `rename`, `codeAction` (compile-safe assists), `executeCommand` |
 | Formatting | `formatting`, `rangeFormatting` |
 | Symbols | `documentSymbol`, `workspace/symbol` |
 | Diagnostics | `publishDiagnostics` from a background `cargo check` on save, pull diagnostics |
@@ -164,7 +164,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
                                         │
               ┌─────────────────────────┴─────────────────────────┐
    ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, once per source hash and target      the workspace's own crates
+   dependencies, by crate, version, target and cfg    the workspace's own crates
    shared by every project                            + a manifest scoped to Cargo.lock
                                         ▲
                          ridx-driver (rustc wrapper inside cargo check)
@@ -180,13 +180,13 @@ keeps those answers instead of computing them again.
   goes on as usual, so the check itself is unchanged.
 - **Dependencies are indexed once per machine.** A dependency's shard goes to a content-addressed store,
   keyed by crate, version, target, cfg flags and the digests of what it was compiled against; when a valid
-  shard is there, the driver skips the crate. Projects and worktrees share these shards, and `std`, `core`
-  and `alloc` are indexed once per toolchain.
-- **Reading is mapping, not parsing.** The v5 shard is little-endian with fixed-size records aligned to 8
-  bytes: a string pool, files (16 B), definitions (40 B) with an FNV-1a hash index, references sorted by
-  span (48 B) with a target hash index, and type, impl, field and generic tables. A lookup is a hash probe or
-  a binary search over mapped pages. Pages nobody asks for are never read, and the kernel can drop the
-  others under memory pressure.
+  shard is there, the driver does not extract the crate again. Projects and worktrees share these shards,
+  and `std`, `core` and `alloc` are indexed once per toolchain.
+- **Reading is mapping, not parsing.** The v5 shard is little-endian, with fixed-size records in sections
+  aligned to 8 bytes: a string pool, files (16 B), definitions (40 B) with an FNV-1a hash index, references
+  sorted by span (48 B) with a target hash index, and type, impl, field and generic tables. A lookup is a
+  hash probe, a binary search or a scan over mapped pages. Pages nobody asks for are never read, and the
+  kernel can drop the others under memory pressure.
 - **Rebuilds are incremental and safe.** After a save the server reindexes in the background; when only
   workspace sources changed, it calls the driver on the changed crates directly, without Cargo. A crate
   that fails to build keeps its last good shard, and another feature set or target gets its own variant
@@ -207,8 +207,6 @@ The whole design, with the shard layout and where each part lives in the code:
 - **Windows** is not supported yet.
 - **Standard library**: navigation and hover into `std`, `core` and `alloc` work; references to them are
   searched in the workspace only, and they cannot be renamed.
-- **Incoming calls** list a caller where the function is called (`name(` or `name::<…>(`); rust-analyzer
-  also lists functions passed as values, such as a system given to `add_systems`.
 - `vec![]` counts as a reference to `Vec`; rust-analyzer does not count it.
 
 ---

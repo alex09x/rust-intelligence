@@ -154,7 +154,6 @@ def render(code, t):
 - {t['lim2']}
 - {t['lim3']}
 - {t['lim4']}
-- {t['lim5']}
 - {t['lim6']}
 
 ---
