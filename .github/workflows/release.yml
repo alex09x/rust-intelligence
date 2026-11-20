@@ -110,6 +110,13 @@ jobs:
       - name: Remove the private credentials even after a failed step
         if: always()
         run: python3 tools/release/apple_keychain.py cleanup
+      - name: Keep Apple's log of a refused submission
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notary-evidence-failed
+          path: notary-evidence/*.json
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
           name: signed-aarch64-apple-darwin

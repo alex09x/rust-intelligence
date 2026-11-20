@@ -57,6 +57,10 @@ def sign_release(source, output, evidence):
             if job:
                 run(["xcrun", "notarytool", "log", job, *auth["auth"], log_file], timeout=120, check=False)
             if submission.get("status") != "Accepted":
+                # Apple's log carries no credentials: show why it refused, the runner is gone afterwards.
+                if log_file.is_file():
+                    log = json.loads(log_file.read_text())
+                    print(json.dumps({k: log.get(k) for k in ("status", "statusSummary", "statusCode", "issues")}, indent=2))
                 raise ValueError(f"Apple notarization was {submission.get('status')!r}, not Accepted (see apple-notary-log.json)")
         receipt = json.loads(log_file.read_text())
         zip_sha = hashlib.sha256(submission_zip.read_bytes()).hexdigest()
