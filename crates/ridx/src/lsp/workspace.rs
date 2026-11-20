@@ -149,7 +149,10 @@ impl MultiRootWorkspace {
         any_reloaded
     }
 
-    pub fn handle_did_change_workspace_folders(&mut self, msg: &Value) {
+    /// Applies the client's folder change and returns the added folders lifted to their Cargo workspaces,
+    /// the roots the caller indexes.
+    pub fn handle_did_change_workspace_folders(&mut self, msg: &Value) -> Vec<PathBuf> {
+        let mut added_roots = Vec::new();
         if let Some(event) = msg.get("params").and_then(|p| p.get("event")) {
             if let Some(removed) = event.get("removed").and_then(|r| r.as_array()) {
                 for item in removed {
@@ -164,12 +167,16 @@ impl MultiRootWorkspace {
                     if let Some(uri) = item.get("uri").and_then(|u| u.as_str()) {
                         let path = super::protocol::uri_to_path(uri);
                         for root in super::cargo_root::workspace_roots(vec![PathBuf::from(path)]) {
-                            self.add_root(root);
+                            self.add_root(root.clone());
+                            if !added_roots.contains(&root) {
+                                added_roots.push(root);
+                            }
                         }
                     }
                 }
             }
         }
+        added_roots
     }
 
     #[inline]

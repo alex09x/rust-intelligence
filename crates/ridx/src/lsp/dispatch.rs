@@ -159,7 +159,7 @@ pub fn dispatch_lsp_message<W: Write>(
                         lifecycle.reindex.queue_first_index(folder);
                     }
                 } else if index_path.is_none() && mr.is_empty() {
-                    if let Ok(cur) = std::env::current_dir() {
+                    if let Some(cur) = std::env::current_dir().ok().and_then(|cur| super::cargo_root::workspace_roots(vec![cur]).pop()) {
                         lifecycle.reindex.queue_first_index(&cur);
                         mr.add_root(cur);
                     }
@@ -258,9 +258,8 @@ pub fn dispatch_lsp_message<W: Write>(
         "workspace/configuration" => Ok(json!([])),
 
         "workspace/didChangeWorkspaceFolders" => {
-            mr.handle_did_change_workspace_folders(&msg);
-            for folder in msg["params"]["event"]["added"].as_array().into_iter().flatten() {
-                lifecycle.reindex.index_if_missing(Path::new(&uri_to_path(folder["uri"].as_str().unwrap_or(""))));
+            for root in mr.handle_did_change_workspace_folders(&msg) {
+                lifecycle.reindex.index_if_missing(&root);
             }
             return Ok(true);
         }

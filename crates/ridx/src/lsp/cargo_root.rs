@@ -106,6 +106,18 @@ mod tests {
     }
 
     #[test]
+    fn added_member_folder_is_indexed_as_its_workspace() {
+        let tmp = workspace();
+        let member = tmp.path().join("app");
+        let msg = serde_json::json!({ "params": { "event": {
+            "added": [{ "uri": format!("file://{}", member.display()), "name": "app" }], "removed": []
+        } } });
+        let roots = super::super::workspace::MultiRootWorkspace::new().handle_did_change_workspace_folders(&msg);
+        assert_eq!(roots.len(), 1, "{roots:?}");
+        assert_eq!(ridx_format::canonicalize_best_effort(&roots[0]), ridx_format::canonicalize_best_effort(tmp.path()));
+    }
+
+    #[test]
     fn relative_or_empty_folder_is_not_resolved_against_the_current_directory() {
         assert_eq!(cargo_workspace_root(Path::new("")), None);
         assert_eq!(cargo_workspace_root(Path::new(".")), None);
