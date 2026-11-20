@@ -5,8 +5,9 @@ services, agents. There is one public interface, the Language Server Protocol, e
 `ridx/*` methods documented here. No integration uses anything private, including the ones we build
 ourselves.
 
-Status in this document: **available** means released and covered by tests; **in progress** means being
-built now; **planned** means agreed and not started. A method that is not marked available may change.
+Status in this document: **available** means implemented on `main` and covered by tests; **available (next
+release)** means that and not in a published release yet; **in progress** means being built now;
+**planned** means agreed and not started. A method that is not marked available may change.
 
 ## 1. Interfaces
 
@@ -24,19 +25,22 @@ configured for rust-analyzer can start it unchanged.
 - On `initialize`, every workspace folder that holds a Cargo workspace without an index is queued, and
   indexing starts on `initialized`.
 - While an index is built, the server reports work-done progress with a token starting `ridx-index-`
-  (`begin`, `report` naming the roots, `end`). **`end` is the readiness signal**: it is sent within 20 ms
-  after the new index has been loaded, so requests after it are answered from that index. **available**
-  There is one token for all folders being indexed: `report` names the roots still running and `end` comes
-  when the last of them is loaded, not once per folder. A per-folder readiness signal is **planned**.
+  (`begin`, `report` naming the roots, `end`). `end` means the **attempts ended**, not that a new index was
+  loaded: a run that failed (an invalid `Cargo.toml`, a build script that fails) ends it too and leaves the
+  index as it was. A successful run's index is normally loaded before its `end` is sent, but this is not
+  guaranteed. There is one token for all folders being indexed, not one per folder. **available**
+  A readiness signal that tells a loaded index from a failed run, per folder: **planned**. Until then, a
+  client that must know waits for `end` and then asks something only the new index answers.
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
 - `$/cancelRequest` is honoured for queued requests. **available** For long-running requests: **planned**.
 
 ## 3. Code that does not compile
 
-A crate with compile errors is indexed from everything that resolved: definitions, references, types,
-implementations and calls in it are answered, including inside the bodies with errors; an expression whose
-type failed is left out. **available** (next release; 0.3.8 indexed only crates that compiled)
+A crate of the workspace with compile errors is indexed from everything that resolved: definitions,
+references, types, implementations and calls in it are answered, including inside the bodies with errors;
+an expression or binding whose type failed is left out. A registry or git dependency that fails to compile
+gets no index. **available (next release)**; 0.3.8 indexed only crates that compiled.
 
 ## 4. Unsaved text
 
@@ -46,16 +50,26 @@ The index is built by the compiler from the files on disk. For text that is open
 |---|---|
 | Type diagnostics of the buffer (pushed and pulled), hover, completion and inlay hints on typed code | available |
 | Navigation, references and rename on positions that exist in the saved text (mapped through the edit) | available |
-| References, rename and navigation that include code typed since the last save | **in progress**: the changed crates are compiled from the buffers' text, without writing them, into an index of the session |
+| References, rename and navigation that include code typed since the last save | available (next release) |
 
-Until the last row is available, references on a dirty buffer leave out code typed since the save, and
-`rename` there can refuse (`-32803`) rather than produce edits from the saved text.
+How: once the edited buffers of a workspace have been unchanged for 250 ms, the packages holding them are
+compiled again by `ridx-driver` from the buffers' text (nothing is written to the files) into an index of
+this session under `target/ridx/sessions/`, which then answers in place of the published one until the next
+save is indexed. Between an edit and that index, answers come from the previous one, mapped through the edit.
+Crates that depend on the edited one keep their saved-text index until the save. `RIDX_SESSION_INDEX=0`
+turns it off.
+
+Measured from `didChange` to `references` that include the edit (Linux x86_64 build node, release build,
+10 edits each): a one-file crate p50 0.36 s, p95 0.36 s; a file of `ridx-format` in this repository's
+workspace (5 packages, 65 indexed crates, its library and unit tests recompiled side by side) p50 3.31 s,
+p95 3.55 s. The time is the compile of the crates owning the buffer: it grows with them, not with the
+workspace.
 
 ## 5. Diagnostics
 
 | `source` | What | When it is published |
 |---|---|---|
-| `rustc` | The compiler's own errors and lints (`code` = the rustc code, e.g. `E0433`, `unused_imports`, `dead_code`) | After a check of the workspace: on `initialized` and after every save. Ranges are in the coordinates of the file as saved; editors move them through unsaved edits. |
+| `rustc` | The compiler's own errors and lints (`code` = the rustc code, e.g. `E0433`, `unused_imports`, `dead_code`) | After a check of the workspace: on `initialized` (every workspace of the session, one after the other; next release) and after every save. Ranges are in the coordinates of the file as saved; editors move them through unsaved edits. |
 | `ridx` | Errors found in the unsaved text (type mismatches and similar) before the compiler sees it | On `didChange`, for the open buffer. |
 
 Both are available. The values of `source` and the rustc `code` values are stable. The server pushes
@@ -64,8 +78,11 @@ only.
 
 ## 6. Code actions
 
-Every code action ridx offers produces code that compiles: an assist rust-analyzer offers but whose result
-would not build is not offered.
+The aim is that every code action produces code that compiles: the refactoring assists are written and tested
+to that end, and an assist rust-analyzer offers whose result would not build is not offered. This is not a
+check of each edit: ridx does not compile the result before offering it, so a caller that needs the
+guarantee validates the result (as `ridx/diagnosticsFor` will allow). A quickfix that broke code is a bug
+to report.
 
 | What | Status |
 |---|---|
@@ -142,10 +159,20 @@ paths (today it returns `{}`), and `workspace/symbol` over dependencies.
 ## 9. Running untrusted code: build scripts and proc macros
 
 Indexing runs `cargo check` with `ridx-driver` as the compiler, so the workspace's build scripts and proc
-macros run as in any build. ridx passes them only the environment it was started with, plus the variables
-Cargo sets and these of its own: `RIDX_OUT_DIR`, `RIDX_CACHE_DIR`, `RIDX_WORKSPACE_ROOT`,
-`RIDX_TARGET_KINDS_FILE`, `RIDX_CARGO_LOCK_HASH`, `RUSTC_BOOTSTRAP=1`. A caller that wants a sandbox starts
-`ridx` in it with a scrubbed environment.
+macros run as in any build. They get the environment `ridx` was started with, plus what Cargo sets, with
+these set or replaced by ridx:
+
+- the index build (`cargo check`): `RIDX_OUT_DIR`, `RIDX_CACHE_DIR`, `RIDX_WORKSPACE_ROOT`,
+  `RIDX_TARGET_KINDS_FILE`, `RUSTC_BOOTSTRAP=1`, `CARGO_TARGET_DIR` (`target/ridx_cargo/<id>`, replacing the
+  caller's), `RUSTC_WRAPPER` = `ridx-driver` and `RUSTC_WORKSPACE_WRAPPER` empty (with `--no-deps` the other
+  way round), `LD_LIBRARY_PATH` and `DYLD_FALLBACK_LIBRARY_PATH` (replaced by the toolchain's library
+  directory), and `RUSTUP_TOOLCHAIN` = the driver's toolchain unless the caller set one;
+- a crate compiled directly after an edit (no Cargo): the variables Cargo set for it in the last build, plus
+  `RIDX_OUT_DIR`, `RIDX_CACHE_DIR`, `RIDX_WORKSPACE_ROOT`, `RIDX_TARGET_KINDS_FILE`, `RIDX_CARGO_LOCK_HASH`,
+  `RUSTC_BOOTSTRAP=1`, the library path variables above, and for unsaved buffers `RIDX_BUFFERS`;
+- the diagnostics check: `CARGO_TARGET_DIR` (`target/ridx-flycheck`, replacing the caller's).
+
+A caller that wants a sandbox starts `ridx` in it with a scrubbed environment.
 
 | What | Status |
 |---|---|
