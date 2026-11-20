@@ -45,8 +45,9 @@ Linux and macOS. Not affiliated with the Rust Project or the Rust Foundation.
   rustc performs anyway on every `cargo check`.
 - **Most of what is analyzed is dependencies and std**, code nobody edits. `ridx` indexes each
   dependency once and shares it between every project and worktree on the machine.
-- **What you are typing still works**: unsaved edits are answered from an in-memory overlay on top of the
-  index until the project builds again.
+- **What you are typing still works**: unsaved edits are answered at once from an in-memory overlay on top of
+  the index, and 250 ms after the last edit the edited crates are compiled from the buffers into an index of
+  the session, so references and rename see the new code too.
 
 ## Measured
 
@@ -179,19 +180,24 @@ keeps those answers instead of computing them again.
   kernel can drop the others under memory pressure.
 - **Rebuilds are incremental and safe.** After a save the server reindexes in the background; when only
   workspace sources changed, it calls the driver on the changed crates directly, without Cargo. A crate
-  that fails to build keeps its last good shard, and another feature set or target gets its own variant
-  next to the first.
+  with compile errors is indexed from everything that resolved; one the compiler cannot take that far (a
+  syntax error) keeps its last good shard. Another feature set or target gets its own variant next to the
+  first.
 - **Code typed between builds** is mapped onto the compiled text line by line, and the edited code is
   analyzed by a small compiler-free front end ([`crates/ridx-syntax`](crates/ridx-syntax): lexer, parser,
-  name resolution, type inference) that reads every other type and item from the index.
+  name resolution, type inference) that reads every other type and item from the index. 250 ms after the last edit, the crates owning the
+  edited buffers are compiled from their text into an index of the session (nothing is written to the
+  files), which answers references, rename and navigation until the next build.
 
 The whole design, with the shard layout and where each part lives in the code:
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Known limitations
 
-- **Answers come from the last build.** Code typed since then is answered from the open buffer and catches
-  up when the project builds again; a crate that fails to build keeps its last good index.
+- **Unsaved code reaches the index with a delay.** The edited crates are compiled from the buffers 250 ms after
+  the last edit, which takes from a fraction of a second to a few seconds for a large crate; until then
+  references and navigation come from the previous index, mapped through the edit. Crates that depend on an
+  edited one see the change after a save.
 - **One cfg.** Like `cargo check`, the index sees one target and one feature set; code behind other
   `#[cfg]`s or features is not indexed. Choose them with `ridx index --all-features` / `--target`.
 - **Windows** is not supported yet.
@@ -215,19 +221,19 @@ cargo test --workspace
 
 If you use ridx in research or documentation, please cite the archived release on Zenodo:
 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) for the project (it resolves to the latest
-version), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) for exactly 0.3.8.
+version), [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) for exactly 0.3.9.
 [`CITATION.cff`](CITATION.cff) holds the metadata GitHub's "Cite this repository" uses.
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 
