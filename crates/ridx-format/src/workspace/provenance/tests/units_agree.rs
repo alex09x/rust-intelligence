@@ -191,3 +191,40 @@ fn test_a_symlinked_query_finds_a_relative_only_hash() {
     assert!(!ws.units_agree_on_source(&gen), "asked directly");
     assert!(!ws.units_agree_on_source(&root.join("alias/gen.rs").display().to_string()), "asked through the symlink");
 }
+
+/// Review of 4d8906dc: routing may store a crate's file relative to the workspace (`shop/src/gen.rs`) while the crate's
+/// root is `W/shop`. An absolute query stays the file asked for: the unit recording its text only in the sidecar,
+/// under that workspace-relative name, still counts.
+#[test]
+fn test_a_workspace_relative_routed_key_keeps_its_owner() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("shop/src")).unwrap();
+    fs::write(root.join("shop/src/gen.rs"), "pub fn g() {}\n").unwrap();
+    let gen = root.join("shop/src/gen.rs").display().to_string();
+    let a = Unit { key: "uk_a", krate: "shop", shard: &[("shop/src/gen.rs", 0x111)], hashes: serde_json::json!({}), own: vec![gen.clone()] };
+    let b = Unit { key: "uk_b", krate: "shop", shard: &[("shop/src/gen.rs", 0)], hashes: serde_json::json!({ "shop/src/gen.rs": 0x222 }), own: vec![gen.clone()] };
+    let ws = units(root, &[a, b]);
+    assert_eq!(ws.target_file_for_reader(1, &gen).as_deref(), Some("shop/src/gen.rs"));
+    assert!(!ws.units_agree_on_source(&gen), "B holds another text");
+}
+
+/// Review of 4d8906dc: routing a query through a symlink to the canonical entry keeps the query's own spelling among
+/// the file's names: a sidecar recording the hash under it still counts.
+#[cfg(unix)]
+#[test]
+fn test_the_query_spelling_survives_canonical_routing() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("shop/src")).unwrap();
+    fs::write(root.join("shop/src/gen.rs"), "pub fn g() {}\n").unwrap();
+    std::os::unix::fs::symlink(root.join("shop/src"), root.join("alias")).unwrap();
+    let canonical = fs::canonicalize(root.join("shop/src/gen.rs")).unwrap().display().to_string();
+    let alias = root.join("alias/gen.rs").display().to_string();
+    let entry: &[(&str, u64)] = &[(canonical.as_str(), 0x111)];
+    let zero: &[(&str, u64)] = &[(canonical.as_str(), 0)];
+    let a = Unit { key: "uk_a", krate: "shop", shard: entry, hashes: serde_json::json!({}), own: vec![canonical.clone()] };
+    let b = Unit { key: "uk_b", krate: "shop", shard: zero, hashes: serde_json::json!({ (alias.clone()): 0x222 }), own: vec![canonical.clone()] };
+    let ws = units(root, &[a, b]);
+    assert!(!ws.units_agree_on_source(&alias), "B holds another text");
+}

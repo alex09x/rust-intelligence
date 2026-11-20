@@ -174,37 +174,53 @@ impl WorkspaceIndex {
     }
 
     /// The names the sidecar of reader `idx` may record one file under: its path as given, its canonical path, and its
-    /// path relative to the reader's root (from the given and from the canonical spellings of both), with that relative
-    /// path joined back onto the root as the reader spells it. All of them name `file` only: never a union of
-    /// alternative resolutions, which may be other files (review of c94616ac).
+    /// path relative to the reader's root, then to the workspace root (from the given and the canonical spellings of
+    /// both), with that relative path joined back onto the root as it is spelled. All of them name `file` only: never a
+    /// union of alternative resolutions, which may be other files (review of c94616ac).
     fn names_of_one_file(&self, idx: usize, file: &Path) -> Vec<String> {
         let canonical = crate::canonicalize_best_effort(file);
         let mut names = vec![file.display().to_string(), canonical.display().to_string()];
-        if let Some(root) = self.reader_root(idx) {
+        for root in [self.reader_root(idx), self.workspace_root.as_deref()].into_iter().flatten() {
             let canonical_root = crate::canonicalize_best_effort(root);
             for rel in [file.strip_prefix(root).ok(), canonical.strip_prefix(&canonical_root).ok()].into_iter().flatten() {
                 names.push(rel.display().to_string());
                 names.push(root.join(rel).display().to_string());
             }
         }
-        names.dedup();
+        let mut seen = std::collections::HashSet::new();
+        names.retain(|n| seen.insert(n.clone()));
         names
     }
 
-    /// The hash the sidecar of reader `idx` recorded for the file `key` that has no entry in its shard, unless the unit
-    /// only read the file through a dependency: the sidecar loaded with the reader lists its own sources
-    /// (`own_sources`) and the file is not among them. Both come from the same bytes, kept in memory: a sidecar
-    /// rewritten on disk since never changes the answer (review of 2f7a84e3). `key` names one file: a relative key
-    /// path routing returned for the reader (`routed`) is the reader's, resolved against its root; a relative query
-    /// nothing routed is the workspace's. Without `own_sources` the unit counts as holding the file: a doubt is a
-    /// disagreement, never a coverage (review of 9f9c7bba).
-    fn sidecar_only_hash(&self, idx: usize, key: &str, routed: bool) -> Option<u64> {
+    /// The one file `query` names for reader `idx`, which path routing stores as `key` (`None`: not routed). An absolute
+    /// query is that file as spelled, whatever form routing stores it in (relative to the workspace or to the reader's
+    /// root: review of 4d8906dc). A relative query is the workspace's, else the reader root's: the first of them whose
+    /// file routing stored as `key`, an absolute `key` being that file itself.
+    fn file_of_query(&self, idx: usize, query: &str, key: Option<&str>) -> PathBuf {
+        let q = Path::new(query);
+        if q.is_absolute() {
+            return q.to_path_buf();
+        }
+        if let Some(k) = key.filter(|k| Path::new(k).is_absolute()) {
+            return PathBuf::from(k);
+        }
+        let anchors: Vec<&Path> = [self.workspace_root.as_deref(), self.reader_root(idx)].into_iter().flatten().collect();
+        let stored_as_key = |file: &Path| key.is_some_and(|k| anchors.iter().any(|a| file.strip_prefix(a).ok().and_then(|r| r.to_str()) == Some(k)));
+        anchors.iter().map(|a| a.join(q)).find(|f| stored_as_key(f)).or_else(|| anchors.first().map(|a| a.join(q))).unwrap_or_else(|| q.to_path_buf())
+    }
+
+    /// The hash the sidecar of reader `idx` recorded for the file `query` names (routing stores it as `key`) that has no
+    /// entry in its shard, unless the unit only read the file through a dependency: the sidecar loaded with the reader
+    /// lists its own sources (`own_sources`) and the file is not among them. Both come from the same bytes, kept in
+    /// memory: a sidecar rewritten on disk since never changes the answer (review of 2f7a84e3). The hash and the
+    /// ownership are looked up under the names of that one file: the query as spelled, the stored key, and the
+    /// absolute, canonical and relative names of the file. Without `own_sources` the unit counts as holding the file: a
+    /// doubt is a disagreement, never a coverage (review of 9f9c7bba).
+    fn sidecar_only_hash(&self, idx: usize, query: &str, key: Option<&str>) -> Option<u64> {
         let hashes = self.reader_file_hashes.get(idx)?;
-        let path = Path::new(key);
-        let (first, second) = (self.reader_root(idx), self.workspace_root.as_deref());
-        let base = if routed { first.or(second) } else { second.or(first) };
-        let file = if path.is_absolute() { path.to_path_buf() } else { base.map_or_else(|| path.to_path_buf(), |b| b.join(path)) };
-        let names = self.names_of_one_file(idx, &file);
+        let file = self.file_of_query(idx, query, key);
+        let mut names = self.names_of_one_file(idx, &file);
+        names.extend(key.filter(|k| !names.iter().any(|n| n == k)).map(str::to_string));
         let h = names.iter().find_map(|n| hashes.get(n.as_str())).copied().filter(|&h| h != 0)?;
         let not_own = self.paths.get(idx).and_then(|p| self.own_sources.get(p)).is_some_and(|own| !names.iter().any(|n| own.contains(n)));
         (!not_own).then_some(h)
@@ -227,8 +243,8 @@ impl WorkspaceIndex {
             let key = target.as_deref().unwrap_or(file_path);
             let reader = &self.readers[idx];
             let h = match reader.find_file_id(key) {
-                Some(fid) => Some(reader.file_source_hash(fid)).filter(|&h| h != 0).or_else(|| self.sidecar_only_hash(idx, key, target.is_some())),
-                None => self.sidecar_only_hash(idx, key, target.is_some()),
+                Some(fid) => Some(reader.file_source_hash(fid)).filter(|&h| h != 0).or_else(|| self.sidecar_only_hash(idx, file_path, target.as_deref())),
+                None => self.sidecar_only_hash(idx, file_path, target.as_deref()),
             };
             match (h, seen) {
                 (Some(h), Some(s)) if h != s => return false,
