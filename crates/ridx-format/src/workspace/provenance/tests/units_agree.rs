@@ -228,3 +228,23 @@ fn test_the_query_spelling_survives_canonical_routing() {
     let ws = units(root, &[a, b]);
     assert!(!ws.units_agree_on_source(&alias), "B holds another text");
 }
+
+/// Review of a0634347: `W/shop/alias -> W/shop/src`, no `W/alias`. Routing canonicalizes `alias/gen.rs` against the
+/// reader's root to the entry `src/gen.rs`; the file is `W/shop`'s, and the unit recording its text only in the sidecar
+/// still counts.
+#[cfg(unix)]
+#[test]
+fn test_a_canonical_relative_route_keeps_the_reader_root() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("shop/src")).unwrap();
+    fs::write(root.join("shop/src/gen.rs"), "pub fn g() {}\n").unwrap();
+    std::os::unix::fs::symlink(root.join("shop/src"), root.join("shop/alias")).unwrap();
+    let canonical = fs::canonicalize(root.join("shop/src/gen.rs")).unwrap().display().to_string();
+    let a = Unit { key: "uk_a", krate: "shop", shard: &[("src/gen.rs", 0x111)], hashes: serde_json::json!({}), own: vec![canonical.clone()] };
+    let b = Unit { key: "uk_b", krate: "shop", shard: &[("src/gen.rs", 0)], hashes: serde_json::json!({ "src/gen.rs": 0x222 }), own: vec![canonical.clone()] };
+    let ws = units(root, &[a, b]);
+    assert!(!root.join("alias").exists());
+    assert_eq!(ws.target_file_for_reader(1, "alias/gen.rs").as_deref(), Some("src/gen.rs"));
+    assert!(!ws.units_agree_on_source("alias/gen.rs"), "B holds another text");
+}

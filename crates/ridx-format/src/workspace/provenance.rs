@@ -195,7 +195,9 @@ impl WorkspaceIndex {
     /// The one file `query` names for reader `idx`, which path routing stores as `key` (`None`: not routed). An absolute
     /// query is that file as spelled, whatever form routing stores it in (relative to the workspace or to the reader's
     /// root: review of 4d8906dc). A relative query is the workspace's, else the reader root's: the first of them whose
-    /// file routing stored as `key`, an absolute `key` being that file itself.
+    /// file routing stored as `key`, as spelled or, as routing canonicalizes a candidate, through its canonical path
+    /// against the canonical roots (`W/shop/alias -> W/shop/src`: `alias/gen.rs` is `src/gen.rs` of `W/shop`, review of
+    /// a0634347); an absolute `key` is that file itself. The file keeps the query's spelling.
     fn file_of_query(&self, idx: usize, query: &str, key: Option<&str>) -> PathBuf {
         let q = Path::new(query);
         if q.is_absolute() {
@@ -205,8 +207,15 @@ impl WorkspaceIndex {
             return PathBuf::from(k);
         }
         let anchors: Vec<&Path> = [self.workspace_root.as_deref(), self.reader_root(idx)].into_iter().flatten().collect();
-        let stored_as_key = |file: &Path| key.is_some_and(|k| anchors.iter().any(|a| file.strip_prefix(a).ok().and_then(|r| r.to_str()) == Some(k)));
-        anchors.iter().map(|a| a.join(q)).find(|f| stored_as_key(f)).or_else(|| anchors.first().map(|a| a.join(q))).unwrap_or_else(|| q.to_path_buf())
+        let files: Vec<PathBuf> = anchors.iter().map(|a| a.join(q)).collect();
+        let Some(k) = key else { return files.first().cloned().unwrap_or_else(|| q.to_path_buf()) };
+        let is_key = |file: &Path, roots: &[PathBuf]| roots.iter().any(|a| file.strip_prefix(a).ok().and_then(|r| r.to_str()) == Some(k));
+        let lexical: Vec<PathBuf> = anchors.iter().map(|a| a.to_path_buf()).collect();
+        if let Some(f) = files.iter().find(|f| is_key(f, &lexical)) {
+            return f.clone();
+        }
+        let canonical: Vec<PathBuf> = anchors.iter().map(|a| crate::canonicalize_best_effort(a)).collect();
+        files.iter().find(|f| is_key(&crate::canonicalize_best_effort(f), &canonical)).or(files.first()).cloned().unwrap_or_else(|| q.to_path_buf())
     }
 
     /// The hash the sidecar of reader `idx` recorded for the file `query` names (routing stores it as `key`) that has no
