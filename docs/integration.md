@@ -31,7 +31,7 @@ configured for rust-analyzer can start it unchanged.
   guaranteed. There is one token for all folders being indexed, not one per folder. **available**
   To tell a loaded index from a failed run, per folder, ask `ridx/status` (§7) after `end`: each root's
   `generation` changes when a new index loads, and `error` says why its last run failed. **available (next
-  release)**. A per-root outcome in the progress itself: **planned**.
+  release)**. The progress itself carries no per-root outcome; `ridx/status` is where it is.
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
 - `$/cancelRequest` is honoured for queued requests. **available** For long-running requests: **planned**.
@@ -107,7 +107,7 @@ implemented in order of need.
 ## 7. `ridx/*` extension methods
 
 All take the session's unsaved text into account. Version: the server lists the methods it supports, with
-their versions, in `initialize` → `capabilities.experimental.ridx` (**planned**, with the first method).
+their versions, in `initialize` → `capabilities.experimental.ridx`: `{methods: {"ridx/status": 1}, requestOptions: {minVersion: 1}}` (**available (next release)**). A method or option missing there is not supported by that server; a version changes only with an incompatible change of its contract.
 
 | Method | Params → result | Status |
 |---|---|---|

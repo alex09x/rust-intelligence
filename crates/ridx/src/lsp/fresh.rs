@@ -95,6 +95,12 @@ impl Waiting {
     }
 }
 
+/// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
+/// supports, each with the version of its contract (docs/integration.md §7), for clients to detect them.
+pub fn experimental_capabilities() -> Value {
+    json!({ "ridx": { "methods": { "ridx/status": 1 }, "requestOptions": { "minVersion": 1 } } })
+}
+
 /// `ridx/status`: every root's index, and the given document's coverage.
 pub fn status(msg: &Value, mr: &super::MultiRootWorkspace, ov: &crate::overlay::OverlayManager, reindex: &super::reindex::Reindexer, session: &SessionIndexer) -> Value {
     let roots: Vec<Value> = mr
@@ -137,6 +143,16 @@ mod tests {
             p.extend(e.clone());
         }
         json!({ "jsonrpc": "2.0", "id": id, "method": "textDocument/references", "params": params })
+    }
+
+    /// prod-code (m=19778): clients detect the `ridx/*` methods from `initialize`.
+    #[test]
+    fn test_initialize_lists_the_ridx_methods() {
+        let mut lc = crate::lsp::lifecycle::LifecycleManager::new();
+        let (caps, _) = lc.handle_initialize(&json!({ "id": 1, "method": "initialize", "params": { "capabilities": {} } })).unwrap();
+        let ridx = &caps["capabilities"]["experimental"]["ridx"];
+        assert_eq!(ridx["methods"]["ridx/status"], 1, "{caps}");
+        assert_eq!(ridx["requestOptions"]["minVersion"], 1, "{caps}");
     }
 
     /// prod-code (m=19767): a tool that edits and asks at once got the answer of the index before the edit.
