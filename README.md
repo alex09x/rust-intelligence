@@ -95,14 +95,15 @@ libraries; your own projects keep any toolchain, ridx runs the index build with 
 the release archive for your platform from GitHub, checks its SHA-256 and puts `ridx` and `ridx-driver`
 into `~/.local/bin` (`RIDX_INSTALL_DIR` changes it, `RIDX_VERSION=v0.3.7` pins a release).
 
-To build from source instead:
+Or from [crates.io](https://crates.io/crates/ridx). Build both binaries with Rust 1.98.1: `ridx-driver` links that
+compiler's own libraries, so it needs `rustc-dev` and these two flags, and `ridx` runs the index build on the
+toolchain it was built with. From a checkout, add `--path crates/ridx` and `--path crates/ridx-driver` instead of
+the crate names.
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 Then open a Cargo workspace in your editor. With no index yet, `ridx` builds one on first use and reports

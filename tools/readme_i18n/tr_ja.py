@@ -28,7 +28,7 @@ T = {
     "h_install": "インストール",
     "install_platforms": "Linux（x86_64、arm64）と Apple Silicon の macOS で、[rustup](https://rustup.rs) が必要です：",
     "install_explain": "インストーラーは Rust 1.98.1（`ridx-driver` が内部で動くツールチェーン。そのコンパイラのライブラリにリンクします。\nあなたのプロジェクトは任意のツールチェーンのままで構いません。ridx が正しいツールチェーンでインデックスを作ります）を\n追加し、GitHub からプラットフォーム用のリリースアーカイブをダウンロードして SHA-256 を検証し、`ridx` と\n`ridx-driver` を `~/.local/bin` に置きます（`RIDX_INSTALL_DIR` で変更、`RIDX_VERSION=v0.3.7` でリリースを固定）。",
-    "install_source": "ソースからビルドする場合：",
+    "install_source": "または [crates.io](https://crates.io/crates/ridx) から。2 つのバイナリはどちらも Rust 1.98.1 でビルドします。`ridx-driver` は\nそのコンパイラ自身のライブラリにリンクするため `rustc-dev` と次の 2 つのフラグが必要で、`ridx` は自分をビルドした\nツールチェーンでインデックスを作ります。リポジトリのチェックアウトからは、クレート名の代わりに `--path crates/ridx`\nと `--path crates/ridx-driver` を使います。",
     "install_then": "あとはエディタで Cargo ワークスペースを開くだけです。インデックスがまだなければ、`ridx` が初回使用時に作成し、\n進捗をエディタに表示します。ビルド完了時にインデックスを再読み込みし、保存後はバックグラウンドで再インデックスします。\nシェルからは `ridx index .` で作成できます（`--all-features`、`--target <triple>` で cfg を選択）。",
     "install_path": "デスクトップのエディタが `ridx` を見つけられない場合は、`which ridx` が示すフルパスを指定してください。",
     "h_editors": "エディタ",

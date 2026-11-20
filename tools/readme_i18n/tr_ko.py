@@ -28,7 +28,7 @@ T = {
     "h_install": "설치",
     "install_platforms": "Linux(x86_64, arm64)와 Apple Silicon의 macOS, [rustup](https://rustup.rs)이 필요합니다:",
     "install_explain": "설치 스크립트는 Rust 1.98.1(`ridx-driver`가 그 안에서 실행되는 툴체인으로, 해당 컴파일러의 라이브러리에\n링크됩니다. 여러분의 프로젝트는 어떤 툴체인을 써도 되며, ridx가 올바른 툴체인으로 인덱스를 빌드합니다)을\n추가하고, GitHub에서 플랫폼용 릴리스 아카이브를 받아 SHA-256을 확인한 뒤 `ridx`와 `ridx-driver`를\n`~/.local/bin`에 둡니다(`RIDX_INSTALL_DIR`로 변경, `RIDX_VERSION=v0.3.7`로 릴리스 고정).",
-    "install_source": "소스에서 빌드하려면:",
+    "install_source": "또는 [crates.io](https://crates.io/crates/ridx)에서 설치합니다. 두 바이너리 모두 Rust 1.98.1로 빌드하세요. `ridx-driver`는\n그 컴파일러 자체의 라이브러리에 링크되므로 `rustc-dev`와 아래 두 플래그가 필요하고, `ridx`는 자신을 빌드한\n툴체인으로 인덱스를 만듭니다. 저장소를 체크아웃했다면 크레이트 이름 대신 `--path crates/ridx`와\n`--path crates/ridx-driver`를 쓰세요.",
     "install_then": "그다음 에디터에서 Cargo 워크스페이스를 엽니다. 아직 인덱스가 없으면 `ridx`가 처음 사용할 때 만들고 진행 상황을\n에디터에 표시합니다. 빌드가 끝나면 인덱스를 다시 불러오고, 저장 후에는 백그라운드에서 다시 인덱싱합니다.\n셸에서는 `ridx index .`로 만듭니다(`--all-features`, `--target <triple>`로 cfg 선택).",
     "install_path": "데스크톱 에디터가 `ridx`를 찾지 못하면 `which ridx`가 알려 주는 전체 경로를 지정하세요.",
     "h_editors": "에디터",

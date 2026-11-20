@@ -28,7 +28,7 @@ T = {
     "h_install": "安装",
     "install_platforms": "Linux（x86_64、arm64）和 Apple Silicon 上的 macOS，需要 [rustup](https://rustup.rs)：",
     "install_explain": "安装脚本会安装 Rust 1.98.1，即 `ridx-driver` 运行所在的工具链（它链接该编译器的库；你的项目可以继续\n使用任何工具链，ridx 会用正确的工具链构建索引），从 GitHub 下载适合你平台的发布包，校验其 SHA-256，\n并把 `ridx` 和 `ridx-driver` 放到 `~/.local/bin`（`RIDX_INSTALL_DIR` 可更改目录，`RIDX_VERSION=v0.3.7` 可固定版本）。",
-    "install_source": "如需从源码构建：",
+    "install_source": "或者从 [crates.io](https://crates.io/crates/ridx) 安装。两个可执行文件都用 Rust 1.98.1 构建：`ridx-driver` 链接该编译器\n自身的库，因此需要 `rustc-dev` 和下面两个参数；`ridx` 会用构建它的工具链来构建索引。从仓库检出构建时，用\n`--path crates/ridx` 和 `--path crates/ridx-driver` 代替 crate 名称。",
     "install_then": "然后在编辑器中打开一个 Cargo 工作区。如果还没有索引，`ridx` 会在首次使用时构建并向编辑器报告进度；\n构建完成后重新加载索引，保存后在后台重新索引。在终端中用 `ridx index .` 构建索引\n（`--all-features`、`--target <triple>` 选择 cfg）。",
     "install_path": "如果桌面编辑器找不到 `ridx`，请给它 `which ridx` 输出的完整路径。",
     "h_editors": "编辑器",

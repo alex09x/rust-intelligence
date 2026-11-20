@@ -1,7 +1,7 @@
-<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
+<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -98,14 +98,15 @@ curl -fsSL https://rust-intelligence.com/install.sh | sh
 추가하고, GitHub에서 플랫폼용 릴리스 아카이브를 받아 SHA-256을 확인한 뒤 `ridx`와 `ridx-driver`를
 `~/.local/bin`에 둡니다(`RIDX_INSTALL_DIR`로 변경, `RIDX_VERSION=v0.3.7`로 릴리스 고정).
 
-소스에서 빌드하려면:
+또는 [crates.io](https://crates.io/crates/ridx)에서 설치합니다. 두 바이너리 모두 Rust 1.98.1로 빌드하세요. `ridx-driver`는
+그 컴파일러 자체의 라이브러리에 링크되므로 `rustc-dev`와 아래 두 플래그가 필요하고, `ridx`는 자신을 빌드한
+툴체인으로 인덱스를 만듭니다. 저장소를 체크아웃했다면 크레이트 이름 대신 `--path crates/ridx`와
+`--path crates/ridx-driver`를 쓰세요.
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 그다음 에디터에서 Cargo 워크스페이스를 엽니다. 아직 인덱스가 없으면 `ridx`가 처음 사용할 때 만들고 진행 상황을

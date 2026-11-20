@@ -1,7 +1,7 @@
-<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
+<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
 
 > [!NOTE]
-> これはコミット [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
+> これはコミット [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -98,14 +98,15 @@ curl -fsSL https://rust-intelligence.com/install.sh | sh
 追加し、GitHub からプラットフォーム用のリリースアーカイブをダウンロードして SHA-256 を検証し、`ridx` と
 `ridx-driver` を `~/.local/bin` に置きます（`RIDX_INSTALL_DIR` で変更、`RIDX_VERSION=v0.3.7` でリリースを固定）。
 
-ソースからビルドする場合：
+または [crates.io](https://crates.io/crates/ridx) から。2 つのバイナリはどちらも Rust 1.98.1 でビルドします。`ridx-driver` は
+そのコンパイラ自身のライブラリにリンクするため `rustc-dev` と次の 2 つのフラグが必要で、`ridx` は自分をビルドした
+ツールチェーンでインデックスを作ります。リポジトリのチェックアウトからは、クレート名の代わりに `--path crates/ridx`
+と `--path crates/ridx-driver` を使います。
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 あとはエディタで Cargo ワークスペースを開くだけです。インデックスがまだなければ、`ridx` が初回使用時に作成し、

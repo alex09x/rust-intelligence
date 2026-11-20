@@ -1,7 +1,7 @@
-<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
+<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -101,14 +101,15 @@ curl -fsSL https://rust-intelligence.com/install.sh | sh
 индекса на нужном), скачивает с GitHub архив релиза для вашей платформы, проверяет его SHA-256 и кладёт
 `ridx` и `ridx-driver` в `~/.local/bin` (`RIDX_INSTALL_DIR` меняет каталог, `RIDX_VERSION=v0.3.7` фиксирует релиз).
 
-Чтобы собрать из исходников:
+Или из [crates.io](https://crates.io/crates/ridx). Оба бинарника собирайте на Rust 1.98.1: `ridx-driver` линкуется с
+библиотеками самого этого компилятора, поэтому ему нужны `rustc-dev` и эти два флага, а `ridx` строит индекс
+toolchain'ом, которым его собрали. Из клона репозитория вместо имён крейтов укажите `--path crates/ridx` и
+`--path crates/ridx-driver`.
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 Затем откройте Cargo-воркспейс в редакторе. Если индекса ещё нет, `ridx` строит его при первом использовании и

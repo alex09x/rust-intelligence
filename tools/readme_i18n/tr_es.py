@@ -28,7 +28,7 @@ T = {
     "h_install": "Instalación",
     "install_platforms": "Linux (x86_64, arm64) y macOS en Apple Silicon, con [rustup](https://rustup.rs):",
     "install_explain": "El instalador añade Rust 1.98.1, la toolchain dentro de la que se ejecuta `ridx-driver` (se enlaza con las\nbibliotecas de ese compilador; tus proyectos conservan cualquier toolchain y ridx construye el índice con la\ncorrecta), descarga de GitHub el archivo de la versión para tu plataforma, comprueba su SHA-256 y coloca\n`ridx` y `ridx-driver` en `~/.local/bin` (`RIDX_INSTALL_DIR` lo cambia, `RIDX_VERSION=v0.3.7` fija una versión).",
-    "install_source": "Para compilar desde el código fuente:",
+    "install_source": "O desde [crates.io](https://crates.io/crates/ridx). Compila los dos binarios con Rust 1.98.1: `ridx-driver` se enlaza\ncon las bibliotecas de ese compilador, así que necesita `rustc-dev` y estas dos opciones, y `ridx` construye el\níndice con la toolchain con la que se compiló. Desde un clon del repositorio, usa `--path crates/ridx` y\n`--path crates/ridx-driver` en lugar de los nombres de los crates.",
     "install_then": "Después abre un workspace de Cargo en tu editor. Si todavía no hay índice, `ridx` lo construye en el primer uso\ny muestra el progreso en el editor; recarga el índice al terminar la compilación y reindexa en segundo plano\ntras cada guardado. `ridx index .` lo construye desde la terminal (`--all-features`, `--target <triple>` eligen\nel cfg).",
     "install_path": "Si un editor de escritorio no encuentra `ridx`, dale la ruta completa que devuelve `which ridx`.",
     "h_editors": "Editores",

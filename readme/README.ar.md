@@ -1,7 +1,7 @@
-<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
+<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
 
 > [!NOTE]
-> هذه ترجمة لملف README الإنجليزي عند الإيداع [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -110,18 +110,16 @@ curl -fsSL https://rust-intelligence.com/install.sh | sh
 SHA-256 الخاص به، ويضع `ridx` و`ridx-driver` في `~/.local/bin` (يغيّره `RIDX_INSTALL_DIR`، ويثبّت
 `RIDX_VERSION=v0.3.7` إصدارًا محددًا).
 
-للبناء من المصدر بدلًا من ذلك:
+أو من [crates.io](https://crates.io/crates/ridx). ابنِ الملفين التنفيذيين بـ Rust 1.98.1: يرتبط `ridx-driver` بمكتبات ذلك المترجم نفسه، لذا يحتاج إلى `rustc-dev` وإلى هذين الخيارين، ويشغّل `ridx` بناء الفهرس بسلسلة الأدوات التي بُني بها. من نسخة مستنسخة من المستودع، استخدم `--path crates/ridx` و`--path crates/ridx-driver` بدل اسمي الحزمتين.
 
 </div>
 
 <div dir="ltr">
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 </div>

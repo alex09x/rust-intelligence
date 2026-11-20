@@ -1,7 +1,7 @@
-<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
+<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -95,14 +95,14 @@ curl -fsSL https://rust-intelligence.com/install.sh | sh
 使用任何工具链，ridx 会用正确的工具链构建索引），从 GitHub 下载适合你平台的发布包，校验其 SHA-256，
 并把 `ridx` 和 `ridx-driver` 放到 `~/.local/bin`（`RIDX_INSTALL_DIR` 可更改目录，`RIDX_VERSION=v0.3.7` 可固定版本）。
 
-如需从源码构建：
+或者从 [crates.io](https://crates.io/crates/ridx) 安装。两个可执行文件都用 Rust 1.98.1 构建：`ridx-driver` 链接该编译器
+自身的库，因此需要 `rustc-dev` 和下面两个参数；`ridx` 会用构建它的工具链来构建索引。从仓库检出构建时，用
+`--path crates/ridx` 和 `--path crates/ridx-driver` 代替 crate 名称。
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 然后在编辑器中打开一个 Cargo 工作区。如果还没有索引，`ridx` 会在首次使用时构建并向编辑器报告进度；

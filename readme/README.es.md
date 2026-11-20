@@ -1,7 +1,7 @@
-<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
+<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -101,14 +101,15 @@ bibliotecas de ese compilador; tus proyectos conservan cualquier toolchain y rid
 correcta), descarga de GitHub el archivo de la versión para tu plataforma, comprueba su SHA-256 y coloca
 `ridx` y `ridx-driver` en `~/.local/bin` (`RIDX_INSTALL_DIR` lo cambia, `RIDX_VERSION=v0.3.7` fija una versión).
 
-Para compilar desde el código fuente:
+O desde [crates.io](https://crates.io/crates/ridx). Compila los dos binarios con Rust 1.98.1: `ridx-driver` se enlaza
+con las bibliotecas de ese compilador, así que necesita `rustc-dev` y estas dos opciones, y `ridx` construye el
+índice con la toolchain con la que se compiló. Desde un clon del repositorio, usa `--path crates/ridx` y
+`--path crates/ridx-driver` en lugar de los nombres de los crates.
 
 ```bash
-rustup toolchain install 1.98.1 --component rustc-dev,llvm-tools-preview,rust-src,rustfmt,clippy
-git clone https://github.com/alex09x/rust-intelligence
-cd rust-intelligence
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx --locked
-RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
+rustup toolchain install 1.98.1 --profile minimal --component rustc-dev,rust-src
+cargo +1.98.1 install ridx
+RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-driver
 ```
 
 Después abre un workspace de Cargo en tu editor. Si todavía no hay índice, `ridx` lo construye en el primer uso

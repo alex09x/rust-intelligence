@@ -28,7 +28,7 @@ T = {
     "h_install": "التثبيت",
     "install_platforms": "على Linux ‏(x86_64، arm64) وmacOS على Apple Silicon، مع [rustup](https://rustup.rs):",
     "install_explain": "يضيف المثبّت Rust 1.98.1، وهي سلسلة الأدوات التي يعمل داخلها `ridx-driver` (يرتبط بمكتبات ذلك المترجم؛ تحتفظ\nمشاريعك بأي سلسلة أدوات، ويبني ridx الفهرس بالسلسلة الصحيحة)، وينزّل من GitHub أرشيف الإصدار لمنصتك، ويتحقق من\nSHA-256 الخاص به، ويضع `ridx` و`ridx-driver` في `~/.local/bin` (يغيّره `RIDX_INSTALL_DIR`، ويثبّت\n`RIDX_VERSION=v0.3.7` إصدارًا محددًا).",
-    "install_source": "للبناء من المصدر بدلًا من ذلك:",
+    "install_source": "أو من [crates.io](https://crates.io/crates/ridx). ابنِ الملفين التنفيذيين بـ Rust 1.98.1: يرتبط `ridx-driver` بمكتبات ذلك المترجم نفسه، لذا يحتاج إلى `rustc-dev` وإلى هذين الخيارين، ويشغّل `ridx` بناء الفهرس بسلسلة الأدوات التي بُني بها. من نسخة مستنسخة من المستودع، استخدم `--path crates/ridx` و`--path crates/ridx-driver` بدل اسمي الحزمتين.",
     "install_then": "ثم افتح مساحة عمل Cargo في محرّرك. إن لم يكن هناك فهرس بعد، يبنيه `ridx` عند أول استخدام ويعرض التقدّم في\nالمحرّر؛ ويعيد تحميل الفهرس عند انتهاء البناء ويعيد الفهرسة في الخلفية بعد الحفظ. يبنيه `ridx index .` من الطرفية\n(`--all-features` و`--target <triple>` يختاران cfg).",
     "install_path": "إذا لم يعثر محرّر سطح المكتب على `ridx`، فأعطه المسار الكامل الذي يعيده `which ridx`.",
     "h_editors": "المحرّرات",
