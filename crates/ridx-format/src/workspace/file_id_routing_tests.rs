@@ -65,6 +65,7 @@ fn workspace(shards: &[(PathBuf, Option<&str>, bool)], ws_root: &str) -> Workspa
         reader_dependencies: vec![Vec::new(); n],
         reader_extern_units,
         reader_file_hashes: vec![HashMap::new(); n],
+        own_sources: Default::default(),
         reader_is_dependency: shards.iter().map(|(_, _, d)| *d).collect(),
         meta_paths: vec![None; n],
         meta_mtimes: vec![None; n],

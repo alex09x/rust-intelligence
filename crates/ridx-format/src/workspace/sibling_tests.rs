@@ -64,6 +64,7 @@ pub(super) fn create_test_workspace(readers_info: Vec<(&Path, Option<PathBuf>, O
         reader_dependencies,
         reader_extern_units,
         reader_file_hashes,
+        own_sources: Default::default(),
         reader_is_dependency,
         meta_paths,
         meta_mtimes,

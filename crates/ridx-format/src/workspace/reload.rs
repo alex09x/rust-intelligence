@@ -112,6 +112,7 @@ impl WorkspaceIndex {
                 if i < self.meta_mtimes.len() {
                     self.meta_mtimes.remove(i);
                 }
+                self.own_sources.remove(&p);
                 changed = true;
                 continue;
             }
@@ -150,6 +151,7 @@ impl WorkspaceIndex {
                         if let Some(fh) = self.reader_file_hashes.get_mut(i) {
                             *fh = meta.file_hashes;
                         }
+                        self.set_own_sources(&p, meta.own_sources);
                         if let Some(mp) = self.meta_paths.get_mut(i) {
                             *mp = meta.meta_path;
                         }
@@ -186,6 +188,7 @@ impl WorkspaceIndex {
                     if let Some(fh) = self.reader_file_hashes.get_mut(i) {
                         *fh = meta.file_hashes;
                     }
+                    self.set_own_sources(&p, meta.own_sources);
                     if let Some(mp) = self.meta_paths.get_mut(i) {
                         *mp = meta.meta_path;
                     }
@@ -222,6 +225,7 @@ impl WorkspaceIndex {
                         }
                         // As `open` reads it: a workspace crate's sidecar names its source root too.
                         let is_dep = meta.is_dependency;
+                        self.set_own_sources(&file_path, meta.own_sources);
                         self.readers.push(reader);
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);

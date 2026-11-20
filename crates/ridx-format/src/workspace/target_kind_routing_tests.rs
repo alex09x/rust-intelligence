@@ -64,6 +64,7 @@ fn build_mock_workspace_with_kinds(readers_info: Vec<(&std::path::Path, Option<P
         reader_dependencies,
         reader_extern_units,
         reader_file_hashes,
+        own_sources: Default::default(),
         reader_is_dependency,
         meta_paths,
         meta_mtimes,

@@ -108,6 +108,8 @@ pub struct WorkspaceIndex {
     pub(crate) reader_dependencies: Vec<Vec<String>>,
     pub(crate) reader_extern_units: Vec<HashMap<String, String>>,
     pub(crate) reader_file_hashes: Vec<HashMap<String, u64>>,
+    /// Per shard path, the `own_sources` of its sidecar, read with its hashes when the shard was loaded.
+    pub(crate) own_sources: HashMap<PathBuf, HashSet<String>>,
     pub(crate) reader_is_dependency: Vec<bool>,
     pub(crate) meta_paths: Vec<Option<PathBuf>>,
     pub(crate) meta_mtimes: Vec<Option<std::time::SystemTime>>,

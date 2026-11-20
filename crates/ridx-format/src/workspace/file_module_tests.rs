@@ -85,6 +85,7 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
         reader_dependencies: vec![Vec::new(), Vec::new()],
         reader_extern_units: vec![HashMap::new(), HashMap::new()],
         reader_file_hashes: vec![HashMap::new(), HashMap::new()],
+        own_sources: Default::default(),
         reader_is_dependency: vec![true, false],
         meta_paths: vec![None, None],
         meta_mtimes: vec![None, None],

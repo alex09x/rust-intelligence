@@ -165,27 +165,41 @@ impl WorkspaceIndex {
         self.path_index.shard_mtime_slow(self, file_path)
     }
 
-    /// The hash the sidecar of reader `idx` recorded for the file `key` (as the reader names it) that has no entry in
-    /// its shard, unless the unit only read the file through a dependency: the sidecar of the generation loaded lists
-    /// its own sources (`own_sources`) and the file is not among them. When that cannot be told (the sidecar changed
-    /// since the reader was loaded, is gone or unreadable, or predates `own_sources`) the unit counts as holding the
-    /// file: a doubt is a disagreement, never a coverage (review of 9f9c7bba).
-    fn sidecar_only_hash(&self, idx: usize, key: &str) -> Option<u64> {
-        let hashes = self.reader_file_hashes.get(idx)?;
-        let path = std::path::Path::new(key);
-        let absolute = if path.is_absolute() { path.to_path_buf() } else { self.workspace_root.as_ref().map_or_else(|| path.to_path_buf(), |r| r.join(path)) };
-        let canonical = crate::canonicalize_best_effort(&absolute).display().to_string();
-        let h = hashes.get(key).or_else(|| hashes.get(&canonical)).copied().filter(|&h| h != 0)?;
-        let not_own = || -> Option<bool> {
-            let sidecar = self.meta_paths.get(idx)?.as_ref()?;
-            let loaded = (*self.meta_mtimes.get(idx)?)?;
-            if std::fs::metadata(sidecar).and_then(|m| m.modified()).ok()? != loaded {
-                return None;
-            }
-            let j: serde_json::Value = serde_json::from_slice(&std::fs::read(sidecar).ok()?).ok()?;
-            Some(!j["own_sources"].as_array()?.iter().any(|s| s.as_str() == Some(canonical.as_str())))
+    /// Records the `own_sources` of the sidecar just loaded for the shard at `path`, or forgets them when it has none.
+    pub(crate) fn set_own_sources(&mut self, path: &Path, own: Option<std::collections::HashSet<String>>) {
+        match own {
+            Some(own) => self.own_sources.insert(path.to_path_buf(), own),
+            None => self.own_sources.remove(path),
         };
-        (not_own() != Some(true)).then_some(h)
+    }
+
+    /// The hash the sidecar of reader `idx` recorded for the file `key` (as the reader names it; `query` as asked) that
+    /// has no entry in its shard, unless the unit only read the file through a dependency: the sidecar loaded with the
+    /// reader lists its own sources (`own_sources`) and the file is not among them. Both come from the same bytes,
+    /// kept in memory: a sidecar rewritten on disk since never changes the answer (review of 2f7a84e3). A relative key
+    /// resolves against the reader's own root, as path routing does, else the workspace root. Without `own_sources`
+    /// the unit counts as holding the file: a doubt is a disagreement, never a coverage (review of 9f9c7bba).
+    fn sidecar_only_hash(&self, idx: usize, key: &str, query: &str) -> Option<u64> {
+        let hashes = self.reader_file_hashes.get(idx)?;
+        let mut candidates: Vec<PathBuf> = Vec::new();
+        for name in [key, query] {
+            let path = Path::new(name);
+            if path.is_absolute() {
+                candidates.push(path.to_path_buf());
+            } else {
+                candidates.extend(self.reader_root(idx).map(|r| r.join(path)));
+                candidates.extend(self.workspace_root.as_ref().map(|r| r.join(path)));
+            }
+        }
+        let mut names: Vec<String> = candidates.iter().flat_map(|c| [c.display().to_string(), crate::canonicalize_best_effort(c).display().to_string()]).collect();
+        // The sidecar names the reader's files relative to its root.
+        if let Some(root) = self.reader_root(idx) {
+            let relative: Vec<String> = candidates.iter().filter_map(|c| c.strip_prefix(root).ok()).map(|r| r.display().to_string()).collect();
+            names.extend(relative);
+        }
+        let h = std::iter::once(key).chain(names.iter().map(String::as_str)).find_map(|n| hashes.get(n)).copied().filter(|&h| h != 0)?;
+        let not_own = self.paths.get(idx).and_then(|p| self.own_sources.get(p)).is_some_and(|own| !names.iter().any(|n| own.contains(n)));
+        (!not_own).then_some(h)
     }
 
     /// Whether every compilation unit recording a source hash for `file_path` recorded the same one. A failed build of
@@ -205,8 +219,8 @@ impl WorkspaceIndex {
             let key = target.as_deref().unwrap_or(file_path);
             let reader = &self.readers[idx];
             let h = match reader.find_file_id(key) {
-                Some(fid) => Some(reader.file_source_hash(fid)).filter(|&h| h != 0).or_else(|| self.sidecar_only_hash(idx, key)),
-                None => self.sidecar_only_hash(idx, key),
+                Some(fid) => Some(reader.file_source_hash(fid)).filter(|&h| h != 0).or_else(|| self.sidecar_only_hash(idx, key, file_path)),
+                None => self.sidecar_only_hash(idx, key, file_path),
             };
             match (h, seen) {
                 (Some(h), Some(s)) if h != s => return false,

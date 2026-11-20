@@ -47,6 +47,7 @@ impl WorkspaceIndex {
             let reader_dependencies = vec![meta.dependencies];
             let reader_extern_units = vec![meta.extern_units];
             let reader_file_hashes = vec![meta.file_hashes];
+            let own_sources: HashMap<PathBuf, HashSet<String>> = meta.own_sources.map(|o| (p.to_path_buf(), o)).into_iter().collect();
             let reader_is_dependency = vec![is_dep];
             let meta_paths = vec![meta.meta_path];
             let meta_mtimes = vec![meta.meta_mtime];
@@ -65,6 +66,7 @@ impl WorkspaceIndex {
                 reader_dependencies,
                 reader_extern_units,
                 reader_file_hashes,
+                own_sources,
                 reader_is_dependency,
                 meta_paths,
                 meta_mtimes,
@@ -117,6 +119,7 @@ impl WorkspaceIndex {
         let mut reader_is_dependency = Vec::with_capacity(ridx_files.len());
         let mut meta_paths = Vec::with_capacity(ridx_files.len());
         let mut meta_mtimes = Vec::with_capacity(ridx_files.len());
+        let mut own_sources: HashMap<PathBuf, HashSet<String>> = HashMap::new();
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
@@ -125,6 +128,9 @@ impl WorkspaceIndex {
                     let embedded = reader.embedded_file_hashes();
                     let meta = Self::load_file_metadata(&file_path, &scan_dir, reader.crate_name(), reader.unit_key(), reader.generation(), &embedded);
                     let is_dep = meta.is_dependency;
+                    if let Some(own) = meta.own_sources {
+                        own_sources.insert(file_path.clone(), own);
+                    }
                     readers.push(reader);
                     paths.push(file_path);
                     mtimes.push(mtime);
@@ -296,6 +302,7 @@ impl WorkspaceIndex {
             reader_dependencies,
             reader_extern_units,
             reader_file_hashes,
+            own_sources,
             reader_is_dependency,
             meta_paths,
             meta_mtimes,

@@ -52,6 +52,10 @@ impl WorkspaceIndex {
                             }
                         }
                         let mtime = fs::metadata(c).and_then(|m| m.modified()).ok();
+                        // From the same bytes as the hashes: one snapshot of the unit (review of 2f7a84e3).
+                        let own_sources = serde_json::from_slice::<serde_json::Value>(&content)
+                            .ok()
+                            .and_then(|v| v["own_sources"].as_array().map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect()));
                         let mut combined_hashes = info.file_hashes;
                         let sroot_path = info.source_root.as_deref().map(Path::new);
                         crate::format::merge_embedded_hashes_authoritative(&mut combined_hashes, embedded_hashes, sroot_path);
@@ -77,6 +81,7 @@ impl WorkspaceIndex {
                             dependencies: info.dependencies,
                             extern_units: info.extern_units,
                             file_hashes: combined_hashes,
+                            own_sources,
                             meta_path: Some(c.clone()),
                             meta_mtime: mtime,
                         };
@@ -95,6 +100,7 @@ impl WorkspaceIndex {
             dependencies: Vec::new(),
             extern_units: HashMap::new(),
             file_hashes: embedded_hashes.clone(),
+            own_sources: None,
             meta_path: Some(cand_json[0].clone()),
             meta_mtime: None,
         }
@@ -112,6 +118,8 @@ pub(crate) struct LoadedFileMetadata {
     pub dependencies: Vec<String>,
     pub extern_units: HashMap<String, String>,
     pub file_hashes: HashMap<String, u64>,
+    /// The sources the unit was compiled from itself (`own_sources`), `None` for a sidecar without it.
+    pub own_sources: Option<std::collections::HashSet<String>>,
     pub meta_path: Option<PathBuf>,
     pub meta_mtime: Option<std::time::SystemTime>,
 }

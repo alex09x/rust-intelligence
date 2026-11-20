@@ -104,6 +104,7 @@ impl WorkspaceIndex {
                                     let mut new_reader_is_dependency = Vec::with_capacity(new_files.len());
                                     let mut new_meta_paths = Vec::with_capacity(new_files.len());
                                     let mut new_meta_mtimes = Vec::with_capacity(new_files.len());
+                                    let mut new_own_sources = HashMap::new();
 
                                     for fp in new_files {
                                         if let Ok(r) = IndexReader::open(&fp) {
@@ -112,6 +113,9 @@ impl WorkspaceIndex {
                                             let meta = Self::load_file_metadata(&fp, &new_vdir, r.crate_name(), r.unit_key(), r.generation(), &embedded);
                                             // As `open` reads it: a workspace crate's sidecar names its source root too.
                                             let is_dep = meta.is_dependency;
+                                            if let Some(own) = meta.own_sources {
+                                                new_own_sources.insert(fp.clone(), own);
+                                            }
                                             new_readers.push(r);
                                             new_paths.push(fp);
                                             new_mtimes.push(mt);
@@ -256,6 +260,7 @@ impl WorkspaceIndex {
                                         self.reader_dependencies = new_reader_dependencies;
                                         self.reader_extern_units = new_reader_extern_units;
                                         self.reader_file_hashes = new_reader_file_hashes;
+                                        self.own_sources = new_own_sources;
                                         self.reader_is_dependency = new_reader_is_dependency;
                                         self.meta_paths = new_meta_paths;
                                         self.meta_mtimes = new_meta_mtimes;
