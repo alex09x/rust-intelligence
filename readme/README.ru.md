@@ -1,7 +1,7 @@
-<!-- translation-source: 2f5d3165b24f397f0edc567fb467cd039ec51a31 -->
+<!-- translation-source: a0dfeef06a74f5486dbec314b49ada11e5ae550c -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [2f5d316](https://github.com/alex09x/rust-intelligence/blob/2f5d3165b24f397f0edc567fb467cd039ec51a31/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [a0dfeef](https://github.com/alex09x/rust-intelligence/blob/a0dfeef06a74f5486dbec314b49ada11e5ae550c/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -18,7 +18,7 @@
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
-  <img src="https://img.shields.io/badge/LSP-3.18-1b1d20" alt="LSP 3.18">
+  <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
 
@@ -163,19 +163,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 
 ## Как это устроено
 
-```
- editor ──JSON-RPC (stdio)──► ridx lsp
-                               ├─ OverlayManager (RAM): open buffers, live edits
-                               ├─ WorkspaceIndex (mmap): shards of this workspace
-                               └─ flycheck thread: cargo check on save
-                                        │
-              ┌─────────────────────────┴─────────────────────────┐
-   ~/.cache/ridx/v5/objects/                          target/ridx/variants/<id>/
-   dependencies, by crate, version, target and cfg    the workspace's own crates
-   shared by every project                            + a manifest scoped to Cargo.lock
-                                        ▲
-                         ridx-driver (rustc wrapper inside cargo check)
-```
+<p align="center"><img src="../site/assets/architecture.svg" width="900" alt="How ridx works: at build time cargo check runs ridx-driver inside rustc and writes .ridx shards to disk; at edit time ridx lsp maps them and answers the editor"></p>
 
 rustc и так на каждом `cargo check` разрешает все имена, раскрывает все макросы и выводит все типы. `ridx`
 сохраняет эти ответы, а не вычисляет их заново.
