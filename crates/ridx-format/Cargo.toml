@@ -5,6 +5,11 @@ edition = "2021"
 description = "Fast, compact, zero-copy binary index format for Rust Intelligence"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/alex09x/rust-intelligence"
+homepage = "https://rust-intelligence.com"
+readme = "../../README.md"
+keywords = ["index", "mmap", "zero-copy", "lsp", "code-intelligence"]
+categories = ["development-tools", "encoding"]
 
 [dependencies]
 memmap2 = "0.9"

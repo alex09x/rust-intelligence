@@ -5,10 +5,16 @@ edition = "2021"
 description = "Compiler-backed, mmap-indexed CLI and LSP code intelligence tool for Rust"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/alex09x/rust-intelligence"
+homepage = "https://rust-intelligence.com"
+readme = "../../README.md"
+keywords = ["lsp", "language-server", "rust-analyzer", "ide", "code-intelligence"]
+categories = ["development-tools", "text-editors", "command-line-utilities"]
+exclude = ["tests/"]
 
 [dependencies]
-ridx-format = { path = "../ridx-format" }
-ridx-syntax = { path = "../ridx-syntax" }
+ridx-format = { version = "0.3.8", path = "../ridx-format" }
+ridx-syntax = { version = "0.3.8", path = "../ridx-syntax" }
 memmap2 = "0.9"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }

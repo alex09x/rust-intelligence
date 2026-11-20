@@ -5,5 +5,10 @@ edition = "2021"
 description = "Zero-dependency lossless Rust lexer and syntax tree for Rust Intelligence"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/alex09x/rust-intelligence"
+homepage = "https://rust-intelligence.com"
+readme = "../../README.md"
+keywords = ["lexer", "parser", "syntax-tree", "lossless", "rust"]
+categories = ["development-tools", "parser-implementations"]
 
 [dependencies]

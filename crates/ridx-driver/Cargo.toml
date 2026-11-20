@@ -5,7 +5,12 @@ edition = "2021"
 description = "Compiler-backed rustc_driver extractor for Rust Intelligence (ridx)"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/alex09x/rust-intelligence"
+homepage = "https://rust-intelligence.com"
+readme = "../../README.md"
+keywords = ["rustc", "rustc-driver", "lsp", "index", "code-intelligence"]
+categories = ["development-tools"]
 
 [dependencies]
-ridx-format = { path = "../ridx-format" }
+ridx-format = { version = "0.3.8", path = "../ridx-format" }
 serde_json = "1.0"
