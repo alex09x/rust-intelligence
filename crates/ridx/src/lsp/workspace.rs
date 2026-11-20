@@ -16,6 +16,9 @@ use std::path::{Path, PathBuf};
 
 pub struct MultiRootWorkspace {
     roots: Vec<(PathBuf, WorkspaceIndex)>,
+    /// Per root, the path its index was opened by when that is not the root itself (`W/target/ridx`, a variant
+    /// directory, an index kept elsewhere): removing that path removes the root, and only it (review of 6b8ee66c).
+    opened_as: Vec<(PathBuf, PathBuf)>,
 }
 
 impl Default for MultiRootWorkspace {
@@ -26,7 +29,7 @@ impl Default for MultiRootWorkspace {
 
 impl MultiRootWorkspace {
     pub fn new() -> Self {
-        Self { roots: Vec::new() }
+        Self { roots: Vec::new(), opened_as: Vec::new() }
     }
 
     #[allow(dead_code)]
@@ -47,6 +50,7 @@ impl MultiRootWorkspace {
 
     pub fn clear(&mut self) {
         self.roots.clear();
+        self.opened_as.clear();
     }
 
     /// Answers for the root `root` (canonical) from `ws` from now on; `None` when there is no such root.
@@ -85,19 +89,23 @@ impl MultiRootWorkspace {
             norm_path.clone()
         };
 
-        if self.roots.iter().any(|(p, _)| p == &root_dir || p == &norm_path) {
+        if self.roots.iter().any(|(p, _)| p == &root_dir || p == &norm_path) || self.opened_as.iter().any(|(_, o)| o == &norm_path) {
             return false;
         }
 
         if let Ok(ws) = WorkspaceIndex::open(&norm_path) {
-            // An index opened as its directory (`W/target/ridx`) answers for the workspace it records and lies in (`W`):
-            // the guard of a failed index and the choice of the index answering a file go by the same roots (review of
-            // 3e51faf9: the directory's files are not under it, and an enclosing workspace answered for them).
-            let index_dir = norm_path.join("ridx_manifest.json").is_file();
-            let recorded = ws.workspace_root().map(ridx_format::canonicalize_best_effort).filter(|r| index_dir && norm_path.starts_with(r));
+            // An index opened by where it is kept (`W/target/ridx`, flat or with a manifest, a variant directory, a shard,
+            // one kept elsewhere) answers for the workspace it records (`W`): the guard of a failed index and the choice of
+            // the index answering a file go by the same roots (reviews of 3e51faf9 and 6b8ee66c). A source folder (with a
+            // `Cargo.toml`) is the root it was opened as.
+            let source_folder = norm_path.is_dir() && norm_path.join("Cargo.toml").is_file();
+            let recorded = ws.workspace_root().map(ridx_format::canonicalize_best_effort).filter(|_| !source_folder);
             let root_dir = recorded.unwrap_or(root_dir);
             if self.roots.iter().any(|(p, _)| p == &root_dir) {
                 return false;
+            }
+            if root_dir != norm_path {
+                self.opened_as.push((root_dir.clone(), norm_path));
             }
             self.roots.push((root_dir, ws));
             return true;
@@ -108,19 +116,18 @@ impl MultiRootWorkspace {
     pub fn remove_root(&mut self, path: &Path) -> bool {
         let norm_path = ridx_format::canonicalize_best_effort(path);
         let before_len = self.roots.len();
+        let opened: Vec<PathBuf> = self.opened_as.iter().filter(|(_, o)| o == &norm_path).map(|(r, _)| r.clone()).collect();
         self.roots.retain(|(p, ws)| {
-            if p == &norm_path || p == path {
+            if p == &norm_path || p == path || opened.contains(p) {
                 return false;
             }
             if ws.paths().iter().any(|ip| ip == path || ip == &norm_path || ridx_format::canonicalize_best_effort(ip) == norm_path) {
                 return false;
             }
-            // The directory an index was opened as, inside the workspace it is bound to.
-            if norm_path.starts_with(p) && ws.paths().iter().any(|ip| ridx_format::canonicalize_best_effort(ip).starts_with(&norm_path)) {
-                return false;
-            }
             true
         });
+        let roots = &self.roots;
+        self.opened_as.retain(|(r, _)| roots.iter().any(|(p, _)| p == r));
         self.roots.len() < before_len
     }
 

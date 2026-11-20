@@ -194,3 +194,77 @@ fn test_the_index_admitted_is_the_index_answering() {
     assert!(mr.roots().all(|r| r != nested), "{:?}", mr.roots().collect::<Vec<_>>());
     assert!(mr.roots().any(|r| r == outer), "the enclosing one stays");
 }
+
+/// A shard of `root`'s package and its sidecar in `dir`.
+fn shard_in(dir: &Path, root: &Path) {
+    std::fs::create_dir_all(dir.join(".deps")).unwrap();
+    let mut w = ridx_format::IndexWriter::new("w", "0.1.0");
+    w.get_or_insert_file("src/lib.rs");
+    w.write_to(&mut std::fs::File::create(dir.join("w.ridx")).unwrap()).unwrap();
+    let meta = json!({ "name": "w", "version": "0.1.0", "source_root": root.display().to_string(), "target_kind": "lib", "is_dependency": false });
+    std::fs::write(dir.join(".deps/w.json"), meta.to_string()).unwrap();
+}
+
+fn manifest(root: &Path) -> Value {
+    json!({ "version": "2.0", "format_version": ridx_format::CURRENT_FORMAT_VERSION, "extractor_version": ridx_format::EXTRACTOR_VERSION,
+        "active_variant_id": "dev", "variant_dir": "variants/dev", "workspace_root": root.display().to_string() })
+}
+
+/// Review of 6b8ee66c: every place an index is opened by (a flat `target/ridx`, a variant directory, an index kept
+/// outside the workspace) answers for the workspace it records, after a later run of it failed, and is removed by
+/// that place.
+#[test]
+fn test_every_form_of_an_index_directory_answers_for_its_workspace() {
+    let elsewhere = tempfile::tempdir().unwrap();
+    for form in ["flat", "variant", "elsewhere"] {
+        let dir = tempfile::tempdir().unwrap();
+        let root = ridx_format::canonicalize_best_effort(dir.path());
+        package(&root);
+        let opened = match form {
+            "flat" => {
+                shard_in(&root.join("target/ridx"), &root);
+                root.join("target/ridx")
+            }
+            "variant" => {
+                let variant = root.join("target/ridx/variants/dev");
+                shard_in(&variant, &root);
+                std::fs::write(variant.join("variant_manifest.json"), manifest(&root).to_string()).unwrap();
+                variant
+            }
+            _ => {
+                let kept = ridx_format::canonicalize_best_effort(elsewhere.path()).join(format!("kept-{}", std::process::id()));
+                shard_in(&kept.join("variants/dev"), &root);
+                std::fs::write(kept.join("ridx_manifest.json"), manifest(&root).to_string()).unwrap();
+                kept
+            }
+        };
+        let mut mr = MultiRootWorkspace::new();
+        assert!(mr.add_root(opened.clone()), "{form}");
+        assert_eq!(mr.first_workspace().and_then(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort), Some(root.clone()), "{form}");
+        assert!(mr.roots().any(|r| r == root), "{form}: bound to its workspace");
+        let reindex = Reindexer::new();
+        reindex.fail_for_test(&root, "ridx index failed: a newer build failed");
+        assert!(index_failed(&references(&root, 1, None), &mr, &reindex).is_none(), "{form}: the index loaded answers");
+        assert!(mr.remove_root(&opened), "{form}: removed by the place it was opened by");
+        assert!(mr.is_empty(), "{form}");
+    }
+}
+
+/// Review of 6b8ee66c: removing a workspace kept inside another one's directories (`A/target`, a package of its own)
+/// removed `A` too, whose shards lie under `A/target`.
+#[test]
+fn test_removing_one_root_keeps_another_whose_shards_lie_under_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let outer = ridx_format::canonicalize_best_effort(dir.path());
+    let inner = outer.join("target");
+    package(&outer);
+    publish_index(&outer);
+    package(&inner);
+    publish_index(&inner);
+    let mut mr = MultiRootWorkspace::new();
+    assert!(mr.add_root(outer.clone()));
+    assert!(mr.add_root(inner.clone()));
+    assert_eq!(mr.len(), 2);
+    assert!(mr.remove_root(&inner));
+    assert_eq!(mr.roots().collect::<Vec<_>>(), vec![outer.as_path()], "only the root removed goes");
+}
