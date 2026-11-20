@@ -2,6 +2,18 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.8] - 2026-11-19
+
+Verified by the workspace test suite and by the editor configurations in the README run against the release binary: Neovim (definition, hover, completion) and Helix (`hx --health rust` and an LSP session opened on a workspace member). The per-method agreement suite was not re-run for this release. The index format is unchanged.
+
+### Added
+- **Signed and notarized macOS binaries**: `ridx` and `ridx-driver` for Apple Silicon are signed with a Developer ID, run under the hardened runtime and are notarized by Apple, so Gatekeeper accepts them. The release stops instead of shipping an unsigned build when signing or notarization fails.
+- **Helix**: [`docs/editors/helix-languages.toml`](docs/editors/helix-languages.toml) declares the `ridx` language server and selects it for Rust.
+- **Documentation**: how the index works and an architecture diagram, in the README and on the site.
+
+### Fixed
+- **Workspace root**: an editor that opens a workspace member as the root (Helix uses the nearest `Cargo.toml`) now indexes and answers for the whole Cargo workspace; workspace folders added later and the current-directory fallback are lifted to their workspace the same way.
+
 ## [0.3.7] - 2026-11-19
 
 The first public release. Verified by the workspace test suite, by Zed's LSP traffic replayed against the server, by hand in Zed, and by rust-analyzer's own go-to-definition fixtures and 26 cross-crate scenarios run against both servers (`bench/ra_fixtures.py`, `bench/fixtures/cross_crate_definition.txt`). The per-method agreement suite was not re-run for this release. The index format is unchanged.

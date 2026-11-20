@@ -1,6 +1,6 @@
 [package]
 name = "ridx-test-support"
-version = "0.3.7"
+version = "0.3.8"
 edition = "2021"
 description = "Test harness, DSL, and fixture helpers for Rust Intelligence (ridx)"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
