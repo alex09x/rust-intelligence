@@ -248,3 +248,35 @@ fn test_a_canonical_relative_route_keeps_the_reader_root() {
     assert_eq!(ws.target_file_for_reader(1, "alias/gen.rs").as_deref(), Some("src/gen.rs"));
     assert!(!ws.units_agree_on_source("alias/gen.rs"), "B holds another text");
 }
+
+/// Review of bbed0a7e: the same route with the sidecars recording the root relative to the workspace (`"shop"`): the
+/// root lies under the workspace, not under the process's working directory.
+#[cfg(unix)]
+#[test]
+fn test_a_relative_recorded_root_lies_under_the_workspace() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("shop/src")).unwrap();
+    fs::write(root.join("shop/src/gen.rs"), "pub fn g() {}\n").unwrap();
+    std::os::unix::fs::symlink(root.join("shop/src"), root.join("shop/alias")).unwrap();
+    let canonical = fs::canonicalize(root.join("shop/src/gen.rs")).unwrap().display().to_string();
+    let a = Unit { key: "uk_a", krate: "shop", shard: &[("src/gen.rs", 0x111)], hashes: serde_json::json!({}), own: vec![canonical.clone()] };
+    let b = Unit { key: "uk_b", krate: "shop", shard: &[("src/gen.rs", 0)], hashes: serde_json::json!({ "src/gen.rs": 0x222 }), own: vec![canonical.clone()] };
+    drop(units(root, &[a, b]));
+    for (i, u) in [
+        Unit { key: "uk_a", krate: "shop", shard: &[], hashes: serde_json::json!({}), own: vec![canonical.clone()] },
+        Unit { key: "uk_b", krate: "shop", shard: &[], hashes: serde_json::json!({ "src/gen.rs": 0x222 }), own: vec![canonical.clone()] },
+    ]
+    .iter()
+    .enumerate()
+    {
+        let (path, mut sidecar) = sidecar_of(root, i, u);
+        sidecar["source_root"] = "shop".into();
+        fs::write(path, sidecar.to_string()).unwrap();
+    }
+    let ws = WorkspaceIndex::open(root).unwrap();
+    assert!(!std::env::current_dir().unwrap().starts_with(root));
+    assert_eq!(ws.reader_root(1), Some(Path::new("shop")));
+    assert_eq!(ws.target_file_for_reader(1, "alias/gen.rs").as_deref(), Some("src/gen.rs"));
+    assert!(!ws.units_agree_on_source("alias/gen.rs"), "B holds another text");
+}

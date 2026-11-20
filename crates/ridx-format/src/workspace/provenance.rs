@@ -173,6 +173,16 @@ impl WorkspaceIndex {
         };
     }
 
+    /// The reader's root as routing resolves it: a relative recorded root (`source_root: "shop"`) lies under the workspace
+    /// root, never under the process's working directory (review of bbed0a7e).
+    fn rooted_reader_root(&self, idx: usize) -> Option<PathBuf> {
+        let root = self.reader_root(idx)?;
+        Some(match self.workspace_root.as_deref() {
+            Some(ws) if root.is_relative() => ws.join(root),
+            _ => root.to_path_buf(),
+        })
+    }
+
     /// The names the sidecar of reader `idx` may record one file under: its path as given, its canonical path, and its
     /// path relative to the reader's root, then to the workspace root (from the given and the canonical spellings of
     /// both), with that relative path joined back onto the root as it is spelled. All of them name `file` only: never a
@@ -180,9 +190,9 @@ impl WorkspaceIndex {
     fn names_of_one_file(&self, idx: usize, file: &Path) -> Vec<String> {
         let canonical = crate::canonicalize_best_effort(file);
         let mut names = vec![file.display().to_string(), canonical.display().to_string()];
-        for root in [self.reader_root(idx), self.workspace_root.as_deref()].into_iter().flatten() {
-            let canonical_root = crate::canonicalize_best_effort(root);
-            for rel in [file.strip_prefix(root).ok(), canonical.strip_prefix(&canonical_root).ok()].into_iter().flatten() {
+        for root in [self.rooted_reader_root(idx), self.workspace_root.clone()].into_iter().flatten() {
+            let canonical_root = crate::canonicalize_best_effort(&root);
+            for rel in [file.strip_prefix(&root).ok(), canonical.strip_prefix(&canonical_root).ok()].into_iter().flatten() {
                 names.push(rel.display().to_string());
                 names.push(root.join(rel).display().to_string());
             }
@@ -206,12 +216,11 @@ impl WorkspaceIndex {
         if let Some(k) = key.filter(|k| Path::new(k).is_absolute()) {
             return PathBuf::from(k);
         }
-        let anchors: Vec<&Path> = [self.workspace_root.as_deref(), self.reader_root(idx)].into_iter().flatten().collect();
+        let anchors: Vec<PathBuf> = [self.workspace_root.clone(), self.rooted_reader_root(idx)].into_iter().flatten().collect();
         let files: Vec<PathBuf> = anchors.iter().map(|a| a.join(q)).collect();
         let Some(k) = key else { return files.first().cloned().unwrap_or_else(|| q.to_path_buf()) };
         let is_key = |file: &Path, roots: &[PathBuf]| roots.iter().any(|a| file.strip_prefix(a).ok().and_then(|r| r.to_str()) == Some(k));
-        let lexical: Vec<PathBuf> = anchors.iter().map(|a| a.to_path_buf()).collect();
-        if let Some(f) = files.iter().find(|f| is_key(f, &lexical)) {
+        if let Some(f) = files.iter().find(|f| is_key(f, &anchors)) {
             return f.clone();
         }
         let canonical: Vec<PathBuf> = anchors.iter().map(|a| crate::canonicalize_best_effort(a)).collect();
