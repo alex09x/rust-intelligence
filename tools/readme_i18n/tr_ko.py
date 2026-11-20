@@ -36,7 +36,7 @@ T = {
     "zed": "**Zed**: [`editors/zed`](../editors/zed) 확장이 `ridx lsp`를 `rust-intelligence` 언어 서버로 등록하고\n  (명령 팔레트: `zed: install dev extension`),\n  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json)이 Rust에 이를 선택합니다.",
     "vscode": "**VS Code**: [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)이\n  rust-analyzer 확장을 `ridx`로 향하게 합니다(`\"rust-analyzer.server.path\": \"ridx\"`).",
     "nvim": "**Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)(`cmd = { \"ridx\" }`,\n  루트를 먼저 `Cargo.lock`으로 찾으므로 워크스페이스 멤버를 열어도 워크스페이스 전체 인덱스를 씁니다).",
-    "helix": "**Helix**: `languages.toml`에 `command = \"ridx\"`, `args = [\"lsp\"]`를 가진 `[language-server.ridx]`를 추가합니다.",
+    "helix": "**Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) 가 언어 서버 `ridx` 를 선언하고 `languages.toml` 에서 Rust용으로 선택합니다.",
     "h_shell": "셸에서",
     "h_lsp": "LSP 메서드",
     "lsp_th": ["분류", "메서드"],

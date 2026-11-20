@@ -149,6 +149,7 @@ pub fn dispatch_lsp_message<W: Write>(
         _ if off_token => Ok(Value::Null),
         "initialize" => match lifecycle.handle_initialize(&msg) {
             Ok((capabilities, folders)) => {
+                let folders = super::cargo_root::workspace_roots(folders);
                 if !folders.is_empty() {
                     if index_path.is_none() {
                         mr.clear();

@@ -36,7 +36,7 @@ T = {
     "zed": "**Zed**：[`editors/zed`](../editors/zed) 拡張が `ridx lsp` を `rust-intelligence` 言語サーバーとして登録し\n  （コマンドパレット：`zed: install dev extension`）、\n  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) で Rust に選択します。",
     "vscode": "**VS Code**：[`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) で\n  rust-analyzer 拡張を `ridx` に向けます（`\"rust-analyzer.server.path\": \"ridx\"`）。",
     "nvim": "**Neovim**：[`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)（`cmd = { \"ridx\" }`、\n  ルートはまず `Cargo.lock` で探すので、ワークスペースのメンバーを開いてもワークスペース全体のインデックスが使われます）。",
-    "helix": "**Helix**：`languages.toml` に `command = \"ridx\"`、`args = [\"lsp\"]` を持つ `[language-server.ridx]` を追加します。",
+    "helix": "**Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) が言語サーバー `ridx` を宣言し、`languages.toml` で Rust 用に選択します。",
     "h_shell": "シェルから",
     "h_lsp": "LSP メソッド",
     "lsp_th": ["カテゴリ", "メソッド"],

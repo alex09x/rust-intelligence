@@ -36,7 +36,7 @@ T = {
     "zed": "**Zed**：[`editors/zed`](../editors/zed) 扩展把 `ridx lsp` 注册为 `rust-intelligence`\n  语言服务器（命令面板：`zed: install dev extension`），\n  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) 为 Rust 选择它。",
     "vscode": "**VS Code**：[`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) 让\n  rust-analyzer 扩展指向 `ridx`（`\"rust-analyzer.server.path\": \"ridx\"`）。",
     "nvim": "**Neovim**：[`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)（`cmd = { \"ridx\" }`，\n  优先按 `Cargo.lock` 查找根目录，因此工作区成员会打开整个工作区的索引）。",
-    "helix": "**Helix**：在 `languages.toml` 中添加 `[language-server.ridx]`，设置 `command = \"ridx\"`、`args = [\"lsp\"]`。",
+    "helix": "**Helix**：[`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) 声明语言服务器 `ridx`，并在 `languages.toml` 中将其选为 Rust 的语言服务器。",
     "h_shell": "在终端中使用",
     "h_lsp": "LSP 方法",
     "lsp_th": ["类别", "方法"],

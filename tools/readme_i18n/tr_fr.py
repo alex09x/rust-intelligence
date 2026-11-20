@@ -36,7 +36,7 @@ T = {
     "zed": "**Zed** : l'extension [`editors/zed`](../editors/zed) enregistre `ridx lsp` comme serveur de langage\n  `rust-intelligence` (palette de commandes : `zed: install dev extension`), et\n  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) le sélectionne pour Rust.",
     "vscode": "**VS Code** : [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) fait pointer\n  l'extension rust-analyzer vers `ridx` (`\"rust-analyzer.server.path\": \"ridx\"`).",
     "nvim": "**Neovim** : [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { \"ridx\" }`,\n  la racine est cherchée d'abord par `Cargo.lock`, ainsi un membre du workspace ouvre l'index du workspace).",
-    "helix": "**Helix** : un `[language-server.ridx]` avec `command = \"ridx\"`, `args = [\"lsp\"]` dans `languages.toml`.",
+    "helix": "**Helix** : [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) déclare le serveur de langage `ridx` et le sélectionne pour Rust dans `languages.toml`.",
     "h_shell": "Depuis le terminal",
     "h_lsp": "Méthodes LSP",
     "lsp_th": ["Catégorie", "Méthodes"],

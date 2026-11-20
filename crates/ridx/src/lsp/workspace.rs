@@ -163,7 +163,9 @@ impl MultiRootWorkspace {
                 for item in added {
                     if let Some(uri) = item.get("uri").and_then(|u| u.as_str()) {
                         let path = super::protocol::uri_to_path(uri);
-                        self.add_root(PathBuf::from(path));
+                        for root in super::cargo_root::workspace_roots(vec![PathBuf::from(path)]) {
+                            self.add_root(root);
+                        }
                     }
                 }
             }

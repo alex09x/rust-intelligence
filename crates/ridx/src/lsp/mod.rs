@@ -13,6 +13,7 @@
 //! Provides ultra-low latency (<50 µs) code intelligence over stdio without running
 //! a heavy background daemon or consuming persistent background RAM.
 
+mod cargo_root;
 pub mod dispatch;
 pub mod editing;
 pub mod error;

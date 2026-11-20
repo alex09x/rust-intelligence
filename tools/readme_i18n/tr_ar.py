@@ -36,7 +36,7 @@ T = {
     "zed": "**Zed**: تسجّل الإضافة [`editors/zed`](../editors/zed) الأمر `ridx lsp` بوصفه خادم اللغة\n  `rust-intelligence` (لوحة الأوامر: `zed: install dev extension`)، ويختاره\n  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) للغة Rust.",
     "vscode": "**VS Code**: يوجّه [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)\n  إضافة rust-analyzer إلى `ridx` (`\"rust-analyzer.server.path\": \"ridx\"`).",
     "nvim": "**Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { \"ridx\" }`،\n  يُبحث عن الجذر أولًا عبر `Cargo.lock`، فيفتح عضو مساحة العمل فهرس مساحة العمل كلها).",
-    "helix": "**Helix**: ‏`[language-server.ridx]` مع `command = \"ridx\"` و`args = [\"lsp\"]` في `languages.toml`.",
+    "helix": "**Helix**: يعرّف [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) خادم اللغة `ridx` ويختاره للغة Rust في `languages.toml`.",
     "h_shell": "من الطرفية",
     "h_lsp": "طرق LSP",
     "lsp_th": ["الفئة", "الطرق"],

@@ -123,7 +123,8 @@ If a desktop editor cannot find `ridx`, give it the full path from `which ridx`.
   rust-analyzer extension at `ridx` (`"rust-analyzer.server.path": "ridx"`).
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
   root found by `Cargo.lock` first, so a workspace member opens the workspace's index).
-- **Helix**: a `[language-server.ridx]` with `command = "ridx"`, `args = ["lsp"]` in `languages.toml`.
+- **Helix**: [`docs/editors/helix-languages.toml`](docs/editors/helix-languages.toml) declares the `ridx`
+  language server and selects it for Rust in `languages.toml`.
 
 ## From the shell
 
