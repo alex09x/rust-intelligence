@@ -17,6 +17,19 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// The Cargo workspaces a session checks on start: the folders queued at `initialize` and the roots of the indexes
+/// already loaded (`--index-path`), each once. Review of a34d8100: only the first queued folder was checked.
+pub fn check_roots(queued: Vec<PathBuf>, mr: &super::MultiRootWorkspace) -> Vec<PathBuf> {
+    let loaded = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).map(Path::to_path_buf);
+    let mut roots: Vec<PathBuf> = Vec::new();
+    for root in queued.into_iter().chain(loaded).map(|r| ridx_format::canonicalize_best_effort(&r)) {
+        if root.join("Cargo.toml").is_file() && !roots.contains(&root) {
+            roots.push(root);
+        }
+    }
+    roots
+}
+
 /// The client's folders with each workspace member replaced by its workspace root, without duplicates.
 pub fn workspace_roots(folders: Vec<PathBuf>) -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = Vec::with_capacity(folders.len());

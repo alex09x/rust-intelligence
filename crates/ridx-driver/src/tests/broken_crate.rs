@@ -62,5 +62,55 @@ pub fn mismatched() -> bool { helper(4) }\n";
     for name in ["helper", "caller", "unresolved", "mismatched"] {
         assert!(paths.iter().any(|p| p.ends_with(name)), "definition {name} in {paths:?}");
     }
+    // Review of a34d8100: a type that failed is left out, the ones that resolved stay.
+    let types: Vec<&str> = reader.types().iter().map(|t| reader.get_str(t.type_offset)).collect();
+    assert!(!types.iter().any(|t| t.contains("type error")), "no failed types: {types:?}");
+    assert!(types.contains(&"i32"), "the resolved ones stay: {types:?}");
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+/// Review of a34d8100: a registry dependency indexed after its errors went to the shared cache, and a later build that
+/// succeeded with the same key (an `env!` variable set this time) kept that partial index.
+#[test]
+fn test_driver_does_not_index_a_dependency_that_does_not_compile() {
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
+    let temp_dir = std::env::temp_dir().join(format!("ridx_driver_broken_dep_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&temp_dir);
+    let reg_dir = temp_dir.join(".cargo/registry/src/dep_broken");
+    fs::create_dir_all(&reg_dir).unwrap();
+    let src = reg_dir.join("lib.rs");
+    fs::write(&src, "pub fn length() -> usize { let s: u8 = \"x\"; s.len() }\n").unwrap();
+    let (out_dir, cache_dir) = (temp_dir.join("out"), temp_dir.join("cache"));
+    fs::create_dir_all(out_dir.join(".deps")).unwrap();
+    let sysroot = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().unwrap();
+    let args = vec![
+        "rustc".to_string(),
+        src.to_str().unwrap().to_string(),
+        "--crate-name".to_string(),
+        "dep_broken".to_string(),
+        "--crate-type".to_string(),
+        "lib".to_string(),
+        "--emit=metadata".to_string(),
+        "-o".to_string(),
+        temp_dir.join("libdep_broken.rmeta").to_str().unwrap().to_string(),
+        "--sysroot".to_string(),
+        String::from_utf8_lossy(&sysroot.stdout).trim().to_string(),
+    ];
+    let mut env = DriverEnv::for_test(&out_dir);
+    env.cache_dir = cache_dir.clone();
+    env.manifest_dir = Some(reg_dir);
+    assert!(run_driver_with_env(args, env).is_err());
+    let mut found = Vec::new();
+    let mut stack = vec![out_dir, cache_dir];
+    while let Some(dir) = stack.pop() {
+        for p in fs::read_dir(&dir).into_iter().flatten().flatten().map(|e| e.path()) {
+            if p.is_dir() {
+                stack.push(p);
+            } else if p.extension().is_some_and(|x| x == "ridx") {
+                found.push(p);
+            }
+        }
+    }
+    assert!(found.is_empty(), "no index of a dependency that failed: {found:?}");
     let _ = fs::remove_dir_all(&temp_dir);
 }

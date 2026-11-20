@@ -94,6 +94,9 @@ fn test_code_action_quickfix_unused_mut_remove_mut() {
     assert_eq!(actions.len(), 1);
     assert_eq!(actions[0]["title"], "Remove unnecessary `mut`");
     assert_eq!(actions[0]["kind"], "quickfix");
+    // Review of a34d8100: rustc's span is `mut x`, and replacing it with nothing left `let  = 1;`.
+    let edit = actions[0]["edit"].to_string();
+    assert!(edit.contains("\"newText\":\"x\"") && !edit.contains("\"newText\":\"\""), "the binding stays: {edit}");
 }
 
 #[test]

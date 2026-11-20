@@ -300,7 +300,8 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             // Inferred expression type
             if !expr.span.from_expansion() {
                 if let Some((file, s_line, s_col, e_line, e_col, _)) = resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref()) {
-                    if let Some(ty) = typeck.expr_ty_opt(expr) {
+                    // In a crate with errors a type that failed is `{type error}`: left out, not a type to show.
+                    if let Some(ty) = typeck.expr_ty_opt(expr).filter(|t| !rustc_middle::ty::TypeVisitableExt::references_error(t)) {
                         let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
                             RawType { file, start_line: s_line, start_col: s_col, end_line: e_line, end_col: e_col, type_name: sanitize_type_name(&ty.to_string()) },
@@ -317,7 +318,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
         if !pat.span.from_expansion() {
             if let Some(typeck) = self.typeck {
                 match pat.kind {
-                    hir::PatKind::Binding(..) => {
+                    hir::PatKind::Binding(..) if !rustc_middle::ty::TypeVisitableExt::references_error(&typeck.pat_ty(pat)) => {
                         if let Some((file, s_line, s_col, e_line, e_col, _)) = resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref()) {
                             let ty = typeck.pat_ty(pat);
                             let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());

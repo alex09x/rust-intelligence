@@ -173,11 +173,11 @@ pub fn dispatch_lsp_message<W: Write>(
 
         "initialized" => {
             mr.warm_background_caches();
-            let folders = lifecycle.reindex.start_queued();
             // The compiler's diagnostics of the code as it is, without waiting for a first save (rust-analyzer checks
             // on start too): a crate opened with an unresolved name showed no error at all.
-            if let Some(root) = folders.iter().find(|r| r.join("Cargo.toml").is_file()) {
-                lifecycle.flycheck.trigger_check(root);
+            let roots = super::cargo_root::check_roots(lifecycle.reindex.start_queued(), mr);
+            if !roots.is_empty() {
+                lifecycle.flycheck.trigger_checks(roots);
             }
             if lifecycle.client_watches_files() {
                 send_response(writer, &super::reindex::watch_registration(json!(lifecycle.next_refresh_id())))?;

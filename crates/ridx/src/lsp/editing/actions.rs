@@ -114,9 +114,12 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                         actions.push(action);
                     }
                 } else if code == "unused_mut" || message.contains("variable does not need to be mutable") {
-                    let action = make_quickfix_action(uri, "Remove unnecessary `mut`", diag_range, "", doc_version, diag);
-                    validate_workspace_edit(&action["edit"], workspace)?;
-                    actions.push(action);
+                    // rustc's span is the whole `mut x`: the binding stays (review of a34d8100: `let  = 1;`).
+                    if let Some(binding) = without_mut(&doc_text, diag_range) {
+                        let action = make_quickfix_action(uri, "Remove unnecessary `mut`", diag_range, &binding, doc_version, diag);
+                        validate_workspace_edit(&action["edit"], workspace)?;
+                        actions.push(action);
+                    }
                 } else if (code == "E0425" || code == "E0412" || message.contains("cannot find")) && workspace.is_some() {
                     if let Some(ident) = message.split('`').nth(1) {
                         if let Some(ws) = workspace {
@@ -265,6 +268,30 @@ fn wrap_single_edit_action(uri: &str, title: &str, kind: &str, data: Value, edit
         action["diagnostics"] = json!([diag]);
     }
     action
+}
+
+/// The text of `range` (one line, LSP UTF-16 columns) in `doc` without its leading `mut` and the space after it:
+/// `mut x` (rustc's span) gives `x`, `mut ` gives nothing to put back, `ref mut x` no fix (not a span of
+/// `unused_mut`).
+pub(crate) fn without_mut(doc: &str, range: &Value) -> Option<String> {
+    let line = range["start"]["line"].as_u64()?;
+    if range["end"]["line"].as_u64()? != line {
+        return None;
+    }
+    let text = doc.lines().nth(line as usize)?;
+    let byte_at = |utf16: u64| {
+        let mut acc = 0u64;
+        text.char_indices()
+            .find(|(_, c)| {
+                let reached = acc >= utf16;
+                acc += c.len_utf16() as u64;
+                reached
+            })
+            .map_or(text.len(), |(i, _)| i)
+    };
+    let span = text.get(byte_at(range["start"]["character"].as_u64()?)..byte_at(range["end"]["character"].as_u64()?))?;
+    let rest = span.strip_prefix("mut")?;
+    rest.starts_with(char::is_whitespace).then(|| rest.trim_start().to_string())
 }
 
 fn make_quickfix_action(uri: &str, title: &str, range: &Value, new_text: &str, doc_version: Option<i32>, diag: &Value) -> Value {

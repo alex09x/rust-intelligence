@@ -115,7 +115,8 @@ impl Callbacks for IndexCallbacks {
     fn config(&mut self, config: &mut rustc_interface::Config) {
         self.crate_cfg = config.crate_cfg.clone();
         let (env, disambiguator, args, cfg) = (self.env.clone(), self.disambiguator.clone(), self.compiler_args.clone(), self.crate_cfg.clone());
-        broken_crate::install(config, Box::new(move |tcx| build_crate_index(tcx, &env, disambiguator.as_deref(), &args, &cfg)));
+        let local = env.manifest_dir.as_deref().is_some_and(|d| !metadata::is_immutable_package(d));
+        broken_crate::install(config, Box::new(move |tcx| build_crate_index(tcx, &env, disambiguator.as_deref(), &args, &cfg)), local);
     }
 
     fn after_analysis<'tcx>(&mut self, _compiler: &rustc_interface::interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
