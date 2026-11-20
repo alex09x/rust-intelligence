@@ -38,6 +38,7 @@ pub mod sysroot;
 
 mod assoc_res;
 mod attr_refs;
+mod broken_crate;
 mod build_index;
 pub(crate) mod cfg_extract;
 mod crate_items;
@@ -113,10 +114,12 @@ struct IndexCallbacks {
 impl Callbacks for IndexCallbacks {
     fn config(&mut self, config: &mut rustc_interface::Config) {
         self.crate_cfg = config.crate_cfg.clone();
+        let (env, disambiguator, args, cfg) = (self.env.clone(), self.disambiguator.clone(), self.compiler_args.clone(), self.crate_cfg.clone());
+        broken_crate::install(config, Box::new(move |tcx| build_crate_index(tcx, &env, disambiguator.as_deref(), &args, &cfg)));
     }
 
     fn after_analysis<'tcx>(&mut self, _compiler: &rustc_interface::interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        build_crate_index(tcx, &self.env, self.disambiguator.as_deref(), &self.compiler_args, &self.crate_cfg);
+        broken_crate::run_pending(tcx);
         Compilation::Continue
     }
 }
