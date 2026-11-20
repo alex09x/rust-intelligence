@@ -85,12 +85,14 @@ impl Reindexer {
         self.queued.lock().unwrap_or_else(|e| e.into_inner()).push(root.to_path_buf());
     }
 
-    /// Indexes the folders queued at `initialize` that have no index, now that the client is `initialized`.
-    pub fn start_queued(&self) {
+    /// Indexes the folders queued at `initialize` that have no index, now that the client is `initialized`, and
+    /// returns all of them.
+    pub fn start_queued(&self) -> Vec<PathBuf> {
         let queued = std::mem::take(&mut *self.queued.lock().unwrap_or_else(|e| e.into_inner()));
-        for root in queued {
-            self.index_if_missing(&root);
+        for root in &queued {
+            self.index_if_missing(root);
         }
+        queued
     }
 
     /// The root indexed this session that holds `file` (canonical), the innermost: during a first run it is in no

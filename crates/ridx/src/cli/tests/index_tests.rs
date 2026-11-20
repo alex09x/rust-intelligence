@@ -175,9 +175,9 @@ fn test_cli_parser_and_resolve_errors() {
     let schema_flag = Cli::try_parse_from(["ridx", "--print-config-schema"]).unwrap();
     assert!(schema_flag.print_config_schema);
 
-    // 2. try_resolve_index_and_target (lines 308-316 in resolve.rs)
-    assert!(try_resolve_index_and_target("test_target".to_string(), None).is_ok() || try_resolve_index_and_target("test_target".to_string(), None).is_err());
-    let _ = try_resolve_index_and_target("/nonexistent/idx".to_string(), Some("target".to_string()));
+    // 2. try_resolve_index_and_target with an index that does not exist. Never without one: that looks in the
+    // current directory, this repository, and indexed all of it, and the e2e tests then completed from that index.
+    assert!(try_resolve_index_and_target("/nonexistent/idx".to_string(), Some("target".to_string())).is_err());
 
     // 3. Invalid variant_manifest.json and ridx_manifest.json (lines 75, 104 in resolve.rs)
     let temp = std::env::temp_dir().join(format!("ridx_invalid_manifest_{}", std::process::id()));

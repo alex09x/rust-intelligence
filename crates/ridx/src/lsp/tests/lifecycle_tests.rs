@@ -286,12 +286,16 @@ fn test_lifecycle_default_and_double_shutdown() {
 
 #[test]
 fn test_lsp_server_stream_error_dispatch_rename_and_unknown_command() {
+    // A folder of its own: without one the server falls back to the current directory, this repository, and
+    // indexed and checked all of it, and the e2e tests then completed from that index.
+    let folder = std::env::temp_dir().join(format!("ridx_error_dispatch_{}", std::process::id()));
+    std::fs::create_dir_all(&folder).unwrap();
     let mut input = Vec::new();
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "id": 1,
         "method": "initialize",
-        "params": { "capabilities": {} }
+        "params": { "workspaceFolders": [{ "uri": format!("file://{}", folder.display()), "name": "ws" }], "capabilities": {} }
     })));
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",

@@ -306,7 +306,10 @@ fn test_resolve_workspace_and_index_target_error_paths() {
     let _ = std::panic::catch_unwind(|| {
         resolve_workspace(Some(PathBuf::from("/nonexistent/ridx/path/12345")));
     });
-    let _ = std::panic::catch_unwind(|| {
-        resolve_index_and_target("/nonexistent/ridx/path/12345".to_string(), None);
-    });
+    // With a target given: without one an index outside any workspace is looked for in the current directory,
+    // this repository, which was then indexed whole.
+    assert!(std::panic::catch_unwind(|| {
+        resolve_index_and_target("/nonexistent/ridx/path/12345".to_string(), Some("target".to_string()));
+    })
+    .is_err());
 }
