@@ -5,8 +5,8 @@ services, agents. There is one public interface, the Language Server Protocol, e
 `ridx/*` methods documented here. No integration uses anything private, including the ones we build
 ourselves.
 
-Status in this document: **available** means implemented on `main` and covered by tests; **available (next
-release)** means that and not in a published release yet; **in progress** means being built now;
+Status in this document: **available** means implemented and covered by tests (**available since 0.3.9**:
+first in that release); **next release** means on `main` and not in a published release yet; **in progress** means being built now;
 **planned** means agreed and not started. A method that is not marked available may change.
 
 ## 1. Interfaces
@@ -30,8 +30,8 @@ configured for rust-analyzer can start it unchanged.
   index as it was. A successful run's index is normally loaded before its `end` is sent, but this is not
   guaranteed. There is one token for all folders being indexed, not one per folder. **available**
   To tell a loaded index from a failed run, per folder, ask `ridx/status` (§7) after `end`: each root's
-  `generation` changes when a new index loads, and `error` says why its last run failed. **available (next
-  release)**. The progress itself carries no per-root outcome; `ridx/status` is where it is.
+  `generation` changes when a new index loads, and `error` says why its last run failed. **available since
+   0.3.9**. The progress itself carries no per-root outcome; `ridx/status` is where it is.
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
 - `$/cancelRequest` is honoured for a request read and not answered yet (queued, or waiting for `minVersion`); one for a request answered already, or never sent, is ignored, so an id can be reused. **available** For long-running requests: **planned**.
@@ -41,7 +41,7 @@ configured for rust-analyzer can start it unchanged.
 A crate of the workspace with compile errors is indexed from everything that resolved: definitions,
 references, types, implementations and calls in it are answered, including inside the bodies with errors;
 an expression or binding whose type failed is left out. A registry or git dependency that fails to compile
-gets no index. **available (next release)**; 0.3.8 indexed only crates that compiled.
+gets no index. **available since 0.3.9**; 0.3.8 indexed only crates that compiled.
 
 ## 4. Unsaved text
 
@@ -51,7 +51,7 @@ The index is built by the compiler from the files on disk. For text that is open
 |---|---|
 | Type diagnostics of the buffer (pushed and pulled), hover, completion and inlay hints on typed code | available |
 | Navigation, references and rename on positions that exist in the saved text (mapped through the edit) | available |
-| References, rename and navigation that include code typed since the last save | available (next release) |
+| References, rename and navigation that include code typed since the last save | available since 0.3.9 |
 
 How: once the edited buffers of a workspace have been unchanged for 250 ms, the crates whose own sources
 include them (the driver records each crate's sources) are compiled again by `ridx-driver` from the buffers'
@@ -77,7 +77,7 @@ workspace.
 
 | `source` | What | When it is published |
 |---|---|---|
-| `rustc` | The compiler's own errors and lints (`code` = the rustc code, e.g. `E0433`, `unused_imports`, `dead_code`) | After a check of the workspace: on `initialized` (every workspace of the session, one after the other; next release) and after every save. Ranges are in the coordinates of the file as saved; editors move them through unsaved edits. |
+| `rustc` | The compiler's own errors and lints (`code` = the rustc code, e.g. `E0433`, `unused_imports`, `dead_code`) | After a check of the workspace: on `initialized` (every workspace of the session, one after the other; since 0.3.9) and after every save. Ranges are in the coordinates of the file as saved; editors move them through unsaved edits. |
 | `ridx` | Errors found in the unsaved text (type mismatches and similar) before the compiler sees it | On `didChange`, for the open buffer. |
 
 Both are available. The values of `source` and the rustc `code` values are stable. The server pushes
@@ -110,12 +110,12 @@ implemented in order of need.
 ## 7. `ridx/*` extension methods
 
 All take the session's unsaved text into account. Version: the server lists the methods it supports, with
-their versions, in `initialize` → `capabilities.experimental.ridx`: `{methods: {"ridx/status": 1}, requestOptions: {minVersion: 1}}` (**available (next release)**). A method or option missing there is not supported by that server; a version changes only with an incompatible change of its contract.
+their versions, in `initialize` → `capabilities.experimental.ridx`: `{methods: {"ridx/status": 1}, requestOptions: {minVersion: 1}}` (**available since 0.3.9**). A method or option missing there is not supported by that server; a version changes only with an incompatible change of its contract.
 
 | Method | Params → result | Status |
 |---|---|---|
-| `ridx/status` | `{textDocument?}` → `{roots: [{root, indexed, generation, building, error, sessionIndex: {answers, building}}], document?: {version, coveredVersion, building}}`; a root still building its first index, or whose first index failed, is listed with `indexed: false`, `generation: null`; `coveredVersion` is the buffer version whose text the index answering for the file recorded, `null` while edits since are not compiled or when no index answers for it; the published index is reloaded first if it changed | available (next release) |
-| `minVersion` on any request with `textDocument` | `params.minVersion: N` (the buffer's LSP version) → the request waits until the index answering covers version `N` of that document, or fails with `-32803` and `data: {reason: "timeout", coveredVersion}` once the timeout passed (even if the index arrives later); `$/cancelRequest` ends it with `-32800`, `shutdown` with `-32600`. Requests only: on a notification the field is ignored | available (next release) |
+| `ridx/status` | `{textDocument?}` → `{roots: [{root, indexed, generation, building, error, sessionIndex: {answers, building}}], document?: {version, coveredVersion, building}}`; a root still building its first index, or whose first index failed, is listed with `indexed: false`, `generation: null`; `coveredVersion` is the buffer version whose text the index answering for the file recorded, `null` while edits since are not compiled or when no index answers for it; the published index is reloaded first if it changed | available since 0.3.9 |
+| `minVersion` on any request with `textDocument` | `params.minVersion: N` (the buffer's LSP version) → the request waits until the index answering covers version `N` of that document, or fails with `-32803` and `data: {reason: "timeout", coveredVersion}` once the timeout passed (even if the index arrives later); `$/cancelRequest` ends it with `-32800`, `shutdown` with `-32600`. Requests only: on a notification the field is ignored | available since 0.3.9 |
 | `ridx/diagnosticsFor` | `{texts: {uri: text}}` → `{uri: Diagnostic[]}`: what the compiler would report if these files had this text, without changing the session's buffers | planned (after `minVersion`) |
 | `ridx/resolveSymbol` | `{path: "crate::module::Type::method", kind?}` → `Location[]` | planned |
 | `ridx/typeAt` | `{textDocument, range}` → `{type, ...}` for an arbitrary expression range | planned |

@@ -2,6 +2,23 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.9] - 2026-11-20
+
+Verified by the workspace test suite and by an LSP session replayed against the release build on a Linux node (references to code typed since the last save, `minVersion`, `ridx/status`). The per-method agreement suite was not re-run for this release. The index format is unchanged.
+
+### Added
+- **Answers on code typed since the last save**: once the edited buffers have been unchanged for 250 ms, the crates owning them are compiled again from the buffers' text (nothing is written to the files) into an index of the session under `target/ridx/sessions/`, so references, rename and navigation include the new code. It answers until a newer published index loads or no buffer is edited any more. `RIDX_SESSION_INDEX=0` turns it off.
+- **`minVersion` and `ridx/status`** for tools driving the server: a request carrying `params.minVersion` waits until the index answering covers that version of the document (or fails with `-32803` after the timeout); `ridx/status` reports per workspace root whether an index is loaded, its generation, a build running and the last error, and for a document the version the index covers. The methods and options supported are listed in `capabilities.experimental.ridx`. `$/cancelRequest` ends a request still queued or waiting.
+- **Integration contract**: [`docs/integration.md`](docs/integration.md) describes for tools using Rust Intelligence the lifecycle, broken code, unsaved text, diagnostics, code actions, the `ridx/*` methods and the index location, with what is available and what is planned.
+- **Install from crates.io**: `cargo +1.98.1 install ridx` and `ridx-driver`, as the README describes.
+
+### Fixed
+- **Crates that do not compile** are indexed from everything that resolved: definitions, references, types and calls are answered in them, inside the bodies with errors too. 0.3.8 indexed only crates that compiled.
+- **Compiler diagnostics on start**: every workspace of the session is checked after `initialized`, one after the other, not only after a save; a save during that check keeps the roots still to check.
+
+### Known issues
+- A browser-downloaded macOS archive still needs `xattr -dr com.apple.quarantine` before the first run (see 0.3.8).
+
 ## [0.3.8] - 2026-11-19
 
 Verified by the workspace test suite and by the editor configurations in the README run against the release binary: Neovim (definition, hover, completion) and Helix (`hx --health rust` and an LSP session opened on a workspace member). The per-method agreement suite was not re-run for this release. The index format is unchanged.
