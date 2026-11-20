@@ -1,7 +1,7 @@
-<!-- translation-source: a0dfeef06a74f5486dbec314b49ada11e5ae550c -->
+<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [a0dfeef](https://github.com/alex09x/rust-intelligence/blob/a0dfeef06a74f5486dbec314b49ada11e5ae550c/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -126,7 +126,7 @@ RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
   rust-analyzer 확장을 `ridx`로 향하게 합니다(`"rust-analyzer.server.path": "ridx"`).
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)(`cmd = { "ridx" }`,
   루트를 먼저 `Cargo.lock`으로 찾으므로 워크스페이스 멤버를 열어도 워크스페이스 전체 인덱스를 씁니다).
-- **Helix**: `languages.toml`에 `command = "ridx"`, `args = ["lsp"]`를 가진 `[language-server.ridx]`를 추가합니다.
+- **Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) 가 언어 서버 `ridx` 를 선언하고 `languages.toml` 에서 Rust용으로 선택합니다.
 
 ## 셸에서
 

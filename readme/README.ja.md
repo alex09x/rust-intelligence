@@ -1,7 +1,7 @@
-<!-- translation-source: a0dfeef06a74f5486dbec314b49ada11e5ae550c -->
+<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
 
 > [!NOTE]
-> これはコミット [a0dfeef](https://github.com/alex09x/rust-intelligence/blob/a0dfeef06a74f5486dbec314b49ada11e5ae550c/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
+> これはコミット [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -126,7 +126,7 @@ RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
   rust-analyzer 拡張を `ridx` に向けます（`"rust-analyzer.server.path": "ridx"`）。
 - **Neovim**：[`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)（`cmd = { "ridx" }`、
   ルートはまず `Cargo.lock` で探すので、ワークスペースのメンバーを開いてもワークスペース全体のインデックスが使われます）。
-- **Helix**：`languages.toml` に `command = "ridx"`、`args = ["lsp"]` を持つ `[language-server.ridx]` を追加します。
+- **Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) が言語サーバー `ridx` を宣言し、`languages.toml` で Rust 用に選択します。
 
 ## シェルから
 

@@ -1,7 +1,7 @@
-<!-- translation-source: a0dfeef06a74f5486dbec314b49ada11e5ae550c -->
+<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
 
 > [!NOTE]
-> هذه ترجمة لملف README الإنجليزي عند الإيداع [a0dfeef](https://github.com/alex09x/rust-intelligence/blob/a0dfeef06a74f5486dbec314b49ada11e5ae550c/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -146,7 +146,7 @@ RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
   إضافة rust-analyzer إلى `ridx` (`"rust-analyzer.server.path": "ridx"`).
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`،
   يُبحث عن الجذر أولًا عبر `Cargo.lock`، فيفتح عضو مساحة العمل فهرس مساحة العمل كلها).
-- **Helix**: ‏`[language-server.ridx]` مع `command = "ridx"` و`args = ["lsp"]` في `languages.toml`.
+- **Helix**: يعرّف [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) خادم اللغة `ridx` ويختاره للغة Rust في `languages.toml`.
 
 ## من الطرفية
 

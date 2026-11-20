@@ -1,7 +1,7 @@
-<!-- translation-source: a0dfeef06a74f5486dbec314b49ada11e5ae550c -->
+<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [a0dfeef](https://github.com/alex09x/rust-intelligence/blob/a0dfeef06a74f5486dbec314b49ada11e5ae550c/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -130,7 +130,7 @@ Si un editor de escritorio no encuentra `ridx`, dale la ruta completa que devuel
   extensión rust-analyzer a `ridx` (`"rust-analyzer.server.path": "ridx"`).
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
   la raíz se busca primero por `Cargo.lock`, así un miembro del workspace abre el índice del workspace).
-- **Helix**: un `[language-server.ridx]` con `command = "ridx"`, `args = ["lsp"]` en `languages.toml`.
+- **Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) declara el servidor de lenguaje `ridx` y lo selecciona para Rust en `languages.toml`.
 
 ## Desde la terminal
 

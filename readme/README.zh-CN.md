@@ -1,7 +1,7 @@
-<!-- translation-source: a0dfeef06a74f5486dbec314b49ada11e5ae550c -->
+<!-- translation-source: 903718e3cf2900286c806ddaec5609b80f62f895 -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [a0dfeef](https://github.com/alex09x/rust-intelligence/blob/a0dfeef06a74f5486dbec314b49ada11e5ae550c/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [903718e](https://github.com/alex09x/rust-intelligence/blob/903718e3cf2900286c806ddaec5609b80f62f895/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -123,7 +123,7 @@ RUSTC_BOOTSTRAP=1 cargo +1.98.1 install --path crates/ridx-driver --locked
   rust-analyzer 扩展指向 `ridx`（`"rust-analyzer.server.path": "ridx"`）。
 - **Neovim**：[`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)（`cmd = { "ridx" }`，
   优先按 `Cargo.lock` 查找根目录，因此工作区成员会打开整个工作区的索引）。
-- **Helix**：在 `languages.toml` 中添加 `[language-server.ridx]`，设置 `command = "ridx"`、`args = ["lsp"]`。
+- **Helix**：[`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) 声明语言服务器 `ridx`，并在 `languages.toml` 中将其选为 Rust 的语言服务器。
 
 ## 在终端中使用
 
