@@ -165,6 +165,18 @@ impl WorkspaceIndex {
         self.path_index.shard_mtime_slow(self, file_path)
     }
 
+    /// The hash the sidecar of reader `idx` recorded for `file_path` when its `own_sources` lists the file (a sidecar
+    /// from before `own_sources` lists nothing).
+    fn own_source_hash(&self, idx: usize, file_path: &str) -> Option<u64> {
+        let hashes = self.reader_file_hashes.get(idx)?;
+        let canonical = crate::canonicalize_best_effort(std::path::Path::new(file_path)).display().to_string();
+        let h = hashes.get(file_path).or_else(|| hashes.get(&canonical)).copied().filter(|&h| h != 0)?;
+        let sidecar = self.meta_paths.get(idx)?.as_ref()?;
+        let j: serde_json::Value = serde_json::from_slice(&std::fs::read(sidecar).ok()?).ok()?;
+        let own = j["own_sources"].as_array()?;
+        own.iter().any(|s| s.as_str() == Some(canonical.as_str())).then_some(h)
+    }
+
     /// Whether every compilation unit recording a source hash for `file_path` recorded the same one. A failed build of
     /// one unit (`lib test` with an error in `mod tests`) leaves that unit's data from the text before while the units
     /// that built record the new text: no single text then matches all of the file's data.
@@ -175,10 +187,16 @@ impl WorkspaceIndex {
         let mut seen: Option<u64> = None;
         for idx in (0..self.readers.len()).filter(|&i| !self.reader_is_dependency.get(i).copied().unwrap_or(false)) {
             // Only the units the file belongs to: another crate's `src/lib.rs` is another file.
-            let Some(target) = self.target_file_for_reader(idx, file_path) else { continue };
-            let (reader, name) = (&self.readers[idx], target.as_ref());
-            let from_reader = reader.find_file_id(name).map(|fid| reader.file_source_hash(fid)).filter(|&h| h != 0);
-            let h = from_reader.or_else(|| self.reader_file_hashes.get(idx).and_then(|m| m.get(name)).copied().filter(|&h| h != 0));
+            let h = match self.target_file_for_reader(idx, file_path) {
+                Some(target) => {
+                    let (reader, name) = (&self.readers[idx], target.as_ref());
+                    let from_reader = reader.find_file_id(name).map(|fid| reader.file_source_hash(fid)).filter(|&h| h != 0);
+                    from_reader.or_else(|| self.reader_file_hashes.get(idx).and_then(|m| m.get(name)).copied().filter(|&h| h != 0))
+                }
+                // No entry in the shard (a file brought in with `include!`), a hash in the sidecar: a source of the unit
+                // when the sidecar lists it among its own, not one read through a dependency (review of 3650f8e3).
+                None => self.own_source_hash(idx, file_path),
+            };
             match (h, seen) {
                 (Some(h), Some(s)) if h != s => return false,
                 (Some(h), None) => seen = Some(h),

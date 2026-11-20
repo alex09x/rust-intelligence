@@ -118,10 +118,16 @@ impl FlycheckState {
         self.generation.load(Ordering::SeqCst)
     }
 
-    /// The server took `diag`: a clear (no diagnostics) of a root's URI ends what that root has to clear there.
-    pub fn clear_delivered(&self, diag: &Value) {
+    /// The server took `diag` of generation `gen`: a clear (no diagnostics) of a root's URI ends what that root has to
+    /// clear there, unless a newer check of the root started since (it may have published the URI again: review of
+    /// 3650f8e3). Checked under the lock a worker registers a check with, so none starts in between.
+    pub fn clear_delivered(&self, gen: u64, diag: &Value) {
         let (Some(root), Some(uri)) = (diag.get(queue::ROOT_KEY).and_then(Value::as_str), diag["params"]["uri"].as_str()) else { return };
-        if diag["params"]["diagnostics"].as_array().is_some_and(|d| d.is_empty()) {
+        if !diag["params"]["diagnostics"].as_array().is_some_and(|d| d.is_empty()) {
+            return;
+        }
+        let gens = self.root_generation.lock().unwrap_or_else(|e| e.into_inner());
+        if gens.get(Path::new(root)).is_some_and(|&g| g == gen) {
             if let Some(uris) = self.published_uris.lock().unwrap_or_else(|e| e.into_inner()).get_mut(Path::new(root)) {
                 uris.remove(uri);
             }

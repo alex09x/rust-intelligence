@@ -113,7 +113,7 @@ pub fn dispatch_lsp_message<W: Write>(
         super::protocol::LspMessage::InternalDiagnostic(gen, diag) => {
             if lifecycle.state() != ServerState::ShutDown && lifecycle.flycheck.is_current(gen, &diag) {
                 super::presentation::reconcile::handle_internal_diagnostic(&diag, lifecycle, ov, writer)?;
-                lifecycle.flycheck.clear_delivered(&diag);
+                lifecycle.flycheck.clear_delivered(gen, &diag);
             }
             return Ok(true);
         }

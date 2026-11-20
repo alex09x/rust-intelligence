@@ -115,9 +115,15 @@ mod tests {
         let root = Path::new("/w/a");
         state.published_uris.lock().unwrap().insert(root.to_path_buf(), ["file:///w/a/x.rs".to_string()].into());
         let note = |diags: serde_json::Value| json!({ (ROOT_KEY): root.display().to_string(), "params": { "uri": "file:///w/a/x.rs", "diagnostics": diags } });
-        state.clear_delivered(&note(json!([{ "message": "w" }])));
+        let gen = state.current_generation();
+        state.root_generation.lock().unwrap().insert(root.to_path_buf(), gen);
+        state.clear_delivered(gen, &note(json!([{ "message": "w" }])));
         assert_eq!(state.published_uris.lock().unwrap()[root].len(), 1, "a diagnostic is not a clear");
-        state.clear_delivered(&note(json!([])));
-        assert!(state.published_uris.lock().unwrap()[root].is_empty(), "the clear taken: nothing left to clear");
+        // Review of 3650f8e3: a newer check of the root started (and may have published the URI again).
+        state.root_generation.lock().unwrap().insert(root.to_path_buf(), gen + 1);
+        state.clear_delivered(gen, &note(json!([])));
+        assert_eq!(state.published_uris.lock().unwrap()[root].len(), 1, "an older clear leaves the newer check's URI");
+        state.clear_delivered(gen + 1, &note(json!([])));
+        assert!(state.published_uris.lock().unwrap()[root].is_empty(), "the clear of the current check taken: nothing left to clear");
     }
 }
