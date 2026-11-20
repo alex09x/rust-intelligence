@@ -56,7 +56,12 @@ pub struct FlycheckState {
     /// The hash of each source's text on disk when a check was last started for it (0: the file was gone), and
     /// whether a save started it.
     checked_sources: Arc<Mutex<HashMap<PathBuf, (u64, bool)>>>,
+    /// The roots still to check, the one being checked first (see `queue`).
+    queue: Arc<Mutex<Vec<PathBuf>>>,
 }
+
+#[path = "flycheck_queue.rs"]
+mod queue;
 
 impl Default for FlycheckState {
     fn default() -> Self {
@@ -69,6 +74,7 @@ impl Default for FlycheckState {
             worker_handle: Arc::new(Mutex::new(None)),
             notifier: Arc::new(Mutex::new(None)),
             checked_sources: Arc::default(),
+            queue: Arc::default(),
         }
     }
 }
@@ -161,41 +167,6 @@ impl FlycheckState {
         let handle = self.worker_handle.lock().unwrap().take();
         if let Some(h) = handle {
             let _ = h.join();
-        }
-    }
-
-    /// Triggers an asynchronous background cargo check, publishing diagnostics via notifier.
-    pub fn trigger_check(&self, workspace_root: &Path) {
-        self.trigger_checks(vec![workspace_root.to_path_buf()]);
-    }
-
-    /// Checks `roots` one after the other in one background worker: a check per root would cancel the one before
-    /// (review of a34d8100: on start only the first of two workspace folders was checked).
-    pub fn trigger_checks(&self, roots: Vec<PathBuf>) {
-        self.cancel();
-        let my_gen = self.generation.load(Ordering::SeqCst);
-
-        let running_child = Arc::clone(&self.running_child);
-        let published_uris = Arc::clone(&self.published_uris);
-        let latest_diagnostics = Arc::clone(&self.latest_diagnostics);
-        let notifier = Arc::clone(&self.notifier);
-        let generation = Arc::clone(&self.generation);
-
-        let handle = std::thread::Builder::new().name("flycheck-worker".into()).spawn(move || {
-            // A later check cancels this one: the roots not reached yet go with it.
-            for root in roots.iter().take_while(|_| generation.load(Ordering::SeqCst) == my_gen) {
-                let _ = run_check_internal(root, my_gen, &generation, &running_child, &published_uris, &latest_diagnostics, |gen, notif| {
-                    if let Some(ref cb) = *notifier.lock().unwrap() {
-                        cb(gen, notif);
-                    }
-                    Ok(())
-                });
-            }
-        });
-
-        if let Ok(h) = handle {
-            let mut guard = self.worker_handle.lock().unwrap();
-            *guard = Some(h);
         }
     }
 
