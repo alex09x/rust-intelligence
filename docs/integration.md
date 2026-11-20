@@ -5,8 +5,8 @@ services, agents. There is one public interface, the Language Server Protocol, e
 `ridx/*` methods documented here. No integration uses anything private, including the ones we build
 ourselves.
 
-Status in this document: **available** means implemented and covered by tests (**available since 0.3.9**:
-first in that release); **next release** means on `main` and not in a published release yet; **in progress** means being built now;
+Status in this document: **available** means implemented and covered by tests (**available since
+<version>**: first in that release); **next release** means on `main` and not in a published release yet; **in progress** means being built now;
 **planned** means agreed and not started. A method that is not marked available may change.
 
 ## 1. Interfaces
@@ -31,9 +31,9 @@ configured for rust-analyzer can start it unchanged.
   guaranteed. There is one token for all folders being indexed, not one per folder. **available**
   To tell a loaded index from a failed run, per folder, ask `ridx/status` (§7) after `end`: each root's
   `generation` changes when a new index loads, and `error` says why its last run failed. **available since
-  0.3.9** (there `error` names only the log; the last error line of the run's output in it: **next release**).
+  0.3.9** (there `error` names only the log; the last error line of the run's output in it: **available since 0.3.10**).
   `end` alone never means success: when a run under it failed, its `message` says so (`Indexing failed:
-  <root>: <error>`, a run that started and failed between the server's looks included; **next release**), but
+  <root>: <error>`, a run that started and failed between the server's looks included; **available since 0.3.10**), but
   only `ridx/status` tells per root which index is loaded.
 - A root whose index failed and has none loaded (`indexed: false`, `error` set) refuses the requests the index
   alone answers (`definition`, `declaration`, `typeDefinition`, `implementation`, `references`, `rename`,
@@ -43,7 +43,7 @@ configured for rust-analyzer can start it unchanged.
   older index loaded answers from it, as does one whose index was published since by anyone; one building its
   first index answers as before (use `minVersion` to wait for it). A request already waiting for `minVersion`
   when the run fails gets the same error then, not a timeout. The root is the innermost workspace holding the
-  file, so a nested workspace whose index failed is refused even inside a loaded outer one. **next release**
+  file, so a nested workspace whose index failed is refused even inside a loaded outer one. **available since 0.3.10**
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
 - `$/cancelRequest` is honoured for a request read and not answered yet (queued, or waiting for `minVersion`); one for a request answered already, or never sent, is ignored, so an id can be reused. **available** For long-running requests: **planned**.

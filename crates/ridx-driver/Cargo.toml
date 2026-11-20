@@ -1,6 +1,6 @@
 [package]
 name = "ridx-driver"
-version = "0.3.9"
+version = "0.3.10"
 edition = "2021"
 description = "Compiler-backed rustc_driver extractor for Rust Intelligence (ridx)"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
@@ -12,5 +12,5 @@ keywords = ["rustc", "rustc-driver", "lsp", "index", "code-intelligence"]
 categories = ["development-tools"]
 
 [dependencies]
-ridx-format = { version = "0.3.9", path = "../ridx-format" }
+ridx-format = { version = "0.3.10", path = "../ridx-format" }
 serde_json = "1.0"

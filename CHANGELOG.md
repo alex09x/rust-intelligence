@@ -2,6 +2,16 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [0.3.10] - 2026-11-20
+
+Verified by the workspace test suite and by an LSP session against the release build on a Linux node with `ridx-driver` missing: the progress `end` names the failure, `references` is refused with `indexFailed`, `documentSymbol` is answered. The per-method agreement suite was not re-run for this release. The index format is unchanged.
+
+### Fixed
+- **A workspace whose index failed** no longer answers `[]`: with no index loaded and its last run failed, `definition`, `declaration`, `typeDefinition`, `implementation`, `references`, `rename`, `prepareRename`, `prepareCallHierarchy` and `prepareTypeHierarchy` are refused with `-32803` and `data: {reason: "indexFailed", root, error}`, also for a request already waiting for `minVersion`. Requests also answered from the syntax tree are answered; an index published since, or an older one loaded, answers.
+- **Why an index failed**: `ridx/status` and the progress `end` give the last error line of the run's output (a missing `ridx-driver`, a manifest that does not parse) and where the rest is; the `end` names every root whose run failed under it, a short one included.
+- **An index opened by where it is kept** (`--index-path` on `target/ridx`, a variant directory, an index kept outside the workspace) answers for the workspace it records, also next to an enclosing workspace, and is removed by the path it was opened by without touching other roots.
+- **README**: the Known limitations, Why and How it works sections describe 0.3.9's indexing of crates with errors and of unsaved code (they still described 0.3.8), with the 0.3.9 citation, in all translations.
+
 ## [0.3.9] - 2026-11-20
 
 Verified by the workspace test suite and by an LSP session replayed against the release build on a Linux node (references to code typed since the last save, `minVersion`, `ridx/status`). The per-method agreement suite was not re-run for this release. The index format is unchanged.
