@@ -182,7 +182,7 @@ jobs:
           cat ./*.sha256 | sort -k2 > SHA256SUMS
           cat SHA256SUMS
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --draft --verify-tag --title "ridx ${TAG#v}" --notes "Release notes: CHANGELOG.md"
+            gh release create "$TAG" --draft --verify-tag --title "Rust Intelligence ${TAG#v}" --notes "Release notes: CHANGELOG.md"
           fi
           existing=$(gh release view "$TAG" --json assets -q '.assets[].name')
           for f in ./*.tar.gz ./*.sha256 SHA256SUMS; do
