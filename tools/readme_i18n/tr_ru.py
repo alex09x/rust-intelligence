@@ -56,7 +56,7 @@ T = {
     "h_dev": "Разработка",
     "dev": "Каждый исходный файл — не длиннее 400 строк.",
     "h_cite": "Цитирование",
-    "cite": "Если вы используете ridx в исследованиях или документации, пожалуйста, цитируйте архивный релиз в Zenodo:\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) — для проекта (ведёт на последнюю версию), [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817) — ровно для 0.3.7.\n[`CITATION.cff`](../CITATION.cff) содержит метаданные, которые использует кнопка GitHub «Cite this repository».",
+    "cite": "Если вы используете ridx в исследованиях или документации, пожалуйста, цитируйте архивный релиз в Zenodo:\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) — для проекта (ведёт на последнюю версию), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) — ровно для 0.3.8.\n[`CITATION.cff`](../CITATION.cff) содержит метаданные, которые использует кнопка GitHub «Cite this repository».",
     "h_license": "Лицензия",
     "license_intro": "Лицензируется под одной из лицензий:",
     "apache": "Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) или http://www.apache.org/licenses/LICENSE-2.0)",

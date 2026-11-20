@@ -56,7 +56,7 @@ T = {
     "h_dev": "Entwicklung",
     "dev": "Jede Quelldatei bleibt bei höchstens 400 Zeilen.",
     "h_cite": "Zitieren",
-    "cite": "Wenn Sie ridx in Forschung oder Dokumentation verwenden, zitieren Sie bitte das archivierte Release auf Zenodo:\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) für das Projekt (verweist auf die neueste Version), [10.5281/zenodo.24379817](https://doi.org/10.5281/zenodo.24379817) für genau 0.3.7.\n[`CITATION.cff`](../CITATION.cff) enthält die Metadaten, die GitHubs „Cite this repository“ verwendet.",
+    "cite": "Wenn Sie ridx in Forschung oder Dokumentation verwenden, zitieren Sie bitte das archivierte Release auf Zenodo:\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) für das Projekt (verweist auf die neueste Version), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) für genau 0.3.8.\n[`CITATION.cff`](../CITATION.cff) enthält die Metadaten, die GitHubs „Cite this repository“ verwendet.",
     "h_license": "Lizenz",
     "license_intro": "Lizenziert unter einer der folgenden Lizenzen:",
     "apache": "Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) oder http://www.apache.org/licenses/LICENSE-2.0)",
