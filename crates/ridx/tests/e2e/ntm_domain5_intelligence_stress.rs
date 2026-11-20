@@ -319,30 +319,24 @@ fn test_domain5_concurrent_intelligence_requests_stress() {
         }
     })));
 
-    // Send 30 interleaved intelligence requests with mid-stream cancellation of request 115
+    // Send 30 interleaved intelligence requests with mid-stream cancellation of request 115. The cancel follows its
+    // request, as in the protocol (a cancel of a request not sent is ignored); 115 waits for a version never sent
+    // (`minVersion`), so it is still pending when the cancel comes, whatever the timing.
     for i in 0..30 {
         let req_id = 100 + i;
-        if req_id == 115 {
-            input.extend(make_lsp_msg(&json!({
-                "jsonrpc": "2.0",
-                "method": "$/cancelRequest",
-                "params": { "id": 115 }
-            })));
-        }
         let method = match i % 3 {
             0 => "textDocument/hover",
             1 => "textDocument/completion",
             _ => "textDocument/signatureHelp",
         };
-        input.extend(make_lsp_msg(&json!({
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "method": method,
-            "params": {
-                "textDocument": { "uri": &uri },
-                "position": { "line": 0, "character": 8 }
-            }
-        })));
+        let mut params = json!({ "textDocument": { "uri": &uri }, "position": { "line": 0, "character": 8 } });
+        if req_id == 115 {
+            params["minVersion"] = json!(2);
+        }
+        input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": req_id, "method": method, "params": params })));
+        if req_id == 115 {
+            input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": 115 } })));
+        }
     }
 
     input.extend(make_lsp_msg(&json!({

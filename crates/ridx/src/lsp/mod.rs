@@ -17,6 +17,7 @@ mod cargo_root;
 pub mod dispatch;
 pub mod editing;
 pub mod error;
+mod folders;
 mod fresh;
 mod fresh_loop;
 pub mod handlers;
@@ -31,6 +32,7 @@ pub mod params;
 pub mod presentation;
 pub mod protocol;
 pub mod reindex;
+mod requests;
 mod session_index;
 mod session_loop;
 pub mod symbols;
@@ -94,6 +96,8 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         let _ = tx_diag.send((gen, notif));
     });
     let cancelled_reader = Arc::clone(&cancelled_requests);
+    let requests = Arc::new(requests::Requests::default());
+    let requests_reader = Arc::clone(&requests);
 
     std::thread::Builder::new().name("lsp-reader".into()).spawn(move || loop {
         let mut content_length: Option<usize> = None;
@@ -127,10 +131,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         }
 
         if let Ok(msg) = serde_json::from_slice::<Value>(&body_buf) {
-            if msg["method"] == "$/cancelRequest" {
-                let id_raw = msg["params"]["id"].clone();
-                cancelled_reader.lock().unwrap().insert(id_raw);
-            }
+            requests_reader.read(&msg, &cancelled_reader);
             if tx.send(msg).is_err() {
                 return;
             }
@@ -139,7 +140,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
 
     let mut index_progress = index_progress::IndexProgress::default();
     let session = session_index::SessionIndexer::default();
-    let mut waiting = fresh::Waiting::default();
+    let mut gate = fresh_loop::Gate::new(Arc::clone(&requests));
     let mut released = std::collections::VecDeque::new();
     loop {
         // A background reindex ended: load it now, rather than on the client's next request.
@@ -167,7 +168,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         }
 
         // Requests waiting for an index that covers their document (`minVersion`): the ones covered now go first.
-        released.extend(fresh_loop::release_waiting(&mut waiting, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled_requests)?);
+        released.extend(fresh_loop::release_waiting(&mut gate, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled_requests)?);
         let next = match released.pop_front() {
             Some(msg) => Ok(msg),
             None => rx.recv_timeout(std::time::Duration::from_millis(20)),
@@ -175,7 +176,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         match next {
             Ok(msg) => {
                 session_loop::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
-                let Some(msg) = fresh_loop::intercept(msg, &mut waiting, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &session, &cancelled_requests)? else {
+                let Some(msg) = fresh_loop::intercept(msg, &mut gate, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &session, &cancelled_requests)? else {
                     continue;
                 };
                 // A panic in one handler answers that request with an internal error instead of ending the session:
@@ -200,7 +201,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
                         logger::log_info(&format!("request {method} panicked: {what}"));
                         // The panic may have left a live database half updated (a cache taken out, not put back).
                         navigation::clear_live_db_cache();
-                        if let Some(id) = id {
+                        if let Some(id) = &id {
                             protocol::send_response(
                                 &mut writer,
                                 &serde_json::json!({ "jsonrpc": "2.0", "id": id, "error": { "code": -32603, "message": format!("{method} failed: {what}") } }),
@@ -209,6 +210,10 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
                         true
                     }
                 };
+                // Answered: a cancel of it read from now on is ignored, and its id's mark goes (`requests`).
+                if let Some(id) = &id {
+                    requests.answered(id, &cancelled_requests);
+                }
                 if !should_continue {
                     break;
                 }

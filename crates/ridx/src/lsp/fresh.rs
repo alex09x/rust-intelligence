@@ -33,12 +33,7 @@ pub struct Waiting {
     /// The deadlines of requests released to dispatch, by id: one no longer covered when its turn comes (another index
     /// loaded meanwhile) waits again until that same deadline (review of e535e9cf).
     released: HashMap<String, Instant>,
-    /// The ids of the last requests the loop took, in order (at most `SEEN`): a `$/cancelRequest` for one of them comes
-    /// after it was answered or held, one for an id not taken yet is for a request still to come.
-    seen: std::collections::VecDeque<String>,
 }
-
-const SEEN: usize = 4096;
 
 /// What a document's coverage is judged by: the open buffers, and the source hash the index answering for a file
 /// recorded for it, `None` when no loaded index answers for it or its units disagree (`fresh_loop::answering_hash`).
@@ -118,25 +113,6 @@ impl Waiting {
         (ready, answers)
     }
 
-    /// The loop took a request with this id.
-    pub fn note_request(&mut self, id: &Value) {
-        if self.seen.len() == SEEN {
-            self.seen.pop_front();
-        }
-        self.seen.push_back(id.to_string());
-    }
-
-    /// `$/cancelRequest` for `id`: the answer of the held request it ends, if one waits, and whether the request was
-    /// taken already (then the cancel is used up; else it is for a request still to come).
-    pub fn cancel(&mut self, id: &Value) -> (Option<Value>, bool) {
-        let key = id.to_string();
-        self.released.remove(&key);
-        let taken = self.seen.iter().rposition(|s| *s == key).map(|at| self.seen.remove(at)).is_some();
-        let Some(at) = self.held.iter().position(|h| &h.msg["id"] == id) else { return (None, taken) };
-        let h = self.held.remove(at);
-        (Some(response(&h.msg["id"], -32800, "Request cancelled".into(), Value::Null)), true)
-    }
-
     /// Answers every held request with `code` (the server shut down while they waited).
     pub fn drain(&mut self, code: i64, message: &str) -> Vec<Value> {
         self.released.clear();
@@ -186,12 +162,6 @@ mod tests {
         let (ready, answers) = waiting.release(&cov!(), &cancelled);
         assert!(ready.is_empty() && answers[0]["id"] == 9 && answers[0]["error"]["code"] == -32800, "{answers:?}");
         assert!(cancelled.lock().unwrap().is_empty(), "the cancellation is used up, so a reused id is not cancelled");
-        assert!(waiting.admit(request(10, 1, json!({})), &cov!()).is_none());
-        assert_eq!(waiting.cancel(&json!(10)).0.unwrap()["error"]["code"], -32800, "a cancel arriving for a held request ends it");
-        assert!(waiting.cancel(&json!(10)).0.is_none() && waiting.is_empty());
-        waiting.note_request(&json!(11));
-        assert!(waiting.cancel(&json!(11)).1, "a request taken already: its cancel is used up");
-        assert!(!waiting.cancel(&json!(12)).1, "an id not taken yet: the cancel waits for its request");
         indexed.set(Some(hash(saved)));
 
         assert!(ov.apply_content_changes(file, 2, &[json!({ "text": edited })]));

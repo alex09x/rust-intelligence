@@ -37,7 +37,11 @@ struct RootState {
     last_start: Option<SystemTime>,
     /// Why the last run failed, `None` after a run that succeeded (`ridx/status`).
     last_error: Option<String>,
+    /// Which registration of the root this is: a run of one removed (and maybe added again) is not taken.
+    registration: u64,
 }
+
+static REGISTRATIONS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 /// Background reindexing per workspace root.
 #[derive(Default)]
@@ -61,9 +65,12 @@ impl Reindexer {
         std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
     }
 
-    /// A workspace folder the client removed: it leaves the roots of the session.
+    /// A workspace folder the client removed: it leaves the roots of the session, with a run's success not yet taken
+    /// (review of 2045537b: it loaded the removed workspace again).
     pub fn forget(&self, root: &Path) {
-        self.roots.lock().unwrap_or_else(|e| e.into_inner()).remove(root);
+        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.remove(root);
+        self.finished.lock().unwrap_or_else(|e| e.into_inner()).retain(|r| r != root);
     }
 
     /// The roots indexed this session, running or not, canonical.
@@ -142,9 +149,13 @@ impl Reindexer {
     /// Runs `ridx index root` in the background, for a change written at `written`.
     fn start(&self, root: &Path, written: Option<SystemTime>) {
         let Some(exe) = ridx_exe() else { return };
+        let registration;
         {
             let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-            let st = roots.entry(root.to_path_buf()).or_default();
+            let st = roots
+                .entry(root.to_path_buf())
+                .or_insert_with(|| RootState { registration: REGISTRATIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed), ..RootState::default() });
+            registration = st.registration;
             let covered_since = st.running_since.or(st.last_start);
             if written.is_some_and(|w| covered_since.is_some_and(|s| w <= s)) {
                 return;
@@ -170,8 +181,8 @@ impl Reindexer {
             let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
             crate::lsp::logger::log_info(&msg);
             let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
-            // A folder the client removed meanwhile (`forget`) is neither loaded nor run again.
-            let Some(st) = roots.get_mut(&root) else { break };
+            // A folder the client removed meanwhile (`forget`), even if added again since, is neither loaded nor run again.
+            let Some(st) = roots.get_mut(&root).filter(|st| st.registration == registration) else { break };
             if ok {
                 finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             }

@@ -111,11 +111,16 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
     ));
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} })));
 
-    // Cancel request -> returns -32800 Request cancelled
-    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": 55 } })));
+    // Cancel request -> returns -32800 Request cancelled. The cancel follows its request, as in the protocol (a cancel of
+    // a request not sent is ignored): a request waiting (`minVersion` on a file no index holds) is still pending then.
+    let pending_uri = "file:///tmp/ridx_stage8_cancel_pending.rs";
     input.extend(make_lsp_msg(
-        &json!({ "jsonrpc": "2.0", "id": 55, "method": "textDocument/definition", "params": { "textDocument": { "uri": &doc_uri }, "position": { "line": 3, "character": 12 } } }),
+        &json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": pending_uri, "languageId": "rust", "version": 1, "text": "fn f() {}\n" } } }),
     ));
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "id": 55, "method": "textDocument/documentSymbol", "params": { "textDocument": { "uri": pending_uri }, "minVersion": 1 } }),
+    ));
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": 55 } })));
 
     input.extend(make_lsp_msg(
         &json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWorkspaceFolders", "params": { "event": { "added": [{ "uri": format!("file://{}", temp_dir.to_str().unwrap()), "name": "ws2" }], "removed": [] } } }),

@@ -134,7 +134,10 @@ pub fn dispatch_lsp_message<W: Write>(
     }
 
     // 5. Automatic index reload: fast stat check (sub-microsecond) on manifest
-    reload_changed_index(writer, lifecycle, mr, ov)?;
+    // Not for a request admitted on the indexes refreshed for it (`fresh_loop::PINNED`): they answer it.
+    if msg.as_object_mut().and_then(|m| m.remove(super::fresh_loop::PINNED)).is_none() {
+        reload_changed_index(writer, lifecycle, mr, ov)?;
+    }
 
     if super::off_token::POSITION_METHODS.contains(&msg["method"].as_str().unwrap_or("")) {
         super::off_token::snap_to_word(&mut msg, ov, &mut lifecycle.conv);

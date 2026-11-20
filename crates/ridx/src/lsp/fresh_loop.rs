@@ -11,13 +11,42 @@
 //! The server loop's side of `minVersion` (`fresh`) and `ridx/status`: what is answered before the ordinary dispatch,
 //! and against which index.
 
+use super::folders::Folders;
 use super::fresh::{Coverage, Waiting};
+use super::requests::Requests;
 use super::session_index::SessionIndexer;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+
+/// Set on a request admitted on the indexes refreshed for it: dispatch answers from them without reloading, so the
+/// index that passed `minVersion` is the one that answers (review of 2045537b: a publication between admission and
+/// dispatch changed it).
+pub(crate) const PINNED: &str = "__ridxPinned";
+
+/// The loop's state before dispatch: requests held for `minVersion`, the requests pending (for `$/cancelRequest`), and
+/// the client's folders.
+pub struct Gate {
+    pub waiting: Waiting,
+    pub requests: Arc<Requests>,
+    folders: Folders,
+}
+
+impl Gate {
+    pub fn new(requests: Arc<Requests>) -> Self {
+        Self { waiting: Waiting::default(), requests, folders: Folders::default() }
+    }
+
+    fn send_answers<W: Write>(&self, writer: &mut W, answers: Vec<Value>, cancelled: &Mutex<HashSet<Value>>) -> io::Result<()> {
+        for answer in answers {
+            super::protocol::send_response(writer, &answer)?;
+            self.requests.answered(&answer["id"], cancelled);
+        }
+        Ok(())
+    }
+}
 
 /// The hash of `file` the index answering for it recorded, when all its units agree on it: one unit compiled from the
 /// buffer's text and another from the text before is no coverage (review of e535e9cf).
@@ -26,11 +55,18 @@ pub(crate) fn answering_hash(mr: &super::MultiRootWorkspace, file: &str) -> Opti
     ws.units_agree_on_source(file).then(|| ws.source_hash_for_file(file)).flatten()
 }
 
-/// The indexes as they are now: a root of the session whose first index was published since (by `ridx index` run by
-/// anyone; review of e535e9cf) is loaded, and a loaded one whose manifest changed is reloaded.
-fn refresh<W: Write>(writer: &mut W, lifecycle: &mut super::LifecycleManager, mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay::OverlayManager) -> io::Result<()> {
+/// The indexes as they are now: a root of the session (a client folder's, or one indexed this session) whose first
+/// index was published since, by anyone (reviews of e535e9cf and 2045537b), is loaded, and a loaded one whose manifest
+/// changed is reloaded.
+fn refresh<W: Write>(
+    gate: &Gate,
+    writer: &mut W,
+    lifecycle: &mut super::LifecycleManager,
+    mr: &mut super::MultiRootWorkspace,
+    ov: &mut crate::overlay::OverlayManager,
+) -> io::Result<()> {
     let loaded: HashSet<PathBuf> = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort).collect();
-    for root in lifecycle.reindex.roots() {
+    for root in gate.folders.roots().into_iter().chain(lifecycle.reindex.roots()) {
         if !loaded.contains(&root) && root.join("target/ridx/ridx_manifest.json").is_file() && mr.add_root(root.clone()) {
             if let Some(ws) = mr.all_workspaces().last() {
                 super::rebase_open_buffers(ws, ov);
@@ -43,44 +79,39 @@ fn refresh<W: Write>(writer: &mut W, lifecycle: &mut super::LifecycleManager, mr
 /// The server loop's turn for waiting requests: after `shutdown` they are answered `-32600`; otherwise the indexes are
 /// refreshed and the ended or covered ones come out. Returns the requests to dispatch (through `intercept` again).
 pub(crate) fn release_waiting<W: Write>(
-    waiting: &mut Waiting,
+    gate: &mut Gate,
     writer: &mut W,
     lifecycle: &mut super::LifecycleManager,
     mr: &mut super::MultiRootWorkspace,
     ov: &mut crate::overlay::OverlayManager,
     cancelled: &Mutex<HashSet<Value>>,
 ) -> io::Result<Vec<Value>> {
-    if waiting.is_empty() {
+    if gate.waiting.is_empty() {
         return Ok(Vec::new());
     }
     if lifecycle.is_shutdown() {
-        for answer in waiting.drain(-32600, "the server is shutting down") {
-            super::protocol::send_response(writer, &answer)?;
-        }
+        let answers = gate.waiting.drain(-32600, "the server is shutting down");
+        gate.send_answers(writer, answers, cancelled)?;
         return Ok(Vec::new());
     }
-    refresh(writer, lifecycle, mr, ov)?;
-    let (ready, answers) = waiting.release(&Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }, cancelled);
-    for answer in answers {
-        super::protocol::send_response(writer, &answer)?;
-    }
+    refresh(gate, writer, lifecycle, mr, ov)?;
+    let (ready, answers) = gate.waiting.release(&Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }, cancelled);
+    gate.send_answers(writer, answers, cancelled)?;
     Ok(ready)
 }
 
-/// Handles `msg` before the ordinary dispatch when it is `$/cancelRequest`, `ridx/status`, or a request to hold for
-/// `minVersion`; returns it to dispatch otherwise.
+/// Handles `msg` before the ordinary dispatch; returns it to dispatch unless answered or held here.
 ///
-/// A `$/cancelRequest` is taken here, in order. For a request taken already (answered, `-32800` from the mark the reader
-/// set, or waiting here, ended now) the mark goes, so a later request reusing the id is not cancelled (review of
-/// e535e9cf: dispatch marked it again after the answer); for one still to come it stays.
-///
-/// `ridx/status` and holding are only for a request (with an `id`) of an initialized server not shut down and not
-/// cancelled: the rest goes through dispatch's own checks (review of a6909dbe). Both look at the indexes refreshed
-/// first, the ones dispatch then answers from (review of e535e9cf: a request was admitted on the index before).
+/// - `$/cancelRequest` was handled by the reader (`requests`): nothing to do in order.
+/// - `initialize` and `workspace/didChangeWorkspaceFolders` keep the client's folders; removing the last folder standing
+///   for a root removes the root (its index, its reindex state and a success not taken yet).
+/// - `ridx/status` and holding are only for a request (with an `id`) of an initialized server not shut down and not
+///   cancelled: the rest goes through dispatch's own checks (review of a6909dbe). Both look at the indexes refreshed
+///   first; a request admitted on them is pinned to them.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn intercept<W: Write>(
-    msg: Value,
-    waiting: &mut Waiting,
+    mut msg: Value,
+    gate: &mut Gate,
     writer: &mut W,
     lifecycle: &mut super::LifecycleManager,
     mr: &mut super::MultiRootWorkspace,
@@ -89,48 +120,41 @@ pub(crate) fn intercept<W: Write>(
     cancelled: &Mutex<HashSet<Value>>,
 ) -> io::Result<Option<Value>> {
     match msg["method"].as_str() {
-        Some("$/cancelRequest") => {
-            let id = &msg["params"]["id"];
-            let (answer, taken) = waiting.cancel(id);
-            if taken {
-                cancelled.lock().unwrap_or_else(|e| e.into_inner()).remove(id);
-            }
-            if let Some(answer) = answer {
-                super::protocol::send_response(writer, &answer)?;
-            }
-            return Ok(None);
-        }
-        // Removed folders leave `ridx/status` (review of e535e9cf: they came back from the reindex history).
+        Some("$/cancelRequest") => return Ok(None),
+        Some("initialize") => gate.folders.add_initialize(&msg),
         Some("workspace/didChangeWorkspaceFolders") => {
-            for item in msg["params"]["event"]["removed"].as_array().into_iter().flatten() {
-                let path = PathBuf::from(super::protocol::uri_to_path(item["uri"].as_str().unwrap_or("")));
-                for root in super::cargo_root::workspace_roots(vec![path.clone()]).into_iter().chain([path]) {
-                    lifecycle.reindex.forget(&ridx_format::canonicalize_best_effort(&root));
+            let event = &msg["params"]["event"];
+            for item in event["removed"].as_array().into_iter().flatten() {
+                let folder = PathBuf::from(super::protocol::uri_to_path(item["uri"].as_str().unwrap_or("")));
+                if let Some(root) = gate.folders.remove(&folder) {
+                    lifecycle.reindex.forget(&root);
+                    mr.remove_root(&root);
                 }
             }
-            return Ok(Some(msg));
+            for item in event["added"].as_array().into_iter().flatten() {
+                gate.folders.add(Path::new(&super::protocol::uri_to_path(item["uri"].as_str().unwrap_or(""))));
+            }
         }
         _ => {}
     }
-    let id = msg.get("id").filter(|id| !id.is_null());
-    if let Some(id) = id.filter(|_| msg.get("method").is_some()) {
-        waiting.note_request(id);
-    }
-    let is_cancelled = id.is_some_and(|id| cancelled.lock().unwrap_or_else(|e| e.into_inner()).contains(id));
+    let id = msg.get("id").filter(|id| !id.is_null()).cloned();
+    let is_cancelled = id.as_ref().is_some_and(|id| cancelled.lock().unwrap_or_else(|e| e.into_inner()).contains(id));
     if id.is_none() || is_cancelled || !lifecycle.is_initialized() || lifecycle.is_shutdown() {
         return Ok(Some(msg));
     }
     if msg["method"] == "ridx/status" {
-        refresh(writer, lifecycle, mr, ov)?;
-        let result = status(&msg, mr, ov, &lifecycle.reindex, session);
+        refresh(gate, writer, lifecycle, mr, ov)?;
+        let result = status(&msg, &gate.folders, mr, ov, &lifecycle.reindex, session);
         super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
+        gate.requests.answered(&msg["id"], cancelled);
         return Ok(None);
     }
     if super::fresh::wanted(&msg).is_none() {
         return Ok(Some(msg));
     }
-    refresh(writer, lifecycle, mr, ov)?;
-    Ok(waiting.admit(msg, &Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }))
+    refresh(gate, writer, lifecycle, mr, ov)?;
+    msg[PINNED] = json!(true);
+    Ok(gate.waiting.admit(msg, &Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }))
 }
 
 /// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
@@ -140,14 +164,21 @@ pub fn experimental_capabilities() -> Value {
 }
 
 /// `ridx/status`: every root of the session and its index, and the given document's coverage.
-pub fn status(msg: &Value, mr: &super::MultiRootWorkspace, ov: &crate::overlay::OverlayManager, reindex: &super::reindex::Reindexer, session: &SessionIndexer) -> Value {
-    // The roots with an index loaded, and those being indexed for the first time or whose first index failed (review
-    // of a6909dbe: they were missing, with the reason of the failure).
+pub fn status(
+    msg: &Value,
+    folders: &Folders,
+    mr: &super::MultiRootWorkspace,
+    ov: &crate::overlay::OverlayManager,
+    reindex: &super::reindex::Reindexer,
+    session: &SessionIndexer,
+) -> Value {
+    // The roots with an index loaded, and the client's folders' and those indexed this session without one, being
+    // indexed for the first time or whose first index failed (review of a6909dbe: they were missing, with the reason).
     let mut roots: Vec<(PathBuf, Option<String>)> = mr
         .all_workspaces()
         .filter_map(|ws| ws.workspace_root().map(|r| (ridx_format::canonicalize_best_effort(r), Some(format!("{}.{}", ws.instance_id(), ws.generation())))))
         .collect();
-    for root in reindex.roots() {
+    for root in folders.roots().into_iter().chain(reindex.roots()) {
         if !roots.iter().any(|(r, _)| *r == root) {
             roots.push((root, None));
         }

@@ -173,26 +173,35 @@ fn test_lsp_server_stream_rejects_requests_before_initialize() {
 
 #[test]
 fn test_lsp_server_stream_request_cancellation() {
+    // A folder of its own, without a Cargo.toml: not this repository, nothing to index or check.
+    let folder = std::env::temp_dir().join(format!("ridx_cancel_folder_{}", std::process::id()));
+    std::fs::create_dir_all(&folder).unwrap();
     let mut input = Vec::new();
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "id": 1,
         "method": "initialize",
-        "params": { "capabilities": {} }
+        "params": { "workspaceFolders": [{ "uri": format!("file://{}", folder.display()), "name": "ws" }], "capabilities": {} }
+    })));
+    // The cancel follows its request, as in the protocol (a cancel of a request not sent is ignored): a request waiting
+    // (`minVersion` on a file no index holds) is still pending when it comes.
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} })));
+    let uri = "file:///tmp/ridx_lifecycle_cancel_pending.rs";
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": { "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": "fn f() {}\n" } }
+    })));
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "id": 100,
+        "method": "textDocument/documentSymbol",
+        "params": { "textDocument": { "uri": uri }, "minVersion": 1 }
     })));
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "method": "$/cancelRequest",
         "params": { "id": 100 }
-    })));
-    input.extend(make_lsp_msg(&json!({
-        "jsonrpc": "2.0",
-        "id": 100,
-        "method": "textDocument/definition",
-        "params": {
-            "textDocument": { "uri": "file:///tmp/dummy.rs" },
-            "position": { "line": 0, "character": 0 }
-        }
     })));
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",

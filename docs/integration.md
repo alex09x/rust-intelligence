@@ -34,7 +34,7 @@ configured for rust-analyzer can start it unchanged.
   release)**. The progress itself carries no per-root outcome; `ridx/status` is where it is.
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
-- `$/cancelRequest` is honoured for queued requests. **available** For long-running requests: **planned**.
+- `$/cancelRequest` is honoured for a request read and not answered yet (queued, or waiting for `minVersion`); one for a request answered already, or never sent, is ignored, so an id can be reused. **available** For long-running requests: **planned**.
 
 ## 3. Code that does not compile
 
