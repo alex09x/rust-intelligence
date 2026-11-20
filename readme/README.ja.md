@@ -1,7 +1,7 @@
-<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
+<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
 
 > [!NOTE]
-> これはコミット [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
+> これはコミット [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -221,19 +221,19 @@ cargo test --workspace
 ## 引用
 
 研究やドキュメントで ridx を使う場合は、Zenodo にアーカイブされたリリースを引用してください：
-プロジェクト全体には [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)（最新版に解決されます）、0.3.9 そのものには [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924)。
+プロジェクト全体には [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)（最新版に解決されます）、0.3.10 そのものには [10.5281/zenodo.24397432](https://doi.org/10.5281/zenodo.24397432)。
 [`CITATION.cff`](../CITATION.cff) には GitHub の「Cite this repository」が使うメタデータがあります。
 
 ```bibtex
-@software{panasenko_2026_24395924,
+@software{panasenko_2026_24397432,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.9},
-  doi       = {10.5281/zenodo.24395924},
-  url       = {https://doi.org/10.5281/zenodo.24395924},
+  version   = {0.3.10},
+  doi       = {10.5281/zenodo.24397432},
+  url       = {https://doi.org/10.5281/zenodo.24397432},
 }
 ```
 

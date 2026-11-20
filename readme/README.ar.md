@@ -1,7 +1,7 @@
-<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
+<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
 
 > [!NOTE]
-> هذه ترجمة لملف README الإنجليزي عند الإيداع [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -256,7 +256,7 @@ cargo test --workspace
 ## الاستشهاد
 
 إذا استخدمت ridx في بحث أو توثيق، فيُرجى الاستشهاد بالإصدار المؤرشف على Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) للمشروع (يشير إلى أحدث إصدار)، و[10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) للإصدار 0.3.9 تحديدًا.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) للمشروع (يشير إلى أحدث إصدار)، و[10.5281/zenodo.24397432](https://doi.org/10.5281/zenodo.24397432) للإصدار 0.3.10 تحديدًا.
 يحتوي [`CITATION.cff`](../CITATION.cff) على البيانات الوصفية التي يستخدمها زر "Cite this repository" في GitHub.
 
 </div>
@@ -264,15 +264,15 @@ cargo test --workspace
 <div dir="ltr">
 
 ```bibtex
-@software{panasenko_2026_24395924,
+@software{panasenko_2026_24397432,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.9},
-  doi       = {10.5281/zenodo.24395924},
-  url       = {https://doi.org/10.5281/zenodo.24395924},
+  version   = {0.3.10},
+  doi       = {10.5281/zenodo.24397432},
+  url       = {https://doi.org/10.5281/zenodo.24397432},
 }
 ```
 
