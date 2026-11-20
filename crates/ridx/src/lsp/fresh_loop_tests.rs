@@ -167,3 +167,30 @@ fn test_an_index_opened_as_its_directory_answers_for_its_workspace() {
     reindex.fail_for_test(&root, "ridx index failed: a newer build failed");
     assert!(index_failed(&references(&root, 1, None), &mr, &reindex).is_none(), "the index loaded answers");
 }
+
+/// Review of 3e51faf9: a nested workspace's index opened as its directory, then the enclosing one: the guard let a
+/// request on the nested workspace through, and the enclosing index answered it. Both now go by the root the directory
+/// is bound to, the nested workspace.
+#[test]
+fn test_the_index_admitted_is_the_index_answering() {
+    let dir = tempfile::tempdir().unwrap();
+    let outer = ridx_format::canonicalize_best_effort(dir.path());
+    let nested = outer.join("nested");
+    for root in [&outer, &nested] {
+        package(root);
+        publish_index(root);
+    }
+    let mut mr = MultiRootWorkspace::new();
+    assert!(mr.add_root(nested.join("target/ridx")));
+    assert!(mr.add_root(outer.clone()));
+    let reindex = Reindexer::new();
+    reindex.fail_for_test(&nested, "ridx index failed: a newer build failed");
+    let request = references(&nested, 1, None);
+    assert!(index_failed(&request, &mr, &reindex).is_none(), "the nested index loaded answers");
+    let answering = mr.doc_ws(&request).and_then(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort);
+    assert_eq!(answering, Some(nested.clone()), "and it is the one answering");
+    assert!(!mr.add_root(nested.join("target/ridx")), "the same index is not loaded twice");
+    assert!(mr.remove_root(&nested.join("target/ridx")), "removed by the directory it was opened as");
+    assert!(mr.roots().all(|r| r != nested), "{:?}", mr.roots().collect::<Vec<_>>());
+    assert!(mr.roots().any(|r| r == outer), "the enclosing one stays");
+}
