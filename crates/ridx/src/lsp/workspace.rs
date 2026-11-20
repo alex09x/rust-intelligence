@@ -101,7 +101,9 @@ impl MultiRootWorkspace {
             let source_folder = norm_path.is_dir() && norm_path.join("Cargo.toml").is_file();
             let recorded = ws.workspace_root().map(ridx_format::canonicalize_best_effort).filter(|_| !source_folder);
             let root_dir = recorded.unwrap_or(root_dir);
-            if self.roots.iter().any(|(p, _)| p == &root_dir) {
+            // Roots and the paths indexes were opened by are one namespace: a root that is another root's alias would make
+            // removing it remove both (review of f3de5a56).
+            if self.roots.iter().any(|(p, _)| p == &root_dir) || self.opened_as.iter().any(|(_, o)| o == &root_dir) {
                 return false;
             }
             if root_dir != norm_path {
@@ -116,9 +118,14 @@ impl MultiRootWorkspace {
     pub fn remove_root(&mut self, path: &Path) -> bool {
         let norm_path = ridx_format::canonicalize_best_effort(path);
         let before_len = self.roots.len();
-        let opened: Vec<PathBuf> = self.opened_as.iter().filter(|(_, o)| o == &norm_path).map(|(r, _)| r.clone()).collect();
+        // A root named exactly is removed alone; only a path no root has is taken for an alias.
+        let exact = self.roots.iter().any(|(p, _)| p == &norm_path || p == path);
+        let opened: Vec<PathBuf> = if exact { Vec::new() } else { self.opened_as.iter().filter(|(_, o)| o == &norm_path).map(|(r, _)| r.clone()).collect() };
         self.roots.retain(|(p, ws)| {
-            if p == &norm_path || p == path || opened.contains(p) {
+            if exact {
+                return !(p == &norm_path || p == path);
+            }
+            if opened.contains(p) {
                 return false;
             }
             if ws.paths().iter().any(|ip| ip == path || ip == &norm_path || ridx_format::canonicalize_best_effort(ip) == norm_path) {

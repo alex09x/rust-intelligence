@@ -268,3 +268,33 @@ fn test_removing_one_root_keeps_another_whose_shards_lie_under_it() {
     assert!(mr.remove_root(&inner));
     assert_eq!(mr.roots().collect::<Vec<_>>(), vec![outer.as_path()], "only the root removed goes");
 }
+
+/// Review of f3de5a56: roots and the paths indexes were opened by are one namespace. `A`'s index kept at `X` is bound
+/// to `A` with the alias `X`; an index kept at `Y` recording the workspace `X` would be the root `X`, and removing `X`
+/// removed both. The second registration is refused, in either order.
+#[test]
+fn test_a_root_never_collides_with_another_roots_alias() {
+    let dir = tempfile::tempdir().unwrap();
+    let base = ridx_format::canonicalize_best_effort(dir.path());
+    let (a, x, y) = (base.join("a"), base.join("x"), base.join("y"));
+    package(&a);
+    shard_in(&x.join("variants/dev"), &a);
+    std::fs::write(x.join("ridx_manifest.json"), manifest(&a).to_string()).unwrap();
+    shard_in(&y.join("variants/dev"), &x);
+    std::fs::write(y.join("ridx_manifest.json"), manifest(&x).to_string()).unwrap();
+
+    let mut mr = MultiRootWorkspace::new();
+    assert!(mr.add_root(x.clone()));
+    assert!(mr.roots().any(|r| r == a), "bound to the workspace it records");
+    assert!(!mr.add_root(y.clone()), "its root would be the alias of another root");
+    assert_eq!(mr.len(), 1);
+    assert!(mr.remove_root(&x));
+    assert!(mr.is_empty());
+
+    let mut mr = MultiRootWorkspace::new();
+    assert!(mr.add_root(y.clone()));
+    assert!(mr.roots().any(|r| r == x));
+    assert!(!mr.add_root(x.clone()), "a path that is a root is no alias of another");
+    assert!(mr.remove_root(&x), "the root named exactly");
+    assert!(mr.is_empty());
+}
