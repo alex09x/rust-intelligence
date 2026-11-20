@@ -104,7 +104,7 @@
       <div class="card step"><span class="num">01</span><b>cargo check</b><span>ridx-driver runs as the rustc wrapper. rustc resolves everything as it normally would.</span></div>
       <div class="card step"><span class="num">02</span><b>Write shards</b><span>Definitions, references and types for each crate go into a compact .ridx v5 file.</span></div>
       <div class="card step"><span class="num">03</span><b>Store by hash</b><span>Dependencies land in the shared store once; your crates go to the workspace variant.</span></div>
-      <div class="card step"><span class="num">04</span><b>Map and query</b><span>The server maps the shards and answers with hash probes and binary searches. Nothing is parsed into the heap.</span></div>
+      <div class="card step"><span class="num">04</span><b>Map and query</b><span>The server maps the shards and answers with hash probes, binary searches and scans over them. Records are read in place, never decoded into the heap.</span></div>
     </div>
   </div>
 

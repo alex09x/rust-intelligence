@@ -117,7 +117,7 @@
   <rect x="60" y="580" width="340" height="114" rx="10" class="in"/>
   <text x="76" y="606" class="m b" font-size="14" fill="#ff9900" style="fill:#ff9900">~/.cache/ridx/v5/objects/</text>
   <text x="76" y="632" class="t" font-size="13">dependencies, content-addressed</text>
-  <text x="76" y="652" class="t mute" font-size="13">skipped when the unit key matches</text>
+  <text x="76" y="652" class="t mute" font-size="13">not re-extracted when the key matches</text>
   <text x="76" y="672" class="t mute" font-size="13">shared by every project and worktree</text>
 
   <rect x="430" y="580" width="340" height="114" rx="10" class="in"/>
