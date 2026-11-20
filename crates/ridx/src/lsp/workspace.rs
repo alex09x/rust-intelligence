@@ -39,6 +39,12 @@ impl MultiRootWorkspace {
         self.roots.len()
     }
 
+    /// The roots an index is loaded for (canonical), whatever the index records as its workspace root: a lone `.ridx`
+    /// opened with `--index-path` records none (review of b3d0d293).
+    pub fn roots(&self) -> impl Iterator<Item = &Path> {
+        self.roots.iter().map(|(r, _)| r.as_path())
+    }
+
     pub fn clear(&mut self) {
         self.roots.clear();
     }

@@ -103,6 +103,9 @@ pub(crate) fn release_waiting<W: Write>(
         return Ok(Vec::new());
     }
     refresh(gate, writer, lifecycle, mr, ov)?;
+    // A request held for its version whose index failed since gets that answer now, not a timeout (review of b3d0d293).
+    let refused = gate.waiting.refuse(|m| refusal(m, mr, &lifecycle.reindex), cancelled);
+    gate.send_answers(writer, refused)?;
     let (ready, answers) = gate.waiting.release(&Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }, cancelled);
     gate.send_answers(writer, answers)?;
     Ok(ready)
@@ -161,11 +164,14 @@ pub(crate) fn intercept<W: Write>(
         super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
         return Ok(None);
     }
-    if let Some(error) = index_failed(&msg, mr, &lifecycle.reindex) {
-        let data = json!({ "reason": "indexFailed", "root": error.0.display().to_string(), "error": error.1 });
-        let message = format!("no index of {}: its build failed", error.0.display());
-        super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "error": { "code": -32803, "message": message, "data": data } }))?;
-        return Ok(None);
+    // An index published since the run failed (by `ridx index` run by hand) answers: the refusal is judged on the
+    // indexes refreshed first (review of b3d0d293).
+    if index_failed(&msg, mr, &lifecycle.reindex).is_some() {
+        refresh(gate, writer, lifecycle, mr, ov)?;
+        if let Some(answer) = refusal(&msg, mr, &lifecycle.reindex) {
+            super::protocol::send_response(writer, &answer)?;
+            return Ok(None);
+        }
     }
     if super::fresh::wanted(&msg).is_none() {
         return Ok(Some(msg));
@@ -192,20 +198,30 @@ const INDEX_ONLY: &[&str] = &[
 /// The root and error when `msg` asks the index of a root that has none loaded because its build failed (prod-code,
 /// m=19837: `references` answered `[]` there, which reads as no references). A root with an older index loaded answers
 /// from it; one still building its first index is answered as before (`minVersion` waits for it).
+/// The root is the innermost of the roots loaded and those indexed this session holding the file: a loaded outer
+/// workspace does not hide a nested one whose index failed, and a root counts as loaded by the index bound to it, not
+/// by the workspace root that index records (review of b3d0d293).
 fn index_failed(msg: &Value, mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer) -> Option<(PathBuf, String)> {
     if !INDEX_ONLY.contains(&msg["method"].as_str()?) {
         return None;
     }
-    let file = super::protocol::uri_to_path(msg["params"]["textDocument"]["uri"].as_str()?);
-    let root = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file))?;
-    let loaded = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).any(|r| ridx_format::canonicalize_best_effort(r) == root);
-    if loaded {
+    let file = ridx_format::canonicalize_best_effort(Path::new(&super::protocol::uri_to_path(msg["params"]["textDocument"]["uri"].as_str()?)));
+    let loaded: Vec<PathBuf> = mr.roots().map(Path::to_path_buf).collect();
+    let root = loaded.iter().cloned().chain(reindex.roots()).filter(|r| file.starts_with(r)).max_by_key(|r| r.as_os_str().len())?;
+    if loaded.contains(&root) {
         return None;
     }
     match reindex.status_of(&root) {
         (false, Some(error)) => Some((root, error)),
         _ => None,
     }
+}
+
+/// The `-32803` answer to `msg` when `index_failed`.
+fn refusal(msg: &Value, mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer) -> Option<Value> {
+    let (root, error) = index_failed(msg, mr, reindex)?;
+    let data = json!({ "reason": "indexFailed", "root": root.display().to_string(), "error": error });
+    Some(super::fresh::response(&msg["id"], -32803, format!("no index of {}: its build failed", root.display()), data))
 }
 
 /// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
@@ -263,6 +279,10 @@ pub fn status(
     }
     out
 }
+
+#[cfg(test)]
+#[path = "fresh_loop_tests.rs"]
+mod index_failed_tests;
 
 #[cfg(test)]
 mod tests {

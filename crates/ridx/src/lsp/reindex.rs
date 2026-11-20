@@ -49,6 +49,9 @@ pub struct Reindexer {
     roots: Arc<Mutex<HashMap<PathBuf, RootState>>>,
     /// The roots whose run ended successfully since the server last looked.
     finished: Arc<Mutex<Vec<PathBuf>>>,
+    /// Every run that ended since the progress last looked, failed or not: a run starting and failing between two
+    /// looks at `running` still shows in the progress (review of b3d0d293).
+    ended: Arc<Mutex<Vec<PathBuf>>>,
     /// Workspace folders from `initialize`, indexed once the client is `initialized` (its progress then shows).
     queued: Mutex<Vec<PathBuf>>,
 }
@@ -63,6 +66,11 @@ impl Reindexer {
     /// run arrive while it runs).
     pub fn take_finished(&self) -> Vec<PathBuf> {
         std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
+    }
+
+    /// The roots whose run ended since the last call, whatever its outcome.
+    pub fn take_ended(&self) -> Vec<PathBuf> {
+        std::mem::take(&mut *self.ended.lock().unwrap_or_else(|e| e.into_inner()))
     }
 
     /// A workspace folder the client removed: it leaves the roots of the session, with a run's success not yet taken
@@ -183,6 +191,7 @@ impl Reindexer {
         }
         let roots = Arc::clone(&self.roots);
         let finished = Arc::clone(&self.finished);
+        let ended = Arc::clone(&self.ended);
         let root = root.to_path_buf();
         std::thread::spawn(move || loop {
             let started = std::time::Instant::now();
@@ -200,6 +209,7 @@ impl Reindexer {
                 finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             }
             st.last_error = (!ok).then(|| failure_reason(&log));
+            ended.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             if std::mem::take(&mut st.again) {
                 let now = SystemTime::now();
                 st.running_since = Some(now);

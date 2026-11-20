@@ -118,6 +118,21 @@ impl Waiting {
         (ready, answers)
     }
 
+    /// The answers of the held requests `refused` answers now (their index failed: review of b3d0d293), taken out. A
+    /// cancelled one, or one past its deadline, is left to `release`, which answers those first.
+    pub fn refuse(&mut self, refused: impl Fn(&Value) -> Option<Value>, cancelled: &std::sync::Mutex<std::collections::HashSet<Value>>) -> Vec<Value> {
+        let now = Instant::now();
+        let cancelled = cancelled.lock().unwrap_or_else(|e| e.into_inner());
+        let mut answers = Vec::new();
+        self.held.retain(|h| {
+            if cancelled.contains(&h.msg["id"]) || now >= h.deadline {
+                return true;
+            }
+            refused(&h.msg).map(|a| answers.push(a)).is_none()
+        });
+        answers
+    }
+
     /// Answers every held request with `code` (the server shut down while they waited).
     pub fn drain(&mut self, code: i64, message: &str) -> Vec<Value> {
         self.released.clear();
