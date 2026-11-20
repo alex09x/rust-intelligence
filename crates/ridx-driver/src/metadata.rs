@@ -32,6 +32,24 @@ pub(crate) fn is_immutable_package_with_home(manifest_dir: &Path, cargo_home: Op
     s.contains("/.cargo/registry/") || s.contains("\\.cargo\\registry\\") || s.contains("/.cargo/git/") || s.contains("\\.cargo\\git\\")
 }
 
+/// The source files this crate itself was compiled from (canonical paths): the local crate's files in the source map,
+/// not those imported from its dependencies' metadata, which `file_hashes` records too. A session index compiles a
+/// buffer in the units listing it here (review of ca0c1ec7: a file included by `#[path]` from another package).
+pub(crate) fn own_source_files(tcx: TyCtxt<'_>) -> Vec<String> {
+    let source_map = tcx.sess.source_map();
+    let mut own: Vec<String> = source_map
+        .files()
+        .iter()
+        .filter(|f| f.cnum == rustc_span::def_id::LOCAL_CRATE)
+        .map(|f| source_map.filename_for_diagnostics(&f.name).to_string())
+        .filter(|name| !name.starts_with('<'))
+        .map(|name| Path::new(&name).canonicalize().map_or(name, |p| p.display().to_string()))
+        .collect();
+    own.sort();
+    own.dedup();
+    own
+}
+
 pub(crate) fn collect_file_hashes<'tcx>(tcx: TyCtxt<'tcx>, package_root: Option<&Path>, manifest_dir: Option<&Path>) -> std::collections::HashMap<String, u64> {
     let mut hashes = std::collections::HashMap::new();
     let root_scope = package_root.or(manifest_dir);

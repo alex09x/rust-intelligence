@@ -12,33 +12,49 @@
 //! navigation missed what a buffer added (prod-code: two calls typed into a buffer, references 2 where
 //! rust-analyzer has 4). Once a workspace's buffers have been quiet for `QUIET`, the crates holding them are compiled
 //! again from the buffers' text into an index of this session (`indexer::session`), which then answers in place of the
-//! published one until the next published index loads.
+//! published one until a newer published index loads, or the buffers are all back to their files. The server loop's
+//! side is `session_loop`.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 /// How long the buffers of a workspace stay unchanged before their crates are compiled again.
 const QUIET: Duration = Duration::from_millis(250);
+
+/// An edited buffer as compiled: its key in the overlay manager, its path, its text.
+#[derive(Clone)]
+pub struct Snapshot {
+    pub key: String,
+    pub path: PathBuf,
+    pub text: String,
+}
+
+/// What the published index of a root was when a session started: its manifest's change time and length.
+pub(crate) fn published_stamp(root: &Path) -> Option<(SystemTime, u64)> {
+    std::fs::metadata(root.join("target/ridx/ridx_manifest.json")).ok().and_then(|m| Some((m.modified().ok()?, m.len())))
+}
 
 #[derive(Default)]
 struct RootState {
     /// The last edit not yet compiled.
     changed_at: Option<Instant>,
     building: bool,
-    /// Counts the loads of the published index: a session built on the one before is dropped.
+    /// Counts the changes of base: a session built before one is dropped.
     epoch: u64,
-    /// The session directory in use, removed when another replaces it.
-    current: Option<PathBuf>,
+    /// The session directory answering, and the published index it was built on.
+    current: Option<(PathBuf, Option<(SystemTime, u64)>)>,
     /// Whether the directories left by servers that ended were removed.
     swept: bool,
 }
 
-/// A session index built, for the server to load.
+/// A session index built, for the server to load, with the exact texts it compiled.
 pub struct SessionBuilt {
     pub root: PathBuf,
     pub dir: PathBuf,
+    pub buffers: Vec<Snapshot>,
+    pub stamp: Option<(SystemTime, u64)>,
     epoch: u64,
 }
 
@@ -50,7 +66,7 @@ pub struct SessionIndexer {
 }
 
 impl SessionIndexer {
-    /// A buffer of `root` changed.
+    /// A buffer of `root` was opened, changed or closed.
     pub fn note_change(&self, root: &Path) {
         if session_off() {
             return;
@@ -58,22 +74,38 @@ impl SessionIndexer {
         self.roots.lock().unwrap_or_else(|e| e.into_inner()).entry(root.to_path_buf()).or_default().changed_at = Some(Instant::now());
     }
 
-    /// Starts the build of every root whose buffers have been quiet long enough, with `dirty_buffers(root)`: the
-    /// edited buffers of that root, path and text.
-    pub fn start_due(&self, dirty_buffers: impl Fn(&Path) -> Vec<(PathBuf, String)>) {
+    /// Starts the build of every root whose buffers have been quiet long enough, with `edited(root)`: the edited
+    /// buffers of that root. Returns the roots with no edited buffer left whose session index answers or is being
+    /// built: they go back to the published index, and a build in flight is dropped (review of ca0c1ec7: a buffer
+    /// reverted or closed kept answering from its discarded text).
+    pub fn start_due(&self, edited: impl Fn(&Path) -> Vec<Snapshot>) -> Vec<PathBuf> {
+        let mut retire = Vec::new();
         let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         for (root, st) in roots.iter_mut() {
-            if st.building || !st.changed_at.is_some_and(|t| t.elapsed() >= QUIET) {
+            if !st.changed_at.is_some_and(|t| t.elapsed() >= QUIET) {
+                continue;
+            }
+            let buffers = edited(root);
+            if st.building {
+                // The edit waits for the build in flight, unless nothing is edited any more: then that build is dropped.
+                if buffers.is_empty() {
+                    st.changed_at = None;
+                    st.epoch += 1;
+                    retire.push(root.clone());
+                }
                 continue;
             }
             st.changed_at = None;
-            let buffers = dirty_buffers(root);
             if buffers.is_empty() {
+                if st.current.is_some() || st.building {
+                    st.epoch += 1;
+                    retire.push(root.clone());
+                }
                 continue;
             }
             st.building = true;
             if !std::mem::replace(&mut st.swept, true) {
-                sweep_ended_servers(&root.join("target/ridx/sessions"));
+                super::session_loop::sweep_ended_servers(&root.join("target/ridx/sessions"));
             }
             let n = {
                 let mut c = self.count.lock().unwrap_or_else(|e| e.into_inner());
@@ -81,11 +113,12 @@ impl SessionIndexer {
                 *c
             };
             let dir = root.join("target/ridx/sessions").join(format!("{}-{n}", std::process::id()));
-            let epoch = st.epoch;
+            let (epoch, stamp) = (st.epoch, published_stamp(root));
             let (root, roots, built) = (root.clone(), Arc::clone(&self.roots), Arc::clone(&self.built));
             std::thread::spawn(move || {
                 let started = Instant::now();
-                let result = crate::indexer::session::build_session_index(&root, &dir, &buffers);
+                let texts: Vec<(PathBuf, String)> = buffers.iter().map(|b| (b.path.clone(), b.text.clone())).collect();
+                let result = crate::indexer::session::build_session_index(&root, &dir, &texts);
                 let msg = match &result {
                     Ok(_) => format!("session index of {} ({} buffer(s)) in {:.0} ms", root.display(), buffers.len(), started.elapsed().as_secs_f64() * 1000.0),
                     Err(e) => format!("no session index of {}: {e}", root.display()),
@@ -95,17 +128,17 @@ impl SessionIndexer {
                     st.building = false;
                 }
                 match result {
-                    Ok(dir) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir, epoch }),
+                    Ok(dir) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir, buffers, stamp, epoch }),
                     Err(_) => {
                         let _ = std::fs::remove_dir_all(&dir);
                     }
                 }
             });
         }
+        retire
     }
 
-    /// The session indexes built since the last call on the published index loaded now; one built on an older one
-    /// is dropped.
+    /// The session indexes built since the last call on the current base; one built before a change of base is dropped.
     pub fn take_built(&self) -> Vec<SessionBuilt> {
         let built = std::mem::take(&mut *self.built.lock().unwrap_or_else(|e| e.into_inner()));
         let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
@@ -116,24 +149,41 @@ impl SessionIndexer {
         current
     }
 
-    /// `dir` now answers for `root`: the session directory it replaces goes.
-    pub fn loaded(&self, root: &Path, dir: &Path) {
-        let previous = self.roots.lock().unwrap_or_else(|e| e.into_inner()).entry(root.to_path_buf()).or_default().current.replace(dir.to_path_buf());
-        if let Some(previous) = previous.filter(|p| p != dir) {
+    /// `dir`, built on the published index `stamp`, now answers for `root`: the session directory it replaces goes.
+    pub fn loaded(&self, root: &Path, dir: &Path, stamp: Option<(SystemTime, u64)>) {
+        let previous = self.roots.lock().unwrap_or_else(|e| e.into_inner()).entry(root.to_path_buf()).or_default().current.replace((dir.to_path_buf(), stamp));
+        if let Some((previous, _)) = previous.filter(|(p, _)| p != dir) {
             let _ = std::fs::remove_dir_all(previous);
         }
     }
 
-    /// The published index of `root` loaded again (a save): whether a session index was answering for it. The edited
-    /// buffers are compiled again on top of the new one.
+    /// The published index of `root` changed (a reindex of this server's, `ridx index` by hand, a variant switch):
+    /// builds in flight are dropped and the edited buffers compiled again on the new one, also when no session
+    /// answered yet (review of ca0c1ec7: a first build's edit was lost). Returns whether a session index answered,
+    /// which the published index now replaces.
     pub fn published_loaded(&self, root: &Path) -> bool {
         let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         let Some(st) = roots.get_mut(root) else { return false };
         st.epoch += 1;
-        let Some(dir) = st.current.take() else { return false };
-        let _ = std::fs::remove_dir_all(dir);
         st.changed_at = Some(Instant::now());
+        let Some((dir, _)) = st.current.take() else { return false };
+        let _ = std::fs::remove_dir_all(dir);
         true
+    }
+
+    /// Ends the session index of `root` (no edited buffer left): whether one answered.
+    pub fn retire(&self, root: &Path) -> bool {
+        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        let Some((dir, _)) = roots.get_mut(root).and_then(|st| st.current.take()) else { return false };
+        let _ = std::fs::remove_dir_all(dir);
+        true
+    }
+
+    /// The roots whose session index answers while their published index has changed since it was built, by anyone
+    /// (review of ca0c1ec7: the session's copy of the manifest hid a `ridx index` run by hand).
+    pub fn published_changed(&self) -> Vec<PathBuf> {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.iter().filter(|(root, st)| st.current.as_ref().is_some_and(|(_, stamp)| *stamp != published_stamp(root))).map(|(r, _)| r.clone()).collect()
     }
 
     /// For `ridx/status`: whether a session index of `root` is being built or waits to be, and whether one answers.
@@ -145,82 +195,9 @@ impl SessionIndexer {
     /// Removes this server's session directories.
     pub fn shutdown(&self) {
         for st in self.roots.lock().unwrap_or_else(|e| e.into_inner()).values_mut() {
-            if let Some(dir) = st.current.take() {
+            if let Some((dir, _)) = st.current.take() {
                 let _ = std::fs::remove_dir_all(dir);
             }
-        }
-    }
-}
-
-/// Notes an edit of a buffer for the session index of its workspace.
-pub(crate) fn note_edit(session: &SessionIndexer, msg: &serde_json::Value, mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer) {
-    if msg["method"] != "textDocument/didChange" {
-        return;
-    }
-    let file = super::protocol::uri_to_path(msg["params"]["textDocument"]["uri"].as_str().unwrap_or(""));
-    if let Some(root) = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file)) {
-        session.note_change(&root);
-    }
-}
-
-/// One turn of the server loop: the published indexes of `finished` replace the sessions on them, sessions due start,
-/// and the ones built are loaded. Returns whether an index was replaced, for the client to fetch again.
-pub(crate) fn step(session: &SessionIndexer, finished: &[PathBuf], mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay::OverlayManager) -> bool {
-    let mut replaced = false;
-    for root in finished {
-        if session.published_loaded(root) {
-            if let Ok(ws) = ridx_format::WorkspaceIndex::open(root) {
-                replaced |= replace(mr, ov, root, ws);
-            }
-        }
-    }
-    session.start_due(|root| edited_buffers(ov, root));
-    for built in session.take_built() {
-        let loaded = ridx_format::WorkspaceIndex::open(&built.dir).is_ok_and(|ws| replace(mr, ov, &built.root, ws));
-        if loaded {
-            session.loaded(&built.root, &built.dir);
-            replaced = true;
-        } else {
-            let _ = std::fs::remove_dir_all(&built.dir);
-        }
-    }
-    replaced
-}
-
-fn replace(mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay::OverlayManager, root: &Path, ws: ridx_format::WorkspaceIndex) -> bool {
-    let Some(ws) = mr.replace_index(root, ws) else { return false };
-    super::rebase_open_buffers(ws, ov);
-    true
-}
-
-/// The open buffers under `root` whose text is not the file's on disk, with that text: every edited one, not only
-/// those changed since the last session index (that one compiled the others from their buffers too).
-fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path) -> Vec<(PathBuf, String)> {
-    let mut out = Vec::new();
-    for file in ov.open_file_paths() {
-        let path = ridx_format::canonicalize_best_effort(Path::new(&file));
-        if !path.starts_with(root) || path.extension().is_none_or(|x| x != "rs") {
-            continue;
-        }
-        let Some(o) = ov.get(&file) else { continue };
-        if std::fs::read_to_string(&path).ok().as_deref() != Some(o.text.as_str()) {
-            out.push((path, o.text.clone()));
-        }
-    }
-    out.sort();
-    out
-}
-
-/// Removes the session directories (`<pid>-<n>`) of servers no longer running: one killed, rather than shut down,
-/// leaves its own behind.
-fn sweep_ended_servers(sessions: &Path) {
-    let me = std::process::id().to_string();
-    for entry in std::fs::read_dir(sessions).into_iter().flatten().flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let Some(pid) = name.split('-').next().filter(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit())) else { continue };
-        let running = pid == me || std::process::Command::new("kill").args(["-0", pid]).stderr(std::process::Stdio::null()).status().is_ok_and(|s| s.success());
-        if !running {
-            let _ = std::fs::remove_dir_all(entry.path());
         }
     }
 }
@@ -228,4 +205,37 @@ fn sweep_ended_servers(sessions: &Path) {
 /// `RIDX_SESSION_INDEX=0` turns session indexes off.
 fn session_off() -> bool {
     std::env::var("RIDX_SESSION_INDEX").is_ok_and(|v| v == "0")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Review of ca0c1ec7: a change of base while no session answered yet lost the edit; with none left, the session
+    /// index goes; one published by anyone else is noticed.
+    #[test]
+    fn test_sessions_follow_the_base_and_the_buffers() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let s = SessionIndexer::default();
+        s.note_change(&root);
+        assert!(!s.published_loaded(&root) && s.state_of(&root).0, "no session answered, the edit is still due");
+
+        let session = root.join("target/ridx/sessions/1-1");
+        std::fs::create_dir_all(&session).unwrap();
+        s.loaded(&root, &session, published_stamp(&root));
+        assert!(s.published_changed().is_empty(), "same published index");
+        std::fs::create_dir_all(root.join("target/ridx")).unwrap();
+        std::fs::write(root.join("target/ridx/ridx_manifest.json"), "{}").unwrap();
+        assert_eq!(s.published_changed(), vec![root.clone()], "a manifest published by anyone");
+
+        s.loaded(&root, &session, published_stamp(&root));
+        s.note_change(&root);
+        std::thread::sleep(QUIET + Duration::from_millis(30));
+        assert_eq!(s.start_due(|_| Vec::new()), vec![root.clone()], "nothing edited any more: back to the published index");
+        assert!(s.retire(&root) && !session.exists());
+        s.note_change(&root);
+        std::thread::sleep(QUIET + Duration::from_millis(30));
+        assert!(s.start_due(|_| Vec::new()).is_empty(), "no session to retire");
+    }
 }

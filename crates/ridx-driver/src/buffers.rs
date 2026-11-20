@@ -46,8 +46,34 @@ impl BufferLoader {
     }
 }
 
+/// One spelling for a path, whether rustc asks for it relative to its working directory or absolute, and whether the
+/// file exists or is only a buffer (review of ca0c1ec7: `src/new.rs`, typed but never saved, missed its absolute key).
 fn canonical(path: &Path) -> PathBuf {
-    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+    let absolute = if path.is_absolute() { path.to_path_buf() } else { std::env::current_dir().map(|d| d.join(path)).unwrap_or_else(|_| path.to_path_buf()) };
+    if let Ok(c) = absolute.canonicalize() {
+        return c;
+    }
+    // Not on disk: the existing directory above it canonical, the rest without `.` and `..`.
+    let mut rest = Vec::new();
+    let mut dir = absolute.as_path();
+    while let Some(parent) = dir.parent() {
+        rest.push(dir.file_name().map(|n| n.to_os_string()));
+        if let Ok(c) = parent.canonicalize() {
+            let mut out = c;
+            for part in rest.into_iter().rev() {
+                match part {
+                    Some(name) if name == ".." => {
+                        out.pop();
+                    }
+                    Some(name) if name != "." => out.push(name),
+                    _ => {}
+                }
+            }
+            return out;
+        }
+        dir = parent;
+    }
+    absolute
 }
 
 impl FileLoader for BufferLoader {
@@ -71,5 +97,24 @@ impl FileLoader for BufferLoader {
 
     fn current_directory(&self) -> io::Result<PathBuf> {
         RealFileLoader.current_directory()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_a_buffer_not_on_disk_is_found_by_a_relative_path() {
+        let dir = std::env::current_dir().unwrap().join(format!("ridx_buffers_test_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let text = dir.join("text.rs");
+        std::fs::write(&text, "pub fn new() {}\n").unwrap();
+        let loader = BufferLoader::new([(dir.join("src/new.rs"), text)]);
+        let relative = PathBuf::from(dir.file_name().unwrap()).join("src/./new.rs");
+        assert!(loader.file_exists(&relative), "a typed, unsaved file asked for relative to the working directory");
+        assert_eq!(loader.read_file(&relative).unwrap(), "pub fn new() {}\n");
+        assert!(!loader.file_exists(&dir.join("src/other.rs")));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

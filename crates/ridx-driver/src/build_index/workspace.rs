@@ -238,6 +238,7 @@ fn publish_workspace_sidecar(
         "dependencies": dep_keys_or_names,
         "extern_units": extern_units,
         "file_hashes": file_hashes,
+        "own_sources": crate::metadata::own_source_files(tcx),
         "compiler_args": compiler_args,
         "env": env_map,
         "enabled_features": enabled_features,

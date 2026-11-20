@@ -31,6 +31,7 @@ pub mod presentation;
 pub mod protocol;
 pub mod reindex;
 mod session_index;
+mod session_loop;
 pub mod symbols;
 pub mod workspace;
 
@@ -143,7 +144,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         // A background reindex ended: load it now, rather than on the client's next request.
         let finished = lifecycle.reindex.take_finished();
         // The index of the edited buffers: it answers once built, until the next published index loads.
-        if session_index::step(&session, &finished, &mut multi_root, &mut overlay_mgr) && !lifecycle.is_shutdown() {
+        if session_loop::step(&session, &finished, &mut multi_root, &mut overlay_mgr) && !lifecycle.is_shutdown() {
             dispatch::refresh_after_load(&mut writer, &mut lifecycle, true)?;
         }
         if !finished.is_empty() {
@@ -176,7 +177,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         };
         match next {
             Ok(msg) => {
-                session_index::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
+                session_loop::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
                 if msg["method"] == "ridx/status" {
                     let result = fresh::status(&msg, &multi_root, &overlay_mgr, &lifecycle.reindex, &session);
                     protocol::send_response(&mut writer, &serde_json::json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
