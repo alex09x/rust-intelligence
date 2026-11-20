@@ -151,3 +151,19 @@ fn test_a_held_request_gets_the_failure() {
     assert_eq!(answer["error"]["data"]["reason"], "indexFailed");
     assert!(l.gate.waiting.is_empty(), "taken out of the waiting requests");
 }
+
+/// Review of 11a609ef: an index opened as its directory (`--index-path W/target/ridx`) is bound to that directory and
+/// records `W` as its workspace root; it answers for `W` after a later run failed.
+#[test]
+fn test_an_index_opened_as_its_directory_answers_for_its_workspace() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = ridx_format::canonicalize_best_effort(dir.path());
+    package(&root);
+    publish_index(&root);
+    let mut mr = MultiRootWorkspace::new();
+    assert!(mr.add_root(root.join("target/ridx")));
+    assert_eq!(mr.first_workspace().and_then(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort), Some(root.clone()));
+    let reindex = Reindexer::new();
+    reindex.fail_for_test(&root, "ridx index failed: a newer build failed");
+    assert!(index_failed(&references(&root, 1, None), &mr, &reindex).is_none(), "the index loaded answers");
+}

@@ -154,3 +154,35 @@ fn test_a_saved_file_goes_to_the_root_being_indexed() {
         assert_eq!(workspace_root_of(&mr, &r, &link.join("server/src/lib.rs")), Some(b.clone()), "one root through a symlink");
     }
 }
+
+/// Review of 11a609ef: `running` and the runs ended were read apart; a run ending between the reads closed the
+/// progress with its failure, and the next look found it in `ended` and showed it begun and ended a second time.
+#[test]
+fn test_a_run_is_reported_once_by_the_progress() {
+    let reindex = Reindexer::new();
+    let a = PathBuf::from("/w/a");
+    reindex.roots.lock().unwrap().insert(a.clone(), RootState { running_since: Some(SystemTime::now()), ..RootState::default() });
+    let failed = |r: &Path| reindex.status_of(r).1;
+    let mut progress = crate::lsp::index_progress::IndexProgress::default();
+    let mut out = Vec::new();
+    let next = || "r".to_string();
+    let (running, ended) = reindex.progress_snapshot();
+    assert_eq!((running.clone(), ended.clone()), (vec![a.clone()], vec![]));
+    progress.sync(&mut out, running, ended, next, failed).unwrap();
+    {
+        // The worker ends the run as `start` does: under the roots' lock.
+        let mut roots = reindex.roots.lock().unwrap();
+        let st = roots.get_mut(&a).unwrap();
+        st.last_error = Some("ridx index failed: no driver".into());
+        reindex.ended.lock().unwrap().push(a.clone());
+        st.running_since = None;
+    }
+    for _ in 0..2 {
+        let (running, ended) = reindex.progress_snapshot();
+        progress.sync(&mut out, running, ended, next, failed).unwrap();
+    }
+    let text = String::from_utf8_lossy(&out);
+    assert_eq!(text.matches("\"kind\":\"end\"").count(), 1, "{text}");
+    assert_eq!(text.matches("\"kind\":\"begin\"").count(), 1, "{text}");
+    assert!(text.contains("Indexing failed: a: ridx index failed: no driver"), "{text}");
+}

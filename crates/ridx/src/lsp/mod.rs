@@ -153,9 +153,9 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         if !finished.is_empty() {
             dispatch::load_finished_index(&mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &finished)?;
         }
-        let ended = lifecycle.reindex.take_ended();
+        let (running, ended) = lifecycle.reindex.progress_snapshot();
         if lifecycle.client_work_done_progress && !lifecycle.is_shutdown() {
-            index_progress.sync(&mut writer, lifecycle.reindex.running(), ended, || lifecycle.next_refresh_id(), |r| lifecycle.reindex.status_of(r).1)?;
+            index_progress.sync(&mut writer, running, ended, || lifecycle.next_refresh_id(), |r| lifecycle.reindex.status_of(r).1)?;
         }
         while let Ok((gen, diag)) = rx_diag.try_recv() {
             dispatch::dispatch_lsp_message(

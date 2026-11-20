@@ -68,11 +68,6 @@ impl Reindexer {
         std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
     }
 
-    /// The roots whose run ended since the last call, whatever its outcome.
-    pub fn take_ended(&self) -> Vec<PathBuf> {
-        std::mem::take(&mut *self.ended.lock().unwrap_or_else(|e| e.into_inner()))
-    }
-
     /// A workspace folder the client removed: it leaves the roots of the session, with a run's success not yet taken
     /// (review of 2045537b: it loaded the removed workspace again).
     pub fn forget(&self, root: &Path) {
@@ -100,7 +95,19 @@ impl Reindexer {
         roots.get(root).map_or((false, None), |st| (st.running_since.is_some(), st.last_error.clone()))
     }
 
+    /// The roots being indexed now and the runs that ended since the last call, read together: a worker ends a run
+    /// (`running_since` cleared, the run in `ended`) under the same lock, so a run is in one of them only once (review of
+    /// 11a609ef: read apart, an end between the reads closed the progress, and the next look reported it again).
+    pub fn progress_snapshot(&self) -> (Vec<PathBuf>, Vec<PathBuf>) {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        let ended = std::mem::take(&mut *self.ended.lock().unwrap_or_else(|e| e.into_inner()));
+        let mut running: Vec<PathBuf> = roots.iter().filter(|(_, st)| st.running_since.is_some()).map(|(r, _)| r.clone()).collect();
+        running.sort();
+        (running, ended)
+    }
+
     /// The roots being indexed now, for the client's progress.
+    #[cfg(test)]
     pub fn running(&self) -> Vec<PathBuf> {
         let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         let mut running: Vec<PathBuf> = roots.iter().filter(|(_, st)| st.running_since.is_some()).map(|(r, _)| r.clone()).collect();

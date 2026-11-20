@@ -218,7 +218,7 @@ cargo test --workspace
 ## 인용
 
 연구나 문서에서 ridx를 사용한다면 Zenodo에 보관된 릴리스를 인용해 주세요:
-프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.9은 [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924).
+프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.9는 [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924).
 [`CITATION.cff`](../CITATION.cff)에 GitHub의 "Cite this repository"가 사용하는 메타데이터가 있습니다.
 
 ```bibtex

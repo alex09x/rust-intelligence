@@ -206,7 +206,10 @@ fn index_failed(msg: &Value, mr: &super::MultiRootWorkspace, reindex: &super::re
         return None;
     }
     let file = ridx_format::canonicalize_best_effort(Path::new(&super::protocol::uri_to_path(msg["params"]["textDocument"]["uri"].as_str()?)));
-    let loaded: Vec<PathBuf> = mr.roots().map(Path::to_path_buf).collect();
+    // The root an index is bound to, and the workspace root it records: one opened as `W/target/ridx` is bound to
+    // that directory and answers for `W` (review of 11a609ef).
+    let recorded = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).map(ridx_format::canonicalize_best_effort);
+    let loaded: Vec<PathBuf> = mr.roots().map(Path::to_path_buf).chain(recorded).collect();
     let root = loaded.iter().cloned().chain(reindex.roots()).filter(|r| file.starts_with(r)).max_by_key(|r| r.as_os_str().len())?;
     if loaded.contains(&root) {
         return None;
