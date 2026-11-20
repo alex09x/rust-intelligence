@@ -173,31 +173,39 @@ impl WorkspaceIndex {
         };
     }
 
-    /// The hash the sidecar of reader `idx` recorded for the file `key` (as the reader names it; `query` as asked) that
-    /// has no entry in its shard, unless the unit only read the file through a dependency: the sidecar loaded with the
-    /// reader lists its own sources (`own_sources`) and the file is not among them. Both come from the same bytes,
-    /// kept in memory: a sidecar rewritten on disk since never changes the answer (review of 2f7a84e3). A relative key
-    /// resolves against the reader's own root, as path routing does, else the workspace root. Without `own_sources`
-    /// the unit counts as holding the file: a doubt is a disagreement, never a coverage (review of 9f9c7bba).
-    fn sidecar_only_hash(&self, idx: usize, key: &str, query: &str) -> Option<u64> {
-        let hashes = self.reader_file_hashes.get(idx)?;
-        let mut candidates: Vec<PathBuf> = Vec::new();
-        for name in [key, query] {
-            let path = Path::new(name);
-            if path.is_absolute() {
-                candidates.push(path.to_path_buf());
-            } else {
-                candidates.extend(self.reader_root(idx).map(|r| r.join(path)));
-                candidates.extend(self.workspace_root.as_ref().map(|r| r.join(path)));
+    /// The names the sidecar of reader `idx` may record one file under: its path as given, its canonical path, and its
+    /// path relative to the reader's root (from the given and from the canonical spellings of both), with that relative
+    /// path joined back onto the root as the reader spells it. All of them name `file` only: never a union of
+    /// alternative resolutions, which may be other files (review of c94616ac).
+    fn names_of_one_file(&self, idx: usize, file: &Path) -> Vec<String> {
+        let canonical = crate::canonicalize_best_effort(file);
+        let mut names = vec![file.display().to_string(), canonical.display().to_string()];
+        if let Some(root) = self.reader_root(idx) {
+            let canonical_root = crate::canonicalize_best_effort(root);
+            for rel in [file.strip_prefix(root).ok(), canonical.strip_prefix(&canonical_root).ok()].into_iter().flatten() {
+                names.push(rel.display().to_string());
+                names.push(root.join(rel).display().to_string());
             }
         }
-        let mut names: Vec<String> = candidates.iter().flat_map(|c| [c.display().to_string(), crate::canonicalize_best_effort(c).display().to_string()]).collect();
-        // The sidecar names the reader's files relative to its root.
-        if let Some(root) = self.reader_root(idx) {
-            let relative: Vec<String> = candidates.iter().filter_map(|c| c.strip_prefix(root).ok()).map(|r| r.display().to_string()).collect();
-            names.extend(relative);
-        }
-        let h = std::iter::once(key).chain(names.iter().map(String::as_str)).find_map(|n| hashes.get(n)).copied().filter(|&h| h != 0)?;
+        names.dedup();
+        names
+    }
+
+    /// The hash the sidecar of reader `idx` recorded for the file `key` that has no entry in its shard, unless the unit
+    /// only read the file through a dependency: the sidecar loaded with the reader lists its own sources
+    /// (`own_sources`) and the file is not among them. Both come from the same bytes, kept in memory: a sidecar
+    /// rewritten on disk since never changes the answer (review of 2f7a84e3). `key` names one file: a relative key
+    /// path routing returned for the reader (`routed`) is the reader's, resolved against its root; a relative query
+    /// nothing routed is the workspace's. Without `own_sources` the unit counts as holding the file: a doubt is a
+    /// disagreement, never a coverage (review of 9f9c7bba).
+    fn sidecar_only_hash(&self, idx: usize, key: &str, routed: bool) -> Option<u64> {
+        let hashes = self.reader_file_hashes.get(idx)?;
+        let path = Path::new(key);
+        let (first, second) = (self.reader_root(idx), self.workspace_root.as_deref());
+        let base = if routed { first.or(second) } else { second.or(first) };
+        let file = if path.is_absolute() { path.to_path_buf() } else { base.map_or_else(|| path.to_path_buf(), |b| b.join(path)) };
+        let names = self.names_of_one_file(idx, &file);
+        let h = names.iter().find_map(|n| hashes.get(n.as_str())).copied().filter(|&h| h != 0)?;
         let not_own = self.paths.get(idx).and_then(|p| self.own_sources.get(p)).is_some_and(|own| !names.iter().any(|n| own.contains(n)));
         (!not_own).then_some(h)
     }
@@ -219,8 +227,8 @@ impl WorkspaceIndex {
             let key = target.as_deref().unwrap_or(file_path);
             let reader = &self.readers[idx];
             let h = match reader.find_file_id(key) {
-                Some(fid) => Some(reader.file_source_hash(fid)).filter(|&h| h != 0).or_else(|| self.sidecar_only_hash(idx, key, file_path)),
-                None => self.sidecar_only_hash(idx, key, file_path),
+                Some(fid) => Some(reader.file_source_hash(fid)).filter(|&h| h != 0).or_else(|| self.sidecar_only_hash(idx, key, target.is_some())),
+                None => self.sidecar_only_hash(idx, key, target.is_some()),
             };
             match (h, seen) {
                 (Some(h), Some(s)) if h != s => return false,
