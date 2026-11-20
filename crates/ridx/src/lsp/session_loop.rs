@@ -49,8 +49,11 @@ pub(crate) fn step(session: &SessionIndexer, finished: &[PathBuf], mr: &mut supe
         super::rebase_open_buffers(ws, ov);
         // The texts it compiled are its base, whatever the buffers hold now: one edited further during the build maps
         // through those edits (review of ca0c1ec7: the base stayed the saved text, under an index of the edited one).
+        // Only a text the index records as compiled: a buffer whose crate stopped before analysis (a parse error) kept
+        // the shard before, and its text stays uncompiled (review of 11310378: it read as covered).
         for b in &built.buffers {
-            if ov.get(&b.key).is_some() {
+            let compiled = ws.source_hash_for_file(&b.key) == Some(ridx_format::normalized_source_hash(b.text.as_bytes()));
+            if compiled && ov.get(&b.key).is_some() {
                 ov.advance_compiled_baseline(&b.key, b.text.clone());
             }
         }

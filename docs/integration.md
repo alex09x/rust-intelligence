@@ -62,6 +62,9 @@ index loads (a save, or `ridx index` run by anyone), or until no buffer is edite
 closed); then the published index answers again. Between an edit and that index, answers come from the
 previous one, mapped through the edit; a tool that must not get such an answer asks with `minVersion` (§7).
 Crates that depend on an edited one without being edited keep their saved-text index until the save.
+A buffer whose crate the compiler cannot parse keeps the previous index of that crate and stays uncovered
+(`coveredVersion` does not move, `minVersion` times out) until a text that parses is compiled. While a run
+of `ridx index` holds the published index, no session index is built; the next one starts when it ends.
 `RIDX_SESSION_INDEX=0` turns it off.
 
 Measured from `didChange` to `references` that include the edit (Linux x86_64 build node, release build,

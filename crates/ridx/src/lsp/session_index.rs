@@ -97,8 +97,9 @@ impl SessionIndexer {
             }
             st.changed_at = None;
             if buffers.is_empty() {
-                if st.current.is_some() || st.building {
-                    st.epoch += 1;
+                // Also a build done but not loaded yet is of a text nobody edits any more (review of 11310378).
+                st.epoch += 1;
+                if st.current.is_some() {
                     retire.push(root.clone());
                 }
                 continue;
@@ -126,6 +127,10 @@ impl SessionIndexer {
                 crate::lsp::logger::log_info(&msg);
                 if let Some(st) = roots.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&root) {
                     st.building = false;
+                    // A run of `ridx index` held the published index: tried again once the buffers are quiet again.
+                    if result.as_ref().is_err_and(|e| e == crate::indexer::session::BUSY) {
+                        st.changed_at.get_or_insert_with(Instant::now);
+                    }
                 }
                 match result {
                     Ok(dir) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir, buffers, stamp, epoch }),

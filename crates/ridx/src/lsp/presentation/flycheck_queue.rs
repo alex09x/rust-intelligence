@@ -14,6 +14,9 @@
 //! included (review of ca0c1ec7: a save in one root during the check on start dropped the other roots).
 
 use super::{run_check_internal, FlycheckState};
+
+/// The key the worker adds to each notification it hands to the server: the root it checked.
+pub(super) const ROOT_KEY: &str = "ridxRoot";
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -44,13 +47,16 @@ impl FlycheckState {
         let notifier = Arc::clone(&self.notifier);
         let generation = Arc::clone(&self.generation);
         let queue = Arc::clone(&self.queue);
+        let root_generation = Arc::clone(&self.root_generation);
 
         let handle = std::thread::Builder::new().name("flycheck-worker".into()).spawn(move || loop {
             if generation.load(Ordering::SeqCst) != my_gen {
                 break;
             }
             let Some(root) = queue.lock().unwrap_or_else(|e| e.into_inner()).first().cloned() else { break };
-            let _ = run_check_internal(&root, my_gen, &generation, &running_child, &published_uris, &latest_diagnostics, |gen, notif| {
+            root_generation.lock().unwrap_or_else(|e| e.into_inner()).insert(root.clone(), my_gen);
+            let _ = run_check_internal(&root, my_gen, &generation, &running_child, &published_uris, &latest_diagnostics, |gen, mut notif| {
+                notif[ROOT_KEY] = root.display().to_string().into();
                 if let Some(ref cb) = *notifier.lock().unwrap() {
                     cb(gen, notif);
                 }
@@ -68,5 +74,28 @@ impl FlycheckState {
             let mut guard = self.worker_handle.lock().unwrap();
             *guard = Some(h);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// Review of 11310378: root A's finished results were dropped when a check of root B started before the server
+    /// took them.
+    #[test]
+    fn test_a_result_is_stale_only_after_a_newer_check_of_its_root() {
+        let state = FlycheckState::new();
+        let (a, b) = (Path::new("/w/a"), Path::new("/w/b"));
+        let gen_a = state.current_generation();
+        state.root_generation.lock().unwrap().insert(a.to_path_buf(), gen_a);
+        let result_a = json!({ (ROOT_KEY): a.display().to_string() });
+        state.cancel(); // a check of B is requested
+        state.root_generation.lock().unwrap().insert(b.to_path_buf(), state.current_generation());
+        assert!(state.is_current(gen_a, &result_a), "B's check leaves A's result current");
+        assert!(!state.is_current(gen_a, &json!({})), "a result without a root follows the global generation");
+        state.root_generation.lock().unwrap().insert(a.to_path_buf(), state.current_generation());
+        assert!(!state.is_current(gen_a, &result_a), "a newer check of A makes it stale");
     }
 }

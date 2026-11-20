@@ -33,14 +33,30 @@ impl Unit {
         !self.args.iter().any(|a| a == "--test") && crate_types(&self.args).iter().all(|t| matches!(t.as_str(), "lib" | "rlib" | "dylib" | "proc-macro"))
     }
 
-    /// The crate names of its `--extern` arguments.
-    pub(super) fn externs(&self) -> Vec<String> {
+    /// The name of the metadata file it writes, without extension: `lib<crate>` and its `-C extra-filename`.
+    pub(super) fn artifact_stem(&self) -> String {
+        let mut extra = "";
+        let mut args = self.args.iter();
+        while let Some(a) = args.next() {
+            let opt = if a == "-C" { args.next().map(String::as_str) } else { a.strip_prefix("-C") };
+            if let Some(e) = opt.and_then(|o| o.strip_prefix("extra-filename=")) {
+                extra = e;
+            }
+        }
+        format!("lib{}{extra}", self.name)
+    }
+
+    /// Its `--extern` arguments: the name it binds (as `rewrite_extern_arg` reads it) and the stem of the file bound.
+    pub(super) fn extern_edges(&self) -> Vec<(String, String)> {
         let mut out = Vec::new();
         let mut args = self.args.iter();
         while let Some(a) = args.next() {
             let spec = if a == "--extern" { args.next().map(String::as_str) } else { a.strip_prefix("--extern=") };
-            if let Some(name) = spec.map(|s| s.split('=').next().unwrap_or(s)) {
-                out.push(name.to_string());
+            if let Some((prefix, path)) = spec.and_then(|s| s.split_once('=')) {
+                let binding = prefix.rsplit(':').next().unwrap_or(prefix).to_string();
+                if let Some(stem) = Path::new(path).file_stem() {
+                    out.push((binding, stem.to_string_lossy().into_owned()));
+                }
             }
         }
         out

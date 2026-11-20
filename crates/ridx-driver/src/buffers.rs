@@ -15,7 +15,7 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
 use rustc_span::source_map::{FileLoader, RealFileLoader};
@@ -53,27 +53,28 @@ fn canonical(path: &Path) -> PathBuf {
     if let Ok(c) = absolute.canonicalize() {
         return c;
     }
-    // Not on disk: the existing directory above it canonical, the rest without `.` and `..`.
-    let mut rest = Vec::new();
-    let mut dir = absolute.as_path();
-    while let Some(parent) = dir.parent() {
-        rest.push(dir.file_name().map(|n| n.to_os_string()));
-        if let Ok(c) = parent.canonicalize() {
-            let mut out = c;
-            for part in rest.into_iter().rev() {
-                match part {
-                    Some(name) if name == ".." => {
-                        out.pop();
+    // Not on disk: component by component, canonical (symbolic links resolved) as long as the path exists, then without
+    // `.` and with `..` taking the component before (review of 11310378: `missing/../new.rs` lost its `..`).
+    let mut out = PathBuf::new();
+    let mut on_disk = true;
+    for component in absolute.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                out.pop();
+            }
+            other => {
+                out.push(other);
+                if on_disk {
+                    match out.canonicalize() {
+                        Ok(c) => out = c,
+                        Err(_) => on_disk = false,
                     }
-                    Some(name) if name != "." => out.push(name),
-                    _ => {}
                 }
             }
-            return out;
         }
-        dir = parent;
     }
-    absolute
+    out
 }
 
 impl FileLoader for BufferLoader {
@@ -115,6 +116,7 @@ mod tests {
         assert!(loader.file_exists(&relative), "a typed, unsaved file asked for relative to the working directory");
         assert_eq!(loader.read_file(&relative).unwrap(), "pub fn new() {}\n");
         assert!(!loader.file_exists(&dir.join("src/other.rs")));
+        assert!(loader.file_exists(&dir.join("missing/../src/new.rs")), "a `..` after a directory that does not exist");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

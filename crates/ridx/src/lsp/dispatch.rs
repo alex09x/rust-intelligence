@@ -111,7 +111,7 @@ pub fn dispatch_lsp_message<W: Write>(
 ) -> io::Result<bool> {
     let mut msg = match lsp_msg.into() {
         super::protocol::LspMessage::InternalDiagnostic(gen, diag) => {
-            if lifecycle.state() != ServerState::ShutDown && gen == lifecycle.flycheck.current_generation() {
+            if lifecycle.state() != ServerState::ShutDown && lifecycle.flycheck.is_current(gen, &diag) {
                 super::presentation::reconcile::handle_internal_diagnostic(&diag, lifecycle, ov, writer)?;
             }
             return Ok(true);

@@ -36,14 +36,20 @@ pub(crate) fn is_immutable_package_with_home(manifest_dir: &Path, cargo_home: Op
 /// not those imported from its dependencies' metadata, which `file_hashes` records too. A session index compiles a
 /// buffer in the units listing it here (review of ca0c1ec7: a file included by `#[path]` from another package).
 pub(crate) fn own_source_files(tcx: TyCtxt<'_>) -> Vec<String> {
-    let source_map = tcx.sess.source_map();
-    let mut own: Vec<String> = source_map
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let mut own: Vec<String> = tcx
+        .sess
+        .source_map()
         .files()
         .iter()
         .filter(|f| f.cnum == rustc_span::def_id::LOCAL_CRATE)
-        .map(|f| source_map.filename_for_diagnostics(&f.name).to_string())
-        .filter(|name| !name.starts_with('<'))
-        .map(|name| Path::new(&name).canonicalize().map_or(name, |p| p.display().to_string()))
+        // The file's path on this machine, not its name for diagnostics, which `--remap-path-prefix` rewrites (review
+        // of 11310378: `/virtual-source/lib.rs` recorded instead of the checkout's file).
+        .filter_map(|f| match &f.name {
+            rustc_span::FileName::Real(real) => real.local_path().map(|p| cwd.join(p)),
+            _ => None,
+        })
+        .map(|p| p.canonicalize().unwrap_or(p).display().to_string())
         .collect();
     own.sort();
     own.dedup();

@@ -58,6 +58,9 @@ pub struct FlycheckState {
     checked_sources: Arc<Mutex<HashMap<PathBuf, (u64, bool)>>>,
     /// The roots still to check, the one being checked first (see `queue`).
     queue: Arc<Mutex<Vec<PathBuf>>>,
+    /// The generation of the last check started per root: a result is stale only when a newer check of its own root
+    /// started (see `is_current`).
+    root_generation: Arc<Mutex<HashMap<PathBuf, u64>>>,
 }
 
 #[path = "flycheck_queue.rs"]
@@ -75,6 +78,7 @@ impl Default for FlycheckState {
             notifier: Arc::new(Mutex::new(None)),
             checked_sources: Arc::default(),
             queue: Arc::default(),
+            root_generation: Arc::default(),
         }
     }
 }
@@ -112,6 +116,16 @@ impl FlycheckState {
 
     pub fn current_generation(&self) -> u64 {
         self.generation.load(Ordering::SeqCst)
+    }
+
+    /// Whether diagnostics of generation `gen` are still to publish: those of a root (`ridxRoot`, set by the worker)
+    /// until a newer check of that same root starts, others while no newer check of any root did. A check requested
+    /// for another root no longer drops a root's finished results (review of 11310378).
+    pub fn is_current(&self, gen: u64, diag: &Value) -> bool {
+        match diag.get(queue::ROOT_KEY).and_then(Value::as_str) {
+            Some(root) => self.root_generation.lock().unwrap_or_else(|e| e.into_inner()).get(Path::new(root)).is_none_or(|&g| g == gen),
+            None => gen == self.current_generation(),
+        }
     }
 
     pub fn get_latest_diagnostics(&self, uri: &str) -> Vec<Value> {

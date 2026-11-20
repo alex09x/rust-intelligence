@@ -39,6 +39,13 @@ fn published_variant(manifest: &[u8]) -> Result<String, String> {
 
 fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buffers: &[(PathBuf, String)]) -> Result<PathBuf, String> {
     let base = root.join("target/ridx");
+    // The published index is taken under its lock, released before compiling: a run of `ridx index` replaces shards
+    // and sidecars in the variant before it publishes the manifest, so without the lock the copy could mix two of its
+    // generations (review of 11310378). While a run holds it, no session is built (`BUSY`); the run's end reschedules.
+    let lock = fs::OpenOptions::new().create(true).truncate(false).write(true).open(base.join(".index.lock")).map_err(|_| "no published index".to_string())?;
+    if let Err(fs::TryLockError::WouldBlock) = lock.try_lock() {
+        return Err(BUSY.into());
+    }
     // One read of the manifest: the variant chosen and the manifest the session keeps are of the same publication.
     let manifest = fs::read(base.join("ridx_manifest.json")).map_err(|_| "no published index".to_string())?;
     let variant_rel = published_variant(&manifest)?;
@@ -52,6 +59,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     link_files(&published, &variant)?;
     link_files(&published.join(".deps"), &variant.join(".deps"))?;
     fs::write(session_dir.join("ridx_manifest.json"), &manifest).map_err(|e| format!("manifest: {e}"))?;
+    drop(lock);
 
     // The buffers' text, and the list the driver reads.
     let texts = session_dir.join("buffers");
@@ -76,14 +84,15 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
 
     // Compiled in waves, each unit once the edited libraries it uses are done, side by side within a wave (a file of
     // `ridx-format` is in its library, 1.7 s, and in its unit tests, 2.5 s). A unit reads the session's metadata of an
-    // edited library that produced one, else the saved one (review of ca0c1ec7: a buffer's new API used from another
-    // edited crate was compiled against the saved library).
-    let libs: HashSet<&str> = units.iter().filter(|u| u.is_lib()).map(|u| u.name.as_str()).collect();
-    let mut fresh_libs: HashSet<String> = HashSet::new();
-    let mut settled: HashSet<&str> = HashSet::new();
+    // edited library that wrote it, else the saved one (review of ca0c1ec7: a buffer's new API used from another edited
+    // crate was compiled against the saved library). Producer and consumer are matched by the metadata file itself
+    // (`libname-<extra>`), whatever name the consumer binds it to (review of 11310378: a renamed dependency).
+    let libs: HashSet<String> = units.iter().filter(|u| u.is_lib()).map(|u| u.artifact_stem()).collect();
+    let mut fresh: HashSet<String> = HashSet::new();
+    let mut settled: HashSet<String> = HashSet::new();
     let mut pending: Vec<&super::session_units::Unit> = units.iter().collect();
     while !pending.is_empty() {
-        let ready = |u: &&super::session_units::Unit| u.externs().iter().all(|e| !libs.contains(e.as_str()) || e == &u.name || settled.contains(e.as_str()));
+        let ready = |u: &&super::session_units::Unit| u.extern_edges().iter().all(|(_, stem)| !libs.contains(stem) || *stem == u.artifact_stem() || settled.contains(stem));
         let (mut wave, rest): (Vec<_>, Vec<_>) = pending.into_iter().partition(ready);
         if wave.is_empty() {
             // A cycle cannot come from Cargo; compile the rest against what there is rather than not at all.
@@ -92,19 +101,29 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
         } else {
             pending = rest;
         }
-        let running = wave.iter().map(|u| compile(&ctx, u, &fresh_libs)).collect::<Result<Vec<_>, _>>()?;
+        let running = wave
+            .iter()
+            .map(|u| {
+                let rebound: HashSet<String> = u.extern_edges().into_iter().filter(|(_, stem)| fresh.contains(stem)).map(|(binding, _)| binding).collect();
+                compile(&ctx, u, &rebound)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         for (unit, staged) in wave.iter().zip(running) {
             staged.finish(unit);
             if unit.is_lib() {
-                settled.insert(unit.name.as_str());
-                if ctx.wrote_metadata(&unit.name) {
-                    fresh_libs.insert(unit.name.clone());
+                let stem = unit.artifact_stem();
+                if ctx.deps.join(format!("{stem}.rmeta")).is_file() {
+                    fresh.insert(stem.clone());
                 }
+                settled.insert(stem);
             }
         }
     }
     Ok(session_dir.to_path_buf())
 }
+
+/// The error of a session that waits for a run of `ridx index` holding the index's lock.
+pub const BUSY: &str = "the published index is being rebuilt";
 
 struct Ctx<'a> {
     driver: &'a Path,
@@ -113,18 +132,6 @@ struct Ctx<'a> {
     list_file: &'a Path,
     deps: PathBuf,
     incr: PathBuf,
-}
-
-impl Ctx<'_> {
-    /// Whether this session's compile of the library `name` wrote its metadata (rustc writes none for a crate that
-    /// stopped on errors).
-    fn wrote_metadata(&self, name: &str) -> bool {
-        let prefix = format!("lib{name}");
-        fs::read_dir(&self.deps).into_iter().flatten().flatten().any(|e| {
-            let f = e.file_name().to_string_lossy().into_owned();
-            f.ends_with(".rmeta") && (f == format!("{prefix}.rmeta") || f.starts_with(&format!("{prefix}-")))
-        })
-    }
 }
 
 /// A unit's compile in flight, and the published shard it set aside.
@@ -154,13 +161,13 @@ impl Staged {
     }
 }
 
-fn compile(ctx: &Ctx, unit: &super::session_units::Unit, fresh_libs: &HashSet<String>) -> Result<Staged, String> {
+/// Starts the compile of `unit`, its `--extern` bindings in `rebound` reading the session's metadata.
+fn compile(ctx: &Ctx, unit: &super::session_units::Unit, rebound: &HashSet<String>) -> Result<Staged, String> {
     // The link to the published shard is set aside first, so that the driver writes the session's own in its place
     // and never into the published one.
     let shard = unit.object.as_ref().and_then(|o| o.file_name()).map(|name| ctx.variant.join(name));
     let backup = shard.as_ref().map(|s| s.with_extension("ridx.published")).filter(|b| shard.as_ref().is_some_and(|s| fs::rename(s, b).is_ok()));
-    let recompiled: HashSet<String> = fresh_libs.iter().flat_map(|n| [n.clone(), n.replace('-', "_")]).collect();
-    let args = sanitize_compiler_args_for_direct(&unit.args, &ctx.deps, &ctx.incr, &recompiled);
+    let args = sanitize_compiler_args_for_direct(&unit.args, &ctx.deps, &ctx.incr, rebound);
     let mut cmd = Command::new(ctx.driver);
     cmd.args(&args).current_dir(ctx.root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
     // The environment the unit was built with first, then the session's own over it: a recorded `RIDX_OUT_DIR` (a
