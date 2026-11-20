@@ -7,7 +7,7 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 Verified by the workspace test suite and by the editor configurations in the README run against the release binary: Neovim (definition, hover, completion) and Helix (`hx --health rust` and an LSP session opened on a workspace member). The per-method agreement suite was not re-run for this release. The index format is unchanged.
 
 ### Added
-- **Signed and notarized macOS binaries**: `ridx` and `ridx-driver` for Apple Silicon are signed with a Developer ID, run under the hardened runtime and are notarized by Apple, so Gatekeeper accepts them. The release stops instead of shipping an unsigned build when signing or notarization fails.
+- **Signed and notarized macOS binaries**: `ridx` and `ridx-driver` for Apple Silicon are signed with a Developer ID, run under the hardened runtime and are notarized by Apple. The release stops instead of shipping an unsigned build when signing or notarization fails. An archive downloaded with a browser needs `xattr -dr com.apple.quarantine` before the first run: Gatekeeper refuses a quarantined `ridx-driver`, which loads `librustc_driver` from the local rustup toolchain. The installer does not quarantine its download.
 - **Helix**: [`docs/editors/helix-languages.toml`](docs/editors/helix-languages.toml) declares the `ridx` language server and selects it for Rust.
 - **Documentation**: how the index works and an architecture diagram, in the README and on the site.
 
