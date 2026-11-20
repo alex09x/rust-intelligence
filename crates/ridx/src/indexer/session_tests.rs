@@ -43,8 +43,10 @@ fn published(root: &Path, units: &[UnitSpec], variant_dir: &str) {
         let mut args = vec!["rustc".to_string(), "--crate-name".into(), u.name.into(), "--edition=2021".into(), src.display().to_string()];
         for e in u.externs {
             // `binding=crate` binds a crate under another name, as Cargo does for a renamed dependency.
+            // `binding=crate.so`: bound to a dylib, as a proc macro is.
             let (binding, krate) = e.split_once('=').unwrap_or((e, e));
-            args.extend(["--extern".to_string(), format!("{binding}={}", root.join(format!("target/ridx_cargo/lib{krate}.rmeta")).display())]);
+            let file = if krate.contains('.') { format!("lib{krate}") } else { format!("lib{krate}.rmeta") };
+            args.extend(["--extern".to_string(), format!("{binding}={}", root.join("target/ridx_cargo").join(file).display())]);
         }
         let mut env = serde_json::json!({ "CARGO_CRATE_NAME": u.name, "CARGO_PKG_NAME": u.package, "CARGO_MANIFEST_DIR": root.join(u.package).display().to_string() });
         for (k, v) in u.extra_env {
@@ -184,4 +186,21 @@ fn test_a_renamed_dependency_reads_the_session_metadata() {
     let fresh = session.join("direct/deps/liba.rmeta").display().to_string();
     let b_line = calls.lines().find(|l| l.starts_with("b ")).unwrap_or_default();
     assert!(b_line.contains(&format!("renamed={fresh}")), "{calls}");
+}
+
+/// Review of a21afbc0: a proc macro is bound as a dylib, which a session (metadata only) never writes; its consumer
+/// was rebound to a session file that does not exist.
+#[test]
+fn test_a_proc_macro_consumer_keeps_the_saved_dylib() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let a = UnitSpec { own: Some(&["a/src/lib.rs"]), ..A };
+    let b = UnitSpec { own: Some(&["b/src/lib.rs", "a/src/lib.rs"]), externs: &["a=a.so"], ..B };
+    published(&root, &[a, b], VARIANT);
+    let session = root.join("target/ridx/sessions/1-1");
+    build_session_index_with(&driver(&root, "d", ""), &root, &session, &[(root.join("a/src/lib.rs"), "x".into())]).unwrap();
+    let calls = read(session.join(VARIANT).join("calls"));
+    let saved = root.join("target/ridx_cargo/liba.so").display().to_string();
+    let b_line = calls.lines().find(|l| l.starts_with("b ")).unwrap_or_default();
+    assert!(b_line.contains(&format!("a={saved}")), "{calls}");
 }

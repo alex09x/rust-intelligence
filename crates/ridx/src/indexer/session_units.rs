@@ -46,16 +46,18 @@ impl Unit {
         format!("lib{}{extra}", self.name)
     }
 
-    /// Its `--extern` arguments: the name it binds (as `rewrite_extern_arg` reads it) and the stem of the file bound.
-    pub(super) fn extern_edges(&self) -> Vec<(String, String)> {
+    /// Its `--extern` arguments: the name it binds (as `rewrite_extern_arg` reads it), the stem of the file bound, and
+    /// that file's name.
+    pub(super) fn extern_edges(&self) -> Vec<(String, String, String)> {
         let mut out = Vec::new();
         let mut args = self.args.iter();
         while let Some(a) = args.next() {
             let spec = if a == "--extern" { args.next().map(String::as_str) } else { a.strip_prefix("--extern=") };
             if let Some((prefix, path)) = spec.and_then(|s| s.split_once('=')) {
                 let binding = prefix.rsplit(':').next().unwrap_or(prefix).to_string();
-                if let Some(stem) = Path::new(path).file_stem() {
-                    out.push((binding, stem.to_string_lossy().into_owned()));
+                let file = Path::new(path);
+                if let (Some(stem), Some(name)) = (file.file_stem(), file.file_name()) {
+                    out.push((binding, stem.to_string_lossy().into_owned(), name.to_string_lossy().into_owned()));
                 }
             }
         }

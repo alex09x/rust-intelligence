@@ -43,8 +43,11 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     // and sidecars in the variant before it publishes the manifest, so without the lock the copy could mix two of its
     // generations (review of 11310378). While a run holds it, no session is built (`BUSY`); the run's end reschedules.
     let lock = fs::OpenOptions::new().create(true).truncate(false).write(true).open(base.join(".index.lock")).map_err(|_| "no published index".to_string())?;
-    if let Err(fs::TryLockError::WouldBlock) = lock.try_lock() {
-        return Err(BUSY.into());
+    match lock.try_lock() {
+        Ok(()) => {}
+        Err(fs::TryLockError::WouldBlock) => return Err(BUSY.into()),
+        // No lock, no copy (review of a21afbc0: a file system without locks copied without one).
+        Err(fs::TryLockError::Error(e)) => return Err(format!("cannot lock {}: {e}", base.join(".index.lock").display())),
     }
     // One read of the manifest: the variant chosen and the manifest the session keeps are of the same publication.
     let manifest = fs::read(base.join("ridx_manifest.json")).map_err(|_| "no published index".to_string())?;
@@ -92,7 +95,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     let mut settled: HashSet<String> = HashSet::new();
     let mut pending: Vec<&super::session_units::Unit> = units.iter().collect();
     while !pending.is_empty() {
-        let ready = |u: &&super::session_units::Unit| u.extern_edges().iter().all(|(_, stem)| !libs.contains(stem) || *stem == u.artifact_stem() || settled.contains(stem));
+        let ready = |u: &&super::session_units::Unit| u.extern_edges().iter().all(|(_, stem, _)| !libs.contains(stem) || *stem == u.artifact_stem() || settled.contains(stem));
         let (mut wave, rest): (Vec<_>, Vec<_>) = pending.into_iter().partition(ready);
         if wave.is_empty() {
             // A cycle cannot come from Cargo; compile the rest against what there is rather than not at all.
@@ -104,7 +107,10 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
         let running = wave
             .iter()
             .map(|u| {
-                let rebound: HashSet<String> = u.extern_edges().into_iter().filter(|(_, stem)| fresh.contains(stem)).map(|(binding, _)| binding).collect();
+                // Only to a file of the session that replaces the one bound, of its kind: a proc macro is bound as a
+                // dylib the session (metadata only) never writes (review of a21afbc0).
+                let replaced = |file: &str| ctx.deps.join(file.strip_suffix(".rlib").map_or_else(|| file.to_string(), |s| format!("{s}.rmeta"))).is_file();
+                let rebound: HashSet<String> = u.extern_edges().into_iter().filter(|(_, stem, file)| fresh.contains(stem) && replaced(file)).map(|(binding, ..)| binding).collect();
                 compile(&ctx, u, &rebound)
             })
             .collect::<Result<Vec<_>, _>>()?;

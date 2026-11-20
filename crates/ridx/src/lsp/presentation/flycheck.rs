@@ -341,6 +341,9 @@ where
             return Ok(0);
         }
         current_uris.insert(uri.clone());
+        // Known as published before it goes out: a check cancelled halfway leaves it to the next one to clear (review
+        // of 11310378: a warning of a cancelled batch stayed for good).
+        published_guard.entry(workspace_root.to_path_buf()).or_default().insert(uri.clone());
         let notif = json!({
             "jsonrpc": "2.0",
             "method": "textDocument/publishDiagnostics",

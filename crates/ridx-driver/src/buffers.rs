@@ -53,22 +53,26 @@ fn canonical(path: &Path) -> PathBuf {
     if let Ok(c) = absolute.canonicalize() {
         return c;
     }
-    // Not on disk: component by component, canonical (symbolic links resolved) as long as the path exists, then without
-    // `.` and with `..` taking the component before (review of 11310378: `missing/../new.rs` lost its `..`).
+    // Not on disk: component by component. Over an existing prefix each step is canonical (a symbolic link resolved
+    // before a `..` applies to it, as the system does); components that do not exist are counted, a `..` takes one
+    // back, and once none is left the path is on disk again and resolved again (reviews of 11310378 and a21afbc0).
     let mut out = PathBuf::new();
-    let mut on_disk = true;
+    let mut missing = 0usize;
     for component in absolute.components() {
         match component {
             Component::CurDir => {}
             Component::ParentDir => {
                 out.pop();
+                missing = missing.saturating_sub(1);
             }
             other => {
                 out.push(other);
-                if on_disk {
+                if missing > 0 {
+                    missing += 1;
+                } else {
                     match out.canonicalize() {
                         Ok(c) => out = c,
-                        Err(_) => on_disk = false,
+                        Err(_) => missing = 1,
                     }
                 }
             }
@@ -117,6 +121,23 @@ mod tests {
         assert_eq!(loader.read_file(&relative).unwrap(), "pub fn new() {}\n");
         assert!(!loader.file_exists(&dir.join("src/other.rs")));
         assert!(loader.file_exists(&dir.join("missing/../src/new.rs")), "a `..` after a directory that does not exist");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Review of a21afbc0: back on disk after a `..`, a symbolic link is resolved again before the next `..`.
+    #[cfg(unix)]
+    #[test]
+    fn test_a_link_after_a_missing_directory_is_followed() {
+        let dir = std::env::temp_dir().join(format!("ridx_buffers_link_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("workspace")).unwrap();
+        std::fs::create_dir_all(dir.join("external/nested")).unwrap();
+        std::os::unix::fs::symlink(dir.join("external/nested"), dir.join("workspace/shortcut")).unwrap();
+        let (local, external) = (dir.join("local.txt"), dir.join("external.txt"));
+        std::fs::write(&local, "LOCAL").unwrap();
+        std::fs::write(&external, "EXTERNAL").unwrap();
+        let loader = BufferLoader::new([(dir.join("workspace/new.rs"), local), (dir.join("external/new.rs"), external)]);
+        assert_eq!(loader.read_file(&dir.join("workspace/missing/../shortcut/../new.rs")).unwrap(), "EXTERNAL");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

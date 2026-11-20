@@ -54,7 +54,16 @@ impl FlycheckState {
                 break;
             }
             let Some(root) = queue.lock().unwrap_or_else(|e| e.into_inner()).first().cloned() else { break };
-            root_generation.lock().unwrap_or_else(|e| e.into_inner()).insert(root.clone(), my_gen);
+            {
+                // A worker cancelled since it took the root stops before registering, and a root's generation only
+                // grows: an old worker never makes a newer check's results stale (review of a21afbc0).
+                let mut gens = root_generation.lock().unwrap_or_else(|e| e.into_inner());
+                if generation.load(Ordering::SeqCst) != my_gen {
+                    break;
+                }
+                let g = gens.entry(root.clone()).or_insert(my_gen);
+                *g = (*g).max(my_gen);
+            }
             let _ = run_check_internal(&root, my_gen, &generation, &running_child, &published_uris, &latest_diagnostics, |gen, mut notif| {
                 notif[ROOT_KEY] = root.display().to_string().into();
                 if let Some(ref cb) = *notifier.lock().unwrap() {
