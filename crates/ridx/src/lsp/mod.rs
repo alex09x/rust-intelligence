@@ -18,6 +18,7 @@ pub mod dispatch;
 pub mod editing;
 pub mod error;
 mod fresh;
+mod fresh_loop;
 pub mod handlers;
 pub mod hierarchy;
 mod index_progress;
@@ -166,7 +167,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         }
 
         // Requests waiting for an index that covers their document (`minVersion`): the ones covered now go first.
-        released.extend(fresh::release_waiting(&mut waiting, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled_requests)?);
+        released.extend(fresh_loop::release_waiting(&mut waiting, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled_requests)?);
         let next = match released.pop_front() {
             Some(msg) => Ok(msg),
             None => rx.recv_timeout(std::time::Duration::from_millis(20)),
@@ -174,7 +175,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         match next {
             Ok(msg) => {
                 session_loop::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
-                let Some(msg) = fresh::intercept(msg, &mut waiting, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &session, &cancelled_requests)? else {
+                let Some(msg) = fresh_loop::intercept(msg, &mut waiting, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &session, &cancelled_requests)? else {
                     continue;
                 };
                 // A panic in one handler answers that request with an internal error instead of ending the session:

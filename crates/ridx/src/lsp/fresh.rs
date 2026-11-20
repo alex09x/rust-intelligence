@@ -8,22 +8,18 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Answers a tool can trust right after an edit, and what the server's indexes cover (`ridx/status`).
+//! Answers a tool can trust right after an edit (`minVersion`).
 //!
 //! An editor is served at once, from the newest index mapped through the edits since. A tool that edits and then
 //! asks would get that answer silently stale (prod-code, m=19767). With `params.minVersion: N` a request waits until
 //! the index answering compiled version `N` (or later) of its document, or fails with `-32803` after
-//! `params.minVersionTimeoutMs` (30 s by default). A document is covered when the index compiled its current text:
-//! the overlay's compiled text is the buffer's.
+//! `params.minVersionTimeoutMs` (30 s by default). The server loop's side, and `ridx/status`, are in `fresh_loop`.
 
-use super::session_index::SessionIndexer;
 use serde_json::{json, Value};
-use std::path::Path;
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
-/// Marks a request released from waiting, so that it is not held again.
-const RELEASED: &str = "__ridxReleased";
 
 struct Held {
     msg: Value,
@@ -34,10 +30,18 @@ struct Held {
 #[derive(Default)]
 pub struct Waiting {
     held: Vec<Held>,
+    /// The deadlines of requests released to dispatch, by id: one no longer covered when its turn comes (another index
+    /// loaded meanwhile) waits again until that same deadline (review of e535e9cf).
+    released: HashMap<String, Instant>,
+    /// The ids of the last requests the loop took, in order (at most `SEEN`): a `$/cancelRequest` for one of them comes
+    /// after it was answered or held, one for an id not taken yet is for a request still to come.
+    seen: std::collections::VecDeque<String>,
 }
 
-/// What a document's coverage is judged by: the open buffers, and the source hash the answering index recorded for a
-/// file (`MultiRootWorkspace::source_hash_for_file`), `None` when no loaded index answers for it.
+const SEEN: usize = 4096;
+
+/// What a document's coverage is judged by: the open buffers, and the source hash the index answering for a file
+/// recorded for it, `None` when no loaded index answers for it or its units disagree (`fresh_loop::answering_hash`).
 pub struct Coverage<'a> {
     pub ov: &'a crate::overlay::OverlayManager,
     pub indexed_hash: &'a dyn Fn(&str) -> Option<u64>,
@@ -47,7 +51,7 @@ impl Coverage<'_> {
     /// The version of `file` the answering index compiled: the buffer's version when that index recorded the hash of
     /// the buffer's text, `None` otherwise (edits not compiled yet, or no index answering for the file any more: review
     /// of a6909dbe, a removed workspace kept a clean overlay). A file not open has no version to wait for.
-    fn covered_version(&self, file: &str) -> Option<Option<i32>> {
+    pub fn covered_version(&self, file: &str) -> Option<Option<i32>> {
         let o = self.ov.get(file)?;
         Some(((self.indexed_hash)(file) == Some(o.content_hash)).then_some(o.version))
     }
@@ -57,14 +61,14 @@ impl Coverage<'_> {
     }
 }
 
-fn response(id: &Value, code: i64, message: String, data: Value) -> Value {
+pub(super) fn response(id: &Value, code: i64, message: String, data: Value) -> Value {
     json!({ "jsonrpc": "2.0", "id": id, "error": { "code": code, "message": message, "data": data } })
 }
 
 /// The document and version a request waits for. Only a request (with an `id`) waits: a notification carrying the
 /// fields is handled at once (review of a6909dbe: a `didChange` waited for the version it was bringing).
-fn wanted(msg: &Value) -> Option<(String, i64)> {
-    if msg.get(RELEASED).is_some() || msg.get("id").is_none_or(Value::is_null) || msg.get("method").is_none() {
+pub(super) fn wanted(msg: &Value) -> Option<(String, i64)> {
+    if msg.get("id").is_none_or(Value::is_null) || msg.get("method").is_none() {
         return None;
     }
     let min = msg["params"]["minVersion"].as_i64()?;
@@ -77,25 +81,27 @@ impl Waiting {
         self.held.is_empty()
     }
 
-    /// `msg` to dispatch now, or `None` when it waits for a newer index.
+    /// `msg` to dispatch now, or `None` when it waits for a newer index. A request released before is checked again
+    /// against the index answering now, keeping its first deadline.
     pub fn admit(&mut self, msg: Value, cov: &Coverage) -> Option<Value> {
         let Some((file, min)) = wanted(&msg) else { return Some(msg) };
+        let released = self.released.remove(&msg["id"].to_string());
         if cov.is_covered(&file, min) {
             return Some(msg);
         }
         let timeout = msg["params"]["minVersionTimeoutMs"].as_u64().map_or(DEFAULT_TIMEOUT, Duration::from_millis);
-        self.held.push(Held { msg, deadline: Instant::now() + timeout });
+        self.held.push(Held { deadline: released.unwrap_or_else(|| Instant::now() + timeout), msg });
         None
     }
 
-    /// The held requests now covered, to dispatch, and the answers of the others that ended: cancelled (`-32800`, its
-    /// id taken out of `cancelled`), then timed out (`-32803`), in that order, before coverage counts: a deadline passed
-    /// is a timeout even when the index arrived since (review of a6909dbe).
+    /// The held requests now covered, to dispatch (through `admit` again), and the answers of the others that ended:
+    /// cancelled (`-32800`, its id taken out of `cancelled`), then timed out (`-32803`), in that order, before coverage
+    /// counts: a deadline passed is a timeout even when the index arrived since (review of a6909dbe).
     pub fn release(&mut self, cov: &Coverage, cancelled: &std::sync::Mutex<std::collections::HashSet<Value>>) -> (Vec<Value>, Vec<Value>) {
         let (mut ready, mut answers) = (Vec::new(), Vec::new());
         let now = Instant::now();
         let mut cancelled = cancelled.lock().unwrap_or_else(|e| e.into_inner());
-        for mut h in std::mem::take(&mut self.held) {
+        for h in std::mem::take(&mut self.held) {
             let Some((file, min)) = wanted(&h.msg) else { continue };
             if cancelled.remove(&h.msg["id"]) {
                 answers.push(response(&h.msg["id"], -32800, "Request cancelled".into(), Value::Null));
@@ -103,7 +109,7 @@ impl Waiting {
                 let data = json!({ "reason": "timeout", "coveredVersion": cov.covered_version(&file).flatten() });
                 answers.push(response(&h.msg["id"], -32803, format!("no index covers version {min} of the document yet"), data));
             } else if cov.is_covered(&file, min) {
-                h.msg[RELEASED] = json!(true);
+                self.released.insert(h.msg["id"].to_string(), h.deadline);
                 ready.push(h.msg);
             } else {
                 self.held.push(h);
@@ -112,117 +118,30 @@ impl Waiting {
         (ready, answers)
     }
 
+    /// The loop took a request with this id.
+    pub fn note_request(&mut self, id: &Value) {
+        if self.seen.len() == SEEN {
+            self.seen.pop_front();
+        }
+        self.seen.push_back(id.to_string());
+    }
+
+    /// `$/cancelRequest` for `id`: the answer of the held request it ends, if one waits, and whether the request was
+    /// taken already (then the cancel is used up; else it is for a request still to come).
+    pub fn cancel(&mut self, id: &Value) -> (Option<Value>, bool) {
+        let key = id.to_string();
+        self.released.remove(&key);
+        let taken = self.seen.iter().rposition(|s| *s == key).map(|at| self.seen.remove(at)).is_some();
+        let Some(at) = self.held.iter().position(|h| &h.msg["id"] == id) else { return (None, taken) };
+        let h = self.held.remove(at);
+        (Some(response(&h.msg["id"], -32800, "Request cancelled".into(), Value::Null)), true)
+    }
+
     /// Answers every held request with `code` (the server shut down while they waited).
     pub fn drain(&mut self, code: i64, message: &str) -> Vec<Value> {
+        self.released.clear();
         std::mem::take(&mut self.held).into_iter().map(|h| response(&h.msg["id"], code, message.to_string(), Value::Null)).collect()
     }
-}
-
-/// The server loop's turn for waiting requests: after `shutdown` they are answered `-32600`; otherwise the published
-/// index is reloaded if it changed (coverage counts against the index that answers now) and the ended or covered ones
-/// come out. Returns the requests to dispatch.
-pub(crate) fn release_waiting<W: std::io::Write>(
-    waiting: &mut Waiting,
-    writer: &mut W,
-    lifecycle: &mut super::LifecycleManager,
-    mr: &mut super::MultiRootWorkspace,
-    ov: &mut crate::overlay::OverlayManager,
-    cancelled: &std::sync::Mutex<std::collections::HashSet<Value>>,
-) -> std::io::Result<Vec<Value>> {
-    if waiting.is_empty() {
-        return Ok(Vec::new());
-    }
-    if lifecycle.is_shutdown() {
-        for answer in waiting.drain(-32600, "the server is shutting down") {
-            super::protocol::send_response(writer, &answer)?;
-        }
-        return Ok(Vec::new());
-    }
-    super::dispatch::reload_changed_index(writer, lifecycle, mr, ov)?;
-    let (ready, answers) = waiting.release(&Coverage { ov, indexed_hash: &|f| mr.source_hash_for_file(f) }, cancelled);
-    for answer in answers {
-        super::protocol::send_response(writer, &answer)?;
-    }
-    Ok(ready)
-}
-
-/// Handles `msg` before the ordinary dispatch when it is `ridx/status` or a request to hold for `minVersion`; returns it
-/// back to dispatch otherwise. Only for a request (with an `id`) of an initialized server not shut down and not
-/// cancelled: the rest goes through dispatch's own checks (review of a6909dbe: status answered before `initialize`,
-/// after `shutdown` and to a notification, and a held request survived `shutdown`).
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn intercept<W: std::io::Write>(
-    msg: Value,
-    waiting: &mut Waiting,
-    writer: &mut W,
-    lifecycle: &mut super::LifecycleManager,
-    mr: &mut super::MultiRootWorkspace,
-    ov: &mut crate::overlay::OverlayManager,
-    session: &SessionIndexer,
-    cancelled: &std::sync::Mutex<std::collections::HashSet<Value>>,
-) -> std::io::Result<Option<Value>> {
-    let id = msg.get("id").filter(|id| !id.is_null());
-    let is_cancelled = id.is_some_and(|id| cancelled.lock().unwrap_or_else(|e| e.into_inner()).contains(id));
-    if id.is_none() || is_cancelled || !lifecycle.is_initialized() || lifecycle.is_shutdown() {
-        return Ok(Some(msg));
-    }
-    if msg["method"] == "ridx/status" {
-        // The published index as it is now, also when the client only polls this (review of a6909dbe).
-        super::dispatch::reload_changed_index(writer, lifecycle, mr, ov)?;
-        let result = status(&msg, mr, ov, &lifecycle.reindex, session);
-        super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
-        return Ok(None);
-    }
-    Ok(waiting.admit(msg, &Coverage { ov, indexed_hash: &|f| mr.source_hash_for_file(f) }))
-}
-
-/// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
-/// supports, each with the version of its contract (docs/integration.md §7), for clients to detect them.
-pub fn experimental_capabilities() -> Value {
-    json!({ "ridx": { "methods": { "ridx/status": 1 }, "requestOptions": { "minVersion": 1 } } })
-}
-
-/// `ridx/status`: every root's index, and the given document's coverage.
-pub fn status(msg: &Value, mr: &super::MultiRootWorkspace, ov: &crate::overlay::OverlayManager, reindex: &super::reindex::Reindexer, session: &SessionIndexer) -> Value {
-    // The roots with an index loaded, and those being indexed for the first time or whose first index failed (review
-    // of a6909dbe: they were missing, with the reason of the failure).
-    let mut roots: Vec<(std::path::PathBuf, Option<String>)> = mr
-        .all_workspaces()
-        .filter_map(|ws| ws.workspace_root().map(|r| (ridx_format::canonicalize_best_effort(r), Some(format!("{}.{}", ws.instance_id(), ws.generation())))))
-        .collect();
-    for root in reindex.roots() {
-        if !roots.iter().any(|(r, _)| *r == root) {
-            roots.push((root, None));
-        }
-    }
-    roots.sort();
-    let roots: Vec<Value> = roots
-        .into_iter()
-        .map(|(root, generation)| {
-            let (building, error) = reindex.status_of(&root);
-            let (session_building, session_answers) = session.state_of(&root);
-            json!({
-                "root": root.display().to_string(),
-                "indexed": generation.is_some(),
-                "generation": generation,
-                "building": building,
-                "error": error,
-                "sessionIndex": { "answers": session_answers, "building": session_building },
-            })
-        })
-        .collect();
-    let mut out = json!({ "roots": roots });
-    if let Some(uri) = msg["params"]["textDocument"]["uri"].as_str() {
-        let file = super::protocol::uri_to_path(uri);
-        let root = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file));
-        let building = root.as_ref().is_some_and(|r| session.state_of(r).0 || reindex.status_of(r).0);
-        let cov = Coverage { ov, indexed_hash: &|f| mr.source_hash_for_file(f) };
-        out["document"] = match ov.get(&file) {
-            Some(o) => json!({ "version": o.version, "coveredVersion": cov.covered_version(&file).flatten(), "building": building }),
-            None => json!({ "version": null, "coveredVersion": null, "building": building }),
-        };
-    }
-    out
 }
 
 #[cfg(test)]
@@ -236,16 +155,6 @@ mod tests {
             p.extend(e.clone());
         }
         json!({ "jsonrpc": "2.0", "id": id, "method": "textDocument/references", "params": params })
-    }
-
-    /// prod-code (m=19778): clients detect the `ridx/*` methods from `initialize`.
-    #[test]
-    fn test_initialize_lists_the_ridx_methods() {
-        let mut lc = crate::lsp::lifecycle::LifecycleManager::new();
-        let (caps, _) = lc.handle_initialize(&json!({ "id": 1, "method": "initialize", "params": { "capabilities": {} } })).unwrap();
-        let ridx = &caps["capabilities"]["experimental"]["ridx"];
-        assert_eq!(ridx["methods"]["ridx/status"], 1, "{caps}");
-        assert_eq!(ridx["requestOptions"]["minVersion"], 1, "{caps}");
     }
 
     /// prod-code (m=19767): a tool that edits and asks at once got the answer of the index before the edit. Coverage is
@@ -277,6 +186,12 @@ mod tests {
         let (ready, answers) = waiting.release(&cov!(), &cancelled);
         assert!(ready.is_empty() && answers[0]["id"] == 9 && answers[0]["error"]["code"] == -32800, "{answers:?}");
         assert!(cancelled.lock().unwrap().is_empty(), "the cancellation is used up, so a reused id is not cancelled");
+        assert!(waiting.admit(request(10, 1, json!({})), &cov!()).is_none());
+        assert_eq!(waiting.cancel(&json!(10)).0.unwrap()["error"]["code"], -32800, "a cancel arriving for a held request ends it");
+        assert!(waiting.cancel(&json!(10)).0.is_none() && waiting.is_empty());
+        waiting.note_request(&json!(11));
+        assert!(waiting.cancel(&json!(11)).1, "a request taken already: its cancel is used up");
+        assert!(!waiting.cancel(&json!(12)).1, "an id not taken yet: the cancel waits for its request");
         indexed.set(Some(hash(saved)));
 
         assert!(ov.apply_content_changes(file, 2, &[json!({ "text": edited })]));
@@ -290,7 +205,12 @@ mod tests {
         assert_eq!(answers[0]["error"]["data"]["coveredVersion"], 2);
         assert_eq!(ready.len(), 1);
         assert_eq!(ready[0]["id"], 3);
-        assert!(waiting.admit(ready[0].clone(), &cov!()).is_some(), "a released request is not held again");
+        // Review of e535e9cf: before its turn, another index loads that does not cover it: it waits again.
+        indexed.set(Some(hash(saved)));
+        assert!(waiting.admit(ready[0].clone(), &cov!()).is_none(), "checked again against the index answering now");
+        indexed.set(Some(hash(edited)));
+        let (ready, _) = waiting.release(&cov!(), &cancelled);
+        assert!(waiting.admit(ready[0].clone(), &cov!()).is_some());
 
         indexed.set(None);
         assert!(waiting.admit(request(5, 2, json!({})), &cov!()).is_none());

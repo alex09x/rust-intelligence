@@ -255,7 +255,7 @@ impl LifecycleManager {
         });
 
         caps["diagnosticProvider"] = json!({ "interFileDependencies": true, "workspaceDiagnostics": true });
-        caps["experimental"] = super::fresh::experimental_capabilities();
+        caps["experimental"] = super::fresh_loop::experimental_capabilities();
 
         let capabilities = json!({
             "capabilities": caps,

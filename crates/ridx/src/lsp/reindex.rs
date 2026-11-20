@@ -61,6 +61,11 @@ impl Reindexer {
         std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
     }
 
+    /// A workspace folder the client removed: it leaves the roots of the session.
+    pub fn forget(&self, root: &Path) {
+        self.roots.lock().unwrap_or_else(|e| e.into_inner()).remove(root);
+    }
+
     /// The roots indexed this session, running or not, canonical.
     pub fn roots(&self) -> Vec<PathBuf> {
         self.roots.lock().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
@@ -164,11 +169,12 @@ impl Reindexer {
             let ok = Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(out).status().is_ok_and(|s| s.success());
             let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
             crate::lsp::logger::log_info(&msg);
+            let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
+            // A folder the client removed meanwhile (`forget`) is neither loaded nor run again.
+            let Some(st) = roots.get_mut(&root) else { break };
             if ok {
                 finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             }
-            let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
-            let st = roots.entry(root.clone()).or_default();
             st.last_error = (!ok).then(|| format!("ridx index failed; its output is in {}", log.display()));
             if std::mem::take(&mut st.again) {
                 let now = SystemTime::now();

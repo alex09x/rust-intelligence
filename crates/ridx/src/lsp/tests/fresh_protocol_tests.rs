@@ -51,3 +51,35 @@ fn test_status_and_held_requests_follow_the_lifecycle() {
     assert_eq!(by_id(5)["error"]["code"], -32600, "status after shutdown");
     let _ = std::fs::remove_dir_all(&folder);
 }
+
+/// Review of e535e9cf: a cancel ended a held request, then dispatch marked its id again, and the next request reusing
+/// the id was cancelled too.
+#[test]
+fn test_a_cancel_ends_a_held_request_once() {
+    let folder = std::env::temp_dir().join(format!("ridx_fresh_cancel_{}", std::process::id()));
+    std::fs::create_dir_all(&folder).unwrap();
+    let uri = format!("file://{}/lib.rs", folder.display());
+    let mut input = Vec::new();
+    let mut send = |v: serde_json::Value| input.extend(make_lsp_msg(&v));
+    send(
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "workspaceFolders": [{ "uri": format!("file://{}", folder.display()), "name": "ws" }], "capabilities": {} } }),
+    );
+    send(json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }));
+    send(
+        json!({ "jsonrpc": "2.0", "method": "textDocument/didOpen", "params": { "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": "pub fn a() {}\n" } } }),
+    );
+    send(json!({ "jsonrpc": "2.0", "id": 7, "method": "textDocument/documentSymbol", "params": { "textDocument": { "uri": uri }, "minVersion": 1 } }));
+    send(json!({ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": 7 } }));
+    send(json!({ "jsonrpc": "2.0", "id": 7, "method": "textDocument/documentSymbol", "params": { "textDocument": { "uri": uri } } }));
+    send(json!({ "jsonrpc": "2.0", "id": 99, "method": "shutdown", "params": null }));
+    send(json!({ "jsonrpc": "2.0", "method": "exit" }));
+
+    let mut output = Vec::new();
+    assert!(run_lsp_server_stream(Cursor::new(input), &mut output, None).is_ok());
+    let responses = parse_lsp_responses(&output);
+    let answers: Vec<&serde_json::Value> = responses.iter().filter(|r| r["id"] == 7).collect();
+    assert_eq!(answers.len(), 2, "{answers:?}");
+    assert_eq!(answers[0]["error"]["code"], -32800, "the held request is cancelled");
+    assert!(answers[1].get("error").is_none(), "the next request with that id is answered: {}", answers[1]);
+    let _ = std::fs::remove_dir_all(&folder);
+}
