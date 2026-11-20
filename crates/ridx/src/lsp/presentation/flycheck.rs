@@ -118,6 +118,16 @@ impl FlycheckState {
         self.generation.load(Ordering::SeqCst)
     }
 
+    /// The server took `diag`: a clear (no diagnostics) of a root's URI ends what that root has to clear there.
+    pub fn clear_delivered(&self, diag: &Value) {
+        let (Some(root), Some(uri)) = (diag.get(queue::ROOT_KEY).and_then(Value::as_str), diag["params"]["uri"].as_str()) else { return };
+        if diag["params"]["diagnostics"].as_array().is_some_and(|d| d.is_empty()) {
+            if let Some(uris) = self.published_uris.lock().unwrap_or_else(|e| e.into_inner()).get_mut(Path::new(root)) {
+                uris.remove(uri);
+            }
+        }
+    }
+
     /// Whether diagnostics of generation `gen` are still to publish: those of a root (`ridxRoot`, set by the worker)
     /// until a newer check of that same root starts, others while no newer check of any root did. A check requested
     /// for another root no longer drops a root's finished results (review of 11310378).
@@ -368,7 +378,9 @@ where
     }
 
     if generation.load(Ordering::SeqCst) == my_gen {
-        published_guard.insert(workspace_root.to_path_buf(), current_uris.clone());
+        // A URI cleared stays known until the server takes its clear (`clear_delivered`): one dropped as stale (a newer
+        // check of the root started first) is cleared again by the next check (review of 503071cb).
+        published_guard.insert(workspace_root.to_path_buf(), current_uris.union(&prev_published).cloned().collect());
         let mut latest_guard = latest_diagnostics.lock().unwrap();
         for (uri, diags) in &file_diagnostics {
             latest_guard.insert(uri.clone(), CachedDiagnostic { items: diags.clone(), baseline: baselines.remove(uri) });

@@ -65,6 +65,30 @@ impl Unit {
     }
 }
 
+/// `args` with the file of each `--extern` replaced by `replace(file)` when it gives one, every other argument (and
+/// every other extern, even of the same binding) as it is.
+pub(super) fn rebind_externs(args: &[String], replace: impl Fn(&str) -> Option<PathBuf>) -> Vec<String> {
+    let rebind = |spec: &str| match spec.split_once('=') {
+        Some((prefix, file)) => replace(file).map_or_else(|| spec.to_string(), |new| format!("{prefix}={}", new.display())),
+        None => spec.to_string(),
+    };
+    let mut out = Vec::with_capacity(args.len());
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        if a == "--extern" {
+            out.push(a.clone());
+            if let Some(spec) = it.next() {
+                out.push(rebind(spec));
+            }
+        } else if let Some(spec) = a.strip_prefix("--extern=") {
+            out.push(format!("--extern={}", rebind(spec)));
+        } else {
+            out.push(a.clone());
+        }
+    }
+    out
+}
+
 fn crate_types(args: &[String]) -> Vec<String> {
     let mut out = Vec::new();
     let mut it = args.iter();

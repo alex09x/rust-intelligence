@@ -107,11 +107,16 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
         let running = wave
             .iter()
             .map(|u| {
-                // Only to a file of the session that replaces the one bound, of its kind: a proc macro is bound as a
-                // dylib the session (metadata only) never writes (review of a21afbc0).
-                let replaced = |file: &str| ctx.deps.join(file.strip_suffix(".rlib").map_or_else(|| file.to_string(), |s| format!("{s}.rmeta"))).is_file();
-                let rebound: HashSet<String> = u.extern_edges().into_iter().filter(|(_, stem, file)| fresh.contains(stem) && replaced(file)).map(|(binding, ..)| binding).collect();
-                compile(&ctx, u, &rebound)
+                // Each bound file on its own, to a file of the session that replaces it, of its kind: a proc macro is
+                // bound as a dylib the session (metadata only) never writes (review of a21afbc0), and one binding can
+                // name an rlib and a dylib, of which only the first has a replacement (review of 503071cb).
+                let args = super::session_units::rebind_externs(&u.args, |file| {
+                    let stem = Path::new(file).file_stem()?.to_string_lossy().into_owned();
+                    let name = Path::new(file).file_name()?.to_string_lossy().into_owned();
+                    let replacement = ctx.deps.join(name.strip_suffix(".rlib").map_or(name.clone(), |s| format!("{s}.rmeta")));
+                    (fresh.contains(&stem) && replacement.is_file()).then_some(replacement)
+                });
+                compile(&ctx, u, &args)
             })
             .collect::<Result<Vec<_>, _>>()?;
         for (unit, staged) in wave.iter().zip(running) {
@@ -167,13 +172,13 @@ impl Staged {
     }
 }
 
-/// Starts the compile of `unit`, its `--extern` bindings in `rebound` reading the session's metadata.
-fn compile(ctx: &Ctx, unit: &super::session_units::Unit, rebound: &HashSet<String>) -> Result<Staged, String> {
+/// Starts the compile of `unit` with `args`, its recorded arguments with the externs the session replaces rebound.
+fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Result<Staged, String> {
     // The link to the published shard is set aside first, so that the driver writes the session's own in its place
     // and never into the published one.
     let shard = unit.object.as_ref().and_then(|o| o.file_name()).map(|name| ctx.variant.join(name));
     let backup = shard.as_ref().map(|s| s.with_extension("ridx.published")).filter(|b| shard.as_ref().is_some_and(|s| fs::rename(s, b).is_ok()));
-    let args = sanitize_compiler_args_for_direct(&unit.args, &ctx.deps, &ctx.incr, rebound);
+    let args = sanitize_compiler_args_for_direct(args, &ctx.deps, &ctx.incr, &HashSet::new());
     let mut cmd = Command::new(ctx.driver);
     cmd.args(&args).current_dir(ctx.root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
     // The environment the unit was built with first, then the session's own over it: a recorded `RIDX_OUT_DIR` (a

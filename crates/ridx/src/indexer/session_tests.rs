@@ -204,3 +204,20 @@ fn test_a_proc_macro_consumer_keeps_the_saved_dylib() {
     let b_line = calls.lines().find(|l| l.starts_with("b ")).unwrap_or_default();
     assert!(b_line.contains(&format!("a={saved}")), "{calls}");
 }
+
+/// Review of 503071cb: one binding naming an rlib and a dylib had both rebound when only the rlib had a replacement.
+#[test]
+fn test_each_bound_file_is_rebound_on_its_own() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let a = UnitSpec { own: Some(&["a/src/lib.rs"]), ..A };
+    let b = UnitSpec { own: Some(&["b/src/lib.rs", "a/src/lib.rs"]), externs: &["a", "a=a.so"], ..B };
+    published(&root, &[a, b], VARIANT);
+    let session = root.join("target/ridx/sessions/1-1");
+    build_session_index_with(&driver(&root, "d", ""), &root, &session, &[(root.join("a/src/lib.rs"), "x".into())]).unwrap();
+    let calls = read(session.join(VARIANT).join("calls"));
+    let b_line = calls.lines().find(|l| l.starts_with("b ")).unwrap_or_default();
+    let fresh = session.join("direct/deps/liba.rmeta").display().to_string();
+    let saved_dylib = root.join("target/ridx_cargo/liba.so").display().to_string();
+    assert!(b_line.contains(&format!("a={fresh}")) && b_line.contains(&format!("a={saved_dylib}")), "{calls}");
+}

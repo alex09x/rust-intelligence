@@ -107,4 +107,17 @@ mod tests {
         state.root_generation.lock().unwrap().insert(a.to_path_buf(), state.current_generation());
         assert!(!state.is_current(gen_a, &result_a), "a newer check of A makes it stale");
     }
+
+    /// Review of 503071cb: a clear dropped as stale lost the URI, and no later check cleared it again.
+    #[test]
+    fn test_a_uri_stays_to_clear_until_its_clear_is_taken() {
+        let state = FlycheckState::new();
+        let root = Path::new("/w/a");
+        state.published_uris.lock().unwrap().insert(root.to_path_buf(), ["file:///w/a/x.rs".to_string()].into());
+        let note = |diags: serde_json::Value| json!({ (ROOT_KEY): root.display().to_string(), "params": { "uri": "file:///w/a/x.rs", "diagnostics": diags } });
+        state.clear_delivered(&note(json!([{ "message": "w" }])));
+        assert_eq!(state.published_uris.lock().unwrap()[root].len(), 1, "a diagnostic is not a clear");
+        state.clear_delivered(&note(json!([])));
+        assert!(state.published_uris.lock().unwrap()[root].is_empty(), "the clear taken: nothing left to clear");
+    }
 }

@@ -168,9 +168,12 @@ impl WorkspaceIndex {
     /// Whether every compilation unit recording a source hash for `file_path` recorded the same one. A failed build of
     /// one unit (`lib test` with an error in `mod tests`) leaves that unit's data from the text before while the units
     /// that built record the new text: no single text then matches all of the file's data.
+    /// Every unit, not the candidates navigation ranks (those prefer the innermost source root): an integration test
+    /// of an outer package including the file with `#[path]` holds it too (review of 503071cb). Dependencies hold no
+    /// workspace file.
     pub fn units_agree_on_source(&self, file_path: &str) -> bool {
         let mut seen: Option<u64> = None;
-        for idx in self.candidate_reader_indices_for_file(file_path) {
+        for idx in (0..self.readers.len()).filter(|&i| !self.reader_is_dependency.get(i).copied().unwrap_or(false)) {
             // Only the units the file belongs to: another crate's `src/lib.rs` is another file.
             let Some(target) = self.target_file_for_reader(idx, file_path) else { continue };
             let (reader, name) = (&self.readers[idx], target.as_ref());
