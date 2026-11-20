@@ -1,7 +1,7 @@
-<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
+<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
 
 > [!NOTE]
-> Ceci est une traduction du README anglais au commit [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Ceci est une traduction du README anglais au commit [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -50,8 +50,10 @@ Linux et macOS. Sans lien avec le Rust Project ni la Rust Foundation.
   l'inférence de types que rustc effectue de toute façon à chaque `cargo check`.
 - **L'essentiel de ce qui est analysé, ce sont les dépendances et std**, du code que personne ne modifie. `ridx`
   indexe chaque dépendance une seule fois et la partage entre tous les projets et worktrees de la machine.
-- **Ce que vous tapez fonctionne aussi** : les modifications non enregistrées sont servies par une couche en
-  mémoire au-dessus de l'index jusqu'à la prochaine compilation du projet.
+- **Ce que vous tapez fonctionne aussi** : une couche en mémoire au-dessus de l'index répond aussitôt aux
+  modifications non enregistrées, et 250 ms après la dernière modification les crates modifiés sont compilés
+  depuis les buffers dans un index de la session, si bien que les références et le renommage voient aussi le
+  nouveau code.
 
 ## Mesures
 
@@ -185,22 +187,28 @@ conserve ces réponses au lieu de les recalculer.
   tables de types, d'impls, de champs et de génériques. Une recherche est une sonde de hachage, une
   recherche dichotomique ou un parcours sur des pages mappées. Les pages que personne ne demande ne sont jamais lues, et le
   noyau peut libérer les autres en cas de manque de mémoire.
-- **Les reconstructions sont incrémentales et sûres.** Après un enregistrement, le serveur réindexe en
-  arrière-plan ; si seules des sources du workspace ont changé, il appelle directement le driver sur les
-  crates modifiés, sans Cargo. Un crate qui ne compile pas garde son dernier bon shard, et un autre jeu de
-  features ou une autre cible obtient sa propre variante à côté de la première.
-- **Le code tapé entre deux builds** est mis en correspondance ligne à ligne avec le texte compilé, et le
-  code modifié est analysé par un petit front-end sans compilateur
-  ([`crates/ridx-syntax`](../crates/ridx-syntax) : lexer, parser, résolution de noms, inférence de types)
-  qui lit tous les autres types et éléments dans l'index.
+- **Les recompilations sont incrémentales et sûres.** Après un enregistrement, le serveur réindexe en
+  arrière-plan ; quand seules des sources du workspace ont changé, il appelle le driver directement sur les
+  crates modifiés, sans Cargo. Un crate avec des erreurs de compilation est indexé à partir de tout ce qui a
+  été résolu ; un crate que le compilateur ne peut pas mener jusque-là (une erreur de syntaxe) garde son
+  dernier shard valide. Un autre jeu de features ou une autre cible obtient sa propre variante à côté de la
+  première.
+- **Le code tapé entre deux compilations** est mis en correspondance ligne à ligne avec le texte compilé, et
+  le code modifié est analysé par un petit front end sans compilateur ([`crates/ridx-syntax`](../crates/ridx-syntax) :
+  lexer, parser, résolution des noms, inférence de types) qui lit tous les autres types et éléments dans
+  l'index. 250 ms après la dernière modification, les crates des buffers modifiés sont compilés depuis leur
+  texte dans un index de la session (rien n'est écrit dans les fichiers), qui répond aux références, au
+  renommage et à la navigation jusqu'à la compilation suivante.
 
 La conception complète, avec la structure d'un shard et l'emplacement de chaque partie dans le code :
 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Limites connues
 
-- **Les réponses viennent de la dernière compilation.** Le code tapé depuis est servi par le buffer ouvert et
-  rattrapé à la prochaine compilation ; un crate qui ne compile pas garde son dernier index valide.
+- **Le code non enregistré atteint l'index avec un délai.** Les crates modifiés sont compilés depuis les
+  buffers 250 ms après la dernière modification, ce qui prend d'une fraction de seconde à quelques secondes
+  pour un gros crate ; d'ici là, les références et la navigation viennent de l'index précédent, ajusté à la
+  modification. Les crates qui dépendent d'un crate modifié voient le changement après l'enregistrement.
 - **Un seul cfg.** Comme `cargo check`, l'index voit une cible et un jeu de features ; le code derrière d'autres
   `#[cfg]` ou features n'est pas indexé. Choisissez-les avec `ridx index --all-features` / `--target`.
 - **Windows** n'est pas encore pris en charge.
@@ -223,19 +231,19 @@ cargo test --workspace
 ## Citer
 
 Si vous utilisez ridx dans un travail de recherche ou une documentation, citez la version archivée sur Zenodo :
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) pour le projet (il pointe vers la dernière version), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) pour exactement 0.3.8.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) pour le projet (il pointe vers la dernière version), [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) pour exactement 0.3.9.
 [`CITATION.cff`](../CITATION.cff) contient les métadonnées qu'utilise « Cite this repository » de GitHub.
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 

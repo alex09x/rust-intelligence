@@ -1,7 +1,7 @@
-<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
+<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
 
 > [!NOTE]
-> Esta é uma tradução do README em inglês no commit [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta é uma tradução do README em inglês no commit [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -50,8 +50,9 @@ Linux e macOS. Sem afiliação com o Rust Project nem com a Rust Foundation.
   tipos que o rustc já faz a cada `cargo check`.
 - **A maior parte do que é analisado são dependências e std**, código que ninguém edita. O `ridx` indexa cada
   dependência uma única vez e a compartilha entre todos os projetos e worktrees da máquina.
-- **O que você está digitando também funciona**: edições não salvas são respondidas por uma camada em memória
-  sobre o índice até o projeto compilar de novo.
+- **O que você digita continua funcionando**: uma camada em memória sobre o índice responde na hora às
+  edições não salvas, e 250 ms após a última edição os crates editados são compilados a partir dos buffers em
+  um índice da sessão, então referências e renomeação também enxergam o código novo.
 
 ## Medições
 
@@ -182,21 +183,26 @@ guarda essas respostas em vez de calculá-las de novo.
   ordenadas por posição (48 B) com índice hash de destinos, e tabelas de tipos, impls, campos e genéricos.
   Uma busca é uma sondagem de hash, uma busca binária ou uma varredura sobre páginas mapeadas. Páginas que ninguém pede
   nunca são lidas, e o kernel pode descartar as outras quando falta memória.
-- **Reconstruções são incrementais e seguras.** Depois de salvar, o servidor reindexa em segundo plano;
-  quando só fontes do workspace mudaram, ele chama o driver diretamente nos crates alterados, sem o Cargo.
-  Um crate que não compila mantém seu último shard bom, e outro conjunto de features ou outra plataforma
-  ganha sua própria variante ao lado da primeira.
+- **As recompilações são incrementais e seguras.** Depois de salvar, o servidor reindexa em segundo plano;
+  quando só fontes do workspace mudaram, ele chama o driver diretamente nos crates alterados, sem Cargo. Um
+  crate com erros de compilação é indexado a partir de tudo o que foi resolvido; um que o compilador não
+  consegue levar até lá (um erro de sintaxe) mantém seu último shard válido. Outro conjunto de features ou
+  outro target ganha sua própria variante ao lado da primeira.
 - **O código digitado entre builds** é mapeado linha a linha sobre o texto compilado, e o código editado é
-  analisado por um pequeno front-end sem compilador ([`crates/ridx-syntax`](../crates/ridx-syntax): lexer,
-  parser, resolução de nomes, inferência de tipos) que lê do índice todos os outros tipos e itens.
+  analisado por um pequeno front end sem compilador ([`crates/ridx-syntax`](../crates/ridx-syntax): lexer,
+  parser, resolução de nomes, inferência de tipos) que lê todos os outros tipos e itens do índice. 250 ms após
+  a última edição, os crates dos buffers editados são compilados a partir do texto deles em um índice da
+  sessão (nada é gravado nos arquivos), que responde referências, renomeação e navegação até o próximo build.
 
 O design completo, com o layout do shard e onde cada parte fica no código:
 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Limitações conhecidas
 
-- **As respostas vêm da última compilação.** O código digitado depois é respondido pelo buffer aberto e se atualiza
-  quando o projeto compila de novo; um crate que não compila mantém o último índice válido.
+- **Código não salvo chega ao índice com atraso.** Os crates editados são compilados a partir dos buffers
+  250 ms após a última edição, o que leva de uma fração de segundo a alguns segundos em um crate grande; até
+  lá, referências e navegação vêm do índice anterior, ajustado à edição. Crates que dependem de um editado
+  veem a mudança depois de salvar.
 - **Um só cfg.** Como o `cargo check`, o índice vê um target e um conjunto de features; o código atrás de outros
   `#[cfg]` ou features não é indexado. Escolha-os com `ridx index --all-features` / `--target`.
 - **Windows** ainda não é suportado.
@@ -219,19 +225,19 @@ cargo test --workspace
 ## Como citar
 
 Se você usar o ridx em pesquisa ou documentação, cite a versão arquivada no Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para o projeto (aponta para a versão mais recente), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) para exatamente a 0.3.8.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para o projeto (aponta para a versão mais recente), [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) para exatamente a 0.3.9.
 [`CITATION.cff`](../CITATION.cff) contém os metadados usados pelo "Cite this repository" do GitHub.
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 

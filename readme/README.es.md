@@ -1,7 +1,7 @@
-<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
+<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -50,8 +50,9 @@ Linux y macOS. Sin afiliación con el Rust Project ni con la Rust Foundation.
   inferencia de tipos que rustc ya hace en cada `cargo check`.
 - **La mayor parte de lo analizado son dependencias y std**, código que nadie edita. `ridx` indexa cada
   dependencia una sola vez y la comparte entre todos los proyectos y worktrees de la máquina.
-- **Lo que estás escribiendo también funciona**: las ediciones sin guardar se responden desde una capa en
-  memoria sobre el índice hasta que el proyecto vuelve a compilar.
+- **Lo que escribe sigue funcionando**: una capa en memoria sobre el índice responde de inmediato a las
+  ediciones sin guardar, y 250 ms después de la última edición los crates editados se compilan desde los
+  búferes en un índice de la sesión, así que las referencias y el renombrado también ven el código nuevo.
 
 ## Mediciones
 
@@ -184,22 +185,27 @@ guarda esas respuestas en lugar de calcularlas de nuevo.
   ordenadas por posición (48 B) con un índice hash de destinos, y tablas de tipos, impl, campos y genéricos.
   Una búsqueda es un sondeo hash, una búsqueda binaria o un recorrido sobre páginas mapeadas. Las páginas que nadie pide
   nunca se leen, y el kernel puede descartar las demás si falta memoria.
-- **Las reconstrucciones son incrementales y seguras.** Tras guardar, el servidor reindexa en segundo
-  plano; si solo cambiaron fuentes del workspace, llama al driver directamente sobre los crates cambiados,
-  sin Cargo. Un crate que no compila conserva su último shard bueno, y otro conjunto de features u otra
-  plataforma obtiene su propia variante junto a la primera.
-- **El código escrito entre compilaciones** se mapea línea a línea sobre el texto compilado, y el código
-  editado lo analiza un pequeño front-end sin compilador ([`crates/ridx-syntax`](../crates/ridx-syntax):
-  lexer, parser, resolución de nombres, inferencia de tipos) que lee del índice todos los demás tipos y
-  elementos.
+- **Las reconstrucciones son incrementales y seguras.** Tras guardar, el servidor reindexa en segundo plano;
+  si solo cambiaron fuentes del workspace, llama al driver directamente sobre los crates cambiados, sin Cargo.
+  Un crate con errores de compilación se indexa con todo lo que se resolvió; uno que el compilador no puede
+  llevar tan lejos (un error de sintaxis) conserva su último shard válido. Otro conjunto de features u otro
+  target obtiene su propia variante junto a la primera.
+- **El código escrito entre compilaciones** se asigna línea a línea al texto compilado, y el código editado
+  lo analiza un pequeño front end sin compilador ([`crates/ridx-syntax`](../crates/ridx-syntax): lexer,
+  parser, resolución de nombres, inferencia de tipos) que lee todos los demás tipos e ítems del índice.
+  250 ms después de la última edición, los crates de los búferes editados se compilan desde su texto en un
+  índice de la sesión (no se escribe nada en los archivos), que responde referencias, renombrado y navegación
+  hasta la siguiente compilación.
 
 El diseño completo, con la estructura del shard y dónde vive cada parte en el código:
 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Limitaciones conocidas
 
-- **Las respuestas vienen de la última compilación.** El código escrito después se responde desde el buffer
-  abierto y se pone al día cuando el proyecto vuelve a compilar; un crate que no compila conserva su último índice válido.
+- **El código sin guardar llega al índice con retraso.** Los crates editados se compilan desde los búferes
+  250 ms después de la última edición, lo que tarda desde una fracción de segundo hasta unos segundos en un
+  crate grande; hasta entonces las referencias y la navegación vienen del índice anterior, ajustado a la
+  edición. Los crates que dependen de uno editado ven el cambio al guardar.
 - **Un solo cfg.** Como `cargo check`, el índice ve un solo target y un conjunto de features; el código tras otros
   `#[cfg]` o features no se indexa. Se eligen con `ridx index --all-features` / `--target`.
 - **Windows** aún no está soportado.
@@ -222,19 +228,19 @@ cargo test --workspace
 ## Cómo citar
 
 Si usas ridx en investigación o documentación, cita la versión archivada en Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para el proyecto (apunta a la última versión), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) para exactamente 0.3.8.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para el proyecto (apunta a la última versión), [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) para exactamente 0.3.9.
 [`CITATION.cff`](../CITATION.cff) contiene los metadatos que usa "Cite this repository" de GitHub.
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 

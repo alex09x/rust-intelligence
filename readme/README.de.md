@@ -1,7 +1,7 @@
-<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
+<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
 
 > [!NOTE]
-> Dies ist eine Übersetzung der englischen README im Commit [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Dies ist eine Übersetzung der englischen README im Commit [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -50,8 +50,9 @@ Linux und macOS. Nicht mit dem Rust Project oder der Rust Foundation verbunden.
   rustc bei jedem `cargo check` ohnehin ausführt.
 - **Das meiste Analysierte sind Abhängigkeiten und std**, Code, den niemand bearbeitet. `ridx` indexiert jede
   Abhängigkeit einmal und teilt sie zwischen allen Projekten und Worktrees auf dem Rechner.
-- **Was Sie gerade tippen, funktioniert auch**: Ungespeicherte Änderungen beantwortet eine Schicht im Speicher
-  über dem Index, bis das Projekt wieder baut.
+- **Was Sie tippen, funktioniert trotzdem**: Ungespeicherte Änderungen beantwortet sofort eine Schicht im
+  Speicher über dem Index, und 250 ms nach der letzten Änderung werden die geänderten Crates aus den Puffern
+  in einen Index der Sitzung kompiliert, sodass auch Referenzen und Umbenennen den neuen Code sehen.
 
 ## Gemessen
 
@@ -184,21 +185,26 @@ rustc löst ohnehin bei jedem `cargo check` jeden Namen auf, expandiert jedes Ma
   Generics. Eine Abfrage ist eine Hash-Probe, eine binäre Suche oder ein Durchlauf über abgebildete Seiten. Seiten, nach
   denen niemand fragt, werden nie gelesen, und die übrigen kann der Kernel bei Speicherdruck verwerfen.
 - **Neubauten sind inkrementell und sicher.** Nach dem Speichern indexiert der Server im Hintergrund neu;
-  haben sich nur Quellen des Workspace geändert, ruft er den Treiber direkt für die geänderten Crates auf,
-  ohne Cargo. Ein Crate, das nicht baut, behält seinen letzten guten Shard, und ein anderes Feature-Set oder
-  Ziel bekommt eine eigene Variante neben der ersten.
-- **Code, der zwischen zwei Builds getippt wird,** wird zeilenweise auf den kompilierten Text abgebildet,
-  und den bearbeiteten Code analysiert ein kleines Frontend ohne Compiler
-  ([`crates/ridx-syntax`](../crates/ridx-syntax): Lexer, Parser, Namensauflösung, Typinferenz), das alle
-  anderen Typen und Einträge aus dem Index liest.
+  wenn sich nur Quellen des Workspace geändert haben, ruft er den Treiber direkt für die geänderten Crates
+  auf, ohne Cargo. Ein Crate mit Kompilierfehlern wird aus allem indexiert, was aufgelöst wurde; eines, das
+  der Compiler nicht so weit bringt (ein Syntaxfehler), behält seinen letzten guten Shard. Ein anderer
+  Feature-Satz oder ein anderes Target bekommt eine eigene Variante neben der ersten.
+- **Code, der zwischen Builds getippt wird,** wird zeilenweise auf den kompilierten Text abgebildet, und den
+  geänderten Code analysiert ein kleines Frontend ohne Compiler ([`crates/ridx-syntax`](../crates/ridx-syntax):
+  Lexer, Parser, Namensauflösung, Typinferenz), das alle anderen Typen und Elemente aus dem Index liest.
+  250 ms nach der letzten Änderung werden die Crates der geänderten Puffer aus ihrem Text in einen Index der
+  Sitzung kompiliert (in die Dateien wird nichts geschrieben); er beantwortet Referenzen, Umbenennen und
+  Navigation bis zum nächsten Build.
 
 Das ganze Design, mit dem Aufbau eines Shards und wo jeder Teil im Code liegt:
 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## Bekannte Einschränkungen
 
-- **Antworten stammen aus dem letzten Build.** Seitdem getippter Code wird aus dem offenen Puffer beantwortet und
-  holt auf, sobald das Projekt wieder baut; ein Crate, der nicht baut, behält seinen letzten guten Index.
+- **Ungespeicherter Code erreicht den Index mit Verzögerung.** Die geänderten Crates werden 250 ms nach der
+  letzten Änderung aus den Puffern kompiliert, was von Sekundenbruchteilen bis zu einigen Sekunden für ein
+  großes Crate dauert; bis dahin kommen Referenzen und Navigation aus dem vorherigen Index, auf die Änderung
+  abgebildet. Crates, die von einem geänderten abhängen, sehen die Änderung nach dem Speichern.
 - **Ein cfg.** Wie `cargo check` sieht der Index ein Target und einen Feature-Satz; Code hinter anderen
   `#[cfg]`s oder Features wird nicht indexiert. Auswahl mit `ridx index --all-features` / `--target`.
 - **Windows** wird noch nicht unterstützt.
@@ -221,19 +227,19 @@ cargo test --workspace
 ## Zitieren
 
 Wenn Sie ridx in Forschung oder Dokumentation verwenden, zitieren Sie bitte das archivierte Release auf Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) für das Projekt (verweist auf die neueste Version), [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) für genau 0.3.8.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) für das Projekt (verweist auf die neueste Version), [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) für genau 0.3.9.
 [`CITATION.cff`](../CITATION.cff) enthält die Metadaten, die GitHubs „Cite this repository“ verwendet.
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 

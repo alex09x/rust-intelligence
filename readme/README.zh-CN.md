@@ -1,7 +1,7 @@
-<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
+<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -48,8 +48,8 @@
   Bevy 为 11.3 GB。它重复了 rustc 在每次 `cargo check` 时本来就会做的名称解析、宏展开和类型推断。
 - **被分析的大部分代码是依赖和 std**，没有人会去编辑。`ridx` 每个依赖只索引一次，
   并在本机所有项目和 worktree 之间共享。
-- **正在输入的代码同样可用**：未保存的修改由索引之上的内存覆盖层回答，
-  直到项目再次构建。
+- **正在输入的代码同样可用**：未保存的修改由索引之上的内存覆盖层立即回答；最后一次修改 250 ms 后，被修改的
+  crate 会从缓冲区编译进会话索引，因此引用和重命名也能看到新代码。
 
 ## 测量
 
@@ -172,20 +172,21 @@ rustc 在每次 `cargo check` 时本来就会解析所有名称、展开所有�
   带 FNV-1a 哈希索引的定义(40 B)、按位置排序并带目标哈希索引的引用(48 B),以及类型、impl、字段和
   泛型表。查找就是在映射页上的一次哈希探测、二分查找或顺序扫描。没人访问的页根本不会被读取,其余的页在内存紧张时
   可由内核换出。
-- **重建是增量且安全的。** 保存后服务器在后台重新索引;如果只有工作区源码变化,它会直接对变化的 crate
-  调用驱动,不经过 Cargo。构建失败的 crate 保留上一次成功的分片,另一组 features 或另一个目标平台
-  会在第一个旁边得到自己的变体。
-- **两次构建之间输入的代码** 按行映射到已编译的文本上,被修改的代码由一个不依赖编译器的小型前端
-  分析([`crates/ridx-syntax`](../crates/ridx-syntax):词法分析、语法分析、名称解析、类型推断),
-  其他所有类型和项都从索引中读取。
+- **重建是增量且安全的。** 保存后服务器在后台重新索引；如果只有工作区源码变化，它会绕过 Cargo，直接对变化的
+  crate 调用驱动。有编译错误的 crate 会按所有已解析的内容建立索引；编译器无法推进到这一步的 crate（语法错误）
+  保留上一个成功的分片。另一组 features 或另一个目标会在第一个旁边得到自己的变体。
+- **两次构建之间输入的代码**按行映射到已编译的文本上，被修改的代码由一个不依赖编译器的小型前端
+  （[`crates/ridx-syntax`](../crates/ridx-syntax)：词法分析、语法分析、名称解析、类型推断）分析，它从索引读取其他所有
+  类型和条目。最后一次修改 250 ms 后，拥有被修改缓冲区的 crate 会从其文本编译进会话索引（不写入任何文件），在下一次
+  构建之前回答引用、重命名和导航。
 
 完整设计、分片布局以及各部分在代码中的位置:
 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)。
 
 ## 已知限制
 
-- **回答来自上一次构建。** 之后输入的代码由打开的缓冲区回答，项目再次构建后会跟上；
-  构建失败的 crate 保留上一个成功的索引。
+- **未保存的代码会延迟进入索引。** 被修改的 crate 在最后一次修改 250 ms 后从缓冲区编译，大的 crate 需要不到一秒
+  到几秒；在此之前，引用和导航来自上一个索引并按修改做了映射。依赖被修改 crate 的 crate 在保存后才能看到变化。
 - **只有一种 cfg。** 与 `cargo check` 一样，索引只看到一个目标和一组特性；其他
   `#[cfg]` 或特性下的代码不会被索引。可用 `ridx index --all-features` / `--target` 选择。
 - 暂不支持 **Windows**。
@@ -208,19 +209,19 @@ cargo test --workspace
 ## 引用
 
 如果你在研究或文档中使用 ridx，请引用 Zenodo 上的归档版本：
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429) 用于精确引用 0.3.8。
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924) 用于精确引用 0.3.9。
 [`CITATION.cff`](../CITATION.cff) 包含 GitHub “Cite this repository” 所使用的元数据。
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 

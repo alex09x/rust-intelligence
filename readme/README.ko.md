@@ -1,7 +1,7 @@
-<!-- translation-source: ef29a0a7c46de3ae9b865daaf62a0debf913eb80 -->
+<!-- translation-source: 2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [ef29a0a](https://github.com/alex09x/rust-intelligence/blob/ef29a0a7c46de3ae9b865daaf62a0debf913eb80/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [2e65ecf](https://github.com/alex09x/rust-intelligence/blob/2e65ecf8c6f701ce96bd66aa5d22603b9fe0a079/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -49,8 +49,8 @@ Linux와 macOS를 지원합니다. Rust Project 및 Rust Foundation과 무관합
   Bevy는 11.3 GB였습니다. rustc가 `cargo check` 때마다 어차피 수행하는 이름 해석, 매크로 확장, 타입 추론을 반복합니다.
 - **분석 대상의 대부분은 의존성과 std**로, 아무도 편집하지 않는 코드입니다. `ridx`는 의존성마다 한 번만
   인덱싱하고 머신의 모든 프로젝트와 worktree에서 공유합니다.
-- **입력 중인 코드도 동작합니다**: 저장하지 않은 편집은 프로젝트가 다시 빌드될 때까지 인덱스 위의 메모리
-  오버레이가 답합니다.
+- **입력 중인 코드도 동작합니다**: 저장하지 않은 편집에는 인덱스 위의 메모리 계층이 바로 답하고, 마지막 편집 후
+  250 ms가 지나면 편집된 크레이트가 버퍼에서 세션 인덱스로 컴파일되므로 참조와 이름 변경도 새 코드를 봅니다.
 
 ## 측정
 
@@ -179,21 +179,23 @@ rustc는 이미 `cargo check`를 할 때마다 모든 이름을 해석하고, �
   해시 인덱스가 있는 참조(48 B), 그리고 타입, impl, 필드, 제네릭 테이블입니다. 조회는 매핑된 페이지 위의
   해시 탐색, 이진 탐색 또는 순차 탐색입니다. 아무도 요청하지 않는 페이지는 한 번도 읽히지 않고, 나머지는
   메모리가 부족할 때 커널이 내보낼 수 있습니다.
-- **재빌드는 증분 방식이고 안전합니다.** 저장하면 서버가 백그라운드에서 다시 인덱싱합니다. 워크스페이스
-  소스만 바뀌었다면 Cargo 없이 바뀐 크레이트에 드라이버를 직접 호출합니다. 빌드에 실패한 크레이트는
-  마지막으로 성공한 샤드를 유지하고, 다른 feature 조합이나 타깃은 첫 번째 것 옆에 자신만의 변형을
-  갖습니다.
-- **빌드 사이에 입력한 코드**는 컴파일된 텍스트에 줄 단위로 대응되고, 편집된 코드는 컴파일러 없이 동작하는
-  작은 프런트엔드([`crates/ridx-syntax`](../crates/ridx-syntax): 렉서, 파서, 이름 해석, 타입 추론)가
-  분석하며, 다른 모든 타입과 항목은 인덱스에서 읽습니다.
+- **재빌드는 증분적이고 안전합니다.** 저장 후 서버는 백그라운드에서 다시 인덱싱합니다. 워크스페이스 소스만 바뀌었다면
+  Cargo 없이 바뀐 크레이트에 대해 드라이버를 직접 호출합니다. 컴파일 오류가 있는 크레이트는 해석된 모든 것으로
+  인덱싱되고, 컴파일러가 거기까지 진행하지 못하는 크레이트(구문 오류)는 마지막으로 성공한 샤드를 유지합니다. 다른
+  feature 조합이나 타깃은 첫 번째 옆에 자기 변형을 갖습니다.
+- **빌드 사이에 입력한 코드**는 컴파일된 텍스트에 줄 단위로 대응되고, 편집된 코드는 컴파일러 없는 작은 프런트엔드
+  ([`crates/ridx-syntax`](../crates/ridx-syntax): 렉서, 파서, 이름 해석, 타입 추론)가 분석하며 나머지 모든 타입과
+  항목은 인덱스에서 읽습니다. 마지막 편집 후 250 ms가 지나면 편집된 버퍼를 가진 크레이트가 그 텍스트로부터 세션
+  인덱스로 컴파일되고(파일에는 아무것도 쓰지 않습니다), 다음 빌드까지 참조, 이름 변경, 탐색에 답합니다.
 
 샤드 레이아웃과 각 부분이 코드의 어디에 있는지를 포함한 전체 설계:
 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ## 알려진 제한
 
-- **답은 마지막 빌드에서 나옵니다.** 그 이후 입력한 코드는 열린 버퍼에서 답하고, 프로젝트가 다시 빌드되면
-  따라잡습니다. 빌드에 실패한 크레이트는 마지막으로 성공한 인덱스를 유지합니다.
+- **저장하지 않은 코드는 조금 늦게 인덱스에 반영됩니다.** 편집된 크레이트는 마지막 편집 후 250 ms에 버퍼에서
+  컴파일되며, 큰 크레이트에서는 1초 미만에서 몇 초가 걸립니다. 그 전까지 참조와 탐색은 이전 인덱스를 편집에 맞춰
+  대응한 결과에서 옵니다. 편집된 크레이트에 의존하는 크레이트는 저장 후에 변경을 봅니다.
 - **cfg는 하나뿐입니다.** `cargo check`처럼 인덱스는 하나의 타깃과 하나의 피처 집합만 봅니다. 다른
   `#[cfg]`나 피처 뒤의 코드는 인덱싱되지 않습니다. `ridx index --all-features` / `--target`으로 선택합니다.
 - **Windows**는 아직 지원하지 않습니다.
@@ -216,19 +218,19 @@ cargo test --workspace
 ## 인용
 
 연구나 문서에서 ridx를 사용한다면 Zenodo에 보관된 릴리스를 인용해 주세요:
-프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.8은 [10.5281/zenodo.24387429](https://doi.org/10.5281/zenodo.24387429).
+프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.9은 [10.5281/zenodo.24395924](https://doi.org/10.5281/zenodo.24395924).
 [`CITATION.cff`](../CITATION.cff)에 GitHub의 "Cite this repository"가 사용하는 메타데이터가 있습니다.
 
 ```bibtex
-@software{panasenko_2026_24387429,
+@software{panasenko_2026_24395924,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.8},
-  doi       = {10.5281/zenodo.24387429},
-  url       = {https://doi.org/10.5281/zenodo.24387429},
+  version   = {0.3.9},
+  doi       = {10.5281/zenodo.24395924},
+  url       = {https://doi.org/10.5281/zenodo.24395924},
 }
 ```
 
