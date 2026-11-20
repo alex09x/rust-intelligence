@@ -79,7 +79,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 }
 
 /// Runs the LSP server over arbitrary reader and writer streams.
-pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: R, mut writer: W, index_path: Option<PathBuf>) -> io::Result<()> {
+pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: R, writer: W, index_path: Option<PathBuf>) -> io::Result<()> {
     let mut multi_root = MultiRootWorkspace::new();
     if let Some(ref p) = index_path {
         multi_root.add_root(p.clone());
@@ -98,6 +98,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
     let cancelled_reader = Arc::clone(&cancelled_requests);
     let requests = Arc::new(requests::Requests::default());
     let requests_reader = Arc::clone(&requests);
+    let mut writer = requests::RetiringWriter::new(writer, Arc::clone(&requests), Arc::clone(&cancelled_requests));
 
     std::thread::Builder::new().name("lsp-reader".into()).spawn(move || loop {
         let mut content_length: Option<usize> = None;
@@ -140,7 +141,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
 
     let mut index_progress = index_progress::IndexProgress::default();
     let session = session_index::SessionIndexer::default();
-    let mut gate = fresh_loop::Gate::new(Arc::clone(&requests));
+    let mut gate = fresh_loop::Gate::default();
     let mut released = std::collections::VecDeque::new();
     loop {
         // A background reindex ended: load it now, rather than on the client's next request.
@@ -182,6 +183,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
                 // A panic in one handler answers that request with an internal error instead of ending the session:
                 // every later request would otherwise go unanswered.
                 let id = msg.get("method").and(msg.get("id")).cloned();
+                let initialize = (msg["method"] == "initialize" && !lifecycle.is_initialized()).then(|| msg.clone());
                 let method = msg.get("method").and_then(Value::as_str).unwrap_or("").to_string();
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     dispatch::dispatch_lsp_message(
@@ -210,9 +212,9 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
                         true
                     }
                 };
-                // Answered: a cancel of it read from now on is ignored, and its id's mark goes (`requests`).
-                if let Some(id) = &id {
-                    requests.answered(id, &cancelled_requests);
+                // The roots of the session are those of an `initialize` accepted (not one rejected or cancelled).
+                if let Some(initialize) = initialize.filter(|_| lifecycle.is_initialized()) {
+                    gate.initialized(&initialize, &lifecycle.reindex);
                 }
                 if !should_continue {
                     break;

@@ -76,11 +76,16 @@ impl Waiting {
         self.held.is_empty()
     }
 
-    /// `msg` to dispatch now, or `None` when it waits for a newer index. A request released before is checked again
-    /// against the index answering now, keeping its first deadline.
-    pub fn admit(&mut self, msg: Value, cov: &Coverage) -> Option<Value> {
+    /// The deadline of the request with this id released to dispatch, taken out: the loop takes it on every path that
+    /// request goes, so none is left to a later request reusing the id.
+    pub fn take_released(&mut self, id: &Value) -> Option<Instant> {
+        self.released.remove(&id.to_string())
+    }
+
+    /// `msg` to dispatch now, or `None` when it waits for a newer index. A request released before (`released`, its
+    /// first deadline) is checked again against the index answering now.
+    pub fn admit(&mut self, msg: Value, cov: &Coverage, released: Option<Instant>) -> Option<Value> {
         let Some((file, min)) = wanted(&msg) else { return Some(msg) };
-        let released = self.released.remove(&msg["id"].to_string());
         if cov.is_covered(&file, min) {
             return Some(msg);
         }
@@ -151,13 +156,13 @@ mod tests {
                 Coverage { ov: &ov, indexed_hash: &|_| indexed.get() }
             };
         }
-        assert!(waiting.admit(request(1, 1, json!({})), &cov!()).is_some(), "version 1 is what the index compiled");
-        assert!(waiting.admit(json!({ "id": 2, "method": "textDocument/hover", "params": {} }), &cov!()).is_some(), "no minVersion: at once");
+        assert!(waiting.admit(request(1, 1, json!({})), &cov!(), None).is_some(), "version 1 is what the index compiled");
+        assert!(waiting.admit(json!({ "id": 2, "method": "textDocument/hover", "params": {} }), &cov!(), None).is_some(), "no minVersion: at once");
         let note = json!({ "method": "textDocument/didChange", "params": { "textDocument": { "uri": uri, "version": 3 }, "minVersion": 3 } });
-        assert!(waiting.admit(note, &cov!()).is_some(), "a notification never waits");
+        assert!(waiting.admit(note, &cov!(), None).is_some(), "a notification never waits");
 
         indexed.set(None);
-        assert!(waiting.admit(request(9, 1, json!({})), &cov!()).is_none(), "no index answers for the file any more: not covered");
+        assert!(waiting.admit(request(9, 1, json!({})), &cov!(), None).is_none(), "no index answers for the file any more: not covered");
         cancelled.lock().unwrap().insert(json!(9));
         let (ready, answers) = waiting.release(&cov!(), &cancelled);
         assert!(ready.is_empty() && answers[0]["id"] == 9 && answers[0]["error"]["code"] == -32800, "{answers:?}");
@@ -165,8 +170,8 @@ mod tests {
         indexed.set(Some(hash(saved)));
 
         assert!(ov.apply_content_changes(file, 2, &[json!({ "text": edited })]));
-        assert!(waiting.admit(request(3, 2, json!({})), &cov!()).is_none(), "version 2 is not compiled yet: it waits");
-        assert!(waiting.admit(request(4, 2, json!({ "minVersionTimeoutMs": 0 })), &cov!()).is_none());
+        assert!(waiting.admit(request(3, 2, json!({})), &cov!(), None).is_none(), "version 2 is not compiled yet: it waits");
+        assert!(waiting.admit(request(4, 2, json!({ "minVersionTimeoutMs": 0 })), &cov!(), None).is_none());
         // The index of the edit arrives after the deadline of 4 passed: 4 still times out, 3 is released.
         indexed.set(Some(hash(edited)));
         let (ready, answers) = waiting.release(&cov!(), &cancelled);
@@ -177,13 +182,24 @@ mod tests {
         assert_eq!(ready[0]["id"], 3);
         // Review of e535e9cf: before its turn, another index loads that does not cover it: it waits again.
         indexed.set(Some(hash(saved)));
-        assert!(waiting.admit(ready[0].clone(), &cov!()).is_none(), "checked again against the index answering now");
+        assert!(
+            {
+                let d = waiting.take_released(&ready[0]["id"]);
+                waiting.admit(ready[0].clone(), &cov!(), d)
+            }
+            .is_none(),
+            "checked again against the index answering now"
+        );
         indexed.set(Some(hash(edited)));
         let (ready, _) = waiting.release(&cov!(), &cancelled);
-        assert!(waiting.admit(ready[0].clone(), &cov!()).is_some());
+        assert!({
+            let d = waiting.take_released(&ready[0]["id"]);
+            waiting.admit(ready[0].clone(), &cov!(), d)
+        }
+        .is_some());
 
         indexed.set(None);
-        assert!(waiting.admit(request(5, 2, json!({})), &cov!()).is_none());
+        assert!(waiting.admit(request(5, 2, json!({})), &cov!(), None).is_none());
         let drained = waiting.drain(-32600, "shutting down");
         assert!(drained.len() == 1 && drained[0]["error"]["code"] == -32600 && waiting.is_empty());
     }

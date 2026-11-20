@@ -16,10 +16,16 @@
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
+/// A client folder: as the client names it, canonical when it was registered, and the root it stands for.
+struct Folder {
+    named: String,
+    canonical: PathBuf,
+    root: PathBuf,
+}
+
 #[derive(Default)]
 pub struct Folders {
-    /// Each client folder (canonical) with its root (canonical).
-    folders: Vec<(PathBuf, PathBuf)>,
+    folders: Vec<Folder>,
 }
 
 fn canonical(p: &Path) -> PathBuf {
@@ -27,27 +33,39 @@ fn canonical(p: &Path) -> PathBuf {
 }
 
 impl Folders {
-    /// Registers a client folder; returns its root.
-    pub fn add(&mut self, folder: &Path) -> PathBuf {
-        let folder = canonical(folder);
-        let root = super::cargo_root::workspace_roots(vec![folder.clone()]).pop().map_or_else(|| folder.clone(), |r| canonical(&r));
-        if !self.folders.iter().any(|(f, _)| *f == folder) {
-            self.folders.push((folder, root.clone()));
+    /// Registers a client folder, given as the client names it; returns its root.
+    pub fn add(&mut self, named: &str) -> PathBuf {
+        let canonical_folder = canonical(Path::new(named));
+        let root = super::cargo_root::workspace_roots(vec![canonical_folder.clone()]).pop().map_or_else(|| canonical_folder.clone(), |r| canonical(&r));
+        if !self.folders.iter().any(|f| f.named == named) {
+            self.folders.push(Folder { named: named.to_string(), canonical: canonical_folder, root: root.clone() });
         }
         root
     }
 
-    /// Removes a client folder; returns its root when no other folder stands for it any more.
-    pub fn remove(&mut self, folder: &Path) -> Option<PathBuf> {
-        let folder = canonical(folder);
-        let at = self.folders.iter().position(|(f, _)| *f == folder)?;
-        let (_, root) = self.folders.remove(at);
-        (!self.folders.iter().any(|(_, r)| *r == root)).then_some(root)
+    /// Registers a root the server took without a client folder (the current directory's workspace).
+    pub fn add_root(&mut self, root: &Path) {
+        let named = root.display().to_string();
+        if !self.folders.iter().any(|f| f.named == named) {
+            self.folders.push(Folder { named, canonical: root.to_path_buf(), root: root.to_path_buf() });
+        }
+    }
+
+    /// Removes a client folder, named as when it was added (else by the path it resolved to then: the file system may
+    /// have changed since, a symbolic link removed; review of 8a28e8ff); returns its root when no other folder stands
+    /// for it any more.
+    pub fn remove(&mut self, named: &str) -> Option<PathBuf> {
+        let at = self.folders.iter().position(|f| f.named == named).or_else(|| {
+            let now = canonical(Path::new(named));
+            self.folders.iter().position(|f| f.canonical == now)
+        })?;
+        let Folder { root, .. } = self.folders.remove(at);
+        (!self.folders.iter().any(|f| f.root == root)).then_some(root)
     }
 
     /// The roots of the session, each once.
     pub fn roots(&self) -> Vec<PathBuf> {
-        let mut roots: Vec<PathBuf> = self.folders.iter().map(|(_, r)| r.clone()).collect();
+        let mut roots: Vec<PathBuf> = self.folders.iter().map(|f| f.root.clone()).collect();
         roots.sort();
         roots.dedup();
         roots
@@ -61,7 +79,7 @@ impl Folders {
             None => params["rootUri"].as_str().map(super::protocol::uri_to_path).or_else(|| params["rootPath"].as_str().map(str::to_string)).into_iter().collect(),
         };
         for path in uris {
-            self.add(Path::new(&path));
+            self.add(&path);
         }
     }
 }
@@ -81,11 +99,27 @@ mod tests {
             std::fs::write(ws.join(m).join("src/lib.rs"), "").unwrap();
         }
         let mut f = Folders::default();
-        assert_eq!(f.add(&ws.join("a")), ws, "a member stands for its workspace");
-        f.add(&ws.join("b"));
+        assert_eq!(f.add(&ws.join("a").display().to_string()), ws, "a member stands for its workspace");
+        f.add(&ws.join("b").display().to_string());
         assert_eq!(f.roots(), vec![ws.clone()]);
-        assert_eq!(f.remove(&ws.join("a")), None, "b still stands for it");
-        assert_eq!(f.remove(&ws.join("b")), Some(ws), "the last one gone: the root goes");
+        assert_eq!(f.remove(&ws.join("a").display().to_string()), None, "b still stands for it");
+        assert_eq!(f.remove(&ws.join("b").display().to_string()), Some(ws), "the last one gone: the root goes");
+        assert!(f.roots().is_empty());
+    }
+
+    /// Review of 8a28e8ff: a folder named through a symbolic link removed since stayed registered.
+    #[cfg(unix)]
+    #[test]
+    fn test_a_folder_is_removed_by_the_name_it_was_added_with() {
+        let dir = tempfile::tempdir().unwrap();
+        let real = canonical(dir.path()).join("real");
+        std::fs::create_dir_all(&real).unwrap();
+        let link = canonical(dir.path()).join("link");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        let mut f = Folders::default();
+        let root = f.add(&link.display().to_string());
+        std::fs::remove_file(&link).unwrap();
+        assert_eq!(f.remove(&link.display().to_string()), Some(root));
         assert!(f.roots().is_empty());
     }
 }
