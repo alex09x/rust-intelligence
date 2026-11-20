@@ -29,9 +29,9 @@ configured for rust-analyzer can start it unchanged.
   loaded: a run that failed (an invalid `Cargo.toml`, a build script that fails) ends it too and leaves the
   index as it was. A successful run's index is normally loaded before its `end` is sent, but this is not
   guaranteed. There is one token for all folders being indexed, not one per folder. **available**
-  A readiness signal that tells a loaded index from a failed run, per folder: **planned**, as `ridx/status`
-  (§7) and a per-root outcome in the progress's last `report`. Until then, a client that must know waits for
-  `end` and then asks something only the new index answers.
+  To tell a loaded index from a failed run, per folder, ask `ridx/status` (§7) after `end`: each root's
+  `generation` changes when a new index loads, and `error` says why its last run failed. **available (next
+  release)**. A per-root outcome in the progress itself: **planned**.
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
 - `$/cancelRequest` is honoured for queued requests. **available** For long-running requests: **planned**.
@@ -57,7 +57,7 @@ How: once the edited buffers of a workspace have been unchanged for 250 ms, the 
 compiled again by `ridx-driver` from the buffers' text (nothing is written to the files) into an index of
 this session under `target/ridx/sessions/`, which then answers in place of the published one until the next
 save is indexed. Between an edit and that index, answers come from the previous one, mapped through the edit;
-a tool that must not get such an answer asks with `minVersion` (§7, planned).
+a tool that must not get such an answer asks with `minVersion` (§7).
 Crates that depend on the edited one keep their saved-text index until the save. `RIDX_SESSION_INDEX=0`
 turns it off.
 
@@ -108,8 +108,8 @@ their versions, in `initialize` → `capabilities.experimental.ridx` (**planned*
 
 | Method | Params → result | Status |
 |---|---|---|
-| `ridx/status` | `{textDocument?}` → per root `{indexed: bool, generation, error?, building: bool}`, and for a document `{savedIndexVersion?, sessionIndexVersion?, building: bool}` | planned (first, with `minVersion`) |
-| `minVersion` on any position request | `params.minVersion: N` (the buffer's LSP version) → the request waits until the index answering covers version `N` of that document, or fails with `-32803` and `data: {reason: "timeout", coveredVersion}` | planned (first) |
+| `ridx/status` | `{textDocument?}` → `{roots: [{root, indexed, generation, building, error, sessionIndex: {answers, building}}], document?: {version, coveredVersion, building}}`; `coveredVersion` is the buffer version the answering index compiled, `null` while edits since are not compiled | available (next release) |
+| `minVersion` on any request with `textDocument` | `params.minVersion: N` (the buffer's LSP version) → the request waits until the index answering covers version `N` of that document, or fails with `-32803` and `data: {reason: "timeout", coveredVersion}` | available (next release) |
 | `ridx/diagnosticsFor` | `{texts: {uri: text}}` → `{uri: Diagnostic[]}`: what the compiler would report if these files had this text, without changing the session's buffers | planned (after `minVersion`) |
 | `ridx/resolveSymbol` | `{path: "crate::module::Type::method", kind?}` → `Location[]` | planned |
 | `ridx/typeAt` | `{textDocument, range}` → `{type, ...}` for an arbitrary expression range | planned |
@@ -126,7 +126,10 @@ What these methods promise, beyond the signatures:
   through the edits since (right for an editor). With it, the answer comes from an index that compiled at
   least that version of the document, so a tool that edits and then asks never gets a stale answer and
   never polls. A document whose text equals the saved file is covered by the published index once it
-  has been indexed. The timeout is 30 s unless `params.minVersionTimeoutMs` says otherwise.
+  has been indexed. The timeout is 30 s unless `params.minVersionTimeoutMs` says otherwise. A document that
+  is not open has no version to wait for and is answered at once; one no indexed crate holds (a new file
+  not yet in any `mod`) is never covered and times out. Measured on a one-file crate: `references` sent
+  right after `didChange` with `minVersion` answered from the new text in 0.33 s.
 - **`ridx/diagnosticsFor`** takes `{texts: {uri: text}, report?: uri[] | "affected"}`. Without `report`
   it reports the files passed in; `"affected"` adds every file of every crate it recompiled. With
   `"affected"` it recompiles the crates that depend on the edited ones too, so a changed declaration
