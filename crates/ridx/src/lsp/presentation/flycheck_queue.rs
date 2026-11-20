@@ -22,6 +22,32 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 impl FlycheckState {
+    /// The server took `diag` of generation `gen`: a clear (no diagnostics) of a root's URI ends what that root has to
+    /// clear there, unless a newer check of the root started since (it may have published the URI again: review of
+    /// 3650f8e3). Checked under the lock a worker registers a check with, so none starts in between.
+    pub fn clear_delivered(&self, gen: u64, diag: &serde_json::Value) {
+        let (Some(root), Some(uri)) = (diag.get(ROOT_KEY).and_then(serde_json::Value::as_str), diag["params"]["uri"].as_str()) else { return };
+        if !diag["params"]["diagnostics"].as_array().is_some_and(|d| d.is_empty()) {
+            return;
+        }
+        let gens = self.root_generation.lock().unwrap_or_else(|e| e.into_inner());
+        if gens.get(Path::new(root)).is_some_and(|&g| g == gen) {
+            if let Some(uris) = self.published_uris.lock().unwrap_or_else(|e| e.into_inner()).get_mut(Path::new(root)) {
+                uris.remove(uri);
+            }
+        }
+    }
+
+    /// Whether diagnostics of generation `gen` are still to publish: those of a root (`ridxRoot`, set by the worker)
+    /// until a newer check of that same root starts, others while no newer check of any root did. A check requested
+    /// for another root no longer drops a root's finished results (review of 11310378).
+    pub fn is_current(&self, gen: u64, diag: &serde_json::Value) -> bool {
+        match diag.get(ROOT_KEY).and_then(serde_json::Value::as_str) {
+            Some(root) => self.root_generation.lock().unwrap_or_else(|e| e.into_inner()).get(Path::new(root)).is_none_or(|&g| g == gen),
+            None => gen == self.current_generation(),
+        }
+    }
+
     /// Triggers an asynchronous background cargo check, publishing diagnostics via notifier.
     pub fn trigger_check(&self, workspace_root: &Path) {
         self.trigger_checks(vec![workspace_root.to_path_buf()]);
