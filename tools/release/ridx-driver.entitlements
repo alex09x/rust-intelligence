@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  rust-intelligence — hardened-runtime entitlements of ridx-driver
+  Copyright (c) 2026 Alexander Panasenko
+
+  Contact: alex@prod.codes
+  Author: https://prod.codes/about/
+  Project: https://github.com/alex09x/rust-intelligence
+  SPDX-License-Identifier: MIT OR Apache-2.0
+
+  ridx-driver links librustc_driver and libLLVM of the user's rustup toolchain, which are not signed
+  by our team, and finds them through DYLD_FALLBACK_LIBRARY_PATH set by ridx. Without these two
+  entitlements the hardened runtime refuses the libraries and drops the variable.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+</dict>
+</plist>

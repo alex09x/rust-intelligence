@@ -8,6 +8,11 @@
 # A pushed tag vX.Y.Z builds both binaries from that tag on every platform, smoke-tests them on a small
 # crate, and attaches ridx-<target>.tar.gz, its .sha256 and SHA256SUMS to the GitHub release of the tag
 # (created as a draft when it does not exist yet). Existing assets are never overwritten.
+#
+# macOS: the build job has no Apple credentials. sign-macos (Environment release-signing) signs ridx and
+# ridx-driver with the Developer ID and notarizes them without running them; verify-macos, without
+# secrets, checks the signatures and Apple's ticket, runs the smoke test on the signed binaries and only
+# then packages them. Missing credentials or a rejected submission stop the release: no ad-hoc fallback.
 name: Release
 
 on:
@@ -55,39 +60,101 @@ jobs:
           export RIDX_BUILD_DIRTY=false
           cargo build --release --locked -p ridx -p ridx-driver
       - name: Smoke test on a small crate
-        run: |
-          set -euo pipefail
-          bin="$GITHUB_WORKSPACE/target/release"
-          work="$RUNNER_TEMP/smoke"
-          mkdir -p "$work/src"
-          printf '[package]\nname = "smoke"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' > "$work/Cargo.toml"
-          printf 'pub struct Greeter;\nimpl Greeter {\n    pub fn hello(&self) -> String { String::from("hi") }\n}\npub fn run() -> String { Greeter.hello() }\n' > "$work/src/lib.rs"
-          cd "$work"
-          "$bin/ridx" --version
-          "$bin/ridx" index .
-          out=$("$bin/ridx" def . src/lib.rs:5:35)
-          echo "$out"
-          echo "$out" | grep -q 'lib.rs:3'
+        run: bash tools/release/smoke.sh "$GITHUB_WORKSPACE/target/release"
       - name: Package
-        run: |
-          set -euo pipefail
-          name="ridx-${{ matrix.target }}"
-          mkdir -p "dist/$name"
-          cp target/release/ridx target/release/ridx-driver LICENSE-MIT LICENSE-APACHE README.md "dist/$name/"
-          tar -C dist -czf "dist/$name.tar.gz" "$name"
-          if command -v sha256sum >/dev/null; then sum="sha256sum"; else sum="shasum -a 256"; fi
-          (cd dist && $sum "$name.tar.gz" > "$name.tar.gz.sha256")
-          cat "dist/$name.tar.gz.sha256"
+        if: runner.os == 'Linux'
+        run: bash tools/release/package.sh target/release "${{ matrix.target }}" dist
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: release-${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: unsigned-${{ matrix.target }}
+          path: |
+            target/release/ridx
+            target/release/ridx-driver
+          if-no-files-found: error
+
+  sign-macos:
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 40
+    environment: release-signing
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-aarch64-apple-darwin
+          path: unsigned
+      - name: Sign with the Developer ID and notarize, without running the binaries
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_NOTARY_KEY_P8: ${{ secrets.APPLE_NOTARY_KEY_P8 }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: python3 tools/release/apple_sign.py unsigned signed notary-evidence
+      - name: Remove the private credentials even after a failed step
+        if: always()
+        run: python3 tools/release/apple_keychain.py cleanup
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
+          name: signed-aarch64-apple-darwin
+          path: |
+            signed/ridx
+            signed/ridx-driver
+            notary-evidence/*.json
+          if-no-files-found: error
+
+  verify-macos:
+    needs: sign-macos
+    runs-on: macos-15
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-aarch64-apple-darwin
+          path: in
+      - name: Developer ID, hardened runtime, entitlements and Apple's ticket
+        run: |
+          set -euo pipefail
+          chmod +x in/signed/ridx in/signed/ridx-driver
+          python3 tools/release/apple_verify.py in/signed in/notary-evidence
+      - name: Toolchain pinned in rust-toolchain.toml
+        run: rustup show active-toolchain || rustup toolchain install
+      - name: Smoke test on the signed binaries
+        run: bash tools/release/smoke.sh "$GITHUB_WORKSPACE/in/signed"
+      - name: Package the signed binaries
+        run: bash tools/release/package.sh in/signed aarch64-apple-darwin dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-aarch64-apple-darwin
           path: |
             dist/*.tar.gz
             dist/*.sha256
           if-no-files-found: error
 
   publish:
-    needs: build
+    needs: [build, verify-macos]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -99,6 +166,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: release-*
           merge-multiple: true
       - name: Attach to the release of the tag
         run: |
