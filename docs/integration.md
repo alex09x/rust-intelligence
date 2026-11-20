@@ -26,6 +26,8 @@ configured for rust-analyzer can start it unchanged.
 - While an index is built, the server reports work-done progress with a token starting `ridx-index-`
   (`begin`, `report` naming the roots, `end`). **`end` is the readiness signal**: it is sent within 20 ms
   after the new index has been loaded, so requests after it are answered from that index. **available**
+  There is one token for all folders being indexed: `report` names the roots still running and `end` comes
+  when the last of them is loaded, not once per folder. A per-folder readiness signal is **planned**.
 - A save, or a watched-file change of a source, starts a background reindex of the changed crates; the
   same progress token reports it. **available**
 - `$/cancelRequest` is honoured for queued requests. **available** For long-running requests: **planned**.
@@ -71,6 +73,11 @@ would not build is not offered.
 | A stable id on every action in `data.id`, using rust-analyzer's assist id where the assist is the same (`extract_function`, `inline_local_variable`, ...) | **planned** (next after unsaved text) |
 | `ridx/assists` / `ridx/applyAssist` by id | **planned**, same release as the ids |
 
+The first ids, in this order: `extract_function`, `extract_variable`, `inline_local_variable`,
+`inline_call`, `wrap_return_type_in_option`, `wrap_return_type_in_result`, `remove_unused_imports`,
+`move_module_to_file`, `extract_module`, `auto_import`, `qualify_path`. An id, once published, keeps its
+meaning in every later version.
+
 The list of assists with their ids will be kept here when the ids land. An assist a tool needs and ridx
 lacks is reported on the [issue tracker](https://github.com/alex09x/rust-intelligence/issues) and
 implemented in order of need.
@@ -92,6 +99,28 @@ their versions, in `initialize` → `capabilities.experimental.ridx` (**planned*
 | `ridx/structuralReplace` | `{pattern, replacement?, scope}` → matches or `WorkspaceEdit` | planned |
 | `ridx/batch` | `{requests: [{method, params}]}` → results in order | planned, optional |
 
+What these methods promise, beyond the signatures:
+
+- **`ridx/diagnosticsFor`** takes `{texts: {uri: text}, report?: uri[] | "affected"}`. Without `report`
+  it reports the files passed in; `"affected"` adds every file of every crate it recompiled (the callers of
+  a changed declaration). Ranges in the files passed in are in the coordinates of the text passed in, the
+  exception to §5; other files are in their saved coordinates. The result carries, per crate,
+  `{complete: bool, reason?}`: a crate whose build stopped before type checking, or whose proc macro failed,
+  is `complete: false`, and its empty list must not be read as clean. Calls are isolated: concurrent calls
+  from one session never see each other's texts, nor change the session's buffers. Its latency (p50 and
+  p95, one edited file, on a mid-size workspace) is published here with the release that ships it.
+- **`ridx/resolveSymbol`** returns every match: for `Type::method` each inherent and trait method, with its
+  `containerName` and trait. It never picks one silently. Generic arguments in the path (`Wrapper<T>::get`)
+  are ignored when matching.
+- **`ridx/symbols`** gives each result its full module path as well as its location, and the result carries
+  `incomplete: true` when `limit` cut the list.
+- **`ridx/typeAt`** returns `{type, expected?}`; `expected` is the type the context requires at that range
+  when it differs (a coercion site).
+- **`ridx/syntaxTree`** returns rust-analyzer's JSON shape, `{kind, start: [offset, line, col], end: [...],
+  children}`, lossless, the root `SOURCE_FILE` covering the whole text, with rust-analyzer's `SyntaxKind`
+  names (`FN`, `BLOCK_EXPR`, `STMT_LIST`, `LET_STMT`, `NAME_REF`, `MACRO_CALL`, `TOKEN_TREE`, ...), so tools
+  written against rust-analyzer's tree read it unchanged.
+
 Standard methods still to complete: `workspace/willRenameFiles` with edits to `mod` declarations and `use`
 paths (today it returns `{}`), and `workspace/symbol` over dependencies.
 
@@ -104,6 +133,9 @@ paths (today it returns `{}`), and `workspace/symbol` over dependencies.
 - One build at a time per index: a run takes the exclusive lock `target/ridx/.index.lock` and another run
   waits for it. Several `ridx lsp` processes may read the same index at once; each keeps only its own
   session's buffers. **available**
+- Shards of workspace crates addressed by content (the crate's sources, cfg and features), so a new git
+  worktree of a repository reuses the shards of every unchanged crate from a sibling worktree or the cache
+  instead of building its index from scratch. **planned**
 - Choosing the index and target directories from outside (`--index-dir` / `--target-dir` and an
   `initializationOptions` equivalent), so build output stays out of the source tree. **planned**
 
@@ -118,8 +150,8 @@ Cargo sets and these of its own: `RIDX_OUT_DIR`, `RIDX_CACHE_DIR`, `RIDX_WORKSPA
 | What | Status |
 |---|---|
 | The environment rule above | available |
+| A budget for index builds shared by every workspace on a machine: concurrent jobs, then a memory cap | planned (before the wrapper) |
 | A wrapper command for `ridx-driver` and its rustc children (as `RUSTC_WRAPPER`), for a sandbox launcher | planned |
-| A budget for index builds: jobs, and a memory cap | planned |
 
 ## 10. Requirements
 
