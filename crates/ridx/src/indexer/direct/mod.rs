@@ -13,7 +13,7 @@
 pub mod args;
 pub mod config;
 pub mod graph;
-mod units;
+pub(crate) mod units;
 
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
@@ -335,7 +335,7 @@ pub fn try_direct_crate_indexing(
 
 /// The variant the published manifest names (`variants/<id>`), the index a server reads, and whether its check built
 /// every crate (a manifest from before the flag counts as partial: one Cargo run settles it).
-fn published_variant(base_out_dir: &Path) -> Option<(String, bool)> {
+pub(crate) fn published_variant(base_out_dir: &Path) -> Option<(String, bool)> {
     let bytes = fs::read(base_out_dir.join("ridx_manifest.json")).ok()?;
     let m = serde_json::from_slice::<serde_json::Value>(&bytes).ok()?;
     Some((m["variant_dir"].as_str().unwrap_or_default().to_string(), m["complete"].as_bool() == Some(true)))

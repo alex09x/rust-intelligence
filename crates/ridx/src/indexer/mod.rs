@@ -20,6 +20,7 @@ mod last_good;
 pub mod manifest;
 pub mod orchestrate;
 pub mod required_features;
+pub mod session;
 pub mod shards;
 pub mod source_snapshots;
 pub mod types;

@@ -44,7 +44,7 @@ pub(super) fn group_by_unit(entries: Vec<(WorkspaceCrateEntry, Option<String>)>)
 }
 
 /// Copies the unit's freshly written sidecar over its other names, so none keeps the hashes of the text before.
-pub(super) fn refresh_aliases(primary: &Path, aliases: &[PathBuf]) {
+pub(crate) fn refresh_aliases(primary: &Path, aliases: &[PathBuf]) {
     let Ok(bytes) = fs::read(primary) else { return };
     for alias in aliases {
         let tmp = alias.with_extension("json.tmp");

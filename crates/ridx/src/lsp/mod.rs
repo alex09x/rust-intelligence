@@ -29,6 +29,7 @@ pub mod params;
 pub mod presentation;
 pub mod protocol;
 pub mod reindex;
+mod session_index;
 pub mod symbols;
 pub mod workspace;
 
@@ -134,9 +135,14 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
     })?;
 
     let mut index_progress = index_progress::IndexProgress::default();
+    let session = session_index::SessionIndexer::default();
     loop {
         // A background reindex ended: load it now, rather than on the client's next request.
         let finished = lifecycle.reindex.take_finished();
+        // The index of the edited buffers: it answers once built, until the next published index loads.
+        if session_index::step(&session, &finished, &mut multi_root, &mut overlay_mgr) && !lifecycle.is_shutdown() {
+            dispatch::refresh_after_load(&mut writer, &mut lifecycle, true)?;
+        }
         if !finished.is_empty() {
             dispatch::load_finished_index(&mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &finished)?;
         }
@@ -161,6 +167,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
                 // every later request would otherwise go unanswered.
                 let id = msg.get("method").and(msg.get("id")).cloned();
                 let method = msg.get("method").and_then(Value::as_str).unwrap_or("").to_string();
+                session_index::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     dispatch::dispatch_lsp_message(
                         protocol::LspMessage::Client(msg),
@@ -210,5 +217,6 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         }
     }
 
+    session.shutdown();
     Ok(())
 }

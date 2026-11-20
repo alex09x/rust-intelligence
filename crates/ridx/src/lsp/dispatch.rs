@@ -86,7 +86,7 @@ pub(crate) fn load_finished_index<W: Write>(
 }
 
 /// After an index is loaded: what came from the one before is dropped and the client asked to fetch it again.
-fn refresh_after_load<W: Write>(writer: &mut W, lifecycle: &mut LifecycleManager, any_reloaded: bool) -> io::Result<()> {
+pub(crate) fn refresh_after_load<W: Write>(writer: &mut W, lifecycle: &mut LifecycleManager, any_reloaded: bool) -> io::Result<()> {
     if any_reloaded {
         lifecycle.conv.clear();
         super::hierarchy::clear_impl_table_cache();

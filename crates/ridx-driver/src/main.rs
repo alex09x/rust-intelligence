@@ -39,6 +39,7 @@ pub mod sysroot;
 mod assoc_res;
 mod attr_refs;
 mod broken_crate;
+mod buffers;
 mod build_index;
 pub(crate) mod cfg_extract;
 mod crate_items;
@@ -77,6 +78,8 @@ pub struct DriverEnv {
     pub build_out_dir: Option<PathBuf>,
     pub pkg_version: String,
     pub driver_hash: u64,
+    /// The list of unsaved buffers to compile instead of their files (`RIDX_BUFFERS`, see `buffers`).
+    pub buffers: Option<PathBuf>,
 }
 
 impl DriverEnv {
@@ -88,6 +91,7 @@ impl DriverEnv {
             build_out_dir: std::env::var("OUT_DIR").ok().map(PathBuf::from),
             pkg_version: std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string()),
             driver_hash: ridx_format::get_driver_hash(),
+            buffers: std::env::var_os(buffers::ENV).map(PathBuf::from),
         }
     }
 
@@ -100,6 +104,7 @@ impl DriverEnv {
             build_out_dir: None,
             pkg_version: "0.1.0".to_string(),
             driver_hash: ridx_format::get_driver_hash(),
+            buffers: None,
         }
     }
 }
@@ -114,6 +119,9 @@ struct IndexCallbacks {
 impl Callbacks for IndexCallbacks {
     fn config(&mut self, config: &mut rustc_interface::Config) {
         self.crate_cfg = config.crate_cfg.clone();
+        if let Some(loader) = self.env.buffers.as_deref().and_then(buffers::BufferLoader::from_list) {
+            config.file_loader = Some(Box::new(loader));
+        }
         let (env, disambiguator, args, cfg) = (self.env.clone(), self.disambiguator.clone(), self.compiler_args.clone(), self.crate_cfg.clone());
         let local = env.manifest_dir.as_deref().is_some_and(|d| !metadata::is_immutable_package(d));
         broken_crate::install(config, Box::new(move |tcx| build_crate_index(tcx, &env, disambiguator.as_deref(), &args, &cfg)), local);

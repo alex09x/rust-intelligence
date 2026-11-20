@@ -43,6 +43,13 @@ impl MultiRootWorkspace {
         self.roots.clear();
     }
 
+    /// Answers for the root `root` (canonical) from `ws` from now on; `None` when there is no such root.
+    pub fn replace_index(&mut self, root: &Path, ws: WorkspaceIndex) -> Option<&WorkspaceIndex> {
+        let slot = self.roots.iter_mut().find(|(r, _)| r == root)?;
+        slot.1 = ws;
+        Some(&slot.1)
+    }
+
     pub fn open_from_folders(&mut self, paths: &[PathBuf]) {
         for p in paths {
             self.add_root(p.clone());

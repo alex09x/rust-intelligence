@@ -11,6 +11,7 @@
 use super::*;
 
 mod broken_crate;
+mod buffers;
 mod cache_and_workspace;
 mod cas_and_owner_bounds;
 mod cfg_and_features;
