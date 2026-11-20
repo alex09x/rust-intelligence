@@ -61,6 +61,11 @@ impl Reindexer {
         std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
     }
 
+    /// The roots indexed this session, running or not, canonical.
+    pub fn roots(&self) -> Vec<PathBuf> {
+        self.roots.lock().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
+    }
+
     /// For `ridx/status`: whether `root` is being indexed now, and why its last run failed (`None` after one that
     /// succeeded, or before any).
     pub fn status_of(&self, root: &Path) -> (bool, Option<String>) {

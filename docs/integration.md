@@ -111,8 +111,8 @@ their versions, in `initialize` → `capabilities.experimental.ridx`: `{methods:
 
 | Method | Params → result | Status |
 |---|---|---|
-| `ridx/status` | `{textDocument?}` → `{roots: [{root, indexed, generation, building, error, sessionIndex: {answers, building}}], document?: {version, coveredVersion, building}}`; `coveredVersion` is the buffer version the answering index compiled, `null` while edits since are not compiled | available (next release) |
-| `minVersion` on any request with `textDocument` | `params.minVersion: N` (the buffer's LSP version) → the request waits until the index answering covers version `N` of that document, or fails with `-32803` and `data: {reason: "timeout", coveredVersion}` | available (next release) |
+| `ridx/status` | `{textDocument?}` → `{roots: [{root, indexed, generation, building, error, sessionIndex: {answers, building}}], document?: {version, coveredVersion, building}}`; a root still building its first index, or whose first index failed, is listed with `indexed: false`, `generation: null`; `coveredVersion` is the buffer version whose text the index answering for the file recorded, `null` while edits since are not compiled or when no index answers for it; the published index is reloaded first if it changed | available (next release) |
+| `minVersion` on any request with `textDocument` | `params.minVersion: N` (the buffer's LSP version) → the request waits until the index answering covers version `N` of that document, or fails with `-32803` and `data: {reason: "timeout", coveredVersion}` once the timeout passed (even if the index arrives later); `$/cancelRequest` ends it with `-32800`, `shutdown` with `-32600`. Requests only: on a notification the field is ignored | available (next release) |
 | `ridx/diagnosticsFor` | `{texts: {uri: text}}` → `{uri: Diagnostic[]}`: what the compiler would report if these files had this text, without changing the session's buffers | planned (after `minVersion`) |
 | `ridx/resolveSymbol` | `{path: "crate::module::Type::method", kind?}` → `Location[]` | planned |
 | `ridx/typeAt` | `{textDocument, range}` → `{type, ...}` for an arbitrary expression range | planned |

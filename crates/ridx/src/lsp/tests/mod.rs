@@ -12,6 +12,7 @@
 
 pub mod common;
 pub mod foreign_shard_tests;
+mod fresh_protocol_tests;
 mod index_refresh_tests;
 pub mod lifecycle_tests;
 pub mod reload_tests;
