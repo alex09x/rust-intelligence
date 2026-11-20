@@ -78,6 +78,13 @@ impl Reindexer {
         self.roots.lock().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
     }
 
+    /// Records a failed run of `root` (tests of what the server answers then).
+    #[cfg(test)]
+    pub fn fail_for_test(&self, root: &Path, error: &str) {
+        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.entry(root.to_path_buf()).or_default().last_error = Some(error.to_string());
+    }
+
     /// For `ridx/status`: whether `root` is being indexed now, and why its last run failed (`None` after one that
     /// succeeded, or before any).
     pub fn status_of(&self, root: &Path) -> (bool, Option<String>) {
@@ -192,7 +199,7 @@ impl Reindexer {
             if ok {
                 finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             }
-            st.last_error = (!ok).then(|| format!("ridx index failed; its output is in {}", log.display()));
+            st.last_error = (!ok).then(|| failure_reason(&log));
             if std::mem::take(&mut st.again) {
                 let now = SystemTime::now();
                 st.running_since = Some(now);
@@ -202,6 +209,17 @@ impl Reindexer {
                 break;
             }
         });
+    }
+}
+
+/// Why a run failed: the last `error` line of its output (a missing `ridx-driver`, a manifest that does not parse), and
+/// where the rest is (prod-code, m=19837: the reason showed only as "ridx index failed").
+pub(crate) fn failure_reason(log: &Path) -> String {
+    let text = std::fs::read_to_string(log).unwrap_or_default();
+    let line = text.lines().rev().find(|l| l.trim_start().to_ascii_lowercase().starts_with("error")).or_else(|| text.lines().rev().find(|l| !l.trim().is_empty()));
+    match line {
+        Some(l) => format!("ridx index failed: {} (output in {})", l.trim().chars().take(300).collect::<String>(), log.display()),
+        None => format!("ridx index failed; its output is in {}", log.display()),
     }
 }
 

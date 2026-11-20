@@ -161,12 +161,51 @@ pub(crate) fn intercept<W: Write>(
         super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
         return Ok(None);
     }
+    if let Some(error) = index_failed(&msg, mr, &lifecycle.reindex) {
+        let data = json!({ "reason": "indexFailed", "root": error.0.display().to_string(), "error": error.1 });
+        let message = format!("no index of {}: its build failed", error.0.display());
+        super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "error": { "code": -32803, "message": message, "data": data } }))?;
+        return Ok(None);
+    }
     if super::fresh::wanted(&msg).is_none() {
         return Ok(Some(msg));
     }
     refresh(gate, writer, lifecycle, mr, ov)?;
     msg[PINNED] = json!(true);
     Ok(gate.waiting.admit(msg, &Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }, deadline))
+}
+
+/// The requests answered from the index alone: on a root without one, an empty answer would read as "none" (no
+/// references, no definition). Hover, completion, symbols, formatting and the rest also answer from the syntax tree.
+const INDEX_ONLY: &[&str] = &[
+    "textDocument/definition",
+    "textDocument/declaration",
+    "textDocument/typeDefinition",
+    "textDocument/implementation",
+    "textDocument/references",
+    "textDocument/rename",
+    "textDocument/prepareRename",
+    "textDocument/prepareCallHierarchy",
+    "textDocument/prepareTypeHierarchy",
+];
+
+/// The root and error when `msg` asks the index of a root that has none loaded because its build failed (prod-code,
+/// m=19837: `references` answered `[]` there, which reads as no references). A root with an older index loaded answers
+/// from it; one still building its first index is answered as before (`minVersion` waits for it).
+fn index_failed(msg: &Value, mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer) -> Option<(PathBuf, String)> {
+    if !INDEX_ONLY.contains(&msg["method"].as_str()?) {
+        return None;
+    }
+    let file = super::protocol::uri_to_path(msg["params"]["textDocument"]["uri"].as_str()?);
+    let root = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file))?;
+    let loaded = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).any(|r| ridx_format::canonicalize_best_effort(r) == root);
+    if loaded {
+        return None;
+    }
+    match reindex.status_of(&root) {
+        (false, Some(error)) => Some((root, error)),
+        _ => None,
+    }
 }
 
 /// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
@@ -237,5 +276,40 @@ mod tests {
         let ridx = &caps["capabilities"]["experimental"]["ridx"];
         assert_eq!(ridx["methods"]["ridx/status"], 1, "{caps}");
         assert_eq!(ridx["requestOptions"]["minVersion"], 1, "{caps}");
+    }
+
+    /// prod-code (m=19837): with `ridx-driver` missing the first index failed, and `references` answered `[]`, which
+    /// reads as "no references". A request the index alone answers is refused there, with the reason.
+    #[test]
+    fn test_a_request_on_a_root_whose_index_failed_is_refused() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = ridx_format::canonicalize_best_effort(dir.path());
+        std::fs::create_dir_all(root.join("src")).unwrap();
+        std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\n").unwrap();
+        std::fs::write(root.join("src/lib.rs"), "pub fn a() {}\n").unwrap();
+        let mr = crate::lsp::MultiRootWorkspace::new();
+        let reindex = crate::lsp::reindex::Reindexer::new();
+        let uri = format!("file://{}", root.join("src/lib.rs").display());
+        let ask = |method: &str| json!({ "id": 1, "method": method, "params": { "textDocument": { "uri": uri }, "position": { "line": 0, "character": 7 } } });
+        assert!(index_failed(&ask("textDocument/references"), &mr, &reindex).is_none(), "no run failed");
+
+        reindex.fail_for_test(&root, "ridx index failed: error: ridx-driver not found");
+        let (failed_root, error) = index_failed(&ask("textDocument/references"), &mr, &reindex).expect("refused");
+        assert_eq!(failed_root, root);
+        assert!(error.contains("ridx-driver"), "{error}");
+        assert!(index_failed(&ask("textDocument/definition"), &mr, &reindex).is_some());
+        assert!(index_failed(&ask("textDocument/documentSymbol"), &mr, &reindex).is_none(), "answered from the syntax tree");
+        assert!(index_failed(&ask("textDocument/hover"), &mr, &reindex).is_none(), "answered from the syntax tree too");
+    }
+
+    /// prod-code (m=19837): the reason a run failed is the last `error` line of its output.
+    #[test]
+    fn test_a_failed_run_says_why() {
+        let dir = tempfile::tempdir().unwrap();
+        let log = dir.path().join("reindex.log");
+        std::fs::write(&log, "   Compiling w\nerror: could not find `ridx-driver` next to ridx\nnote: install it\n").unwrap();
+        let reason = crate::lsp::reindex::failure_reason(&log);
+        assert!(reason.contains("error: could not find `ridx-driver` next to ridx"), "{reason}");
+        assert!(reason.contains("reindex.log"), "{reason}");
     }
 }
