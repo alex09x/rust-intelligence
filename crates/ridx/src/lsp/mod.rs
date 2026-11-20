@@ -17,6 +17,7 @@ mod cargo_root;
 pub mod dispatch;
 pub mod editing;
 pub mod error;
+mod fresh;
 pub mod handlers;
 pub mod hierarchy;
 mod index_progress;
@@ -136,6 +137,8 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
 
     let mut index_progress = index_progress::IndexProgress::default();
     let session = session_index::SessionIndexer::default();
+    let mut waiting = fresh::Waiting::default();
+    let mut released = std::collections::VecDeque::new();
     loop {
         // A background reindex ended: load it now, rather than on the client's next request.
         let finished = lifecycle.reindex.take_finished();
@@ -161,13 +164,29 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
             )?;
         }
 
-        match rx.recv_timeout(std::time::Duration::from_millis(20)) {
+        // Requests waiting for an index that covers their document (`minVersion`): the ones covered now go first.
+        let (ready, expired) = waiting.release(&overlay_mgr);
+        for answer in expired {
+            protocol::send_response(&mut writer, &answer)?;
+        }
+        released.extend(ready);
+        let next = match released.pop_front() {
+            Some(msg) => Ok(msg),
+            None => rx.recv_timeout(std::time::Duration::from_millis(20)),
+        };
+        match next {
             Ok(msg) => {
+                session_index::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
+                if msg["method"] == "ridx/status" {
+                    let result = fresh::status(&msg, &multi_root, &overlay_mgr, &lifecycle.reindex, &session);
+                    protocol::send_response(&mut writer, &serde_json::json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
+                    continue;
+                }
+                let Some(msg) = waiting.admit(msg, &overlay_mgr) else { continue };
                 // A panic in one handler answers that request with an internal error instead of ending the session:
                 // every later request would otherwise go unanswered.
                 let id = msg.get("method").and(msg.get("id")).cloned();
                 let method = msg.get("method").and_then(Value::as_str).unwrap_or("").to_string();
-                session_index::note_edit(&session, &msg, &multi_root, &lifecycle.reindex);
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     dispatch::dispatch_lsp_message(
                         protocol::LspMessage::Client(msg),

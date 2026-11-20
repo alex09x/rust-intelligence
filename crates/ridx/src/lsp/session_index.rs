@@ -136,6 +136,12 @@ impl SessionIndexer {
         true
     }
 
+    /// For `ridx/status`: whether a session index of `root` is being built or waits to be, and whether one answers.
+    pub fn state_of(&self, root: &Path) -> (bool, bool) {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.get(root).map_or((false, false), |st| (st.building || st.changed_at.is_some(), st.current.is_some()))
+    }
+
     /// Removes this server's session directories.
     pub fn shutdown(&self) {
         for st in self.roots.lock().unwrap_or_else(|e| e.into_inner()).values_mut() {

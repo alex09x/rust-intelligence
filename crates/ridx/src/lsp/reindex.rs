@@ -35,6 +35,8 @@ struct RootState {
     again: bool,
     /// When the last run started: a file written before it is in the index.
     last_start: Option<SystemTime>,
+    /// Why the last run failed, `None` after a run that succeeded (`ridx/status`).
+    last_error: Option<String>,
 }
 
 /// Background reindexing per workspace root.
@@ -57,6 +59,13 @@ impl Reindexer {
     /// run arrive while it runs).
     pub fn take_finished(&self) -> Vec<PathBuf> {
         std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
+    }
+
+    /// For `ridx/status`: whether `root` is being indexed now, and why its last run failed (`None` after one that
+    /// succeeded, or before any).
+    pub fn status_of(&self, root: &Path) -> (bool, Option<String>) {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.get(root).map_or((false, None), |st| (st.running_since.is_some(), st.last_error.clone()))
     }
 
     /// The roots being indexed now, for the client's progress.
@@ -155,6 +164,7 @@ impl Reindexer {
             }
             let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
             let st = roots.entry(root.clone()).or_default();
+            st.last_error = (!ok).then(|| format!("ridx index failed; its output is in {}", log.display()));
             if std::mem::take(&mut st.again) {
                 let now = SystemTime::now();
                 st.running_since = Some(now);
