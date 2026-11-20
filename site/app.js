@@ -12,25 +12,15 @@
 const RES = (typeof window !== "undefined" && window.RIDX_RESOURCES) || null;
 
 
-const ARCH = {
-  editor: ["your editor process", "LSP client", "Any editor that speaks the Language Server Protocol. It launches ridx lsp and talks to it over stdin/stdout.", ["No plugin of its own required", "Same binary for every editor"]],
-  lsp: ["ridx process", "ridx lsp", "A small server that routes requests. It answers from the mapped index and overlays your unsaved edits on top.", ["JSON-RPC over stdio", "Honours $/cancelRequest", "Multi-root workspaces routed by path"]],
-  overlay: ["RAM · only what you have open", "OverlayManager", "Holds the buffers you are editing right now. Answers reflect what is on screen, before you save.", ["Live incremental edits", "Lexical scoping for rename", "Transactional WorkspaceEdit with rollback"]],
-  index: ["mmap · OS page cache", "WorkspaceIndex", "Maps the .ridx shards for this workspace. The kernel pages data in as queries touch it and can drop it under memory pressure.", ["O(log N) binary search", "Scoped strictly to Cargo.lock", "Shard files closed after mapping"]],
-  fly: ["background thread", "Flycheck", "On save, runs cargo check in the background and publishes compiler diagnostics without blocking requests.", ["Separate target/ridx-flycheck dir", "Previous run cancelled on new save", "Clears fixed errors"]],
-  t1: ["disk · shared by all projects", "Tier 1 · Global CAS", "crates.io and git dependencies are indexed once per source hash and target, then reused by every workspace and worktree on the machine.", ["~/.cache/ridx/v5/objects/", "Immutable, content-addressed", "Linked into a project, not rebuilt"]],
-  t2: ["disk · inside your project", "Tier 2 · Workspace variant", "Shards for your own workspace members, plus a manifest that whitelists exactly the crates in your Cargo.lock.", ["target/ridx/variants/<id>/", "ridx_manifest.json whitelist", "No symbols leak between projects"]],
-  driver: ["build time · inside rustc", "ridx-driver", "A rustc wrapper. While cargo check compiles, it records definitions, references and inferred types straight from the compiler and writes .ridx shards.", ["Uses rustc’s own resolution", "No second analyzer to disagree", "Shards can ship via a CAS build cache"]],
-};
-
 const FORMAT = [
-  ["Header · magic RIDX, v5", "offsets & counts"], ["String intern pool", "UTF-8, deduped"],
-  ["File path table", "16 B / entry"], ["Definitions table", "40 B / entry"],
-  ["Definitions hash index", "FNV-1a, 16 B"], ["Owner index & deref table", "receiver chains"],
-  ["References table (sorted by span)", "48 B / entry"], ["References target hash index", "16 B"],
-  ["Types, impls, fields, generics", "16–32 B / entry"],
+  ["Header · magic RIDX, v5", "416 B, section offsets"], ["String pool", "names, paths, signatures"],
+  ["Files", "16 B / entry, content hash"], ["Definitions", "40 B / entry"],
+  ["Definitions hash index", "FNV-1a, by path"], ["Owner index · deref table", "members, receiver chains"],
+  ["References, sorted by span", "48 B / entry"], ["References target hash index", "find references"],
+  ["Types · type arena", "28 B / entry, structural"], ["Impls · fields · generics · where", "16–32 B / entry"],
+  ["Uses · macros · cfgs · lang items · notes", "8–28 B / entry"],
 ];
-const TONES = ["#f74c00", "#ff9900", "#ffb347", "#00d2ff", "#38bdf8", "#7dd3fc", "#bae6fd", "#c4b5fd", "#a78bfa"];
+const TONES = ["#f74c00", "#ff9900", "#ffb347", "#00d2ff", "#38bdf8", "#7dd3fc", "#bae6fd", "#c4b5fd", "#a78bfa", "#8b5cf6", "#7c3aed"];
 
 const LSP = [
   ["Navigation", "definition · declaration · implementation · typeDefinition"],
@@ -157,17 +147,6 @@ function renderResources(data) {
 }
 
 renderResources(RES);
-
-const archButtons = [...document.querySelectorAll("[data-arch]")];
-const archDetail = document.getElementById("arch-detail");
-function showArch(key) {
-  archButtons.forEach((b) => b.classList.toggle("on", b.dataset.arch === key));
-  const [where, title, body, facts] = ARCH[key];
-  const list = el("ul", "", facts.map((f) => `<li>${esc(f)}</li>`).join(""));
-  archDetail.replaceChildren(el("span", "eye", esc(where)), el("span", "h3", esc(title)), el("p", "", esc(body)), list);
-}
-archButtons.forEach((b) => b.addEventListener("click", () => showArch(b.dataset.arch)));
-showArch("index");
 
 const fmt = document.getElementById("fmt");
 FORMAT.forEach(([n, s], i) => {

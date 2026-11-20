@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820" role="img" aria-labelledby="t d">
+  <!--
+    rust-intelligence — architecture diagram
+    Copyright (c) 2026 Alexander Panasenko
+    Contact: alex@prod.codes
+    Author: https://prod.codes/about/
+    Project: https://github.com/alex09x/rust-intelligence
+    SPDX-License-Identifier: MIT OR Apache-2.0
+  -->
+  <title id="t">How ridx works</title>
+  <desc id="d">At build time cargo check runs ridx-driver inside rustc, which writes one .ridx shard per crate to disk: dependencies to a shared content-addressed store, the standard library once per toolchain, the workspace's crates to a variant directory. At edit time the ridx language server maps those shards and answers the editor, with an overlay and a live layer for unsaved code.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8d99ad"/></marker>
+    <marker id="ac" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#00d2ff"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f74c00"/></marker>
+    <style>
+      .t{font-family:"Space Grotesk",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;fill:#e6e9ef}
+      .m{font-family:"JetBrains Mono",SFMono-Regular,Menlo,Consolas,monospace;fill:#e6e9ef}
+      .mute{fill:#8d99ad}
+      .eye{font-family:"JetBrains Mono",SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;letter-spacing:2px;font-weight:600}
+      .b{font-weight:700}
+      .box{fill:#121826;stroke:#1e293b;stroke-width:1.5}
+      .in{fill:#0e1422;stroke:#1e293b;stroke-width:1.2}
+      .tag{font-family:"JetBrains Mono",SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;font-weight:600}
+      .seg{fill:#0e1422;stroke:#2a3650;stroke-width:1}
+    </style>
+  </defs>
+
+  <rect width="1200" height="820" rx="20" fill="#090d16"/>
+
+  <!-- column headings -->
+  <text x="40" y="48" class="eye" fill="#f74c00">BUILD TIME · ONCE PER CHANGE</text>
+  <text x="660" y="48" class="eye" fill="#00d2ff">EDIT TIME · EVERY REQUEST</text>
+
+  <!-- ===== build column ===== -->
+  <rect x="40" y="72" width="500" height="56" rx="12" class="box"/>
+  <text x="60" y="106" class="m b" font-size="16">ridx index</text>
+  <text x="520" y="105" class="t mute" font-size="13" text-anchor="end">or a save, in the background</text>
+  <path d="M290 128V150" stroke="#8d99ad" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="40" y="152" width="500" height="64" rx="12" class="box"/>
+  <text x="60" y="180" class="m b" font-size="16">cargo check</text>
+  <text x="60" y="202" class="t mute" font-size="13">every crate is compiled by the real rustc, as usual</text>
+  <path d="M290 216V238" stroke="#8d99ad" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="40" y="240" width="500" height="96" rx="12" class="box" stroke="#f74c00" style="stroke:#f74c00"/>
+  <text x="60" y="270" class="m b" font-size="16" fill="#f74c00" style="fill:#f74c00">ridx-driver</text>
+  <text x="520" y="269" class="m mute" font-size="12" text-anchor="end">RUSTC_WRAPPER</text>
+  <text x="60" y="292" class="t mute" font-size="13">rustc_driver with an after_analysis callback on TyCtxt</text>
+  <g class="tag">
+    <rect x="60" y="306" width="48" height="20" rx="6" fill="#2a1408"/><text x="84" y="320" text-anchor="middle" fill="#f74c00">HIR</text>
+    <rect x="116" y="306" width="116" height="20" rx="6" fill="#2a1408"/><text x="174" y="320" text-anchor="middle" fill="#f74c00">TypeckResults</text>
+    <rect x="240" y="306" width="68" height="20" rx="6" fill="#2a1408"/><text x="274" y="320" text-anchor="middle" fill="#f74c00">ty::Ty</text>
+    <rect x="316" y="306" width="96" height="20" rx="6" fill="#2a1408"/><text x="364" y="320" text-anchor="middle" fill="#f74c00">metadata</text>
+  </g>
+  <path d="M290 336V358" stroke="#8d99ad" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="40" y="360" width="500" height="106" rx="12" class="box"/>
+  <text x="60" y="388" class="t b" font-size="15">writes one .ridx shard per crate</text>
+  <text x="60" y="414" class="m mute" font-size="13">definitions · references, as rustc resolved them</text>
+  <text x="60" y="434" class="m mute" font-size="13">types · impls · fields · generics · where</text>
+  <text x="60" y="454" class="m mute" font-size="13">macros · uses · cfgs · lang items · notes</text>
+  <path d="M290 466V538" stroke="#f74c00" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="304" y="508" class="m" font-size="12" fill="#f74c00" style="fill:#f74c00">write</text>
+
+  <!-- ===== edit column ===== -->
+  <rect x="660" y="72" width="500" height="56" rx="12" class="box"/>
+  <text x="680" y="106" class="t b" font-size="16">your editor</text>
+  <text x="1140" y="105" class="t mute" font-size="13" text-anchor="end">Zed · VS Code · Neovim · Helix</text>
+  <path d="M910 128V150" stroke="#8d99ad" stroke-width="1.5" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text x="924" y="144" class="m mute" font-size="12">JSON-RPC over stdio</text>
+
+  <rect x="660" y="152" width="500" height="314" rx="14" class="box" style="stroke:#00d2ff"/>
+  <text x="680" y="182" class="m b" font-size="16" fill="#00d2ff" style="fill:#00d2ff">ridx lsp</text>
+  <text x="680" y="204" class="t mute" font-size="13">one process, no second compiler in memory</text>
+
+  <rect x="680" y="222" width="220" height="108" rx="10" class="in"/>
+  <text x="696" y="248" class="t b" font-size="14">live layer</text>
+  <rect x="852" y="235" width="36" height="18" rx="5" fill="#231f3a"/><text x="870" y="248" class="tag" text-anchor="middle" fill="#c4b5fd">RAM</text>
+  <text x="696" y="274" class="m mute" font-size="12">ridx-syntax: parser,</text>
+  <text x="696" y="292" class="m mute" font-size="12">names, type inference</text>
+  <text x="696" y="310" class="m mute" font-size="12">for unsaved code</text>
+
+  <rect x="920" y="222" width="220" height="108" rx="10" class="in"/>
+  <text x="936" y="248" class="t b" font-size="14">overlay</text>
+  <rect x="1092" y="235" width="36" height="18" rx="5" fill="#231f3a"/><text x="1110" y="248" class="tag" text-anchor="middle" fill="#c4b5fd">RAM</text>
+  <text x="936" y="274" class="m mute" font-size="12">open buffers mapped</text>
+  <text x="936" y="292" class="m mute" font-size="12">onto compiled lines</text>
+  <text x="936" y="310" class="m mute" font-size="12">by file hash</text>
+
+  <rect x="680" y="342" width="220" height="108" rx="10" class="in" style="stroke:#00d2ff"/>
+  <text x="696" y="368" class="t b" font-size="14">WorkspaceIndex</text>
+  <rect x="844" y="355" width="44" height="18" rx="5" fill="#062a33"/><text x="866" y="368" class="tag" text-anchor="middle" fill="#00d2ff">mmap</text>
+  <text x="696" y="394" class="m mute" font-size="12">every shard mapped,</text>
+  <text x="696" y="412" class="m mute" font-size="12">cross-crate indices</text>
+  <text x="696" y="430" class="m mute" font-size="12">built at open</text>
+
+  <rect x="920" y="342" width="220" height="108" rx="10" class="in"/>
+  <text x="936" y="368" class="t b" font-size="14">flycheck · reindex</text>
+  <text x="936" y="394" class="m mute" font-size="12">cargo check on save,</text>
+  <text x="936" y="412" class="m mute" font-size="12">new index swapped in</text>
+  <text x="936" y="430" class="m mute" font-size="12">when it is published</text>
+
+  <path d="M790 330V340" stroke="#8d99ad" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <path d="M790 538V452" stroke="#00d2ff" stroke-width="2" marker-end="url(#ac)"/>
+  <text x="804" y="500" class="m" font-size="12" fill="#00d2ff" style="fill:#00d2ff">mmap · pages read on demand</text>
+
+  <!-- save: reindex in the background -->
+  <path d="M660 420H600V100H544" stroke="#8d99ad" stroke-width="1.2" stroke-dasharray="5 5" fill="none" marker-end="url(#a)"/>
+  <text x="592" y="260" class="m mute" font-size="12" text-anchor="middle" transform="rotate(-90 592 260)">save: reindex</text>
+
+  <!-- ===== disk ===== -->
+  <rect x="40" y="540" width="1120" height="170" rx="16" fill="#0b1120" stroke="#ff9900" stroke-opacity=".45" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="60" y="566" class="eye" fill="#ff9900">DISK · PAGE CACHE</text>
+
+  <rect x="60" y="580" width="340" height="114" rx="10" class="in"/>
+  <text x="76" y="606" class="m b" font-size="14" fill="#ff9900" style="fill:#ff9900">~/.cache/ridx/v5/objects/</text>
+  <text x="76" y="632" class="t" font-size="13">dependencies, content-addressed</text>
+  <text x="76" y="652" class="t mute" font-size="13">skipped when the unit key matches</text>
+  <text x="76" y="672" class="t mute" font-size="13">shared by every project and worktree</text>
+
+  <rect x="430" y="580" width="340" height="114" rx="10" class="in"/>
+  <text x="446" y="606" class="m b" font-size="14" fill="#ff9900" style="fill:#ff9900">~/.cache/ridx/v5/sysroot/</text>
+  <text x="446" y="632" class="t" font-size="13">core · alloc · std</text>
+  <text x="446" y="652" class="t mute" font-size="13">from the toolchain's metadata</text>
+  <text x="446" y="672" class="t mute" font-size="13">indexed once per toolchain</text>
+
+  <rect x="800" y="580" width="340" height="114" rx="10" class="in"/>
+  <text x="816" y="606" class="m b" font-size="14" fill="#ff9900" style="fill:#ff9900">target/ridx/variants/&lt;id&gt;/</text>
+  <text x="816" y="632" class="t" font-size="13">your crates + a manifest</text>
+  <text x="816" y="652" class="t mute" font-size="13">one variant per features and target</text>
+  <text x="816" y="672" class="t mute" font-size="13">a failed build keeps the last good shard</text>
+
+  <!-- ===== shard layout ===== -->
+  <text x="40" y="742" class="t mute" font-size="13">one .ridx v5 shard: little-endian, fixed-size records in 8-byte aligned sections, read in place</text>
+  <g class="m" font-size="12" text-anchor="middle">
+    <rect x="40" y="756" width="84" height="40" rx="6" class="seg"/><text x="82" y="772">header</text><text x="82" y="788" class="mute">416 B</text>
+    <rect x="128" y="756" width="96" height="40" rx="6" class="seg"/><text x="176" y="772">strings</text><text x="176" y="788" class="mute">pool</text>
+    <rect x="228" y="756" width="96" height="40" rx="6" class="seg"/><text x="276" y="772">files</text><text x="276" y="788" class="mute">16 B</text>
+    <rect x="328" y="756" width="120" height="40" rx="6" class="seg" style="stroke:#00d2ff"/><text x="388" y="772">definitions</text><text x="388" y="788" class="mute">40 B + hash</text>
+    <rect x="452" y="756" width="120" height="40" rx="6" class="seg" style="stroke:#00d2ff"/><text x="512" y="772">references</text><text x="512" y="788" class="mute">48 B + hash</text>
+    <rect x="576" y="756" width="96" height="40" rx="6" class="seg"/><text x="624" y="772">types</text><text x="624" y="788" class="mute">28 B</text>
+    <rect x="676" y="756" width="104" height="40" rx="6" class="seg"/><text x="728" y="772">type arena</text><text x="728" y="788" class="mute">structural</text>
+    <rect x="784" y="756" width="88" height="40" rx="6" class="seg"/><text x="828" y="772">impls</text><text x="828" y="788" class="mute">32 B</text>
+    <rect x="876" y="756" width="136" height="40" rx="6" class="seg"/><text x="944" y="772">fields·generics</text><text x="944" y="788" class="mute">where · deref</text>
+    <rect x="1016" y="756" width="144" height="40" rx="6" class="seg"/><text x="1088" y="772">uses·macros</text><text x="1088" y="788" class="mute">cfgs · notes</text>
+  </g>
+</svg>

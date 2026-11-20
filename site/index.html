@@ -34,7 +34,7 @@
 <body>
 <header class="nav">
   <a class="lockup" href="#top" style="gap:10px"><img src="assets/logo-minimal.svg" width="32" height="32" alt=""><span class="wm" style="font-size:22px">ridx<span class="rust">.</span></span></a>
-  <nav><a href="#why">Why</a><a href="#resources">Numbers</a><a href="#arch">Architecture</a><a href="#limits">Trade-offs</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
+  <nav><a href="#why">Why</a><a href="#resources">Numbers</a><a href="#arch">Architecture</a><a href="#limits">Trade-offs</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="docs.html">Docs</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
 </header>
 
 <main id="top">
@@ -94,47 +94,24 @@
 </section>
 
 <section id="arch" class="wrap sec">
-  <div class="head"><span class="eye">Architecture</span><h2 class="h2">What runs where</h2><p class="lead">Two things live in memory: the language server and your unsaved buffers. Everything else is files on disk, mapped on demand. Click any part.</p></div>
-  <div class="arch-wrap">
-    <div class="arch-col">
-      <div class="lane">editor</div>
-      <button class="box" data-arch="editor"><div class="top"><b>LSP client</b><span class="tag proc">your editor</span></div><div class="sub">VS Code · Neovim · Helix · Zed</div></button>
-      <div class="wire"><i></i></div>
-      <div class="lane">ridx process</div>
-      <button class="box" data-arch="lsp"><div class="top"><b>ridx lsp</b><span class="tag proc">stdio JSON-RPC</span></div><div class="sub">dispatcher · lifecycle · cancellation</div></button>
-      <div class="wire"><i></i></div>
-      <div class="grid3">
-        <button class="box" data-arch="overlay"><b>OverlayManager</b><br><span class="tag ram">RAM</span></button>
-        <button class="box" data-arch="index"><b>WorkspaceIndex</b><br><span class="tag disk">mmap</span></button>
-        <button class="box" data-arch="fly"><b>Flycheck</b><br><span class="tag proc">thread</span></button>
-      </div>
-      <div class="wire"><i></i></div>
-      <div class="lane">disk · page cache</div>
-      <div class="grid2">
-        <button class="box" data-arch="t1"><b>Tier 1 · Global CAS</b><div class="path">~/.cache/ridx/v5/objects/</div><span class="tag disk">shared, immutable</span></button>
-        <button class="box" data-arch="t2"><b>Tier 2 · Workspace variant</b><div class="path">target/ridx/variants/&lt;id&gt;/</div><span class="tag disk">per project</span></button>
-      </div>
-      <div class="wire"><i></i></div>
-      <div class="lane">build time</div>
-      <button class="box" data-arch="driver"><div class="top"><b>ridx-driver</b><span class="tag proc">rustc wrapper</span></div><div class="sub">runs inside cargo check, writes .ridx shards</div></button>
-    </div>
-    <div class="card detail" id="arch-detail"></div>
-  </div>
+  <div class="head"><span class="eye">Architecture</span><h2 class="h2">What runs where</h2><p class="lead">Two things live in memory: the language server and your unsaved buffers. Everything else is files on disk, mapped on demand.</p></div>
+  <figure class="card arch-fig"><a href="assets/architecture.svg"><img src="assets/architecture.svg" width="1200" height="820" alt="How ridx works: at build time cargo check runs ridx-driver inside rustc and writes .ridx shards to disk; at edit time ridx lsp maps them and answers the editor"></a></figure>
+  <p class="mute" style="margin:0;font-size:14px">The whole design, request by request, with pointers into the code: <a href="docs.html">Documentation → Architecture</a>.</p>
 
   <div style="display:flex;flex-direction:column;gap:16px;margin-top:40px">
     <span class="h3">How an index is built and queried</span>
     <div class="row-wrap" style="gap:12px">
       <div class="card step"><span class="num">01</span><b>cargo check</b><span>ridx-driver runs as the rustc wrapper. rustc resolves everything as it normally would.</span></div>
       <div class="card step"><span class="num">02</span><b>Write shards</b><span>Definitions, references and types for each crate go into a compact .ridx v5 file.</span></div>
-      <div class="card step"><span class="num">03</span><b>Store by hash</b><span>Dependencies land in the global CAS once; your crates go to the workspace variant.</span></div>
-      <div class="card step"><span class="num">04</span><b>Map and query</b><span>Queries mmap the shards and binary-search sorted tables. No parse, no copy, no daemon.</span></div>
+      <div class="card step"><span class="num">03</span><b>Store by hash</b><span>Dependencies land in the shared store once; your crates go to the workspace variant.</span></div>
+      <div class="card step"><span class="num">04</span><b>Map and query</b><span>The server maps the shards and answers with hash probes and binary searches. Nothing is parsed into the heap.</span></div>
     </div>
   </div>
 
   <div class="row-wrap" style="gap:24px;margin-top:40px;align-items:flex-start">
     <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:12px">
       <span class="h3">The .ridx v5 file</span>
-      <p class="mute" style="margin:0;font-size:14px;line-height:1.65">Little-endian, 8-byte aligned, fixed-size records. Lookups are binary searches over sorted tables in mapped memory — nothing is parsed or copied into the heap.</p>
+      <p class="mute" style="margin:0;font-size:14px;line-height:1.65">Little-endian, fixed-size records in 8-byte aligned sections. A lookup is a hash probe, a binary search or a scan over mapped memory; records are read in place, never decoded into the heap.</p>
     </div>
     <div class="fmt" id="fmt"></div>
   </div>
@@ -151,7 +128,7 @@
 </section>
 
 <section id="lsp" class="wrap sec">
-  <div class="head"><span class="eye">LSP 3.18</span><h2 class="h2">One server, every capability your editor asks for</h2></div>
+  <div class="head"><span class="eye">LSP</span><h2 class="h2">One server, every capability your editor asks for</h2></div>
   <div class="card" style="overflow:hidden"><div class="mtx" id="mtx"><div class="th">CATEGORY</div><div class="th">METHODS</div></div></div>
 </section>
 
@@ -170,7 +147,7 @@
     <div class="lockup" style="gap:12px"><img src="assets/logo-minimal.svg" width="40" height="40" alt=""><span class="wm" style="font-size:28px">ridx<span class="rust">.</span></span></div>
     <div class="meta">
       <span>© 2026 Alexander Panasenko · <a href="mailto:alex@prod.codes">alex@prod.codes</a></span>
-      <span>MIT / Apache-2.0 · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a> · <a href="https://doi.org/10.5281/zenodo.24379816">DOI 10.5281/zenodo.24379816</a></span>
+      <span>MIT / Apache-2.0 · <a href="docs.html">Docs</a> · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a> · <a href="https://doi.org/10.5281/zenodo.24379816">DOI 10.5281/zenodo.24379816</a></span>
       <span>Not affiliated with the Rust Project or the Rust Foundation.</span>
     </div>
   </div>

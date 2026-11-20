@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  rust-intelligence — documentation page: renders docs/ARCHITECTURE.md, copied next to it at deploy time
+  Copyright (c) 2026 Alexander Panasenko
+
+  Contact: alex@prod.codes
+  Author: https://prod.codes/about/
+  Project: https://github.com/alex09x/rust-intelligence
+  SPDX-License-Identifier: MIT OR Apache-2.0
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Architecture · ridx documentation</title>
+  <meta name="description" content="How ridx works: a rustc driver writes a compact on-disk index during cargo check, and the language server answers from memory-mapped shards. Build pipeline, shard format, request sources and live analysis.">
+  <link rel="canonical" href="https://rust-intelligence.com/docs.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="ridx architecture">
+  <meta property="og:url" content="https://rust-intelligence.com/docs.html">
+  <meta property="og:image" content="https://rust-intelligence.com/assets/social.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600;800&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="nav">
+  <a class="lockup" href="./" style="gap:10px"><img src="assets/logo-minimal.svg" width="32" height="32" alt=""><span class="wm" style="font-size:22px">ridx<span class="rust">.</span></span></a>
+  <nav><a href="./#why">Why</a><a href="./#resources">Numbers</a><a href="./#start">Quickstart</a><a href="docs.html" class="cur">Docs</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
+</header>
+
+<main class="wrap docs">
+  <aside class="doc-side">
+    <span class="eye">Documentation</span>
+    <a class="doc-cur" href="#top">Architecture</a>
+    <nav id="toc"></nav>
+    <span class="eye" style="margin-top:20px">More</span>
+    <a href="./#start">Install and editors</a>
+    <a href="https://github.com/alex09x/rust-intelligence#readme">README</a>
+    <a href="https://github.com/alex09x/rust-intelligence/blob/main/bench/README.md">Benchmarks</a>
+    <a href="https://github.com/alex09x/rust-intelligence/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/alex09x/rust-intelligence#citing">Citing</a>
+  </aside>
+  <article class="doc" id="top">
+    <p class="mute" id="doc-status">Loading the architecture document… If it does not appear, read it on
+      <a href="https://github.com/alex09x/rust-intelligence/blob/main/docs/ARCHITECTURE.md">GitHub</a>.</p>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="lockup" style="gap:12px"><img src="assets/logo-minimal.svg" width="40" height="40" alt=""><span class="wm" style="font-size:28px">ridx<span class="rust">.</span></span></div>
+    <div class="meta">
+      <span>Source of this page: <a href="https://github.com/alex09x/rust-intelligence/blob/main/docs/ARCHITECTURE.md">docs/ARCHITECTURE.md</a></span>
+      <span>MIT / Apache-2.0 · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a> · <a href="https://doi.org/10.5281/zenodo.24379816">DOI 10.5281/zenodo.24379816</a></span>
+      <span>Not affiliated with the Rust Project or the Rust Foundation.</span>
+    </div>
+  </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="docs.js"></script>
+</body>
+</html>

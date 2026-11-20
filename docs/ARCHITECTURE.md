@@ -6,23 +6,7 @@ compiler already resolves every name, expands every macro and infers every type 
 server answers editor requests by looking them up in memory-mapped files. Only the code typed since the
 last build is analyzed by `ridx` itself, by a small compiler-free front end over the same index.
 
-```
- build time                                   edit time
-
- ridx index                                   editor
-   │                                            │ JSON-RPC (stdio)
-   ▼                                            ▼
- cargo check                                  ridx lsp
-   │ RUSTC_WRAPPER                              ├─ overlay: open buffers, positions
-   ▼                                            ├─ live: names and types of unsaved code
- ridx-driver (rustc + after_analysis)           ├─ WorkspaceIndex ◄── mmap ──┐
-   │ HIR + TypeckResults                        └─ flycheck, reindex         │
-   ▼                                                                         │
- .ridx shards ───────────────────────────────────────────────────────────────┘
-   ~/.cache/ridx/v5/objects/     dependencies, shared by every project
-   ~/.cache/ridx/v5/sysroot/     core, alloc, std, once per toolchain
-   target/ridx/variants/<id>/    the workspace's own crates + manifest
-```
+![How ridx works](../site/assets/architecture.svg)
 
 ## Crates
 
