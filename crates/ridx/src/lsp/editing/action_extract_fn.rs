@@ -25,18 +25,31 @@ use std::ops::Range;
 /// offset (written on it, or as `Add explicit type` would write it).
 pub(crate) type LetType<'a> = &'a dyn Fn(usize) -> Option<String>;
 
-/// Whether a value of type `ty` is copied when passed: a primitive or a shared reference.
-fn copy_type(ty: &str) -> bool {
-    let ty = ty.trim();
-    (ty.starts_with('&') && !ty.starts_with("&mut"))
-        || matches!(ty, "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "f32" | "f64" | "bool" | "char")
+const PRIMITIVES: &[&str] = &["u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64", "bool", "char"];
+
+/// Whether a value of type `ty` is copied when passed: a primitive (the file declares none of their names: `type u32 =
+/// String`, review of 531974ed) or a shared reference, told by its tokens (`&'a mut T` is no shared one).
+fn copy_type(ty: &str, primitive_shadowed: bool) -> bool {
+    let toks: Vec<_> = ridx_syntax::lex(ty).into_iter().filter(|t| !t.is_trivia()).collect();
+    match toks.as_slice() {
+        [t] => !primitive_shadowed && PRIMITIVES.contains(&t.text(ty)),
+        [amp, rest @ ..] if amp.kind == T::Amp => {
+            let rest = match rest {
+                [lt, rest @ ..] if lt.kind == T::Lifetime => rest,
+                rest => rest,
+            };
+            !rest.first().is_some_and(|t| t.kind == T::Mut) && !rest.is_empty()
+        }
+        _ => false,
+    }
 }
 
 /// The local `name`, read at byte `at` inside `f`, with its type: a parameter, or a `let` before the selection whose
 /// uses include `at`. `Err` when the name is bound otherwise (a pattern, a closure's parameter): not known; or `mut`:
 /// a method taking `&mut self` would change the copy passed, not the local.
 fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, let_type: LetType) -> Result<Option<String>, ()> {
-    let mutable = |pat: NodeId| tree.own_tokens(pat).any(|(_, t)| t.kind == T::Mut);
+    // `mut`, or `ref` (whose binding is a reference, not the type written for what it matched: review of 531974ed).
+    let mutable = |pat: NodeId| tree.own_tokens(pat).any(|(_, t)| matches!(t.kind, T::Mut | T::Ref));
     for p in ridx_syntax::sema_fn::params(tree, f) {
         if p.bindings.as_slice() == [name] && p.pat.is_some_and(|pat| tree.kind(pat) == K::IdentPat) {
             let uses = ridx_syntax::sema_fn::param_uses(tree, f, name);
@@ -73,6 +86,9 @@ fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, let_type: L
 /// The edits extracting the expression `sel` (byte range) of `doc` into a function: its call in place, and the
 /// function after the item holding it.
 pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> Option<Vec<(Range<usize>, String)>> {
+    if sel.start > sel.end || sel.end > doc.len() {
+        return None;
+    }
     let tree = ridx_syntax::parse(doc);
     let sel = sel.start + (doc[sel.clone()].len() - doc[sel.clone()].trim_start().len())..sel.end - (doc[sel.clone()].len() - doc[sel.clone()].trim_end().len());
     let start = tree.covering(sel.start);
@@ -86,18 +102,49 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     // function that is not).
     if !tree.ancestors(expr).any(|a| a == body)
         || tree.ancestors(f).chain(std::iter::once(f)).any(|a| tree.child(a, K::GenericParamList).is_some())
-        || tree.own_tokens(f).any(|(_, t)| t.kind == T::Const)
+        || tree.own_tokens(f).any(|(_, t)| matches!(t.kind, T::Const | T::Unsafe))
+    {
+        return None;
+    }
+    // The context a plain function in the module lacks (review of 531974ed): an `unsafe` or `const` block around it, a
+    // `cfg` on the function or what holds it (the helper would outlive what it calls), `track_caller` (the caller
+    // reported would be the helper), `target_feature`.
+    if tree.ancestors(expr).take_while(|&a| a != f).any(|a| tree.kind(a) == K::BlockExpr && tree.own_tokens(a).any(|(_, t)| matches!(t.kind, T::Unsafe | T::Const)))
+        || std::iter::once(f).chain(tree.ancestors(f)).any(|a| {
+            tree.children(a)
+                .filter(|&c| tree.kind(c) == K::Attr)
+                .any(|attr| tree.tokens_of(attr).iter().any(|t| matches!(t.text(doc), "cfg" | "cfg_attr" | "track_caller" | "target_feature")))
+        })
     {
         return None;
     }
     let inner: Vec<NodeId> = std::iter::once(expr).chain(tree.descendants(expr)).collect();
-    if inner
-        .iter()
-        .any(|&n| matches!(tree.kind(n), K::ReturnExpr | K::TryExpr | K::BreakExpr | K::ContinueExpr | K::AwaitExpr | K::MacroCall | K::IdentPat | K::ClosureExpr | K::RefExpr))
-        || tree.tokens_of(expr).iter().any(|t| matches!(t.kind, T::SelfKw | T::SelfType))
+    // An assignment (`n += 1`) writes the local, which a copy passed would not (review of 531974ed).
+    let assigns = |n: NodeId| {
+        tree.kind(n) == K::BinExpr && {
+            let op: String = tree.own_tokens(n).filter(|(_, t)| !t.is_trivia()).map(|(_, t)| t.text(doc)).collect();
+            op.ends_with('=') && !matches!(op.as_str(), "==" | "!=" | "<=" | ">=")
+        }
+    };
+    if inner.iter().any(|&n| {
+        matches!(tree.kind(n), K::ReturnExpr | K::TryExpr | K::BreakExpr | K::ContinueExpr | K::AwaitExpr | K::MacroCall | K::IdentPat | K::ClosureExpr | K::RefExpr) || assigns(n)
+    }) || tree.tokens_of(expr).iter().any(|t| matches!(t.kind, T::SelfKw | T::SelfType))
     {
         return None;
     }
+    // A name the function's body declares (a `const`, a `fn`, a `use`) is not seen from the module (review of 531974ed:
+    // a local `N` would become the module's).
+    let local_items: Vec<&str> = tree
+        .descendants(body)
+        .filter(|&d| tree.kind(d) == K::Name && tree.parent(d).is_some_and(|p| tree.kind(p).is_item()))
+        .map(|d| ridx_syntax::sema_fn::norm_ident(tree.text(d)))
+        .collect();
+    if tree.descendants(body).any(|d| tree.kind(d) == K::Use)
+        || tree.tokens_of(expr).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && local_items.contains(&ridx_syntax::sema_fn::norm_ident(t.text(doc))))
+    {
+        return None;
+    }
+    let primitive_shadowed = tree.descendants(tree.root()).any(|d| tree.kind(d) == K::Name && PRIMITIVES.contains(&tree.text(d)));
     // The value's type: the `let` it initializes, or the function's for its tail.
     let parent = tree.parent(expr)?;
     let ret = if tree.kind(parent) == K::LetStmt {
@@ -108,7 +155,10 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     } else {
         return None;
     };
-    if ret.contains("impl ") || ret.contains('_') && ret.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_") {
+    // A type the new signature can hold as written: no `impl`, no placeholder, no `Self` (a free function has none),
+    // and no reference out (whose lifetime the signature would have to tell: review of 531974ed).
+    let nameable = |ty: &str| !ty.contains("impl ") && !ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_" || w == "Self");
+    if !nameable(&ret) || ret.contains(['&', '\'']) {
         return None;
     }
     // The locals it reads, in order of first use.
@@ -126,7 +176,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         }
         let name = ridx_syntax::sema_fn::norm_ident(tok.text(doc));
         match local_of(&tree, f, name, tok.start as usize, let_type).ok()? {
-            Some(ty) if copy_type(&ty) => {
+            Some(ty) if copy_type(&ty, primitive_shadowed) && nameable(&ty) => {
                 if !params.iter().any(|(p, _, _)| p == name) {
                     params.push((name.to_string(), tok.text(doc).to_string(), ty));
                 }

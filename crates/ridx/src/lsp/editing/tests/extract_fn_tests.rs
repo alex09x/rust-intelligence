@@ -69,9 +69,31 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         ("pub fn f(a: u32) -> u32 {\n    let r = $0*&a + 1$0;\n    r\n}\n", Some("u32")),
         ("use std::ops::AddAssign;\npub fn f(mut a: u32) -> u32 {\n    let r = $0{ a.add_assign(1); a }$0;\n    r + a\n}\n", Some("u32")),
         ("pub fn f(a: u32) -> u32 {\n    let mut b = a;\n    let r = $0b.wrapping_add(1)$0;\n    b += 1;\n    r + b\n}\n", Some("u32")),
+        // Review of 531974ed: a name the body declares, a write, a type the new signature cannot hold, a primitive's
+        // name taken, `&'a mut`, `ref`, a context the helper would lack.
+        ("const N: i32 = 100;\npub fn f() -> i32 {\n    const N: i32 = 3;\n    let r = $0N + 1$0;\n    r\n}\n", Some("i32")),
+        ("pub fn f() -> i32 {\n    fn local() -> i32 { 1 }\n    let r = $0local() + 1$0;\n    r\n}\n", Some("i32")),
+        ("pub fn f(mut n: i32) -> i32 {\n    let r = $0n += 1$0;\n    n\n}\n", Some("()")),
+        ("pub struct S;\nimpl S {\n    pub fn f(a: bool) -> Self {\n        $0if a { S } else { S }$0\n    }\n}\n", None),
+        ("pub fn f<'a>(a: &'a str, b: &'a str, c: bool) -> &'a str {\n    $0if c { a } else { b }$0\n}\n", None),
+        ("pub fn f(v: &u8) -> u8 {\n    let x: &_ = v;\n    let r = $0*x + 1$0;\n    r\n}\n", Some("u8")),
+        ("pub type u32 = String;\npub fn f(v: u32) -> usize {\n    let n = $0v.len() + 1$0;\n    n + v.len()\n}\n", Some("usize")),
+        ("pub fn f(x: &'static mut i32) -> i32 {\n    let r = $0*x + 1$0;\n    r + *x\n}\n", Some("i32")),
+        ("pub fn f(ref x: i32) -> i32 {\n    let r = $0*x + 1$0;\n    r\n}\n", Some("i32")),
+        ("unsafe fn g() -> i32 { 1 }\npub fn f() -> i32 {\n    unsafe {\n        let r = $0g() + 1$0;\n        r\n    }\n}\n", Some("i32")),
+        ("#[cfg(test)]\nfn only() -> i32 { 1 }\n#[cfg(test)]\npub fn f() -> i32 {\n    let r = $0only() + 1$0;\n    r\n}\n", Some("i32")),
+        ("#[track_caller]\npub fn f(a: u32) -> u32 {\n    let r = $0a.checked_add(1).unwrap()$0;\n    r\n}\n", Some("u32")),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {
         assert_eq!(extracted(doc, ty), None, "{doc}");
     }
+}
+
+/// Review of 531974ed: a range given end first is no selection, and no panic.
+#[test]
+fn test_a_reversed_range_is_declined() {
+    let doc = "pub fn f(a: u32) -> u32 {\n    a + 1\n}\n";
+    let range = json!({ "start": { "line": 1, "character": 9 }, "end": { "line": 1, "character": 4 } });
+    assert_eq!(extract_fn_action(doc, "file:///w/src/lib.rs", &range, None, &|_| None), None);
 }

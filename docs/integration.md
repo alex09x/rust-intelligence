@@ -136,7 +136,9 @@ or a lone literal, in a function with no generics; `wrap_return_type_in_*` takes
 the index or any open buffer) and no trait fixes, with every exit wrapped (no `-> ()`, no `?`, no return in a
 macro), in a file declaring no `Option`, `Some`, `Result` or `Ok` of its own, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. `extract_function` extracts a whole
 expression of a function with no generics, whose value's type is known (a `let` it initializes, or the tail),
-reading only `Copy` locals of known type, with no `return`, `?`, `break`, `.await`, `self` or macro in it; statements
+reading only `Copy` locals of known type (not `mut`, not `ref`, never borrowed or assigned in it), naming nothing the
+body declares, with no `return`, `?`, `break`, `.await`, `self` or macro in it, outside `unsafe` and `const` blocks
+and any `cfg`, `track_caller` or `target_feature`, with a value type that holds no reference or `Self`; statements
 are not extracted yet. An assist a tool needs and ridx
 lacks is reported on the [issue tracker](https://github.com/alex09x/rust-intelligence/issues) and
 implemented in order of need.
