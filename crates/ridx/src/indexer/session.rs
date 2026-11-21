@@ -85,7 +85,8 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     // from it; any other one (a new module) may be included by an edited buffer, which the compile tells; one nothing
     // compiles is said to be in no crate, at once (prod-code, m=20181). No buffer owned by any unit is no failure.
     let unowned: Vec<PathBuf> = sources.iter().filter(|s| !units.iter().any(|u| u.may_own(s))).cloned().collect();
-    units.extend(super::session_units::new_test_units(&variant.join(".deps"), root, &unowned));
+    let (new_tests, unresolved) = super::session_units::new_test_units(&variant.join(".deps"), root, &unowned);
+    units.extend(new_tests);
     let ctx = Ctx { driver, root, variant: &variant, list_file: &list_file, deps: session_dir.join("direct/deps"), incr: session_dir.join("direct/incremental") };
     fs::create_dir_all(&ctx.deps).and_then(|_| fs::create_dir_all(&ctx.incr)).map_err(|e| format!("direct directory: {e}"))?;
 
@@ -150,6 +151,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
         }
     }
     report.unheld = sources.difference(&held).cloned().collect();
+    report.unresolved = unresolved.into_iter().collect();
     Ok(SessionOutput { dir: session_dir.to_path_buf(), report })
 }
 

@@ -31,6 +31,9 @@ pub struct CompilerReport {
     pub untold: HashSet<PathBuf>,
     /// The buffers no unit compiled owns, by what it recorded (a file nothing includes): in no crate.
     pub unheld: HashSet<PathBuf>,
+    /// The buffers a package's tests may include whose test target is not told for sure (`session_new_tests`): not
+    /// compiled, said so.
+    pub unresolved: HashSet<PathBuf>,
 }
 
 /// `args` reporting in rustc's JSON, and only its diagnostics: the format and colour the unit was recorded with go.

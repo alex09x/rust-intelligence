@@ -70,15 +70,18 @@ fn workspace_units(deps: &Path) -> Vec<(Vec<String>, HashMap<String, String>)> {
 /// from the arguments of an integration test of the same package (they bind its library and its dev-dependencies),
 /// else of its library's unit tests with the library bound, with the crate root, name and output names of the new
 /// target.
-pub(in crate::indexer) fn new_test_units(deps: &Path, root: &Path, files: &[PathBuf]) -> Vec<Unit> {
+/// The second list holds the files whose target is not told for sure: their package's manifest configures its tests
+/// (`autotests`, `[[test]]`), which could name, edition, harness or exclude them otherwise (review of fd0e108b).
+pub(in crate::indexer) fn new_test_units(deps: &Path, root: &Path, files: &[PathBuf]) -> (Vec<Unit>, Vec<PathBuf>) {
     let units = workspace_units(deps);
-    let mut out = Vec::new();
+    let (mut out, mut unresolved) = (Vec::new(), Vec::new());
     for file in files {
         let Some((pkg, target)) = autotest_of(file) else { continue };
         let pkg = canonical(&pkg);
-        // Cargo builds it only when it discovers tests, or the manifest declares it (review of c8b32392).
-        let (autotests, declared) = manifest_tests(&pkg);
-        if !autotests && !declared.contains(file) {
+        // Only a package that discovers its tests as Cargo does by default: then the target is `<name>`, with the
+        // package's edition and the test harness, for sure (reviews of c8b32392 and fd0e108b).
+        if !plain_autotests(&pkg) {
+            unresolved.push(file.clone());
             continue;
         }
         let of_pkg: Vec<&(Vec<String>, HashMap<String, String>)> =
@@ -126,28 +129,19 @@ pub(in crate::indexer) fn new_test_units(deps: &Path, root: &Path, files: &[Path
         let object = Some(PathBuf::from(format!("{crate_name}-{id}.ridx")));
         out.push(Unit { name: crate_name, args, env, object, sidecar, aliases: Vec::new(), own: Some([file.clone()].into()), synthetic: Some(file.clone()) });
     }
-    out
+    (out, unresolved)
 }
 
-/// Whether the package at `pkg` discovers its tests (`autotests`, true unless `[package]` says `false`), and the files
-/// its `[[test]]` sections name. Read line by line: the keys are simple, and a full manifest reader is not a dependency.
-fn manifest_tests(pkg: &Path) -> (bool, HashSet<PathBuf>) {
+/// Whether the manifest of the package at `pkg` leaves its tests to Cargo's default discovery: it says nothing of
+/// `autotests` and declares no test target (`[[test]]`, or `test = [...]`), comments aside. Any such setting may
+/// change which file is a test and how it is built, which only Cargo's own reading of TOML tells; a manifest that
+/// cannot be read says nothing of them.
+fn plain_autotests(pkg: &Path) -> bool {
     let text = fs::read_to_string(pkg.join("Cargo.toml")).unwrap_or_default();
-    let (mut section, mut autotests, mut declared) = (String::new(), true, HashSet::new());
-    for line in text.lines().map(str::trim) {
-        if line.starts_with('[') {
-            section = line.trim_matches(|c| c == '[' || c == ']').trim().to_string();
-            continue;
-        }
-        let Some((key, value)) = line.split_once('=') else { continue };
-        let (key, value) = (key.trim(), value.split('#').next().unwrap_or("").trim().trim_matches('"'));
-        if section == "package" && key == "autotests" {
-            autotests = value != "false";
-        } else if section == "test" && key == "path" {
-            declared.insert(canonical(&pkg.join(value)));
-        }
-    }
-    (autotests, declared)
+    !text.lines().any(|line| {
+        let code: String = line.split('#').next().unwrap_or("").chars().filter(|c| !c.is_whitespace()).collect();
+        code.contains("autotests") || code.starts_with("[[test]]") || code.starts_with("test=[")
+    })
 }
 
 /// The edition of the package at `pkg`, as Cargo resolves it (a workspace's inherited one too).
@@ -222,9 +216,14 @@ mod tests {
         let off = package(&root, &deps, "off", &format!("{PKG}autotests = false\n\n[[test]]\nname = \"kept\"\npath = \"tests/kept.rs\"\n"), &[("tests/old.rs", true, None)]);
         let new = |p: &Path, f: &str| canonical(&p.join(f));
         let files = [new(&a, "tests/api.rs"), new(&b, "tests/api.rs"), new(&off, "tests/new.rs"), new(&off, "tests/kept.rs")];
-        let units = new_test_units(&deps, &root, &files);
+        let commented = package(&root, &deps, "commented", "[package] # settings\nname = \"p\"\nversion = \"0.1.0\"\nautotests = false\n", &[("tests/old.rs", true, None)]);
+        let files = [files[0].clone(), files[1].clone(), files[2].clone(), files[3].clone(), new(&commented, "tests/new.rs")];
+        let (units, unresolved) = new_test_units(&deps, &root, &files);
         let made: Vec<&PathBuf> = units.iter().filter_map(|u| u.synthetic.as_ref()).collect();
-        assert_eq!(made, [&files[0], &files[1], &files[3]], "not one autotests = false does not declare");
+        assert_eq!(made, [&files[0], &files[1]], "packages that leave their tests to Cargo's discovery");
+        // Review of fd0e108b: a manifest that configures its tests (a `[[test]]` with Cargo's default path, a header with
+        // a comment) is not told by reading it line by line: said so, not guessed.
+        assert_eq!(unresolved, [files[2].clone(), files[3].clone(), files[4].clone()]);
         assert_ne!(units[0].sidecar, units[1].sidecar, "each its own outputs");
         assert_ne!(codegen(&units[0].args, "extra-filename="), codegen(&units[1].args, "extra-filename="));
         assert!(!units[1].args.iter().any(|x| x == "--extern"), "a package without a library binds none: {:?}", units[1].args);
