@@ -17,71 +17,10 @@
 //! statements, takes references and writes `-> _` where it cannot name a type; ridx does not offer those yet.
 
 use super::action_parse::{byte_to_utf16_pos, line_starts_of, utf16_pos_to_byte};
-use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree, TokenKind as T};
+use super::assist_locals::{copy_type, local_of, primitive_shadowed, LetType};
+use ridx_syntax::{NodeId, SyntaxKind as K, TokenKind as T};
 use serde_json::{json, Value};
 use std::ops::Range;
-
-/// What the extraction needs to know from outside the syntax tree: the type of the `let` whose name is at a byte
-/// offset (written on it, or as `Add explicit type` would write it).
-pub(crate) type LetType<'a> = &'a dyn Fn(usize) -> Option<String>;
-
-const PRIMITIVES: &[&str] = &["u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64", "bool", "char"];
-
-/// Whether a value of type `ty` is copied when passed: a primitive (the file declares none of their names: `type u32 =
-/// String`, review of 531974ed) or a shared reference, told by its tokens (`&'a mut T` is no shared one).
-fn copy_type(ty: &str, primitive_shadowed: bool) -> bool {
-    let toks: Vec<_> = ridx_syntax::lex(ty).into_iter().filter(|t| !t.is_trivia()).collect();
-    match toks.as_slice() {
-        [t] => !primitive_shadowed && PRIMITIVES.contains(&t.text(ty)),
-        [amp, rest @ ..] if amp.kind == T::Amp => {
-            let rest = match rest {
-                [lt, rest @ ..] if lt.kind == T::Lifetime => rest,
-                rest => rest,
-            };
-            !rest.first().is_some_and(|t| t.kind == T::Mut) && !rest.is_empty()
-        }
-        _ => false,
-    }
-}
-
-/// The local `name`, read at byte `at` inside `f`, with its type: a parameter, or a `let` before the selection whose
-/// uses include `at`. `Err` when the name is bound otherwise (a pattern, a closure's parameter): not known; or `mut`:
-/// a method taking `&mut self` would change the copy passed, not the local.
-fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, let_type: LetType) -> Result<Option<String>, ()> {
-    // `mut`, or `ref` (whose binding is a reference, not the type written for what it matched: review of 531974ed).
-    let mutable = |pat: NodeId| tree.own_tokens(pat).any(|(_, t)| matches!(t.kind, T::Mut | T::Ref));
-    for p in ridx_syntax::sema_fn::params(tree, f) {
-        if p.bindings.as_slice() == [name] && p.pat.is_some_and(|pat| tree.kind(pat) == K::IdentPat) {
-            let uses = ridx_syntax::sema_fn::param_uses(tree, f, name);
-            if uses.uses.iter().any(|r| r.start == at) {
-                if p.pat.is_some_and(mutable) {
-                    return Err(());
-                }
-                return Ok(p.ty_text.map(str::to_string));
-            }
-        }
-    }
-    let mut bound_otherwise = false;
-    for pat in tree.descendants(f).filter(|&n| tree.kind(n) == K::IdentPat && tree.range(n).end <= at) {
-        let Some(n) = tree.child(pat, K::Name).filter(|&n| ridx_syntax::sema_fn::norm_ident(tree.text(n)) == name) else { continue };
-        match tree.parent(pat).filter(|&s| tree.kind(s) == K::LetStmt) {
-            Some(stmt) if ridx_syntax::sema_fn::let_uses(tree, stmt, name).uses.iter().any(|r| r.start == at) => {
-                if mutable(pat) {
-                    return Err(());
-                }
-                let written = tree.children(stmt).find(|&c| tree.kind(c).is_type()).map(|t| tree.text(t).to_string());
-                return Ok(written.or_else(|| let_type(tree.range(n).start)));
-            }
-            Some(_) => {}
-            None => bound_otherwise = true,
-        }
-    }
-    if bound_otherwise {
-        Err(())
-    } else {
-        Ok(None)
-    }
-}
 
 /// The edits extracting the expression `sel` (byte range) of `doc` into a function: its call in place, and the
 /// function after the item holding it.
@@ -144,7 +83,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     {
         return None;
     }
-    let primitive_shadowed = tree.descendants(tree.root()).any(|d| tree.kind(d) == K::Name && PRIMITIVES.contains(&tree.text(d)));
+    let primitive_shadowed = primitive_shadowed(&tree);
     // The value's type: the `let` it initializes, or the function's for its tail.
     let parent = tree.parent(expr)?;
     let ret = if tree.kind(parent) == K::LetStmt {

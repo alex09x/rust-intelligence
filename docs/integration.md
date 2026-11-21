@@ -128,13 +128,15 @@ rust-analyzer), `generate_impl`, `generate_new`, `generate_single_field_struct_f
 `make_usual_string`, `promote_local_to_const`, `remove_hash`, `replace_qualified_name_with_use`,
 `wrap_return_type_in_option`, `wrap_return_type_in_result`; ridx's own: `organize_imports`, `prefix_with_underscore`,
 `remove_unnecessary_mut`. An action is never asked for by its place in the list. Where ridx offers an assist in fewer places than
-rust-analyzer, it is where the result would not compile: `inline_local_variable` inlines a binding used once,
-outside a loop or closure, with nothing in between naming what it reads, whose initializer has no effect, no
-unsuffixed number and no borrowed temporary (one with arithmetic only into the next statement, evaluated first and
-on every path); `promote_local_to_const` takes an initializer of integer, `bool` and `char` literals and operators,
-or a lone literal, in a function with no generics; `wrap_return_type_in_*` takes a function nothing else calls (in
-the index or any open buffer) and no trait fixes, with every exit wrapped (no `-> ()`, no `?`, no return in a
-macro), in a file declaring no `Option`, `Some`, `Result` or `Ok` of its own, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. `extract_function` extracts a whole
+rust-analyzer, it is where the result would not compile: `inline_local_variable` inlines a binding used once, as
+a value (not borrowed, not a receiver), outside a loop, a closure or an `async` block, with nothing in between naming
+what it reads, whose initializer is made of `Copy` locals of known type and typed literals under the built-in
+operators of primitives (one with arithmetic only into the next statement, evaluated first and on every path); `promote_local_to_const` takes an initializer of integer, `bool` and `char` literals and operators
+(no tuple or array under an operator), or a lone literal, in a function with no generics and with no `Self` in the
+type; `wrap_return_type_in_*` takes a function nothing else calls (in
+the index or any open buffer) and no trait fixes, with every exit wrapped (a tail or a last `return`, no `?`, no
+macro but the standard library's), in a 2018-or-later package, and writes `::core::option::Option` and
+`::core::result::Result` paths, which no import or prelude setting changes, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. `extract_function` extracts a whole
 expression of a function with no generics, whose value's type is known (a `let` it initializes, or the tail),
 reading only `Copy` locals of known type (not `mut`, not `ref`, never borrowed or assigned in it), naming nothing the
 body declares, with no `return`, `?`, `break`, `.await`, `self` or macro in it, outside `unsafe` and `const` blocks

@@ -40,6 +40,10 @@ fn test_a_constant_binding_becomes_a_constant() {
     let got = promoted("pub struct S { pub x: i32 }\npub fn s() -> S {\n    let x$0: i32 = 1;\n    S { x }\n}\n", None).unwrap();
     assert!(got.contains("S { x: X }"), "{got}");
     assert_rustc_compiles(&got, "Promote local to constant");
+    // Review of 36349abf: with an attribute before it too.
+    let got = promoted("pub struct S { pub x: i32 }\npub fn s() -> S {\n    let x$0: i32 = 1;\n    S { #[cfg(all())] x }\n}\n", None).unwrap();
+    assert!(got.contains("S { #[cfg(all())] x: X }"), "{got}");
+    assert_rustc_compiles(&got, "Promote local to constant");
     let got = promoted("pub fn v() -> i32 {\n    let value$0: i32 = 1;\n    fn value() -> i32 {\n        2\n    }\n    value\n}\n", None).unwrap();
     assert!(got.contains("const VALUE: i32 = 1;") && got.ends_with("    VALUE\n}\n"), "{got}");
     assert_rustc_compiles(&got, "Promote local to constant");
@@ -65,6 +69,9 @@ fn test_a_binding_no_constant_can_hold_is_not_promoted() {
         ("pub fn f<T>() -> usize {\n    let empty$0: [T; 0] = [];\n    empty.len()\n}\n", None),
         ("pub fn f() -> bool {\n    let same$0 = \"a\" == \"b\";\n    same\n}\n", Some("bool")),
         ("pub fn f() -> f64 {\n    let x$0 = 1.5 * 2.0;\n    x\n}\n", Some("f64")),
+        // Review of 36349abf: a comparison of tuples, an impl's `Self`.
+        ("pub fn f() -> bool {\n    let same$0 = (1u8, 2u8) == (1u8, 2u8);\n    same\n}\n", Some("bool")),
+        ("pub struct S;\nimpl S {\n    pub fn f() -> usize {\n        let empty$0: [Self; 0] = [];\n        empty.len()\n    }\n}\n", None),
     ] {
         assert_eq!(promoted(doc, ty), None, "{doc}");
     }

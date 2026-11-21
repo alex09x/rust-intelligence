@@ -80,6 +80,7 @@ mod action_wrap_return;
 pub mod actions;
 pub mod apply_registry;
 mod assist_ids;
+mod assist_locals;
 pub mod atomic_write;
 pub mod commands;
 pub mod detached_rename;

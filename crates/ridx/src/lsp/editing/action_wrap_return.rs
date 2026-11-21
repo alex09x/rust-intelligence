@@ -9,8 +9,8 @@
  */
 
 //! `Wrap return type in Option` and `in Result` (rust-analyzer's `wrap_return_type_in_option` and
-//! `wrap_return_type_in_result`): `-> T` becomes `-> Option<T>` or `-> Result<T, ()>`, and every value the function
-//! returns is wrapped in `Some` or `Ok` (prod-code, m=20226). Offered where the result compiles (docs/integration.md
+//! `wrap_return_type_in_result`): `-> T` becomes `-> ::core::option::Option<T>` or `-> ::core::result::Result<T, ()>`,
+//! and every value the function returns is wrapped in `Some` or `Ok` (prod-code, m=20226). Offered where the result compiles (docs/integration.md
 //! §6): a function nothing calls in the workspace, whose signature no trait fixes; rust-analyzer offers it with callers
 //! left broken, and writes the error type as a placeholder `_`, which does not compile.
 
@@ -28,19 +28,64 @@ pub(crate) enum Wrap {
 }
 
 impl Wrap {
+    // Written as paths from the `core` crate, which no import, glob or `no_implicit_prelude` changes (review of
+    // 36349abf): `Option` and `Some` in scope may be another item's.
     fn ty(self, inner: &str) -> String {
         match self {
-            Wrap::Option => format!("Option<{inner}>"),
-            Wrap::Result => format!("Result<{inner}, ()>"),
+            Wrap::Option => format!("::core::option::Option<{inner}>"),
+            Wrap::Result => format!("::core::result::Result<{inner}, ()>"),
         }
     }
 
     fn value(self, inner: &str) -> String {
         match self {
-            Wrap::Option => format!("Some({inner})"),
-            Wrap::Result => format!("Ok({inner})"),
+            Wrap::Option => format!("::core::option::Option::Some({inner})"),
+            Wrap::Result => format!("::core::result::Result::Ok({inner})"),
         }
     }
+}
+
+/// The standard library's macros, which never return from the function they are called in.
+const LOCAL_MACROS: &[&str] = &[
+    "println",
+    "print",
+    "eprintln",
+    "eprint",
+    "format",
+    "format_args",
+    "write",
+    "writeln",
+    "vec",
+    "assert",
+    "assert_eq",
+    "assert_ne",
+    "debug_assert",
+    "debug_assert_eq",
+    "debug_assert_ne",
+    "panic",
+    "unreachable",
+    "todo",
+    "unimplemented",
+    "matches",
+    "concat",
+    "stringify",
+    "line",
+    "column",
+    "file",
+    "env",
+    "option_env",
+    "include_str",
+    "cfg",
+];
+
+/// Whether the package of `file` is of the 2018 edition or later, where `::core` names the `core` crate: its
+/// `Cargo.toml` says so, or takes its workspace's edition (Cargo has no workspace edition older than 2018 in use).
+pub(crate) fn edition_2018(file: &std::path::Path) -> bool {
+    let Some(manifest) = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).find(|m| m.is_file()) else { return false };
+    let text = std::fs::read_to_string(manifest).unwrap_or_default();
+    text.lines()
+        .map(|l| l.split('#').next().unwrap_or("").replace([' ', '\t'], ""))
+        .any(|l| l.starts_with("edition.workspace=true") || (l.starts_with("edition=\"20") && !l.starts_with("edition=\"2015")))
 }
 
 /// The function whose header (up to its body) covers byte `offset`, with its name: a free function or a method of an
@@ -62,9 +107,13 @@ fn fn_at(tree: &SyntaxTree<'_>, offset: usize) -> Option<(NodeId, NodeId)> {
 
 /// The edits wrapping the return type of the function at byte `offset` of `doc` and the values it returns, as byte
 /// ranges with their new text; `called` says whether anything but its own name names the function elsewhere.
-pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, called: &dyn Fn(usize) -> bool) -> Option<Vec<(Range<usize>, String)>> {
+pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, edition_2018: bool, called: &dyn Fn(usize, &str) -> bool) -> Option<Vec<(Range<usize>, String)>> {
     let tree = ridx_syntax::parse(doc);
     let (f, name) = fn_at(&tree, offset)?;
+    // `::core` is the crate from 2018 on, unless the file makes a `core` of its own.
+    if !edition_2018 || tree.descendants(tree.root()).any(|d| tree.kind(d) == K::Name && tree.text(d) == "core") {
+        return None;
+    }
     let ty = tree.child(f, K::RetType).and_then(|r| tree.children(r).next())?;
     let ty_text = tree.text(ty);
     let head = ty_text.split('<').next().unwrap_or("").trim();
@@ -73,27 +122,35 @@ pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, called: &dyn Fn(u
         return None;
     }
     let body = ridx_syntax::sema_fn::fn_body(&tree, f)?;
-    // Every exit is wrapped: none through `?` (whose type the new one changes), none hidden in a macro's arguments.
+    // Every exit is wrapped: none through `?` (whose type the new one changes), none in a macro's arguments or its
+    // expansion (only the standard library's, which return from nothing, are read: review of 36349abf).
+    let macro_name = |d: NodeId| tree.tokens_of(d).iter().take_while(|t| t.kind != T::Bang).filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).last().map(|t| t.text(doc));
     if !ridx_syntax::sema_fn::own_try_ops(&tree, f).is_empty()
-        || tree.descendants(body).any(|d| tree.kind(d) == K::MacroCall && tree.tokens_of(d).iter().any(|t| t.kind == T::Return || t.kind == T::Question))
+        || tree.descendants(body).any(|d| {
+            tree.kind(d) == K::MacroCall
+                && (tree.tokens_of(d).iter().any(|t| t.kind == T::Return || t.kind == T::Question)
+                    || !macro_name(d).is_some_and(|m| LOCAL_MACROS.contains(&m) && tree.text(d).starts_with(m)))
+        })
     {
         return None;
     }
-    // `Option`, `Some`, `Result` and `Ok` are the prelude's: the file declares or imports none of them.
-    let prelude = ["Option", "Some", "Result", "Ok"];
-    if tree.descendants(tree.root()).any(|d| {
-        (tree.kind(d) == K::Name && prelude.contains(&ridx_syntax::sema_fn::norm_ident(tree.text(d))))
-            || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| prelude.contains(&ridx_syntax::sema_fn::norm_ident(t.text(doc)))))
-    }) {
+    // The end of the body returns a value: its tail, or a last `return` (a body falling through its end returns `()`,
+    // under whatever alias: review of 36349abf).
+    let last = tree.children(body).filter(|&c| tree.kind(c) != K::Attr).last();
+    let returns_last =
+        last.is_some_and(|l| tree.kind(l) == K::ReturnExpr || (tree.kind(l) == K::ExprStmt && tree.children(l).next().is_some_and(|e| tree.kind(e) == K::ReturnExpr)));
+    if ridx_syntax::sema_fn::tail_expr(&tree, f).is_none() && !returns_last {
         return None;
     }
-    // Every caller would break: a function named anywhere but at its own name, `r#name` included.
+    // Every caller would break: a function named anywhere but at its own name, `r#name` included; a name beyond ASCII
+    // is not compared without its normal form.
     let fn_name = ridx_syntax::sema_fn::norm_ident(tree.text(name));
-    if tree
-        .tokens
-        .iter()
-        .any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(doc)) == fn_name && (t.start as usize) != tree.range(name).start)
-        || called(tree.range(name).start)
+    if !fn_name.is_ascii()
+        || tree
+            .tokens
+            .iter()
+            .any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(doc)) == fn_name && (t.start as usize) != tree.range(name).start)
+        || called(tree.range(name).start, fn_name)
     {
         return None;
     }
@@ -128,11 +185,9 @@ pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Opt
     // Named in another file of the workspace, by the index (this one's text was read already), or in another open
     // buffer, whose unsaved calls the index may not have yet (review of 63f24322); a definition the index does not have
     // is not known to be unused.
-    let called = |name_start: usize| {
+    let called = |name_start: usize, name: &str| {
         let line = doc[..name_start].matches('\n').count();
         let char_col = doc[starts[line]..name_start].chars().count();
-        let name_len = doc[name_start..].find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '#')).unwrap_or(doc.len() - name_start);
-        let name = ridx_syntax::sema_fn::norm_ident(&doc[name_start..name_start + name_len]);
         let in_buffer = ov.open_file_paths().into_iter().filter(|k| ridx_format::canonicalize_best_effort(std::path::Path::new(k)) != canonical).any(|k| {
             ov.get(&k)
                 .is_some_and(|o| ridx_syntax::lex(&o.text).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(&o.text)) == name))
@@ -141,7 +196,7 @@ pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Opt
         in_buffer || ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
     };
     for (wrap, title) in [(Wrap::Option, "Wrap return type in Option"), (Wrap::Result, "Wrap return type in Result")] {
-        let Some(edits) = wrap_edits(doc, offset, wrap, &called) else { continue };
+        let Some(edits) = wrap_edits(doc, offset, wrap, edition_2018(&canonical), &called) else { continue };
         let edits: Vec<Value> = edits
             .into_iter()
             .map(|(r, text)| {

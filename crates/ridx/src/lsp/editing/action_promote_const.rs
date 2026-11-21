@@ -36,7 +36,10 @@ fn const_evaluable(tree: &SyntaxTree<'_>, init: ridx_syntax::NodeId) -> bool {
         k => matches!(k, K::BinExpr | K::PrefixExpr | K::ParenExpr | K::TupleExpr | K::ArrayExpr | K::CastExpr | K::PathType | K::Path | K::PathSegment | K::Name),
     });
     // A cast names its type (`1 as u8`), an integer one; no other name.
-    kinds_ok && !tree.tokens_of(init).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::SelfKw) && !is_primitive(t.text(tree.src)))
+    // An operator over a tuple or an array compares them through a trait no constant calls (review of 36349abf).
+    let nodes = || std::iter::once(init).chain(tree.descendants(init));
+    let composite_op = nodes().any(|n| matches!(tree.kind(n), K::BinExpr | K::PrefixExpr)) && nodes().any(|n| matches!(tree.kind(n), K::TupleExpr | K::ArrayExpr));
+    kinds_ok && !composite_op && !tree.tokens_of(init).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::SelfKw) && !is_primitive(t.text(tree.src)))
 }
 
 fn is_primitive(s: &str) -> bool {
@@ -82,7 +85,11 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, inferred: &dyn Fn() -> Opt
     let ty = written.or_else(inferred)?;
     // A constant's type is an item's: no placeholder, no generic parameter of the function or impl around it (review
     // of 63f24322: `const X: _` and `[T; 0]` in `fn f<T>()`).
-    if ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_") || tree.ancestors(stmt).any(|a| tree.child(a, K::GenericParamList).is_some()) {
+    // `Self` is the enclosing impl's, which a constant cannot see either (review of 36349abf).
+    if ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_" || w == "Self")
+        || tree.ancestors(stmt).any(|a| tree.child(a, K::GenericParamList).is_some())
+        || !tree.text(name).is_ascii()
+    {
         return None;
     }
     let var = ridx_syntax::sema_fn::norm_ident(tree.text(name));

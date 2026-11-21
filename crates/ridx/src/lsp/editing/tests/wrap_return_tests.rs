@@ -13,12 +13,12 @@
 use super::*;
 use crate::lsp::editing::tests::code_action_assists_tests::assert_rustc_compiles;
 
-/// `doc` with the wrap at the first `$0` applied, nothing calling it from another file.
+/// `doc` with the wrap at the first `$0` applied, nothing calling it from another file, in a 2018 package.
 fn wrapped(doc: &str, wrap: Wrap) -> Option<String> {
     let offset = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let mut out = doc.clone();
-    for (r, text) in wrap_edits(&doc, offset, wrap, &|_| false)?.into_iter().rev() {
+    for (r, text) in wrap_edits(&doc, offset, wrap, true, &|_, _| false)?.into_iter().rev() {
         out.replace_range(r, &text);
     }
     Some(out)
@@ -29,19 +29,24 @@ fn wrapped(doc: &str, wrap: Wrap) -> Option<String> {
 fn test_the_return_type_and_every_returned_value_are_wrapped() {
     let doc = "pub fn twice(x: u32) -> u$032 {\n    x * 2\n}\n";
     let got = wrapped(doc, Wrap::Option).unwrap();
-    assert_eq!(got, "pub fn twice(x: u32) -> Option<u32> {\n    Some(x * 2)\n}\n");
+    assert_eq!(got, "pub fn twice(x: u32) -> ::core::option::Option<u32> {\n    ::core::option::Option::Some(x * 2)\n}\n");
     assert_rustc_compiles(&got, "Wrap return type in Option");
     let got = wrapped(doc, Wrap::Result).unwrap();
-    assert_eq!(got, "pub fn twice(x: u32) -> Result<u32, ()> {\n    Ok(x * 2)\n}\n");
+    assert_eq!(got, "pub fn twice(x: u32) -> ::core::result::Result<u32, ()> {\n    ::core::result::Result::Ok(x * 2)\n}\n");
     assert_rustc_compiles(&got, "Wrap return type in Result");
 
     let doc = "pub fn $0pick(a: bool) -> &'static str {\n    if a {\n        return \"a\";\n    }\n    match a {\n        true => \"t\",\n        false => \"f\",\n    }\n}\n";
     let got = wrapped(doc, Wrap::Option).unwrap();
-    assert!(got.contains("-> Option<&'static str>") && got.contains("return Some(\"a\");") && got.contains("Some(match a {"), "{got}");
+    assert!(got.contains("return ::core::option::Option::Some(\"a\");") && got.contains("::core::option::Option::Some(match a {"), "{got}");
     assert_rustc_compiles(&got, "Wrap return type in Option");
 
-    let doc = "pub struct S;\nimpl S {\n    pub fn $0get(&self) -> u8 {\n        1\n    }\n}\n";
+    let doc = "pub struct S;\nimpl S {\n    pub fn $0get(&self) -> u8 {\n        println!(\"get\");\n        1\n    }\n}\n";
     assert_rustc_compiles(&wrapped(doc, Wrap::Result).unwrap(), "Wrap return type in Result");
+    // Review of 36349abf: an `Option` of the user's, a glob import, no prelude: the paths are the `core` crate's.
+    let doc = "pub struct Option<T>(pub T);\nmod p {\n    pub type Result<T> = core::result::Result<T, ()>;\n}\nuse p::*;\npub fn $0f() -> u8 {\n    1\n}\n";
+    assert_rustc_compiles(&wrapped(doc, Wrap::Option).unwrap(), "Wrap return type in Option");
+    assert_rustc_compiles(&wrapped(doc, Wrap::Result).unwrap(), "Wrap return type in Result");
+    assert_rustc_compiles(&wrapped("#![no_implicit_prelude]\npub fn $0f() -> u8 {\n    1\n}\n", Wrap::Option).unwrap(), "Wrap return type in Option");
 }
 
 #[test]
@@ -63,7 +68,10 @@ fn test_it_is_not_offered_where_the_result_would_not_compile() {
         "pub fn $0f() -> () {\n    let _ = 1;\n}\n",
         "pub type R = Result<u8, ()>;\npub fn $0f(r: R) -> R {\n    let v = r?;\n    Ok(v)\n}\n",
         "pub fn $0f(c: bool) -> u8 {\n    println!(\"{}\", if c { return 1 } else { 2 });\n    3\n}\n",
-        "pub struct Option<T>(pub T);\npub fn $0f() -> u8 {\n    1\n}\n",
+        // Review of 36349abf: a unit alias falling through, a macro whose expansion returns, a name beyond ASCII.
+        "pub type Unit = ();\npub fn $0f() -> Unit {\n    let _ = 1;\n}\n",
+        "macro_rules! early {\n    () => {\n        return 1\n    };\n}\npub fn $0f() -> u8 {\n    early!();\n    2\n}\n",
+        "pub fn $0ca\u{0301}fe() -> u8 {\n    1\n}\n",
     ] {
         assert_eq!(wrapped(doc, Wrap::Option), None, "{doc}");
     }
@@ -74,6 +82,7 @@ fn test_it_is_not_offered_where_the_result_would_not_compile() {
 fn test_a_caller_in_another_open_buffer_keeps_the_signature() {
     let dir = tempfile::tempdir().unwrap();
     let mut w = ridx_format::IndexWriter::new("w", "0.1.0");
+    std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
     let lib = dir.path().join("src/lib.rs");
     w.add_definition(ridx_format::RawDefinition {
         def_id: 1,
@@ -100,4 +109,24 @@ fn test_a_caller_in_another_open_buffer_keeps_the_signature() {
     let other = dir.path().join("src/g.rs");
     ov.open_document(&format!("file://{}", other.display()), &other.to_string_lossy(), 1, "pub fn g() -> u8 {\n    crate::f()\n}\n".to_string());
     assert!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).is_empty(), "a call not saved yet");
+}
+
+/// `::core` names the crate from the 2018 edition on: a 2015 package, or one whose edition is unknown, is not wrapped.
+#[test]
+fn test_the_edition_is_read_from_the_manifest() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("src/lib.rs");
+    assert!(!edition_2018(&file), "no manifest");
+    let manifest = dir.path().join("Cargo.toml");
+    for (text, yes) in [
+        ("[package]\nname = \"w\"\n", false),
+        ("[package]\nedition = \"2015\"\n", false),
+        ("[package]\nedition = \"2021\" # now\n", true),
+        ("[package]\nedition.workspace = true\n", true),
+    ] {
+        std::fs::write(&manifest, text).unwrap();
+        assert_eq!(edition_2018(&file), yes, "{text}");
+    }
+    let doc = "pub fn $0f() -> u8 {\n    1\n}\n";
+    assert_eq!(wrap_edits(&doc.replacen("$0", "", 1), doc.find("$0").unwrap(), Wrap::Option, false, &|_, _| false), None);
 }
