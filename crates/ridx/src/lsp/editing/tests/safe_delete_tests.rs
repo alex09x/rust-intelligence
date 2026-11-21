@@ -173,6 +173,21 @@ fn test_an_index_is_current_by_the_content_of_the_sources() {
     assert_eq!(reason(&[("mac.rs", "pub fn c() { call_it!(); }\n")], &ov, &mut conv), "staleIndex");
     assert_eq!(reason(&[("mac2.rs", "pub fn c() { outer!(); }\n")], &ov, &mut conv), "staleIndex");
     assert_eq!(reason(&[("mac3.rs", "pub fn c() { println!(\"x\"); }\n")], &ov, &mut conv), "deleted", "a macro naming nothing of it");
+    // The Cargo workspace as Cargo resolves it: a package of its own nested in a repository is read alone, and a
+    // workspace of its own nested in it is not read.
+    let (_d, path, index) = workspace(lib, &defs, &[]);
+    let root = path.parent().unwrap().parent().unwrap();
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[workspace]\n").unwrap();
+    std::fs::create_dir_all(root.join("fixture/src")).unwrap();
+    std::fs::write(root.join("fixture/Cargo.toml"), "[package]\nname = \"fx\"\nversion = \"0.1.0\"\n\n[workspace]\n").unwrap();
+    std::fs::write(root.join("fixture/src/lib.rs"), "pub fn unused() {}\n").unwrap();
+    // Nor is the build directory Cargo names, where ridx keeps copies of the texts it indexed.
+    std::fs::create_dir_all(root.join("target/ridx/sources")).unwrap();
+    std::fs::write(root.join("target/ridx/sources/0.rs"), "pub fn c() { crate::unused() }\n").unwrap();
+    assert!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv)["edit"].is_object());
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\n\n[workspace]\nmembers = [\"fixture\"]\n").unwrap();
+    std::fs::write(root.join("fixture/Cargo.toml"), "[package]\nname = \"fx\"\nversion = \"0.1.0\"\n").unwrap();
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv)["reason"], "staleIndex", "a member is read");
     // A buffer of a file not saved yet.
     let (_d, path, index) = workspace(lib, &defs, &[]);
     let new = path.with_file_name("new.rs");

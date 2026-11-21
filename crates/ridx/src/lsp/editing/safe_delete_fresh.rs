@@ -68,36 +68,47 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
     Some(out)
 }
 
-/// The directories whose Rust files may belong to the indexed crates: for each source, the outermost ancestor with a
-/// `Cargo.toml` inside its repository, or its own directory; none inside another.
-fn roots(indexed: &HashSet<PathBuf>) -> Vec<PathBuf> {
-    let mut roots: Vec<PathBuf> = Vec::new();
+/// The directories whose Rust files may belong to the indexed crates: for each source, the root of its Cargo workspace
+/// as Cargo resolves it (not a repository or a workspace it is nested in), or its own directory with no manifest above
+/// it; none inside another. With them, the workspaces' build directories, which hold no source (Cargo's, and ridx's
+/// copies of the texts it indexed). `None` where Cargo gives no answer for a manifest.
+fn roots(indexed: &HashSet<PathBuf>) -> Option<(Vec<PathBuf>, Vec<PathBuf>)> {
+    let (mut roots, mut builds): (Vec<PathBuf>, Vec<PathBuf>) = (Vec::new(), Vec::new());
+    let mut by_dir: std::collections::HashMap<PathBuf, PathBuf> = std::collections::HashMap::new();
     for f in indexed {
         let Some(dir) = f.parent() else { continue };
-        let mut root = dir.to_path_buf();
-        for a in dir.ancestors() {
-            if a.join("Cargo.toml").is_file() {
-                root = a.to_path_buf();
+        let root = match by_dir.get(dir) {
+            Some(r) => r.clone(),
+            None => {
+                let r = match super::cargo_meta::workspace_root(f).ok()? {
+                    Some((root, build)) => {
+                        builds.push(build);
+                        root
+                    }
+                    None => dir.to_path_buf(),
+                };
+                by_dir.insert(dir.to_path_buf(), r.clone());
+                r
             }
-            if a.join(".git").exists() {
-                break;
-            }
-        }
+        };
         if !roots.iter().any(|r| root.starts_with(r)) {
             roots.retain(|r| !r.starts_with(&root));
             roots.push(root);
         }
     }
-    roots
+    Some((roots, builds))
 }
 
-/// Every Rust file under `roots`, but in hidden directories and Cargo's build directories (which hold a
-/// `CACHEDIR.TAG`: a source directory named `target` is a source directory); `None` past [`MAX_FILES`].
-fn rust_files(roots: &[PathBuf]) -> Option<Vec<PathBuf>> {
+/// Every Rust file under `roots`, but in hidden directories, Cargo's build directories (which hold a `CACHEDIR.TAG`:
+/// a source directory named `target` is a source directory) and workspaces of their own nested in a root (a fixture
+/// with its `[workspace]`), and the `builds` directories; `None` past [`MAX_FILES`].
+fn rust_files(roots: &[PathBuf], builds: &[PathBuf]) -> Option<Vec<PathBuf>> {
     let mut out = Vec::new();
     let mut stack: Vec<PathBuf> = roots.to_vec();
+    let own_workspace = |dir: &Path| std::fs::read_to_string(dir.join("Cargo.toml")).is_ok_and(|m| m.lines().any(|l| l.trim() == "[workspace]"));
     while let Some(dir) = stack.pop() {
-        if dir.join("CACHEDIR.TAG").is_file() {
+        let build = builds.iter().any(|b| ridx_format::canonicalize_best_effort(&dir) == *b);
+        if build || dir.join("CACHEDIR.TAG").is_file() || (!roots.contains(&dir) && own_workspace(&dir)) {
             continue;
         }
         let Ok(entries) = std::fs::read_dir(&dir) else { continue };
@@ -170,7 +181,7 @@ fn scan(text: &str, names: &[&str]) -> Scan {
 /// naming one (a file added since, a `#[path]` module, a module of a crate the index lacks).
 pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&str]) -> bool {
     let Some(indexed) = indexed_sources(ws, ov) else { return false };
-    let Some(mut files) = rust_files(&roots(&indexed)) else { return false };
+    let Some(mut files) = roots(&indexed).and_then(|(r, b)| rust_files(&r, &b)) else { return false };
     // A buffer of a file not saved yet is a source too.
     files.extend(ov.open_file_paths().into_iter().map(PathBuf::from).filter(|p| p.extension().is_some_and(|e| e == "rs")));
     let mut seen = HashSet::new();

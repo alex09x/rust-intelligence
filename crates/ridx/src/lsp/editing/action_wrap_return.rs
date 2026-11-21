@@ -49,47 +49,7 @@ impl Wrap {
 /// resolves it (`[package.metadata]` tables and a workspace's inherited edition read as Cargo reads them: review of
 /// 03933e37); not when Cargo cannot tell.
 pub(crate) fn edition_2018(file: &std::path::Path) -> bool {
-    package_edition(file).is_some_and(|e| e != "2015")
-}
-
-/// The edition of the package holding `file`, from `cargo metadata`, cached by the text of every manifest above it.
-fn package_edition(file: &std::path::Path) -> Option<String> {
-    use std::collections::HashMap;
-    use std::sync::{Mutex, OnceLock};
-    // By the nearest manifest: the text of every manifest above the file, and the edition read with it.
-    type Editions = HashMap<std::path::PathBuf, (String, Option<String>)>;
-    static CACHE: OnceLock<Mutex<Editions>> = OnceLock::new();
-    let manifests: Vec<std::path::PathBuf> = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).filter(|m| m.is_file()).collect();
-    let nearest = manifests.first()?.clone();
-    let key: String = manifests.iter().map(|m| std::fs::read_to_string(m).unwrap_or_default()).collect::<Vec<_>>().join("\u{0}");
-    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((k, e)) = cache.lock().ok()?.get(&nearest) {
-        if *k == key {
-            return e.clone();
-        }
-    }
-    let out = std::process::Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--no-deps", "--offline", "--manifest-path"])
-        .arg(&nearest)
-        .stdin(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .output()
-        .ok()?;
-    let j: Value = serde_json::from_slice(&out.stdout).ok()?;
-    let file = ridx_format::canonicalize_best_effort(file);
-    // The package whose directory holds the file most closely.
-    let edition = j["packages"]
-        .as_array()?
-        .iter()
-        .filter_map(|p| {
-            let dir = ridx_format::canonicalize_best_effort(std::path::Path::new(p["manifest_path"].as_str()?).parent()?);
-            let edition = p["edition"].as_str()?;
-            file.starts_with(&dir).then(|| (dir.components().count(), edition.to_string()))
-        })
-        .max_by_key(|(depth, _)| *depth)
-        .map(|(_, e)| e);
-    cache.lock().ok()?.insert(nearest, (key, edition.clone()));
-    edition
+    super::cargo_meta::package_edition(file).is_some_and(|e| e != "2015")
 }
 
 /// The function whose header (up to its body) covers byte `offset`, with its name: a free function or a method of an

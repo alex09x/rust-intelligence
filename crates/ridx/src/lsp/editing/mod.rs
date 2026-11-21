@@ -82,6 +82,7 @@ pub mod apply_registry;
 mod assist_ids;
 mod assist_locals;
 pub mod atomic_write;
+mod cargo_meta;
 pub mod commands;
 pub mod detached_rename;
 pub mod extract;
