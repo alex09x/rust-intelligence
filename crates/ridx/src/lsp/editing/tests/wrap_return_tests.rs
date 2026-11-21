@@ -252,3 +252,40 @@ fn test_an_unsaved_root_and_a_new_target_are_read() {
     std::fs::write(root.join("src/main.rs"), "extern crate self as r#core;\nmod child;\nfn main() {}\n").unwrap();
     assert!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).is_empty(), "a target discovered anew");
 }
+
+/// Review of f6ee3aa1: a target Cargo discovers deeper (`src/bin/tool/main.rs`, the directory there already) is read.
+#[test]
+fn test_a_nested_new_target_is_read() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    std::fs::create_dir_all(root.join("src/bin/tool")).unwrap();
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
+    std::fs::write(root.join("src/lib.rs"), "pub mod child;\n").unwrap();
+    let child = root.join("src/child.rs");
+    let doc = "pub fn f() -> u8 {\n    1\n}\n";
+    std::fs::write(&child, doc).unwrap();
+    let mut w = ridx_format::IndexWriter::new("w", "0.1.0");
+    w.add_definition(ridx_format::RawDefinition {
+        def_id: 1,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: child.to_string_lossy().to_string(),
+        name: "f".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 9,
+        path: "child::f".to_string(),
+        signature: None,
+    });
+    let shard = root.join("w.ridx");
+    w.write_to(&mut std::fs::File::create(&shard).unwrap()).unwrap();
+    let ws = ridx_format::WorkspaceIndex::open(&shard).unwrap();
+    let uri = format!("file://{}", child.display());
+    let range = json!({ "start": { "line": 0, "character": 14 }, "end": { "line": 0, "character": 14 } });
+    let ov = crate::overlay::OverlayManager::new();
+    assert_eq!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).len(), 2);
+    std::fs::write(root.join("src/bin/tool/main.rs"), "extern crate self as r#core;\n#[path = \"../../child.rs\"]\nmod child;\nfn main() {}\n").unwrap();
+    assert!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).is_empty(), "a nested target discovered anew");
+}
