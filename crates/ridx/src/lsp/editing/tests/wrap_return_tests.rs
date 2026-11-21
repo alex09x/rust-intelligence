@@ -202,3 +202,53 @@ fn test_the_crate_root_and_a_workspace_elsewhere_are_read() {
     std::fs::write(base.join("control/Cargo.toml"), control("2015")).unwrap();
     assert!(!edition_2018(&file), "read again once that workspace changes");
 }
+
+/// Review of 8b38fdc2: a crate root's unsaved buffer is its text; a target Cargo discovers anew (`src/main.rs`) is
+/// read though no manifest changed.
+#[test]
+fn test_an_unsaved_root_and_a_new_target_are_read() {
+    let setup = || {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        std::fs::create_dir_all(root.join("src")).unwrap();
+        std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\nedition = \"2021\"\n").unwrap();
+        std::fs::write(root.join("src/lib.rs"), "pub mod child;\n").unwrap();
+        let child = root.join("src/child.rs");
+        std::fs::write(&child, "pub fn f() -> u8 {\n    1\n}\n").unwrap();
+        let mut w = ridx_format::IndexWriter::new("w", "0.1.0");
+        w.add_definition(ridx_format::RawDefinition {
+            def_id: 1,
+            kind: ridx_format::DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: child.to_string_lossy().to_string(),
+            name: "f".to_string(),
+            start_line: 1,
+            start_col: 8,
+            end_line: 1,
+            end_col: 9,
+            path: "child::f".to_string(),
+            signature: None,
+        });
+        let shard = root.join("w.ridx");
+        w.write_to(&mut std::fs::File::create(&shard).unwrap()).unwrap();
+        let ws = ridx_format::WorkspaceIndex::open(&shard).unwrap();
+        (dir, root, child, ws)
+    };
+    let doc = "pub fn f() -> u8 {\n    1\n}\n";
+    let range = json!({ "start": { "line": 0, "character": 14 }, "end": { "line": 0, "character": 14 } });
+    let (_d, root, child, ws) = setup();
+    let uri = format!("file://{}", child.display());
+    let mut ov = crate::overlay::OverlayManager::new();
+    assert_eq!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).len(), 2);
+    let lib = root.join("src/lib.rs");
+    ov.open_document(&format!("file://{}", lib.display()), &lib.to_string_lossy(), 1, "pub mod child;\n".to_string());
+    ov.apply_content_changes(&lib.to_string_lossy(), 2, &[json!({ "text": "extern crate self as r#core;\npub mod child;\n" })]);
+    assert!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).is_empty(), "the root's unsaved alias");
+    let (_d, root, child, ws) = setup();
+    let uri = format!("file://{}", child.display());
+    let ov = crate::overlay::OverlayManager::new();
+    assert_eq!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).len(), 2);
+    std::fs::write(root.join("src/main.rs"), "extern crate self as r#core;\nmod child;\nfn main() {}\n").unwrap();
+    assert!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).is_empty(), "a target discovered anew");
+}

@@ -169,7 +169,16 @@ pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Opt
         let toks: Vec<_> = ridx_syntax::lex(text).into_iter().filter(|t| !t.is_trivia()).collect();
         toks.windows(2).any(|w| w[0].text(text) == "extern" && w[1].text(text) == "crate")
     };
-    let roots_plain = super::cargo_meta::target_roots(&canonical).is_some_and(|roots| roots.iter().all(|r| std::fs::read_to_string(r).is_ok_and(|t| !extern_crate(&t))));
+    // A root's open buffer is its text, unsaved or not (review of 8b38fdc2).
+    let root_text = |r: &std::path::Path| {
+        let canonical = ridx_format::canonicalize_best_effort(r);
+        ov.open_file_paths()
+            .into_iter()
+            .find(|k| ridx_format::canonicalize_best_effort(std::path::Path::new(k)) == canonical)
+            .and_then(|k| ov.get(&k).map(|o| o.text.clone()))
+            .or_else(|| std::fs::read_to_string(r).ok())
+    };
+    let roots_plain = super::cargo_meta::target_roots(&canonical).is_some_and(|roots| roots.iter().all(|r| root_text(r).is_some_and(|t| !extern_crate(&t))));
     for (wrap, title) in [(Wrap::Option, "Wrap return type in Option"), (Wrap::Result, "Wrap return type in Result")] {
         let Some(edits) = wrap_edits(doc, offset, wrap, roots_plain && edition_2018(&canonical), &called) else { continue };
         let edits: Vec<Value> = edits
