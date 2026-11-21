@@ -205,6 +205,13 @@ fn test_the_check_is_found_whatever_the_uri_spelling() {
     let encoded = crate::lsp::protocol::path_to_uri(&spaced.to_string_lossy());
     assert_ne!(encoded, uri(&spaced));
     assert_eq!(merge_with_compiler(&encoded, &[], "x\n", || Some("x\n".into()), &flycheck).len(), 1);
+    // Review of 88fe53d0: another file named `a%20b.rs` is not the one asked for by the URI `a%20b.rs` of `a b.rs`.
+    let literal = root.join("src/a%20b.rs");
+    std::fs::write(&literal, "x\n").unwrap();
+    let other = json!({ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }, "code": "E0599", "source": "rustc", "message": "of a%20b.rs" });
+    let flycheck = FlycheckState::new();
+    flycheck.set_latest_diagnostics_with_baseline(&uri(&literal), vec![other], Some("x\n".into()));
+    assert!(merge_with_compiler(&encoded, &[], "x\n", || Some("x\n".into()), &flycheck).is_empty());
 }
 
 /// Review of d4541e29: a document closed and opened again is another buffer than the one a build in flight compiled.
@@ -219,4 +226,23 @@ fn test_a_document_opened_again_is_another_buffer() {
     ov.close_document(&path);
     ov.open_with_provenance(&uri(&a), &path, 1, "x".into(), true);
     assert_ne!(ov.get(&path).unwrap().instance, first);
+}
+
+/// Review of 88fe53d0: the check's clear of `a b.rs` went to its own spelling, while the client was shown the file's
+/// error under `a%20b.rs`.
+#[test]
+fn test_the_checks_result_goes_where_the_client_was_shown_the_file() {
+    let (_d, root) = workspace();
+    let spaced = root.join("src/a b.rs");
+    std::fs::write(&spaced, "x\n").unwrap();
+    let lifecycle = crate::lsp::LifecycleManager::new();
+    let ov = crate::overlay::OverlayManager::new();
+    let encoded = crate::lsp::protocol::path_to_uri(&spaced.to_string_lossy());
+    lifecycle.flycheck.mark_published(&encoded);
+    lifecycle.flycheck.session.record_published(&spaced, &encoded, true);
+    let mut out = Vec::new();
+    publish_check(&uri(&spaced), &lifecycle, &ov, &mut out).unwrap();
+    let sent = String::from_utf8(out).unwrap();
+    assert!(sent.contains(&encoded) && sent.contains("\"diagnostics\":[]"), "{sent}");
+    assert!(!lifecycle.flycheck.has_active_diagnostics(&encoded));
 }

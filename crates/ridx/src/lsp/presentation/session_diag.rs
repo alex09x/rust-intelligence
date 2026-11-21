@@ -162,6 +162,30 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
     files
 }
 
+/// Publishes what the check of the saved files reported on the file it names `check_uri` under the URI the client knows
+/// the file by: its open buffer's, else the one something of it is still published under, else the check's; and clears
+/// it under the check's spelling when that one still shows something (review of 88fe53d0: a check's clear went to a URI
+/// the client did not show it under).
+pub fn publish_check<W: Write>(check_uri: &str, lifecycle: &crate::lsp::lifecycle::LifecycleManager, ov: &crate::overlay::OverlayManager, writer: &mut W) -> std::io::Result<()> {
+    let file = ridx_format::canonicalize_best_effort(Path::new(&crate::lsp::protocol::uri_to_path(check_uri)));
+    let fc = &lifecycle.flycheck;
+    let open = ov
+        .open_file_paths()
+        .into_iter()
+        .find_map(|k| (ridx_format::canonicalize_best_effort(Path::new(&k)) == file).then(|| ov.get(&k).map(|o| (o.uri.clone(), o.version))).flatten());
+    let (target, version) = match open {
+        Some((uri, version)) => (uri, Some(version)),
+        None => (fc.session.published_uri(&file).filter(|u| fc.has_active_diagnostics(u)).unwrap_or_else(|| check_uri.to_string()), None),
+    };
+    super::reconcile::publish_reconciled_diagnostics(&target, version, ov, fc, writer)?;
+    if target != check_uri && fc.clear_published(check_uri) {
+        let clear = json!({ "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": { "uri": check_uri, "diagnostics": [] } });
+        crate::lsp::protocol::send_response(writer, &clear)?;
+    }
+    fc.session.record_published(&file, &target, fc.has_active_diagnostics(&target));
+    Ok(())
+}
+
 /// The buffer `uri` (`file`) was closed: it is the file as saved again, which the check of the saved files speaks for
 /// (review of fb2bed09). The session's result of it goes, and the document is published again whatever changed: what
 /// its buffer alone had (an unbalanced brace typed) goes too (review of d4541e29).

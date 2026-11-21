@@ -65,6 +65,13 @@ pub(crate) fn step(
         }
     }
     for built in session.take_built() {
+        // A build of a buffer closed or opened again since is of a text no buffer holds: its index would answer for it,
+        // with the buffer mapped against another (review of 88fe53d0). It goes, and the buffers open now are compiled.
+        if !still_open(&built.buffers, ov) {
+            let _ = std::fs::remove_dir_all(&built.dir);
+            session.note_change(&built.root);
+            continue;
+        }
         let Some(ws) = ridx_format::WorkspaceIndex::open(&built.dir).ok().and_then(|ws| mr.replace_index(&built.root, ws)) else {
             let _ = std::fs::remove_dir_all(&built.dir);
             continue;
@@ -91,6 +98,11 @@ pub(crate) fn step(
         replaced = true;
     }
     replaced
+}
+
+/// Whether every buffer of `buffers` is still open as it was taken (the same opening).
+fn still_open(buffers: &[Snapshot], ov: &crate::overlay::OverlayManager) -> bool {
+    buffers.iter().all(|b| ov.get(&b.key).is_some_and(|o| o.instance == b.instance))
 }
 
 fn back_to_published(mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay::OverlayManager, root: &Path) -> bool {
@@ -148,6 +160,21 @@ fn process_ended(pid: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Review of 88fe53d0: a build of a buffer closed or opened again since is not installed.
+    #[test]
+    fn test_a_build_is_of_buffers_still_open_as_they_were() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("a.rs").to_string_lossy().to_string();
+        let mut ov = crate::overlay::OverlayManager::new();
+        ov.open_with_provenance("file:///a.rs", &path, 1, "x".into(), true);
+        let taken = vec![Snapshot { key: path.clone(), path: PathBuf::from(&path), text: "x".into(), instance: ov.get(&path).unwrap().instance }];
+        assert!(still_open(&taken, &ov));
+        ov.close_document(&path);
+        assert!(!still_open(&taken, &ov), "closed");
+        ov.open_with_provenance("file:///a.rs", &path, 1, "x".into(), true);
+        assert!(!still_open(&taken, &ov), "opened again");
+    }
 
     #[test]
     fn test_only_directories_of_ended_servers_are_swept() {

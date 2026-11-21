@@ -234,7 +234,7 @@ pub fn handle_internal_diagnostic<W: Write>(
             send_response(writer, &refresh)?;
         }
     } else {
-        publish_reconciled_diagnostics(uri, None, overlay_mgr, &lifecycle.flycheck, writer)?;
+        super::session_diag::publish_check(uri, lifecycle, overlay_mgr, writer)?;
     }
     Ok(())
 }

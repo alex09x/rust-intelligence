@@ -51,7 +51,9 @@ pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: im
     // The check names a file by its path as a raw `file://` URI, whatever spelling the client's URI has (`a%20b.rs`,
     // review of d4541e29): that is where its result is looked up first.
     let key = check_key(&file);
-    let key = if flycheck.get_latest_diagnostics(&key).is_empty() { uri.to_string() } else { key };
+    // The client's URI as it is only when spelled as the check spells paths (no escape): `a%20b.rs` as a key is another
+    // file's, one named so (review of 88fe53d0).
+    let key = if flycheck.get_latest_diagnostics(&key).is_empty() && !uri.contains('%') { uri.to_string() } else { key };
     let raw = flycheck.get_latest_diagnostics(&key);
     if raw.is_empty() {
         return heuristic.to_vec();
