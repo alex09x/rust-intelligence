@@ -38,6 +38,7 @@ mod session_index;
 mod session_loop;
 pub mod symbols;
 mod syntax_tree;
+mod syntax_tree_kinds;
 pub mod workspace;
 
 #[cfg(test)]

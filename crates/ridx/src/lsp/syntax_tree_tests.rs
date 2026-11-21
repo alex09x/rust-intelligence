@@ -91,3 +91,88 @@ fn test_a_range_gives_the_node_covering_it() {
     let v = syntax_tree_json("fn f(v: Vec<Vec<u8>>) {}\n", None);
     assert!(!v.contains("\"SHR\""), "{v}");
 }
+
+/// The nodes of `v` of kind `kind`.
+fn of_kind<'v>(v: &'v Value, kind: &str, out: &mut Vec<&'v Value>) {
+    if v["kind"] == kind {
+        out.push(v);
+    }
+    for c in v["children"].as_array().into_iter().flatten() {
+        of_kind(c, kind, out);
+    }
+}
+
+fn tree(src: &str) -> Value {
+    serde_json::from_str(&syntax_tree_json(src, None)).unwrap()
+}
+
+fn count(src: &str, kind: &str) -> usize {
+    let v = tree(src);
+    let mut found = Vec::new();
+    of_kind(&v, kind, &mut found);
+    found.len()
+}
+
+/// Review of 27bd4208: a long chain of operands is a deep tree, written with no recursion.
+#[test]
+fn test_a_deep_tree_is_written_on_a_small_stack() {
+    let src = format!("fn f() -> u32 {{ {}1 }}\n", "1 + ".repeat(12_000));
+    let len = std::thread::Builder::new().stack_size(1 << 20).spawn(move || syntax_tree_json(&src, None).len()).unwrap().join().unwrap();
+    assert!(len > 1_000_000);
+}
+
+/// Review of 27bd4208: tokens are named by their role, as rust-analyzer's parser names them.
+#[test]
+fn test_tokens_are_named_by_their_role() {
+    let mut toks = Vec::new();
+    tokens(&tree("macro_rules! m { () => {} }\n"), &mut toks);
+    assert_eq!(toks[0].0, "MACRO_RULES_KW", "{toks:?}");
+    let mut toks = Vec::new();
+    tokens(&tree("fn f() { let c = || 0; let b = true || false; }\n"), &mut toks);
+    let pipes: Vec<&str> = toks.iter().filter(|t| t.0.starts_with("PIPE")).map(|t| t.0.as_str()).collect();
+    assert_eq!(pipes, ["PIPE", "PIPE", "PIPE2"], "{toks:?}");
+}
+
+/// Review of 27bd4208: a macro call in an expression or a type has rust-analyzer's wrapper; an unclosed block its
+/// statement list; the comments above an item are the item's.
+#[test]
+fn test_the_tree_has_rust_analyzers_wrappers() {
+    assert_eq!(count("fn f() { let _ = vec![1u8]; }\n", "MACRO_EXPR"), 1);
+    assert_eq!(count("fn f(x: ty!()) {}\n", "MACRO_TYPE"), 1);
+    assert_eq!(count("macro_rules! m { () => {} }\nm!();\n", "MACRO_EXPR"), 0, "an item's macro call is no expression");
+    assert_eq!(count("fn f() { let x = 1;", "STMT_LIST"), 1);
+    let v = tree("/// docs\nfn f() {}\n");
+    let mut found = Vec::new();
+    of_kind(&v, "FN", &mut found);
+    assert_eq!(found[0]["start"], serde_json::json!([0, 0, 0]));
+    assert_eq!(found[0]["children"][0]["kind"], "COMMENT");
+    let v = tree("// one\n\nfn f() {}\n");
+    let mut found = Vec::new();
+    of_kind(&v, "FN", &mut found);
+    assert_eq!(found[0]["start"][0], 8, "a blank line keeps a comment off the item");
+}
+
+/// Review of 27bd4208: the smallest node of the tree returned, a synthetic one included; a malformed range is refused.
+#[test]
+fn test_a_range_selects_in_the_returned_tree_and_must_be_valid() {
+    let src = "fn f(){foo();}\n";
+    let s = src.find("foo").unwrap();
+    let v: Value = serde_json::from_str(&syntax_tree_json(src, Some(s..s + 3))).unwrap();
+    assert_eq!(v["kind"], "NAME_REF");
+    let b = src.find('{').unwrap();
+    let v: Value = serde_json::from_str(&syntax_tree_json(src, Some(b..src.len() - 1))).unwrap();
+    assert_eq!(v["kind"], "STMT_LIST");
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("lib.rs");
+    std::fs::write(&file, src).unwrap();
+    let uri = format!("file://{}", file.display());
+    let call = |range: Value| {
+        let msg = serde_json::json!({ "params": { "textDocument": { "uri": uri }, "range": range } });
+        let (ov, re) = (crate::overlay::OverlayManager::new(), crate::lsp::reindex::Reindexer::new());
+        crate::lsp::ridx_methods::dispatch("ridx/syntaxTree", &msg, None, &ov, &mut crate::lsp::protocol::PositionConverter::new(), &re)
+    };
+    assert!(call(serde_json::json!({ "start": { "line": 0, "character": 7 } })).is_err(), "no end");
+    assert!(call(serde_json::json!({ "start": { "line": 4294967296u64, "character": 0 }, "end": { "line": 0, "character": 1 } })).is_err(), "no such line");
+    assert!(call(serde_json::json!({ "start": { "line": 0, "character": 10 }, "end": { "line": 0, "character": 7 } })).is_err(), "reversed");
+    assert!(call(serde_json::json!({ "start": { "line": 0, "character": 7 }, "end": { "line": 0, "character": 10 } })).is_ok());
+}

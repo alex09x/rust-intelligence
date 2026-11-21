@@ -12,154 +12,19 @@
 //! rust-analyzer's `rust-analyzer/viewSyntaxTree` returns, a string of nested `{"type": "Node" | "Token", "kind",
 //! "start": [offset, line, col], "end": [...], "children": [...]}`, lossless, with rust-analyzer's kind names
 //! (prod-code, m=20253: its introduce-variable and convert-to-method tools read it). Offsets are UTF-8 bytes, lines and
-//! columns 0-based, columns in UTF-8 bytes, as rust-analyzer gives them. The tree is ridx's own parser's: the wrappers
-//! rust-analyzer has and it does not (`STMT_LIST` in a block, `NAME_REF` around a name used) are added; the rest of
-//! rust-analyzer's structure may differ (docs/integration.md §7). With `range`, the smallest node covering it.
+//! columns 0-based, columns in UTF-8 bytes, as rust-analyzer gives them.
+//!
+//! The tree is ridx's own parser's, in rust-analyzer's shape where its tools read it (review of 27bd4208): the wrappers
+//! rust-analyzer has and ridx's tree does not are added (`STMT_LIST`, an unclosed one included, `NAME_REF`,
+//! `MACRO_EXPR` and `MACRO_TYPE` around a macro call in an expression or a type), contextual keywords and joint
+//! punctuation are named by their role (`MACRO_RULES_KW`; a closure's `||` is two `PIPE`), and the comments right
+//! above an item are the item's, as rust-analyzer attaches them. Record and variant lists are not split into fields.
+//! The tree is written with an explicit stack: no nesting depth exhausts the server's.
 
+use super::syntax_tree_kinds::{contextual, node_kind, token_kind, JOINED};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree, Token, TokenKind as T};
 use std::fmt::Write;
-
-/// rust-analyzer's name of a node kind: `PathType` is `PATH_TYPE`; an `ItemList` of an impl or a trait is an
-/// `ASSOC_ITEM_LIST`, of an `extern` block an `EXTERN_ITEM_LIST`.
-fn node_kind(tree: &SyntaxTree<'_>, n: NodeId) -> String {
-    let k = tree.kind(n);
-    if k == K::ItemList {
-        match tree.parent(n).map(|p| tree.kind(p)) {
-            Some(K::Impl | K::Trait) => return "ASSOC_ITEM_LIST".into(),
-            Some(K::ExternBlock) => return "EXTERN_ITEM_LIST".into(),
-            _ => {}
-        }
-    }
-    let mut out = String::new();
-    for (i, c) in format!("{k:?}").chars().enumerate() {
-        if c.is_uppercase() && i > 0 {
-            out.push('_');
-        }
-        out.extend(c.to_uppercase());
-    }
-    out
-}
-
-/// rust-analyzer's name of a token of kind `k`.
-fn token_kind(k: T) -> &'static str {
-    match k {
-        T::Whitespace => "WHITESPACE",
-        T::LineComment | T::BlockComment => "COMMENT",
-        T::Shebang => "SHEBANG",
-        T::Ident | T::RawIdent => "IDENT",
-        T::Lifetime => "LIFETIME_IDENT",
-        T::Int => "INT_NUMBER",
-        T::Float => "FLOAT_NUMBER",
-        T::Char => "CHAR",
-        T::Byte => "BYTE",
-        T::Str | T::RawStr => "STRING",
-        T::ByteStr | T::RawByteStr => "BYTE_STRING",
-        T::CStr | T::RawCStr => "C_STRING",
-        T::SelfKw => "SELF_KW",
-        T::SelfType => "SELF_TYPE_KW",
-        T::Underscore => "UNDERSCORE",
-        T::LParen => "L_PAREN",
-        T::RParen => "R_PAREN",
-        T::LBrace => "L_CURLY",
-        T::RBrace => "R_CURLY",
-        T::LBracket => "L_BRACK",
-        T::RBracket => "R_BRACK",
-        T::Bang => "BANG",
-        T::Hash => "POUND",
-        T::Dollar => "DOLLAR",
-        T::Percent => "PERCENT",
-        T::Amp => "AMP",
-        T::Star => "STAR",
-        T::Plus => "PLUS",
-        T::Comma => "COMMA",
-        T::Minus => "MINUS",
-        T::Dot => "DOT",
-        T::Slash => "SLASH",
-        T::Colon => "COLON",
-        T::Semi => "SEMICOLON",
-        T::Lt => "L_ANGLE",
-        T::Eq => "EQ",
-        T::Gt => "R_ANGLE",
-        T::Question => "QUESTION",
-        T::At => "AT",
-        T::Caret => "CARET",
-        T::Pipe => "PIPE",
-        T::Tilde => "TILDE",
-        T::Unknown => "ERROR",
-        _ => keyword(k),
-    }
-}
-
-/// A keyword's token name: `FN_KW`.
-fn keyword(k: T) -> &'static str {
-    match k {
-        T::As => "AS_KW",
-        T::Async => "ASYNC_KW",
-        T::Await => "AWAIT_KW",
-        T::Break => "BREAK_KW",
-        T::Const => "CONST_KW",
-        T::Continue => "CONTINUE_KW",
-        T::Crate => "CRATE_KW",
-        T::Dyn => "DYN_KW",
-        T::Else => "ELSE_KW",
-        T::Enum => "ENUM_KW",
-        T::Extern => "EXTERN_KW",
-        T::False => "FALSE_KW",
-        T::Fn => "FN_KW",
-        T::For => "FOR_KW",
-        T::If => "IF_KW",
-        T::Impl => "IMPL_KW",
-        T::In => "IN_KW",
-        T::Let => "LET_KW",
-        T::Loop => "LOOP_KW",
-        T::Match => "MATCH_KW",
-        T::Mod => "MOD_KW",
-        T::Move => "MOVE_KW",
-        T::Mut => "MUT_KW",
-        T::Pub => "PUB_KW",
-        T::Ref => "REF_KW",
-        T::Return => "RETURN_KW",
-        T::Static => "STATIC_KW",
-        T::Struct => "STRUCT_KW",
-        T::Super => "SUPER_KW",
-        T::Trait => "TRAIT_KW",
-        T::True => "TRUE_KW",
-        T::Type => "TYPE_KW",
-        T::Unsafe => "UNSAFE_KW",
-        T::Use => "USE_KW",
-        T::Where => "WHERE_KW",
-        T::While => "WHILE_KW",
-        _ => "ERROR",
-    }
-}
-
-/// The punctuation rust-analyzer's parser joins into one token, by its text.
-const JOINED: &[(&str, &str)] = &[
-    ("..=", "DOT2EQ"),
-    ("...", "DOT3"),
-    ("<<=", "SHLEQ"),
-    (">>=", "SHREQ"),
-    ("::", "COLON2"),
-    ("->", "THIN_ARROW"),
-    ("=>", "FAT_ARROW"),
-    ("==", "EQ2"),
-    ("!=", "NEQ"),
-    ("<=", "LTEQ"),
-    (">=", "GTEQ"),
-    ("&&", "AMP2"),
-    ("||", "PIPE2"),
-    ("+=", "PLUSEQ"),
-    ("-=", "MINUSEQ"),
-    ("*=", "STAREQ"),
-    ("/=", "SLASHEQ"),
-    ("%=", "PERCENTEQ"),
-    ("^=", "CARETEQ"),
-    ("&=", "AMPEQ"),
-    ("|=", "PIPEEQ"),
-    ("<<", "SHL"),
-    (">>", "SHR"),
-    ("..", "DOT2"),
-];
+use std::ops::Range;
 
 /// What a node holds, in source order.
 enum Item {
@@ -168,61 +33,122 @@ enum Item {
     Token(usize, usize, &'static str),
     /// A `NAME_REF` around the token at that byte range.
     NameRef(usize, usize, &'static str),
-    /// A `STMT_LIST` around these items: a block's braces and what is between them.
-    StmtList(Vec<Item>),
+    /// A node rust-analyzer has and ridx's tree does not (`STMT_LIST`, `MACRO_EXPR`), around these items.
+    Wrapper(&'static str, Vec<Item>),
 }
 
-/// The node `n`'s children and own tokens in source order, joint punctuation joined.
+/// The bytes node `n` takes in rust-analyzer's tree: the whole text for the root, and for an item the comments right
+/// above it too (up to a blank line), which rust-analyzer attaches to it.
+fn range_of(tree: &SyntaxTree<'_>, n: NodeId) -> Range<usize> {
+    if n == tree.root() {
+        return 0..tree.src.len();
+    }
+    let r = tree.range(n);
+    if !tree.kind(n).is_item() {
+        return r;
+    }
+    let mut start = r.start;
+    let i = tree.tokens.partition_point(|t| (t.start as usize) < r.start);
+    for t in tree.tokens[..i].iter().rev() {
+        match t.kind {
+            T::LineComment | T::BlockComment => start = t.start as usize,
+            T::Whitespace if !t.text(tree.src).contains("\n\n") => {}
+            _ => break,
+        }
+    }
+    start..r.end
+}
+
+/// The wrapper rust-analyzer puts around the macro call `mc`: `MACRO_TYPE` in a type's place, none for an item or a
+/// pattern, else `MACRO_EXPR`.
+fn macro_wrapper(tree: &SyntaxTree<'_>, mc: NodeId) -> Option<&'static str> {
+    let p = tree.parent(mc)?;
+    let start = tree.range(mc).start;
+    match tree.kind(p) {
+        K::SourceFile | K::ItemList | K::MacroPat => None,
+        K::RetType | K::Impl | K::TypeArg | K::RefType | K::PtrType | K::SliceType | K::ArrayType | K::TupleType | K::ParenType => Some("MACRO_TYPE"),
+        // A type before the `=`, a value after it.
+        K::LetStmt | K::Const | K::Static | K::TypeAlias | K::Param => {
+            let eq_before = tree.own_tokens(p).any(|(_, t)| t.kind == T::Eq && (t.start as usize) < start);
+            let colon_before = tree.own_tokens(p).any(|(_, t)| t.kind == T::Colon && (t.start as usize) < start);
+            Some(if !eq_before && (colon_before || tree.kind(p) == K::TypeAlias) { "MACRO_TYPE" } else { "MACRO_EXPR" })
+        }
+        _ => Some("MACRO_EXPR"),
+    }
+}
+
+/// The node `n`'s children and own tokens in source order, as rust-analyzer's tree has them.
 fn items(tree: &SyntaxTree<'_>, n: NodeId) -> Vec<Item> {
+    let kind = tree.kind(n);
     let toks: Vec<Token> = tree.own_tokens(n).map(|(_, t)| t).filter(|t| !t.is_trivia()).collect();
-    let mut out: Vec<(usize, Item)> = tree.children(n).map(|c| (tree.range(c).start, Item::Node(c))).collect();
-    // Whitespace and comments, which the tree's nodes do not hold: in the innermost node around them, as
-    // rust-analyzer's tree has every byte.
+    let mut out: Vec<(usize, Item)> = Vec::new();
+    for c in tree.children(n) {
+        let item = match tree.kind(c) {
+            K::MacroCall => match macro_wrapper(tree, c) {
+                Some(w) => Item::Wrapper(w, vec![Item::Node(c)]),
+                None => Item::Node(c),
+            },
+            _ => Item::Node(c),
+        };
+        out.push((range_of(tree, c).start, item));
+    }
+    // Whitespace and comments, which the tree's nodes do not hold: in the innermost node around them.
     let r = range_of(tree, n);
-    let kids: Vec<std::ops::Range<usize>> = tree.children(n).map(|c| tree.range(c)).collect();
+    let kids: Vec<Range<usize>> = tree.children(n).map(|c| range_of(tree, c)).collect();
     let lo = tree.tokens.partition_point(|t| (t.start as usize) < r.start);
     for t in tree.tokens[lo..].iter().take_while(|t| (t.start as usize) < r.end) {
         if t.is_trivia() && !kids.iter().any(|k| k.start <= t.start as usize && t.end as usize <= k.end) {
             out.push((t.start as usize, Item::Token(t.start as usize, t.end as usize, token_kind(t.kind))));
         }
     }
-    let name_ref_owner = matches!(tree.kind(n), K::PathSegment | K::FieldExpr | K::MethodCallExpr | K::RecordExprField | K::RecordPatField);
+    let name_ref_owner = matches!(kind, K::PathSegment | K::FieldExpr | K::MethodCallExpr | K::RecordExprField | K::RecordPatField);
+    // A closure's parameter list `||` is two delimiters, not a logical or.
+    let joins = !matches!(kind, K::ClosureExpr | K::ParamList);
     let mut i = 0;
     while i < toks.len() {
         let t = toks[i];
         let mut joined = None;
-        for (text, kind) in JOINED {
+        for (text, jk) in JOINED.iter().filter(|_| joins) {
             let n_chars = text.len();
             if i + n_chars <= toks.len() && (i..i + n_chars - 1).all(|j| toks[j].is_joint() && toks[j].end == toks[j + 1].start) {
                 let s: String = toks[i..i + n_chars].iter().map(|t| t.text(tree.src)).collect();
                 if s == *text {
-                    joined = Some((n_chars, *kind));
+                    joined = Some((n_chars, *jk));
                     break;
                 }
             }
         }
-        let (count, kind) = joined.unwrap_or((1, token_kind(t.kind)));
+        let word = t.text(tree.src);
+        let own_kind = if t.kind == T::Ident { contextual(kind, word) } else { None };
+        let (count, tk) = joined.unwrap_or((1, own_kind.unwrap_or_else(|| token_kind(t.kind))));
         let (start, end) = (t.start as usize, toks[i + count - 1].end as usize);
         let item = if name_ref_owner && count == 1 && matches!(t.kind, T::Ident | T::RawIdent | T::SelfKw | T::SelfType | T::Super | T::Crate | T::Int) {
-            Item::NameRef(start, end, kind)
+            Item::NameRef(start, end, tk)
         } else {
-            Item::Token(start, end, kind)
+            Item::Token(start, end, tk)
         };
         out.push((start, item));
         i += count;
     }
     out.sort_by_key(|(s, _)| *s);
     let mut list: Vec<Item> = out.into_iter().map(|(_, it)| it).collect();
-    // A block's braces and statements are a `STMT_LIST` in rust-analyzer's tree.
-    if tree.kind(n) == K::BlockExpr {
-        let open = list.iter().position(|it| matches!(it, Item::Token(_, _, "L_CURLY")));
-        let close = list.iter().rposition(|it| matches!(it, Item::Token(_, _, "R_CURLY")));
-        if let (Some(o), Some(c)) = (open, close) {
+    // A block's braces and statements are a `STMT_LIST` in rust-analyzer's tree, an unclosed block's too.
+    if kind == K::BlockExpr {
+        if let Some(o) = list.iter().position(|it| matches!(it, Item::Token(_, _, "L_CURLY"))) {
+            let c = list.iter().rposition(|it| matches!(it, Item::Token(_, _, "R_CURLY"))).filter(|&c| c > o).unwrap_or(list.len() - 1);
             let inner: Vec<Item> = list.drain(o..=c).collect();
-            list.insert(o, Item::StmtList(inner));
+            list.insert(o, Item::Wrapper("STMT_LIST", inner));
         }
     }
     list
+}
+
+fn item_range(tree: &SyntaxTree<'_>, it: &Item) -> Range<usize> {
+    match it {
+        Item::Node(c) => range_of(tree, *c),
+        Item::Token(s, e, _) | Item::NameRef(s, e, _) => *s..*e,
+        Item::Wrapper(_, inner) => item_range(tree, &inner[0]).start..item_range(tree, inner.last().unwrap_or(&inner[0])).end,
+    }
 }
 
 /// `[offset,line,col]` of byte `b` of `src`.
@@ -231,75 +157,79 @@ fn pos(src: &str, b: usize) -> String {
     format!("[{b},{},{}]", src[..ls].matches('\n').count(), b - ls)
 }
 
-fn write_items(tree: &SyntaxTree<'_>, list: &[Item], out: &mut String) {
-    for (i, it) in list.iter().enumerate() {
-        if i > 0 {
-            out.push(',');
-        }
-        let src = tree.src;
-        match it {
-            Item::Node(c) => write_node(tree, *c, out),
-            Item::Token(s, e, k) => {
-                let _ = write!(out, r#"{{"type":"Token","kind":"{k}","start":{},"end":{}}}"#, pos(src, *s), pos(src, *e));
-            }
-            Item::NameRef(s, e, k) => {
-                let (ps, pe) = (pos(src, *s), pos(src, *e));
-                let _ = write!(out, r#"{{"type":"Node","kind":"NAME_REF","start":{ps},"end":{pe},"children":[{{"type":"Token","kind":"{k}","start":{ps},"end":{pe}}}]}}"#);
-            }
-            Item::StmtList(inner) => {
-                let (s, e) = (first_start(tree, inner), last_end(tree, inner));
-                let _ = write!(out, r#"{{"type":"Node","kind":"STMT_LIST","start":{},"end":{},"children":["#, pos(src, s), pos(src, e));
-                write_items(tree, inner, out);
+/// Writes `root` and everything under it, with an explicit stack of the lists being written.
+fn write_tree(tree: &SyntaxTree<'_>, root: Item, out: &mut String) {
+    let src = tree.src;
+    let mut stack: Vec<std::vec::IntoIter<Item>> = vec![vec![root].into_iter()];
+    let mut first = vec![true];
+    while let Some(top) = stack.last_mut() {
+        let Some(it) = top.next() else {
+            stack.pop();
+            first.pop();
+            if !stack.is_empty() {
                 out.push_str("]}");
             }
+            continue;
+        };
+        if let Some(f) = first.last_mut() {
+            if !std::mem::replace(f, false) {
+                out.push(',');
+            }
+        }
+        let r = item_range(tree, &it);
+        let (ps, pe) = (pos(src, r.start), pos(src, r.end));
+        match it {
+            Item::Token(_, _, k) => {
+                let _ = write!(out, r#"{{"type":"Token","kind":"{k}","start":{ps},"end":{pe}}}"#);
+            }
+            Item::NameRef(_, _, k) => {
+                let _ = write!(out, r#"{{"type":"Node","kind":"NAME_REF","start":{ps},"end":{pe},"children":[{{"type":"Token","kind":"{k}","start":{ps},"end":{pe}}}]}}"#);
+            }
+            Item::Node(c) => {
+                let _ = write!(out, r#"{{"type":"Node","kind":"{}","start":{ps},"end":{pe},"children":["#, node_kind(tree, c));
+                stack.push(items(tree, c).into_iter());
+                first.push(true);
+            }
+            Item::Wrapper(k, inner) => {
+                let _ = write!(out, r#"{{"type":"Node","kind":"{k}","start":{ps},"end":{pe},"children":["#);
+                stack.push(inner.into_iter());
+                first.push(true);
+            }
         }
     }
 }
 
-fn first_start(tree: &SyntaxTree<'_>, list: &[Item]) -> usize {
-    match list.first() {
-        Some(Item::Node(c)) => tree.range(*c).start,
-        Some(Item::Token(s, ..) | Item::NameRef(s, ..)) => *s,
-        Some(Item::StmtList(inner)) => first_start(tree, inner),
-        None => 0,
+/// The smallest item of the tree rust-analyzer's shape gives that covers `r`, from node `n` down.
+fn smallest(tree: &SyntaxTree<'_>, n: NodeId, r: &Range<usize>) -> Item {
+    // The node or synthetic node (a `NAME_REF`, a `STMT_LIST`) holding all of `r`, innermost on a tie (review of
+    // 27bd4208: the parser's tree alone gave the segment around a `NAME_REF`).
+    let covers = |it: &Item| {
+        let ir = item_range(tree, it);
+        !matches!(it, Item::Token(..)) && ir.start <= r.start && r.end <= ir.end
+    };
+    let mut current = Item::Node(n);
+    loop {
+        let next = match &mut current {
+            Item::Node(c) => items(tree, *c).into_iter().find(&covers),
+            Item::Wrapper(_, inner) => inner.iter().position(&covers).map(|i| inner.swap_remove(i)),
+            _ => None,
+        };
+        match next {
+            Some(it) => current = it,
+            None => return current,
+        }
     }
-}
-
-fn last_end(tree: &SyntaxTree<'_>, list: &[Item]) -> usize {
-    match list.last() {
-        Some(Item::Node(c)) => tree.range(*c).end,
-        Some(Item::Token(_, e, ..) | Item::NameRef(_, e, _)) => *e,
-        Some(Item::StmtList(inner)) => last_end(tree, inner),
-        None => 0,
-    }
-}
-
-/// The bytes of node `n`: the whole text for the root, as rust-analyzer's `SOURCE_FILE`.
-fn range_of(tree: &SyntaxTree<'_>, n: NodeId) -> std::ops::Range<usize> {
-    if n == tree.root() {
-        0..tree.src.len()
-    } else {
-        tree.range(n)
-    }
-}
-
-fn write_node(tree: &SyntaxTree<'_>, n: NodeId, out: &mut String) {
-    let r = range_of(tree, n);
-    let _ = write!(out, r#"{{"type":"Node","kind":"{}","start":{},"end":{},"children":["#, node_kind(tree, n), pos(tree.src, r.start), pos(tree.src, r.end));
-    write_items(tree, &items(tree, n), out);
-    out.push_str("]}");
 }
 
 /// The tree of `src` as rust-analyzer's JSON, from the smallest node covering the byte range `range` when given.
-pub fn syntax_tree_json(src: &str, range: Option<std::ops::Range<usize>>) -> String {
+pub fn syntax_tree_json(src: &str, range: Option<Range<usize>>) -> String {
     let tree = ridx_syntax::parse(src);
-    let mut root = tree.root();
-    if let Some(r) = range {
-        let c = tree.covering(r.start);
-        root = std::iter::once(c).chain(tree.ancestors(c)).find(|&n| tree.range(n).end >= r.end).unwrap_or(root);
-    }
+    let root = match range {
+        Some(r) => smallest(&tree, tree.root(), &r),
+        None => Item::Node(tree.root()),
+    };
     let mut out = String::new();
-    write_node(&tree, root, &mut out);
+    write_tree(&tree, root, &mut out);
     out
 }
 

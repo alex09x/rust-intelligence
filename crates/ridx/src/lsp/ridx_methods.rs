@@ -35,13 +35,24 @@ pub fn dispatch(
                 Some(o) => o.text.clone(),
                 None => std::fs::read_to_string(&file).map_err(|e| LspError::invalid_params(format!("Cannot read {file}: {e}")))?,
             };
-            let range = &msg["params"]["range"];
-            let range = range.is_object().then(|| {
-                let starts = super::editing::action_parse::line_starts_of(&text);
-                let at = |p: &Value| super::editing::action_parse::utf16_pos_to_byte(&text, &starts, p["line"].as_u64()? as u32, p["character"].as_u64()? as u32);
-                Some(at(&range["start"])?..at(&range["end"])?)
-            });
-            Ok(Value::String(super::syntax_tree::syntax_tree_json(&text, range.flatten())))
+            // A range given is a valid one, or the request is refused: never the whole document in its place (review
+            // of 27bd4208).
+            let range = match msg["params"].get("range").filter(|r| !r.is_null()) {
+                None => None,
+                Some(r) => {
+                    let starts = super::editing::action_parse::line_starts_of(&text);
+                    let at = |p: &Value| {
+                        let (l, c) = (u32::try_from(p["line"].as_u64()?).ok()?, u32::try_from(p["character"].as_u64()?).ok()?);
+                        super::editing::action_parse::utf16_pos_to_byte(&text, &starts, l, c)
+                    };
+                    let (s, e) = at(&r["start"]).zip(at(&r["end"])).ok_or_else(|| LspError::invalid_params("Invalid range"))?;
+                    if s > e {
+                        return Err(LspError::invalid_params("Range ends before it starts"));
+                    }
+                    Some(s..e)
+                }
+            };
+            Ok(Value::String(super::syntax_tree::syntax_tree_json(&text, range)))
         }
         // `{name, expansion}` of the macro called at the position, or `null` when ridx cannot expand it fully.
         "ridx/expandMacro" => {
