@@ -38,7 +38,9 @@ enum Item {
 }
 
 /// The bytes node `n` takes in rust-analyzer's tree: the whole text for the root, and for an item the comments right
-/// above it too (up to a blank line), which rust-analyzer attaches to it.
+/// above it too, which rust-analyzer attaches to it as its parser does (`n_attached_trivias`): up to an inner doc
+/// comment (`//!`, `/*!`, its scope's), or a blank line, which outer documentation (`///`, `/**`) crosses (review of
+/// d7ed2459).
 fn range_of(tree: &SyntaxTree<'_>, n: NodeId) -> Range<usize> {
     if n == tree.root() {
         return 0..tree.src.len();
@@ -47,12 +49,17 @@ fn range_of(tree: &SyntaxTree<'_>, n: NodeId) -> Range<usize> {
     if !tree.kind(n).is_item() {
         return r;
     }
+    let inner = |s: &str| s.starts_with("//!") || s.starts_with("/*!");
+    let outer = |s: &str| (s.starts_with("///") && !s.starts_with("////")) || (s.starts_with("/**") && !s.starts_with("/***") && !s.starts_with("/**/"));
     let mut start = r.start;
     let i = tree.tokens.partition_point(|t| (t.start as usize) < r.start);
-    for t in tree.tokens[..i].iter().rev() {
+    let mut before = tree.tokens[..i].iter().rev().peekable();
+    while let Some(t) = before.next() {
         match t.kind {
+            T::LineComment | T::BlockComment if inner(t.text(tree.src)) => break,
             T::LineComment | T::BlockComment => start = t.start as usize,
             T::Whitespace if !t.text(tree.src).contains("\n\n") => {}
+            T::Whitespace if before.peek().is_some_and(|p| matches!(p.kind, T::LineComment | T::BlockComment) && outer(p.text(tree.src))) => {}
             _ => break,
         }
     }
@@ -66,7 +73,11 @@ fn macro_wrapper(tree: &SyntaxTree<'_>, mc: NodeId) -> Option<&'static str> {
     let start = tree.range(mc).start;
     match tree.kind(p) {
         K::SourceFile | K::ItemList | K::MacroPat => None,
-        K::RetType | K::Impl | K::TypeArg | K::RefType | K::PtrType | K::SliceType | K::ArrayType | K::TupleType | K::ParenType => Some("MACRO_TYPE"),
+        // By the slot it fills (review of d7ed2459): a type alias's right side and a cast's target are types; an array
+        // type's length, after its `;`, is a value.
+        K::TypeAlias | K::CastExpr if tree.own_tokens(p).any(|(_, t)| matches!(t.kind, T::Eq | T::As) && (t.start as usize) < start) => Some("MACRO_TYPE"),
+        K::ArrayType => Some(if tree.own_tokens(p).any(|(_, t)| t.kind == T::Semi && (t.start as usize) < start) { "MACRO_EXPR" } else { "MACRO_TYPE" }),
+        K::RetType | K::Impl | K::TypeArg | K::RefType | K::PtrType | K::SliceType | K::TupleType | K::ParenType => Some("MACRO_TYPE"),
         // A type before the `=`, a value after it.
         K::LetStmt | K::Const | K::Static | K::TypeAlias | K::Param => {
             let eq_before = tree.own_tokens(p).any(|(_, t)| t.kind == T::Eq && (t.start as usize) < start);
@@ -203,9 +214,13 @@ fn write_tree(tree: &SyntaxTree<'_>, root: Item, out: &mut String) {
 fn smallest(tree: &SyntaxTree<'_>, n: NodeId, r: &Range<usize>) -> Item {
     // The node or synthetic node (a `NAME_REF`, a `STMT_LIST`) holding all of `r`, innermost on a tie (review of
     // 27bd4208: the parser's tree alone gave the segment around a `NAME_REF`).
+    // A cursor (an empty range) is in a node from its start up to before its end, at the end of the text in what ends
+    // there: `fn a() {}|fn b() {}` is in `b` (review of d7ed2459).
     let covers = |it: &Item| {
         let ir = item_range(tree, it);
-        !matches!(it, Item::Token(..)) && ir.start <= r.start && r.end <= ir.end
+        let holds =
+            if r.is_empty() { ir.start <= r.start && (r.start < ir.end || (r.start == ir.end && ir.end == tree.src.len())) } else { ir.start <= r.start && r.end <= ir.end };
+        !matches!(it, Item::Token(..)) && holds
     };
     let mut current = Item::Node(n);
     loop {

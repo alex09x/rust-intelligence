@@ -176,3 +176,38 @@ fn test_a_range_selects_in_the_returned_tree_and_must_be_valid() {
     assert!(call(serde_json::json!({ "start": { "line": 0, "character": 10 }, "end": { "line": 0, "character": 7 } })).is_err(), "reversed");
     assert!(call(serde_json::json!({ "start": { "line": 0, "character": 7 }, "end": { "line": 0, "character": 10 } })).is_ok());
 }
+
+/// The start offset of the first node of `kind` in `v`, in preorder.
+fn start_of(v: &Value, kind: &str) -> Option<u64> {
+    if v["type"] == "Node" && v["kind"] == kind {
+        return v["start"][0].as_u64();
+    }
+    v["children"].as_array().into_iter().flatten().find_map(|c| start_of(c, kind))
+}
+
+/// Review of d7ed2459: a macro's wrapper by the slot it fills; inner documentation stays with its scope and outer
+/// documentation crosses a blank line; a cursor at the start of an item is in it.
+#[test]
+fn test_slots_documentation_and_cursors_as_rust_analyzer_has_them() {
+    let tree = |src: &str| -> Value { serde_json::from_str(&syntax_tree_json(src, None)).unwrap() };
+    let wrapper = |src: &str| {
+        let v = tree(src);
+        let mut ks = Vec::new();
+        kinds(&v, &mut ks);
+        ks.into_iter().find(|k| k == "MACRO_TYPE" || k == "MACRO_EXPR")
+    };
+    assert_eq!(wrapper("type Alias = ty!();").as_deref(), Some("MACRO_TYPE"));
+    assert_eq!(wrapper("fn f(x: u8) -> u16 { x as ty!() }").as_deref(), Some("MACRO_TYPE"));
+    assert_eq!(wrapper("fn f(_: [u8; n!()]) {}").as_deref(), Some("MACRO_EXPR"));
+    assert_eq!(wrapper("fn f(_: [ty!(); 2]) {}").as_deref(), Some("MACRO_TYPE"));
+    assert_eq!(start_of(&tree("//! crate\n\nfn f() {}\n"), "FN"), Some(11));
+    assert_eq!(start_of(&tree("//! crate\nfn f() {}\n"), "FN"), Some(10));
+    assert_eq!(start_of(&tree("mod m {\n    //! module\n    fn f() {}\n}\n"), "FN"), Some(27));
+    assert_eq!(start_of(&tree("/// docs\n\nfn f() {}\n"), "FN"), Some(0));
+    assert_eq!(start_of(&tree("// plain\n\nfn f() {}\n"), "FN"), Some(10));
+    let src = "fn a() {}fn b() {}";
+    let v: Value = serde_json::from_str(&syntax_tree_json(src, Some(9..9))).unwrap();
+    assert_eq!((v["kind"].as_str(), v["start"][0].as_u64()), (Some("FN"), Some(9)), "{v}");
+    let v: Value = serde_json::from_str(&syntax_tree_json(src, Some(src.len()..src.len()))).unwrap();
+    assert_ne!(v["kind"], "SOURCE_FILE", "the end of the text is in what ends there: {v}");
+}
