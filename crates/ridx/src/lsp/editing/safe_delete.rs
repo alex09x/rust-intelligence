@@ -30,7 +30,8 @@ const ITEMS: &[K] = &[K::Fn, K::Struct, K::Enum, K::Union, K::Trait, K::Const, K
 
 /// Attributes under which something outside the source uses an item: the linker (a symbol, a section the loader runs:
 /// `#[used]`, `#[link_section]`, review of f4f8b604), the compiler's proc-macro loader.
-const EXTERNAL_USE: &[&str] = &["no_mangle", "export_name", "used", "link_section", "proc_macro", "proc_macro_derive", "proc_macro_attribute"];
+const EXTERNAL_USE: &[&str] =
+    &["no_mangle", "export_name", "used", "link_section", "global_allocator", "panic_handler", "alloc_error_handler", "proc_macro", "proc_macro_derive", "proc_macro_attribute"];
 
 /// What deleting the item named at a position takes away: the bytes, and the name of every declaration in them (the
 /// item first).
@@ -172,17 +173,32 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
         // Every edge the index has to it: the definition's own (impls, aliases) and the path's, a macro's expansion
         // and a whole impl header included (review of f4f8b604: the first alone dropped some).
         let by_path = ws.find_references(found.target_path);
-        for rf in found.references.iter().chain(&by_path) {
-            let path = crate::lsp::navigation::type_definition_parse::on_disk(rf.resolved_path());
-            if !seen.insert((path.clone(), rf.span.start_line(), rf.span.start_col())) {
+        let mut edges: Vec<super::safe_delete_edges::Edge> = found
+            .references
+            .iter()
+            .chain(&by_path)
+            .map(|rf| super::safe_delete_edges::Edge {
+                path: crate::lsp::navigation::type_definition_parse::on_disk(rf.resolved_path()),
+                start: (rf.span.start_line(), rf.span.start_col()),
+                end: (rf.span.end_line(), rf.span.end_col()),
+            })
+            .collect();
+        // And every edge the shards store to it, unfiltered: a macro's expansion too (review of 4009c2c4).
+        edges.extend(super::safe_delete_edges::raw_edges(ws, &canonical, l, c, found.target_path));
+        for edge in edges {
+            let path = ridx_format::canonicalize_best_effort(&edge.path);
+            if !seen.insert((path.clone(), edge.start)) {
                 continue;
             }
-            let inside = ridx_format::canonicalize_best_effort(&path) == canonical
-                && byte_at(&doc, &starts, rf.span.start_line(), rf.span.start_col()).is_some_and(|b| plan.span.contains(&b));
+            let inside = path == canonical && byte_at(&doc, &starts, edge.start.0, edge.start.1).is_some_and(|b| plan.span.contains(&b));
             if !inside {
-                let p = path.to_string_lossy();
-                let (s, e) = (conv.char_col_to_utf16_col(&p, rf.span.start_line(), rf.span.start_col()), conv.char_col_to_utf16_col(&p, rf.span.end_line(), rf.span.end_col()));
-                uses.push(json!({ "uri": crate::lsp::protocol::path_to_uri(&p), "range": { "start": { "line": rf.span.start_line() - 1, "character": s }, "end": { "line": rf.span.end_line() - 1, "character": e } } }));
+                let p = edge.path.to_string_lossy();
+                // The compiler's columns of a first line after a byte order mark do not count it; the client's do
+                // (review of 4009c2c4).
+                let bom = super::safe_delete_fresh::starts_with_bom(&edge.path, ov) as u32;
+                let mut col = |(l, c): (u32, u32)| conv.char_col_to_utf16_col(&p, l, c) + if l == 1 { bom } else { 0 };
+                let (s, e) = (col(edge.start), col(edge.end));
+                uses.push(json!({ "uri": crate::lsp::protocol::path_to_uri(&p), "range": { "start": { "line": edge.start.0 - 1, "character": s }, "end": { "line": edge.end.0 - 1, "character": e } } }));
             }
         }
     }

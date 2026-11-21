@@ -52,6 +52,23 @@ fn test_what_its_own_deletion_would_break_is_refused() {
     assert_eq!(deleted("mod $0m {\n    #[no_mangle]\n    pub extern \"C\" fn api() {}\n}\n"), Err("externallyUsed"));
     assert_eq!(deleted("pub trait Marker {}\npub struct S;\nmod $0m {\n    impl super::Marker for super::S {}\n}\n"), Err("containsImpl"));
     assert_eq!(deleted("#[used]\n#[link_section = \".init_array\"]\nstatic $0INIT: extern \"C\" fn() = init;\nextern \"C\" fn init() {}\n"), Err("externallyUsed"));
+    // Review of 4009c2c4: the allocator the compiler selects.
+    assert_eq!(deleted("use std::alloc::System;\n#[global_allocator]\nstatic $0A: System = System;\n"), Err("externallyUsed"));
+}
+
+/// Review of 4009c2c4: a use the compiler recorded in a macro's expansion keeps the item; a use's columns on a first
+/// line after a byte order mark are the client's; a workspace's own `.rustup` directory is no toolchain's.
+#[test]
+fn test_every_stored_edge_and_its_client_place() {
+    let lib = "pub fn used() {}\npub fn unused() {}\n";
+    let mut conv = PositionConverter::new();
+    let (_d, path, index) = workspace_with(lib, "// a caller\n\npub fn caller() {}\n", &[("used", DefKind::Fn, 1, 8)], &[(3, 5, 0)], true);
+    assert_eq!(handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut conv)["reason"], "used", "a macro's expansion");
+    let caller = "\u{feff}pub fn caller() { crate::used() }\n";
+    let (_d, path, index) = workspace_with(lib, caller, &[("used", DefKind::Fn, 1, 8)], &[(1, 27, 0)], false);
+    let got = handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut PositionConverter::new());
+    assert_eq!(got["remainingUses"][0]["range"]["start"]["character"], 27, "{got}");
+    assert!(!crate::lsp::editing::safe_delete_fresh::cached(std::path::Path::new("/w/.rustup/caller.rs")));
 }
 
 /// An inline module's declarations are all checked.
@@ -65,12 +82,22 @@ fn test_a_container_names_its_members() {
 /// A workspace whose `src/lib.rs` is `lib` with `defs` (name, kind, 1-based line and column), indexed from that very
 /// text, and whose `src/other.rs` holds `refs` (1-based line and column, the index of the definition used).
 fn workspace(lib: &str, defs: &[(&str, DefKind, u32, u32)], refs: &[(u32, u32, usize)]) -> (tempfile::TempDir, std::path::PathBuf, WorkspaceIndex) {
+    workspace_with(lib, "// a caller\n\npub fn caller() {}\n", defs, refs, false)
+}
+
+/// [`workspace`] with `caller` as `src/other.rs`, its references recorded as a macro's expansion when `in_macro`.
+fn workspace_with(
+    lib: &str,
+    caller: &str,
+    defs: &[(&str, DefKind, u32, u32)],
+    refs: &[(u32, u32, usize)],
+    in_macro: bool,
+) -> (tempfile::TempDir, std::path::PathBuf, WorkspaceIndex) {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().canonicalize().unwrap();
     std::fs::create_dir_all(root.join("src")).unwrap();
     let (lib_path, other) = (root.join("src/lib.rs"), root.join("src/other.rs"));
     std::fs::write(&lib_path, lib).unwrap();
-    let caller = "// a caller\n\npub fn caller() {}\n";
     std::fs::write(&other, caller).unwrap();
     let mut w = IndexWriter::new("w", "0.1.0");
     w.add_file_hash(&lib_path.to_string_lossy(), ridx_format::normalized_source_hash(lib.as_bytes()));
@@ -111,7 +138,7 @@ fn workspace(lib: &str, defs: &[(&str, DefKind, u32, u32)], refs: &[(u32, u32, u
             target_col: tc,
             kind,
             is_write: false,
-            is_macro_expansion: false,
+            is_macro_expansion: in_macro,
         });
     }
     let shard = root.join("w.ridx");

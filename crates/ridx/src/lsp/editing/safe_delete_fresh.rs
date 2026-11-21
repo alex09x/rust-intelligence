@@ -22,10 +22,53 @@ use std::path::{Path, PathBuf};
 /// More Rust files than this under the workspace are not read on a request: the answer is then `staleIndex`.
 const MAX_FILES: usize = 50_000;
 
-/// The registry's, git checkouts' and toolchains' sources, which do not change under a build.
-fn cached(p: &Path) -> bool {
-    let s = p.to_string_lossy();
-    s.contains("/.cargo/registry/") || s.contains("/.cargo/git/") || s.contains("/.rustup/") || s.contains("/rustlib/src/")
+/// The directories of sources no build changes: Cargo's registry and git checkouts, rustup's toolchains and the
+/// sysroot, where they are on this machine (a workspace's own `.rustup/caller.rs` is no toolchain's: review of
+/// 4009c2c4).
+fn cache_dirs() -> &'static [PathBuf] {
+    static DIRS: std::sync::OnceLock<Vec<PathBuf>> = std::sync::OnceLock::new();
+    DIRS.get_or_init(|| {
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        let cargo = std::env::var_os("CARGO_HOME").map(PathBuf::from).or_else(|| home.as_ref().map(|h| h.join(".cargo")));
+        let rustup = std::env::var_os("RUSTUP_HOME").map(PathBuf::from).or_else(|| home.as_ref().map(|h| h.join(".rustup")));
+        let sysroot = std::process::Command::new("rustc")
+            .args(["--print", "sysroot"])
+            .stderr(std::process::Stdio::null())
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| PathBuf::from(String::from_utf8_lossy(&o.stdout).trim()));
+        let mut dirs: Vec<PathBuf> = Vec::new();
+        dirs.extend(cargo.iter().flat_map(|c| [c.join("registry"), c.join("git")]));
+        dirs.extend(rustup.map(|r| r.join("toolchains")));
+        dirs.extend(sysroot.filter(|s| !s.as_os_str().is_empty()));
+        dirs.into_iter().map(|d| ridx_format::canonicalize_best_effort(&d)).collect()
+    })
+}
+
+pub(crate) fn cached(p: &Path) -> bool {
+    let p = ridx_format::canonicalize_best_effort(p);
+    cache_dirs().iter().any(|d| p.starts_with(d))
+}
+
+/// The file `raw` of reader `idx` as the workspace resolves it (an absolute path, or one relative to the reader's
+/// source root or the workspace's, overlapping components joined once: review of 4009c2c4); `None` when no root is
+/// known.
+pub(crate) fn resolve(ws: &WorkspaceIndex, idx: usize, raw: &str) -> Option<PathBuf> {
+    let rel = Path::new(raw);
+    if rel.is_absolute() {
+        return Some(rel.to_path_buf());
+    }
+    let root = ws.source_root_at(idx).or_else(|| (!ws.is_reader_dependency(idx)).then(|| ws.workspace_root()).flatten())?;
+    Some(ridx_format::format::join_resolving_overlap(root, rel))
+}
+
+/// Whether the text of `path` the server sees begins with a byte order mark.
+pub(crate) fn starts_with_bom(path: &Path, ov: &OverlayManager) -> bool {
+    match ov.get(&path.to_string_lossy()) {
+        Some(o) => o.text.starts_with('\u{feff}'),
+        None => std::fs::read(path).is_ok_and(|b| b.starts_with("\u{feff}".as_bytes())),
+    }
 }
 
 /// The text of `path` as the server sees it: its open buffer, else the disk.
@@ -44,13 +87,11 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
     for (idx, reader) in ws.readers().iter().enumerate() {
         // Every file the compiler read for the shard, not only those holding a definition or a reference.
         for (f, hash) in reader.embedded_file_hashes() {
-            let f = Path::new(&f);
-            let path = if f.is_absolute() {
-                f.to_path_buf()
-            } else if let Some(root) = ws.source_root_at(idx) {
-                root.join(f)
-            } else {
-                continue;
+            // A file of the workspace whose place is not known is not known to be as it was read.
+            let path = match resolve(ws, idx, &f) {
+                Some(p) => p,
+                None if ws.is_reader_dependency(idx) => continue,
+                None => return None,
             };
             if hash == 0 || cached(&path) {
                 continue;
