@@ -61,7 +61,8 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                 }
                 if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
                     let layout_at = |c: u32| ws.note_at(&file, il, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
-                    if let Some(h) = line_text.as_deref().and_then(|l| super::hover_binding::binding_hover(l, line_0based, col_1based, ty, &layout_at)) {
+                    let src = overlay_opt.map(|o| std::borrow::Cow::Borrowed(o.text.as_str())).or_else(|| std::fs::read_to_string(&file).ok().map(std::borrow::Cow::Owned));
+                    if let Some(h) = src.as_deref().and_then(|s| super::hover_binding::binding_hover(s, line_0based, col_1based, ty, &layout_at)) {
                         return Ok(h);
                     }
                 }

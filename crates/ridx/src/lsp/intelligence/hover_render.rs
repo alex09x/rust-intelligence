@@ -128,10 +128,7 @@ fn local_binding(d: &ResolvedDefinition<'_>, src: &str, ty: &str) -> Option<Stri
     binding_text(line, d.start_col, d.name, ty)
 }
 
-#[cfg(test)]
-pub(crate) use super::hover_binding::{let_binding_hover, let_binding_hover_with_layout};
-
-pub(crate) fn binding_text(line: &str, start_col: u32, name: &str, ty: &str) -> Option<String> {
+fn binding_text(line: &str, start_col: u32, name: &str, ty: &str) -> Option<String> {
     let col = line.char_indices().nth(start_col.saturating_sub(1) as usize).map_or(line.len(), |(i, _)| i);
     let d_name = name;
     let before = line[..col].trim_end();
