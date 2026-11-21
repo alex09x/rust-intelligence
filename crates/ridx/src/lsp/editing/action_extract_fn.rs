@@ -33,12 +33,17 @@ fn copy_type(ty: &str) -> bool {
 }
 
 /// The local `name`, read at byte `at` inside `f`, with its type: a parameter, or a `let` before the selection whose
-/// uses include `at`. `Err` when the name is bound otherwise (a pattern, a closure's parameter): not known.
+/// uses include `at`. `Err` when the name is bound otherwise (a pattern, a closure's parameter): not known; or `mut`:
+/// a method taking `&mut self` would change the copy passed, not the local.
 fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, let_type: LetType) -> Result<Option<String>, ()> {
+    let mutable = |pat: NodeId| tree.own_tokens(pat).any(|(_, t)| t.kind == T::Mut);
     for p in ridx_syntax::sema_fn::params(tree, f) {
         if p.bindings.as_slice() == [name] && p.pat.is_some_and(|pat| tree.kind(pat) == K::IdentPat) {
             let uses = ridx_syntax::sema_fn::param_uses(tree, f, name);
             if uses.uses.iter().any(|r| r.start == at) {
+                if p.pat.is_some_and(mutable) {
+                    return Err(());
+                }
                 return Ok(p.ty_text.map(str::to_string));
             }
         }
@@ -48,6 +53,9 @@ fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, let_type: L
         let Some(n) = tree.child(pat, K::Name).filter(|&n| ridx_syntax::sema_fn::norm_ident(tree.text(n)) == name) else { continue };
         match tree.parent(pat).filter(|&s| tree.kind(s) == K::LetStmt) {
             Some(stmt) if ridx_syntax::sema_fn::let_uses(tree, stmt, name).uses.iter().any(|r| r.start == at) => {
+                if mutable(pat) {
+                    return Err(());
+                }
                 let written = tree.children(stmt).find(|&c| tree.kind(c).is_type()).map(|t| tree.text(t).to_string());
                 return Ok(written.or_else(|| let_type(tree.range(n).start)));
             }
@@ -83,7 +91,9 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         return None;
     }
     let inner: Vec<NodeId> = std::iter::once(expr).chain(tree.descendants(expr)).collect();
-    if inner.iter().any(|&n| matches!(tree.kind(n), K::ReturnExpr | K::TryExpr | K::BreakExpr | K::ContinueExpr | K::AwaitExpr | K::MacroCall | K::IdentPat | K::ClosureExpr))
+    if inner
+        .iter()
+        .any(|&n| matches!(tree.kind(n), K::ReturnExpr | K::TryExpr | K::BreakExpr | K::ContinueExpr | K::AwaitExpr | K::MacroCall | K::IdentPat | K::ClosureExpr | K::RefExpr))
         || tree.tokens_of(expr).iter().any(|t| matches!(t.kind, T::SelfKw | T::SelfType))
     {
         return None;
@@ -102,7 +112,9 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         return None;
     }
     // The locals it reads, in order of first use.
-    let mut params: Vec<(String, String)> = Vec::new();
+    // A borrow (`&x`) would borrow the copy passed, not the local: no `RefExpr` above. Each local is written in its own
+    // spelling (`r#type`) and told apart by its name.
+    let mut params: Vec<(String, String, String)> = Vec::new();
     for &n in &inner {
         if tree.kind(n) != K::PathExpr || tree.children(n).count() != 1 {
             continue;
@@ -115,20 +127,25 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         let name = ridx_syntax::sema_fn::norm_ident(tok.text(doc));
         match local_of(&tree, f, name, tok.start as usize, let_type).ok()? {
             Some(ty) if copy_type(&ty) => {
-                if !params.iter().any(|(p, _)| p == name) {
-                    params.push((name.to_string(), ty));
+                if !params.iter().any(|(p, _, _)| p == name) {
+                    params.push((name.to_string(), tok.text(doc).to_string(), ty));
                 }
             }
             Some(_) => return None,
-            None if tree.descendants(f).any(|d| tree.kind(d) == K::IdentPat && tree.child(d, K::Name).is_some_and(|nn| tree.text(nn) == name)) => return None,
+            None if tree
+                .descendants(f)
+                .any(|d| tree.kind(d) == K::IdentPat && tree.child(d, K::Name).is_some_and(|nn| ridx_syntax::sema_fn::norm_ident(tree.text(nn)) == name)) =>
+            {
+                return None
+            }
             None => {}
         }
     }
     let name = (0..)
         .map(|i| if i == 0 { "fun_name".to_string() } else { format!("fun_name{i}") })
         .find(|n| !tree.tokens.iter().any(|t| ridx_syntax::sema_fn::norm_ident(t.text(doc)) == n.as_str()))?;
-    let args: Vec<&str> = params.iter().map(|(p, _)| p.as_str()).collect();
-    let sig: Vec<String> = params.iter().map(|(p, t)| format!("{p}: {t}")).collect();
+    let args: Vec<&str> = params.iter().map(|(_, raw, _)| raw.as_str()).collect();
+    let sig: Vec<String> = params.iter().map(|(_, raw, t)| format!("{raw}: {t}")).collect();
     // After the item of the module that holds the function (the function, or its impl), in that module, so that what
     // the module imports names its types; a function in another function's body is not extracted from.
     let mut top = f;

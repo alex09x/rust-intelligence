@@ -45,6 +45,10 @@ fn test_an_expression_becomes_a_function_of_the_locals_it_reads() {
     assert_rustc_compiles(&got, "Extract into function");
     let doc = "pub fn g(s: &str) -> usize {\n    $0s.len() * 2$0\n}\n";
     assert_rustc_compiles(&extracted(doc, None).unwrap(), "Extract into function");
+    // A raw name keeps its spelling in the signature.
+    let got = extracted("pub fn h(r#type: u8) -> u8 {\n    $0r#type + 1$0\n}\n", None).unwrap();
+    assert!(got.contains("fn fun_name(r#type: u8) -> u8") && got.contains("fun_name(r#type)"), "{got}");
+    assert_rustc_compiles(&got, "Extract into function");
 }
 
 #[test]
@@ -60,6 +64,11 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         ("pub fn f(a: u32) -> String {\n    $0format!(\"{a}\")$0\n}\n", None),
         // Generic.
         ("pub fn f<T: Copy>(a: T) -> T {\n    let b = $0a$0;\n    b\n}\n", Some("T")),
+        // A borrow of a local (it would borrow the copy passed), a mutable local (changed through `&mut self` on the
+        // copy).
+        ("pub fn f(a: u32) -> u32 {\n    let r = $0*&a + 1$0;\n    r\n}\n", Some("u32")),
+        ("use std::ops::AddAssign;\npub fn f(mut a: u32) -> u32 {\n    let r = $0{ a.add_assign(1); a }$0;\n    r + a\n}\n", Some("u32")),
+        ("pub fn f(a: u32) -> u32 {\n    let mut b = a;\n    let r = $0b.wrapping_add(1)$0;\n    b += 1;\n    r + b\n}\n", Some("u32")),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {
