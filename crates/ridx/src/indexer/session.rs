@@ -226,9 +226,14 @@ impl Staged {
                 super::direct::units::refresh_aliases(&unit.sidecar, &unit.aliases);
             }
         }
-        // A unit made for a new test file (`new_tests`) owns that file alone, checked when the compile succeeded.
+        // A unit made for a new test file (`new_tests`) owns what its compile found, the modules of the test included
+        // (review of c8b32392), else that file alone; checked when its analysis ran (its shard, as a type error leaves it).
         let (checked, owned) = match &unit.synthetic {
-            Some(f) => ((success && !self.remaps).then(|| [f.clone()].into()), Some([f.clone()].into())),
+            Some(f) => {
+                let mut found: HashSet<PathBuf> = owned.unwrap_or_default();
+                found.insert(f.clone());
+                (((ran || success) && !self.remaps).then(|| found.clone()), Some(found))
+            }
             None => (checked, owned),
         };
         UnitOutcome { messages, checked, owned, untold: self.remaps }
