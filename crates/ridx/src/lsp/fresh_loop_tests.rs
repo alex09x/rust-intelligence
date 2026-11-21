@@ -8,7 +8,8 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Requests on a root whose index failed (prod-code, m=19837; review of b3d0d293).
+//! Requests on a root whose index failed (prod-code, m=19837; review of b3d0d293), and the workspace a held pull and
+//! the document's status follow (review of 775998ea).
 
 use super::*;
 use crate::lsp::reindex::Reindexer;
@@ -144,7 +145,7 @@ fn test_a_held_request_gets_the_failure() {
 
     l.lifecycle.reindex.fail_for_test(&root, "ridx index failed: no driver");
     let mut out = Vec::new();
-    let ready = release_waiting(&mut l.gate, &mut out, &mut l.lifecycle, &mut l.mr, &mut l.ov, &l.cancelled).unwrap();
+    let ready = release_waiting(&mut l.gate, &mut out, &mut l.lifecycle, &mut l.mr, &mut l.ov, &l.session, &l.cancelled).unwrap();
     assert!(ready.is_empty());
     let a = answers(&out);
     let answer = a.iter().find(|a| a["id"] == 2).unwrap_or_else(|| panic!("answered: {a:?}"));
@@ -297,4 +298,60 @@ fn test_a_root_never_collides_with_another_roots_alias() {
     assert!(!mr.add_root(x.clone()), "a path that is a root is no alias of another");
     assert!(mr.remove_root(&x), "the root named exactly");
     assert!(mr.is_empty());
+}
+
+fn pull(file: &Path, id: u64, min_version: i64) -> Value {
+    json!({ "jsonrpc": "2.0", "id": id, "method": "textDocument/diagnostic", "params": { "textDocument": { "uri": format!("file://{}", file.display()) }, "minVersion": min_version } })
+}
+
+/// Review of 775998ea: a pull held while a nested folder holding its file was added has that workspace compile it, the
+/// client not asking again.
+#[test]
+fn test_a_held_pull_follows_its_file_to_a_new_workspace() {
+    let dir = tempfile::tempdir().unwrap();
+    let outer = ridx_format::canonicalize_best_effort(dir.path());
+    package(&outer);
+    publish_index(&outer);
+    let nested = outer.join("nested");
+    package(&nested);
+    publish_index(&nested);
+    let mut l = Loop::new(&outer);
+    let file = nested.join("src/lib.rs");
+    l.ov.open_document(&format!("file://{}", file.display()), &file.display().to_string(), 1, "pub fn a() {}\n".to_string());
+    let mut out = Vec::new();
+    assert!(l.intercept(pull(&file, 2, 1), &mut out).is_none(), "held: no session compiled it");
+    assert!(l.session.is_wanted(&outer, &file) && !l.session.is_wanted(&nested, &file));
+
+    let added = json!({ "jsonrpc": "2.0", "method": "workspace/didChangeWorkspaceFolders", "params": { "event": { "added": [{ "uri": format!("file://{}", nested.display()), "name": "n" }], "removed": [] } } });
+    assert!(l.intercept(added, &mut out).is_none());
+    let ready = release_waiting(&mut l.gate, &mut out, &mut l.lifecycle, &mut l.mr, &mut l.ov, &l.session, &l.cancelled).unwrap();
+    assert!(ready.is_empty() && !l.gate.waiting.is_empty(), "still held");
+    assert!(l.session.is_wanted(&nested, &file), "the nested workspace compiles it now");
+    assert!(l.session.state_of(&nested).0, "a session of it is due");
+}
+
+/// Review of 775998ea: the document's `building` is of the workspace its diagnostics wait for, a nested one registered
+/// without an index, not the loaded one enclosing it.
+#[test]
+fn test_the_documents_building_is_of_the_workspace_its_diagnostics_wait_for() {
+    let dir = tempfile::tempdir().unwrap();
+    let outer = ridx_format::canonicalize_best_effort(dir.path());
+    package(&outer);
+    publish_index(&outer);
+    let nested = outer.join("nested");
+    package(&nested);
+    let mut l = Loop::new(&outer);
+    l.lifecycle.reindex.fail_for_test(&nested, "ridx index failed: no driver");
+    let file = nested.join("src/lib.rs");
+    l.ov.open_document(&format!("file://{}", file.display()), &file.display().to_string(), 1, "pub fn a() {}\n".to_string());
+    let mut out = Vec::new();
+    assert!(l.intercept(pull(&file, 2, 1), &mut out).is_none());
+    assert!(l.session.state_of(&nested).0 && !l.session.state_of(&outer).0, "the nested session is due");
+    let status = json!({ "jsonrpc": "2.0", "id": 3, "method": "ridx/status", "params": { "textDocument": { "uri": format!("file://{}", file.display()) } } });
+    let mut out = Vec::new();
+    assert!(l.intercept(status, &mut out).is_none());
+    let a = answers(&out);
+    let doc = &a.iter().find(|a| a["id"] == 3).expect("status answered")["result"]["document"];
+    assert_eq!(doc["diagnostics"]["state"], "pending");
+    assert_eq!(doc["building"], true, "{doc}");
 }

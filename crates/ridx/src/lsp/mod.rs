@@ -172,7 +172,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         }
 
         // Requests waiting for an index that covers their document (`minVersion`): the ones covered now go first.
-        released.extend(fresh_loop::release_waiting(&mut gate, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &cancelled_requests)?);
+        released.extend(fresh_loop::release_waiting(&mut gate, &mut writer, &mut lifecycle, &mut multi_root, &mut overlay_mgr, &session, &cancelled_requests)?);
         let next = match released.pop_front() {
             Some(msg) => Ok(msg),
             None => rx.recv_timeout(std::time::Duration::from_millis(20)),

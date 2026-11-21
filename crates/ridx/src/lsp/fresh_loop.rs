@@ -93,6 +93,7 @@ pub(crate) fn release_waiting<W: Write>(
     lifecycle: &mut super::LifecycleManager,
     mr: &mut super::MultiRootWorkspace,
     ov: &mut crate::overlay::OverlayManager,
+    session: &SessionIndexer,
     cancelled: &Mutex<HashSet<Value>>,
 ) -> io::Result<Vec<Value>> {
     if gate.waiting.is_empty() {
@@ -110,6 +111,11 @@ pub(crate) fn release_waiting<W: Write>(
     let ov: &crate::overlay::OverlayManager = ov;
     let fc = &lifecycle.flycheck;
     let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f) };
+    // A pull held while the workspace its file belongs to changed (a nested folder added) has that one compile it now:
+    // it is not asked again (review of 775998ea).
+    for msg in gate.waiting.held_diagnostics() {
+        demand(msg, &cov, mr, &lifecycle.reindex, session, false);
+    }
     let (ready, answers) = gate.waiting.release(&cov, cancelled);
     gate.send_answers(writer, answers)?;
     Ok(ready)
@@ -190,16 +196,23 @@ pub(crate) fn intercept<W: Write>(
         super::protocol::send_response(writer, &answer)?;
         return Ok(None);
     }
-    // One waiting for the diagnostics of a buffer as saved has the sessions compile it: only a compile of its very
-    // text, in its own workspace, says what they are (review of 13eacef0).
-    if msg["method"] == "textDocument/diagnostic" {
-        if let Some((file, _)) = super::fresh::wanted(&msg).filter(|(f, _)| ov.get(f).is_some() && (cov.diagnostics)(f) == Readiness::Pending) {
-            if let Some(root) = owning_root(mr, &lifecycle.reindex, &file) {
-                session.want(&ridx_format::canonicalize_best_effort(Path::new(&file)), &root);
-            }
-        }
-    }
+    demand(&msg, &cov, mr, &lifecycle.reindex, session, true);
     Ok(gate.waiting.admit(msg, &cov, deadline))
+}
+
+/// A pull waiting for the diagnostics of a buffer as saved has the sessions compile it: only a compile of its very
+/// text, in its own workspace, says what they are (review of 13eacef0). `again`: a session is due even when the buffer
+/// is wanted there already (a request asking again retries a build that failed); else only when it is not.
+fn demand(msg: &Value, cov: &Coverage, mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer, session: &SessionIndexer, again: bool) {
+    if msg["method"] != "textDocument/diagnostic" {
+        return;
+    }
+    let Some((file, _)) = super::fresh::wanted(msg).filter(|(f, _)| cov.ov.get(f).is_some() && (cov.diagnostics)(f) == Readiness::Pending) else { return };
+    let Some(root) = owning_root(mr, reindex, &file) else { return };
+    let file = ridx_format::canonicalize_best_effort(Path::new(&file));
+    if again || !session.is_wanted(&root, &file) {
+        session.want(&file, &root);
+    }
 }
 
 /// The requests answered from the index alone: on a root without one, an empty answer would read as "none" (no
@@ -278,62 +291,9 @@ pub fn experimental_capabilities() -> Value {
     json!({ "ridx": { "methods": { "ridx/status": 1, "textDocument/diagnostic": 1 }, "requestOptions": { "minVersion": 1 } } })
 }
 
-/// `ridx/status`: every root of the session and its index, and the given document's coverage.
-pub fn status(
-    msg: &Value,
-    folders: &Folders,
-    mr: &super::MultiRootWorkspace,
-    ov: &crate::overlay::OverlayManager,
-    reindex: &super::reindex::Reindexer,
-    session: &SessionIndexer,
-    flycheck: &crate::lsp::presentation::flycheck::FlycheckState,
-) -> Value {
-    // The roots with an index loaded, and the client's folders' and those indexed this session without one, being
-    // indexed for the first time or whose first index failed (review of a6909dbe: they were missing, with the reason).
-    let mut roots: Vec<(PathBuf, Option<String>)> = mr
-        .all_workspaces()
-        .filter_map(|ws| ws.workspace_root().map(|r| (ridx_format::canonicalize_best_effort(r), Some(format!("{}.{}", ws.instance_id(), ws.generation())))))
-        .collect();
-    for root in folders.roots().into_iter().chain(reindex.roots()) {
-        if !roots.iter().any(|(r, _)| *r == root) {
-            roots.push((root, None));
-        }
-    }
-    roots.sort();
-    let roots: Vec<Value> = roots
-        .into_iter()
-        .map(|(root, generation)| {
-            let (building, error) = reindex.status_of(&root);
-            let (session_building, session_answers) = session.state_of(&root);
-            json!({
-                "root": root.display().to_string(),
-                "indexed": generation.is_some(),
-                "generation": generation,
-                "building": building,
-                "error": error,
-                "sessionIndex": { "answers": session_answers, "building": session_building },
-            })
-        })
-        .collect();
-    let mut out = json!({ "roots": roots });
-    if let Some(uri) = msg["params"]["textDocument"]["uri"].as_str() {
-        let file = super::protocol::uri_to_path(uri);
-        let root = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file));
-        let building = root.as_ref().is_some_and(|r| session.state_of(r).0 || reindex.status_of(r).0);
-        let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(flycheck, ov, mr, reindex, f) };
-        // Whether the compiler's diagnostics of the buffer's text are known (prod-code, m=20178).
-        let diagnostics = match (cov.diagnostics)(&file) {
-            Readiness::Ready(v) => json!({ "state": "ready", "version": v }),
-            Readiness::Unavailable(v, why) => json!({ "state": "unavailable", "version": v, "reason": why }),
-            Readiness::Pending => json!({ "state": "pending", "version": null }),
-        };
-        out["document"] = match ov.get(&file) {
-            Some(o) => json!({ "version": o.version, "coveredVersion": cov.covered_version(&file).flatten(), "building": building, "diagnostics": diagnostics }),
-            None => json!({ "version": null, "coveredVersion": null, "building": building, "diagnostics": null }),
-        };
-    }
-    out
-}
+#[path = "fresh_status.rs"]
+mod fresh_status;
+pub use fresh_status::status;
 
 #[cfg(test)]
 #[path = "fresh_loop_tests.rs"]

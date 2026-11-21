@@ -107,6 +107,11 @@ impl Waiting {
         self.held.is_empty()
     }
 
+    /// The held `textDocument/diagnostic` requests.
+    pub fn held_diagnostics(&self) -> impl Iterator<Item = &Value> {
+        self.held.iter().map(|h| &h.msg).filter(|m| is_diagnostic(m))
+    }
+
     /// The deadline of the request with this id released to dispatch, taken out: the loop takes it on every path that
     /// request goes, so none is left to a later request reusing the id.
     pub fn take_released(&mut self, id: &Value) -> Option<Instant> {
