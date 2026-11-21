@@ -43,7 +43,7 @@ fn test_an_expression_becomes_a_function_of_the_locals_it_reads() {
     let got = extracted(doc, Some("u64")).unwrap();
     assert!(got.contains("        fun_name(b, a)\n") && got.contains("}\n\nfn fun_name(b: u64, a: u64) -> u64 {\n    b * K + a\n}"), "{got}");
     assert_rustc_compiles(&got, "Extract into function");
-    let doc = "pub fn g(s: &str) -> usize {\n    $0s.len() * 2$0\n}\n";
+    let doc = "fn width(s: &str) -> usize { s.len() }\npub fn g(s: &str) -> usize {\n    $0width(s) * 2$0\n}\n";
     assert_rustc_compiles(&extracted(doc, None).unwrap(), "Extract into function");
     // A raw name keeps its spelling in the signature.
     let got = extracted("pub fn h(r#type: u8) -> u8 {\n    $0r#type + 1$0\n}\n", None).unwrap();
@@ -83,6 +83,10 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         ("unsafe fn g() -> i32 { 1 }\npub fn f() -> i32 {\n    unsafe {\n        let r = $0g() + 1$0;\n        r\n    }\n}\n", Some("i32")),
         ("#[cfg(test)]\nfn only() -> i32 { 1 }\n#[cfg(test)]\npub fn f() -> i32 {\n    let r = $0only() + 1$0;\n    r\n}\n", Some("i32")),
         ("#[track_caller]\npub fn f(a: u32) -> u32 {\n    let r = $0a.checked_add(1).unwrap()$0;\n    r\n}\n", Some("u32")),
+        // Review of 6c5f3f95: a receiver borrowed by the compiler, a `let` assigned later.
+        ("pub trait A { fn address(&self) -> usize; }\nimpl A for u8 { fn address(&self) -> usize { self as *const u8 as usize } }\npub fn f(n: u8) -> usize {\n    let r = $0n.address() + 1$0;\n    r\n}\n", Some("usize")),
+        ("pub fn f() -> u32 {\n    let x: u32;\n    let r = $0{ x = 1; x }$0;\n    r\n}\n", Some("u32")),
+        ("pub fn f(c: bool) -> u32 {\n    let x: u32;\n    if c { x = 1 } else { x = 2 }\n    let r = $0x + 1$0;\n    r\n}\n", Some("u32")),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {

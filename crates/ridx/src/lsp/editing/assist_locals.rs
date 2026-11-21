@@ -58,7 +58,10 @@ pub(crate) fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, 
         let Some(n) = tree.child(pat, K::Name).filter(|&n| ridx_syntax::sema_fn::norm_ident(tree.text(n)) == name) else { continue };
         match tree.parent(pat).filter(|&s| tree.kind(s) == K::LetStmt) {
             Some(stmt) if ridx_syntax::sema_fn::let_uses(tree, stmt, name).uses.iter().any(|r| r.start == at) => {
-                if mutable(pat) {
+                // A `let x;` with no initializer is assigned later, which a copy passed would not see (review of
+                // 6c5f3f95).
+                let initialized = tree.children(stmt).any(|c| tree.kind(c).is_expr() || tree.kind(c) == K::MacroCall);
+                if mutable(pat) || !initialized {
                     return Err(());
                 }
                 let written = tree.children(stmt).find(|&c| tree.kind(c).is_type()).map(|t| tree.text(t).to_string());

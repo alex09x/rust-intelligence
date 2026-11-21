@@ -114,6 +114,11 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
             continue;
         }
         let name = ridx_syntax::sema_fn::norm_ident(tok.text(doc));
+        // A receiver, a field's base or an indexed value is borrowed where it is, by the compiler (`n.address()` takes
+        // `&n`): the copy passed would be borrowed instead (review of 6c5f3f95).
+        if tree.parent(n).is_some_and(|p| matches!(tree.kind(p), K::MethodCallExpr | K::FieldExpr | K::IndexExpr) && tree.children(p).next() == Some(n)) {
+            return None;
+        }
         match local_of(&tree, f, name, tok.start as usize, let_type).ok()? {
             Some(ty) if copy_type(&ty, primitive_shadowed) && nameable(&ty) => {
                 if !params.iter().any(|(p, _, _)| p == name) {
