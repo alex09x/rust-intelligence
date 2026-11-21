@@ -374,3 +374,29 @@ fn edited(file: &Path, text: &str) -> crate::overlay::OverlayManager {
     ov.apply_content_changes(&path, 2, &[json!({ "text": text })]);
     ov
 }
+
+/// prod-code, m=20185: a file on disk no crate includes answered `[]`, read as a file without errors; it gets
+/// rust-analyzer's `unlinked-file` hint, while an edited one stays refused.
+#[test]
+fn test_a_file_no_crate_includes_says_so() {
+    let (_d, root) = workspace();
+    let stray = root.join("tests/stray/helper.rs");
+    std::fs::create_dir_all(stray.parent().unwrap()).unwrap();
+    let text = "pub fn helper() -> u32 { 1 }\n".to_string();
+    std::fs::write(&stray, &text).unwrap();
+    let flycheck = FlycheckState::new();
+    let texts = [(stray.clone(), text.clone())];
+    let mut r = report(Vec::new(), &[]);
+    r.unheld.insert(stray.clone());
+    flycheck.session.set_outcomes(&root, session_outcomes(&r, &texts, &HashMap::new()));
+    let path = stray.to_string_lossy().to_string();
+    let mut ov = crate::overlay::OverlayManager::new();
+    ov.open_with_provenance(&uri(&stray), &path, 1, text.clone(), true);
+    assert_eq!(readiness(&flycheck, &ov, &path), Readiness::Ready(1), "as saved: answered");
+    let got = merge_with_compiler(&uri(&stray), &[], &text, || Some(text.clone()), &flycheck);
+    assert_eq!(got.len(), 1, "{got:?}");
+    assert_eq!((got[0]["code"].as_str(), got[0]["severity"].as_u64(), got[0]["source"].as_str()), (Some("unlinked-file"), Some(4), Some("ridx")));
+    assert!(got[0]["message"].as_str().unwrap().contains("not included in any crates"));
+    let edited = edited(&stray, "pub fn helper() -> u32 { 2 }\n");
+    assert_eq!(readiness(&flycheck, &edited, &path), Readiness::Pending, "another text: not this one's outcome");
+}

@@ -53,9 +53,21 @@ pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: im
     if let Some(session) = flycheck.session.of(&file) {
         return merge_session(uri, heuristic, live, &session);
     }
+    // A file on disk no crate includes says so, with rust-analyzer's hint (prod-code, m=20185).
+    if flycheck.session.outcome(&file).is_some_and(|o| o.unavailable == Some(super::session_diag::UNLINKED)) {
+        let saved = saved();
+        let mut out = merge_check(uri, heuristic, live, || saved.clone(), flycheck, &file);
+        out.extend(super::session_diag::unlinked_hint(flycheck, &file, live, saved.as_deref()));
+        return out;
+    }
+    merge_check(uri, heuristic, live, saved, flycheck, &file)
+}
+
+/// [`merge_with_compiler`] with the check of the saved files, for `file` (canonical).
+fn merge_check(uri: &str, heuristic: &[Value], live: &str, saved: impl FnOnce() -> Option<String>, flycheck: &FlycheckState, file: &std::path::Path) -> Vec<Value> {
     // The check names a file by its path as a raw `file://` URI, whatever spelling the client's URI has (`a%20b.rs`,
     // review of d4541e29): that is where its result is looked up first.
-    let key = check_key(&file);
+    let key = check_key(file);
     // The client's URI as it is only when spelled as the check spells paths (no escape): `a%20b.rs` as a key is another
     // file's, one named so (review of 88fe53d0).
     let key = if flycheck.get_latest_diagnostics(&key).is_empty() && !uri.contains('%') { uri.to_string() } else { key };

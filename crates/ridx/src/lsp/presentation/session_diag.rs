@@ -222,6 +222,25 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
     files
 }
 
+/// The outcome of a buffer no crate includes.
+pub const UNLINKED: &str = "notInAnyCrate";
+
+/// The hint for a file on disk no crate includes, the one rust-analyzer gives (`unlinked-file`), when a session found
+/// `live` (the file as saved) in none: in place of an empty list, which reads as a file without errors (prod-code,
+/// m=20185).
+pub fn unlinked_hint(fc: &super::flycheck::FlycheckState, file: &Path, live: &str, saved: Option<&str>) -> Option<Value> {
+    let out = fc.session.outcome(file)?;
+    (out.unavailable == Some(UNLINKED) && out.text == live && saved == Some(live)).then(|| {
+        json!({
+            "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } },
+            "severity": 4,
+            "code": "unlinked-file",
+            "source": "ridx",
+            "message": "This file is not included in any crates, so ridx can't offer IDE services."
+        })
+    })
+}
+
 /// The outcome of each buffer of a session (`buffers` compiled, `files` from [`session_files`]): its diagnostics when it
 /// has them, else why not.
 pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], files: &HashMap<PathBuf, SessionFile>) -> HashMap<PathBuf, Outcome> {
@@ -232,7 +251,7 @@ pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], 
             let unavailable = if files.contains_key(&path) {
                 None
             } else if report.unheld.contains(&path) {
-                Some("notInAnyCrate")
+                Some(UNLINKED)
             } else if report.untold.contains(&path) {
                 Some("pathsUntold")
             } else {
@@ -265,6 +284,9 @@ pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::Overl
     match fc.session.outcome(&path) {
         Some(out) if out.text == o.text => match out.unavailable {
             None => Readiness::Ready(o.version),
+            // A file on disk no crate includes is answered, with a hint saying so (`unlinked_hint`), as rust-analyzer
+            // does; an edited one is refused, its edit validates nothing (prod-code, m=20185).
+            Some(UNLINKED) if o.is_synced_with_disk() => Readiness::Ready(o.version),
             Some(why) => Readiness::Unavailable(o.version, why),
         },
         // No session compiled this text yet (a session's result of another text answers for it until the next one).
