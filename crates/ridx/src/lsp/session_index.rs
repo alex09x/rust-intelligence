@@ -55,8 +55,8 @@ pub struct SessionBuilt {
     pub dir: PathBuf,
     pub buffers: Vec<Snapshot>,
     pub stamp: Option<(SystemTime, u64)>,
-    /// What the compiler reported on the texts compiled (rustc's JSON diagnostics).
-    pub messages: Vec<serde_json::Value>,
+    /// What the compiler reported on the texts compiled.
+    pub report: crate::indexer::session_report::CompilerReport,
     epoch: u64,
 }
 
@@ -135,7 +135,7 @@ impl SessionIndexer {
                     }
                 }
                 match result {
-                    Ok(out) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir: out.dir, buffers, stamp, messages: out.messages, epoch }),
+                    Ok(out) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir: out.dir, buffers, stamp, report: out.report, epoch }),
                     Err(_) => {
                         let _ = std::fs::remove_dir_all(&dir);
                     }
@@ -184,6 +184,19 @@ impl SessionIndexer {
         let Some((dir, _)) = roots.get_mut(root).and_then(|st| st.current.take()) else { return false };
         let _ = std::fs::remove_dir_all(dir);
         true
+    }
+
+    /// Forgets every root whose session index answers but that `keep` no longer has (a workspace folder removed): its
+    /// directory goes, and a build of it in flight is dropped when it ends (review of 2e1fcfb1). Returns those roots.
+    pub fn forget_unless(&self, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
+        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        let gone: Vec<PathBuf> = roots.iter().filter(|(r, st)| st.current.is_some() && !keep(r)).map(|(r, _)| r.clone()).collect();
+        for root in &gone {
+            if let Some((dir, _)) = roots.remove(root).and_then(|st| st.current) {
+                let _ = std::fs::remove_dir_all(dir);
+            }
+        }
+        gone
     }
 
     /// The roots whose session index answers while their published index has changed since it was built, by anyone
@@ -244,5 +257,20 @@ mod tests {
         s.note_change(&root);
         std::thread::sleep(QUIET + Duration::from_millis(30));
         assert!(s.start_due(|_| Vec::new()).is_empty(), "no session to retire");
+    }
+
+    /// Review of 2e1fcfb1: a workspace folder removed kept its session.
+    #[test]
+    fn test_a_removed_root_takes_its_session_with_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let (root, other) = (dir.path().join("w"), dir.path().join("v"));
+        let session = root.join("target/ridx/sessions/1-1");
+        std::fs::create_dir_all(&session).unwrap();
+        let s = SessionIndexer::default();
+        s.loaded(&root, &session, None);
+        s.note_change(&other);
+        assert!(s.forget_unless(|r| r == root).is_empty() && session.exists(), "kept");
+        assert_eq!(s.forget_unless(|_| false), vec![root.clone()], "only a root whose session answers");
+        assert!(!session.exists() && s.state_of(&root) == (false, false) && s.state_of(&other).0);
     }
 }

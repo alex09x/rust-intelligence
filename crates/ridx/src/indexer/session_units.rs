@@ -28,6 +28,11 @@ pub(super) struct Unit {
 }
 
 impl Unit {
+    /// The sources it was compiled from itself, when the driver recorded them.
+    pub(super) fn own_sources(&self) -> Option<&HashSet<PathBuf>> {
+        self.own.as_ref()
+    }
+
     /// A library unit, whose metadata other units read (not a test harness, a binary or a build script).
     pub(super) fn is_lib(&self) -> bool {
         !self.args.iter().any(|a| a == "--test") && crate_types(&self.args).iter().all(|t| matches!(t.as_str(), "lib" | "rlib" | "dylib" | "proc-macro"))

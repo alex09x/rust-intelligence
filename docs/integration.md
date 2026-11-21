@@ -64,7 +64,7 @@ The index is built by the compiler from the files on disk. For text that is open
 | Type diagnostics of the buffer (pushed and pulled), hover, completion and inlay hints on typed code | available |
 | Navigation, references and rename on positions that exist in the saved text (mapped through the edit) | available |
 | References, rename and navigation that include code typed since the last save | available since 0.3.9 |
-| The compiler's diagnostics of the unsaved text: every error and lint rustc reports on it, in the buffer's coordinates | available since 0.3.11 |
+| The compiler's diagnostics of the unsaved text: every error and lint rustc reports on it, in the buffer's coordinates | next release |
 
 How: once the edited buffers of a workspace have been unchanged for 250 ms, the crates whose own sources
 include them (the driver records each crate's sources) are compiled again by `ridx-driver` from the buffers'
@@ -92,7 +92,7 @@ workspace.
 | `source` | What | When it is published |
 |---|---|---|
 | `rustc` | The compiler's own errors and lints (`code` = the rustc code, e.g. `E0433`, `unused_imports`, `dead_code`) | After a check of the workspace: on `initialized` (every workspace of the session, one after the other; since 0.3.9) and after every save. Ranges are in the coordinates of the file as saved; editors move them through unsaved edits. |
-| `rustc` | The same, on the text of a session index (§4): every error and lint the compiler reports on the edited buffers, and on other files of their crates | When a session index loads, for each file it compiled and each file it reported on, in place of the check's for those files until the session ends (since 0.3.11). Ranges are in the buffer's coordinates, published with the document's version; Zed, which moves `rustc` diagnostics through unsaved edits itself, gets them as `ridx`. |
+| `rustc` | The same, on the text of a session index (§4): every error and lint the compiler reports on the edited buffers, and on other files of their crates | When a session index loads, for each file the compiler checked and each file it reported on (a text the session compiled: a buffer, or a file not written since), in place of the check's for those files until the session ends or a check started after it reports on the text the buffer holds (next release). Ranges are in the buffer's coordinates, published with the document's version; Zed, which moves `rustc` diagnostics through unsaved edits itself, gets them as `ridx`. |
 | `ridx` | Errors found in the unsaved text (type mismatches and similar) before the compiler sees it | On `didChange`, for the open buffer. |
 
 Both are available. The values of `source` and the rustc `code` values are stable. The server pushes

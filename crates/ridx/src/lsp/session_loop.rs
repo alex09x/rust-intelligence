@@ -11,7 +11,7 @@
 //! The server loop's side of session indexes (`session_index`): which messages change the edited buffers, when a
 //! session index replaces the published one and back, and the directories of servers that ended.
 
-use super::presentation::session_diag::SessionDiagnostics;
+use super::presentation::flycheck::FlycheckState;
 use super::session_index::{SessionIndexer, Snapshot};
 use std::path::{Path, PathBuf};
 
@@ -30,25 +30,34 @@ pub(crate) fn note_edit(session: &SessionIndexer, msg: &serde_json::Value, mr: &
 /// One turn of the server loop: a published index that changed (`finished` by this server's reindex, or by anyone)
 /// replaces the session on it, roots with no edited buffer left go back to their published index, sessions due start,
 /// and the ones built are loaded. Returns whether an index was replaced, for the client to fetch again; the files whose
-/// compiler diagnostics a session set or took away (`diags`) go to `touched`.
+/// compiler diagnostics a session changed (in `flycheck.session`) go to `touched`.
 pub(crate) fn step(
     session: &SessionIndexer,
     finished: &[PathBuf],
     mr: &mut super::MultiRootWorkspace,
     ov: &mut crate::overlay::OverlayManager,
-    diags: &SessionDiagnostics,
+    flycheck: &FlycheckState,
     touched: &mut Vec<PathBuf>,
 ) -> bool {
+    let diags = &flycheck.session;
+    // Whether the check has diagnostics of a file, under the URI it names files by.
+    let has_check = |p: &Path| !flycheck.get_latest_diagnostics(&format!("file://{}", p.display())).is_empty();
     let mut replaced = false;
+    // A workspace folder removed takes its session with it (review of 2e1fcfb1: its diagnostics outlived it).
+    let live: Vec<PathBuf> = mr.roots().map(Path::to_path_buf).collect();
+    session.forget_unless(|r| live.iter().any(|l| l == r));
+    for root in diags.roots().into_iter().filter(|r| !live.contains(r)) {
+        touched.extend(diags.clear(&root, &has_check));
+    }
     for root in finished.iter().cloned().chain(session.published_changed()) {
         // The session built next, on the new published index, reports again.
-        touched.extend(diags.clear(&root));
+        touched.extend(diags.clear(&root, &has_check));
         if session.published_loaded(&root) {
             replaced |= back_to_published(mr, ov, &root);
         }
     }
     for root in session.start_due(|root| edited_buffers(ov, root)) {
-        touched.extend(diags.clear(&root));
+        touched.extend(diags.clear(&root, &has_check));
         if session.retire(&root) {
             replaced |= back_to_published(mr, ov, &root);
         }
@@ -72,7 +81,7 @@ pub(crate) fn step(
             }
         }
         let texts: Vec<(PathBuf, String)> = built.buffers.iter().map(|b| (b.path.clone(), b.text.clone())).collect();
-        touched.extend(diags.replace(&built.root, super::presentation::session_diag::session_files(&built.root, &built.messages, &texts)));
+        touched.extend(diags.replace(&built.root, super::presentation::session_diag::session_files(&built.root, &built.report, &texts), &has_check));
         session.loaded(&built.root, &built.dir, built.stamp);
         replaced = true;
     }

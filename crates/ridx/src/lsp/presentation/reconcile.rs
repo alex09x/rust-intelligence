@@ -223,6 +223,9 @@ pub fn handle_internal_diagnostic<W: Write>(
         .or_else(|| (!diags.is_empty()).then(|| overlay_mgr.get(&file).and_then(|ov| ov.disk_text.clone())).flatten())
         .or_else(|| (!diags.is_empty()).then(|| std::fs::read_to_string(&file).ok()).flatten());
     lifecycle.flycheck.set_latest_diagnostics_with_baseline(uri, diags, baseline);
+    if let Some(started) = diag["params"]["started"].as_u64() {
+        lifecycle.flycheck.set_checked_at(uri, started);
+    }
     if lifecycle.client_pull_diagnostics() {
         if lifecycle.client_refresh_diagnostics() {
             let refresh = json!({

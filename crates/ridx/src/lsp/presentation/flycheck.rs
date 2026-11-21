@@ -63,6 +63,9 @@ pub struct FlycheckState {
     root_generation: Arc<Mutex<HashMap<PathBuf, u64>>>,
     /// The compiler's diagnostics on the text of the session indexes answering, which stand in for the check's.
     pub session: super::session_diag::SessionDiagnostics,
+    /// Per URI, when the check that last reported on it (diagnostics or their clearing) started, in microseconds since
+    /// the epoch: a check started after a session index was built speaks for the saved text more recently than it.
+    checked_at: Arc<Mutex<HashMap<String, u64>>>,
 }
 
 #[path = "flycheck_queue.rs"]
@@ -82,6 +85,7 @@ impl Default for FlycheckState {
             queue: Arc::default(),
             root_generation: Arc::default(),
             session: Default::default(),
+            checked_at: Arc::default(),
         }
     }
 }
@@ -141,6 +145,16 @@ impl FlycheckState {
             let base = baseline.or_else(|| std::fs::read_to_string(super::super::protocol::uri_to_path(uri)).ok());
             guard.insert(uri.to_string(), CachedDiagnostic { items: diags, baseline: base });
         }
+    }
+
+    /// Records that a check started at `started_us` reported on `uri` (see `checked_at`).
+    pub fn set_checked_at(&self, uri: &str, started_us: u64) {
+        self.checked_at.lock().unwrap().insert(uri.to_string(), started_us);
+    }
+
+    /// When the check that last reported on `uri` started.
+    pub fn checked_at(&self, uri: &str) -> Option<u64> {
+        self.checked_at.lock().unwrap().get(uri).copied()
     }
 
     pub fn mark_published(&self, uri: &str) {
@@ -247,6 +261,7 @@ where
     }
 
     let started = std::time::SystemTime::now();
+    let started_us = super::session_diag::micros(started);
     let mut child = cmd.spawn()?;
     let Some(stdout) = child.stdout.take() else {
         return Ok(0);
@@ -340,7 +355,7 @@ where
         let notif = json!({
             "jsonrpc": "2.0",
             "method": "textDocument/publishDiagnostics",
-            "params": { "uri": uri, "diagnostics": diags, "baseline": baselines.get(uri) }
+            "params": { "uri": uri, "diagnostics": diags, "baseline": baselines.get(uri), "started": started_us }
         });
         emit_notif(my_gen, notif)?;
     }
@@ -354,7 +369,7 @@ where
             let clear_notif = json!({
                 "jsonrpc": "2.0",
                 "method": "textDocument/publishDiagnostics",
-                "params": { "uri": old_uri, "diagnostics": [] }
+                "params": { "uri": old_uri, "diagnostics": [], "started": started_us }
             });
             emit_notif(my_gen, clear_notif)?;
         }

@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::{build_session_index_with, json_diagnostics};
+use super::build_session_index_with;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -95,7 +95,7 @@ fn test_a_session_index_compiles_the_buffers_crates_and_leaves_the_published_ind
 
     let out = build_session_index_with(&driver(&root, "d", ""), &root, &session, &[(a.clone(), "pub fn a() { edited() }\n".to_string())]).unwrap();
     assert_eq!(out.dir, session);
-    assert!(out.messages.is_empty(), "the compiler reported nothing");
+    assert!(out.report.messages.is_empty(), "the compiler reported nothing");
     let variant = session.join(VARIANT);
     assert_eq!(read(variant.join("a-1.ridx")), "NEW", "the crate holding the buffer is compiled into the session");
     assert_eq!(read(variant.join("b-1.ridx")), "B", "the other crate is the published one, though it records a's source");
@@ -232,15 +232,36 @@ fn test_the_compilers_diagnostics_come_back_with_the_session() {
     published(&root, &[A], VARIANT);
     let report = r#"printf '%s\n' '{"$message_type":"diagnostic","message":"mismatched types","spans":[]}' 'warning: not json' '{"$message_type":"artifact","artifact":"x"}' >&2"#;
     let out = build_session_index_with(&driver(&root, "d", report), &root, &root.join("target/ridx/sessions/1-1"), &[(root.join("a/src/lib.rs"), "x".into())]).unwrap();
-    assert_eq!(out.messages.len(), 1, "{:?}", out.messages);
-    assert_eq!(out.messages[0]["message"], "mismatched types");
+    assert_eq!(out.report.messages.len(), 1, "{:?}", out.report.messages);
+    assert_eq!(out.report.messages[0]["message"], "mismatched types");
     assert!(read(out.dir.join(VARIANT).join("calls")).contains("--error-format=json"), "asked for JSON");
 }
 
+/// Review of 2e1fcfb1: a unit whose analysis ran certifies its own sources, one that stopped first (no shard) none.
 #[test]
-fn test_the_recorded_format_gives_way_to_json() {
-    let args: Vec<String> = ["rustc", "--error-format", "human", "--json=diagnostic-rendered-ansi,artifacts", "--color", "always", "--color=never", "--edition=2021", "lib.rs"]
-        .map(String::from)
-        .into();
-    assert_eq!(json_diagnostics(args), ["rustc", "--edition=2021", "lib.rs", "--error-format=json"]);
+fn test_only_a_unit_that_ran_its_analysis_certifies_its_sources() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    published(&root, &[UnitSpec { own: Some(&["a/src/lib.rs", "a/src/m.rs"]), ..A }], VARIANT);
+    let buffer = [(root.join("a/src/lib.rs"), "x".to_string())];
+    let ran = build_session_index_with(&driver(&root, "d", ""), &root, &root.join("target/ridx/sessions/1-1"), &buffer).unwrap();
+    let want: std::collections::HashSet<PathBuf> = [root.join("a/src/lib.rs"), root.join("a/src/m.rs")].into();
+    assert_eq!(ran.report.checked, want);
+    assert!(ran.report.started.is_some());
+    let failing = driver(&root, "f", "exit 1");
+    let stopped = build_session_index_with(&failing, &root, &root.join("target/ridx/sessions/1-2"), &buffer).unwrap();
+    assert!(stopped.report.checked.is_empty(), "{:?}", stopped.report.checked);
+}
+
+/// Review of 2e1fcfb1: a process the compiler started kept its standard error open, and the session waited for it.
+#[test]
+fn test_a_process_left_behind_does_not_hold_the_session() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    published(&root, &[A], VARIANT);
+    let started = std::time::Instant::now();
+    let report = r#"(sleep 20 >&2 &) ; printf '\377\n{"$message_type":"diagnostic","message":"m","spans":[]}\n' >&2"#;
+    let out = build_session_index_with(&driver(&root, "d", report), &root, &root.join("target/ridx/sessions/1-1"), &[(root.join("a/src/lib.rs"), "x".into())]).unwrap();
+    assert!(started.elapsed() < std::time::Duration::from_secs(10), "{:?}", started.elapsed());
+    assert_eq!(out.report.messages.len(), 1, "a line that is not UTF-8 costs only itself");
 }

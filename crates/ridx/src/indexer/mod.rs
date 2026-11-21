@@ -21,6 +21,7 @@ pub mod manifest;
 pub mod orchestrate;
 pub mod required_features;
 pub mod session;
+pub mod session_report;
 mod session_units;
 pub mod shards;
 pub mod source_snapshots;

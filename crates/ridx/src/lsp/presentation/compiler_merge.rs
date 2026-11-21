@@ -38,8 +38,16 @@ pub fn set_client_moves_rustc(moves: bool) {
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.
 pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: impl FnOnce() -> Option<String>, flycheck: &FlycheckState) -> Vec<Value> {
     let file = ridx_format::canonicalize_best_effort(std::path::Path::new(&crate::lsp::protocol::uri_to_path(uri)));
+    let mut saved = Some(saved);
+    let mut saved_text: Option<Option<String>> = None;
+    let mut saved = move || saved_text.get_or_insert_with(|| saved.take().and_then(|f| f())).clone();
     if let Some(session) = flycheck.session.of(&file) {
-        return merge_session(uri, heuristic, live, &session);
+        // A check started after the session, of the text the buffer holds (saved since), is the newer word on it
+        // (review of 2e1fcfb1: a session's clean result hid the check's error of the text saved).
+        let newer_check = flycheck.checked_at(uri).is_some_and(|t| t > session.started_us) && saved().as_deref() == Some(live);
+        if !newer_check {
+            return merge_session(uri, heuristic, live, &session);
+        }
     }
     let raw = flycheck.get_latest_diagnostics(uri);
     if raw.is_empty() {

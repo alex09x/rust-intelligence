@@ -148,7 +148,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
         let finished = lifecycle.reindex.take_finished();
         // The index of the edited buffers: it answers once built, until the next published index loads.
         let mut touched = Vec::new();
-        if session_loop::step(&session, &finished, &mut multi_root, &mut overlay_mgr, &lifecycle.flycheck.session, &mut touched) && !lifecycle.is_shutdown() {
+        if session_loop::step(&session, &finished, &mut multi_root, &mut overlay_mgr, &lifecycle.flycheck, &mut touched) && !lifecycle.is_shutdown() {
             dispatch::refresh_after_load(&mut writer, &mut lifecycle, true)?;
         }
         presentation::session_diag::publish_session_files(&touched, &lifecycle, &overlay_mgr, &mut writer)?;

@@ -46,6 +46,11 @@ pub fn resolve_effective_span<'a>(span: &'a Value, root: &Path) -> &'a Value {
 }
 
 pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value)> {
+    parse_compiler_message_at(msg, root).map(|(path, diag)| (format!("file://{}", path.display()), diag))
+}
+
+/// [`parse_compiler_message`] with the file as a path (canonical), not a URI: a name with `%` in it is the name.
+pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, Value)> {
     let actual_msg = if let Some(reason) = msg.get("reason").and_then(|r| r.as_str()) {
         if reason != "compiler-message" {
             return None;
@@ -62,7 +67,6 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
     let file_name = primary_span.get("file_name")?.as_str()?;
     let abs_file = if Path::new(file_name).is_absolute() { PathBuf::from(file_name) } else { root.join(file_name) };
     let canon = abs_file.canonicalize().unwrap_or(abs_file);
-    let uri = format!("file://{}", canon.display());
 
     let line_start = primary_span.get("line_start")?.as_u64()?.saturating_sub(1);
     let col_start_char = primary_span.get("column_start")?.as_u64()?.saturating_sub(1);
@@ -170,7 +174,7 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
         "relatedInformation": related
     });
 
-    Some((uri, diag))
+    Some((canon, diag))
 }
 
 pub fn char_col_to_utf16(line_str: &str, char_col: u64) -> u64 {

@@ -97,7 +97,14 @@ pub fn handle_workspace_diagnostic_with_flycheck(
             None => h_items.to_vec(),
         }
     };
-    let auth_hash = |uri: &str| flycheck.map_or(0, |fc| hash_of(&(serde_json::to_string(&fc.get_latest_diagnostics(uri)).unwrap_or_default(), fc.get_diagnostic_baseline(uri))));
+    // A session's diagnostics of the file, and when the check last reported on it, are part of what its items come
+    // from (review of 2e1fcfb1: a closed file stayed `unchanged` after a session reported on it).
+    let auth_hash = |uri: &str| {
+        flycheck.map_or(0, |fc| {
+            let session = fc.session.stamp(&ridx_format::canonicalize_best_effort(Path::new(&uri_to_path(uri))));
+            hash_of(&(serde_json::to_string(&fc.get_latest_diagnostics(uri)).unwrap_or_default(), fc.get_diagnostic_baseline(uri), session, fc.checked_at(uri)))
+        })
+    };
 
     // A closed file's items, recomputed only when the file or its compiler diagnostics changed.
     let closed_items = |path: &Path, uri: &str| -> Option<Vec<Value>> {
