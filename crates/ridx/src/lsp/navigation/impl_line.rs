@@ -63,16 +63,24 @@ pub(super) fn is_head_position(line: &str, col: usize) -> bool {
 /// its last type before the `where` clause and the items (`Wrapper<T>` of `impl<T> Tr for Wrapper<T>`, `S` of
 /// `impl S`). It is where rust-analyzer places an implementation (prod-code, m=20226: ridx gave the `impl`). The
 /// syntax tree tells it, never the characters of the line: a comment, `r#where` or `for <'a>` is no keyword there
-/// (review of 465e02ad). `None` when no impl header holds `start`.
-pub(super) fn self_type_range(tree: &ridx_syntax::SyntaxTree<'_>, start: usize) -> Option<std::ops::Range<usize>> {
-    use ridx_syntax::SyntaxKind as K;
+/// (review of 465e02ad). `None` when no impl header holds `start` with its `impl` keyword on the line `line` (byte
+/// range) where the index placed it (a file changed since may hold another impl there: review of 7b3076a8), or when its
+/// self type is no type (`impl Tr for {}`, being typed: the parser's recovery).
+pub(super) fn self_type_range(tree: &ridx_syntax::SyntaxTree<'_>, start: usize, line: std::ops::Range<usize>) -> Option<std::ops::Range<usize>> {
+    use ridx_syntax::{SyntaxKind as K, TokenKind as T};
+    if !line.contains(&start) {
+        return None;
+    }
     let node = tree.covering(start);
     let imp = std::iter::once(node).chain(tree.ancestors(node)).find(|&n| tree.kind(n) == K::Impl)?;
-    if tree.child(imp, K::ItemList).is_some_and(|items| start >= tree.range(items).start) {
+    if tree.child(imp, K::ItemList).is_some_and(|items| start >= tree.range(items).start)
+        || !tree.own_tokens(imp).any(|(_, t)| t.kind == T::Impl && line.contains(&(t.start as usize)))
+    {
         return None;
     }
     let ty = tree.children(imp).filter(|&c| !matches!(tree.kind(c), K::GenericParamList | K::WhereClause | K::ItemList | K::Attr | K::Visibility)).last()?;
-    Some(tree.range(ty))
+    let range = tree.range(ty);
+    (tree.kind(ty).is_type() && !range.is_empty()).then_some(range)
 }
 
 #[cfg(test)]
@@ -84,7 +92,9 @@ mod tests {
     fn the_self_type_of_an_impl_header_is_found() {
         let ty = |src: &str| {
             let tree = ridx_syntax::parse(src);
-            self_type_range(&tree, src.find("impl").unwrap()).map(|r| src[r].to_string())
+            let start = src.find("impl").unwrap();
+            let line = src[..start].rfind('\n').map_or(0, |i| i + 1)..src[start..].find('\n').map_or(src.len(), |i| start + i);
+            self_type_range(&tree, start, line).map(|r| src[r].to_string())
         };
         assert_eq!(ty("impl Shape for Circle {}").as_deref(), Some("Circle"));
         assert_eq!(ty("impl<T: Clone> Tr<T> for Wrapper<T> where T: Copy {}").as_deref(), Some("Wrapper<T>"));
@@ -100,6 +110,11 @@ mod tests {
         assert_eq!(ty("impl Tr for r#where {}").as_deref(), Some("r#where"));
         assert_eq!(ty("impl Tr for Box<dyn for <'a> Fn(&'a u8)> {}").as_deref(), Some("Box<dyn for <'a> Fn(&'a u8)>"));
         assert_eq!(ty("impl Tr\n    for S\n{}").as_deref(), Some("S"), "a header on several lines");
+        // Review of 7b3076a8: no type typed yet is no place; a line that holds no impl any more holds none.
+        assert_eq!(ty("impl Tr for {}"), None);
+        let src = "//x\nimpl Other for B {}\n";
+        let tree = ridx_syntax::parse(src);
+        assert_eq!(self_type_range(&tree, 3, 0..3), None, "the line of the index, not the next one");
     }
 
     #[test]

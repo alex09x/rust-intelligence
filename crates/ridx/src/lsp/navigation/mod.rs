@@ -311,9 +311,10 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
             // An impl header is placed at its self type, as rust-analyzer does (prod-code, m=20226); a derive's impl
             // stays at the derive.
             if let Some((text, tree)) = texts.get(path_str).and_then(|t| t.as_deref()).zip(trees.get(path_str)) {
-                let line_start = text.split_inclusive('\n').take(start_line as usize).map(str::len).sum::<usize>();
-                let start = line_start + text[line_start..].chars().take(span.start_col().saturating_sub(1) as usize).map(char::len_utf8).sum::<usize>();
-                if let Some(ty) = impl_line::self_type_range(tree, start) {
+                let line_start = text.split_inclusive('\n').take(start_line as usize).map(str::len).sum::<usize>().min(text.len());
+                let line = line_start..text[line_start..].find('\n').map_or(text.len(), |i| line_start + i);
+                let start = line_start + text[line.clone()].chars().take(span.start_col().saturating_sub(1) as usize).map(char::len_utf8).sum::<usize>();
+                if let Some(ty) = impl_line::self_type_range(tree, start, line) {
                     let pos = |b: usize| {
                         let ls = text[..b].rfind('\n').map_or(0, |i| i + 1);
                         (text[..ls].matches('\n').count() as u32, text[ls..b].encode_utf16().count() as u32)
