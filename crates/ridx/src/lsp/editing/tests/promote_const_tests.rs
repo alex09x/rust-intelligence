@@ -95,3 +95,14 @@ fn test_a_macro_that_may_import_keeps_the_type_unwritten() {
     let doc = "mod t {\n    pub type u8 = String;\n}\nmacro_rules! import {\n    () => {\n        use t::*;\n    };\n}\nimport!();\npub fn f() -> bool {\n    let n$0 = 1u8;\n    n > 0\n}\n";
     assert_eq!(promoted(doc, None), None);
 }
+
+/// Review of 9276edef: `types::macro_rules!()` is a call, not a definition; a raw name's call counts.
+#[test]
+fn test_a_qualified_or_raw_macro_call_keeps_the_type_unwritten() {
+    for doc in [
+        "mod t {\n    pub type u8 = String;\n}\nmod types {\n    macro_rules! imp {\n        () => {\n            use crate::t::*;\n        };\n    }\n    pub(crate) use imp as macro_rules;\n}\ntypes::macro_rules!();\npub fn f() -> bool {\n    let n$0 = 1u8;\n    n > 0\n}\n",
+        "mod t {\n    pub type u32 = String;\n}\nmacro_rules! r#declare {\n    () => {\n        use t::*;\n    };\n}\nr#declare!();\npub fn f() -> bool {\n    let n$0 = 1u32;\n    n > 0\n}\n",
+    ] {
+        assert_eq!(promoted(doc, None), None, "{doc}");
+    }
+}

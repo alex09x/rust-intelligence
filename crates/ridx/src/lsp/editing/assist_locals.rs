@@ -119,21 +119,33 @@ const STD_STATEMENT_MACROS: &[&str] = &[
 /// 7dca0b11): any in an item's place; in a statement's, any but the standard library's statement macros, unless the
 /// file defines a macro of that name itself.
 pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId) -> bool {
+    // The call's name and whether its path is the name alone (`types::println!` is a user's macro, whatever its last
+    // segment: review of 9276edef).
     let name = |mc: NodeId| {
-        let toks = tree.tokens_of(mc);
+        let toks: Vec<_> = tree.tokens_of(mc).iter().filter(|t| !t.is_trivia()).collect();
         let bang = toks.iter().position(|t| t.kind == T::Bang)?;
-        toks[..bang].iter().rev().find(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(tree.src)))
+        let name = toks[..bang].iter().rev().find(|t| matches!(t.kind, T::Ident | T::RawIdent))?;
+        Some((ridx_syntax::sema_fn::norm_ident(name.text(tree.src)), bang == 1 && name.kind == T::Ident))
     };
-    let defined: Vec<&str> = tree
-        .descendants(tree.root())
-        .filter(|&d| tree.kind(d) == K::MacroRules)
-        .filter_map(|d| tree.child(d, K::Name))
-        .map(|n| ridx_syntax::sema_fn::norm_ident(tree.text(n)))
-        .collect();
-    std::iter::once(within).chain(tree.descendants(within)).filter(|&d| tree.kind(d) == K::MacroCall).any(|mc| {
+    // A name the file defines or imports is not the standard library's (`use types::println;`).
+    let shadowed = |n: &str| {
+        tree.descendants(tree.root()).any(|d| {
+            (tree.kind(d) == K::MacroRules && tree.child(d, K::Name).is_some_and(|m| ridx_syntax::sema_fn::norm_ident(tree.text(m)) == n))
+                || (tree.kind(d) == K::Use
+                    && tree
+                        .tokens_of(d)
+                        .iter()
+                        .any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::Star) && (t.kind == T::Star || ridx_syntax::sema_fn::norm_ident(t.text(tree.src)) == n)))
+        })
+    };
+    let by_node = std::iter::once(within).chain(tree.descendants(within)).filter(|&d| tree.kind(d) == K::MacroCall).any(|mc| {
         let parent = tree.parent(mc).map(|p| tree.kind(p));
-        let item_place = matches!(parent, Some(K::SourceFile | K::ItemList | K::Module)) && name(mc) != Some("macro_rules");
+        let item_place = matches!(parent, Some(K::SourceFile | K::ItemList | K::Module)) && name(mc) != Some(("macro_rules", true));
         let statement_place = matches!(parent, Some(K::BlockExpr | K::ExprStmt));
-        item_place || (statement_place && name(mc).is_none_or(|n| !STD_STATEMENT_MACROS.contains(&n) || defined.contains(&n)))
-    })
+        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || shadowed(n)))
+    });
+    // A raw name's call the parser may not make a node of (`r#declare!();`): any counts.
+    let toks: Vec<_> = tree.tokens_of(within).iter().filter(|t| !t.is_trivia()).collect();
+    let raw_call = toks.windows(2).any(|w| w[0].kind == T::RawIdent && w[1].kind == T::Bang);
+    by_node || raw_call
 }

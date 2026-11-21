@@ -139,3 +139,17 @@ fn test_a_macro_that_may_declare_keeps_names_unknown() {
     let doc = "pub fn f(a: u32) -> u32 {\n    println!(\"{a}\");\n    let r = $0a + 1$0;\n    r\n}\n";
     assert!(extracted(doc, Some("u32")).is_some(), "println! declares nothing");
 }
+
+/// Review of 9276edef: a macro anywhere in the file may already declare the helper's name; a standard-looking name
+/// called by a path or imported is a user's macro; a raw name's call counts.
+#[test]
+fn test_macro_identity_and_the_helper_destination() {
+    for doc in [
+        "mod types {\n    #[macro_export]\n    macro_rules! make_helper {\n        () => {\n            fn fun_name() {}\n        };\n    }\n}\nmake_helper!();\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n",
+        "const N: i32 = 100;\nmod types {\n    macro_rules! println {\n        () => {\n            const N: i32 = 3;\n        };\n    }\n    pub(crate) use println;\n}\npub fn f() -> i32 {\n    types::println!();\n    let r = $0N + 1$0;\n    r\n}\n",
+        "const N: i32 = 100;\nmod types {\n    macro_rules! println {\n        () => {\n            const N: i32 = 3;\n        };\n    }\n    pub(crate) use println;\n}\nuse types::println;\npub fn f() -> i32 {\n    println!();\n    let r = $0N + 1$0;\n    r\n}\n",
+        "const N: i32 = 100;\nmacro_rules! r#declare {\n    () => {\n        const N: i32 = 3;\n    };\n}\npub fn f() -> i32 {\n    r#declare!();\n    let r = $0N + 1$0;\n    r\n}\n",
+    ] {
+        assert_eq!(extracted(doc, Some("i32")), None, "{doc}");
+    }
+}
