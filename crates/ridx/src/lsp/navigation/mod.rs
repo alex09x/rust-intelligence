@@ -286,24 +286,40 @@ pub fn handle_implementation(msg: &Value, workspace: Option<&WorkspaceIndex>, ov
                 }
             }
         }
+        // The text each impl's file has where the index placed it: the open buffer's when it is the compiled text, else
+        // the file as saved; a buffer edited since is not narrowed (review of 465e02ad: the disk was read under a session
+        // index of the buffer).
         let mut texts: std::collections::HashMap<String, Option<String>> = std::collections::HashMap::new();
+        for r in &impl_refs {
+            let path = type_definition_parse::on_disk(r.resolved_path()).to_string_lossy().to_string();
+            texts.entry(path.clone()).or_insert_with(|| match overlay_mgr.get(&path) {
+                Some(o) if o.is_dirty() => None,
+                Some(o) => Some(o.text.clone()),
+                None => std::fs::read_to_string(&path).ok(),
+            });
+        }
+        let trees: std::collections::HashMap<&str, ridx_syntax::SyntaxTree<'_>> = texts.iter().filter_map(|(p, t)| Some((p.as_str(), ridx_syntax::parse(t.as_deref()?)))).collect();
         for r in impl_refs {
             let resolved_path = type_definition_parse::on_disk(r.resolved_path());
             let path_str = resolved_path.to_str().unwrap_or(r.file);
             let uri = path_to_uri(path_str);
             let span = r.span;
-            let start_line = span.start_line().saturating_sub(1);
+            let mut start_line = span.start_line().saturating_sub(1);
             let mut end_line = span.end_line().saturating_sub(1);
             let mut start_char = conv.char_col_to_utf16_col(path_str, span.start_line(), span.start_col());
             let mut end_char = conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
             // An impl header is placed at its self type, as rust-analyzer does (prod-code, m=20226); a derive's impl
             // stays at the derive.
-            let text = texts.entry(path_str.to_string()).or_insert_with(|| std::fs::read_to_string(path_str).ok());
-            let line = text.as_deref().and_then(|t| t.lines().nth(start_line as usize));
-            if let Some((s, e)) = line.and_then(|l| impl_line::self_type_range(l, span.start_col().saturating_sub(1) as usize)) {
-                start_char = conv.char_col_to_utf16_col(path_str, span.start_line(), s as u32 + 1);
-                end_char = conv.char_col_to_utf16_col(path_str, span.start_line(), e as u32 + 1);
-                end_line = start_line;
+            if let Some((text, tree)) = texts.get(path_str).and_then(|t| t.as_deref()).zip(trees.get(path_str)) {
+                let line_start = text.split_inclusive('\n').take(start_line as usize).map(str::len).sum::<usize>();
+                let start = line_start + text[line_start..].chars().take(span.start_col().saturating_sub(1) as usize).map(char::len_utf8).sum::<usize>();
+                if let Some(ty) = impl_line::self_type_range(tree, start) {
+                    let pos = |b: usize| {
+                        let ls = text[..b].rfind('\n').map_or(0, |i| i + 1);
+                        (text[..ls].matches('\n').count() as u32, text[ls..b].encode_utf16().count() as u32)
+                    };
+                    ((start_line, start_char), (end_line, end_char)) = (pos(ty.start), pos(ty.end));
+                }
             }
             keyed.push((
                 (uri.clone(), start_line, start_char, end_line, end_char),

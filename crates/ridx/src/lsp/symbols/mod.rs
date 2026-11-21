@@ -117,7 +117,9 @@ pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterato
                         "end": { "line": s.span.end_line().saturating_sub(1), "character": end_char }
                     }
                 });
-                let crate_root = s.kind == ridx_format::DefKind::Mod && s.path == s.name;
+                // A crate root as the search tells one: named as its crate or target, not any top-level module (review of
+                // 465e02ad).
+                let crate_root = s.kind == ridx_format::DefKind::Mod && s.path == s.name && (s.name == s.crate_name || s.name.replace('-', "_") == s.crate_name);
                 item["containerName"] = json!(container_name(s.path, s.crate_name, crate_root));
                 break;
             }

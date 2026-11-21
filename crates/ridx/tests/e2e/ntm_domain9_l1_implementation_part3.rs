@@ -221,3 +221,26 @@ pub struct Engine;
     assert_eq!(items[1]["uri"], uri);
     assert_range(&items[1], 2, 25, 31);
 }
+
+/// Review of 465e02ad: the self type was read from the disk while the index and a clean buffer had another header.
+#[test]
+fn test_l1_implementation_self_type_is_read_from_the_open_buffer() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("pkg_buffer_impl", "0.1.0").unwrap();
+    let (_, ids) = ws.add_source_file_with_defs("pkg_buffer_impl", "src/lib.rs", "pub trait «Handler»;\n", DefKind::Trait).unwrap();
+    let code = "pub trait Handler;\n«impl Handler for Worker» {}\n";
+    ws.add_source_file_with_impl_refs("pkg_buffer_impl", "src/lib.rs", code, "pkg_buffer_impl", ids[0]).unwrap();
+    let shard = ws.build_crate_index("pkg_buffer_impl").unwrap();
+    let index = WorkspaceIndex::open(&shard).unwrap();
+    let uri = ws.file_uri("pkg_buffer_impl", "src/lib.rs").unwrap();
+    let file = ws.file_path("pkg_buffer_impl", "src/lib.rs").unwrap();
+    let file_str = file.to_str().unwrap();
+    let mut overlay_mgr = OverlayManager::new();
+    overlay_mgr.open_document(&uri, file_str, 1, "pub trait Handler;\nimpl Handler for Worker {}\n".to_string());
+    std::fs::write(&file, "pub trait Handler;\nimpl Handler for LongerName {}\n").unwrap();
+    let mut conv = PositionConverter::new();
+    let res = handle_implementation(&make_pos_req(&uri, 0, 10), Some(&index), &overlay_mgr, &mut conv);
+    let items = res.as_array().expect("impl list");
+    assert_eq!(items.len(), 1);
+    assert_range(&items[0], 1, 17, 23);
+}

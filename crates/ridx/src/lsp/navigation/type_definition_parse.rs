@@ -210,7 +210,8 @@ pub(crate) fn sysroot_rust_src() -> Option<&'static Path> {
         .get_or_init(|| {
             if let Some(env_p) = std::env::var_os("RUST_SRC_PATH").map(PathBuf::from) {
                 if env_p.is_dir() {
-                    return Some(env_p);
+                    // Absolute: a relative one would be the authority of the URIs made from it (review of 465e02ad).
+                    return Some(std::path::absolute(&env_p).unwrap_or(env_p));
                 }
             }
             if let Some(src) = driver_rust_src() {

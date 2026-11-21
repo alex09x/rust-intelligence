@@ -59,72 +59,20 @@ pub(super) fn is_head_position(line: &str, col: usize) -> bool {
     depth == 0
 }
 
-/// The 0-based character range of the self type of the impl header that starts at character `col` of `line`: after
-/// `for` (`impl Tr for S<T>`: `S<T>`), else after the impl's generics (`impl<T> S<T>`), up to `where`, `{` or the end
-/// of the line. It is where rust-analyzer places an implementation (prod-code, m=20226: ridx gave the `impl`). `None`
-/// when the header does not start there or its self type is not on that line.
-pub(super) fn self_type_range(line: &str, col: usize) -> Option<(usize, usize)> {
-    let chars: Vec<char> = line.chars().collect();
-    let rest: String = chars.get(col..)?.iter().collect();
-    if !is_impl_header(&rest) {
+/// The byte range of the self type of the `impl` whose header holds byte `start` of the file `tree` was parsed from:
+/// its last type before the `where` clause and the items (`Wrapper<T>` of `impl<T> Tr for Wrapper<T>`, `S` of
+/// `impl S`). It is where rust-analyzer places an implementation (prod-code, m=20226: ridx gave the `impl`). The
+/// syntax tree tells it, never the characters of the line: a comment, `r#where` or `for <'a>` is no keyword there
+/// (review of 465e02ad). `None` when no impl header holds `start`.
+pub(super) fn self_type_range(tree: &ridx_syntax::SyntaxTree<'_>, start: usize) -> Option<std::ops::Range<usize>> {
+    use ridx_syntax::SyntaxKind as K;
+    let node = tree.covering(start);
+    let imp = std::iter::once(node).chain(tree.ancestors(node)).find(|&n| tree.kind(n) == K::Impl)?;
+    if tree.child(imp, K::ItemList).is_some_and(|items| start >= tree.range(items).start) {
         return None;
     }
-    // The character just after the `impl` keyword.
-    let at = rest.find("impl")? + 4;
-    let mut i = col + rest[..at].chars().count();
-    let skip_ws = |mut i: usize| {
-        while chars.get(i).is_some_and(|c| c.is_whitespace()) {
-            i += 1;
-        }
-        i
-    };
-    i = skip_ws(i);
-    if chars.get(i) == Some(&'<') {
-        let mut depth = 0i32;
-        while let Some(&c) = chars.get(i) {
-            match c {
-                '<' => depth += 1,
-                '>' if i > 0 && chars[i - 1] != '-' => depth -= 1,
-                _ => {}
-            }
-            i += 1;
-            if depth == 0 {
-                break;
-            }
-        }
-        i = skip_ws(i);
-    }
-    let word_at = |j: usize, w: &str| {
-        let wc: Vec<char> = w.chars().collect();
-        chars.get(j..j + wc.len()) == Some(&wc[..])
-            && (j == 0 || !chars[j - 1].is_alphanumeric() && chars[j - 1] != '_')
-            && chars.get(j + wc.len()).is_none_or(|c| !c.is_alphanumeric() && *c != '_')
-    };
-    // The head's end (`where`, `{`) and a `for` in it, both at depth 0.
-    let (mut depth, mut start, mut end) = (0i32, i, chars.len());
-    let mut j = i;
-    while j < chars.len() {
-        match chars[j] {
-            '<' | '(' | '[' => depth += 1,
-            '>' if chars[j - 1] != '-' => depth -= 1,
-            ')' | ']' => depth -= 1,
-            '{' if depth == 0 => {
-                end = j;
-                break;
-            }
-            _ if depth == 0 && word_at(j, "where") => {
-                end = j;
-                break;
-            }
-            _ if depth == 0 && word_at(j, "for") && chars.get(j + 3) != Some(&'<') => start = skip_ws(j + 3),
-            _ => {}
-        }
-        j += 1;
-    }
-    while end > start && chars[end - 1].is_whitespace() {
-        end -= 1;
-    }
-    (end > start).then_some((start, end))
+    let ty = tree.children(imp).filter(|&c| !matches!(tree.kind(c), K::GenericParamList | K::WhereClause | K::ItemList | K::Attr | K::Visibility)).last()?;
+    Some(tree.range(ty))
 }
 
 #[cfg(test)]
@@ -134,18 +82,24 @@ mod tests {
     /// prod-code, m=20226: rust-analyzer places an implementation at the impl's self type.
     #[test]
     fn the_self_type_of_an_impl_header_is_found() {
-        let ty = |line: &str| self_type_range(line, 0).map(|(s, e)| line.chars().skip(s).take(e - s).collect::<String>());
-        assert_eq!(ty("impl Shape for Circle {").as_deref(), Some("Circle"));
-        assert_eq!(ty("impl<T: Clone> Tr<T> for Wrapper<T> where T: Copy {").as_deref(), Some("Wrapper<T>"));
-        assert_eq!(ty("impl Config {").as_deref(), Some("Config"));
-        assert_eq!(ty("impl<T> Vec<T> {").as_deref(), Some("Vec<T>"));
+        let ty = |src: &str| {
+            let tree = ridx_syntax::parse(src);
+            self_type_range(&tree, src.find("impl").unwrap()).map(|r| src[r].to_string())
+        };
+        assert_eq!(ty("impl Shape for Circle {}").as_deref(), Some("Circle"));
+        assert_eq!(ty("impl<T: Clone> Tr<T> for Wrapper<T> where T: Copy {}").as_deref(), Some("Wrapper<T>"));
+        assert_eq!(ty("impl Config {}").as_deref(), Some("Config"));
+        assert_eq!(ty("impl<T> Vec<T> {}").as_deref(), Some("Vec<T>"));
         assert_eq!(ty("unsafe impl Send for S {}").as_deref(), Some("S"));
         assert_eq!(ty("impl Fn() -> u8 for F {}").as_deref(), Some("F"));
-        assert_eq!(ty("impl<T> From<T> for Box<dyn Fn(T) -> T>").as_deref(), Some("Box<dyn Fn(T) -> T>"));
-        assert_eq!(ty("impl<'a> Tr for &'a S {").as_deref(), Some("&'a S"));
+        assert_eq!(ty("impl<T> From<T> for Box<dyn Fn(T) -> T> {}").as_deref(), Some("Box<dyn Fn(T) -> T>"));
+        assert_eq!(ty("impl<'a> Tr for &'a S {}").as_deref(), Some("&'a S"));
         assert_eq!(ty("fn f(x: impl Tr) {}"), None);
-        let line = "    impl Shape for Circle {";
-        assert_eq!(self_type_range(line, 4), Some((19, 25)));
+        // Review of 465e02ad: a comment, a raw identifier and a binder with a space are no keywords.
+        assert_eq!(ty("impl Tr for /* where { */ S {}").as_deref(), Some("S"));
+        assert_eq!(ty("impl Tr for r#where {}").as_deref(), Some("r#where"));
+        assert_eq!(ty("impl Tr for Box<dyn for <'a> Fn(&'a u8)> {}").as_deref(), Some("Box<dyn for <'a> Fn(&'a u8)>"));
+        assert_eq!(ty("impl Tr\n    for S\n{}").as_deref(), Some("S"), "a header on several lines");
     }
 
     #[test]

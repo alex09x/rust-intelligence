@@ -262,3 +262,34 @@ fn test_a_crate_root_item_is_held_by_its_crate() {
     assert_eq!(container_name("a::b::Item", "smoke", false), "b");
     assert_eq!(container_name("smoke", "smoke", true), "", "a crate root has none");
 }
+
+/// Review of 465e02ad: resolve took a top-level module stored by its bare path for a crate root, with no container.
+#[test]
+fn test_resolve_gives_a_top_level_module_its_crate() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut w = ridx_format::IndexWriter::new("app", "0.1.0");
+    for (id, name, kind) in [(1, "app", ridx_format::DefKind::Mod), (2, "net", ridx_format::DefKind::Mod)] {
+        w.add_definition(ridx_format::RawDefinition {
+            def_id: id,
+            kind,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: "/w/src/lib.rs".to_string(),
+            name: name.to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 4,
+            path: name.to_string(),
+            signature: None,
+        });
+    }
+    let shard = dir.path().join("app.ridx");
+    w.write_to(&mut std::fs::File::create(&shard).unwrap()).unwrap();
+    let index = ridx_format::WorkspaceIndex::open(&shard).unwrap();
+    let mut conv = PositionConverter::new();
+    let net = crate::lsp::symbols::handle_workspace_symbol_resolve(&json!({ "params": { "name": "net" } }), std::iter::once(&index), &mut conv);
+    assert_eq!(net["containerName"], "app");
+    let root = crate::lsp::symbols::handle_workspace_symbol_resolve(&json!({ "params": { "name": "app" } }), std::iter::once(&index), &mut conv);
+    assert_eq!(root["containerName"], "", "the crate root itself has none");
+}
