@@ -47,7 +47,7 @@ Linux and macOS. Not affiliated with the Rust Project or the Rust Foundation.
   dependency once and shares it between every project and worktree on the machine.
 - **What you are typing still works**: unsaved edits are answered at once from an in-memory overlay on top of
   the index, and 250 ms after the last edit the edited crates are compiled from the buffers into an index of
-  the session, so references and rename see the new code too.
+  the session, so references and rename see the new code too, and the compiler's errors in it are reported.
 
 ## Measured
 
@@ -154,7 +154,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Refactoring | `prepareRename`, `rename`, `codeAction` (compile-safe assists), `executeCommand` |
 | Formatting | `formatting`, `rangeFormatting` |
 | Symbols | `documentSymbol`, `workspace/symbol` |
-| Diagnostics | `publishDiagnostics` from a background `cargo check` on save, pull diagnostics |
+| Diagnostics | `publishDiagnostics` from a background `cargo check` on save and from the compile of unsaved buffers, pull diagnostics |
 | Workspaces | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, multi-root |
 
 ## How it works
