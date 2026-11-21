@@ -246,3 +246,40 @@ fn test_the_checks_result_goes_where_the_client_was_shown_the_file() {
     assert!(sent.contains(&encoded) && sent.contains("\"diagnostics\":[]"), "{sent}");
     assert!(!lifecycle.flycheck.has_active_diagnostics(&encoded));
 }
+
+/// Review of 2810515d: the check's key of a file named `a%20b.rs` was decoded to `a b.rs`, and its open buffer
+/// (`a%2520b.rs`) got nothing.
+#[test]
+fn test_the_checks_key_is_a_path_not_a_uri() {
+    let (_d, root) = workspace();
+    let literal = root.join("src/a%20b.rs");
+    std::fs::write(&literal, "x\n").unwrap();
+    let lifecycle = crate::lsp::LifecycleManager::new();
+    let mut ov = crate::overlay::OverlayManager::new();
+    let client = crate::lsp::protocol::path_to_uri(&literal.to_string_lossy());
+    ov.open_with_provenance(&client, &literal.to_string_lossy(), 1, "x\n".into(), true);
+    let e0425 = json!({ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }, "code": "E0425", "source": "rustc", "message": "saved" });
+    lifecycle.flycheck.set_latest_diagnostics_with_baseline(&uri(&literal), vec![e0425], Some("x\n".into()));
+    let mut out = Vec::new();
+    publish_check(&uri(&literal), &lifecycle, &ov, &mut out).unwrap();
+    let sent = String::from_utf8(out).unwrap();
+    assert!(sent.contains(&client) && sent.contains("E0425"), "{sent}");
+}
+
+/// Review of 2810515d: a file shown under an alias when closed, opened again under its own URI, kept the alias's
+/// error when the check cleared it.
+#[test]
+fn test_a_uri_the_file_was_shown_under_before_is_cleared() {
+    let (_d, root) = workspace();
+    let a = root.join("src/a.rs");
+    let lifecycle = crate::lsp::LifecycleManager::new();
+    let mut ov = crate::overlay::OverlayManager::new();
+    let alias = "file:///elsewhere/link/a.rs";
+    lifecycle.flycheck.mark_published(alias);
+    lifecycle.flycheck.session.record_published(&a, alias, true);
+    ov.open_with_provenance(&uri(&a), &a.to_string_lossy(), 1, std::fs::read_to_string(&a).unwrap(), true);
+    let mut out = Vec::new();
+    publish_check(&uri(&a), &lifecycle, &ov, &mut out).unwrap();
+    let sent = String::from_utf8(out).unwrap();
+    assert!(sent.contains(alias) && !lifecycle.flycheck.has_active_diagnostics(alias), "{sent}");
+}

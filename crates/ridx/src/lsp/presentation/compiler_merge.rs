@@ -38,6 +38,11 @@ pub fn check_key(file: &std::path::Path) -> String {
     format!("file://{}", file.display())
 }
 
+/// The file a check key names ([`check_key`]): the path after `file://` as it is, never percent-decoded.
+pub fn check_path(key: &str) -> std::path::PathBuf {
+    std::path::PathBuf::from(key.strip_prefix("file://").unwrap_or(key))
+}
+
 /// The diagnostics of `uri`: the compiler's from `flycheck` and the editor's own (`heuristic`, in the coordinates
 /// of `live`), an editor diagnostic dropped where the compiler reports the same code over the same range. `saved`
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.

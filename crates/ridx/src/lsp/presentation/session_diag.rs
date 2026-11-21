@@ -162,25 +162,29 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
     files
 }
 
-/// Publishes what the check of the saved files reported on the file it names `check_uri` under the URI the client knows
-/// the file by: its open buffer's, else the one something of it is still published under, else the check's; and clears
-/// it under the check's spelling when that one still shows something (review of 88fe53d0: a check's clear went to a URI
-/// the client did not show it under).
-pub fn publish_check<W: Write>(check_uri: &str, lifecycle: &crate::lsp::lifecycle::LifecycleManager, ov: &crate::overlay::OverlayManager, writer: &mut W) -> std::io::Result<()> {
-    let file = ridx_format::canonicalize_best_effort(Path::new(&crate::lsp::protocol::uri_to_path(check_uri)));
+/// Publishes what the check of the saved files reported on the file its key `check_key` names (`file://` and the path
+/// as it is, not a URI to decode: a file may be named `a%20b.rs`, review of 2810515d) under the URI the client knows
+/// the file by: its open buffer's, else the one something of it is still published under, else the file's own. Every
+/// other spelling still showing something of the file (the check's key, a URI it was shown under before) is cleared
+/// (reviews of 88fe53d0 and 2810515d).
+pub fn publish_check<W: Write>(check_key: &str, lifecycle: &crate::lsp::lifecycle::LifecycleManager, ov: &crate::overlay::OverlayManager, writer: &mut W) -> std::io::Result<()> {
+    let file = ridx_format::canonicalize_best_effort(&super::compiler_merge::check_path(check_key));
     let fc = &lifecycle.flycheck;
+    let previous = fc.session.published_uri(&file).filter(|u| fc.has_active_diagnostics(u));
     let open = ov
         .open_file_paths()
         .into_iter()
         .find_map(|k| (ridx_format::canonicalize_best_effort(Path::new(&k)) == file).then(|| ov.get(&k).map(|o| (o.uri.clone(), o.version))).flatten());
     let (target, version) = match open {
         Some((uri, version)) => (uri, Some(version)),
-        None => (fc.session.published_uri(&file).filter(|u| fc.has_active_diagnostics(u)).unwrap_or_else(|| check_uri.to_string()), None),
+        None => (previous.clone().unwrap_or_else(|| crate::lsp::protocol::path_to_uri(&file.to_string_lossy())), None),
     };
     super::reconcile::publish_reconciled_diagnostics(&target, version, ov, fc, writer)?;
-    if target != check_uri && fc.clear_published(check_uri) {
-        let clear = json!({ "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": { "uri": check_uri, "diagnostics": [] } });
-        crate::lsp::protocol::send_response(writer, &clear)?;
+    for other in [Some(check_key.to_string()), previous].into_iter().flatten().filter(|u| *u != target) {
+        if fc.clear_published(&other) {
+            let clear = json!({ "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": { "uri": other, "diagnostics": [] } });
+            crate::lsp::protocol::send_response(writer, &clear)?;
+        }
     }
     fc.session.record_published(&file, &target, fc.has_active_diagnostics(&target));
     Ok(())

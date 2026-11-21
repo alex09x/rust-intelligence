@@ -215,7 +215,8 @@ pub fn handle_internal_diagnostic<W: Write>(
 ) -> std::io::Result<()> {
     let uri = diag["params"]["uri"].as_str().unwrap_or("");
     let diags = diag["params"]["diagnostics"].as_array().cloned().unwrap_or_default();
-    let file = uri_to_path(uri);
+    // The check's key names the path as it is, not a URI to decode (review of 2810515d).
+    let file = super::compiler_merge::check_path(uri).to_string_lossy().into_owned();
     // The text the check read, sent with its diagnostics; the buffer's idea of the disk may be newer.
     let baseline = (!diags.is_empty())
         .then(|| diag["params"]["baseline"].as_str().map(str::to_string))
