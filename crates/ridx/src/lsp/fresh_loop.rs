@@ -190,6 +190,15 @@ pub(crate) fn intercept<W: Write>(
         super::protocol::send_response(writer, &answer)?;
         return Ok(None);
     }
+    // One waiting for the diagnostics of a buffer as saved has the sessions compile it: only a compile of its very
+    // text, in its own workspace, says what they are (review of 13eacef0).
+    if msg["method"] == "textDocument/diagnostic" {
+        if let Some((file, _)) = super::fresh::wanted(&msg).filter(|(f, _)| ov.get(f).is_some() && (cov.diagnostics)(f) == Readiness::Pending) {
+            if let Some(root) = super::dispatch::workspace_root_of(mr, &lifecycle.reindex, Path::new(&file)) {
+                session.want(&file, &root);
+            }
+        }
+    }
     Ok(gate.waiting.admit(msg, &cov, deadline))
 }
 

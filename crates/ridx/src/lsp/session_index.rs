@@ -15,7 +15,7 @@
 //! published one until a newer published index loads, or the buffers are all back to their files. The server loop's
 //! side is `session_loop`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
@@ -80,9 +80,26 @@ pub struct SessionIndexer {
     count: Arc<Mutex<u64>>,
     /// The roots with an index at the last `roots_removed`.
     known: Mutex<Vec<PathBuf>>,
+    /// The open buffers as saved a session compiles too: a request waits for the compiler's diagnostics of their text
+    /// (`want`).
+    wanted: Mutex<HashSet<String>>,
 }
 
 impl SessionIndexer {
+    /// The buffer `key` of `root`, as saved, is compiled by the sessions from now on: a request waits for its
+    /// diagnostics, which only a compile of its very text gives (review of 13eacef0: the check of the saved files was
+    /// taken for them). A session is due when it was not wanted yet.
+    pub fn want(&self, key: &str, root: &Path) {
+        if self.wanted.lock().unwrap_or_else(|e| e.into_inner()).insert(key.to_string()) {
+            self.note_change(root);
+        }
+    }
+
+    /// Whether the sessions compile the buffer `key` though it is as saved (`want`).
+    pub fn is_wanted(&self, key: &str) -> bool {
+        self.wanted.lock().unwrap_or_else(|e| e.into_inner()).contains(key)
+    }
+
     /// A buffer of `root` was opened, changed or closed.
     pub fn note_change(&self, root: &Path) {
         if session_off() {

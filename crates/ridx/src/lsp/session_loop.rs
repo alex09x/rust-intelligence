@@ -58,7 +58,7 @@ pub(crate) fn step(
             replaced |= back_to_published(mr, ov, &root);
         }
     }
-    for root in session.start_due(|root| edited_buffers(ov, root)) {
+    for root in session.start_due(|root| edited_buffers(ov, root, &|k| session.is_wanted(k))) {
         touched.extend(diags.clear(&root, &has_check));
         if session.retire(&root) {
             replaced |= back_to_published(mr, ov, &root);
@@ -116,8 +116,9 @@ fn back_to_published(mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay
 }
 
 /// The open buffers under `root` whose text is not the file's on disk: every edited one, not only those changed since
-/// the last session index (that one compiled the others from their buffers too).
-fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path) -> Vec<Snapshot> {
+/// the last session index (that one compiled the others from their buffers too); and those as saved a request waits
+/// for the diagnostics of (`wanted`).
+fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path, wanted: &dyn Fn(&str) -> bool) -> Vec<Snapshot> {
     let mut out = Vec::new();
     for key in ov.open_file_paths() {
         let path = ridx_format::canonicalize_best_effort(Path::new(&key));
@@ -125,7 +126,7 @@ fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path) -> Vec<Snaps
             continue;
         }
         let Some(o) = ov.get(&key) else { continue };
-        if std::fs::read_to_string(&path).ok().as_deref() != Some(o.text.as_str()) {
+        if wanted(&key) || std::fs::read_to_string(&path).ok().as_deref() != Some(o.text.as_str()) {
             out.push(Snapshot { text: o.text.clone(), instance: o.instance, key, path });
         }
     }
@@ -164,6 +165,22 @@ fn process_ended(pid: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Review of 13eacef0: a buffer as saved whose diagnostics a request waits for is compiled by the sessions too.
+    #[test]
+    fn test_a_buffer_as_saved_is_compiled_when_wanted() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        let path = root.join("a.rs").to_string_lossy().to_string();
+        std::fs::write(&path, "x").unwrap();
+        let mut ov = crate::overlay::OverlayManager::new();
+        ov.open_with_provenance("file:///a.rs", &path, 1, "x".into(), true);
+        assert!(edited_buffers(&ov, &root, &|_| false).is_empty(), "as saved: not compiled");
+        let session = SessionIndexer::default();
+        session.want(&path, &root);
+        assert!(session.is_wanted(&path) && session.state_of(&root).0, "a session is due");
+        assert_eq!(edited_buffers(&ov, &root, &|k| session.is_wanted(k)).len(), 1);
+    }
 
     /// Review of 88fe53d0: a build of a buffer closed or opened again since is not installed.
     #[test]

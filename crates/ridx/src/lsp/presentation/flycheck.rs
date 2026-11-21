@@ -61,8 +61,6 @@ pub struct FlycheckState {
     /// The generation of the last check started per root: a result is stale only when a newer check of its own root
     /// started (see `is_current`).
     root_generation: Arc<Mutex<HashMap<PathBuf, u64>>>,
-    /// The roots a check ran to the end on (see `check_settled`).
-    completed: Arc<Mutex<HashSet<PathBuf>>>,
     /// The compiler's diagnostics on the text of the session indexes answering, which stand in for the check's.
     pub session: super::session_diag::SessionDiagnostics,
 }
@@ -83,7 +81,6 @@ impl Default for FlycheckState {
             checked_sources: Arc::default(),
             queue: Arc::default(),
             root_generation: Arc::default(),
-            completed: Arc::default(),
             session: Default::default(),
         }
     }

@@ -255,9 +255,10 @@ pub enum Readiness {
     Pending,
 }
 
-/// The [`Readiness`] of the diagnostics of `file` (the overlay key). A buffer a session compiled is ready once a session
-/// compiled its very text; one as saved, once the check of the saved files of its workspace ran and none is to run.
-/// A file not open has no version and is ready.
+/// The [`Readiness`] of the diagnostics of `file` (the overlay key): ready once a session compiled the buffer's very
+/// text, edited or as saved (a buffer as saved is compiled for a request waiting for it, `SessionIndexer::want`). The
+/// check of the saved files never stands in: that it ran says nothing of the text it read, of whether it failed before
+/// the file, or of which workspace it was (review of 13eacef0). A file not open has no version and is ready.
 pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::OverlayManager, file: &str) -> Readiness {
     let Some(o) = ov.get(file) else { return Readiness::Ready(0) };
     let path = ridx_format::canonicalize_best_effort(Path::new(file));
@@ -266,10 +267,8 @@ pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::Overl
             None => Readiness::Ready(o.version),
             Some(why) => Readiness::Unavailable(o.version, why),
         },
-        // A session's result of another text still answers for it until the next session: not this text's.
-        Some(_) => Readiness::Pending,
-        None if o.is_synced_with_disk() && fc.check_settled(&path) => Readiness::Ready(o.version),
-        None => Readiness::Pending,
+        // No session compiled this text yet (a session's result of another text answers for it until the next one).
+        _ => Readiness::Pending,
     }
 }
 

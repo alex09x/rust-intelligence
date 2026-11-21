@@ -352,12 +352,17 @@ fn test_a_buffers_diagnostics_are_known_once_its_text_is_compiled() {
     flycheck.session.set_outcomes(&root, session_outcomes(&report(Vec::new(), &[]), &texts, &HashMap::new()));
     assert_eq!(readiness(&flycheck, &ov, &path), Readiness::Unavailable(2, "notChecked"), "stopped before checking it");
 
-    // A buffer as saved: the check of the saved files answers once it ran.
+    // Review of 13eacef0: a buffer as saved is ready once a session compiled its text too, whatever a check of the
+    // saved files did (it may have failed, read another text, or been another workspace's).
     let mut saved = crate::overlay::OverlayManager::new();
     let lib_path = lib.to_string_lossy().to_string();
-    saved.open_with_provenance(&uri(&lib), &lib_path, 1, std::fs::read_to_string(&lib).unwrap(), true);
-    assert_eq!(readiness(&flycheck, &saved, &lib_path), Readiness::Pending, "no check ran");
-    flycheck.settle_for_test(&root);
+    let lib_text = std::fs::read_to_string(&lib).unwrap();
+    saved.open_with_provenance(&uri(&lib), &lib_path, 1, lib_text.clone(), true);
+    flycheck.set_latest_diagnostics_with_baseline(&uri(&lib), Vec::new(), Some(lib_text.clone()));
+    assert_eq!(readiness(&flycheck, &saved, &lib_path), Readiness::Pending, "the check of the saved files is not it");
+    let lib_texts = [(lib.clone(), lib_text)];
+    let r = report(Vec::new(), &[&lib]);
+    flycheck.session.set_outcomes(&root, session_outcomes(&r, &lib_texts, &session_files(&root, &r, &lib_texts)));
     assert_eq!(readiness(&flycheck, &saved, &lib_path), Readiness::Ready(1));
 }
 
