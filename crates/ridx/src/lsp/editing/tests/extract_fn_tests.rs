@@ -131,6 +131,7 @@ fn test_a_reversed_range_is_declined() {
 fn test_a_macro_that_may_declare_keeps_names_unknown() {
     for (doc, ty) in [
         ("mod types {\n    pub type u32 = String;\n}\nmacro_rules! import {\n    () => {\n        use types::*;\n    };\n}\nimport!();\npub fn f(a: u32, b: u32) -> bool {\n    let r = $0a == b$0;\n    r\n}\n", Some("bool")),
+        ("mod types {\n    pub type u32 = String;\n}\nmacro_rules! import {\n    () => {\n        use types::*;\n    };\n}\nimport!();\npub fn f(a: u32) -> u8 {\n    let r = $0match a { _ => 1u8 }$0;\n    drop(a);\n    r\n}\n", Some("u8")),
         ("const N: i32 = 100;\nmacro_rules! local {\n    () => {\n        const N: i32 = 3;\n    };\n}\npub fn f() -> i32 {\n    local!();\n    let r = $0N + 1$0;\n    r\n}\n", Some("i32")),
     ] {
         assert_eq!(extracted(doc, ty), None, "{doc}");
