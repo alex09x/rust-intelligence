@@ -36,6 +36,20 @@ pub fn dispatch(method: &str, msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Ove
             });
             Ok(Value::String(super::syntax_tree::syntax_tree_json(&text, range.flatten())))
         }
+        // `{name, expansion}` of the macro called at the position, or `null` when ridx cannot expand it fully.
+        "ridx/expandMacro" => {
+            let uri = msg["params"]["textDocument"]["uri"].as_str().ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
+            let file = uri_to_path(uri);
+            let text = match ov.get(&file) {
+                Some(o) => o.text.clone(),
+                None => std::fs::read_to_string(&file).unwrap_or_default(),
+            };
+            let starts = super::editing::action_parse::line_starts_of(&text);
+            let p = &msg["params"]["position"];
+            let cursor = p["line"].as_u64().zip(p["character"].as_u64()).and_then(|(l, c)| super::editing::action_parse::utf16_pos_to_byte(&text, &starts, l as u32, c as u32));
+            let expanded = cursor.zip(ws).and_then(|(at, ws)| super::editing::action_inline_macro::expand_macro_at(&text, &file, at, ws));
+            Ok(expanded.map_or(Value::Null, |(name, expansion)| serde_json::json!({ "name": name, "expansion": expansion })))
+        }
         _ => Err(LspError::method_not_found(format!("Method not found: {method}"))),
     }
 }

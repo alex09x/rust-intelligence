@@ -76,6 +76,26 @@ pub fn plan_inline_macro(doc: &str, file: &str, cursor: usize, ws: &WorkspaceInd
     place(doc, &masked, &starts, &call, expansion)
 }
 
+/// The name of the `macro_rules!` macro called around `cursor` and its expansion as source, for `ridx/expandMacro`
+/// (prod-code, m=20257): fully expanded, so `None` when it calls a macro again, and for a macro ridx does not expand
+/// (the standard library's, a proc macro).
+pub fn expand_macro_at(doc: &str, file: &str, cursor: usize, ws: &WorkspaceIndex) -> Option<(String, String)> {
+    let masked = mask_comments_and_strings(doc);
+    let starts = line_starts_of(doc);
+    let call = macro_call_at(&masked, cursor)?;
+    let name = &masked[call.name.0..call.name.1];
+    if STD_MACROS.contains(&name) || name == "macro_rules" {
+        return None;
+    }
+    let (def_text, def_crate) = macro_definition(doc, &starts, file, call.name.0, name, ws)?;
+    let def = MacroRulesDef::parse_body(&def_text)?;
+    let prefix = crate_prefix(ws, file, &masked, &masked[call.path_start..call.name.0], def_crate.as_deref())?;
+    let expansion = tidy_spacing(&rejoin_punctuation(&def.expand(&doc[call.open + 1..call.close - 1], &prefix)?)).trim().to_string();
+    let toks: Vec<_> = ridx_syntax::lex(&expansion).into_iter().filter(|t| !t.is_trivia()).collect();
+    let calls_again = toks.windows(2).any(|w| matches!(w[0].kind, ridx_syntax::TokenKind::Ident) && w[1].kind == ridx_syntax::TokenKind::Bang);
+    (!expansion.is_empty() && !calls_again).then(|| (name.to_string(), expansion))
+}
+
 struct MacroCall {
     path_start: usize,
     name: (usize, usize),
@@ -308,6 +328,10 @@ fn place(doc: &str, masked: &str, starts: &[usize], call: &MacroCall, expansion:
     let in_expression = prev.ends_with(['=', '(', ',', '[', '>']) || contains_word(prev.rsplit(|c: char| !c.is_alphanumeric()).next().unwrap_or(""), "return");
     (in_expression && in_fn).then(|| (call.path_start, call.close, format!("({{ {expansion} }})")))
 }
+
+#[cfg(test)]
+#[path = "tests/expand_macro_tests.rs"]
+mod expand_tests;
 
 #[cfg(test)]
 mod tests {

@@ -288,7 +288,7 @@ fn diagnostics_of(
 /// 0.3.11 declared `minVersion` with a pull answered once the index covered the version, which a tool could not tell
 /// from this (prod-code, m=20197).
 pub fn experimental_capabilities() -> Value {
-    json!({ "ridx": { "methods": { "ridx/safeDelete": 1, "ridx/status": 1, "ridx/syntaxTree": 1, "textDocument/diagnostic": 1 }, "requestOptions": { "minVersion": 1 } } })
+    json!({ "ridx": { "methods": { "ridx/expandMacro": 1, "ridx/safeDelete": 1, "ridx/status": 1, "ridx/syntaxTree": 1, "textDocument/diagnostic": 1 }, "requestOptions": { "minVersion": 1 } } })
 }
 
 #[path = "fresh_status.rs"]
@@ -312,6 +312,7 @@ mod tests {
         assert_eq!(ridx["methods"]["ridx/status"], 1, "{caps}");
         assert_eq!(ridx["methods"]["ridx/safeDelete"], 1, "{caps}");
         assert_eq!(ridx["methods"]["ridx/syntaxTree"], 1, "{caps}");
+        assert_eq!(ridx["methods"]["ridx/expandMacro"], 1, "{caps}");
         assert_eq!(ridx["requestOptions"]["minVersion"], 1, "{caps}");
         // prod-code (m=20197): the pull's contract, which 0.3.10 and 0.3.11 did not have.
         assert_eq!(ridx["methods"]["textDocument/diagnostic"], 1, "{caps}");
