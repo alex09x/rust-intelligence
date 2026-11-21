@@ -244,6 +244,9 @@ impl SessionIndexer {
                 let _ = std::fs::remove_dir_all(dir);
             }
         }
+        // Its buffers are wanted again if it is added back: a held pull then has a session of it scheduled (review of
+        // 124dc616: the old mark kept it from scheduling one).
+        self.wanted.lock().unwrap_or_else(|e| e.into_inner()).retain(|r, _| keep(r));
         gone
     }
 
@@ -327,6 +330,9 @@ mod tests {
         }
         s.want(&file, &root);
         assert!(!due(&s), "a build running: it is the one");
+        // Review of 124dc616: a root removed and added back kept its mark, and a held pull scheduled nothing there.
+        s.forget_unless(|r| r != root);
+        assert!(!s.is_wanted(&root, &file), "forgotten with its root");
     }
 
     /// Review of 2e1fcfb1: a workspace folder removed kept its session.

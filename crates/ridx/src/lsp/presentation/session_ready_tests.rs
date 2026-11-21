@@ -189,8 +189,11 @@ fn test_an_outcome_alone_changing_the_answer_is_published() {
     assert!(flycheck.session.set_outcomes(&root, session_outcomes(&failed, &texts, &outer_files)).is_empty(), "the same again: nothing changes");
     let mut unlinked = report(Vec::new(), &[]);
     unlinked.unheld.insert(a.clone());
+    let stamp = flycheck.session.stamp(&a);
     let changed = flycheck.session.set_outcomes(&inner, session_outcomes(&unlinked, &texts, &HashMap::new()));
     assert_eq!(changed, vec![a.clone()], "the inner root answers now");
+    // Review of c3bd7441: a workspace pull's cache of an alias kept the error.
+    assert_ne!(flycheck.session.stamp(&a), stamp, "what was computed from it is stale");
     assert_eq!(merge_with_compiler(&uri(&a), &[], &text, || Some(text.clone()), &flycheck)[0]["code"], "unlinked-file");
     assert_eq!(flycheck.session.clear(&inner, NO_CHECK), vec![a.clone()], "the enclosing root's error answers again");
 }

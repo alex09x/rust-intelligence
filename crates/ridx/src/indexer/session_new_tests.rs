@@ -141,7 +141,7 @@ pub(in crate::indexer) fn new_test_units(deps: &Path, root: &Path, files: &[Path
 fn plain_autotests(pkg: &Path) -> bool {
     let text = fs::read_to_string(pkg.join("Cargo.toml")).unwrap_or_default();
     !text.lines().any(|line| {
-        let code: String = line.split('#').next().unwrap_or("").chars().filter(|c| !c.is_whitespace() && !matches!(c, '"' | '\'')).collect();
+        let code: String = line.split('#').next().unwrap_or("").chars().filter(|c| !c.is_whitespace() && !matches!(c, '"' | '\'' | '\u{feff}')).collect();
         // The key a line sets or the table it opens.
         let key = match code.strip_prefix('[') {
             Some(header) => header.trim_start_matches('[').split(']').next().unwrap_or(""),
@@ -263,5 +263,8 @@ mod tests {
         ] {
             assert!(!plain(declared), "{declared}");
         }
+        // Review of 566e29b9: a byte order mark hid the first header.
+        fs::write(dir.path().join("Cargo.toml"), format!("\u{feff}[[test]]\nname = \"t\"\nharness = false\n\n{PKG}")).unwrap();
+        assert!(!plain_autotests(dir.path()));
     }
 }

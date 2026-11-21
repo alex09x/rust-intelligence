@@ -180,10 +180,13 @@ impl SessionDiagnostics {
         of_in(&self.roots.lock().unwrap_or_else(|e| e.into_inner()), file).map(|(_, f)| f.clone())
     }
 
-    /// What the session says of `file`, for a cache of what was computed from it (`workspace_diag`).
+    /// What the session says of `file`, for a cache of what was computed from it (`workspace_diag`): its result, and the
+    /// outcome answering for it with that outcome's root, which alone may change the answer (review of c3bd7441: an
+    /// inner root's `notInAnyCrate` left an alias's cached error).
     pub fn stamp(&self, file: &Path) -> u64 {
         let mut h = std::collections::hash_map::DefaultHasher::new();
         self.of(file).map(|f| (serde_json::to_string(&f.diagnostics).unwrap_or_default(), f.text)).hash(&mut h);
+        outcome_of(&self.outcomes.lock().unwrap_or_else(|e| e.into_inner()), file).map(|(r, o)| (r.clone(), o.text.clone(), o.unavailable)).hash(&mut h);
         h.finish()
     }
 
