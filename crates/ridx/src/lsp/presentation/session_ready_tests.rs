@@ -148,3 +148,49 @@ fn test_the_answer_is_the_innermost_sessions() {
     assert_eq!(got.len(), 1, "{got:?}");
     assert_eq!(got[0]["code"], "unlinked-file");
 }
+
+/// Review of d6df3ce0: a file written after the pull of its buffer as saved was admitted lost the hint: the answer read
+/// the disk again and gave an empty list. The hint is of the outcome that admitted it.
+#[test]
+fn test_a_write_after_admission_keeps_the_hint() {
+    let (_d, root) = workspace();
+    let stray = root.join("src/stray.rs");
+    let text = "pub fn s() {}\n".to_string();
+    std::fs::write(&stray, &text).unwrap();
+    let flycheck = FlycheckState::new();
+    let mut r = report(Vec::new(), &[]);
+    r.unheld.insert(stray.clone());
+    flycheck.session.set_outcomes(&root, session_outcomes(&r, &[(stray.clone(), text.clone())], &HashMap::new()));
+    let path = stray.to_string_lossy().to_string();
+    let mut ov = crate::overlay::OverlayManager::new();
+    ov.open_with_provenance(&uri(&stray), &path, 1, text.clone(), true);
+    assert_eq!(readiness(&flycheck, &ov, &path, &root), Readiness::Ready(1), "admitted");
+    let written = "pub fn s() { changed() }\n".to_string();
+    std::fs::write(&stray, &written).unwrap();
+    let got = merge_with_compiler(&uri(&stray), &[], &text, || Some(written.clone()), &flycheck);
+    assert_eq!(got.len(), 1, "{got:?}");
+    assert_eq!(got[0]["code"], "unlinked-file");
+}
+
+/// Review of d6df3ce0: an inner root's `notInAnyCrate` in place of an enclosing root's error changed what is answered
+/// with no result of a file changing, and the error stayed published.
+#[test]
+fn test_an_outcome_alone_changing_the_answer_is_published() {
+    let (_d, root) = workspace();
+    let inner = root.join("src");
+    let a = root.join("src/a.rs");
+    let text = std::fs::read_to_string(&a).unwrap();
+    let texts = [(a.clone(), text.clone())];
+    let flycheck = FlycheckState::new();
+    let failed = report(vec![message(&a, 1, 0, 3, "E0308", "mismatched types")], &[&a]);
+    let outer_files = session_files(&root, &failed, &texts);
+    assert_eq!(flycheck.session.set_outcomes(&root, session_outcomes(&failed, &texts, &outer_files)), vec![a.clone()], "a first outcome");
+    assert_eq!(flycheck.session.replace(&root, outer_files.clone(), NO_CHECK), vec![a.clone()]);
+    assert!(flycheck.session.set_outcomes(&root, session_outcomes(&failed, &texts, &outer_files)).is_empty(), "the same again: nothing changes");
+    let mut unlinked = report(Vec::new(), &[]);
+    unlinked.unheld.insert(a.clone());
+    let changed = flycheck.session.set_outcomes(&inner, session_outcomes(&unlinked, &texts, &HashMap::new()));
+    assert_eq!(changed, vec![a.clone()], "the inner root answers now");
+    assert_eq!(merge_with_compiler(&uri(&a), &[], &text, || Some(text.clone()), &flycheck)[0]["code"], "unlinked-file");
+    assert_eq!(flycheck.session.clear(&inner, NO_CHECK), vec![a.clone()], "the enclosing root's error answers again");
+}

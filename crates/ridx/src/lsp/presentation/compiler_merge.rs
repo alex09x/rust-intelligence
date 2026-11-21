@@ -55,10 +55,10 @@ pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: im
     match flycheck.session.outcome_root(&file) {
         Some((_, Some(entry))) => merge_session(uri, heuristic, live, &entry),
         // A file on disk no crate includes says so, with rust-analyzer's hint (prod-code, m=20185).
+        // Of the outcome that admitted a pull, never a second read of the disk (review of d6df3ce0).
         Some((out, None)) if out.unavailable == Some(super::session_diag::UNLINKED) => {
-            let saved = saved();
-            let mut merged = merge_check(uri, heuristic, live, || saved.clone(), flycheck, &file);
-            merged.extend(super::session_diag::unlinked_hint(flycheck, &file, live, saved.as_deref()));
+            let mut merged = merge_check(uri, heuristic, live, saved, flycheck, &file);
+            merged.extend(super::session_diag::unlinked_hint(&out, live));
             merged
         }
         Some((_, None)) => merge_check(uri, heuristic, live, saved, flycheck, &file),

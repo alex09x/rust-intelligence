@@ -31,6 +31,7 @@ pub struct SessionFile {
 }
 
 type Roots = HashMap<PathBuf, HashMap<PathBuf, SessionFile>>;
+type Outcomes = HashMap<PathBuf, HashMap<PathBuf, Outcome>>;
 
 /// What a session's compile of a buffer gave, for the text compiled: its diagnostics (`None`), or why it gave none,
 /// which an empty list would hide (prod-code, m=20178): `notChecked` (no unit owning it checked it to the end, a proc
@@ -47,7 +48,7 @@ pub struct Outcome {
 #[derive(Default)]
 pub struct SessionDiagnostics {
     roots: Mutex<Roots>,
-    outcomes: Mutex<HashMap<PathBuf, HashMap<PathBuf, Outcome>>>,
+    outcomes: Mutex<Outcomes>,
     published: Mutex<HashMap<PathBuf, std::collections::BTreeSet<String>>>,
 }
 
@@ -55,6 +56,11 @@ pub struct SessionDiagnostics {
 /// the file.
 fn of_in<'a>(roots: &'a Roots, file: &Path) -> Option<(&'a PathBuf, &'a SessionFile)> {
     roots.iter().filter(|(r, files)| file.starts_with(r) && files.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(r, files)| (r, &files[file]))
+}
+
+/// The root and outcome answering for `file` (canonical) in `outcomes`: of the innermost root whose session compiled it.
+fn outcome_of<'a>(outcomes: &'a Outcomes, file: &Path) -> Option<(&'a PathBuf, &'a Outcome)> {
+    outcomes.iter().filter(|(r, o)| file.starts_with(r) && o.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(r, o)| (r, &o[file]))
 }
 
 /// Whether what a client is sent of a file changes from `before` to `after` (the session's result for it and the root
@@ -90,9 +96,27 @@ impl SessionDiagnostics {
         })
     }
 
-    /// The outcomes of the buffers the session of `root` now answering compiled.
-    pub fn set_outcomes(&self, root: &Path, outcomes: HashMap<PathBuf, Outcome>) {
-        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).insert(root.to_path_buf(), outcomes);
+    /// Applies `change` to the outcomes and returns the files whose outcome answering for them (`outcome_root`), or the
+    /// root giving it, changes: what is answered for them follows it, an `unlinked-file` hint in place of an enclosing
+    /// root's result (review of d6df3ce0: only a change of the files' results was published).
+    fn change_outcomes(&self, change: impl FnOnce(&mut Outcomes)) -> Vec<PathBuf> {
+        let mut outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
+        let files = |o: &Outcomes| o.values().flat_map(|f| f.keys().cloned()).collect::<HashSet<PathBuf>>();
+        let before: HashMap<PathBuf, (PathBuf, Outcome)> =
+            files(&outcomes).into_iter().filter_map(|k| outcome_of(&outcomes, &k).map(|(r, o)| (r.clone(), o.clone())).map(|v| (k, v))).collect();
+        change(&mut outcomes);
+        let keys: HashSet<PathBuf> = files(&outcomes).into_iter().chain(before.keys().cloned()).collect();
+        let mut out: Vec<PathBuf> = keys.into_iter().filter(|k| before.get(k).map(|(r, o)| (r, o)) != outcome_of(&outcomes, k)).collect();
+        out.sort();
+        out
+    }
+
+    /// The outcomes of the buffers the session of `root` now answering compiled: returns the files whose outcome
+    /// answering for them changes.
+    pub fn set_outcomes(&self, root: &Path, outcomes: HashMap<PathBuf, Outcome>) -> Vec<PathBuf> {
+        self.change_outcomes(|o| {
+            o.insert(root.to_path_buf(), outcomes);
+        })
     }
 
     /// The outcome of the compile of buffer `file` (canonical) by the session of `root` exactly: a session of an
@@ -106,8 +130,7 @@ impl SessionDiagnostics {
     /// enclosing root's clean result was answered for an inner root's `notInAnyCrate`).
     pub fn outcome_root(&self, file: &Path) -> Option<(Outcome, Option<SessionFile>)> {
         let outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
-        let (root, out) =
-            outcomes.iter().filter(|(r, o)| file.starts_with(r) && o.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(r, o)| (r.clone(), o[file].clone()))?;
+        let (root, out) = outcome_of(&outcomes, file).map(|(r, o)| (r.clone(), o.clone()))?;
         drop(outcomes);
         let entry = self.roots.lock().unwrap_or_else(|e| e.into_inner()).get(&root).and_then(|files| files.get(file)).cloned();
         Some((out, entry))
@@ -115,30 +138,36 @@ impl SessionDiagnostics {
 
     /// The outcome of the compile of buffer `file` (canonical), from the innermost root whose session compiled it.
     pub fn outcome(&self, file: &Path) -> Option<Outcome> {
-        let outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
-        outcomes.iter().filter(|(r, o)| file.starts_with(r) && o.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(_, o)| o[file].clone())
+        outcome_of(&self.outcomes.lock().unwrap_or_else(|e| e.into_inner()), file).map(|(_, o)| o.clone())
     }
 
-    /// The session of `root` no longer answers: returns the files whose result changes, back to the check's.
+    /// The session of `root` no longer answers: returns the files whose result or outcome changes, back to the check's.
     pub fn clear(&self, root: &Path, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
-        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).remove(root);
+        let mut out = self.change_outcomes(|o| {
+            o.remove(root);
+        });
         let keys = self.roots.lock().unwrap_or_else(|e| e.into_inner()).get(root).map(|f| f.keys().cloned().collect()).unwrap_or_default();
-        self.change(keys, has_check, |roots| {
+        out.extend(self.change(keys, has_check, |roots| {
             roots.remove(root);
-        })
+        }));
+        out.sort();
+        out.dedup();
+        out
     }
 
     /// Drops the results of the files `keep` does not keep: a buffer closed is a file as saved, which the check speaks
     /// for, also while a session of the root's other buffers answers or a build of it is in flight (review of
     /// fb2bed09). Returns the files whose result changes.
     pub fn keep_only(&self, keep: &dyn Fn(&Path) -> bool, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
-        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).values_mut().for_each(|o| o.retain(|p, _| keep(p)));
+        let mut out = self.change_outcomes(|o| o.values_mut().for_each(|o| o.retain(|p, _| keep(p))));
         let gone: HashSet<PathBuf> = self.roots.lock().unwrap_or_else(|e| e.into_inner()).values().flat_map(|f| f.keys()).filter(|p| !keep(p)).cloned().collect();
-        if gone.is_empty() {
-            return Vec::new();
+        if !gone.is_empty() {
+            let drop = gone.clone();
+            out.extend(self.change(gone, has_check, |roots| roots.values_mut().for_each(|files| files.retain(|p, _| !drop.contains(p)))));
         }
-        let drop = gone.clone();
-        self.change(gone, has_check, |roots| roots.values_mut().for_each(|files| files.retain(|p, _| !drop.contains(p))))
+        out.sort();
+        out.dedup();
+        out
     }
 
     /// The roots with a session's diagnostics.
@@ -240,81 +269,9 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
     files
 }
 
-/// The outcome of a buffer no crate includes.
-pub const UNLINKED: &str = "notInAnyCrate";
-
-/// The hint for a file on disk no crate includes, the one rust-analyzer gives (`unlinked-file`), when a session found
-/// `live` (the file as saved) in none: in place of an empty list, which reads as a file without errors (prod-code,
-/// m=20185).
-pub fn unlinked_hint(fc: &super::flycheck::FlycheckState, file: &Path, live: &str, saved: Option<&str>) -> Option<Value> {
-    let out = fc.session.outcome(file)?;
-    (out.unavailable == Some(UNLINKED) && out.text == live && saved == Some(live)).then(|| {
-        json!({
-            "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } },
-            "severity": 4,
-            "code": "unlinked-file",
-            "source": "ridx",
-            "message": "This file is not included in any crates, so ridx can't offer IDE services."
-        })
-    })
-}
-
-/// The outcome of each buffer of a session (`buffers` compiled, `files` from [`session_files`]): its diagnostics when it
-/// has them, else why not.
-pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], files: &HashMap<PathBuf, SessionFile>) -> HashMap<PathBuf, Outcome> {
-    buffers
-        .iter()
-        .map(|(p, text)| {
-            let path = ridx_format::canonicalize_best_effort(p);
-            let unavailable = if files.contains_key(&path) {
-                None
-            } else if report.unresolved.contains(&path) {
-                Some("targetUnresolved")
-            } else if report.unheld.contains(&path) {
-                Some(UNLINKED)
-            } else if report.untold.contains(&path) {
-                Some("pathsUntold")
-            } else {
-                Some("notChecked")
-            };
-            (path, Outcome { text: text.clone(), unavailable })
-        })
-        .collect()
-}
-
-/// Whether the compiler's diagnostics of an open buffer's text are known, for a request that waits for them
-/// (`textDocument/diagnostic` with `minVersion`, prod-code m=20178: the answer before them read as clean).
-#[derive(Debug, PartialEq)]
-pub enum Readiness {
-    /// Known, for this version of the buffer.
-    Ready(i32),
-    /// The compile of this version gave none, for this reason (see [`Outcome`]).
-    Unavailable(i32, &'static str),
-    /// Not known yet.
-    Pending,
-}
-
-/// The [`Readiness`] of the diagnostics of `file` (the overlay key) of workspace `root`: ready once a session of that
-/// workspace compiled the buffer's very text, edited or as saved (a buffer as saved is compiled for a request waiting for it, `SessionIndexer::want`). The
-/// check of the saved files never stands in: that it ran says nothing of the text it read, of whether it failed before
-/// the file, or of which workspace it was (review of 13eacef0). A file not open has no version and is ready.
-pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::OverlayManager, file: &str, root: &Path) -> Readiness {
-    let Some(o) = ov.get(file) else { return Readiness::Ready(0) };
-    let path = ridx_format::canonicalize_best_effort(Path::new(file));
-    match fc.session.outcome_in(root, &path) {
-        Some(out) if out.text == o.text => match out.unavailable {
-            None => Readiness::Ready(o.version),
-            // A file on disk no crate includes is answered, with a hint saying so (`unlinked_hint`), as rust-analyzer
-            // does; an edited one is refused, its edit validates nothing (prod-code, m=20185).
-            // As saved by the text the answer reads too (`reconcile::saved_text`), not a copy taken at open: the hint is
-            // given then, never an empty list (review of 43ac9527).
-            Some(UNLINKED) if super::reconcile::saved_text(ov, file).as_deref() == Some(o.text.as_str()) => Readiness::Ready(o.version),
-            Some(why) => Readiness::Unavailable(o.version, why),
-        },
-        // No session compiled this text yet (a session's result of another text answers for it until the next one).
-        _ => Readiness::Pending,
-    }
-}
+#[path = "session_outcome.rs"]
+mod outcome;
+pub use outcome::{readiness, session_outcomes, unlinked_hint, Readiness, UNLINKED};
 
 /// Publishes what the check of the saved files reported on the file its key `check_key` names (`file://` and the path
 /// as it is, not a URI to decode: a file may be named `a%20b.rs`, review of 2810515d) under the URI the client knows

@@ -96,8 +96,13 @@ pub(crate) fn step(
         let files = super::presentation::session_diag::session_files(&built.root, &built.report, &texts);
         // What each buffer's compile gave, a reason for none included: a request waiting for its diagnostics is answered
         // by it, never with an empty list standing for "clean" (prod-code, m=20178).
-        diags.set_outcomes(&built.root, super::presentation::session_diag::session_outcomes(&built.report, &texts, &files));
-        touched.extend(diags.replace(&built.root, files, &has_check));
+        // Both the outcomes and the results say which files change: an outcome alone may change what is answered (an
+        // inner root's `notInAnyCrate` in place of an enclosing root's result, review of d6df3ce0).
+        let mut changed = diags.set_outcomes(&built.root, super::presentation::session_diag::session_outcomes(&built.report, &texts, &files));
+        changed.extend(diags.replace(&built.root, files, &has_check));
+        changed.sort();
+        changed.dedup();
+        touched.extend(changed);
         session.loaded(&built.root, &built.dir, built.stamp);
         replaced = true;
     }
