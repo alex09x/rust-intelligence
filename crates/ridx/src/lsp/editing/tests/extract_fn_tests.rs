@@ -108,6 +108,8 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         ("pub fn f() -> u8 {\n    type cafe\u{301} = u8;\n    let n: cafe\u{301} = $01 + 2$0;\n    n\n}\n", Some("u8")),
         ("pub fn f() -> i32 {\n    const C: i32 = {\n        let x: i32 = $01 + 2$0;\n        x\n    };\n    C\n}\n", Some("i32")),
         ("pub fn f() -> i32 {\n    static S: i32 = {\n        let x: i32 = $01 + 2$0;\n        x\n    };\n    S\n}\n", Some("i32")),
+        // Review of 1db80426: a comparison borrows its operands, which a user's impl may observe.
+        ("pub struct Ptr(pub *const u8);\nimpl PartialEq<&Ptr> for u8 {\n    fn eq(&self, p: &&Ptr) -> bool { std::ptr::eq(self, p.0) }\n}\npub fn f(n: u8, p: &Ptr) -> bool {\n    let r = $0n == p$0;\n    r\n}\n", Some("bool")),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {

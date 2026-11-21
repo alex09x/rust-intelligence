@@ -141,6 +141,17 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         if tree.parent(outer).is_some_and(|p| matches!(tree.kind(p), K::MethodCallExpr | K::FieldExpr | K::IndexExpr) && tree.children(p).next() == Some(outer)) {
             return None;
         }
+        // A comparison borrows both operands (`PartialEq::eq(&n, &p)`), which a user's `PartialEq<&P> for u8` may
+        // observe: no copy of them is passed (review of 1db80426).
+        let comparison = |p: NodeId| {
+            tree.kind(p) == K::BinExpr && {
+                let op: String = tree.own_tokens(p).filter(|(_, t)| !t.is_trivia()).map(|(_, t)| t.text(doc)).collect();
+                matches!(op.as_str(), "==" | "!=" | "<" | ">" | "<=" | ">=")
+            }
+        };
+        if tree.parent(outer).is_some_and(comparison) {
+            return None;
+        }
         match local_of(&tree, f, name, tok.start as usize, let_type).ok()? {
             Some(ty) if copy_type(&ty, primitive_shadowed) && nameable(&ty) => {
                 if !params.iter().any(|(p, _, _)| p == name) {
