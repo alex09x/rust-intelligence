@@ -168,8 +168,8 @@ fn test_a_range_selects_in_the_returned_tree_and_must_be_valid() {
     let uri = format!("file://{}", file.display());
     let call = |range: Value| {
         let msg = serde_json::json!({ "params": { "textDocument": { "uri": uri }, "range": range } });
-        let (ov, re) = (crate::overlay::OverlayManager::new(), crate::lsp::reindex::Reindexer::new());
-        crate::lsp::ridx_methods::dispatch("ridx/syntaxTree", &msg, None, &ov, &mut crate::lsp::protocol::PositionConverter::new(), &re)
+        let ov = crate::overlay::OverlayManager::new();
+        crate::lsp::ridx_methods::dispatch("ridx/syntaxTree", &msg, None, &ov, &mut crate::lsp::protocol::PositionConverter::new())
     };
     assert!(call(serde_json::json!({ "start": { "line": 0, "character": 7 } })).is_err(), "no end");
     assert!(call(serde_json::json!({ "start": { "line": 4294967296u64, "character": 0 }, "end": { "line": 0, "character": 1 } })).is_err(), "no such line");

@@ -118,44 +118,8 @@ fn byte_at(doc: &str, starts: &[usize], line: u32, col: u32) -> Option<usize> {
     Some(ls + doc[ls..].chars().take(skip).map(char::len_utf8).sum::<usize>())
 }
 
-/// Whether every source of the workspace the index read is as it read it: on disk, or in its open buffer (a closed
-/// caller changed with nothing telling the server holds uses the index does not have: review of f4f8b604).
-fn sources_current(ws: &WorkspaceIndex, ov: &OverlayManager) -> bool {
-    let mut seen = std::collections::HashSet::new();
-    for (idx, reader) in ws.readers().iter().enumerate() {
-        // Every file the compiler read for the shard, not only those holding a definition or a reference.
-        for (f, hash) in reader.embedded_file_hashes() {
-            let f = std::path::Path::new(&f);
-            let path = if f.is_absolute() {
-                f.to_path_buf()
-            } else if let Some(root) = ws.source_root_at(idx) {
-                root.join(f)
-            } else {
-                continue;
-            };
-            // The registry's, git checkouts' and toolchains' sources do not change under a build; every other is read.
-            let s = path.to_string_lossy();
-            let cached = s.contains("/.cargo/registry/") || s.contains("/.cargo/git/") || s.contains("/.rustup/") || s.contains("/rustlib/src/");
-            if hash == 0 || cached || !seen.insert((path.clone(), hash)) {
-                continue;
-            }
-            let key = path.to_string_lossy();
-            let text = match ov.get(&key) {
-                Some(o) => Some(o.text.clone().into_bytes()),
-                None => std::fs::read(&path).ok(),
-            };
-            if text.is_none_or(|t| ridx_format::normalized_source_hash(&t) != hash) {
-                return false;
-            }
-        }
-    }
-    true
-}
-
 /// The answer to `ridx/safeDelete`.
-///
-/// `indexed`: every change of a file the server was told of is in the index it loaded (`Reindexer::all_current`).
-pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &OverlayManager, conv: &mut PositionConverter, indexed: bool) -> Value {
+pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let refuse = |reason: &str, uses: Vec<Value>| json!({ "refused": true, "reason": reason, "remainingUses": uses });
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
@@ -174,10 +138,6 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
         Err(why) => return refuse(why, Vec::new()),
     };
     let Some(ws) = ws else { return refuse("unknownSymbol", Vec::new()) };
-    // A file saved, or changed on disk, since the index loaded: its uses may not be in it (prod-code, m=20268).
-    if !indexed {
-        return refuse("staleIndex", Vec::new());
-    }
     // The index compiled this very text: its coordinates are this text's.
     if !ws.units_agree_on_source(&file) || ws.source_hash_for_file(&file) != Some(ridx_format::normalized_source_hash(doc.as_bytes())) {
         return refuse("staleIndex", Vec::new());
@@ -191,7 +151,9 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
     if unsaved {
         return refuse("unsavedUses", Vec::new());
     }
-    if !sources_current(ws, ov) {
+    // A file saved, changed on disk or added since the index was built may hold a use it lacks (prod-code, m=20268),
+    // told by the sources' content, not by what the server was told of (review of 9effe92d).
+    if !super::safe_delete_fresh::uses_covered(ws, ov, &names) {
         return refuse("staleIndex", Vec::new());
     }
     let mut uses = Vec::new();

@@ -130,14 +130,55 @@ fn test_the_uses_keep_an_item() {
     let lib = "pub fn used() {}\npub fn unused() {}\n";
     let (_d, path, index) = workspace(lib, &[("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)], &[(3, 5, 0)]);
     let (ov, mut conv) = (OverlayManager::new(), PositionConverter::new());
-    let used = handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv, true);
+    let used = handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv);
     assert_eq!((used["reason"].as_str(), used["remainingUses"][0]["range"]["start"]["line"].as_u64()), (Some("used"), Some(2)), "{used}");
-    let unused = handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv, true);
+    let unused = handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv);
     let uri = format!("file://{}", path.display());
     assert_eq!(unused["edit"]["changes"][&uri][0]["range"], json!({ "start": { "line": 1, "character": 0 }, "end": { "line": 2, "character": 0 } }), "{unused}");
-    assert_eq!(handle_safe_delete(&at(&path, 1, 8), None, &ov, &mut conv, true)["reason"], "unknownSymbol", "no index: its uses are not known");
-    // prod-code, m=20268: a file saved since the index was loaded may hold a use of it.
-    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv, false)["reason"], "staleIndex");
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), None, &ov, &mut conv)["reason"], "unknownSymbol", "no index: its uses are not known");
+    // prod-code, m=20268: a file saved since the index was built may hold a use of it.
+    std::fs::write(path.with_file_name("added.rs"), "pub fn added() { crate::unused() }\n").unwrap();
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv)["reason"], "staleIndex");
+}
+
+/// Review of 9effe92d: the index is current by the sources' content, whatever the server was told of, by whichever
+/// path the index was opened or published: a file it did not read that may use the item makes it stale, one that
+/// cannot does not.
+#[test]
+fn test_an_index_is_current_by_the_content_of_the_sources() {
+    let lib = "pub fn used() {}\npub fn unused() {}\nmacro_rules! call_it {\n    () => {\n        $crate::unused()\n    };\n}\nmacro_rules! outer {\n    () => {\n        call_it!()\n    };\n}\n";
+    let defs = [("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)];
+    let mut conv = PositionConverter::new();
+    let reason = |files: &[(&str, &str)], ov: &OverlayManager, conv: &mut PositionConverter| {
+        let (_d, path, index) = workspace(lib, &defs, &[]);
+        let src = path.parent().unwrap().to_path_buf();
+        for (name, text) in files {
+            let f = src.join(name);
+            std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+            std::fs::write(f, text).unwrap();
+        }
+        let got = handle_safe_delete(&at(&path, 1, 8), Some(&index), ov, conv);
+        got["reason"].as_str().map_or("deleted".to_string(), str::to_string)
+    };
+    let ov = OverlayManager::new();
+    assert_eq!(reason(&[], &ov, &mut conv), "deleted");
+    assert_eq!(reason(&[("plain.rs", "pub fn plain() -> u8 { 1 }\n")], &ov, &mut conv), "deleted", "a new file naming nothing of it");
+    // A directory named `target` is a source directory; Cargo's build directory (a `CACHEDIR.TAG`) is not.
+    assert_eq!(reason(&[("target/caller.rs", "pub fn c() { crate::unused() }\n")], &ov, &mut conv), "staleIndex");
+    assert_eq!(reason(&[("out/CACHEDIR.TAG", "Signature: 8a477f597d28d172789f06886806bc55\n"), ("out/gen.rs", "fn g() { unused() }\n")], &ov, &mut conv), "deleted");
+    // A raw spelling, a name beyond ASCII (which may be it in another normal form), a macro whose body names it, also
+    // through another macro.
+    assert_eq!(reason(&[("raw.rs", "pub fn c() { crate::r#unused() }\n")], &ov, &mut conv), "staleIndex");
+    assert_eq!(reason(&[("kelvin.rs", "pub fn \u{212a}() {}\n")], &ov, &mut conv), "staleIndex");
+    assert_eq!(reason(&[("mac.rs", "pub fn c() { call_it!(); }\n")], &ov, &mut conv), "staleIndex");
+    assert_eq!(reason(&[("mac2.rs", "pub fn c() { outer!(); }\n")], &ov, &mut conv), "staleIndex");
+    assert_eq!(reason(&[("mac3.rs", "pub fn c() { println!(\"x\"); }\n")], &ov, &mut conv), "deleted", "a macro naming nothing of it");
+    // A buffer of a file not saved yet.
+    let (_d, path, index) = workspace(lib, &defs, &[]);
+    let new = path.with_file_name("new.rs");
+    let mut ov = OverlayManager::new();
+    ov.open_document(&format!("file://{}", new.display()), &new.to_string_lossy(), 1, "pub fn c() { crate::unused() }\n".to_string());
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv)["reason"], "staleIndex");
 }
 
 /// Review of d753d993: the index must be of this text and know this item; a member's use keeps its container; an
@@ -150,31 +191,31 @@ fn test_safe_delete_fails_closed() {
     let mut ov = OverlayManager::new();
     let uri = format!("file://{}", path.display());
     ov.open_document(&uri, &path.to_string_lossy(), 2, "pub fn unused() {}\npub fn used() {}\n".to_string());
-    assert_eq!(handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv, true)["reason"], "staleIndex", "the index is of another text");
+    assert_eq!(handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv)["reason"], "staleIndex", "the index is of another text");
     let mut ov = OverlayManager::new();
     let other = path.with_file_name("g.rs");
     ov.open_document(&format!("file://{}", other.display()), &other.to_string_lossy(), 1, "pub fn g() {}\n".to_string());
     ov.apply_content_changes(&other.to_string_lossy(), 2, &[json!({ "text": "pub fn g() { crate::unused() }\n" })]);
-    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv, true)["reason"], "unsavedUses");
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv)["reason"], "unsavedUses");
 
     let lib = "mod m {\n    pub fn child() {}\n}\n";
     let (_d, path, index) = workspace(lib, &[("m", DefKind::Mod, 1, 5), ("child", DefKind::Fn, 2, 12)], &[(3, 5, 1)]);
-    let got = handle_safe_delete(&at(&path, 0, 4), Some(&index), &OverlayManager::new(), &mut conv, true);
+    let got = handle_safe_delete(&at(&path, 0, 4), Some(&index), &OverlayManager::new(), &mut conv);
     assert_eq!(got["reason"], "used", "its child is used: {got}");
 
     // Review of f4f8b604: a closed caller changed on disk, unreported, is not what the index read.
     let lib = "pub fn used() {}\npub fn unused() {}\n";
     let (_d, path, index) = workspace(lib, &[("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)], &[]);
-    assert!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv, true)["edit"].is_object());
+    assert!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv)["edit"].is_object());
     std::fs::write(path.with_file_name("other.rs"), "pub fn caller() { crate::unused() }\n").unwrap();
-    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv, true)["reason"], "staleIndex");
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv)["reason"], "staleIndex");
     // A byte order mark is no column to the compiler.
     let lib = "\u{feff}pub fn unused() {}\n";
     let (_d, path, index) = workspace(lib, &[("unused", DefKind::Fn, 1, 8)], &[]);
-    let got = handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut conv, true);
+    let got = handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut conv);
     assert!(got["edit"].is_object(), "{got}");
 
     let lib = "pub fn a\u{0301}b() {}\n";
     let (_d, path, _index) = workspace(lib, &[], &[]);
-    assert_eq!(handle_safe_delete(&at(&path, 0, 9), None, &OverlayManager::new(), &mut conv, true)["reason"], "unknownSymbol");
+    assert_eq!(handle_safe_delete(&at(&path, 0, 9), None, &OverlayManager::new(), &mut conv)["reason"], "unknownSymbol");
 }

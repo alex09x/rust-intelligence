@@ -39,12 +39,6 @@ struct RootState {
     last_error: Option<String>,
     /// Which registration of the root this is: a run of one removed (and maybe added again) is not taken.
     registration: u64,
-    /// The latest change of a file the server was told of (a save, a watched-file event): when it was written.
-    changed: Option<SystemTime>,
-    /// When the last run that succeeded started, until its index is loaded.
-    built_from: Option<SystemTime>,
-    /// When the run whose index the server loaded started: a change written before it is in the index.
-    loaded_from: Option<SystemTime>,
 }
 
 static REGISTRATIONS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
@@ -71,22 +65,7 @@ impl Reindexer {
     /// as a new root) and asks the client to fetch again what came from the old one (the watched-file events of a
     /// run arrive while it runs).
     pub fn take_finished(&self) -> Vec<PathBuf> {
-        let taken = std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()));
-        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-        for root in &taken {
-            if let Some(st) = roots.get_mut(root) {
-                st.loaded_from = st.built_from.take().or(st.loaded_from);
-            }
-        }
-        taken
-    }
-
-    /// Whether every change of a file the server was told of is in the index it has loaded: no run is going on, and the
-    /// run whose index is loaded started after the change was written (prod-code, m=20268: `ridx/safeDelete` must not
-    /// take an index behind a caller saved in another file for unused).
-    pub fn all_current(&self) -> bool {
-        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-        roots.values().all(|st| st.running_since.is_none() && st.changed.is_none_or(|c| st.loaded_from.is_some_and(|l| c <= l)))
+        std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
     }
 
     /// A workspace folder the client removed: it leaves the roots of the session, with a run's success not yet taken
@@ -188,21 +167,10 @@ impl Reindexer {
         // A root whose first index was asked for this session: a save while it runs is one more run after it, and a
         // save after a run that failed (a compile error, say) tries again.
         let first_index_asked = self.roots.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&root);
-        if !(root.join(MANIFEST).is_file() || first_index_asked) {
+        if reindex_off() || !(root.join(MANIFEST).is_file() || first_index_asked) {
             return;
         }
-        // The change is known from now on, indexed or not: until an index of it is loaded, the root is behind.
         let written = std::fs::metadata(&changed).and_then(|m| m.modified()).ok();
-        {
-            let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-            let st =
-                roots.entry(root.clone()).or_insert_with(|| RootState { registration: REGISTRATIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed), ..RootState::default() });
-            let at = written.unwrap_or_else(SystemTime::now);
-            st.changed = Some(st.changed.map_or(at, |c| c.max(at)));
-        }
-        if reindex_off() {
-            return;
-        }
         self.start(&root, written);
     }
 
@@ -245,7 +213,6 @@ impl Reindexer {
             // A folder the client removed meanwhile (`forget`), even if added again since, is neither loaded nor run again.
             let Some(st) = roots.get_mut(&root).filter(|st| st.registration == registration) else { break };
             if ok {
-                st.built_from = st.running_since;
                 finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
             }
             st.last_error = (!ok).then(|| failure_reason(&log));

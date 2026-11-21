@@ -23,9 +23,7 @@ fn test_only_an_indexed_workspace_is_reindexed_and_never_from_a_test_binary() {
     std::fs::write(dir.path().join("target/ridx/ridx_manifest.json"), "{}").unwrap();
     assert!(ridx_exe().is_none(), "the test binary is not ridx");
     r.trigger_for_change(dir.path(), &src);
-    assert!(r.roots.lock().unwrap().values().all(|st| st.running_since.is_none()), "no run");
-    // The change is known, and not in the index (prod-code, m=20268).
-    assert!(!r.all_current());
+    assert!(r.roots.lock().unwrap().is_empty());
 }
 
 #[test]
@@ -187,28 +185,4 @@ fn test_a_run_is_reported_once_by_the_progress() {
     assert_eq!(text.matches("\"kind\":\"end\"").count(), 1, "{text}");
     assert_eq!(text.matches("\"kind\":\"begin\"").count(), 1, "{text}");
     assert!(text.contains("Indexing failed: a: ridx index failed: no driver"), "{text}");
-}
-
-/// prod-code, m=20268: a change the server was told of is in the index only once a run that started after it was
-/// written has been loaded; a run going on, or one that failed, leaves the root behind.
-#[test]
-fn test_a_root_is_current_once_an_index_of_its_changes_is_loaded() {
-    use std::time::{Duration, SystemTime};
-    let r = Reindexer::new();
-    assert!(r.all_current(), "nothing changed");
-    let t0 = SystemTime::now();
-    let set = |f: &dyn Fn(&mut RootState)| f(r.roots.lock().unwrap().entry(PathBuf::from("/w")).or_default());
-    set(&|st| st.changed = Some(t0));
-    assert!(!r.all_current(), "a change not indexed");
-    set(&|st| st.running_since = Some(t0 + Duration::from_secs(1)));
-    assert!(!r.all_current(), "being indexed");
-    set(&|st| {
-        st.built_from = st.running_since.take();
-    });
-    assert!(!r.all_current(), "built, not loaded yet");
-    r.finished.lock().unwrap().push(PathBuf::from("/w"));
-    r.take_finished();
-    assert!(r.all_current(), "loaded");
-    set(&|st| st.changed = Some(t0 + Duration::from_secs(5)));
-    assert!(!r.all_current(), "changed again after that run started");
 }

@@ -357,7 +357,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/content" | "workspace/textDocumentContent" => Ok(handle_text_document_content(&msg, ov)),
         "textDocument/prepareRename" => handle_prepare_rename(&msg, mr.doc_ws(&msg), ov, conv),
         "textDocument/rename" => handle_rename(&msg, mr.doc_ws(&msg), ov, conv),
-        m if m.starts_with("ridx/") => super::ridx_methods::dispatch(m, &msg, mr.doc_ws(&msg), ov, conv, &lifecycle.reindex),
+        m if m.starts_with("ridx/") => super::ridx_methods::dispatch(m, &msg, mr.doc_ws(&msg), ov, conv),
         "textDocument/linkedEditingRange" => Ok(handle_linked_editing_range(&msg, ov, conv)),
         "textDocument/formatting" => Ok(handle_formatting(&msg, ov)),
         "textDocument/rangeFormatting" => Ok(handle_range_formatting(&msg, ov)),
