@@ -76,63 +76,7 @@ pub fn plan_inline_macro(doc: &str, file: &str, cursor: usize, ws: &WorkspaceInd
     place(doc, &masked, &starts, &call, expansion)
 }
 
-/// The name of the `macro_rules!` macro called around `cursor` and its expansion as source, for `ridx/expandMacro`
-/// (prod-code, m=20257): fully expanded, so `None` when it calls a macro again, and for a macro ridx does not expand
-/// (the standard library's, a proc macro).
-pub fn expand_macro_at(doc: &str, file: &str, cursor: usize, ws: &WorkspaceIndex) -> Option<(String, String)> {
-    use ridx_syntax::{SyntaxKind as K, TokenKind as T};
-    let masked = mask_comments_and_strings(doc);
-    let starts = line_starts_of(doc);
-    // The call around the cursor as the syntax tree has it: trivia before the `!`, a name beyond ASCII (review of
-    // d2cb318a).
-    let tree = ridx_syntax::parse(doc);
-    let c = tree.covering(cursor);
-    let mc = std::iter::once(c).chain(tree.ancestors(c)).find(|&n| tree.kind(n) == K::MacroCall)?;
-    let toks: Vec<_> = tree.tokens_of(mc).iter().filter(|t| !t.is_trivia()).copied().collect();
-    let bang = toks.iter().position(|t| t.kind == T::Bang)?;
-    let name_at = toks[..bang].iter().rposition(|t| matches!(t.kind, T::Ident | T::RawIdent))?;
-    let name_tok = toks[name_at];
-    let tt = tree.child(mc, K::TokenTree)?;
-    // Delimited arguments, closed by the delimiter that opened them: the parser's recovery makes a token tree of
-    // `id!(12` too (review of 94c450dc).
-    let tt_toks: Vec<_> = tree.tokens_of(tt).iter().filter(|t| !t.is_trivia()).copied().collect();
-    let closed = match (tt_toks.first(), tt_toks.last()) {
-        (Some(o), Some(c)) if tt_toks.len() >= 2 => matches!((o.kind, c.kind), (T::LParen, T::RParen) | (T::LBracket, T::RBracket) | (T::LBrace, T::RBrace)),
-        _ => false,
-    };
-    if !closed {
-        return None;
-    }
-    let (open, close) = (tt_toks[0].start as usize, tt_toks[tt_toks.len() - 1].end as usize);
-    let call = MacroCall { path_start: toks.first()?.start as usize, name: (name_tok.start as usize, name_tok.end as usize), open, close };
-    let name = &doc[call.name.0..call.name.1];
-    if name == "macro_rules" || cursor > call.close {
-        return None;
-    }
-    // A qualified call (`std::println!`) is the macro its path names: only the index's own resolution tells which, never
-    // a workspace macro of that name (review of 94c450dc).
-    let qualified = name_at > 0;
-    // The standard library's definitions are not read (`macro_definition`): a workspace macro named like one is.
-    let (def_text, def_crate) = macro_definition(doc, &starts, file, call.name.0, name, ws, !qualified)?;
-    // A fragment other than a single token tree, an identifier, a literal or a lifetime (`expr`, `ty`, `path`, ..) is
-    // one opaque node where it goes, which its text alone is not (`$x * 2` of `1 + 2`, `&'static $t` of `dyn A + B`):
-    // no expansion as source is faithful then (review of 94c450dc).
-    let def_toks: Vec<_> = ridx_syntax::lex(&def_text).into_iter().filter(|t| !t.is_trivia()).collect();
-    let opaque =
-        def_toks.windows(4).any(|w| w[0].text(&def_text) == "$" && w[2].text(&def_text) == ":" && !matches!(w[3].text(&def_text), "tt" | "ident" | "literal" | "lifetime"));
-    if opaque {
-        return None;
-    }
-    let def = MacroRulesDef::parse_body(&def_text)?;
-    // The path as its significant tokens spell it (`crate /* c */ ::m!` is `crate::`: review of 94c450dc).
-    let call_path: String = toks[..name_at].iter().map(|t| t.text(doc)).collect();
-    let prefix = crate_prefix(ws, file, &masked, &call_path, def_crate.as_deref())?;
-    let expansion = tidy_spacing(&rejoin_punctuation(&def.expand(&doc[call.open + 1..call.close - 1], &prefix)?)).trim().to_string();
-    // Fully expanded: no call `name!(..)` left, `r#name!` included; `a != b` is none.
-    let toks: Vec<_> = ridx_syntax::lex(&expansion).into_iter().filter(|t| !t.is_trivia()).collect();
-    let calls_again = toks.windows(3).any(|w| matches!(w[0].kind, T::Ident | T::RawIdent) && w[1].kind == T::Bang && matches!(w[2].kind, T::LParen | T::LBracket | T::LBrace));
-    (!expansion.is_empty() && !calls_again).then(|| (name.to_string(), expansion))
-}
+pub use super::action_expand_macro::expand_macro_at;
 
 struct MacroCall {
     path_start: usize,
@@ -187,7 +131,7 @@ fn macro_call_at(masked: &str, at: usize) -> Option<MacroCall> {
 
 /// The `macro_rules!` body (with its braces) the call's name resolves to, and the defining crate when it is not the
 /// file's own.
-fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at: usize, name: &str, ws: &WorkspaceIndex, by_name: bool) -> Option<(String, Option<String>)> {
+pub(super) fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at: usize, name: &str, ws: &WorkspaceIndex, by_name: bool) -> Option<(String, Option<String>)> {
     let (line, col) = byte_to_line_col(doc, starts, name_at);
     let own = ws.reader_indices_for_file(file).first().map(|&i| ws.readers()[i].crate_name().to_string());
     // The index's resolution of the name, else (`by_name`) its one `macro_rules!` of that name (the file's crate's
@@ -244,7 +188,7 @@ fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at: usize, nam
 /// What `$crate` becomes in the file: `crate` for its own macros; another crate's name, written as the call's path
 /// writes it (`bitflags::bitflags!`), as the file's crate links it, or as the file itself names it (`use
 /// expect_test::expect;` in a test module, whose dev-dependencies the library unit's extern list leaves out).
-fn crate_prefix(ws: &WorkspaceIndex, file: &str, masked_doc: &str, call_path: &str, def_crate: Option<&str>) -> Option<String> {
+pub(super) fn crate_prefix(ws: &WorkspaceIndex, file: &str, masked_doc: &str, call_path: &str, def_crate: Option<&str>) -> Option<String> {
     let Some(def_crate) = def_crate else { return Some("crate".to_string()) };
     if let Some(head) = call_path.trim_end_matches("::").split("::").next().filter(|h| !h.is_empty() && *h != "crate" && *h != "self" && *h != "super") {
         return Some(format!("::{head}"));

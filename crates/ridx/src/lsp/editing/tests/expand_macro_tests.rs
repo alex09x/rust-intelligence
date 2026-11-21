@@ -118,3 +118,20 @@ fn test_fragments_paths_and_unclosed_arguments() {
     let (_d, file, ws) = indexed(defs, &[]);
     assert_ne!(super::crate_prefix(&ws, &file, "", "crate::", Some("dep")).as_deref(), Some("::crate"), "`crate /* c */ ::` is `crate::`");
 }
+
+/// Review of 29b77abe: a literal fragment may be `-2i32`, taken whole; a same-named macro not in scope is not the call's;
+/// delimiters must nest; a transcriber's `$x: u32` and `$t::MAX` are no fragments.
+#[test]
+fn test_scope_nesting_and_matcher_fragments() {
+    let defs = "macro_rules! abs {\n    ($x:literal) => { $x.abs() };\n}\nmod hidden {\n    macro_rules! println {\n        () => { 3u8 };\n    }\n}\nmacro_rules! ignore {\n    ($x:tt) => { 1u8 };\n}\nmacro_rules! decl {\n    ($x:ident) => { let $x: u32 = 0; };\n}\nmacro_rules! max {\n    ($t:ident) => { $t::MAX };\n}\n";
+    let expand = |body: &str, at: &str| {
+        let d = format!("{defs}{body}");
+        let (_d, file, ws) = indexed(&d, &[("abs", 1), ("println", 5), ("ignore", 9), ("decl", 12), ("max", 15)]);
+        expand_macro_at(&d, &file, d.rfind(at).unwrap(), &ws)
+    };
+    assert_eq!(expand("pub fn g() -> i32 { abs!(-2i32) }\n", "abs!"), None, "a literal fragment");
+    assert_eq!(expand("pub fn g() { println!(\"S\"); }\n", "println!"), None, "the module's macro is not in scope");
+    assert_eq!(expand("pub fn g() -> u8 { ignore!({[(])}) }\n", "ignore!"), None, "crossed delimiters");
+    assert_eq!(expand("pub fn g() { decl!(a); }\n", "decl!"), Some(("decl".to_string(), "let a: u32 = 0;".to_string())));
+    assert_eq!(expand("pub fn g() -> u8 { max!(u8) }\n", "max!"), Some(("max".to_string(), "u8::MAX".to_string())));
+}
