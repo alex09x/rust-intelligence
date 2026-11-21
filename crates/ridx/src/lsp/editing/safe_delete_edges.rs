@@ -27,21 +27,30 @@ pub(crate) struct Edge {
 /// be placed: a known use is no absence of uses.
 pub(crate) fn raw_edges(ws: &WorkspaceIndex, file: &Path, line: u32, col: u32, target_path: &str) -> Result<Vec<Edge>, ()> {
     let mut out = Vec::new();
-    // The units that define something in the file: a reference recording another unit is another definition's.
-    let own_units: Vec<&str> = ws.reader_indices_for_file(&file.to_string_lossy()).into_iter().map(|i| ws.readers()[i].unit_key()).collect();
     for (idx, r) in ws.readers().iter().enumerate() {
         for e in r.references() {
             let target_file = r.get_str(e.target_file_offset());
             let target_unit = r.get_str(e.target_unit_offset());
             // A relative target file is the target unit's, not the referrer's (review of 6b91c9eb: two crates' src/lib.rs);
-            // with no unit recorded, any reader's root that places it at this file does.
-            let target_readers: Vec<usize> = match ws.readers().iter().position(|t| !target_unit.is_empty() && t.unit_key() == target_unit) {
-                Some(t) => vec![t],
-                None => (0..ws.readers().len()).collect(),
+            // with no unit recorded, any reader's root that places it at this file does; a unit recorded but not loaded
+            // is another unit's, never one of these (review of 4d025d17).
+            let unit_reader = ws.readers().iter().position(|t| !target_unit.is_empty() && t.unit_key() == target_unit);
+            let target_readers: Vec<usize> = match (unit_reader, target_unit.is_empty()) {
+                (Some(t), _) => vec![t],
+                (None, true) => (0..ws.readers().len()).collect(),
+                (None, false) => Vec::new(),
             };
             let matches = if target_file.is_empty() {
-                // No file: the path names it, unless the recorded unit is none of the file's (review of 6b91c9eb).
-                r.get_str(e.target_path_offset()) == target_path && (target_unit.is_empty() || own_units.is_empty() || own_units.contains(&target_unit))
+                // No file: the path names it, unless the recorded unit's own definition of that id is known to be in
+                // another file (review of 6b91c9eb); which reader a file routes to is no evidence of who defines in it
+                // (review of 4d025d17).
+                let elsewhere = unit_reader.is_some_and(|t| {
+                    let tr = &ws.readers()[t];
+                    tr.definitions().iter().find(|d| d.def_id() == e.target_def_id()).is_some_and(|d| {
+                        super::safe_delete_fresh::resolve(ws, t, tr.get_file(d.span().file_id())).is_some_and(|p| ridx_format::canonicalize_best_effort(&p) != file)
+                    })
+                });
+                r.get_str(e.target_path_offset()) == target_path && !elsewhere
             } else {
                 e.target_line() == line
                     && e.target_col() == col

@@ -87,11 +87,20 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
         // Every file the compiler read for the shard, not only those holding a definition or a reference: the loaded
         // source snapshot's too, a non-Rust `include!` input among them (review of c5dee55b).
         let files: Vec<(String, u64)> = reader.embedded_file_hashes().into_iter().chain(ws.reader_source_snapshot(idx).map(|(f, h)| (f.to_string(), h))).collect();
-        // An entry whose file is not there is accepted only as another spelling of one that is, with its hash, of
-        // this reader: the snapshot also holds the lookup aliases loading makes (`crates/app/crates/app/src/lib.rs`
-        // beside `crates/app/src/lib.rs`: review of 6b91c9eb). A missing file no other entry stands for fails.
-        let mut verified: HashSet<u64> = HashSet::new();
-        let mut missing: Vec<u64> = Vec::new();
+        // The snapshot also holds the lookup aliases loading makes: a key that repeats another key of this reader after
+        // a prefix, with its hash (`crates/app/crates/app/src/lib.rs` beside `crates/app/src/lib.rs`). Such a spelling
+        // is no input of its own, whatever is at that path, and every other entry is: an equal hash makes no two files
+        // one (reviews of 6b91c9eb and 4d025d17).
+        // The prefix is the key's own beginning again (the overlap joined twice), never just any directory above it.
+        let alias = |f: &str, h: u64| {
+            files.iter().any(|(g, gh)| {
+                *gh == h && g.len() < f.len() && f.ends_with(g.as_str()) && {
+                    let prefix = &f[..f.len() - g.len()];
+                    prefix.ends_with('/') && g.starts_with(prefix)
+                }
+            })
+        };
+        let files: Vec<(String, u64)> = files.iter().filter(|(f, h)| !alias(f, *h)).cloned().collect();
         for (f, hash) in files {
             // A file of the workspace whose place is not known is not known to be as it was read.
             let path = match resolve(ws, idx, &f) {
@@ -107,16 +116,11 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
                 None => std::fs::read(&path).ok(),
             };
             match bytes {
-                None if !path.exists() => missing.push(hash),
                 Some(t) if ridx_format::normalized_source_hash(&t) == hash => {
-                    verified.insert(hash);
                     out.insert(ridx_format::canonicalize_best_effort(&path));
                 }
                 _ => return None,
             }
-        }
-        if missing.iter().any(|h| !verified.contains(h)) {
-            return None;
         }
     }
     Some(out)
