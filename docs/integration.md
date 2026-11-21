@@ -124,9 +124,14 @@ The ids given now: `add_explicit_type`, `add_explicit_enum_discriminant`, `add_h
 `convert_tuple_struct_to_named_struct`, `extract_constant`, `extract_static`, `extract_variable`,
 `generate_default_from_new`, `generate_documentation_template`, `generate_fn_type_alias` (both forms, as
 rust-analyzer), `generate_impl`, `generate_new`, `generate_single_field_struct_from`, `generate_trait_impl`,
-`inline_into_callers`, `inline_macro`, `inline_type_alias_uses`, `make_raw_string`, `make_usual_string`,
-`remove_hash`, `replace_qualified_name_with_use`; ridx's own: `organize_imports`, `prefix_with_underscore`,
-`remove_unnecessary_mut`. An action is never asked for by its place in the list. An assist a tool needs and ridx
+`inline_into_callers`, `inline_local_variable`, `inline_macro`, `inline_type_alias_uses`, `make_raw_string`,
+`make_usual_string`, `promote_local_to_const`, `remove_hash`, `replace_qualified_name_with_use`,
+`wrap_return_type_in_option`, `wrap_return_type_in_result`; ridx's own: `organize_imports`, `prefix_with_underscore`,
+`remove_unnecessary_mut`. An action is never asked for by its place in the list. Where ridx offers an assist in fewer places than
+rust-analyzer, it is where the result would not compile: `inline_local_variable` inlines a binding used once,
+outside a loop or closure, with nothing in between naming what it reads; `promote_local_to_const` takes an
+initializer of literals and operators; `wrap_return_type_in_*` takes a function nothing else calls and no trait
+fixes, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. An assist a tool needs and ridx
 lacks is reported on the [issue tracker](https://github.com/alex09x/rust-intelligence/issues) and
 implemented in order of need.
 

@@ -87,6 +87,10 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
+            if let Some(action) = super::action_inline_variable::inline_variable_action(&doc_text, uri, range, doc_version) {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
         }
         if matches_kind("refactor.rewrite") {
             if let Some(action) = super::action_qualified_use::qualified_use_action(&doc_text, uri, range, doc_version, ws) {
@@ -94,6 +98,14 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 actions.push(action);
             }
             if let Some(action) = super::action_explicit_type::explicit_type_action(&doc_text, uri, range, doc_version, ws, overlay_mgr) {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
+            if let Some(action) = super::action_promote_const::promote_const_action(&doc_text, uri, range, doc_version, ws, overlay_mgr) {
+                validate_workspace_edit(&action["edit"], workspace)?;
+                actions.push(action);
+            }
+            for action in super::action_wrap_return::wrap_return_actions(&doc_text, uri, range, doc_version, ws) {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }

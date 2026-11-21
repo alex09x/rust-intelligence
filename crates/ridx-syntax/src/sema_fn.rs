@@ -160,6 +160,14 @@ pub fn param_uses(tree: &SyntaxTree<'_>, fn_id: NodeId, name: &str) -> ParamUses
     out
 }
 
+/// Finds the uses of `name` (normalized), bound by the `let` statement `let_stmt`, in the rest of its block: up to a
+/// statement that binds the name again, through blocks, closures and macro arguments, as `param_uses` does.
+pub fn let_uses(tree: &SyntaxTree<'_>, let_stmt: NodeId, name: &str) -> ParamUses {
+    let mut out = ParamUses::default();
+    crate::sema_scope::find_let_uses(tree, let_stmt, name, &mut out);
+    out
+}
+
 /// Collects `ReturnExpr` nodes belonging to `fn_id` into `out` (cleared first).
 pub fn own_returns_into(tree: &SyntaxTree<'_>, fn_id: NodeId, out: &mut Vec<NodeId>) {
     out.clear();
