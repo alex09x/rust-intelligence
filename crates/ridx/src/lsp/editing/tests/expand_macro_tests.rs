@@ -97,3 +97,24 @@ fn test_the_expansion_is_faithful_or_none() {
     assert_eq!(calls("raw", ""), None, "it calls `r#value!` again");
     assert_eq!(calls("twice", "1 + 2"), None, "an `expr` fragment");
 }
+
+/// Review of 94c450dc: a `ty` fragment is one node where it goes, as an `expr` one is; a qualified call is only the
+/// macro the index resolved it to; arguments not closed by their delimiter are no call; the path's head is read from
+/// its tokens.
+#[test]
+fn test_fragments_paths_and_unclosed_arguments() {
+    let defs = "macro_rules! borrowed {\n    ($t:ty) => { &'static $t };\n}\nmacro_rules! id {\n    ($x:tt) => { $x };\n}\nmacro_rules! println {\n    () => { 3u8 };\n}\n";
+    let expand = |body: &str, at: &str| {
+        let d = format!("{defs}{body}");
+        let (_d, file, ws) = indexed(&d, &[("borrowed", 1), ("id", 4), ("println", 7)]);
+        expand_macro_at(&d, &file, d.rfind(at).unwrap(), &ws)
+    };
+    assert_eq!(expand("pub fn g() -> u8 { id!(12) }\n", "id!"), Some(("id".to_string(), "12".to_string())));
+    assert_eq!(expand("pub fn g() { let _: borrowed!(dyn std::fmt::Debug + Send) = &1; }\n", "borrowed!"), None, "a `ty` fragment");
+    assert_eq!(expand("pub fn g() { std::println!(\"S\"); }\n", "println!"), None, "the standard library's, by its path");
+    for body in ["pub fn g() -> u8 { id!(12\n", "pub fn g() -> u8 { id!(\u{e9}\n", "pub fn g() -> u8 { id!(\n"] {
+        assert_eq!(expand(body, "id!"), None, "{body}");
+    }
+    let (_d, file, ws) = indexed(defs, &[]);
+    assert_ne!(super::crate_prefix(&ws, &file, "", "crate::", Some("dep")).as_deref(), Some("::crate"), "`crate /* c */ ::` is `crate::`");
+}
