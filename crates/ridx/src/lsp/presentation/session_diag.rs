@@ -101,6 +101,18 @@ impl SessionDiagnostics {
         self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).get(root).and_then(|o| o.get(file)).cloned()
     }
 
+    /// The innermost root whose session compiled buffer `file` (canonical), with its outcome, and that root's result
+    /// for the file: what is answered for it comes from the root whose outcome admits it (review of 43ac9527: an
+    /// enclosing root's clean result was answered for an inner root's `notInAnyCrate`).
+    pub fn outcome_root(&self, file: &Path) -> Option<(Outcome, Option<SessionFile>)> {
+        let outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
+        let (root, out) =
+            outcomes.iter().filter(|(r, o)| file.starts_with(r) && o.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(r, o)| (r.clone(), o[file].clone()))?;
+        drop(outcomes);
+        let entry = self.roots.lock().unwrap_or_else(|e| e.into_inner()).get(&root).and_then(|files| files.get(file)).cloned();
+        Some((out, entry))
+    }
+
     /// The outcome of the compile of buffer `file` (canonical), from the innermost root whose session compiled it.
     pub fn outcome(&self, file: &Path) -> Option<Outcome> {
         let outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
@@ -292,7 +304,9 @@ pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::Overl
             None => Readiness::Ready(o.version),
             // A file on disk no crate includes is answered, with a hint saying so (`unlinked_hint`), as rust-analyzer
             // does; an edited one is refused, its edit validates nothing (prod-code, m=20185).
-            Some(UNLINKED) if o.is_synced_with_disk() => Readiness::Ready(o.version),
+            // As saved by the text the answer reads too (`reconcile::saved_text`), not a copy taken at open: the hint is
+            // given then, never an empty list (review of 43ac9527).
+            Some(UNLINKED) if super::reconcile::saved_text(ov, file).as_deref() == Some(o.text.as_str()) => Readiness::Ready(o.version),
             Some(why) => Readiness::Unavailable(o.version, why),
         },
         // No session compiled this text yet (a session's result of another text answers for it until the next one).
@@ -368,3 +382,7 @@ pub fn publish_session_files<W: Write>(
 #[cfg(test)]
 #[path = "session_diag_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "session_ready_tests.rs"]
+mod ready_tests;

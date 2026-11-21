@@ -50,17 +50,23 @@ pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: im
     let file = ridx_format::canonicalize_best_effort(std::path::Path::new(&crate::lsp::protocol::uri_to_path(uri)));
     // A buffer a session index compiled has the compiler's result of the buffers, saved since or not: the check of the
     // saved files is of other inputs until a session no longer has it (reviews of 46ce96f2 and 710381e0).
-    if let Some(session) = flycheck.session.of(&file) {
-        return merge_session(uri, heuristic, live, &session);
+    // What the innermost session that compiled the file says, its result or its reason, not an enclosing one's result
+    // (review of 43ac9527).
+    match flycheck.session.outcome_root(&file) {
+        Some((_, Some(entry))) => merge_session(uri, heuristic, live, &entry),
+        // A file on disk no crate includes says so, with rust-analyzer's hint (prod-code, m=20185).
+        Some((out, None)) if out.unavailable == Some(super::session_diag::UNLINKED) => {
+            let saved = saved();
+            let mut merged = merge_check(uri, heuristic, live, || saved.clone(), flycheck, &file);
+            merged.extend(super::session_diag::unlinked_hint(flycheck, &file, live, saved.as_deref()));
+            merged
+        }
+        Some((_, None)) => merge_check(uri, heuristic, live, saved, flycheck, &file),
+        None => match flycheck.session.of(&file) {
+            Some(session) => merge_session(uri, heuristic, live, &session),
+            None => merge_check(uri, heuristic, live, saved, flycheck, &file),
+        },
     }
-    // A file on disk no crate includes says so, with rust-analyzer's hint (prod-code, m=20185).
-    if flycheck.session.outcome(&file).is_some_and(|o| o.unavailable == Some(super::session_diag::UNLINKED)) {
-        let saved = saved();
-        let mut out = merge_check(uri, heuristic, live, || saved.clone(), flycheck, &file);
-        out.extend(super::session_diag::unlinked_hint(flycheck, &file, live, saved.as_deref()));
-        return out;
-    }
-    merge_check(uri, heuristic, live, saved, flycheck, &file)
 }
 
 /// [`merge_with_compiler`] with the check of the saved files, for `file` (canonical).
