@@ -70,16 +70,8 @@ pub(crate) fn resolve(ws: &WorkspaceIndex, idx: usize, raw: &str) -> Option<Path
     Some(ridx_format::format::join_resolving_overlap(&root, rel))
 }
 
-/// Whether the text of `path` the server sees begins with a byte order mark.
-pub(crate) fn starts_with_bom(path: &Path, ov: &OverlayManager) -> bool {
-    match ov.get(&path.to_string_lossy()) {
-        Some(o) => o.text.starts_with('\u{feff}'),
-        None => std::fs::read(path).is_ok_and(|b| b.starts_with("\u{feff}".as_bytes())),
-    }
-}
-
 /// The text of `path` as the server sees it: its open buffer, else the disk.
-fn text_of(path: &Path, ov: &OverlayManager) -> Option<String> {
+pub(crate) fn text_of(path: &Path, ov: &OverlayManager) -> Option<String> {
     match ov.get(&path.to_string_lossy()) {
         Some(o) => Some(o.text.clone()),
         None => std::fs::read(path).ok().map(|b| String::from_utf8_lossy(&b).into_owned()),
@@ -95,6 +87,11 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
         // Every file the compiler read for the shard, not only those holding a definition or a reference: the loaded
         // source snapshot's too, a non-Rust `include!` input among them (review of c5dee55b).
         let files: Vec<(String, u64)> = reader.embedded_file_hashes().into_iter().chain(ws.reader_source_snapshot(idx).map(|(f, h)| (f.to_string(), h))).collect();
+        // An entry whose file is not there is accepted only as another spelling of one that is, with its hash, of
+        // this reader: the snapshot also holds the lookup aliases loading makes (`crates/app/crates/app/src/lib.rs`
+        // beside `crates/app/src/lib.rs`: review of 6b91c9eb). A missing file no other entry stands for fails.
+        let mut verified: HashSet<u64> = HashSet::new();
+        let mut missing: Vec<u64> = Vec::new();
         for (f, hash) in files {
             // A file of the workspace whose place is not known is not known to be as it was read.
             let path = match resolve(ws, idx, &f) {
@@ -109,10 +106,17 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
                 Some(o) => Some(o.text.clone().into_bytes()),
                 None => std::fs::read(&path).ok(),
             };
-            if bytes.is_none_or(|t| ridx_format::normalized_source_hash(&t) != hash) {
-                return None;
+            match bytes {
+                None if !path.exists() => missing.push(hash),
+                Some(t) if ridx_format::normalized_source_hash(&t) == hash => {
+                    verified.insert(hash);
+                    out.insert(ridx_format::canonicalize_best_effort(&path));
+                }
+                _ => return None,
             }
-            out.insert(ridx_format::canonicalize_best_effort(&path));
+        }
+        if missing.iter().any(|h| !verified.contains(h)) {
+            return None;
         }
     }
     Some(out)

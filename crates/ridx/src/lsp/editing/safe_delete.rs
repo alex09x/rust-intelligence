@@ -200,8 +200,17 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
                 // The compiler's columns of a first line after a byte order mark do not count it; the text converted
                 // does, so the column is moved past it before converting (review of 4009c2c4; of b0b16e39: after it,
                 // a character of two UTF-16 units would be cut).
-                let bom = super::safe_delete_fresh::starts_with_bom(&edge.path, ov) as u32;
-                let mut col = |(l, c): (u32, u32)| conv.char_col_to_utf16_col(&p, l, c + if l == 1 { bom } else { 0 });
+                // Both from one text, the open buffer's when there is one (review of 6b91c9eb: a BOM-only edit leaves the
+                // hash as it was while the disk's columns differ).
+                let text = super::safe_delete_fresh::text_of(&edge.path, ov);
+                let mut col = |(l, c): (u32, u32)| match &text {
+                    Some(t) => {
+                        let line = t.split('\n').nth(l.saturating_sub(1) as usize).unwrap_or("");
+                        let skip = c.saturating_sub(1) as usize + (l == 1 && t.starts_with('\u{feff}')) as usize;
+                        line.chars().take(skip).map(|ch| ch.len_utf16() as u32).sum()
+                    }
+                    None => conv.char_col_to_utf16_col(&p, l, c),
+                };
                 let (s, e) = (col(edge.start), col(edge.end));
                 uses.push(json!({ "uri": crate::lsp::protocol::path_to_uri(&p), "range": { "start": { "line": edge.start.0 - 1, "character": s }, "end": { "line": edge.end.0 - 1, "character": e } } }));
             }
