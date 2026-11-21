@@ -120,12 +120,14 @@ fn test_the_uses_keep_an_item() {
     let lib = "pub fn used() {}\npub fn unused() {}\n";
     let (_d, path, index) = workspace(lib, &[("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)], &[(3, 5, 0)]);
     let (ov, mut conv) = (OverlayManager::new(), PositionConverter::new());
-    let used = handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv);
+    let used = handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv, true);
     assert_eq!((used["reason"].as_str(), used["remainingUses"][0]["range"]["start"]["line"].as_u64()), (Some("used"), Some(2)), "{used}");
-    let unused = handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv);
+    let unused = handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv, true);
     let uri = format!("file://{}", path.display());
     assert_eq!(unused["edit"]["changes"][&uri][0]["range"], json!({ "start": { "line": 1, "character": 0 }, "end": { "line": 2, "character": 0 } }), "{unused}");
-    assert_eq!(handle_safe_delete(&at(&path, 1, 8), None, &ov, &mut conv)["reason"], "unknownSymbol", "no index: its uses are not known");
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), None, &ov, &mut conv, true)["reason"], "unknownSymbol", "no index: its uses are not known");
+    // prod-code, m=20268: a file saved since the index was loaded may hold a use of it.
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv, false)["reason"], "staleIndex");
 }
 
 /// Review of d753d993: the index must be of this text and know this item; a member's use keeps its container; an
@@ -138,19 +140,19 @@ fn test_safe_delete_fails_closed() {
     let mut ov = OverlayManager::new();
     let uri = format!("file://{}", path.display());
     ov.open_document(&uri, &path.to_string_lossy(), 2, "pub fn unused() {}\npub fn used() {}\n".to_string());
-    assert_eq!(handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv)["reason"], "staleIndex", "the index is of another text");
+    assert_eq!(handle_safe_delete(&at(&path, 0, 8), Some(&index), &ov, &mut conv, true)["reason"], "staleIndex", "the index is of another text");
     let mut ov = OverlayManager::new();
     let other = path.with_file_name("g.rs");
     ov.open_document(&format!("file://{}", other.display()), &other.to_string_lossy(), 1, "pub fn g() {}\n".to_string());
     ov.apply_content_changes(&other.to_string_lossy(), 2, &[json!({ "text": "pub fn g() { crate::unused() }\n" })]);
-    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv)["reason"], "unsavedUses");
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &ov, &mut conv, true)["reason"], "unsavedUses");
 
     let lib = "mod m {\n    pub fn child() {}\n}\n";
     let (_d, path, index) = workspace(lib, &[("m", DefKind::Mod, 1, 5), ("child", DefKind::Fn, 2, 12)], &[(3, 5, 1)]);
-    let got = handle_safe_delete(&at(&path, 0, 4), Some(&index), &OverlayManager::new(), &mut conv);
+    let got = handle_safe_delete(&at(&path, 0, 4), Some(&index), &OverlayManager::new(), &mut conv, true);
     assert_eq!(got["reason"], "used", "its child is used: {got}");
 
     let lib = "pub fn a\u{0301}b() {}\n";
     let (_d, path, _index) = workspace(lib, &[], &[]);
-    assert_eq!(handle_safe_delete(&at(&path, 0, 9), None, &OverlayManager::new(), &mut conv)["reason"], "unknownSymbol");
+    assert_eq!(handle_safe_delete(&at(&path, 0, 9), None, &OverlayManager::new(), &mut conv, true)["reason"], "unknownSymbol");
 }

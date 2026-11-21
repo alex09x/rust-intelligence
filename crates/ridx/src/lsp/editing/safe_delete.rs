@@ -102,7 +102,9 @@ fn line_col(doc: &str, b: usize) -> (u32, u32) {
 }
 
 /// The answer to `ridx/safeDelete`.
-pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &OverlayManager, conv: &mut PositionConverter) -> Value {
+///
+/// `indexed`: every change of a file the server was told of is in the index it loaded (`Reindexer::all_current`).
+pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &OverlayManager, conv: &mut PositionConverter, indexed: bool) -> Value {
     let refuse = |reason: &str, uses: Vec<Value>| json!({ "refused": true, "reason": reason, "remainingUses": uses });
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
@@ -121,6 +123,10 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
         Err(why) => return refuse(why, Vec::new()),
     };
     let Some(ws) = ws else { return refuse("unknownSymbol", Vec::new()) };
+    // A file saved, or changed on disk, since the index loaded: its uses may not be in it (prod-code, m=20268).
+    if !indexed {
+        return refuse("staleIndex", Vec::new());
+    }
     // The index compiled this very text: its coordinates are this text's.
     if !ws.units_agree_on_source(&file) || ws.source_hash_for_file(&file) != Some(ridx_format::normalized_source_hash(doc.as_bytes())) {
         return refuse("staleIndex", Vec::new());

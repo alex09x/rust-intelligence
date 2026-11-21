@@ -18,9 +18,16 @@ use ridx_format::WorkspaceIndex;
 use serde_json::Value;
 
 /// The answer to the `ridx/*` request `msg` (method `method`).
-pub fn dispatch(method: &str, msg: &Value, ws: Option<&WorkspaceIndex>, ov: &OverlayManager, conv: &mut PositionConverter) -> LspResult<Value> {
+pub fn dispatch(
+    method: &str,
+    msg: &Value,
+    ws: Option<&WorkspaceIndex>,
+    ov: &OverlayManager,
+    conv: &mut PositionConverter,
+    reindex: &super::reindex::Reindexer,
+) -> LspResult<Value> {
     match method {
-        "ridx/safeDelete" => Ok(super::editing::safe_delete::handle_safe_delete(msg, ws, ov, conv)),
+        "ridx/safeDelete" => Ok(super::editing::safe_delete::handle_safe_delete(msg, ws, ov, conv, reindex.all_current())),
         "ridx/syntaxTree" => {
             let uri = msg["params"]["textDocument"]["uri"].as_str().ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
             let file = uri_to_path(uri);
