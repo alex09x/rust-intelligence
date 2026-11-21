@@ -161,7 +161,7 @@ pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Opt
         // Every edge the shards store, a macro's expansion in any file too (review of b854363f: a closed file's
         // `call!()` expanding to `f()`).
         let stored = super::safe_delete_edges::raw_edges(ws, &canonical, line as u32 + 1, char_col as u32 + 1, def.path);
-        in_buffer || !stored.is_empty() || ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
+        in_buffer || !stored.is_ok_and(|s| s.is_empty()) || ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
     };
     // `::core` is the sysroot crate only where no crate root of the package names another `core` (`extern crate self as
     // r#core` in `lib.rs` holds for its modules too: review of b854363f): no `extern crate` in any of them.

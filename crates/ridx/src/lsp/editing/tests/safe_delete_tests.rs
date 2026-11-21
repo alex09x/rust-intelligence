@@ -129,7 +129,7 @@ fn workspace_with(
             start_line: *line,
             start_col: *col,
             end_line: *line,
-            end_col: col + name.len() as u32,
+            end_col: col + name.chars().count() as u32,
             target_def_id: Some(*def as u32 + 1),
             target_path: paths[*def].clone(),
             target_file: Some(lib_path.to_string_lossy().to_string()),
@@ -328,4 +328,21 @@ fn test_what_the_content_check_reads() {
     std::fs::create_dir_all(root.join("target/ridx/sources")).unwrap();
     std::fs::write(root.join("target/ridx/sources/0.rs"), "pub fn c() { crate::unused() }\n").unwrap();
     assert_eq!(ask(&path, &index, &mut conv), "deleted", "ridx's copies");
+}
+
+/// Review of b0b16e39: a stored reference that records its target's file is a use of that definition only, the same
+/// path elsewhere being another one; a use's columns after a byte order mark keep a two-unit character whole.
+#[test]
+fn test_stored_edges_keep_their_target_and_whole_characters() {
+    let lib = "pub fn used() {}\npub fn unused() {}\n";
+    let (_d, path, index) = workspace(lib, &[("used", DefKind::Fn, 1, 8)], &[(3, 5, 0)]);
+    let file = ridx_format::canonicalize_best_effort(&path);
+    assert_eq!(crate::lsp::editing::safe_delete_edges::raw_edges(&index, &file, 1, 8, "used").map(|e| e.len()), Ok(1));
+    let elsewhere = path.with_file_name("other.rs");
+    assert_eq!(crate::lsp::editing::safe_delete_edges::raw_edges(&index, &elsewhere, 1, 8, "used").map(|e| e.len()), Ok(0), "its target is lib.rs");
+    let lib = "pub fn \u{10400}() {}\n";
+    let caller = "\u{feff}pub fn c() { crate::\u{10400}() }\n";
+    let (_d, path, index) = workspace_with(lib, caller, &[("\u{10400}", DefKind::Fn, 1, 8)], &[(1, 21, 0)], false);
+    let got = handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut PositionConverter::new());
+    assert_eq!(got["remainingUses"][0]["range"], json!({ "start": { "line": 0, "character": 21 }, "end": { "line": 0, "character": 23 } }), "{got}");
 }

@@ -58,8 +58,16 @@ pub(crate) fn resolve(ws: &WorkspaceIndex, idx: usize, raw: &str) -> Option<Path
     if rel.is_absolute() {
         return Some(rel.to_path_buf());
     }
-    let root = ws.source_root_at(idx).or_else(|| (!ws.is_reader_dependency(idx)).then(|| ws.workspace_root()).flatten())?;
-    Some(ridx_format::format::join_resolving_overlap(root, rel))
+    // A relative source root is the workspace's (`crates/app`), not the server's working directory (review of
+    // b0b16e39).
+    let workspace = ws.workspace_root();
+    let root = match ws.source_root_at(idx) {
+        Some(r) if r.is_absolute() => r.to_path_buf(),
+        Some(r) => ridx_format::format::join_resolving_overlap(workspace?, r),
+        None if !ws.is_reader_dependency(idx) => workspace?.to_path_buf(),
+        None => return None,
+    };
+    Some(ridx_format::format::join_resolving_overlap(&root, rel))
 }
 
 /// Whether the text of `path` the server sees begins with a byte order mark.

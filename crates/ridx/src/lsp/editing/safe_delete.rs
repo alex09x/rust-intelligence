@@ -184,7 +184,11 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
             })
             .collect();
         // And every edge the shards store to it, unfiltered: a macro's expansion too (review of 4009c2c4).
-        edges.extend(super::safe_delete_edges::raw_edges(ws, &canonical, l, c, found.target_path));
+        // A use the shards hold but cannot place is still a use (review of b0b16e39).
+        let Ok(stored) = super::safe_delete_edges::raw_edges(ws, &canonical, l, c, found.target_path) else {
+            return refuse("unlocatedUses", Vec::new());
+        };
+        edges.extend(stored);
         for edge in edges {
             let path = ridx_format::canonicalize_best_effort(&edge.path);
             if !seen.insert((path.clone(), edge.start)) {
@@ -193,10 +197,11 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
             let inside = path == canonical && byte_at(&doc, &starts, edge.start.0, edge.start.1).is_some_and(|b| plan.span.contains(&b));
             if !inside {
                 let p = edge.path.to_string_lossy();
-                // The compiler's columns of a first line after a byte order mark do not count it; the client's do
-                // (review of 4009c2c4).
+                // The compiler's columns of a first line after a byte order mark do not count it; the text converted
+                // does, so the column is moved past it before converting (review of 4009c2c4; of b0b16e39: after it,
+                // a character of two UTF-16 units would be cut).
                 let bom = super::safe_delete_fresh::starts_with_bom(&edge.path, ov) as u32;
-                let mut col = |(l, c): (u32, u32)| conv.char_col_to_utf16_col(&p, l, c) + if l == 1 { bom } else { 0 };
+                let mut col = |(l, c): (u32, u32)| conv.char_col_to_utf16_col(&p, l, c + if l == 1 { bom } else { 0 });
                 let (s, e) = (col(edge.start), col(edge.end));
                 uses.push(json!({ "uri": crate::lsp::protocol::path_to_uri(&p), "range": { "start": { "line": edge.start.0 - 1, "character": s }, "end": { "line": edge.end.0 - 1, "character": e } } }));
             }
