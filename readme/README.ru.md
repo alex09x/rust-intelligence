@@ -1,7 +1,7 @@
-<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
+<!-- translation-source: dd1f795a87ee6091c77465eb659661c234a70214 -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [dd1f795](https://github.com/alex09x/rust-intelligence/blob/dd1f795a87ee6091c77465eb659661c234a70214/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -227,19 +227,19 @@ cargo test --workspace
 ## Цитирование
 
 Если вы используете ridx в исследованиях или документации, пожалуйста, цитируйте архивный релиз в Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) — для проекта (ведёт на последнюю версию), [10.5281/zenodo.24397432](https://doi.org/10.5281/zenodo.24397432) — ровно для 0.3.10.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) — для проекта (ведёт на последнюю версию), [10.5281/zenodo.24415350](https://doi.org/10.5281/zenodo.24415350) — ровно для 0.3.11.
 [`CITATION.cff`](../CITATION.cff) содержит метаданные, которые использует кнопка GitHub «Cite this repository».
 
 ```bibtex
-@software{panasenko_2026_24397432,
+@software{panasenko_2026_24415350,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.10},
-  doi       = {10.5281/zenodo.24397432},
-  url       = {https://doi.org/10.5281/zenodo.24397432},
+  version   = {0.3.11},
+  doi       = {10.5281/zenodo.24415350},
+  url       = {https://doi.org/10.5281/zenodo.24415350},
 }
 ```
 
