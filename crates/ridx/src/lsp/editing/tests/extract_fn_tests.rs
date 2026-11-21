@@ -96,6 +96,10 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         ("pub fn f(a: u8) -> u8 {\n    #[cfg(test)]\n    let r = $0a + 1$0;\n    #[cfg(not(test))]\n    let r = a;\n    r\n}\n", Some("u8")),
         ("#[r#cfg(test)]\npub fn f(a: u8) -> u8 {\n    let r = $0a + 1$0;\n    r\n}\n", Some("u8")),
         ("pub fn f() -> usize {\n    let r = [0u8; { $01 + 2$0 }];\n    r.len()\n}\n", None),
+        // Review of 56f8c6cd: a receiver in parentheses is borrowed in place too; a comparison of a type an import
+        // names as a primitive borrows what is not `Copy`.
+        ("pub trait A { fn address(&self) -> usize; }\nimpl A for u8 { fn address(&self) -> usize { self as *const u8 as usize } }\npub fn f(n: u8) -> usize {\n    let r = $0(n).address() + 1$0;\n    r\n}\n", Some("usize")),
+        ("use std::string::String as u32;\npub fn f(a: u32, b: u32) -> bool {\n    let r = $0a == b$0;\n    drop(a);\n    r && b.is_empty()\n}\n", Some("bool")),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {
