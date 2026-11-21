@@ -182,7 +182,7 @@ fn rust_files(inv: &Inventory) -> Option<Vec<PathBuf>> {
         let canonical = ridx_format::canonicalize_best_effort(&dir);
         let root = inv.roots.contains(&canonical);
         if !visited.insert(canonical.clone())
-            || inv.skip.contains(&canonical)
+            || inv.skip.iter().any(|s| canonical.starts_with(s))
             || dir.join("CACHEDIR.TAG").is_file()
             || (!root && !inv.members.contains(&canonical) && own_workspace(&dir))
         {
@@ -216,7 +216,7 @@ fn rust_files(inv: &Inventory) -> Option<Vec<PathBuf>> {
 /// (a file added since, a `#[path]` module, an included input, a module of a crate the index lacks) names one or calls
 /// a macro whose body names one, under its own name or a rename. `own`: the item's file and bytes, whose own
 /// mentions are no use.
-pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&str], own: (&Path, std::ops::Range<usize>)) -> bool {
+pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&str], context: &[&str], own: (&Path, std::ops::Range<usize>)) -> bool {
     let Some(indexed) = indexed_sources(ws, ov) else { return false };
     let Some(mut files) = inventory(&indexed).and_then(|inv| rust_files(&inv)) else { return false };
     // A buffer of a file not saved yet is a source too, and so is every source the index read (its gated mentions).
@@ -226,6 +226,8 @@ pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&s
     // Macros called from a file the index did not read, and those called under `cfg` from one it did.
     let mut unseen_calls: Vec<String> = Vec::new();
     let mut all_calls: Vec<String> = Vec::new();
+    // Macros called with arguments that name one.
+    let mut named_args_calls: Vec<String> = Vec::new();
     let mut defines: Vec<(String, bool, bool, Vec<String>)> = Vec::new();
     let mut aliases: Vec<(String, String)> = Vec::new();
     while let Some(f) = files.pop() {
@@ -236,7 +238,7 @@ pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&s
         let Some(text) = text_of(&f, ov) else { return false };
         let is_indexed = indexed.contains(&canonical);
         let own_bytes = (canonical == own.0).then_some(&own.1);
-        let s = super::safe_delete_scan::scan(&text, names, is_indexed, own_bytes);
+        let s = super::safe_delete_scan::scan(&text, names, context, is_indexed, own_bytes);
         // What it includes is read as a source of its own; an include whose path is not known is a source not known
         // (review of 53031a6e).
         if s.unresolved_include {
@@ -249,7 +251,10 @@ pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&s
         if !is_indexed && s.names_one {
             return false;
         }
-        for (call, gated) in s.calls {
+        for (call, gated, args_name) in s.calls {
+            if args_name {
+                named_args_calls.push(call.clone());
+            }
             if !is_indexed || gated {
                 unseen_calls.push(call.clone());
             }
@@ -278,5 +283,8 @@ pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&s
     // A naming macro whose expansion depends on the configuration (a `cfg` in its body, or one it calls) may use the
     // item in another configuration from any call (review of 53031a6e).
     let gated_naming: HashSet<String> = closure(defines.iter().filter(|d| d.2).map(|d| d.0.clone()).collect()).intersection(&naming).cloned().collect();
-    !unseen_calls.iter().any(|c| naming.contains(c)) && !all_calls.iter().any(|c| gated_naming.contains(c))
+    // A macro whose expansion depends on the configuration, called with arguments naming one, may use them in
+    // another configuration (`gen!(unused)`: review of d8dcd7b1).
+    let gated_any = closure(defines.iter().filter(|d| d.2).map(|d| d.0.clone()).collect());
+    !unseen_calls.iter().any(|c| naming.contains(c)) && !all_calls.iter().any(|c| gated_naming.contains(c)) && !named_args_calls.iter().any(|c| gated_any.contains(c))
 }

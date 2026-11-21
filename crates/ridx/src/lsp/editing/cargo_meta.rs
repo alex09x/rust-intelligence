@@ -45,7 +45,7 @@ fn fingerprint(manifest: &Path) -> String {
         for glob in out.split('"').skip(1).step_by(2).filter(|s| s.contains(['*', '?', '['])).map(str::to_string).collect::<Vec<_>>() {
             let fixed = glob.split(['*', '?', '[']).next().unwrap_or("");
             let base = fixed.rsplit_once('/').map_or("", |(b, _)| b);
-            listing(&dir.join(if base.is_empty() { "." } else { base }), 0, &mut names);
+            listing(&dir.join(if base.is_empty() { "." } else { base }), 3, &mut names);
         }
         names.sort();
         out.push('\u{0}');

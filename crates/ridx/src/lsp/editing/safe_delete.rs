@@ -154,7 +154,10 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
     }
     // A file saved, changed on disk or added since the index was built may hold a use it lacks (prod-code, m=20268),
     // told by the sources' content, not by what the server was told of (review of 9effe92d).
-    if !super::safe_delete_fresh::uses_covered(ws, ov, &names, (&canonical, plan.span.clone())) {
+    // The words a path to the item may hold: its names and the modules its file's path spells (`b` of `src/b.rs`).
+    let module_words: Vec<String> = canonical.iter().map(|c| std::path::Path::new(c).file_stem().map_or(String::new(), |s| s.to_string_lossy().into_owned())).collect();
+    let context: Vec<&str> = names.iter().copied().chain(module_words.iter().map(String::as_str)).filter(|w| !w.is_empty() && *w != "mod" && *w != "lib" && *w != "main").collect();
+    if !super::safe_delete_fresh::uses_covered(ws, ov, &names, &context, (&canonical, plan.span.clone())) {
         return refuse("staleIndex", Vec::new());
     }
     let mut uses = Vec::new();
