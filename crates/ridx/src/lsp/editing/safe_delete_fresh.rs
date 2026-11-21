@@ -138,11 +138,14 @@ struct Inventory {
     members: HashSet<PathBuf>,
     /// Every directory Cargo names (roots, members, targets'), read even when hidden.
     named: HashSet<PathBuf>,
+    /// The directories of the targets Cargo declares: source, under a build directory too (`[[test]] path =
+    /// "build-cache/cases/caller.rs"` with that as `CARGO_TARGET_DIR`: review of 6914b9cf).
+    declared: Vec<PathBuf>,
 }
 
 /// The inventory of the indexed sources' workspaces; `None` where Cargo gives no answer for a manifest.
 fn inventory(indexed: &HashSet<PathBuf>) -> Option<Inventory> {
-    let mut inv = Inventory { roots: Vec::new(), skip: Vec::new(), members: HashSet::new(), named: HashSet::new() };
+    let mut inv = Inventory { roots: Vec::new(), skip: Vec::new(), members: HashSet::new(), named: HashSet::new(), declared: Vec::new() };
     let mut dirs: HashSet<PathBuf> = HashSet::new();
     let mut found: Vec<PathBuf> = Vec::new();
     for f in indexed {
@@ -157,6 +160,7 @@ fn inventory(indexed: &HashSet<PathBuf>) -> Option<Inventory> {
                 inv.members.extend(l.packages.iter().cloned());
                 found.push(l.root);
                 found.extend(l.packages);
+                inv.declared.extend(l.targets.iter().cloned());
                 found.extend(l.targets);
             }
             None => found.push(dir.to_path_buf()),
@@ -186,7 +190,7 @@ fn rust_files(inv: &Inventory) -> Option<Vec<PathBuf>> {
         let canonical = ridx_format::canonicalize_best_effort(&dir);
         let root = inv.roots.contains(&canonical);
         if !visited.insert(canonical.clone())
-            || inv.skip.iter().any(|s| canonical.starts_with(s))
+            || (inv.skip.iter().any(|s| canonical.starts_with(s)) && !inv.declared.iter().any(|d| canonical.starts_with(d) && inv.skip.iter().any(|s| d.starts_with(s))))
             || dir.join("CACHEDIR.TAG").is_file()
             || (!root && !inv.members.contains(&canonical) && own_workspace(&dir))
         {
@@ -292,3 +296,7 @@ pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&s
     let gated_any = closure(defines.iter().filter(|d| d.2).map(|d| d.0.clone()).collect());
     !unseen_calls.iter().any(|c| naming.contains(c)) && !all_calls.iter().any(|c| gated_naming.contains(c)) && !named_args_calls.iter().any(|c| gated_any.contains(c))
 }
+
+#[cfg(test)]
+#[path = "tests/safe_delete_fresh_tests.rs"]
+mod tests;

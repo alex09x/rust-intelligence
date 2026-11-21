@@ -40,13 +40,15 @@ pub(super) struct Scan {
 /// The text of the string literal `lit` as Rust reads it: raw ones as written, cooked ones with their escapes
 /// decoded (`"body\u{2e}inc"` is `body.inc`: review of 53031a6e); `None` for another literal.
 pub(super) fn string_value(lit: &str) -> Option<String> {
+    // Rust reads a CRLF source as LF before lexing, a raw literal's text too (review of 6914b9cf).
+    let lit = &lit.replace("\r\n", "\n");
     if let Some(raw) = lit.strip_prefix('r') {
         let hashes = raw.len() - raw.trim_start_matches('#').len();
         return raw.get(hashes + 1..raw.len().checked_sub(hashes + 1)?).map(str::to_string);
     }
     // Rust reads a CRLF source as LF before lexing; a continuation skips only ASCII whitespace (a no-break space after
     // it is the path's: review of d8dcd7b1).
-    let body = lit.strip_prefix('"')?.strip_suffix('"')?.replace("\r\n", "\n");
+    let body = lit.strip_prefix('"')?.strip_suffix('"')?.to_string();
     let mut out = String::new();
     let mut chars = body.chars().peekable();
     while let Some(c) = chars.next() {
@@ -167,7 +169,8 @@ pub(super) fn scan(text: &str, names: &[&str], context: &[&str], indexed: bool, 
             }
         }
     }
-    if indexed && !(mentions.is_empty() && call_at.is_empty() && !text.contains("cfg")) {
+    let read = indexed && !(mentions.is_empty() && call_at.is_empty() && !text.contains("cfg"));
+    if read || (!s.defines.is_empty() && text.contains("cfg")) {
         let tree = ridx_syntax::parse(text);
         let gated = |at: usize| {
             let n = tree.covering(at);
@@ -177,15 +180,24 @@ pub(super) fn scan(text: &str, names: &[&str], context: &[&str], indexed: bool, 
                     .any(|attr| tree.tokens_of(attr).iter().any(|t| matches!(ridx_syntax::sema_fn::norm_ident(t.text(text)), "cfg" | "cfg_attr")))
             })
         };
-        s.gated_mention = mentions.iter().any(|&at| !own.is_some_and(|r| r.contains(&at)) && gated(at));
+        s.gated_mention = read && mentions.iter().any(|&at| !own.is_some_and(|r| r.contains(&at)) && gated(at));
         // An import under `cfg` naming the item's module or the item may rebind an ungated call to it in another
         // configuration (`#[cfg(feature = "x")] use b as pick;`: review of d8dcd7b1).
-        s.gated_mention |= tree.descendants(tree.root()).filter(|&d| tree.kind(d) == K::Use).any(|u| {
-            gated(tree.range(u).start)
-                && tree.tokens_of(u).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && context.contains(&ridx_syntax::sema_fn::norm_ident(t.text(text))))
-        });
-        for (c, &at) in s.calls.iter_mut().zip(&call_at) {
+        s.gated_mention |= read
+            && tree.descendants(tree.root()).filter(|&d| tree.kind(d) == K::Use).any(|u| {
+                // Not one inside the item deleted, which goes with it (review of 6914b9cf).
+                !own.is_some_and(|r| r.contains(&tree.range(u).start))
+                    && gated(tree.range(u).start)
+                    && tree.tokens_of(u).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && context.contains(&ridx_syntax::sema_fn::norm_ident(t.text(text))))
+            });
+        for (c, &at) in s.calls.iter_mut().zip(&call_at).filter(|_| read) {
             c.1 = gated(at);
+        }
+        // A definition a `cfg` selects, on it or what holds it, is one of several by that name: what it expands to
+        // depends on the configuration (review of 6914b9cf: two `gen!`, one discarding its argument).
+        for d in tree.descendants(tree.root()).filter(|&d| tree.kind(d) == K::MacroRules && gated(tree.range(d).start)) {
+            let name = tree.child(d, K::Name).map(|n| ridx_syntax::sema_fn::norm_ident(tree.text(n)));
+            s.defines.iter_mut().filter(|m| Some(m.0.as_str()) == name).for_each(|m| m.2 = true);
         }
     }
     s

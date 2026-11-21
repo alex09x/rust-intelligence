@@ -119,6 +119,18 @@ fn byte_at(doc: &str, starts: &[usize], line: u32, col: u32) -> Option<usize> {
     Some(ls + doc[ls..].chars().take(skip).map(char::len_utf8).sum::<usize>())
 }
 
+/// The words a path to the item at `at` of `doc` (in the file `canonical`) may hold besides its names: the modules its
+/// file's path spells (`b` of `src/b.rs`) and the inline modules around it (`mod b { pub fn chosen() }` in lib.rs:
+/// review of 6914b9cf).
+pub(super) fn module_words(canonical: &std::path::Path, doc: &str, at: usize) -> Vec<String> {
+    let mut words: Vec<String> = canonical.iter().map(|c| std::path::Path::new(c).file_stem().map_or(String::new(), |s| s.to_string_lossy().into_owned())).collect();
+    let tree = ridx_syntax::parse(doc);
+    let n = tree.covering(at);
+    let modules = tree.ancestors(n).filter(|&a| tree.kind(a) == ridx_syntax::SyntaxKind::Module).filter_map(|m| tree.child(m, ridx_syntax::SyntaxKind::Name));
+    words.extend(modules.map(|n| ridx_syntax::sema_fn::norm_ident(tree.text(n)).to_string()));
+    words
+}
+
 /// The answer to `ridx/safeDelete`.
 pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &OverlayManager, conv: &mut PositionConverter) -> Value {
     let refuse = |reason: &str, uses: Vec<Value>| json!({ "refused": true, "reason": reason, "remainingUses": uses });
@@ -155,7 +167,7 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
     // A file saved, changed on disk or added since the index was built may hold a use it lacks (prod-code, m=20268),
     // told by the sources' content, not by what the server was told of (review of 9effe92d).
     // The words a path to the item may hold: its names and the modules its file's path spells (`b` of `src/b.rs`).
-    let module_words: Vec<String> = canonical.iter().map(|c| std::path::Path::new(c).file_stem().map_or(String::new(), |s| s.to_string_lossy().into_owned())).collect();
+    let module_words = module_words(&canonical, &doc, plan.span.start);
     let context: Vec<&str> = names.iter().copied().chain(module_words.iter().map(String::as_str)).filter(|w| !w.is_empty() && *w != "mod" && *w != "lib" && *w != "main").collect();
     if !super::safe_delete_fresh::uses_covered(ws, ov, &names, &context, (&canonical, plan.span.clone())) {
         return refuse("staleIndex", Vec::new());

@@ -36,3 +36,23 @@ fn test_includes_arguments_and_gated_imports() {
     let s = scan("#[cfg(test)]\nmod tests {\n    use super::*;\n}\n", &["chosen"], &["chosen", "b"], true, None);
     assert!(!s.gated_mention, "a test module's glob names neither");
 }
+
+/// Review of 6914b9cf: a raw literal's CRLF is read as LF; an import inside the item deleted goes with it; a `cfg` on a
+/// definition makes it one of several; an inline module is a word of the item's path.
+#[test]
+fn test_raw_crlf_own_imports_gated_definitions_and_inline_modules() {
+    assert_eq!(string_value("r#\"body\r\n.inc\"#").as_deref(), Some("body\n.inc"));
+    let text = "pub fn unused() {\n    #[cfg(feature = \"x\")]\n    use crate::unused as alias;\n}\n";
+    let own = 0..text.len();
+    assert!(!scan(text, &["unused"], &["unused"], true, Some(&own)).gated_mention, "its own import");
+    assert!(scan(text, &["unused"], &["unused"], true, None).gated_mention);
+    for indexed in [true, false] {
+        let s = scan("#[cfg(feature = \"a\")]\nmacro_rules! gen {\n    ($f:ident) => {};\n}\npub fn g() {}\n", &["unused"], &["unused"], indexed, None);
+        assert!(s.defines.iter().any(|d| d.0 == "gen" && d.2), "a cfg on the definition, indexed {indexed}");
+    }
+    let s = scan("mod m {\n    #[cfg(any())]\n    macro_rules! gen {\n        ($f:ident) => {};\n    }\n}\n", &["unused"], &["unused"], false, None);
+    assert!(s.defines.iter().any(|d| d.0 == "gen" && d.2), "a cfg on what holds it");
+    let doc = "pub mod b {\n    pub fn chosen() {}\n}\n";
+    let words = crate::lsp::editing::safe_delete::module_words(std::path::Path::new("/w/src/lib.rs"), doc, doc.find("pub fn").unwrap());
+    assert!(words.iter().any(|w| w == "b"), "{words:?}");
+}
