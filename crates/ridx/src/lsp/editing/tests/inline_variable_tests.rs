@@ -13,36 +13,34 @@
 use super::*;
 use crate::lsp::editing::tests::code_action_assists_tests::assert_rustc_compiles;
 
-/// `doc` with the action at the first `$0` applied, an unannotated `let` typed `ty`, or `None` where it is not offered.
-fn inlined_typed(doc: &str, ty: Option<&str>) -> Option<String> {
+/// `doc` with the action at the first `$0` applied, or `None` where it is not offered.
+fn inlined(doc: &str) -> Option<String> {
     let offset = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let mut out = doc.clone();
-    for (r, text) in inline_edits(&doc, offset, &|_| ty.map(str::to_string))?.into_iter().rev() {
+    for (r, text) in inline_edits(&doc, offset)?.into_iter().rev() {
         out.replace_range(r, &text);
     }
     Some(out)
 }
 
-fn inlined(doc: &str) -> Option<String> {
-    inlined_typed(doc, None)
-}
-
-/// prod-code, m=20226: rust-analyzer offers `inline_local_variable` at `let area = size * scale;`.
+/// prod-code, m=20226: rust-analyzer offers `inline_local_variable` at a `let` used once; ridx where the initializer
+/// is a value with nothing to evaluate.
 #[test]
 fn test_a_binding_used_once_is_inlined() {
-    let got = inlined("pub fn scaled(size: u32, scale: u32) -> u32 {\n    let $0area = size * scale;\n    area + 1\n}\n").unwrap();
-    assert_eq!(got, "pub fn scaled(size: u32, scale: u32) -> u32 {\n    (size * scale) + 1\n}\n");
+    let got = inlined("pub fn scaled(size: u32, scale: u32) -> u32 {\n    let $0n = 4u32;\n    size * scale + n\n}\n").unwrap();
+    assert_eq!(got, "pub fn scaled(size: u32, scale: u32) -> u32 {\n    size * scale + 4u32\n}\n");
     assert_rustc_compiles(&got, "Inline variable");
-    let got = inlined("pub fn g(a: u32) -> u32 {\n    let b$0 = a + 1u32;\n    b * 2\n}\n").unwrap();
-    assert_eq!(got, "pub fn g(a: u32) -> u32 {\n    (a + 1u32) * 2\n}\n");
+    // A cast, parenthesized where it goes.
+    let got = inlined("pub fn g(a: u8) -> u64 {\n    let b$0 = a as u64;\n    b * 2\n}\n").unwrap();
+    assert_eq!(got, "pub fn g(a: u8) -> u64 {\n    (a as u64) * 2\n}\n");
     assert_rustc_compiles(&got, "Inline variable");
-    // No arithmetic: nothing to reorder, so it may cross a statement that does not name what it reads.
-    let got = inlined("pub fn h(p: u8, q: u8) -> bool {\n    let f$0 = p == q;\n    let y = 3u8;\n    f && y > 1\n}\n").unwrap();
-    assert!(got.contains("    (p == q) && y > 1\n") && !got.contains("let f"), "{got}");
+    // Across a statement that does not name what it reads.
+    let got = inlined("pub fn h(p: u8) -> u8 {\n    let f$0 = p;\n    let y = 3u8;\n    f + y\n}\n").unwrap();
+    assert!(got.contains("    p + y\n") && !got.contains("let f"), "{got}");
     assert_rustc_compiles(&got, "Inline variable");
-    // A local typed by the index, a tuple, a shared reference.
-    let got = inlined_typed("fn take(t: (u8, &str)) -> u8 { t.0 }\npub fn k(s: &str) -> u8 {\n    let n = 2u8;\n    let t$0 = (n, s);\n    take(t)\n}\n", Some("u8")).unwrap();
+    // A local with its type written, a tuple, a shared reference.
+    let got = inlined("fn take(t: (u8, &str)) -> u8 { t.0 }\npub fn k(s: &str) -> u8 {\n    let n: u8 = 2;\n    let t$0 = (n, s);\n    take(t)\n}\n").unwrap();
     assert!(got.contains("    take((n, s))\n"), "{got}");
     assert_rustc_compiles(&got, "Inline variable");
 }
@@ -84,6 +82,17 @@ fn test_a_binding_is_not_inlined_where_the_result_would_differ() {
         "pub fn f() -> u64 {\n    let a$0: u64 = 1;\n    a\n}\n",
         "pub struct S { pub a: u32 }\npub fn f() -> S {\n    let a$0 = 1u32;\n    S { a }\n}\n",
         "pub fn f() {\n    let a$0 = 1u8;\n}\n",
+        // Review of 03933e37: any operator (its overflow, or what is evaluated before it, moves: prod-code's own
+        // `size * scale` too), a type only inferred (the index may be older than the code), a borrow or a receiver in
+        // parentheses, a name a later item or another binding shares, a name beyond ASCII where it goes.
+        "pub fn scaled(size: u32, scale: u32) -> u32 {\n    let $0area = size * scale;\n    area + 1\n}\n",
+        "pub fn f(v: &mut [u8], a: u8) {\n    let x$0 = a + 1u8;\n    v[9] = x;\n}\n",
+        "fn g() -> u8 { 1 }\npub fn f() -> u8 {\n    let n = g();\n    let x$0 = n;\n    x\n}\n",
+        "pub fn f(n: u8) -> bool {\n    let x$0 = n;\n    std::ptr::eq(&(x), &n)\n}\n",
+        "pub fn f(a: u32) -> u32 {\n    let b$0 = a;\n    (b).pow(2)\n}\n",
+        "pub fn f(n: u8) -> u8 {\n    let x$0 = n;\n    {\n        const n: u8 = 9;\n        x + n\n    }\n}\n",
+        "pub fn f(n: u8, c: bool) -> u8 {\n    let x$0 = n;\n    if c {\n        let n = 2u8;\n        return n;\n    }\n    x\n}\n",
+        "pub fn f(n: u8) -> u8 {\n    let x$0 = n;\n    let caf\u{e9} = 1u8;\n    x + caf\u{e9}\n}\n",
     ] {
         assert_eq!(inlined(doc), None, "{doc}");
     }
@@ -93,7 +102,7 @@ fn test_a_binding_is_not_inlined_where_the_result_would_differ() {
 fn test_the_action_carries_its_edit() {
     let doc = "pub fn f() -> u32 {\n    let a = 2u32;\n    a\n}\n";
     let range = json!({ "start": { "line": 1, "character": 8 }, "end": { "line": 1, "character": 8 } });
-    let action = inline_variable_action(doc, "file:///w/src/lib.rs", &range, Some(3), &|_| None).unwrap();
+    let action = inline_variable_action(doc, "file:///w/src/lib.rs", &range, Some(3)).unwrap();
     assert_eq!(action["title"], "Inline variable");
     let edits = &action["edit"]["documentChanges"][0]["edits"];
     assert_eq!(edits[0]["range"], json!({ "start": { "line": 1, "character": 0 }, "end": { "line": 2, "character": 0 } }));

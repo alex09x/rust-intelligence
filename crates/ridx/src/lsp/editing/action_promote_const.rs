@@ -9,41 +9,30 @@
  */
 
 //! `Promote local to constant` (rust-analyzer's `promote_local_to_const`): `let area = 4 * 8;` becomes
-//! `const AREA: i32 = 4 * 8;` and its uses `AREA` (prod-code, m=20226). Offered where the result compiles
-//! (docs/integration.md §6): an initializer of literals and operators alone, whose type ridx can write; rust-analyzer
-//! also promotes one that reads parameters (`size * scale`), which no constant can.
+//! `const VALUE: i32 = 1;` and its uses `VALUE` (prod-code, m=20226). Offered where the result compiles
+//! (docs/integration.md §6): a lone literal, whose type is written on the binding or spelled by the literal itself
+//! (`8u64`, `true`, `'c'`, `"hi"`). An operator is not promoted: a constant evaluates it at compile time, where an
+//! overflow or a division by zero no longer compiles (`1u8 / 0u8`, review of 03933e37); rust-analyzer also promotes
+//! one that reads parameters (`size * scale`), which no constant can.
 
 use super::action_parse::{byte_to_utf16_pos, line_starts_of, utf16_pos_to_byte};
-use crate::overlay::OverlayManager;
-use ridx_format::WorkspaceIndex;
-use ridx_syntax::{SyntaxKind as K, SyntaxTree, TokenKind as T};
+use ridx_syntax::{SyntaxKind as K, TokenKind as T};
 use serde_json::{json, Value};
 use std::ops::Range;
 
-/// Whether the expression `init` is evaluated at compile time as it is: a lone literal, or integer, `bool` and `char`
-/// literals combined by operators, parentheses, tuples, arrays and casts to a primitive, and no name. A string or a
-/// float under an operator is not (`"a" == "b"` calls a trait no constant can, review of 63f24322).
-fn const_evaluable(tree: &SyntaxTree<'_>, init: ridx_syntax::NodeId) -> bool {
-    if tree.kind(init) == K::Literal {
-        return true;
-    }
-    let kinds_ok = std::iter::once(init).chain(tree.descendants(init)).all(|n| match tree.kind(n) {
-        K::Literal => {
-            let t = tree.text(n);
-            let float = t.contains('.') || t.ends_with("f32") || t.ends_with("f64") || (!t.starts_with("0x") && t.contains(['e', 'E']));
-            (t.starts_with(|c: char| c.is_ascii_digit()) && !float) || t == "true" || t == "false" || t.starts_with('\'')
+/// The type a literal spells by itself, or `None` where its type is inferred (`1`, `1.5`) or not a plain one (`b"a"`).
+fn literal_type(t: &str) -> Option<&'static str> {
+    const NUMBERS: &[&str] = &["u128", "usize", "u16", "u32", "u64", "u8", "i128", "isize", "i16", "i32", "i64", "i8", "f32", "f64"];
+    match t {
+        "true" | "false" => Some("bool"),
+        _ if t.starts_with('\'') => Some("char"),
+        _ if t.starts_with('"') || t.starts_with("r\"") || t.starts_with("r#") => Some("&str"),
+        // A float suffix on hexadecimal digits is digits (`0xf32`).
+        _ if t.starts_with(|c: char| c.is_ascii_digit()) => {
+            NUMBERS.iter().find(|s| t.ends_with(*s)).filter(|s| !(s.starts_with('f') && (t.starts_with("0x") || t.starts_with("0o") || t.starts_with("0b")))).copied()
         }
-        k => matches!(k, K::BinExpr | K::PrefixExpr | K::ParenExpr | K::TupleExpr | K::ArrayExpr | K::CastExpr | K::PathType | K::Path | K::PathSegment | K::Name),
-    });
-    // A cast names its type (`1 as u8`), an integer one; no other name.
-    // An operator over a tuple or an array compares them through a trait no constant calls (review of 36349abf).
-    let nodes = || std::iter::once(init).chain(tree.descendants(init));
-    let composite_op = nodes().any(|n| matches!(tree.kind(n), K::BinExpr | K::PrefixExpr)) && nodes().any(|n| matches!(tree.kind(n), K::TupleExpr | K::ArrayExpr));
-    kinds_ok && !composite_op && !tree.tokens_of(init).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::SelfKw) && !is_primitive(t.text(tree.src)))
-}
-
-fn is_primitive(s: &str) -> bool {
-    matches!(s, "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "bool" | "char")
+        _ => None,
+    }
 }
 
 /// `name` in upper snake case, as a constant is named.
@@ -58,9 +47,9 @@ fn const_name(name: &str) -> String {
     out
 }
 
-/// The edits promoting the `let` whose name covers byte `offset` of `doc` to a constant of type `ty` (the type
-/// written on the binding, else `inferred`'s), as byte ranges with their new text.
-pub(crate) fn promote_edits(doc: &str, offset: usize, inferred: &dyn Fn() -> Option<String>) -> Option<Vec<(Range<usize>, String)>> {
+/// The edits promoting the `let` whose name covers byte `offset` of `doc` to a constant of the type written on the
+/// binding, else the one its literal spells, as byte ranges with their new text.
+pub(crate) fn promote_edits(doc: &str, offset: usize) -> Option<Vec<(Range<usize>, String)>> {
     let tree = ridx_syntax::parse(doc);
     let at = |o: usize| Some(tree.covering(o)).filter(|&n| tree.kind(n) == K::Name);
     let name = at(offset).or_else(|| offset.checked_sub(1).and_then(at))?;
@@ -79,10 +68,14 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, inferred: &dyn Fn() -> Opt
         }
     }
     let init = init?;
-    if !const_evaluable(&tree, init) {
+    if tree.kind(init) != K::Literal {
         return None;
     }
-    let ty = written.or_else(inferred)?;
+    // The primitive a literal spells is that primitive only while the file names nothing so.
+    let ty = match written {
+        Some(w) => w,
+        None => literal_type(tree.text(init)).filter(|_| !super::assist_locals::primitive_shadowed(&tree))?.to_string(),
+    };
     // A constant's type is an item's: no placeholder, no generic parameter of the function or impl around it (review
     // of 63f24322: `const X: _` and `[T; 0]` in `fn f<T>()`).
     // `Self` is the enclosing impl's, which a constant cannot see either (review of 36349abf).
@@ -114,20 +107,13 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, inferred: &dyn Fn() -> Opt
 }
 
 /// The `Promote local to constant` action at the cursor of an empty `range`, with its edit.
-pub fn promote_const_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<Value> {
+pub fn promote_const_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>) -> Option<Value> {
     if range["start"] != range["end"] {
         return None;
     }
     let starts = line_starts_of(doc);
     let offset = utf16_pos_to_byte(doc, &starts, range["start"]["line"].as_u64()? as u32, range["start"]["character"].as_u64()? as u32)?;
-    // The type `Add explicit type` writes there.
-    let inferred = || {
-        let explicit = super::action_explicit_type::explicit_type_action(doc, uri, range, doc_version, ws, ov)?;
-        let edit = explicit["edit"]["documentChanges"][0]["edits"][0].clone();
-        let edit = if edit.is_null() { explicit["edit"]["changes"][uri][0].clone() } else { edit };
-        edit["newText"].as_str()?.strip_prefix(": ").map(str::to_string)
-    };
-    let edits: Vec<Value> = promote_edits(doc, offset, &inferred)?
+    let edits: Vec<Value> = promote_edits(doc, offset)?
         .into_iter()
         .map(|(r, text)| {
             let ((sl, sc), (el, ec)) = (byte_to_utf16_pos(doc, &starts, r.start), byte_to_utf16_pos(doc, &starts, r.end));

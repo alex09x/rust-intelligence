@@ -12,16 +12,16 @@
 //! its initializer, and the `let` goes (prod-code, m=20226). Offered only where that provably means what the code
 //! meant and compiles (docs/integration.md §6, reviews of 63f24322 and 36349abf):
 //!
-//! - the initializer reads only `Copy` locals whose type ridx knows and literals with a fixed type, combined by the
-//!   built-in operators of primitives (no overloaded operator runs code), no assignment, call, macro, field, index or
-//!   borrow: nothing to drop, move or run earlier or later;
-//! - the use is a value read: not borrowed, not a method's receiver (both see the binding's own storage), not in a
-//!   loop, a closure or an `async` block the `let` is outside of;
-//! - with arithmetic, which may overflow, the use is in the statement right after the `let`, evaluated first there and
-//!   on every path, so the same panic comes first.
+//! - the initializer is a value with nothing to evaluate: a literal with a fixed type, a `Copy` local whose type is
+//!   written on it (a parameter, an annotated `let`: an inferred one may be stale, review of 03933e37), or those in
+//!   parentheses, a tuple, an array or a cast to a primitive. No operator (whose overflow or order of evaluation the
+//!   move would change), call, macro, field, index or borrow: nothing to drop, move, panic or run earlier or later;
+//! - no other binding or item of the function shares a name the initializer reads: the name means the same at the use;
+//! - the use is a value read: not borrowed, not a method's receiver (both see the binding's own storage), through
+//!   parentheses too, not in a loop, a closure or an `async` block the `let` is outside of.
 
 use super::action_parse::{byte_to_utf16_pos, line_starts_of, utf16_pos_to_byte};
-use super::assist_locals::{copy_type, local_of, primitive_shadowed, LetType, PRIMITIVES};
+use super::assist_locals::{copy_type, local_of, primitive_shadowed, PRIMITIVES};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree, TokenKind as T};
 use serde_json::{json, Value};
 
@@ -44,23 +44,17 @@ pub(crate) fn is_shorthand(tree: &SyntaxTree<'_>, at: usize) -> bool {
     std::iter::once(c).chain(tree.ancestors(c)).find(|&n| tree.kind(n) == K::RecordExprField).is_some_and(|f| !tree.own_tokens(f).any(|(_, t)| t.kind == T::Colon))
 }
 
-/// The operator of the binary expression `n` (`+`, `&&`, `<<`, ...).
-fn op(tree: &SyntaxTree<'_>, n: NodeId) -> String {
-    tree.own_tokens(n).filter(|(_, t)| !t.is_trivia()).map(|(_, t)| t.text(tree.src)).collect()
-}
-
-/// What the initializer `n` is made of, when it is evaluated anywhere to the same value with no effect: `Some((true,
-/// _))` for a primitive's value, which built-in operators combine, `Some((_, true))` when it has arithmetic, which may
-/// panic on overflow. `local` gives the type of the local read at a byte, if ridx knows it.
-fn pure(tree: &SyntaxTree<'_>, n: NodeId, local: &dyn Fn(&str, usize) -> Option<String>, shadowed: bool) -> Option<(bool, bool)> {
+/// Whether the initializer `n` is a value with nothing to evaluate (no operator, call or effect), and of a primitive
+/// type when `Some(true)`. `local` gives the type written on the local read at a byte.
+fn pure(tree: &SyntaxTree<'_>, n: NodeId, local: &dyn Fn(&str, usize) -> Option<String>, shadowed: bool) -> Option<bool> {
     let kids: Vec<NodeId> = tree.children(n).filter(|&c| tree.kind(c).is_expr()).collect();
     match tree.kind(n) {
         K::Literal => {
             let t = tree.text(n);
             if t.starts_with(|c: char| c.is_ascii_digit()) {
-                (typed_number(t) && !shadowed).then_some((true, false))
+                (typed_number(t) && !shadowed).then_some(true)
             } else {
-                Some((matches!(t, "true" | "false") || t.starts_with('\'') && !shadowed, false))
+                Some(matches!(t, "true" | "false") || t.starts_with('\'') && !shadowed)
             }
         }
         K::PathExpr => {
@@ -68,60 +62,23 @@ fn pure(tree: &SyntaxTree<'_>, n: NodeId, local: &dyn Fn(&str, usize) -> Option<
             let [tok] = toks.as_slice() else { return None };
             let name = ridx_syntax::sema_fn::norm_ident(tok.text(tree.src));
             let ty = local(name, tok.start as usize).filter(|ty| copy_type(ty, shadowed))?;
-            Some((PRIMITIVES.contains(&ty.trim()), false))
+            Some(PRIMITIVES.contains(&ty.trim()))
         }
         K::ParenExpr => pure(tree, *kids.first()?, local, shadowed),
+        // A cast between primitives neither panics nor runs code.
         K::CastExpr => {
-            let (prim, arith) = pure(tree, *kids.first()?, local, shadowed)?;
+            let prim = pure(tree, *kids.first()?, local, shadowed)?;
             let target = tree.children(n).find(|&c| tree.kind(c).is_type()).map(|t| tree.text(t).trim().to_string())?;
-            (prim && !shadowed && PRIMITIVES.contains(&target.as_str())).then_some((true, arith))
-        }
-        K::PrefixExpr => {
-            let (prim, arith) = pure(tree, *kids.first()?, local, shadowed)?;
-            let o = op(tree, n);
-            (prim && (o == "-" || o == "!")).then_some((true, arith || o == "-"))
-        }
-        K::BinExpr => {
-            let o = op(tree, n);
-            if o.ends_with('=') && !matches!(o.as_str(), "==" | "!=" | "<=" | ">=") {
-                return None;
-            }
-            let [l, r] = kids.as_slice() else { return None };
-            let ((lp, la), (rp, ra)) = (pure(tree, *l, local, shadowed)?, pure(tree, *r, local, shadowed)?);
-            (lp && rp).then_some((true, la || ra || matches!(o.as_str(), "+" | "-" | "*" | "/" | "%" | "<<" | ">>")))
+            (prim && !shadowed && PRIMITIVES.contains(&target.as_str())).then_some(true)
         }
         K::TupleExpr | K::ArrayExpr => {
-            let mut arith = false;
             for k in kids {
-                arith |= pure(tree, k, local, shadowed)?.1;
+                pure(tree, k, local, shadowed)?;
             }
-            Some((false, arith))
+            Some(false)
         }
         _ => None,
     }
-}
-
-/// Whether the use at `path` is evaluated whenever the statement `stmt` holding it is: not in a branch of an `if` or a
-/// `match`, nor right of `&&` or `||`.
-fn unconditional(tree: &SyntaxTree<'_>, path: NodeId, stmt: NodeId) -> bool {
-    let mut child = path;
-    for a in tree.ancestors(path) {
-        let first_expr = tree.children(a).find(|&c| tree.kind(c).is_expr());
-        let conditional = match tree.kind(a) {
-            K::IfExpr | K::MatchExpr | K::MatchArm | K::MatchArmList => first_expr != Some(child),
-            K::BinExpr => first_expr != Some(child) && matches!(op(tree, a).as_str(), "&&" | "||"),
-            _ => false,
-        };
-        // The statement itself may be the `if` whose branch holds the use.
-        if conditional {
-            return false;
-        }
-        if a == stmt {
-            return true;
-        }
-        child = a;
-    }
-    true
 }
 
 /// The `let` statement whose binding's name covers byte `offset` of `tree`, with the name's node and the initializer:
@@ -149,7 +106,7 @@ fn plain_let(tree: &SyntaxTree<'_>, offset: usize) -> Option<(NodeId, NodeId, No
 
 /// The edit of `Inline variable` at byte `offset` of `doc`: the deletion of the `let` and the initializer at the use,
 /// as byte ranges with their new text, in order.
-pub(crate) fn inline_edits(doc: &str, offset: usize, let_type: LetType) -> Option<Vec<(std::ops::Range<usize>, String)>> {
+pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Range<usize>, String)>> {
     let tree = ridx_syntax::parse(doc);
     let (stmt, name, init) = plain_let(&tree, offset)?;
     let block = tree.parent(stmt)?;
@@ -157,7 +114,17 @@ pub(crate) fn inline_edits(doc: &str, offset: usize, let_type: LetType) -> Optio
     // Names compared as Rust compares them: `r#n` is `n`; a name beyond ASCII is not compared without its normal form.
     let idents: Vec<&str> =
         tree.tokens_of(init).iter().filter(|t| matches!(t.kind, T::Ident | T::RawIdent | T::SelfKw)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(doc))).collect();
-    if !tree.text(name).is_ascii() || idents.iter().any(|i| !i.is_ascii()) {
+    // Every name the function declares, a binding or an item (one declared later is in scope before it: review of
+    // 03933e37); a name read that two of them share may mean another one at the use.
+    let declared: Vec<&str> = tree
+        .descendants(f)
+        .filter(|&d| tree.kind(d) == K::Name && tree.parent(d).is_some_and(|p| tree.kind(p) == K::IdentPat || tree.kind(p).is_item()))
+        .map(|d| ridx_syntax::sema_fn::norm_ident(tree.text(d)))
+        .collect();
+    if !tree.text(name).is_ascii() || idents.iter().any(|i| !i.is_ascii()) || declared.iter().any(|d| !d.is_ascii()) {
+        return None;
+    }
+    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1) {
         return None;
     }
     let uses = ridx_syntax::sema_fn::let_uses(&tree, stmt, ridx_syntax::sema_fn::norm_ident(tree.text(name)));
@@ -169,8 +136,14 @@ pub(crate) fn inline_edits(doc: &str, offset: usize, let_type: LetType) -> Optio
     let parent = tree.parent(path)?;
     // A value read, evaluated once where the `let` was: not borrowed or a receiver (which see the binding's storage),
     // not in a loop, a closure or an `async` block (run another number of times, or later) the `let` is outside of.
-    let receiver = matches!(tree.kind(parent), K::MethodCallExpr | K::FieldExpr | K::IndexExpr | K::CallExpr) && tree.children(parent).next() == Some(path);
-    if tree.kind(parent) == K::RefExpr || receiver {
+    // Parentheses change neither (`&(x)`, `(x).f()`: review of 03933e37).
+    let mut outer = path;
+    while let Some(p) = tree.parent(outer).filter(|&p| tree.kind(p) == K::ParenExpr) {
+        outer = p;
+    }
+    let holder = tree.parent(outer)?;
+    let receiver = matches!(tree.kind(holder), K::MethodCallExpr | K::FieldExpr | K::IndexExpr | K::CallExpr) && tree.children(holder).next() == Some(outer);
+    if tree.kind(holder) == K::RefExpr || receiver {
         return None;
     }
     for a in tree.ancestors(path).take_while(|&a| a != block) {
@@ -180,22 +153,9 @@ pub(crate) fn inline_edits(doc: &str, offset: usize, let_type: LetType) -> Optio
         }
     }
     let shadowed = primitive_shadowed(&tree);
-    let local = |n: &str, at: usize| local_of(&tree, f, n, at, let_type).ok().flatten();
-    let (_, arithmetic) = pure(&tree, init, &local, shadowed)?;
-    let use_stmt = std::iter::once(path).chain(tree.ancestors(path)).find(|&a| tree.parent(a) == Some(block))?;
-    if arithmetic {
-        // Nothing the statement evaluates before the use may panic, exit or run code: the overflow still comes first.
-        let next = tree.children(block).skip_while(|&c| c != stmt).nth(1);
-        let before = tree.range(use_stmt).start..tree.range(path).start;
-        let first = !tree.descendants(use_stmt).any(|d| {
-            let k = tree.kind(d);
-            let effect = matches!(k, K::CallExpr | K::MethodCallExpr | K::MacroCall | K::IndexExpr | K::TryExpr | K::AwaitExpr | K::PrefixExpr | K::BinExpr | K::CastExpr);
-            effect && tree.range(d).end <= before.end && before.contains(&tree.range(d).start)
-        });
-        if next != Some(use_stmt) || !first || !unconditional(&tree, path, use_stmt) {
-            return None;
-        }
-    }
+    // Only a type written on the local: one inferred from the index may be stale (review of 03933e37).
+    let local = |n: &str, at: usize| local_of(&tree, f, n, at, &|_| None).ok().flatten();
+    pure(&tree, init, &local, shadowed)?;
     // Nothing between the `let` and the use names what the initializer reads: it reads the same values there.
     let between = tree.range(stmt).end..tree.range(path).start;
     if tree
@@ -225,13 +185,13 @@ fn statement_span(doc: &str, range: std::ops::Range<usize>) -> std::ops::Range<u
 }
 
 /// The `Inline variable` action at the cursor of an empty `range`, with its edit.
-pub fn inline_variable_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, let_type: LetType) -> Option<Value> {
+pub fn inline_variable_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>) -> Option<Value> {
     if range["start"] != range["end"] {
         return None;
     }
     let starts = line_starts_of(doc);
     let offset = utf16_pos_to_byte(doc, &starts, range["start"]["line"].as_u64()? as u32, range["start"]["character"].as_u64()? as u32)?;
-    let edits: Vec<Value> = inline_edits(doc, offset, let_type)?
+    let edits: Vec<Value> = inline_edits(doc, offset)?
         .into_iter()
         .map(|(r, text)| {
             let ((sl, sc), (el, ec)) = (byte_to_utf16_pos(doc, &starts, r.start), byte_to_utf16_pos(doc, &starts, r.end));

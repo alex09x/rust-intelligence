@@ -13,12 +13,12 @@
 use super::*;
 use crate::lsp::editing::tests::code_action_assists_tests::assert_rustc_compiles;
 
-/// `doc` with the promotion at the first `$0` applied, the binding's type inferred as `ty`.
-fn promoted(doc: &str, ty: Option<&str>) -> Option<String> {
+/// `doc` with the promotion at the first `$0` applied.
+fn promoted(doc: &str, _: Option<&str>) -> Option<String> {
     let offset = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let mut out = doc.clone();
-    for (r, text) in promote_edits(&doc, offset, &|| ty.map(str::to_string))?.into_iter().rev() {
+    for (r, text) in promote_edits(&doc, offset)?.into_iter().rev() {
         out.replace_range(r, &text);
     }
     Some(out)
@@ -26,14 +26,14 @@ fn promoted(doc: &str, ty: Option<&str>) -> Option<String> {
 
 #[test]
 fn test_a_constant_binding_becomes_a_constant() {
-    let doc = "pub fn f(v: &[u8]) -> bool {\n    let max$0_len = 4 * 8;\n    let ok = v.len() < max_len;\n    ok && max_len > 1\n}\n";
-    let got = promoted(doc, Some("usize")).unwrap();
-    assert_eq!(got, "pub fn f(v: &[u8]) -> bool {\n    const MAX_LEN: usize = 4 * 8;\n    let ok = v.len() < MAX_LEN;\n    ok && MAX_LEN > 1\n}\n");
+    let doc = "pub fn f(v: &[u8]) -> bool {\n    let max$0_len: usize = 32;\n    let ok = v.len() < max_len;\n    ok && max_len > 1\n}\n";
+    let got = promoted(doc, None).unwrap();
+    assert_eq!(got, "pub fn f(v: &[u8]) -> bool {\n    const MAX_LEN: usize = 32;\n    let ok = v.len() < MAX_LEN;\n    ok && MAX_LEN > 1\n}\n");
     assert_rustc_compiles(&got, "Promote local to constant");
-    let got = promoted("pub fn g() -> u64 {\n    let n$0: u64 = 1 << 3;\n    n\n}\n", None).unwrap();
-    assert_eq!(got, "pub fn g() -> u64 {\n    const N: u64 = 1 << 3;\n    N\n}\n", "the type written on the binding");
+    let got = promoted("pub fn g() -> u64 {\n    let n$0 = 8u64;\n    n\n}\n", None).unwrap();
+    assert_eq!(got, "pub fn g() -> u64 {\n    const N: u64 = 8u64;\n    N\n}\n", "the type the literal spells");
     assert_rustc_compiles(&got, "Promote local to constant");
-    let got = promoted("pub fn h() -> String {\n    let greeting$0 = \"hi\";\n    format!(\"{}!\", greeting)\n}\n", Some("&str")).unwrap();
+    let got = promoted("pub fn h() -> String {\n    let greeting$0 = \"hi\";\n    format!(\"{}!\", greeting)\n}\n", None).unwrap();
     assert!(got.contains("const GREETING: &str = \"hi\";") && got.contains("format!(\"{}!\", GREETING)"), "{got}");
     assert_rustc_compiles(&got, "Promote local to constant");
     // Review of 63f24322: a field shorthand keeps its field; a function of the block named so is not the local.
@@ -72,6 +72,12 @@ fn test_a_binding_no_constant_can_hold_is_not_promoted() {
         // Review of 36349abf: a comparison of tuples, an impl's `Self`.
         ("pub fn f() -> bool {\n    let same$0 = (1u8, 2u8) == (1u8, 2u8);\n    same\n}\n", Some("bool")),
         ("pub struct S;\nimpl S {\n    pub fn f() -> usize {\n        let empty$0: [Self; 0] = [];\n        empty.len()\n    }\n}\n", None),
+        // Review of 03933e37: an operator, which a constant evaluates at compile time (a division by zero or an
+        // overflow then fails to compile); a type only inferred; a primitive's name the file takes.
+        ("pub fn f(c: bool) -> u8 {\n    let x$0 = 1u8 / 0u8;\n    if c { x } else { 0 }\n}\n", None),
+        ("pub fn f() -> usize {\n    let n$0: usize = 4 * 8;\n    n\n}\n", None),
+        ("pub fn f() -> f64 {\n    let x$0 = 1.5;\n    x\n}\n", None),
+        ("type u8 = i64;\npub fn f() -> u8 {\n    let n$0 = 1u8;\n    n\n}\n", None),
     ] {
         assert_eq!(promoted(doc, ty), None, "{doc}");
     }

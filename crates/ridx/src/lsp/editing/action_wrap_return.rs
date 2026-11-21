@@ -45,47 +45,51 @@ impl Wrap {
     }
 }
 
-/// The standard library's macros, which never return from the function they are called in.
-const LOCAL_MACROS: &[&str] = &[
-    "println",
-    "print",
-    "eprintln",
-    "eprint",
-    "format",
-    "format_args",
-    "write",
-    "writeln",
-    "vec",
-    "assert",
-    "assert_eq",
-    "assert_ne",
-    "debug_assert",
-    "debug_assert_eq",
-    "debug_assert_ne",
-    "panic",
-    "unreachable",
-    "todo",
-    "unimplemented",
-    "matches",
-    "concat",
-    "stringify",
-    "line",
-    "column",
-    "file",
-    "env",
-    "option_env",
-    "include_str",
-    "cfg",
-];
-
-/// Whether the package of `file` is of the 2018 edition or later, where `::core` names the `core` crate: its
-/// `Cargo.toml` says so, or takes its workspace's edition (Cargo has no workspace edition older than 2018 in use).
+/// Whether the package of `file` is of the 2018 edition or later, where `::core` names the `core` crate, as Cargo
+/// resolves it (`[package.metadata]` tables and a workspace's inherited edition read as Cargo reads them: review of
+/// 03933e37); not when Cargo cannot tell.
 pub(crate) fn edition_2018(file: &std::path::Path) -> bool {
-    let Some(manifest) = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).find(|m| m.is_file()) else { return false };
-    let text = std::fs::read_to_string(manifest).unwrap_or_default();
-    text.lines()
-        .map(|l| l.split('#').next().unwrap_or("").replace([' ', '\t'], ""))
-        .any(|l| l.starts_with("edition.workspace=true") || (l.starts_with("edition=\"20") && !l.starts_with("edition=\"2015")))
+    package_edition(file).is_some_and(|e| e != "2015")
+}
+
+/// The edition of the package holding `file`, from `cargo metadata`, cached by the text of every manifest above it.
+fn package_edition(file: &std::path::Path) -> Option<String> {
+    use std::collections::HashMap;
+    use std::sync::{Mutex, OnceLock};
+    // By the nearest manifest: the text of every manifest above the file, and the edition read with it.
+    type Editions = HashMap<std::path::PathBuf, (String, Option<String>)>;
+    static CACHE: OnceLock<Mutex<Editions>> = OnceLock::new();
+    let manifests: Vec<std::path::PathBuf> = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).filter(|m| m.is_file()).collect();
+    let nearest = manifests.first()?.clone();
+    let key: String = manifests.iter().map(|m| std::fs::read_to_string(m).unwrap_or_default()).collect::<Vec<_>>().join("\u{0}");
+    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some((k, e)) = cache.lock().ok()?.get(&nearest) {
+        if *k == key {
+            return e.clone();
+        }
+    }
+    let out = std::process::Command::new("cargo")
+        .args(["metadata", "--format-version", "1", "--no-deps", "--offline", "--manifest-path"])
+        .arg(&nearest)
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    let j: Value = serde_json::from_slice(&out.stdout).ok()?;
+    let file = ridx_format::canonicalize_best_effort(file);
+    // The package whose directory holds the file most closely.
+    let edition = j["packages"]
+        .as_array()?
+        .iter()
+        .filter_map(|p| {
+            let dir = ridx_format::canonicalize_best_effort(std::path::Path::new(p["manifest_path"].as_str()?).parent()?);
+            let edition = p["edition"].as_str()?;
+            file.starts_with(&dir).then(|| (dir.components().count(), edition.to_string()))
+        })
+        .max_by_key(|(depth, _)| *depth)
+        .map(|(_, e)| e);
+    cache.lock().ok()?.insert(nearest, (key, edition.clone()));
+    edition
 }
 
 /// The function whose header (up to its body) covers byte `offset`, with its name: a free function or a method of an
@@ -110,8 +114,16 @@ fn fn_at(tree: &SyntaxTree<'_>, offset: usize) -> Option<(NodeId, NodeId)> {
 pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, edition_2018: bool, called: &dyn Fn(usize, &str) -> bool) -> Option<Vec<(Range<usize>, String)>> {
     let tree = ridx_syntax::parse(doc);
     let (f, name) = fn_at(&tree, offset)?;
-    // `::core` is the crate from 2018 on, unless the file makes a `core` of its own.
-    if !edition_2018 || tree.descendants(tree.root()).any(|d| tree.kind(d) == K::Name && tree.text(d) == "core") {
+    // `::core` is the crate from 2018 on, unless the file makes a `core` of its own, by any spelling, or names a crate
+    // in the extern prelude itself (`extern crate self as r#core`: review of 03933e37).
+    let toks: Vec<_> = tree.tokens.iter().filter(|t| !t.is_trivia()).collect();
+    let extern_crate = toks.windows(2).any(|w| w[0].text(doc) == "extern" && w[1].text(doc) == "crate");
+    if !edition_2018 || extern_crate || tree.descendants(tree.root()).any(|d| tree.kind(d) == K::Name && ridx_syntax::sema_fn::norm_ident(tree.text(d)) == "core") {
+        return None;
+    }
+    // An attribute may change what the function is or must return (`#[test]`, a proc macro), and `main` must return
+    // what the runtime accepts (review of 03933e37).
+    if tree.children(f).any(|c| tree.kind(c) == K::Attr) || ridx_syntax::sema_fn::norm_ident(tree.text(name)) == "main" {
         return None;
     }
     let ty = tree.child(f, K::RetType).and_then(|r| tree.children(r).next())?;
@@ -122,16 +134,9 @@ pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, edition_2018: boo
         return None;
     }
     let body = ridx_syntax::sema_fn::fn_body(&tree, f)?;
-    // Every exit is wrapped: none through `?` (whose type the new one changes), none in a macro's arguments or its
-    // expansion (only the standard library's, which return from nothing, are read: review of 36349abf).
-    let macro_name = |d: NodeId| tree.tokens_of(d).iter().take_while(|t| t.kind != T::Bang).filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).last().map(|t| t.text(doc));
-    if !ridx_syntax::sema_fn::own_try_ops(&tree, f).is_empty()
-        || tree.descendants(body).any(|d| {
-            tree.kind(d) == K::MacroCall
-                && (tree.tokens_of(d).iter().any(|t| t.kind == T::Return || t.kind == T::Question)
-                    || !macro_name(d).is_some_and(|m| LOCAL_MACROS.contains(&m) && tree.text(d).starts_with(m)))
-        })
-    {
+    // Every exit is wrapped: none through `?` (whose type the new one changes), none through a macro, whose expansion
+    // ridx does not read (a file may define its own `println`: review of 03933e37).
+    if !ridx_syntax::sema_fn::own_try_ops(&tree, f).is_empty() || tree.descendants(f).any(|d| tree.kind(d) == K::MacroCall) {
         return None;
     }
     // The end of the body returns a value: its tail, or a last `return` (a body falling through its end returns `()`,

@@ -94,8 +94,7 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
-            let let_type = |offset: usize| super::action_explicit_type::let_type_at(&doc_text, uri, offset, ws, overlay_mgr);
-            if let Some(action) = super::action_inline_variable::inline_variable_action(&doc_text, uri, range, doc_version, &let_type) {
+            if let Some(action) = super::action_inline_variable::inline_variable_action(&doc_text, uri, range, doc_version) {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
@@ -109,7 +108,7 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
-            if let Some(action) = super::action_promote_const::promote_const_action(&doc_text, uri, range, doc_version, ws, overlay_mgr) {
+            if let Some(action) = super::action_promote_const::promote_const_action(&doc_text, uri, range, doc_version) {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
