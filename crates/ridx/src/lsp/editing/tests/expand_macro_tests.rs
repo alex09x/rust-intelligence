@@ -151,3 +151,75 @@ fn test_the_fallback_takes_only_an_unshadowed_ungated_definition() {
     );
     assert_eq!(expand("#[cfg(any())]\nmacro_rules! m {\n    () => { 2u8 };\n}\npub fn g() -> u8 { m!() }\n"), None, "compiled out");
 }
+
+/// `doc` with the macro `m` declared at `def` (1-based line, column) and the call `m!` at `call` resolved to it.
+fn resolved(doc: &str, def: (u32, u32), call: (u32, u32)) -> Option<(String, String)> {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    std::fs::create_dir_all(root.join("src")).unwrap();
+    let lib = root.join("src/lib.rs");
+    std::fs::write(&lib, doc).unwrap();
+    let file = lib.to_string_lossy().to_string();
+    let mut w = IndexWriter::new("w", "0.1.0");
+    w.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Macro,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: file.clone(),
+        name: "m".to_string(),
+        start_line: def.0,
+        start_col: def.1,
+        end_line: def.0,
+        end_col: def.1 + 1,
+        path: "w::m".to_string(),
+        signature: None,
+    });
+    w.add_reference(ridx_format::RawReference {
+        file: file.clone(),
+        start_line: call.0,
+        start_col: call.1,
+        end_line: call.0,
+        end_col: call.1 + 1,
+        target_def_id: Some(1),
+        target_path: "w::m".to_string(),
+        target_unit: None,
+        target_file: Some(file.clone()),
+        target_line: def.0,
+        target_col: def.1,
+        kind: DefKind::Macro,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    w.add_file_hash(&file, ridx_format::normalized_source_hash(doc.as_bytes()));
+    let shard = root.join("w.ridx");
+    w.write_to(&mut std::fs::File::create(&shard).unwrap()).unwrap();
+    let ws = WorkspaceIndex::open(&shard).unwrap();
+    expand_macro_at(doc, &file, doc.rfind("m!").unwrap(), &ws)
+}
+
+/// Review of ced3cb20: the index's edge names its definition by line and column, a header across lines too; without
+/// one, a `#[macro_use]` module or an item macro may bind another `m` before the call; a module named as the defining
+/// crate is no extern crate.
+#[test]
+fn test_the_recorded_definition_and_what_may_rebind_a_name() {
+    let pad = " ".repeat(40);
+    let doc = format!("macro_rules! m {{ () => {{ 1u8 }}; }}\n{pad}macro_rules! m {{ () => {{ 2u8 }}; }}\npub fn g() -> u8 {{ m!() }}\n");
+    assert_eq!(resolved(&doc, (2, 54), (3, 20)), Some(("m".to_string(), "2u8".to_string())), "the target line's own definition");
+    assert_eq!(resolved(&doc, (2, 41), (3, 20)), Some(("m".to_string(), "2u8".to_string())), "by its `macro_rules`");
+    let doc = "macro_rules! m { () => { 1u8 }; }\nmacro_rules!\n    m { () => { 2u8 }; }\npub fn g() -> u8 { m!() }\n";
+    assert_eq!(resolved(doc, (3, 5), (4, 20)), Some(("m".to_string(), "2u8".to_string())), "a name on the header's next line");
+    assert_eq!(resolved(doc, (2, 7), (4, 20)), None, "no definition there");
+    let expand = |d: &str| {
+        let (_d, file, ws) = indexed(d, &[]);
+        expand_macro_at(d, &file, d.rfind("m!").unwrap(), &ws)
+    };
+    let root = "macro_rules! m {\n    () => { 1u8 };\n}\n";
+    assert_eq!(expand(&format!("{root}#[macro_use]\nmod defs;\npub fn g() -> u8 {{ m!() }}\n")), None, "macro_use");
+    assert_eq!(expand(&format!("{root}make!();\npub fn g() -> u8 {{ m!() }}\n")), None, "an item macro");
+    assert_eq!(expand(&format!("{root}pub fn g() -> u8 {{\n    make!();\n    m!()\n}}\n")), None, "a statement macro");
+    assert_eq!(expand(&format!("{root}pub fn h() {{ make!(); }}\npub fn g() -> u8 {{ m!() }}\n")), Some(("m".to_string(), "1u8".to_string())), "another block's");
+    let (_d, file, ws) = indexed("", &[]);
+    assert_eq!(super::crate_prefix(&ws, &file, "mod dep { pub use actual::m; }\n", "dep::", Some("dep")), None);
+    assert_eq!(super::crate_prefix(&ws, &file, "", "dep::", Some("dep")).as_deref(), Some("::dep"));
+}

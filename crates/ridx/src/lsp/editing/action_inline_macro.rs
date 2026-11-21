@@ -194,7 +194,17 @@ pub(super) fn crate_prefix(ws: &WorkspaceIndex, file: &str, masked_doc: &str, ca
     // (`facade::m!`) is no crate (review of b40e1834).
     if let Some(head) = call_path.trim_end_matches("::").split("::").next().filter(|h| !h.is_empty() && *h != "crate" && *h != "self" && *h != "super") {
         if head.trim_start_matches("r#") == def_crate {
-            return Some(format!("::{head}"));
+            // And only where that name is an extern crate's of the file, not a module of the same name re-exporting it
+            // from the crate linked under another name (`mod dep { pub use actual::m; }`: review of ced3cb20).
+            let linked = ws.extern_crate_names_for_file(file).is_none_or(|l| l.contains(&def_crate));
+            let module = ws.exact_local_symbols_by_name(def_crate).iter().any(|s| s.kind == DefKind::Mod)
+                || masked_doc.match_indices(def_crate).any(|(p, _)| {
+                    let before = masked_doc[..p].trim_end();
+                    let b = masked_doc.as_bytes();
+                    let word = (p == 0 || !is_ident_byte(b[p - 1])) && b.get(p + def_crate.len()).is_none_or(|&c| !is_ident_byte(c));
+                    word && (before.ends_with("mod") || before.ends_with("as"))
+                });
+            return (linked && !module).then(|| format!("::{head}"));
         }
     }
     let b = masked_doc.as_bytes();

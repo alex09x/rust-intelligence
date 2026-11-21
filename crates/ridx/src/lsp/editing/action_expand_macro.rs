@@ -11,7 +11,7 @@
 //! `ridx/expandMacro` (prod-code, m=20257): the `macro_rules!` call around the cursor and its expansion as source,
 //! fully expanded, or `None` wherever ridx cannot tell the expansion is the one the compiler makes.
 
-use super::action_inline_macro::{crate_prefix, macro_definition};
+use super::action_inline_macro::crate_prefix;
 use super::action_inline_macro_text::{rejoin_punctuation, tidy_spacing};
 use super::action_parse::{line_starts_of, mask_comments_and_strings};
 use ridx_format::{DefKind, WorkspaceIndex};
@@ -66,6 +66,26 @@ fn fragments_faithful(def: &str) -> bool {
     true
 }
 
+/// The body of the one `macro_rules! name` of `text` declared at the compiler's 1-based `line` and `col`: where its
+/// item, its `macro_rules` or its name starts (a name may be on a later line: review of ced3cb20).
+fn declared_at(text: &str, line: u32, col: u32, name: &str) -> Option<String> {
+    let at = super::action_struct_conv_index::line_col_to_byte(text, &line_starts_of(text), line, col)?;
+    let tree = ridx_syntax::parse(text);
+    let found: Vec<_> = tree
+        .descendants(tree.root())
+        .filter(|&d| tree.kind(d) == K::MacroRules)
+        .filter(|&d| {
+            let n = tree.child(d, K::Name);
+            n.is_some_and(|n| ridx_syntax::sema_fn::norm_ident(tree.text(n)) == ridx_syntax::sema_fn::norm_ident(name))
+                && (tree.range(d).start == at
+                    || n.is_some_and(|n| tree.range(n).start == at)
+                    || tree.tokens_of(d).iter().any(|t| t.start as usize == at && t.text(text) == "macro_rules"))
+        })
+        .collect();
+    let [d] = found.as_slice() else { return None };
+    Some(tree.text(tree.child(*d, K::TokenTree)?).to_string())
+}
+
 /// The definition the call named `name` at `name_at` resolves to: the index's own edge, when the index read this very
 /// text (an edge of an older text is not this call's: review of 29b77abe), by the target's own name (a re-export's
 /// differs); else, for an unqualified call, a `macro_rules!` of that name at the top of this file before it, which
@@ -76,26 +96,49 @@ fn definition(doc: &str, tree: &SyntaxTree<'_>, file: &str, name_at: usize, name
     let (line, col) = super::action_struct_conv_index::byte_to_line_col(doc, &starts, name_at);
     if current {
         if let Some(r) = ws.find_direct_references_at(file, line, col).filter(|r| r.target_kind == DefKind::Macro) {
-            let (target, path, target_line) = (r.target_symbol.to_string(), r.target_resolved_path(), r.target_line);
-            // The definition's file must be the text the index read too, or its coordinates name another macro; and its
-            // line must hold one definition of that name, the line being all that is looked up (review of b40e1834).
+            // The definition's file must be the text its own unit read, the one whose coordinates the edge gives (another
+            // unit may have read a newer text of it: review of ced3cb20).
+            let t = r.target_reader_idx?;
+            let path = r.target_resolved_path();
+            if path.to_string_lossy().contains("/library/") {
+                return None;
+            }
             let text = std::fs::read_to_string(&path).ok()?;
-            if ws.source_hash_for_file(&path.to_string_lossy()) != Some(ridx_format::normalized_source_hash(text.as_bytes())) {
+            let tr = &ws.readers()[t];
+            let want = ridx_format::canonicalize_best_effort(&path);
+            let mut hashes: Vec<u64> = (0..tr.files_count())
+                .filter(|&id| super::safe_delete_fresh::resolve(ws, t, tr.get_file(id)).is_some_and(|p| ridx_format::canonicalize_best_effort(&p) == want))
+                .map(|id| tr.file_source_hash(id))
+                .collect();
+            hashes.sort_unstable();
+            hashes.dedup();
+            if hashes != [ridx_format::normalized_source_hash(text.as_bytes())] {
                 return None;
             }
-            let on_line = text.lines().nth(target_line.saturating_sub(1) as usize).unwrap_or("");
-            let def_toks: Vec<_> = ridx_syntax::lex(on_line).into_iter().filter(|t| !t.is_trivia()).collect();
-            let defs = def_toks
-                .windows(3)
-                .filter(|w| w[0].text(on_line) == "macro_rules" && w[1].text(on_line) == "!" && ridx_syntax::sema_fn::norm_ident(w[2].text(on_line)) == target)
-                .count();
-            if defs > 1 {
-                return None;
-            }
-            return macro_definition(doc, &starts, file, name_at, &target, ws, false);
+            let body = declared_at(&text, r.target_line, r.target_col, r.target_symbol)?;
+            let own = ws.reader_indices_for_file(file).first().map(|&i| ws.readers()[i].crate_name().replace('-', "_"));
+            let def_crate = tr.crate_name().replace('-', "_");
+            return Some((body, (own.as_deref() != Some(def_crate.as_str())).then_some(def_crate)));
         }
     }
-    if qualified {
+    // Unqualified, and in a file where nothing but its own `macro_rules!` may bind a macro before the call: a
+    // `#[macro_use]` module, an attribute macro, another macro's expansion may each bring another of that name into
+    // textual scope (review of ced3cb20).
+    let other_call = tree.descendants(tree.root()).filter(|&d| tree.kind(d) == K::MacroCall && tree.range(d).start < name_at && !tree.range(d).contains(&name_at)).any(|d| {
+        let toks: Vec<_> = tree.tokens_of(d).iter().filter(|t| !t.is_trivia()).collect();
+        let bare = toks.len() >= 2 && toks[1].kind == T::Bang && toks[0].kind == T::Ident;
+        // Where an expansion's `macro_rules!` stays in scope: an item's place, or a statement's in a block around the call.
+        let binds = match tree.parent(d).map(|p| (p, tree.kind(p))) {
+            Some((_, K::SourceFile | K::ItemList | K::Module)) => true,
+            Some((p, K::BlockExpr | K::ExprStmt)) => {
+                std::iter::once(p).chain(tree.ancestors(p)).find(|&b| tree.kind(b) == K::BlockExpr).is_some_and(|b| tree.range(b).contains(&name_at))
+            }
+            _ => false,
+        };
+        binds && !(bare && super::assist_locals::STD_STATEMENT_MACROS.contains(&toks[0].text(doc))) && !tree.ancestors(d).any(|a| tree.kind(a) == K::MacroRules)
+    });
+    let macro_use = tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(doc)) == "macro_use");
+    if qualified || other_call || macro_use || super::assist_locals::macro_attribute(tree) {
         return None;
     }
     // The one definition of that name in the file, at its top, before the call, under no attribute: a nearer one in a

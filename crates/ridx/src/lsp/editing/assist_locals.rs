@@ -93,7 +93,7 @@ pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>, std_only: StdOnly<'_>) -
 }
 
 /// The standard library's statement macros, which declare nothing where they are called.
-const STD_STATEMENT_MACROS: &[&str] = &[
+pub(crate) const STD_STATEMENT_MACROS: &[&str] = &[
     "println",
     "print",
     "eprintln",
