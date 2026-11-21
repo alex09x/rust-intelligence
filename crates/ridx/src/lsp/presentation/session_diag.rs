@@ -37,7 +37,7 @@ type Roots = HashMap<PathBuf, HashMap<PathBuf, SessionFile>>;
 #[derive(Default)]
 pub struct SessionDiagnostics {
     roots: Mutex<Roots>,
-    published: Mutex<HashMap<PathBuf, String>>,
+    published: Mutex<HashMap<PathBuf, std::collections::BTreeSet<String>>>,
 }
 
 /// The root and the session's diagnostics of `file` (canonical) in `roots`: from the innermost root whose session has
@@ -116,20 +116,56 @@ impl SessionDiagnostics {
         h.finish()
     }
 
-    fn published_uri(&self, file: &Path) -> Option<String> {
-        self.published.lock().unwrap_or_else(|e| e.into_inner()).get(file).cloned()
+    /// The URIs something of `file` is still published under (`active` says which still show something), in order; the
+    /// others are forgotten (review of 68375e6e: a cleared alias was used again after it was gone).
+    fn published_uris(&self, file: &Path, active: &dyn Fn(&str) -> bool) -> Vec<String> {
+        let mut published = self.published.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(uris) = published.get_mut(file) else { return Vec::new() };
+        uris.retain(|u| active(u));
+        uris.iter().cloned().collect()
     }
 
-    /// `file`'s diagnostics are out under `uri` (`active`), or no longer under any: an alias is kept only while there is
-    /// something to clear under it (review of 68375e6e: a cleared alias was used again after it was gone).
+    /// `file`'s diagnostics are out under `uri` (`active`), or no longer: every URI of the file still showing something
+    /// is kept, not only the last (review of c7b4013f: two aliases closed in turn lost the first).
     fn record_published(&self, file: &Path, uri: &str, active: bool) {
         let mut published = self.published.lock().unwrap_or_else(|e| e.into_inner());
+        let uris = published.entry(file.to_path_buf()).or_default();
         if active {
-            published.insert(file.to_path_buf(), uri.to_string());
+            uris.insert(uri.to_string());
         } else {
-            published.remove(file);
+            uris.remove(uri);
         }
     }
+}
+
+/// Publishes `file` under `target` (with `version`, an open buffer's) and clears it under every other URI something of
+/// it is still published under: the one place a file's publication moves, whatever moves it (reviews of 88fe53d0,
+/// 2810515d and c7b4013f). Only URIs known to be this file's are cleared, never a key the check names it by, which may
+/// be another file's URI (`a%20b.rs`).
+fn publish_under<W: Write>(
+    file: &Path,
+    target: &str,
+    version: Option<i32>,
+    lifecycle: &crate::lsp::lifecycle::LifecycleManager,
+    ov: &crate::overlay::OverlayManager,
+    writer: &mut W,
+) -> std::io::Result<()> {
+    let fc = &lifecycle.flycheck;
+    super::reconcile::publish_reconciled_diagnostics(target, version, ov, fc, writer)?;
+    for other in fc.session.published_uris(file, &|u| fc.has_active_diagnostics(u)).into_iter().filter(|u| u != target) {
+        if fc.clear_published(&other) {
+            let clear = json!({ "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": { "uri": other, "diagnostics": [] } });
+            crate::lsp::protocol::send_response(writer, &clear)?;
+        }
+        fc.session.record_published(file, &other, false);
+    }
+    fc.session.record_published(file, target, fc.has_active_diagnostics(target));
+    Ok(())
+}
+
+/// The URI to publish closed `file` under: one something of it is still published under, else its own.
+fn closed_target(file: &Path, fc: &super::flycheck::FlycheckState) -> String {
+    fc.session.published_uris(file, &|u| fc.has_active_diagnostics(u)).into_iter().next().unwrap_or_else(|| crate::lsp::protocol::path_to_uri(&file.to_string_lossy()))
 }
 
 /// Whether the check of the saved files has diagnostics of `file`, under the URI it names files by.
@@ -164,30 +200,18 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
 
 /// Publishes what the check of the saved files reported on the file its key `check_key` names (`file://` and the path
 /// as it is, not a URI to decode: a file may be named `a%20b.rs`, review of 2810515d) under the URI the client knows
-/// the file by: its open buffer's, else the one something of it is still published under, else the file's own. Every
-/// other spelling still showing something of the file (the check's key, a URI it was shown under before) is cleared
-/// (reviews of 88fe53d0 and 2810515d).
+/// the file by: its open buffer's, else one something of it is still published under, else the file's own.
 pub fn publish_check<W: Write>(check_key: &str, lifecycle: &crate::lsp::lifecycle::LifecycleManager, ov: &crate::overlay::OverlayManager, writer: &mut W) -> std::io::Result<()> {
     let file = ridx_format::canonicalize_best_effort(&super::compiler_merge::check_path(check_key));
-    let fc = &lifecycle.flycheck;
-    let previous = fc.session.published_uri(&file).filter(|u| fc.has_active_diagnostics(u));
     let open = ov
         .open_file_paths()
         .into_iter()
         .find_map(|k| (ridx_format::canonicalize_best_effort(Path::new(&k)) == file).then(|| ov.get(&k).map(|o| (o.uri.clone(), o.version))).flatten());
     let (target, version) = match open {
         Some((uri, version)) => (uri, Some(version)),
-        None => (previous.clone().unwrap_or_else(|| crate::lsp::protocol::path_to_uri(&file.to_string_lossy())), None),
+        None => (closed_target(&file, &lifecycle.flycheck), None),
     };
-    super::reconcile::publish_reconciled_diagnostics(&target, version, ov, fc, writer)?;
-    for other in [Some(check_key.to_string()), previous].into_iter().flatten().filter(|u| *u != target) {
-        if fc.clear_published(&other) {
-            let clear = json!({ "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": { "uri": other, "diagnostics": [] } });
-            crate::lsp::protocol::send_response(writer, &clear)?;
-        }
-    }
-    fc.session.record_published(&file, &target, fc.has_active_diagnostics(&target));
-    Ok(())
+    publish_under(&file, &target, version, lifecycle, ov, writer)
 }
 
 /// The buffer `uri` (`file`) was closed: it is the file as saved again, which the check of the saved files speaks for
@@ -203,9 +227,7 @@ pub fn on_close<W: Write>(uri: &str, file: &str, lifecycle: &crate::lsp::lifecyc
     if lifecycle.client_pull_diagnostics() {
         return publish_session_files(std::slice::from_ref(&closed), lifecycle, ov, writer);
     }
-    super::reconcile::publish_reconciled_diagnostics(uri, None, ov, fc, writer)?;
-    fc.session.record_published(&closed, uri, fc.has_active_diagnostics(uri));
-    Ok(())
+    publish_under(&closed, uri, None, lifecycle, ov, writer)
 }
 
 /// Sends the diagnostics of `files` again after a session changed them: pushed, each under the URI of its open buffer
@@ -229,19 +251,14 @@ pub fn publish_session_files<W: Write>(
     }
     let open: Vec<(PathBuf, String, i32)> =
         ov.open_file_paths().into_iter().filter_map(|key| ov.get(&key).map(|o| (ridx_format::canonicalize_best_effort(Path::new(&key)), o.uri.clone(), o.version))).collect();
-    let session = &lifecycle.flycheck.session;
     for file in files {
         let (uri, version) = match open.iter().find(|(p, _, _)| p == file) {
             Some((_, uri, version)) => (uri.clone(), Some(*version)),
-            // The URI something is still out under, else the file's own (review of 46ce96f2: an alias cleared by
-            // another path was used again).
-            None => {
-                let out = session.published_uri(file).filter(|u| lifecycle.flycheck.has_active_diagnostics(u));
-                (out.unwrap_or_else(|| crate::lsp::protocol::path_to_uri(&file.to_string_lossy())), None)
-            }
+            // A URI something is still out under, else the file's own (review of 46ce96f2: an alias cleared by another
+            // path was used again).
+            None => (closed_target(file, &lifecycle.flycheck), None),
         };
-        super::reconcile::publish_reconciled_diagnostics(&uri, version, ov, &lifecycle.flycheck, writer)?;
-        session.record_published(file, &uri, lifecycle.flycheck.has_active_diagnostics(&uri));
+        publish_under(file, &uri, version, lifecycle, ov, writer)?;
     }
     Ok(())
 }

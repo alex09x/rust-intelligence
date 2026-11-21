@@ -123,10 +123,12 @@ fn test_a_change_of_text_or_root_is_sent_again() {
 fn test_a_publication_is_remembered_only_while_it_is_out() {
     let diags = SessionDiagnostics::default();
     let f = Path::new("/w/src/a.rs");
-    diags.record_published(f, "file:///w/link/a.rs", true);
-    assert_eq!(diags.published_uri(f).as_deref(), Some("file:///w/link/a.rs"));
-    diags.record_published(f, "file:///w/link/a.rs", false);
-    assert_eq!(diags.published_uri(f), None);
+    diags.record_published(f, "file:///w/one/a.rs", true);
+    diags.record_published(f, "file:///w/two/a.rs", true);
+    assert_eq!(diags.published_uris(f, &|_| true), ["file:///w/one/a.rs", "file:///w/two/a.rs"], "every URI still out, not only the last");
+    diags.record_published(f, "file:///w/one/a.rs", false);
+    assert_eq!(diags.published_uris(f, &|_| true), ["file:///w/two/a.rs"]);
+    assert!(diags.published_uris(f, &|_| false).is_empty() && diags.published_uris(f, &|_| true).is_empty(), "one no longer showing anything is forgotten");
 }
 
 /// prod-code, m=20120: an error typed and never saved was not reported; the check of the saved file was. Review of
@@ -282,4 +284,45 @@ fn test_a_uri_the_file_was_shown_under_before_is_cleared() {
     publish_check(&uri(&a), &lifecycle, &ov, &mut out).unwrap();
     let sent = String::from_utf8(out).unwrap();
     assert!(sent.contains(alias) && !lifecycle.flycheck.has_active_diagnostics(alias), "{sent}");
+}
+
+/// Review of c7b4013f: closed under two aliases in turn, the file kept the first's error when the check cleared it.
+#[test]
+fn test_every_uri_the_file_was_shown_under_is_cleared() {
+    let (_d, root) = workspace();
+    let a = root.join("src/a.rs");
+    let lifecycle = crate::lsp::LifecycleManager::new();
+    let ov = crate::overlay::OverlayManager::new();
+    for alias in ["file:///one/a.rs", "file:///two/a.rs"] {
+        lifecycle.flycheck.mark_published(alias);
+        lifecycle.flycheck.session.record_published(&a, alias, true);
+    }
+    let mut out = Vec::new();
+    publish_check(&uri(&a), &lifecycle, &ov, &mut out).unwrap();
+    assert!(!lifecycle.flycheck.has_active_diagnostics("file:///one/a.rs") && !lifecycle.flycheck.has_active_diagnostics("file:///two/a.rs"));
+}
+
+/// Review of c7b4013f: publishing `a%20b.rs` cleared `a b.rs`, whose URI is that file's check key.
+#[test]
+fn test_a_check_key_is_never_cleared_as_a_uri() {
+    let (_d, root) = workspace();
+    let (literal, spaced) = (root.join("src/a%20b.rs"), root.join("src/a b.rs"));
+    std::fs::write(&literal, "x\n").unwrap();
+    std::fs::write(&spaced, "x\n").unwrap();
+    let lifecycle = crate::lsp::LifecycleManager::new();
+    let ov = crate::overlay::OverlayManager::new();
+    let spaced_uri = crate::lsp::protocol::path_to_uri(&spaced.to_string_lossy());
+    assert_eq!(spaced_uri, uri(&literal), "the space file's URI is the literal file's key");
+    lifecycle.flycheck.mark_published(&spaced_uri);
+    lifecycle.flycheck.session.record_published(&spaced, &spaced_uri, true);
+    let mut out = Vec::new();
+    publish_check(&uri(&literal), &lifecycle, &ov, &mut out).unwrap();
+    assert!(lifecycle.flycheck.has_active_diagnostics(&spaced_uri), "{}", String::from_utf8_lossy(&out));
+}
+
+/// Review of c7b4013f: the check's own pass read `a%20b.rs` as `a b.rs`; a key is read back as the path it holds.
+#[test]
+fn test_a_check_key_is_read_back_as_its_path() {
+    let p = Path::new("/w/src/a%20b.rs");
+    assert_eq!(crate::lsp::presentation::compiler_merge::check_path(&crate::lsp::presentation::compiler_merge::check_key(p)), p);
 }

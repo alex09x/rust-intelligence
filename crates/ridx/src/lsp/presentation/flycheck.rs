@@ -138,7 +138,7 @@ impl FlycheckState {
         if diags.is_empty() {
             guard.remove(uri);
         } else {
-            let base = baseline.or_else(|| std::fs::read_to_string(super::super::protocol::uri_to_path(uri)).ok());
+            let base = baseline.or_else(|| std::fs::read_to_string(super::compiler_merge::check_path(uri)).ok());
             guard.insert(uri.to_string(), CachedDiagnostic { items: diags, baseline: base });
         }
     }
@@ -314,7 +314,7 @@ where
     // before the time is compared, so a write after the read shows in the time too.
     let mut baselines: HashMap<String, String> = HashMap::new();
     file_diagnostics.retain(|uri, _| {
-        let path = PathBuf::from(super::super::protocol::uri_to_path(uri));
+        let path = super::compiler_merge::check_path(uri);
         let Ok(text) = std::fs::read_to_string(&path) else { return false };
         if modified_since(&path, started) {
             return false;
