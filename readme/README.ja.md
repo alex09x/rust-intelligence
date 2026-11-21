@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> これはコミット [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
+> これはコミット [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md) 時点の英語版 README の翻訳です。正式かつ最新の版は[英語版 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)です。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -51,7 +51,7 @@ Linux と macOS に対応。Rust Project および Rust Foundation とは関係�
   インデックスを作り、マシン上のすべてのプロジェクトと worktree で共有します。
 - **入力中のコードにも対応**：未保存の編集には、インデックスの上に重ねたメモリ上のオーバーレイがすぐに答えます。最後の
   編集から 250 ms 後には編集されたクレートがバッファからセッションのインデックスへコンパイルされるので、参照や
-  リネームも新しいコードを見ます。
+  リネームも新しいコードを見ます。その中のコンパイラのエラーも報告されます。
 
 ## 計測
 
@@ -156,7 +156,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | リファクタリング | `prepareRename`, `rename`, `codeAction` (コンパイルを壊さないアシスト), `executeCommand` |
 | フォーマット | `formatting`, `rangeFormatting` |
 | シンボル | `documentSymbol`, `workspace/symbol` |
-| 診断 | 保存時のバックグラウンド `cargo check` による `publishDiagnostics`、プル型診断 |
+| 診断 | 保存時のバックグラウンド `cargo check` と未保存バッファのコンパイルによる `publishDiagnostics`、プル型診断 |
 | ワークスペース | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, マルチルート |
 
 ## 仕組み

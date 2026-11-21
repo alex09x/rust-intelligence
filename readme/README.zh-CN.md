@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -49,7 +49,7 @@
 - **被分析的大部分代码是依赖和 std**，没有人会去编辑。`ridx` 每个依赖只索引一次，
   并在本机所有项目和 worktree 之间共享。
 - **正在输入的代码同样可用**：未保存的修改由索引之上的内存覆盖层立即回答；最后一次修改 250 ms 后，被修改的
-  crate 会从缓冲区编译进会话索引，因此引用和重命名也能看到新代码。
+  crate 会从缓冲区编译进会话索引，因此引用和重命名也能看到新代码。其中的编译器错误也会被报告。
 
 ## 测量
 
@@ -151,7 +151,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | 重构 | `prepareRename`, `rename`, `codeAction` (不破坏编译的辅助操作), `executeCommand` |
 | 格式化 | `formatting`, `rangeFormatting` |
 | 符号 | `documentSymbol`, `workspace/symbol` |
-| 诊断 | 保存时由后台 `cargo check` 产生的 `publishDiagnostics`，拉取式诊断 |
+| 诊断 | 保存时由后台 `cargo check` 以及未保存缓冲区的编译产生的 `publishDiagnostics`，拉取式诊断 |
 | 工作区 | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, 多根工作区 |
 
 ## 工作原理

@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> Ceci est une traduction du README anglais au commit [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Ceci est une traduction du README anglais au commit [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -53,7 +53,7 @@ Linux et macOS. Sans lien avec le Rust Project ni la Rust Foundation.
 - **Ce que vous tapez fonctionne aussi** : une couche en mémoire au-dessus de l'index répond aussitôt aux
   modifications non enregistrées, et 250 ms après la dernière modification les crates modifiés sont compilés
   depuis les buffers dans un index de la session, si bien que les références et le renommage voient aussi le
-  nouveau code.
+  nouveau code. Les erreurs du compilateur y sont aussi signalées.
 
 ## Mesures
 
@@ -160,7 +160,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Refactorisation | `prepareRename`, `rename`, `codeAction` (assistances sûres pour la compilation), `executeCommand` |
 | Formatage | `formatting`, `rangeFormatting` |
 | Symboles | `documentSymbol`, `workspace/symbol` |
-| Diagnostics | `publishDiagnostics` d'un `cargo check` en arrière-plan à l'enregistrement, diagnostics pull |
+| Diagnostics | `publishDiagnostics` d'un `cargo check` en arrière-plan à l'enregistrement et de la compilation des tampons non enregistrés, diagnostics pull |
 | Workspaces | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, multi-racine |
 
 ## Fonctionnement

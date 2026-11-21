@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -52,7 +52,7 @@ Linux и macOS. Проект не связан с Rust Project и Rust Foundatio
   каждую зависимость один раз и делит её между всеми проектами и worktree на машине.
 - **То, что вы набираете, тоже работает**: на несохранённые правки сразу отвечает слой в памяти поверх
   индекса, а через 250 мс после последней правки изменённые крейты компилируются из буферов в индекс
-  сессии, так что ссылки и переименование тоже видят новый код.
+  сессии, так что ссылки и переименование тоже видят новый код. Ошибки компилятора в нём тоже видны сразу.
 
 ## Замеры
 
@@ -160,7 +160,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Рефакторинг | `prepareRename`, `rename`, `codeAction` (правки, не ломающие компиляцию), `executeCommand` |
 | Форматирование | `formatting`, `rangeFormatting` |
 | Символы | `documentSymbol`, `workspace/symbol` |
-| Диагностика | `publishDiagnostics` из фонового `cargo check` при сохранении, pull-диагностика |
+| Диагностика | `publishDiagnostics` из фонового `cargo check` при сохранении и из компиляции несохранённых буферов, pull-диагностика |
 | Воркспейсы | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, несколько корней |
 
 ## Как это устроено

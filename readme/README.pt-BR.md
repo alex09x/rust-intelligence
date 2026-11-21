@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> Esta é uma tradução do README em inglês no commit [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta é uma tradução do README em inglês no commit [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -52,7 +52,7 @@ Linux e macOS. Sem afiliação com o Rust Project nem com a Rust Foundation.
   dependência uma única vez e a compartilha entre todos os projetos e worktrees da máquina.
 - **O que você digita continua funcionando**: uma camada em memória sobre o índice responde na hora às
   edições não salvas, e 250 ms após a última edição os crates editados são compilados a partir dos buffers em
-  um índice da sessão, então referências e renomeação também enxergam o código novo.
+  um índice da sessão, então referências e renomeação também enxergam o código novo. Os erros do compilador nele também são informados.
 
 ## Medições
 
@@ -158,7 +158,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Refatoração | `prepareRename`, `rename`, `codeAction` (assistências seguras para a compilação), `executeCommand` |
 | Formatação | `formatting`, `rangeFormatting` |
 | Símbolos | `documentSymbol`, `workspace/symbol` |
-| Diagnósticos | `publishDiagnostics` de um `cargo check` em segundo plano ao salvar, diagnósticos pull |
+| Diagnósticos | `publishDiagnostics` de um `cargo check` em segundo plano ao salvar e da compilação dos buffers não salvos, diagnósticos pull |
 | Workspaces | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, múltiplas raízes |
 
 ## Como funciona

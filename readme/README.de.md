@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> Dies ist eine Übersetzung der englischen README im Commit [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Dies ist eine Übersetzung der englischen README im Commit [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -52,7 +52,7 @@ Linux und macOS. Nicht mit dem Rust Project oder der Rust Foundation verbunden.
   Abhängigkeit einmal und teilt sie zwischen allen Projekten und Worktrees auf dem Rechner.
 - **Was Sie tippen, funktioniert trotzdem**: Ungespeicherte Änderungen beantwortet sofort eine Schicht im
   Speicher über dem Index, und 250 ms nach der letzten Änderung werden die geänderten Crates aus den Puffern
-  in einen Index der Sitzung kompiliert, sodass auch Referenzen und Umbenennen den neuen Code sehen.
+  in einen Index der Sitzung kompiliert, sodass auch Referenzen und Umbenennen den neuen Code sehen. Auch die Fehler des Compilers darin werden gemeldet.
 
 ## Gemessen
 
@@ -159,7 +159,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Refactoring | `prepareRename`, `rename`, `codeAction` (kompiliersichere Assists), `executeCommand` |
 | Formatierung | `formatting`, `rangeFormatting` |
 | Symbole | `documentSymbol`, `workspace/symbol` |
-| Diagnosen | `publishDiagnostics` aus einem `cargo check` im Hintergrund beim Speichern, Pull-Diagnosen |
+| Diagnosen | `publishDiagnostics` aus einem `cargo check` im Hintergrund beim Speichern und aus dem Kompilieren ungespeicherter Puffer, Pull-Diagnosen |
 | Workspaces | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, Multi-Root |
 
 ## Wie es funktioniert

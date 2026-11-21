@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> هذه ترجمة لملف README الإنجليزي عند الإيداع [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -54,7 +54,7 @@
   ويشاركها بين كل المشاريع وworktree على الجهاز.
 - **ما تكتبه الآن يعمل أيضًا**: تُجاب التعديلات غير المحفوظة فورًا من طبقة في الذاكرة فوق الفهرس، وبعد 250 ms
   من آخر تعديل تُترجَم الصناديق (crates) المعدّلة من المخازن المؤقتة إلى فهرس للجلسة، فترى المراجع وإعادة التسمية
-  الشيفرة الجديدة أيضًا.
+  الشيفرة الجديدة أيضًا. وتُبلَّغ أيضًا أخطاء المترجم فيه.
 
 ## القياسات
 
@@ -181,7 +181,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | إعادة الهيكلة | `prepareRename`, `rename`, `codeAction` (مساعدات آمنة للترجمة), `executeCommand` |
 | التنسيق | `formatting`, `rangeFormatting` |
 | الرموز | `documentSymbol`, `workspace/symbol` |
-| التشخيصات | `publishDiagnostics` من `cargo check` في الخلفية عند الحفظ، وتشخيصات السحب |
+| التشخيصات | `publishDiagnostics` من `cargo check` في الخلفية عند الحفظ ومن ترجمة المخازن غير المحفوظة، وتشخيصات السحب |
 | مساحات العمل | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, جذور متعددة |
 
 ## كيف يعمل

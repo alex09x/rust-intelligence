@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> 이 문서는 커밋 [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -50,7 +50,7 @@ Linux와 macOS를 지원합니다. Rust Project 및 Rust Foundation과 무관합
 - **분석 대상의 대부분은 의존성과 std**로, 아무도 편집하지 않는 코드입니다. `ridx`는 의존성마다 한 번만
   인덱싱하고 머신의 모든 프로젝트와 worktree에서 공유합니다.
 - **입력 중인 코드도 동작합니다**: 저장하지 않은 편집에는 인덱스 위의 메모리 계층이 바로 답하고, 마지막 편집 후
-  250 ms가 지나면 편집된 크레이트가 버퍼에서 세션 인덱스로 컴파일되므로 참조와 이름 변경도 새 코드를 봅니다.
+  250 ms가 지나면 편집된 크레이트가 버퍼에서 세션 인덱스로 컴파일되므로 참조와 이름 변경도 새 코드를 봅니다. 그 안의 컴파일러 오류도 보고됩니다.
 
 ## 측정
 
@@ -155,7 +155,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | 리팩터링 | `prepareRename`, `rename`, `codeAction` (컴파일을 깨뜨리지 않는 어시스트), `executeCommand` |
 | 서식 | `formatting`, `rangeFormatting` |
 | 심볼 | `documentSymbol`, `workspace/symbol` |
-| 진단 | 저장 시 백그라운드 `cargo check`의 `publishDiagnostics`, 풀 방식 진단 |
+| 진단 | 저장 시 백그라운드 `cargo check`와 저장하지 않은 버퍼의 컴파일에서 나온 `publishDiagnostics`, 풀 방식 진단 |
 | 워크스페이스 | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, 다중 루트 |
 
 ## 동작 방식

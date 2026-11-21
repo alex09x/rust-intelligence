@@ -1,7 +1,7 @@
-<!-- translation-source: ccd5c36fdcf2f9210dffb784900861d2efe035ba -->
+<!-- translation-source: 33c7cf00e20c66d3b57e8adbd6d2b7ff991850df -->
 
 > [!NOTE]
-> Esta es una traducción del README en inglés en el commit [ccd5c36](https://github.com/alex09x/rust-intelligence/blob/ccd5c36fdcf2f9210dffb784900861d2efe035ba/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta es una traducción del README en inglés en el commit [33c7cf0](https://github.com/alex09x/rust-intelligence/blob/33c7cf00e20c66d3b57e8adbd6d2b7ff991850df/README.md). La versión canónica y más actualizada es el [README en inglés](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -52,7 +52,7 @@ Linux y macOS. Sin afiliación con el Rust Project ni con la Rust Foundation.
   dependencia una sola vez y la comparte entre todos los proyectos y worktrees de la máquina.
 - **Lo que escribe sigue funcionando**: una capa en memoria sobre el índice responde de inmediato a las
   ediciones sin guardar, y 250 ms después de la última edición los crates editados se compilan desde los
-  búferes en un índice de la sesión, así que las referencias y el renombrado también ven el código nuevo.
+  búferes en un índice de la sesión, así que las referencias y el renombrado también ven el código nuevo. También se informan los errores del compilador en él.
 
 ## Mediciones
 
@@ -160,7 +160,7 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
 | Refactorización | `prepareRename`, `rename`, `codeAction` (asistencias seguras para la compilación), `executeCommand` |
 | Formato | `formatting`, `rangeFormatting` |
 | Símbolos | `documentSymbol`, `workspace/symbol` |
-| Diagnósticos | `publishDiagnostics` de un `cargo check` en segundo plano al guardar, diagnósticos pull |
+| Diagnósticos | `publishDiagnostics` de un `cargo check` en segundo plano al guardar y de la compilación de los búferes sin guardar, diagnósticos pull |
 | Workspaces | `didChangeWorkspaceFolders`, `didChangeWatchedFiles`, multirraíz |
 
 ## Cómo funciona
