@@ -86,7 +86,54 @@ pub(crate) fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, 
 /// types::*` with `type u32 = String` in types.rs).
 pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>) -> bool {
     let primitive = |s: &str| PRIMITIVES.contains(&ridx_syntax::sema_fn::norm_ident(s));
-    tree.descendants(tree.root()).any(|d| {
-        (tree.kind(d) == K::Name && primitive(tree.text(d))) || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| t.kind == T::Star || primitive(t.text(tree.src))))
+    macro_may_declare(tree, tree.root())
+        || tree.descendants(tree.root()).any(|d| {
+            (tree.kind(d) == K::Name && primitive(tree.text(d))) || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| t.kind == T::Star || primitive(t.text(tree.src))))
+        })
+}
+
+/// The standard library's statement macros, which declare nothing where they are called.
+const STD_STATEMENT_MACROS: &[&str] = &[
+    "println",
+    "print",
+    "eprintln",
+    "eprint",
+    "assert",
+    "assert_eq",
+    "assert_ne",
+    "debug_assert",
+    "debug_assert_eq",
+    "debug_assert_ne",
+    "panic",
+    "todo",
+    "unimplemented",
+    "unreachable",
+    "write",
+    "writeln",
+    "dbg",
+    "format",
+];
+
+/// Whether a macro called under `within` in an item's or a statement's place may declare an item or an import there
+/// that the unexpanded tree does not show (`m!();` expanding to `use types::*;` or `const N: i32 = 3;`: review of
+/// 7dca0b11): any in an item's place; in a statement's, any but the standard library's statement macros, unless the
+/// file defines a macro of that name itself.
+pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId) -> bool {
+    let name = |mc: NodeId| {
+        let toks = tree.tokens_of(mc);
+        let bang = toks.iter().position(|t| t.kind == T::Bang)?;
+        toks[..bang].iter().rev().find(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(tree.src)))
+    };
+    let defined: Vec<&str> = tree
+        .descendants(tree.root())
+        .filter(|&d| tree.kind(d) == K::MacroRules)
+        .filter_map(|d| tree.child(d, K::Name))
+        .map(|n| ridx_syntax::sema_fn::norm_ident(tree.text(n)))
+        .collect();
+    std::iter::once(within).chain(tree.descendants(within)).filter(|&d| tree.kind(d) == K::MacroCall).any(|mc| {
+        let parent = tree.parent(mc).map(|p| tree.kind(p));
+        let item_place = matches!(parent, Some(K::SourceFile | K::ItemList | K::Module)) && name(mc) != Some("macro_rules");
+        let statement_place = matches!(parent, Some(K::BlockExpr | K::ExprStmt));
+        item_place || (statement_place && name(mc).is_none_or(|n| !STD_STATEMENT_MACROS.contains(&n) || defined.contains(&n)))
     })
 }

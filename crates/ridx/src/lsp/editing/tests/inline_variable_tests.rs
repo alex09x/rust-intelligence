@@ -114,3 +114,15 @@ fn test_the_action_carries_its_edit() {
     assert_eq!(edits[0]["range"], json!({ "start": { "line": 1, "character": 0 }, "end": { "line": 2, "character": 0 } }));
     assert_eq!(edits[1], json!({ "range": { "start": { "line": 2, "character": 4 }, "end": { "line": 2, "character": 5 } }, "newText": "2u32" }));
 }
+
+/// Review of 7dca0b11: a macro that may import `u8` from elsewhere keeps `u8` unknown; one in the function may declare
+/// what the initializer reads.
+#[test]
+fn test_a_macro_that_may_declare_keeps_inline_out() {
+    for doc in [
+        "mod t {\n    pub struct u8;\n}\nmacro_rules! import {\n    () => {\n        use t::*;\n    };\n}\nimport!();\npub fn f(s: u8) -> u8 {\n    let x$0 = s;\n    x\n}\n",
+        "macro_rules! local {\n    () => {\n        const n: u8 = 2;\n    };\n}\npub fn f(n: u8) -> u8 {\n    let x$0 = n;\n    {\n        local!();\n        x + 0\n    }\n}\n",
+    ] {
+        assert_eq!(inlined(doc), None, "{doc}");
+    }
+}

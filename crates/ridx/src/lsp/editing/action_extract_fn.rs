@@ -91,6 +91,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     // A name beyond ASCII is not compared without its normal form (`café` and `cafe\u{301}` are one name): not
     // extracted (review of 5852217f).
     if tree.descendants(body).any(|d| tree.kind(d) == K::Use)
+        || super::assist_locals::macro_may_declare(&tree, body)
         || tree.tokens_of(expr).iter().any(|t| {
             let name = ridx_syntax::sema_fn::norm_ident(t.text(doc));
             matches!(t.kind, T::Ident | T::RawIdent) && (local_items.contains(&name) || !name.is_ascii())

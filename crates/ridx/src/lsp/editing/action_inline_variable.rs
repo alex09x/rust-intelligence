@@ -126,7 +126,10 @@ pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Ra
     }
     // A `use` in the function brings names into its whole block, later ones too, whatever they are: none is compared
     // (review of b854363f).
-    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1) || tree.descendants(f).any(|d| tree.kind(d) == K::Use) {
+    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1)
+        || tree.descendants(f).any(|d| tree.kind(d) == K::Use)
+        || super::assist_locals::macro_may_declare(&tree, f)
+    {
         return None;
     }
     let uses = ridx_syntax::sema_fn::let_uses(&tree, stmt, ridx_syntax::sema_fn::norm_ident(tree.text(name)));

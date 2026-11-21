@@ -88,3 +88,10 @@ fn test_a_binding_no_constant_can_hold_is_not_promoted() {
         assert_eq!(promoted(doc, ty), None, "{doc}");
     }
 }
+
+/// Review of 7dca0b11: a macro that may import `u8` keeps the literal's own type unwritten.
+#[test]
+fn test_a_macro_that_may_import_keeps_the_type_unwritten() {
+    let doc = "mod t {\n    pub type u8 = String;\n}\nmacro_rules! import {\n    () => {\n        use t::*;\n    };\n}\nimport!();\npub fn f() -> bool {\n    let n$0 = 1u8;\n    n > 0\n}\n";
+    assert_eq!(promoted(doc, None), None);
+}
