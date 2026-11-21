@@ -80,24 +80,28 @@ pub struct SessionIndexer {
     count: Arc<Mutex<u64>>,
     /// The roots with an index at the last `roots_removed`.
     known: Mutex<Vec<PathBuf>>,
-    /// The open buffers as saved a session compiles too: a request waits for the compiler's diagnostics of their text
-    /// (`want`).
-    wanted: Mutex<HashSet<String>>,
+    /// Per root, the open buffers as saved (canonical) its sessions compile too: a request waits for the compiler's
+    /// diagnostics of their text (`want`).
+    wanted: Mutex<HashMap<PathBuf, HashSet<PathBuf>>>,
 }
 
 impl SessionIndexer {
-    /// The buffer `key` of `root`, as saved, is compiled by the sessions from now on: a request waits for its
-    /// diagnostics, which only a compile of its very text gives (review of 13eacef0: the check of the saved files was
-    /// taken for them). A session is due when it was not wanted yet.
-    pub fn want(&self, key: &str, root: &Path) {
-        if self.wanted.lock().unwrap_or_else(|e| e.into_inner()).insert(key.to_string()) {
+    /// The buffer `file` (canonical) is compiled by the sessions of `root`, the workspace it belongs to, from now on: a
+    /// request waits for its diagnostics, which only a compile of its very text in that workspace gives (review of
+    /// 13eacef0: the check of the saved files was taken for them). A session of `root` is due when the buffer was not
+    /// wanted yet, or when none is to run or running: a build that failed is tried again for a request asking again
+    /// (review of 7501440b).
+    pub fn want(&self, file: &Path, root: &Path) {
+        let new = self.wanted.lock().unwrap_or_else(|e| e.into_inner()).entry(root.to_path_buf()).or_default().insert(file.to_path_buf());
+        let idle = self.roots.lock().unwrap_or_else(|e| e.into_inner()).get(root).is_none_or(|st| !st.building && st.changed_at.is_none());
+        if new || idle {
             self.note_change(root);
         }
     }
 
-    /// Whether the sessions compile the buffer `key` though it is as saved (`want`).
-    pub fn is_wanted(&self, key: &str) -> bool {
-        self.wanted.lock().unwrap_or_else(|e| e.into_inner()).contains(key)
+    /// Whether the sessions of `root` compile the buffer `file` (canonical) though it is as saved (`want`).
+    pub fn is_wanted(&self, root: &Path, file: &Path) -> bool {
+        self.wanted.lock().unwrap_or_else(|e| e.into_inner()).get(root).is_some_and(|w| w.contains(file))
     }
 
     /// A buffer of `root` was opened, changed or closed.
@@ -301,6 +305,28 @@ mod tests {
         s.note_change(&root);
         std::thread::sleep(QUIET + Duration::from_millis(30));
         assert!(s.start_due(|_| Vec::new()).is_empty(), "no session to retire");
+    }
+
+    /// Review of 7501440b: a request asking again after a build of the wanted buffer failed scheduled nothing.
+    #[test]
+    fn test_a_wanted_buffer_is_tried_again_when_nothing_is_due() {
+        let dir = tempfile::tempdir().unwrap();
+        let (root, file) = (dir.path().join("w"), dir.path().join("w/a.rs"));
+        let s = SessionIndexer::default();
+        s.want(&file, &root);
+        let due = |s: &SessionIndexer| s.roots.lock().unwrap()[&root].changed_at.is_some();
+        assert!(due(&s));
+        s.roots.lock().unwrap().get_mut(&root).unwrap().changed_at = None; // the build ran and failed
+        s.want(&file, &root);
+        assert!(due(&s), "asked again with nothing due: tried again");
+        {
+            let mut roots = s.roots.lock().unwrap();
+            let st = roots.get_mut(&root).unwrap();
+            st.changed_at = None;
+            st.building = true;
+        }
+        s.want(&file, &root);
+        assert!(!due(&s), "a build running: it is the one");
     }
 
     /// Review of 2e1fcfb1: a workspace folder removed kept its session.

@@ -95,6 +95,12 @@ impl SessionDiagnostics {
         self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).insert(root.to_path_buf(), outcomes);
     }
 
+    /// The outcome of the compile of buffer `file` (canonical) by the session of `root` exactly: a session of an
+    /// enclosing workspace compiled it with other cfgs and dependencies (review of 7501440b).
+    pub fn outcome_in(&self, root: &Path, file: &Path) -> Option<Outcome> {
+        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).get(root).and_then(|o| o.get(file)).cloned()
+    }
+
     /// The outcome of the compile of buffer `file` (canonical), from the innermost root whose session compiled it.
     pub fn outcome(&self, file: &Path) -> Option<Outcome> {
         let outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
@@ -274,14 +280,14 @@ pub enum Readiness {
     Pending,
 }
 
-/// The [`Readiness`] of the diagnostics of `file` (the overlay key): ready once a session compiled the buffer's very
-/// text, edited or as saved (a buffer as saved is compiled for a request waiting for it, `SessionIndexer::want`). The
+/// The [`Readiness`] of the diagnostics of `file` (the overlay key) of workspace `root`: ready once a session of that
+/// workspace compiled the buffer's very text, edited or as saved (a buffer as saved is compiled for a request waiting for it, `SessionIndexer::want`). The
 /// check of the saved files never stands in: that it ran says nothing of the text it read, of whether it failed before
 /// the file, or of which workspace it was (review of 13eacef0). A file not open has no version and is ready.
-pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::OverlayManager, file: &str) -> Readiness {
+pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::OverlayManager, file: &str, root: &Path) -> Readiness {
     let Some(o) = ov.get(file) else { return Readiness::Ready(0) };
     let path = ridx_format::canonicalize_best_effort(Path::new(file));
-    match fc.session.outcome(&path) {
+    match fc.session.outcome_in(root, &path) {
         Some(out) if out.text == o.text => match out.unavailable {
             None => Readiness::Ready(o.version),
             // A file on disk no crate includes is answered, with a hint saying so (`unlinked_hint`), as rust-analyzer

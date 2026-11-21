@@ -58,7 +58,7 @@ pub(crate) fn step(
             replaced |= back_to_published(mr, ov, &root);
         }
     }
-    for root in session.start_due(|root| edited_buffers(ov, root, &|k| session.is_wanted(k))) {
+    for root in session.start_due(|root| edited_buffers(ov, root, &|p| session.is_wanted(root, p))) {
         touched.extend(diags.clear(&root, &has_check));
         if session.retire(&root) {
             replaced |= back_to_published(mr, ov, &root);
@@ -118,7 +118,7 @@ fn back_to_published(mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay
 /// The open buffers under `root` whose text is not the file's on disk: every edited one, not only those changed since
 /// the last session index (that one compiled the others from their buffers too); and those as saved a request waits
 /// for the diagnostics of (`wanted`).
-fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path, wanted: &dyn Fn(&str) -> bool) -> Vec<Snapshot> {
+fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path, wanted: &dyn Fn(&Path) -> bool) -> Vec<Snapshot> {
     let mut out = Vec::new();
     for key in ov.open_file_paths() {
         let path = ridx_format::canonicalize_best_effort(Path::new(&key));
@@ -126,7 +126,7 @@ fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path, wanted: &dyn
             continue;
         }
         let Some(o) = ov.get(&key) else { continue };
-        if wanted(&key) || std::fs::read_to_string(&path).ok().as_deref() != Some(o.text.as_str()) {
+        if wanted(&path) || std::fs::read_to_string(&path).ok().as_deref() != Some(o.text.as_str()) {
             out.push(Snapshot { text: o.text.clone(), instance: o.instance, key, path });
         }
     }
@@ -177,9 +177,15 @@ mod tests {
         ov.open_with_provenance("file:///a.rs", &path, 1, "x".into(), true);
         assert!(edited_buffers(&ov, &root, &|_| false).is_empty(), "as saved: not compiled");
         let session = SessionIndexer::default();
-        session.want(&path, &root);
-        assert!(session.is_wanted(&path) && session.state_of(&root).0, "a session is due");
-        assert_eq!(edited_buffers(&ov, &root, &|k| session.is_wanted(k)).len(), 1);
+        session.want(&PathBuf::from(&path), &root);
+        assert!(session.is_wanted(&root, &PathBuf::from(&path)) && session.state_of(&root).0, "a session is due");
+        assert_eq!(edited_buffers(&ov, &root, &|p| session.is_wanted(&root, p)).len(), 1);
+        // Review of 7501440b: opened through a link, wanted by its path: the same buffer.
+        let link = root.join("link.rs");
+        std::os::unix::fs::symlink(root.join("a.rs"), &link).unwrap();
+        let mut by_link = crate::overlay::OverlayManager::new();
+        by_link.open_with_provenance("file:///link.rs", &link.to_string_lossy(), 1, "x".into(), true);
+        assert_eq!(edited_buffers(&by_link, &root, &|p| session.is_wanted(&root, p)).len(), 1);
     }
 
     /// Review of 88fe53d0: a build of a buffer closed or opened again since is not installed.

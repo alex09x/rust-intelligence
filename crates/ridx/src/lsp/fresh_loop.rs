@@ -109,7 +109,7 @@ pub(crate) fn release_waiting<W: Write>(
     gate.send_answers(writer, refused)?;
     let ov: &crate::overlay::OverlayManager = ov;
     let fc = &lifecycle.flycheck;
-    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| readiness(fc, ov, f) };
+    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f) };
     let (ready, answers) = gate.waiting.release(&cov, cancelled);
     gate.send_answers(writer, answers)?;
     Ok(ready)
@@ -184,7 +184,7 @@ pub(crate) fn intercept<W: Write>(
     msg[PINNED] = json!(true);
     let ov: &crate::overlay::OverlayManager = ov;
     let fc = &lifecycle.flycheck;
-    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| readiness(fc, ov, f) };
+    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f) };
     // A `textDocument/diagnostic` whose version compiled without diagnostics is told so now (prod-code, m=20178).
     if let Some(answer) = super::fresh::unavailable(&msg, &cov) {
         super::protocol::send_response(writer, &answer)?;
@@ -194,8 +194,8 @@ pub(crate) fn intercept<W: Write>(
     // text, in its own workspace, says what they are (review of 13eacef0).
     if msg["method"] == "textDocument/diagnostic" {
         if let Some((file, _)) = super::fresh::wanted(&msg).filter(|(f, _)| ov.get(f).is_some() && (cov.diagnostics)(f) == Readiness::Pending) {
-            if let Some(root) = super::dispatch::workspace_root_of(mr, &lifecycle.reindex, Path::new(&file)) {
-                session.want(&file, &root);
+            if let Some(root) = owning_root(mr, &lifecycle.reindex, &file) {
+                session.want(&ridx_format::canonicalize_best_effort(Path::new(&file)), &root);
             }
         }
     }
@@ -245,6 +245,26 @@ fn refusal(msg: &Value, mr: &super::MultiRootWorkspace, reindex: &super::reindex
     let (root, error) = index_failed(msg, mr, reindex)?;
     let data = json!({ "reason": "indexFailed", "root": root.display().to_string(), "error": error });
     Some(super::fresh::response(&msg["id"], -32803, format!("no index of {}: its build failed", root.display()), data))
+}
+
+/// The workspace whose sessions say what the diagnostics of `file` are: the innermost root of the session holding it,
+/// an index loaded for it or not (a root registered and indexed for the first time counts: review of 7501440b, a
+/// loaded enclosing workspace was taken), else `dispatch::workspace_root_of`.
+pub(crate) fn owning_root(mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer, file: &str) -> Option<PathBuf> {
+    let file = ridx_format::canonicalize_best_effort(Path::new(file));
+    let roots = mr.roots().map(Path::to_path_buf).chain(reindex.roots()).map(|r| ridx_format::canonicalize_best_effort(&r));
+    roots.filter(|r| file.starts_with(r)).max_by_key(|r| r.as_os_str().len()).or_else(|| super::dispatch::workspace_root_of(mr, reindex, &file))
+}
+
+/// The [`Readiness`] of the diagnostics of `file`, from a session of the workspace it belongs to ([`owning_root`]).
+fn diagnostics_of(
+    fc: &crate::lsp::presentation::flycheck::FlycheckState,
+    ov: &crate::overlay::OverlayManager,
+    mr: &super::MultiRootWorkspace,
+    reindex: &super::reindex::Reindexer,
+    file: &str,
+) -> Readiness {
+    owning_root(mr, reindex, file).map_or(Readiness::Pending, |root| readiness(fc, ov, file, &root))
 }
 
 /// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
@@ -300,7 +320,7 @@ pub fn status(
         let file = super::protocol::uri_to_path(uri);
         let root = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file));
         let building = root.as_ref().is_some_and(|r| session.state_of(r).0 || reindex.status_of(r).0);
-        let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| readiness(flycheck, ov, f) };
+        let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(flycheck, ov, mr, reindex, f) };
         // Whether the compiler's diagnostics of the buffer's text are known (prod-code, m=20178).
         let diagnostics = match (cov.diagnostics)(&file) {
             Readiness::Ready(v) => json!({ "state": "ready", "version": v }),
