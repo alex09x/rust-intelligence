@@ -60,7 +60,14 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                     return Ok(hover.inferred_type.map_or(Value::Null, |ty| json!({ "contents": { "kind": "markdown", "value": format!("```rust\n{ty}\n```") } })));
                 }
                 if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
-                    let layout_at = |c: u32| ws.note_at(&file, il, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
+                    // The pattern's own position, in the coordinates the index recorded (the name's line may differ).
+                    let layout_at = |l0: u32, c: u32| {
+                        let (cl, cc) = match overlay_opt.filter(|o| o.is_dirty()) {
+                            Some(o) => o.map_live_to_compiled(l0 + 1, c)?,
+                            None => (l0 + 1, c),
+                        };
+                        ws.note_at(&file, cl, cc, ridx_format::NOTE_LAYOUT).map(str::to_string)
+                    };
                     let src = overlay_opt.map(|o| std::borrow::Cow::Borrowed(o.text.as_str())).or_else(|| std::fs::read_to_string(&file).ok().map(std::borrow::Cow::Owned));
                     if let Some(h) = src.as_deref().and_then(|s| super::hover_binding::binding_hover(s, line_0based, col_1based, ty, &layout_at)) {
                         return Ok(h);

@@ -59,13 +59,14 @@ fn position(src: &str, offset: usize, utf16: bool) -> (u32, usize) {
 
 /// The hover of the binding named at 1-based char column `col` of 0-based line `line_0` of `src`, when the index has
 /// its type `ty` and no definition there; `None` unless the syntax tree has an identifier pattern there. `layout_at`
-/// gives the layout note recorded at a 1-based char column of that line: the one where the pattern starts.
-pub(crate) fn binding_hover(src: &str, line_0: u32, col: u32, ty: &str, layout_at: &dyn Fn(u32) -> Option<String>) -> Option<Value> {
+/// gives the layout note recorded at a 0-based line and 1-based char column of `src`: where the pattern starts, on
+/// its own line (review of 68375e6e: a `mut` on the line above lost the layout).
+pub(crate) fn binding_hover(src: &str, line_0: u32, col: u32, ty: &str, layout_at: &dyn Fn(u32, u32) -> Option<String>) -> Option<Value> {
     let b = binding_at(src, offset_of(src, line_0, col)?)?;
     let text = format!("{}{}{}: {}", if b.is_let { "let " } else { "" }, if b.is_mut { "mut " } else { "" }, b.name, super::hover_decl::short_type(ty));
     let block = format!("```rust\n{text}\n```");
     let (pat_line, pat_col) = position(src, b.pattern_start, false);
-    let layout = (pat_line == line_0).then(|| layout_at(pat_col as u32 + 1)).flatten();
+    let layout = layout_at(pat_line, pat_col as u32 + 1);
     let value = match layout {
         Some(layout) => format!("{block}\n\n---\n\n{layout}"),
         None => block,

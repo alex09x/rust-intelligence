@@ -10,15 +10,15 @@
 
 use super::*;
 
-/// The hover at the first `name` in `src` after `after`, with layouts recorded at `notes` (1-based column, text).
-fn hover_at(src: &str, after: &str, name: &str, ty: &str, notes: &[(u32, &'static str)]) -> Option<Value> {
+/// The hover at the first `name` in `src` after `after`, with layouts recorded at `notes` (0-based line, 1-based column, text).
+fn hover_at(src: &str, after: &str, name: &str, ty: &str, notes: &[(u32, u32, &'static str)]) -> Option<Value> {
     let from = src.find(after).unwrap_or(0) + after.len();
     let at = from + src[from..].find(name).unwrap();
     let line_start = src[..at].rfind('\n').map_or(0, |i| i + 1);
     let line = src[..line_start].matches('\n').count() as u32;
     let col = src[line_start..at].chars().count() as u32 + 1;
     let notes = notes.to_vec();
-    binding_hover(src, line, col, ty, &move |c| notes.iter().find(|(n, _)| *n == c).map(|(_, t)| t.to_string()))
+    binding_hover(src, line, col, ty, &move |l, c| notes.iter().find(|(nl, nc, _)| (*nl, *nc) == (l, c)).map(|(_, _, t)| t.to_string()))
 }
 
 fn text(h: Option<Value>) -> Option<String> {
@@ -29,10 +29,10 @@ fn text(h: Option<Value>) -> Option<String> {
 #[test]
 fn test_a_parameter_shows_its_name_type_layout_and_range() {
     let src = "fn gap(a: Guard, on: bool) {}";
-    let h = hover_at(src, "", "on", "bool", &[(18, "size = 1, align = 0x1, no Drop")]).unwrap();
+    let h = hover_at(src, "", "on", "bool", &[(0, 18, "size = 1, align = 0x1, no Drop")]).unwrap();
     assert_eq!(h["contents"]["value"], "```rust\non: bool\n```\n\n---\n\nsize = 1, align = 0x1, no Drop");
     assert_eq!(h["range"], json!({ "start": { "line": 0, "character": 17 }, "end": { "line": 0, "character": 19 } }));
-    let a = hover_at(src, "", "a:", "app::Guard", &[(8, "size = 24 (0x18), align = 0x8, needs Drop")]);
+    let a = hover_at(src, "", "a:", "app::Guard", &[(0, 8, "size = 24 (0x18), align = 0x8, needs Drop")]);
     assert_eq!(text(a).as_deref(), Some("```rust\na: Guard\n```\n\n---\n\nsize = 24 (0x18), align = 0x8, needs Drop"));
 }
 
@@ -41,12 +41,12 @@ fn test_a_parameter_shows_its_name_type_layout_and_range() {
 fn test_the_layout_is_the_one_where_the_pattern_starts() {
     let note = "size = 1, align = 0x1, no Drop";
     for src in ["fn f(mut n: u8) {}", "fn f(mut  n: u8) {}"] {
-        assert_eq!(text(hover_at(src, "", "n:", "u8", &[(6, note)])).as_deref(), Some(format!("```rust\nmut n: u8\n```\n\n---\n\n{note}").as_str()), "{src}");
+        assert_eq!(text(hover_at(src, "", "n:", "u8", &[(0, 6, note)])).as_deref(), Some(format!("```rust\nmut n: u8\n```\n\n---\n\n{note}").as_str()), "{src}");
     }
     let tuple = "fn f<T>((a,  b): (u8, T)) {}";
-    assert_eq!(text(hover_at(tuple, "", "b)", "T", &[(10, note)])).as_deref(), Some("```rust\nb: T\n```"), "a's layout is not b's");
+    assert_eq!(text(hover_at(tuple, "", "b)", "T", &[(0, 10, note)])).as_deref(), Some("```rust\nb: T\n```"), "a's layout is not b's");
     let src = "fn f() {\n    let mut v: Vec<String> = Vec::new();\n    let c = Circle::new(2.0);\n}\n";
-    let v = hover_at(src, "", "v:", "std::vec::Vec<std::string::String>", &[(9, "size = 24 (0x18), align = 0x8, needs Drop")]);
+    let v = hover_at(src, "", "v:", "std::vec::Vec<std::string::String>", &[(1, 9, "size = 24 (0x18), align = 0x8, needs Drop")]);
     assert_eq!(text(v).as_deref(), Some("```rust\nlet mut v: Vec<String>\n```\n\n---\n\nsize = 24 (0x18), align = 0x8, needs Drop"));
     assert_eq!(text(hover_at(src, "let ", "c ", "shapes::Circle", &[])).as_deref(), Some("```rust\nlet c: Circle\n```"));
 }
@@ -55,7 +55,7 @@ fn test_the_layout_is_the_one_where_the_pattern_starts() {
 #[test]
 fn test_a_raw_identifier_keeps_its_prefix_in_the_name_and_the_range() {
     let src = "/*🙂*/ fn f(r#flag: bool) {}";
-    let h = hover_at(src, "", "r#flag", "bool", &[(12, "size = 1, align = 0x1, no Drop")]).unwrap();
+    let h = hover_at(src, "", "r#flag", "bool", &[(0, 12, "size = 1, align = 0x1, no Drop")]).unwrap();
     assert_eq!(h["contents"]["value"], "```rust\nr#flag: bool\n```\n\n---\n\nsize = 1, align = 0x1, no Drop");
     assert_eq!(h["range"]["start"]["character"], 12);
     assert_eq!(h["range"]["end"]["character"], 18);
@@ -75,4 +75,13 @@ fn test_bindings_are_what_the_syntax_tree_says() {
     assert_eq!(at("total.", "count"), None, "a method");
     assert_eq!(at("    ", "total"), None, "an expression");
     assert_eq!(at("take(", "x"), None, "an argument");
+}
+
+/// Review of 68375e6e: a `mut` on the line above the name lost the layout recorded at it.
+#[test]
+fn test_a_pattern_starting_on_another_line_keeps_its_layout() {
+    let src = "fn f(\n    mut\n    n: u8,\n) {}\n";
+    let h = hover_at(src, "", "n:", "u8", &[(1, 5, "size = 1, align = 0x1, no Drop")]).unwrap();
+    assert_eq!(h["contents"]["value"], "```rust\nmut n: u8\n```\n\n---\n\nsize = 1, align = 0x1, no Drop");
+    assert_eq!(h["range"]["start"], json!({ "line": 2, "character": 4 }));
 }
