@@ -64,6 +64,15 @@ pub fn explicit_type_action(doc: &str, uri: &str, range: &Value, doc_version: Op
     Some(json!({ "title": "Add explicit type", "kind": "refactor.rewrite", "edit": workspace_edit }))
 }
 
+/// The type `Add explicit type` would write for the `let` whose name is at byte `offset` of `doc`.
+pub(crate) fn let_type_at(doc: &str, uri: &str, offset: usize, ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<String> {
+    let starts = super::action_parse::line_starts_of(doc);
+    let (line, col) = super::action_parse::byte_to_utf16_pos(doc, &starts, offset);
+    let range = json!({ "start": { "line": line, "character": col }, "end": { "line": line, "character": col } });
+    let action = explicit_type_action(doc, uri, &range, None, ws, ov)?;
+    action["edit"]["changes"][uri][0]["newText"].as_str()?.strip_prefix(": ").map(str::to_string)
+}
+
 /// The byte end of the name in `let [mut] name = …` when the binding has no type: `None` for a pattern, an annotation
 /// or a `let` with no initializer.
 fn untyped_let_name_end(line: &str) -> Option<usize> {

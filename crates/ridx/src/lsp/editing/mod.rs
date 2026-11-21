@@ -30,6 +30,7 @@ pub mod action_default_ufcs;
 mod action_default_use;
 pub mod action_doc_template;
 pub mod action_explicit_type;
+mod action_extract_fn;
 pub mod action_extract_lit;
 pub mod action_extract_lit_name;
 pub mod action_generics;

@@ -51,6 +51,7 @@ const BY_TITLE: &[(&str, &str)] = &[
     ("Replace qualified path with use", "replace_qualified_name_with_use"),
     ("Extract variable", "extract_variable"),
     ("Extract into variable", "extract_variable"),
+    ("Extract into function", "extract_function"),
     ("Organize Imports", "organize_imports"),
     ("Import `", "auto_import"),
     ("Prefix with underscore", "prefix_with_underscore"),
