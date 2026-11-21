@@ -87,6 +87,15 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         ("pub trait A { fn address(&self) -> usize; }\nimpl A for u8 { fn address(&self) -> usize { self as *const u8 as usize } }\npub fn f(n: u8) -> usize {\n    let r = $0n.address() + 1$0;\n    r\n}\n", Some("usize")),
         ("pub fn f() -> u32 {\n    let x: u32;\n    let r = $0{ x = 1; x }$0;\n    r\n}\n", Some("u32")),
         ("pub fn f(c: bool) -> u32 {\n    let x: u32;\n    if c { x = 1 } else { x = 2 }\n    let r = $0x + 1$0;\n    r\n}\n", Some("u32")),
+        // Review of 5852217f: a name in another normal form, a type the body declares, a primitive's name taken raw or
+        // by an import, a `cfg` on the statement or spelled raw, an array's length.
+        ("const caf\u{e9}: i32 = 100;\npub fn f() -> i32 {\n    const cafe\u{301}: i32 = 3;\n    let r = $0caf\u{e9} + 1$0;\n    r\n}\n", Some("i32")),
+        ("pub fn f(v: &u8) -> u8 {\n    type Word = u8;\n    let n: Word = *v;\n    let r = $0n + 1$0;\n    r\n}\n", Some("Word")),
+        ("type r#u32 = String;\npub fn f(v: u32) -> usize {\n    let n = $0v.len() + 1$0;\n    n + v.len()\n}\n", Some("usize")),
+        ("use std::string::String as u32;\npub fn f(v: u32) -> usize {\n    let n = $0v.len() + 1$0;\n    n\n}\n", Some("usize")),
+        ("pub fn f(a: u8) -> u8 {\n    #[cfg(test)]\n    let r = $0a + 1$0;\n    #[cfg(not(test))]\n    let r = a;\n    r\n}\n", Some("u8")),
+        ("#[r#cfg(test)]\npub fn f(a: u8) -> u8 {\n    let r = $0a + 1$0;\n    r\n}\n", Some("u8")),
+        ("pub fn f() -> usize {\n    let r = [0u8; { $01 + 2$0 }];\n    r.len()\n}\n", None),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {

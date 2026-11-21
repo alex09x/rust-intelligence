@@ -80,6 +80,10 @@ pub(crate) fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, 
 
 /// Whether the file of `tree` declares something named as a primitive type (`type u32 = String`): then no spelling of
 /// one is known to be it.
+/// Declared or imported under such a name, in any spelling: `type r#u32 = String`, `use std::string::String as u32`
+/// (review of 5852217f).
 pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>) -> bool {
-    tree.descendants(tree.root()).any(|d| tree.kind(d) == K::Name && PRIMITIVES.contains(&tree.text(d)))
+    let primitive = |s: &str| PRIMITIVES.contains(&ridx_syntax::sema_fn::norm_ident(s));
+    tree.descendants(tree.root())
+        .any(|d| (tree.kind(d) == K::Name && primitive(tree.text(d))) || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| primitive(t.text(tree.src)))))
 }

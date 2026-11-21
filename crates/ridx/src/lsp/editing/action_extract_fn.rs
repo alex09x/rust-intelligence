@@ -48,13 +48,18 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     // The context a plain function in the module lacks (review of 531974ed): an `unsafe` or `const` block around it, a
     // `cfg` on the function or what holds it (the helper would outlive what it calls), `track_caller` (the caller
     // reported would be the helper), `target_feature`.
-    if tree.ancestors(expr).take_while(|&a| a != f).any(|a| tree.kind(a) == K::BlockExpr && tree.own_tokens(a).any(|(_, t)| matches!(t.kind, T::Unsafe | T::Const)))
-        || std::iter::once(f).chain(tree.ancestors(f)).any(|a| {
-            tree.children(a)
-                .filter(|&c| tree.kind(c) == K::Attr)
-                .any(|attr| tree.tokens_of(attr).iter().any(|t| matches!(t.text(doc), "cfg" | "cfg_attr" | "track_caller" | "target_feature")))
-        })
-    {
+    // From the expression up (a `cfg` on a statement too), by any spelling (`#[r#cfg]`); an array's length and a const
+    // argument are evaluated at compile time like a `const` block (review of 5852217f).
+    let in_length = |a: NodeId| tree.kind(a) == K::ArrayExpr && tree.own_tokens(a).any(|(_, t)| t.kind == T::Semi && (t.start as usize) < tree.range(expr).start);
+    if tree.ancestors(expr).take_while(|&a| a != f).any(|a| {
+        (tree.kind(a) == K::BlockExpr && tree.own_tokens(a).any(|(_, t)| matches!(t.kind, T::Unsafe | T::Const)))
+            || matches!(tree.kind(a), K::ArrayType | K::ConstArg | K::ConstParam)
+            || in_length(a)
+    }) || tree.ancestors(expr).any(|a| {
+        tree.children(a)
+            .filter(|&c| tree.kind(c) == K::Attr)
+            .any(|attr| tree.tokens_of(attr).iter().any(|t| matches!(ridx_syntax::sema_fn::norm_ident(t.text(doc)), "cfg" | "cfg_attr" | "track_caller" | "target_feature")))
+    }) {
         return None;
     }
     let inner: Vec<NodeId> = std::iter::once(expr).chain(tree.descendants(expr)).collect();
@@ -78,11 +83,18 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         .filter(|&d| tree.kind(d) == K::Name && tree.parent(d).is_some_and(|p| tree.kind(p).is_item()))
         .map(|d| ridx_syntax::sema_fn::norm_ident(tree.text(d)))
         .collect();
+    // A name beyond ASCII is not compared without its normal form (`café` and `cafe\u{301}` are one name): not
+    // extracted (review of 5852217f).
     if tree.descendants(body).any(|d| tree.kind(d) == K::Use)
-        || tree.tokens_of(expr).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && local_items.contains(&ridx_syntax::sema_fn::norm_ident(t.text(doc))))
+        || tree.tokens_of(expr).iter().any(|t| {
+            let name = ridx_syntax::sema_fn::norm_ident(t.text(doc));
+            matches!(t.kind, T::Ident | T::RawIdent) && (local_items.contains(&name) || !name.is_ascii())
+        })
     {
         return None;
     }
+    // Nor does a type of the new signature name what the body declares (`type Word = u8` in it).
+    let names_local = |ty: &str| ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| local_items.contains(&w) || !w.is_ascii());
     let primitive_shadowed = primitive_shadowed(&tree);
     // The value's type: the `let` it initializes, or the function's for its tail.
     let parent = tree.parent(expr)?;
@@ -96,7 +108,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     };
     // A type the new signature can hold as written: no `impl`, no placeholder, no `Self` (a free function has none),
     // and no reference out (whose lifetime the signature would have to tell: review of 531974ed).
-    let nameable = |ty: &str| !ty.contains("impl ") && !ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_" || w == "Self");
+    let nameable = |ty: &str| !ty.contains("impl ") && !names_local(ty) && !ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_" || w == "Self");
     if !nameable(&ret) || ret.contains(['&', '\'']) {
         return None;
     }
