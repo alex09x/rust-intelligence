@@ -2,6 +2,11 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [Unreleased]
+
+### Added
+- **`minVersion` on `textDocument/diagnostic`** waits for the compiler's diagnostics of that version of the document, not for the index: an empty answer then means clean. A version whose compile gave no diagnostics (stopped before checking the file, or a crate compiled with `--remap-path-prefix` or an `@file`) is answered with `-32803` `diagnosticsUnavailable` and the reason, never with an empty list. `ridx/status` reports the same per document (`document.diagnostics`). Asked for by prod-code, whose edit validation read the empty answer before the compile as clean.
+
 ## [0.3.11] - 2026-11-21
 
 Verified by the workspace test suite and by LSP sessions against the release build on a Linux node: a wrong return type, an unresolved name and a wrong argument count typed and never saved are pushed and pulled as `rustc` diagnostics with the document's version, and cleared when the text is reverted or the buffer closed; hover on a parameter shows `on: bool` with `size = 1, align = 0x1, no Drop`. Released after ten review rounds of the session diagnostics. The per-method agreement suite was not re-run for this release. The index format is unchanged.

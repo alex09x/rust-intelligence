@@ -32,11 +32,21 @@ pub struct SessionFile {
 
 type Roots = HashMap<PathBuf, HashMap<PathBuf, SessionFile>>;
 
-/// Per root whose session index answers, its buffers (canonical) with their diagnostics; and the URI each file's
-/// diagnostics were last published under, to clear them under that one.
+/// What a session's compile of a buffer gave, for the text compiled: its diagnostics (`None`), or why it gave none,
+/// which an empty list would hide (prod-code, m=20178): `notChecked` (no unit owning it checked it to the end, a proc
+/// macro that panicked), `pathsUntold` (a unit owning it remaps paths or reads an `@file`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Outcome {
+    pub text: String,
+    pub unavailable: Option<&'static str>,
+}
+
+/// Per root whose session index answers, its buffers (canonical) with their diagnostics and the outcome of each buffer
+/// compiled; and the URI each file's diagnostics were last published under, to clear them under that one.
 #[derive(Default)]
 pub struct SessionDiagnostics {
     roots: Mutex<Roots>,
+    outcomes: Mutex<HashMap<PathBuf, HashMap<PathBuf, Outcome>>>,
     published: Mutex<HashMap<PathBuf, std::collections::BTreeSet<String>>>,
 }
 
@@ -79,8 +89,20 @@ impl SessionDiagnostics {
         })
     }
 
+    /// The outcomes of the buffers the session of `root` now answering compiled.
+    pub fn set_outcomes(&self, root: &Path, outcomes: HashMap<PathBuf, Outcome>) {
+        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).insert(root.to_path_buf(), outcomes);
+    }
+
+    /// The outcome of the compile of buffer `file` (canonical), from the innermost root whose session compiled it.
+    pub fn outcome(&self, file: &Path) -> Option<Outcome> {
+        let outcomes = self.outcomes.lock().unwrap_or_else(|e| e.into_inner());
+        outcomes.iter().filter(|(r, o)| file.starts_with(r) && o.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(_, o)| o[file].clone())
+    }
+
     /// The session of `root` no longer answers: returns the files whose result changes, back to the check's.
     pub fn clear(&self, root: &Path, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
+        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).remove(root);
         let keys = self.roots.lock().unwrap_or_else(|e| e.into_inner()).get(root).map(|f| f.keys().cloned().collect()).unwrap_or_default();
         self.change(keys, has_check, |roots| {
             roots.remove(root);
@@ -91,6 +113,7 @@ impl SessionDiagnostics {
     /// for, also while a session of the root's other buffers answers or a build of it is in flight (review of
     /// fb2bed09). Returns the files whose result changes.
     pub fn keep_only(&self, keep: &dyn Fn(&Path) -> bool, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
+        self.outcomes.lock().unwrap_or_else(|e| e.into_inner()).values_mut().for_each(|o| o.retain(|p, _| keep(p)));
         let gone: HashSet<PathBuf> = self.roots.lock().unwrap_or_else(|e| e.into_inner()).values().flat_map(|f| f.keys()).filter(|p| !keep(p)).cloned().collect();
         if gone.is_empty() {
             return Vec::new();
@@ -196,6 +219,55 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
         files.entry(path).or_insert_with(|| SessionFile { diagnostics: Vec::new(), text: (*text).clone() }).diagnostics.push(diag);
     }
     files
+}
+
+/// The outcome of each buffer of a session (`buffers` compiled, `files` from [`session_files`]): its diagnostics when it
+/// has them, else why not.
+pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], files: &HashMap<PathBuf, SessionFile>) -> HashMap<PathBuf, Outcome> {
+    buffers
+        .iter()
+        .map(|(p, text)| {
+            let path = ridx_format::canonicalize_best_effort(p);
+            let unavailable = if files.contains_key(&path) {
+                None
+            } else if report.untold.contains(&path) {
+                Some("pathsUntold")
+            } else {
+                Some("notChecked")
+            };
+            (path, Outcome { text: text.clone(), unavailable })
+        })
+        .collect()
+}
+
+/// Whether the compiler's diagnostics of an open buffer's text are known, for a request that waits for them
+/// (`textDocument/diagnostic` with `minVersion`, prod-code m=20178: the answer before them read as clean).
+#[derive(Debug, PartialEq)]
+pub enum Readiness {
+    /// Known, for this version of the buffer.
+    Ready(i32),
+    /// The compile of this version gave none, for this reason (see [`Outcome`]).
+    Unavailable(i32, &'static str),
+    /// Not known yet.
+    Pending,
+}
+
+/// The [`Readiness`] of the diagnostics of `file` (the overlay key). A buffer a session compiled is ready once a session
+/// compiled its very text; one as saved, once the check of the saved files of its workspace ran and none is to run.
+/// A file not open has no version and is ready.
+pub fn readiness(fc: &super::flycheck::FlycheckState, ov: &crate::overlay::OverlayManager, file: &str) -> Readiness {
+    let Some(o) = ov.get(file) else { return Readiness::Ready(0) };
+    let path = ridx_format::canonicalize_best_effort(Path::new(file));
+    match fc.session.outcome(&path) {
+        Some(out) if out.text == o.text => match out.unavailable {
+            None => Readiness::Ready(o.version),
+            Some(why) => Readiness::Unavailable(o.version, why),
+        },
+        // A session's result of another text still answers for it until the next session: not this text's.
+        Some(_) => Readiness::Pending,
+        None if o.is_synced_with_disk() && fc.check_settled(&path) => Readiness::Ready(o.version),
+        None => Readiness::Pending,
+    }
 }
 
 /// Publishes what the check of the saved files reported on the file its key `check_key` names (`file://` and the path

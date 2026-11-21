@@ -40,6 +40,37 @@ pub struct Waiting {
 pub struct Coverage<'a> {
     pub ov: &'a crate::overlay::OverlayManager,
     pub indexed_hash: &'a dyn Fn(&str) -> Option<u64>,
+    /// Whether the compiler's diagnostics of a buffer are known (`session_diag::readiness`): a `textDocument/diagnostic`
+    /// waits for those, not for the index (prod-code, m=20178: the answer before them read as clean).
+    pub diagnostics: &'a dyn Fn(&str) -> Readiness,
+}
+
+use crate::lsp::presentation::session_diag::Readiness;
+
+fn is_diagnostic(msg: &Value) -> bool {
+    msg["method"] == "textDocument/diagnostic"
+}
+
+/// Whether `msg`, waiting for version `min` of `file`, goes now: a `textDocument/diagnostic` once the compiler's
+/// diagnostics of that version are known, any other request once the index answering covers it.
+fn goes_now(msg: &Value, cov: &Coverage, file: &str, min: i64) -> bool {
+    if !is_diagnostic(msg) || cov.ov.get(file).is_none() {
+        return cov.is_covered(file, min);
+    }
+    matches!((cov.diagnostics)(file), Readiness::Ready(v) if i64::from(v) >= min)
+}
+
+/// The answer of a `textDocument/diagnostic` waiting for version `min` whose compile of that version gave no
+/// diagnostics: an error saying why, never an empty list (prod-code, m=20178).
+pub(super) fn unavailable(msg: &Value, cov: &Coverage) -> Option<Value> {
+    let (file, min) = wanted(msg).filter(|_| is_diagnostic(msg))?;
+    match (cov.diagnostics)(&file) {
+        Readiness::Unavailable(v, why) if i64::from(v) >= min => {
+            let data = json!({ "reason": "diagnosticsUnavailable", "detail": why, "version": v });
+            Some(response(&msg["id"], -32803, format!("the compile of version {v} of the document gave no diagnostics ({why})"), data))
+        }
+        _ => None,
+    }
 }
 
 impl Coverage<'_> {
@@ -86,7 +117,7 @@ impl Waiting {
     /// first deadline) is checked again against the index answering now.
     pub fn admit(&mut self, msg: Value, cov: &Coverage, released: Option<Instant>) -> Option<Value> {
         let Some((file, min)) = wanted(&msg) else { return Some(msg) };
-        if cov.is_covered(&file, min) {
+        if goes_now(&msg, cov, &file, min) {
             return Some(msg);
         }
         let timeout = msg["params"]["minVersionTimeoutMs"].as_u64().map_or(DEFAULT_TIMEOUT, Duration::from_millis);
@@ -105,10 +136,20 @@ impl Waiting {
             let Some((file, min)) = wanted(&h.msg) else { continue };
             if cancelled.remove(&h.msg["id"]) {
                 answers.push(response(&h.msg["id"], -32800, "Request cancelled".into(), Value::Null));
+            } else if now >= h.deadline && is_diagnostic(&h.msg) {
+                // The version whose diagnostics are known, older than the one asked for, if any.
+                let known = match (cov.diagnostics)(&file) {
+                    Readiness::Ready(v) => Some(v),
+                    _ => None,
+                };
+                let data = json!({ "reason": "timeout", "coveredVersion": known });
+                answers.push(response(&h.msg["id"], -32803, format!("the compiler's diagnostics of version {min} of the document are not known yet"), data));
             } else if now >= h.deadline {
                 let data = json!({ "reason": "timeout", "coveredVersion": cov.covered_version(&file).flatten() });
                 answers.push(response(&h.msg["id"], -32803, format!("no index covers version {min} of the document yet"), data));
-            } else if cov.is_covered(&file, min) {
+            } else if let Some(answer) = unavailable(&h.msg, cov) {
+                answers.push(answer);
+            } else if goes_now(&h.msg, cov, &file, min) {
                 self.released.insert(h.msg["id"].to_string(), h.deadline);
                 ready.push(h.msg);
             } else {
@@ -168,7 +209,7 @@ mod tests {
         let mut waiting = Waiting::default();
         macro_rules! cov {
             () => {
-                Coverage { ov: &ov, indexed_hash: &|_| indexed.get() }
+                Coverage { ov: &ov, indexed_hash: &|_| indexed.get(), diagnostics: &|_| Readiness::Pending }
             };
         }
         assert!(waiting.admit(request(1, 1, json!({})), &cov!(), None).is_some(), "version 1 is what the index compiled");
@@ -217,5 +258,41 @@ mod tests {
         assert!(waiting.admit(request(5, 2, json!({})), &cov!(), None).is_none());
         let drained = waiting.drain(-32600, "shutting down");
         assert!(drained.len() == 1 && drained[0]["error"]["code"] == -32600 && waiting.is_empty());
+    }
+
+    /// prod-code, m=20178: a pull with `minVersion` answered `[]` before the buffer's version was compiled; it waits for
+    /// the compiler's diagnostics of that version, not for the index, and is told when there are none.
+    #[test]
+    fn test_a_pull_waits_for_the_diagnostics_of_its_version() {
+        use std::cell::Cell;
+        let (uri, file) = ("file:///tmp/ridx_fresh/lib.rs", "/tmp/ridx_fresh/lib.rs");
+        let mut ov = OverlayManager::new();
+        ov.open_with_source_hash(uri, file, 1, "x".into(), None);
+        let state: Cell<Option<Readiness>> = Cell::new(Some(Readiness::Pending));
+        let take = || {
+            let s = state.take().unwrap();
+            let copy = match &s {
+                Readiness::Ready(v) => Readiness::Ready(*v),
+                Readiness::Unavailable(v, w) => Readiness::Unavailable(*v, w),
+                Readiness::Pending => Readiness::Pending,
+            };
+            state.set(Some(s));
+            copy
+        };
+        let cancelled = std::sync::Mutex::new(std::collections::HashSet::new());
+        let mut waiting = Waiting::default();
+        let pull = |id: u64| json!({ "jsonrpc": "2.0", "id": id, "method": "textDocument/diagnostic", "params": { "textDocument": { "uri": uri }, "minVersion": 1 } });
+        let cov = Coverage { ov: &ov, indexed_hash: &|_| Some(ridx_format::normalized_source_hash(b"x")), diagnostics: &|_| take() };
+        assert!(waiting.admit(pull(1), &cov, None).is_none(), "the index covers it, its diagnostics are not known");
+        state.set(Some(Readiness::Ready(1)));
+        let (ready, answers) = waiting.release(&cov, &cancelled);
+        assert!(answers.is_empty() && ready.len() == 1 && ready[0]["id"] == 1);
+        state.set(Some(Readiness::Unavailable(1, "notChecked")));
+        let answer = unavailable(&pull(2), &cov).expect("an answer, not an empty list");
+        assert_eq!((answer["error"]["code"].clone(), answer["error"]["data"]["reason"].clone()), (json!(-32803), json!("diagnosticsUnavailable")));
+        assert_eq!(answer["error"]["data"]["detail"], "notChecked");
+        assert!(waiting.admit(pull(3), &cov, None).is_none());
+        let (ready, answers) = waiting.release(&cov, &cancelled);
+        assert!(ready.is_empty() && answers[0]["id"] == 3 && answers[0]["error"]["data"]["reason"] == "diagnosticsUnavailable", "a held one too");
     }
 }

@@ -326,3 +326,46 @@ fn test_a_check_key_is_read_back_as_its_path() {
     let p = Path::new("/w/src/a%20b.rs");
     assert_eq!(crate::lsp::presentation::compiler_merge::check_path(&crate::lsp::presentation::compiler_merge::check_key(p)), p);
 }
+
+/// prod-code, m=20178: a pull before the session compiled the buffer answered `[]`, read as clean; a compile that gave
+/// no diagnostics must say so.
+#[test]
+fn test_a_buffers_diagnostics_are_known_once_its_text_is_compiled() {
+    let (_d, root) = workspace();
+    let (a, lib) = (root.join("src/a.rs"), root.join("src/lib.rs"));
+    let flycheck = FlycheckState::new();
+    let path = a.to_string_lossy().to_string();
+    let ov = edited(&a, "pub fn value() -> u32 { \"s\" }\n");
+    assert_eq!(readiness(&flycheck, &ov, &path), Readiness::Pending, "not compiled yet");
+    let texts = [(a.clone(), "pub fn value() -> u32 { \"s\" }\n".to_string())];
+    let r = report(vec![message(&a, 1, 25, 28, "E0308", "mismatched types")], &[&a]);
+    let files = session_files(&root, &r, &texts);
+    flycheck.session.set_outcomes(&root, session_outcomes(&r, &texts, &files));
+    assert_eq!(readiness(&flycheck, &ov, &path), Readiness::Ready(2));
+    let stale = edited(&a, "pub fn value() -> u32 { 2 }\n");
+    assert_eq!(readiness(&flycheck, &stale, &path), Readiness::Pending, "another text was compiled");
+
+    let mut untold = report(Vec::new(), &[]);
+    untold.untold.insert(a.clone());
+    flycheck.session.set_outcomes(&root, session_outcomes(&untold, &texts, &HashMap::new()));
+    assert_eq!(readiness(&flycheck, &ov, &path), Readiness::Unavailable(2, "pathsUntold"));
+    flycheck.session.set_outcomes(&root, session_outcomes(&report(Vec::new(), &[]), &texts, &HashMap::new()));
+    assert_eq!(readiness(&flycheck, &ov, &path), Readiness::Unavailable(2, "notChecked"), "stopped before checking it");
+
+    // A buffer as saved: the check of the saved files answers once it ran.
+    let mut saved = crate::overlay::OverlayManager::new();
+    let lib_path = lib.to_string_lossy().to_string();
+    saved.open_with_provenance(&uri(&lib), &lib_path, 1, std::fs::read_to_string(&lib).unwrap(), true);
+    assert_eq!(readiness(&flycheck, &saved, &lib_path), Readiness::Pending, "no check ran");
+    flycheck.settle_for_test(&root);
+    assert_eq!(readiness(&flycheck, &saved, &lib_path), Readiness::Ready(1));
+}
+
+/// An overlay manager with `file` open and edited to `text`, not saved (version 2).
+fn edited(file: &Path, text: &str) -> crate::overlay::OverlayManager {
+    let mut ov = crate::overlay::OverlayManager::new();
+    let path = file.to_string_lossy();
+    ov.open_with_provenance(&uri(file), &path, 1, std::fs::read_to_string(file).unwrap(), true);
+    ov.apply_content_changes(&path, 2, &[json!({ "text": text })]);
+    ov
+}

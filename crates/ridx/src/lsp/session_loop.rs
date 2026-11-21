@@ -93,7 +93,11 @@ pub(crate) fn step(
         // again since is another buffer (reviews of fb2bed09 and d4541e29).
         let texts: Vec<(PathBuf, String)> =
             built.buffers.iter().filter(|b| ov.get(&b.key).is_some_and(|o| o.instance == b.instance)).map(|b| (b.path.clone(), b.text.clone())).collect();
-        touched.extend(diags.replace(&built.root, super::presentation::session_diag::session_files(&built.root, &built.report, &texts), &has_check));
+        let files = super::presentation::session_diag::session_files(&built.root, &built.report, &texts);
+        // What each buffer's compile gave, a reason for none included: a request waiting for its diagnostics is answered
+        // by it, never with an empty list standing for "clean" (prod-code, m=20178).
+        diags.set_outcomes(&built.root, super::presentation::session_diag::session_outcomes(&built.report, &texts, &files));
+        touched.extend(diags.replace(&built.root, files, &has_check));
         session.loaded(&built.root, &built.dir, built.stamp);
         replaced = true;
     }

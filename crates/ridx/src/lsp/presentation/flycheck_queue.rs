@@ -22,6 +22,19 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 impl FlycheckState {
+    /// Whether the check of the saved files of `file`'s workspace (canonical) ran to the end and none of it is to run or
+    /// running: its result of the file as saved is known (prod-code, m=20178).
+    pub fn check_settled(&self, file: &Path) -> bool {
+        let queued = self.queue.lock().unwrap_or_else(|e| e.into_inner()).iter().any(|r| file.starts_with(r));
+        !queued && self.completed.lock().unwrap_or_else(|e| e.into_inner()).iter().any(|r| file.starts_with(r))
+    }
+
+    /// A check of `root` ran to the end, for tests.
+    #[cfg(test)]
+    pub fn settle_for_test(&self, root: &Path) {
+        self.completed.lock().unwrap().insert(root.to_path_buf());
+    }
+
     /// The server took `diag` of generation `gen`: a clear (no diagnostics) of a root's URI ends what that root has to
     /// clear there, unless a newer check of the root started since (it may have published the URI again: review of
     /// 3650f8e3). Checked under the lock a worker registers a check with, so none starts in between.
@@ -74,6 +87,7 @@ impl FlycheckState {
         let generation = Arc::clone(&self.generation);
         let queue = Arc::clone(&self.queue);
         let root_generation = Arc::clone(&self.root_generation);
+        let completed = Arc::clone(&self.completed);
 
         let handle = std::thread::Builder::new().name("flycheck-worker".into()).spawn(move || loop {
             if generation.load(Ordering::SeqCst) != my_gen {
@@ -103,6 +117,8 @@ impl FlycheckState {
                 break;
             }
             q.retain(|r| r != &root);
+            // Its results are in `latest_diagnostics` (the check writes them before it returns).
+            completed.lock().unwrap_or_else(|e| e.into_inner()).insert(root.clone());
         });
 
         if let Ok(h) = handle {

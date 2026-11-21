@@ -14,6 +14,7 @@
 use super::folders::Folders;
 use super::fresh::{Coverage, Waiting};
 use super::session_index::SessionIndexer;
+use crate::lsp::presentation::session_diag::{readiness, Readiness};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::io::{self, Write};
@@ -106,7 +107,10 @@ pub(crate) fn release_waiting<W: Write>(
     // A request held for its version whose index failed since gets that answer now, not a timeout (review of b3d0d293).
     let refused = gate.waiting.refuse(|m| refusal(m, mr, &lifecycle.reindex), cancelled);
     gate.send_answers(writer, refused)?;
-    let (ready, answers) = gate.waiting.release(&Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }, cancelled);
+    let ov: &crate::overlay::OverlayManager = ov;
+    let fc = &lifecycle.flycheck;
+    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| readiness(fc, ov, f) };
+    let (ready, answers) = gate.waiting.release(&cov, cancelled);
     gate.send_answers(writer, answers)?;
     Ok(ready)
 }
@@ -160,7 +164,7 @@ pub(crate) fn intercept<W: Write>(
     }
     if msg["method"] == "ridx/status" {
         refresh(gate, writer, lifecycle, mr, ov)?;
-        let result = status(&msg, &gate.folders, mr, ov, &lifecycle.reindex, session);
+        let result = status(&msg, &gate.folders, mr, ov, &lifecycle.reindex, session, &lifecycle.flycheck);
         super::protocol::send_response(writer, &json!({ "jsonrpc": "2.0", "id": msg["id"], "result": result }))?;
         return Ok(None);
     }
@@ -178,7 +182,15 @@ pub(crate) fn intercept<W: Write>(
     }
     refresh(gate, writer, lifecycle, mr, ov)?;
     msg[PINNED] = json!(true);
-    Ok(gate.waiting.admit(msg, &Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) }, deadline))
+    let ov: &crate::overlay::OverlayManager = ov;
+    let fc = &lifecycle.flycheck;
+    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| readiness(fc, ov, f) };
+    // A `textDocument/diagnostic` whose version compiled without diagnostics is told so now (prod-code, m=20178).
+    if let Some(answer) = super::fresh::unavailable(&msg, &cov) {
+        super::protocol::send_response(writer, &answer)?;
+        return Ok(None);
+    }
+    Ok(gate.waiting.admit(msg, &cov, deadline))
 }
 
 /// The requests answered from the index alone: on a root without one, an empty answer would read as "none" (no
@@ -240,6 +252,7 @@ pub fn status(
     ov: &crate::overlay::OverlayManager,
     reindex: &super::reindex::Reindexer,
     session: &SessionIndexer,
+    flycheck: &crate::lsp::presentation::flycheck::FlycheckState,
 ) -> Value {
     // The roots with an index loaded, and the client's folders' and those indexed this session without one, being
     // indexed for the first time or whose first index failed (review of a6909dbe: they were missing, with the reason).
@@ -273,10 +286,16 @@ pub fn status(
         let file = super::protocol::uri_to_path(uri);
         let root = super::dispatch::workspace_root_of(mr, reindex, Path::new(&file));
         let building = root.as_ref().is_some_and(|r| session.state_of(r).0 || reindex.status_of(r).0);
-        let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f) };
+        let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| readiness(flycheck, ov, f) };
+        // Whether the compiler's diagnostics of the buffer's text are known (prod-code, m=20178).
+        let diagnostics = match (cov.diagnostics)(&file) {
+            Readiness::Ready(v) => json!({ "state": "ready", "version": v }),
+            Readiness::Unavailable(v, why) => json!({ "state": "unavailable", "version": v, "reason": why }),
+            Readiness::Pending => json!({ "state": "pending", "version": null }),
+        };
         out["document"] = match ov.get(&file) {
-            Some(o) => json!({ "version": o.version, "coveredVersion": cov.covered_version(&file).flatten(), "building": building }),
-            None => json!({ "version": null, "coveredVersion": null, "building": building }),
+            Some(o) => json!({ "version": o.version, "coveredVersion": cov.covered_version(&file).flatten(), "building": building, "diagnostics": diagnostics }),
+            None => json!({ "version": null, "coveredVersion": null, "building": building, "diagnostics": null }),
         };
     }
     out
