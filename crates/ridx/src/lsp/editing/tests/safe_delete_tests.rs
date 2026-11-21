@@ -46,6 +46,12 @@ fn test_what_its_own_deletion_would_break_is_refused() {
     // Review of d753d993: used though nothing in the source names it.
     assert_eq!(deleted("fn $0main() {}\n"), Err("entryPoint"));
     assert_eq!(deleted("#[no_mangle]\npub extern \"C\" fn $0hook() {}\n"), Err("externallyUsed"));
+    // Review of f4f8b604: raw spellings, a member used from outside, an impl, a registration the loader runs.
+    assert_eq!(deleted("fn $0r#main() {}\n"), Err("entryPoint"));
+    assert_eq!(deleted("#[r#no_mangle]\npub extern \"C\" fn $0hook() {}\n"), Err("externallyUsed"));
+    assert_eq!(deleted("mod $0m {\n    #[no_mangle]\n    pub extern \"C\" fn api() {}\n}\n"), Err("externallyUsed"));
+    assert_eq!(deleted("pub trait Marker {}\npub struct S;\nmod $0m {\n    impl super::Marker for super::S {}\n}\n"), Err("containsImpl"));
+    assert_eq!(deleted("#[used]\n#[link_section = \".init_array\"]\nstatic $0INIT: extern \"C\" fn() = init;\nextern \"C\" fn init() {}\n"), Err("externallyUsed"));
 }
 
 /// An inline module's declarations are all checked.
@@ -64,8 +70,12 @@ fn workspace(lib: &str, defs: &[(&str, DefKind, u32, u32)], refs: &[(u32, u32, u
     std::fs::create_dir_all(root.join("src")).unwrap();
     let (lib_path, other) = (root.join("src/lib.rs"), root.join("src/other.rs"));
     std::fs::write(&lib_path, lib).unwrap();
+    let caller = "// a caller\n\npub fn caller() {}\n";
+    std::fs::write(&other, caller).unwrap();
     let mut w = IndexWriter::new("w", "0.1.0");
     w.add_file_hash(&lib_path.to_string_lossy(), ridx_format::normalized_source_hash(lib.as_bytes()));
+    w.add_file_hash(&other.to_string_lossy(), ridx_format::normalized_source_hash(caller.as_bytes()));
+    w.get_or_insert_file(&other.to_string_lossy());
     let paths: Vec<String> =
         defs.iter().enumerate().map(|(i, d)| defs.iter().take(i).filter(|m| m.1 == DefKind::Mod).map(|m| format!("{}::", m.0)).collect::<String>() + d.0).collect();
     for (i, (name, kind, line, col)) in defs.iter().enumerate() {
@@ -151,6 +161,18 @@ fn test_safe_delete_fails_closed() {
     let (_d, path, index) = workspace(lib, &[("m", DefKind::Mod, 1, 5), ("child", DefKind::Fn, 2, 12)], &[(3, 5, 1)]);
     let got = handle_safe_delete(&at(&path, 0, 4), Some(&index), &OverlayManager::new(), &mut conv, true);
     assert_eq!(got["reason"], "used", "its child is used: {got}");
+
+    // Review of f4f8b604: a closed caller changed on disk, unreported, is not what the index read.
+    let lib = "pub fn used() {}\npub fn unused() {}\n";
+    let (_d, path, index) = workspace(lib, &[("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)], &[]);
+    assert!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv, true)["edit"].is_object());
+    std::fs::write(path.with_file_name("other.rs"), "pub fn caller() { crate::unused() }\n").unwrap();
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv, true)["reason"], "staleIndex");
+    // A byte order mark is no column to the compiler.
+    let lib = "\u{feff}pub fn unused() {}\n";
+    let (_d, path, index) = workspace(lib, &[("unused", DefKind::Fn, 1, 8)], &[]);
+    let got = handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut conv, true);
+    assert!(got["edit"].is_object(), "{got}");
 
     let lib = "pub fn a\u{0301}b() {}\n";
     let (_d, path, _index) = workspace(lib, &[], &[]);

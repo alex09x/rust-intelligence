@@ -28,8 +28,9 @@ use std::ops::Range;
 /// The items a safe delete takes away whole.
 const ITEMS: &[K] = &[K::Fn, K::Struct, K::Enum, K::Union, K::Trait, K::Const, K::Static, K::TypeAlias, K::MacroRules, K::Module];
 
-/// Attributes under which something outside the source uses an item: the linker, the compiler's proc-macro loader.
-const EXTERNAL_USE: &[&str] = &["no_mangle", "export_name", "proc_macro", "proc_macro_derive", "proc_macro_attribute"];
+/// Attributes under which something outside the source uses an item: the linker (a symbol, a section the loader runs:
+/// `#[used]`, `#[link_section]`, review of f4f8b604), the compiler's proc-macro loader.
+const EXTERNAL_USE: &[&str] = &["no_mangle", "export_name", "used", "link_section", "proc_macro", "proc_macro_derive", "proc_macro_attribute"];
 
 /// What deleting the item named at a position takes away: the bytes, and the name of every declaration in them (the
 /// item first).
@@ -54,12 +55,19 @@ pub(crate) fn plan(doc: &str, offset: usize) -> Result<Plan, &'static str> {
     if tree.kind(item) == K::Module && tree.child(item, K::ItemList).is_none() {
         return Err("moduleFile");
     }
-    // A crate root's `main` is its target's entry point, used though nothing names it.
-    if tree.kind(item) == K::Fn && tree.text(name) == "main" && tree.parent(item).is_some_and(|p| tree.kind(p) == K::SourceFile) {
+    // A crate root's `main` (`r#main` too) is its target's entry point, used though nothing names it.
+    let norm = ridx_syntax::sema_fn::norm_ident;
+    if tree.kind(item) == K::Fn && norm(tree.text(name)) == "main" && tree.parent(item).is_some_and(|p| tree.kind(p) == K::SourceFile) {
         return Err("entryPoint");
     }
-    if tree.children(item).filter(|&c| tree.kind(c) == K::Attr).any(|a| tree.tokens_of(a).iter().any(|t| EXTERNAL_USE.contains(&t.text(doc)))) {
+    // The item and everything it holds (a module's items: review of f4f8b604), by any spelling (`#[r#no_mangle]`).
+    let inner: Vec<_> = std::iter::once(item).chain(tree.descendants(item)).collect();
+    if inner.iter().any(|&n| tree.kind(n) == K::Attr && tree.tokens_of(n).iter().any(|t| EXTERNAL_USE.contains(&norm(t.text(doc))))) {
         return Err("externallyUsed");
+    }
+    // An impl names nothing a reference could point at, and code elsewhere may need it (a trait bound, a method).
+    if inner.iter().skip(1).any(|&n| tree.kind(n) == K::Impl) {
+        return Err("containsImpl");
     }
     let mut names = vec![tree.range(name)];
     names.extend(tree.descendants(item).filter(|&d| tree.kind(d) == K::Name && d != name && tree.parent(d).is_some_and(|p| ITEMS.contains(&tree.kind(p)))).map(|d| tree.range(d)));
@@ -95,10 +103,53 @@ fn lines_of(doc: &str, tree: &SyntaxTree<'_>, range: Range<usize>) -> Range<usiz
     }
 }
 
-/// The 1-based line and character column of byte `b` of `doc`.
+/// The 1-based line and character column the compiler gives byte `b` of `doc`: a byte order mark is no character of
+/// the first line to it (review of f4f8b604).
 fn line_col(doc: &str, b: usize) -> (u32, u32) {
     let ls = doc[..b].rfind('\n').map_or(0, |i| i + 1);
-    (doc[..ls].matches('\n').count() as u32 + 1, doc[ls..b].chars().count() as u32 + 1)
+    let bom = ls == 0 && doc.starts_with('\u{feff}');
+    (doc[..ls].matches('\n').count() as u32 + 1, doc[ls..b].chars().count() as u32 + 1 - bom as u32)
+}
+
+/// The byte of `doc` at the compiler's 1-based `line` and character `col`.
+fn byte_at(doc: &str, starts: &[usize], line: u32, col: u32) -> Option<usize> {
+    let ls = *starts.get(line.saturating_sub(1) as usize)?;
+    let skip = col.saturating_sub(1) as usize + (ls == 0 && doc.starts_with('\u{feff}')) as usize;
+    Some(ls + doc[ls..].chars().take(skip).map(char::len_utf8).sum::<usize>())
+}
+
+/// Whether every source of the workspace the index read is as it read it: on disk, or in its open buffer (a closed
+/// caller changed with nothing telling the server holds uses the index does not have: review of f4f8b604).
+fn sources_current(ws: &WorkspaceIndex, ov: &OverlayManager) -> bool {
+    let mut seen = std::collections::HashSet::new();
+    for (idx, reader) in ws.readers().iter().enumerate() {
+        // Every file the compiler read for the shard, not only those holding a definition or a reference.
+        for (f, hash) in reader.embedded_file_hashes() {
+            let f = std::path::Path::new(&f);
+            let path = if f.is_absolute() {
+                f.to_path_buf()
+            } else if let Some(root) = ws.source_root_at(idx) {
+                root.join(f)
+            } else {
+                continue;
+            };
+            // The registry's, git checkouts' and toolchains' sources do not change under a build; every other is read.
+            let s = path.to_string_lossy();
+            let cached = s.contains("/.cargo/registry/") || s.contains("/.cargo/git/") || s.contains("/.rustup/") || s.contains("/rustlib/src/");
+            if hash == 0 || cached || !seen.insert((path.clone(), hash)) {
+                continue;
+            }
+            let key = path.to_string_lossy();
+            let text = match ov.get(&key) {
+                Some(o) => Some(o.text.clone().into_bytes()),
+                None => std::fs::read(&path).ok(),
+            };
+            if text.is_none_or(|t| ridx_format::normalized_source_hash(&t) != hash) {
+                return false;
+            }
+        }
+    }
+    true
 }
 
 /// The answer to `ridx/safeDelete`.
@@ -133,31 +184,39 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
     }
     let canonical = ridx_format::canonicalize_best_effort(std::path::Path::new(&file));
     let names: Vec<&str> = plan.names.iter().map(|r| ridx_syntax::sema_fn::norm_ident(&doc[r.clone()])).collect();
-    // A buffer edited elsewhere, whose uses the index may not have yet, naming what would go.
-    let unsaved = ov.open_file_paths().into_iter().filter(|k| ridx_format::canonicalize_best_effort(std::path::Path::new(k)) != canonical).any(|k| {
-        ov.get(&k).is_some_and(|o| {
-            o.is_dirty() && ridx_syntax::lex(&o.text).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && names.contains(&ridx_syntax::sema_fn::norm_ident(t.text(&o.text))))
-        })
-    });
+    // Any buffer edited elsewhere: the index may not have its uses yet, and no reading of its text tells them all (a
+    // macro's, a name spelled another way: review of f4f8b604).
+    let unsaved =
+        ov.open_file_paths().into_iter().filter(|k| ridx_format::canonicalize_best_effort(std::path::Path::new(k)) != canonical).any(|k| ov.get(&k).is_some_and(|o| o.is_dirty()));
     if unsaved {
         return refuse("unsavedUses", Vec::new());
     }
+    if !sources_current(ws, ov) {
+        return refuse("staleIndex", Vec::new());
+    }
     let mut uses = Vec::new();
+    let mut seen = std::collections::HashSet::new();
     for (i, r) in plan.names.iter().enumerate() {
         let (l, c) = line_col(&doc, r.start);
-        // The definition the index has there, by its name and place: what it says of the uses is of this declaration.
-        let Some(found) = ws.find_references_at(&file, l, c).filter(|f| ridx_syntax::sema_fn::norm_ident(f.target_symbol) == names[i] && f.target_line == l && f.target_col == c)
-        else {
+        // The definition the index has there, at its place in the very text it compiled; its name compared where both
+        // spellings are ASCII (another normal form of a name is the compiler's, not a different item).
+        let same_name = |s: &str| {
+            let s = ridx_syntax::sema_fn::norm_ident(s);
+            s == names[i] || !(s.is_ascii() && names[i].is_ascii())
+        };
+        let Some(found) = ws.find_references_at(&file, l, c).filter(|f| same_name(f.target_symbol) && f.target_line == l && f.target_col == c) else {
             return refuse(if i == 0 { "unknownSymbol" } else { "unknownMember" }, Vec::new());
         };
-        for rf in &found.references {
+        // Every edge the index has to it: the definition's own (impls, aliases) and the path's, a macro's expansion
+        // and a whole impl header included (review of f4f8b604: the first alone dropped some).
+        let by_path = ws.find_references(found.target_path);
+        for rf in found.references.iter().chain(&by_path) {
             let path = crate::lsp::navigation::type_definition_parse::on_disk(rf.resolved_path());
-            let inside = ridx_format::canonicalize_best_effort(&path) == canonical && {
-                let b = starts
-                    .get(rf.span.start_line().saturating_sub(1) as usize)
-                    .map(|&ls| ls + doc[ls..].chars().take(rf.span.start_col().saturating_sub(1) as usize).map(char::len_utf8).sum::<usize>());
-                b.is_some_and(|b| plan.span.contains(&b))
-            };
+            if !seen.insert((path.clone(), rf.span.start_line(), rf.span.start_col())) {
+                continue;
+            }
+            let inside = ridx_format::canonicalize_best_effort(&path) == canonical
+                && byte_at(&doc, &starts, rf.span.start_line(), rf.span.start_col()).is_some_and(|b| plan.span.contains(&b));
             if !inside {
                 let p = path.to_string_lossy();
                 let (s, e) = (conv.char_col_to_utf16_col(&p, rf.span.start_line(), rf.span.start_col()), conv.char_col_to_utf16_col(&p, rf.span.end_line(), rf.span.end_col()));
