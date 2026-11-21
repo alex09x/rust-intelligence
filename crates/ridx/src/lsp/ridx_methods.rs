@@ -64,8 +64,16 @@ pub fn dispatch(
             };
             let starts = super::editing::action_parse::line_starts_of(&text);
             let p = &msg["params"]["position"];
-            let cursor = p["line"].as_u64().zip(p["character"].as_u64()).and_then(|(l, c)| super::editing::action_parse::utf16_pos_to_byte(&text, &starts, l as u32, c as u32));
-            let expanded = cursor.zip(ws).and_then(|(at, ws)| super::editing::action_inline_macro::expand_macro_at(&text, &file, at, ws));
+            // A position that is no position is refused, not wrapped to another (review of d2cb318a).
+            let (l, c) = p["line"]
+                .as_u64()
+                .and_then(|l| u32::try_from(l).ok())
+                .zip(p["character"].as_u64().and_then(|c| u32::try_from(c).ok()))
+                .ok_or_else(|| LspError::invalid_params("Invalid position"))?;
+            let cursor = super::editing::action_parse::utf16_pos_to_byte(&text, &starts, l, c).ok_or_else(|| LspError::invalid_params("Invalid position"))?;
+            // The definitions are read as saved: a buffer edited may hold another one (review of d2cb318a).
+            let edited = ov.open_file_paths().into_iter().any(|k| ov.get(&k).is_some_and(|o| o.is_dirty() || std::fs::read_to_string(&k).ok().as_deref() != Some(o.text.as_str())));
+            let expanded = ws.filter(|_| !edited).and_then(|ws| super::editing::action_inline_macro::expand_macro_at(&text, &file, cursor, ws));
             Ok(expanded.map_or(Value::Null, |(name, expansion)| serde_json::json!({ "name": name, "expansion": expansion })))
         }
         _ => Err(LspError::method_not_found(format!("Method not found: {method}"))),

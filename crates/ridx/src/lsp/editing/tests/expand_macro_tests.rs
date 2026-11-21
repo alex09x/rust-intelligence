@@ -48,3 +48,52 @@ fn test_a_macro_call_is_expanded_fully_or_not_at_all() {
     assert_eq!(expand_macro_at(doc, &file, doc.find("outer!()) ").unwrap(), &ws), None, "it calls a macro again");
     assert_eq!(expand_macro_at(doc, &file, doc.find("x\n}\npub fn g").unwrap(), &ws), None, "no macro call there");
 }
+
+/// A file `doc` with the `macro_rules!` macros `defs` (name, 1-based line of `macro_rules!`) indexed.
+fn indexed(doc: &str, defs: &[(&str, u32)]) -> (tempfile::TempDir, String, WorkspaceIndex) {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    std::fs::create_dir_all(root.join("src")).unwrap();
+    let lib = root.join("src/lib.rs");
+    std::fs::write(&lib, doc).unwrap();
+    let mut w = IndexWriter::new("w", "0.1.0");
+    for (i, (name, line)) in defs.iter().enumerate() {
+        w.add_definition(RawDefinition {
+            def_id: i as u32 + 1,
+            kind: DefKind::Macro,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: lib.to_string_lossy().to_string(),
+            name: name.to_string(),
+            start_line: *line,
+            start_col: 14,
+            end_line: *line,
+            end_col: 14 + name.len() as u32,
+            path: name.to_string(),
+            signature: None,
+        });
+    }
+    let shard = root.join("w.ridx");
+    w.write_to(&mut std::fs::File::create(&shard).unwrap()).unwrap();
+    let ws = WorkspaceIndex::open(&shard).unwrap();
+    (dir, lib.to_string_lossy().to_string(), ws)
+}
+
+/// Review of d2cb318a: a call found by the syntax tree, a name the standard library also uses, completeness told by
+/// the call syntax, an `expr` fragment not rendered as text.
+#[test]
+fn test_the_expansion_is_faithful_or_none() {
+    let doc = "macro_rules! value {\n    () => { 1u8 };\n}\nmacro_rules! println {\n    () => { 3u8 };\n}\nmacro_rules! ne {\n    () => { 1 != 2 };\n}\nmacro_rules! raw {\n    () => { r#value!() };\n}\nmacro_rules! twice {\n    ($x:expr) => { $x * 2 };\n}\npub fn f() -> u8 {\n    value /* gap */ !() + println!()\n}\n";
+    let (_d, file, ws) = indexed(doc, &[("value", 1), ("println", 4), ("ne", 7), ("raw", 10), ("twice", 13)]);
+    let at = |s: &str| expand_macro_at(doc, &file, doc.rfind(s).unwrap(), &ws);
+    assert_eq!(at("value /*"), Some(("value".to_string(), "1u8".to_string())));
+    assert_eq!(at("println!()"), Some(("println".to_string(), "3u8".to_string())), "the workspace's own println");
+    let calls = |name: &str, args: &str| {
+        let d = format!("{doc}pub fn g() {{ let _ = {name}!({args}); }}\n");
+        let (_d, file, ws) = indexed(&d, &[("value", 1), ("println", 4), ("ne", 7), ("raw", 10), ("twice", 13)]);
+        expand_macro_at(&d, &file, d.rfind(&format!("{name}!")).unwrap(), &ws)
+    };
+    assert_eq!(calls("ne", ""), Some(("ne".to_string(), "1 != 2".to_string())), "`!=` is no call");
+    assert_eq!(calls("raw", ""), None, "it calls `r#value!` again");
+    assert_eq!(calls("twice", "1 + 2"), None, "an `expr` fragment");
+}

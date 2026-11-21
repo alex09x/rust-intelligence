@@ -80,19 +80,37 @@ pub fn plan_inline_macro(doc: &str, file: &str, cursor: usize, ws: &WorkspaceInd
 /// (prod-code, m=20257): fully expanded, so `None` when it calls a macro again, and for a macro ridx does not expand
 /// (the standard library's, a proc macro).
 pub fn expand_macro_at(doc: &str, file: &str, cursor: usize, ws: &WorkspaceIndex) -> Option<(String, String)> {
+    use ridx_syntax::{SyntaxKind as K, TokenKind as T};
     let masked = mask_comments_and_strings(doc);
     let starts = line_starts_of(doc);
-    let call = macro_call_at(&masked, cursor)?;
-    let name = &masked[call.name.0..call.name.1];
-    if STD_MACROS.contains(&name) || name == "macro_rules" {
+    // The call around the cursor as the syntax tree has it: trivia before the `!`, a name beyond ASCII (review of
+    // d2cb318a).
+    let tree = ridx_syntax::parse(doc);
+    let c = tree.covering(cursor);
+    let mc = std::iter::once(c).chain(tree.ancestors(c)).find(|&n| tree.kind(n) == K::MacroCall)?;
+    let toks: Vec<_> = tree.tokens_of(mc).iter().filter(|t| !t.is_trivia()).copied().collect();
+    let bang = toks.iter().position(|t| t.kind == T::Bang)?;
+    let name_tok = toks[..bang].iter().rev().find(|t| matches!(t.kind, T::Ident | T::RawIdent))?;
+    let tt = tree.child(mc, K::TokenTree)?;
+    let call =
+        MacroCall { path_start: toks.first()?.start as usize, name: (name_tok.start as usize, name_tok.end as usize), open: tree.range(tt).start, close: tree.range(tt).end };
+    let name = &doc[call.name.0..call.name.1];
+    if name == "macro_rules" || cursor > call.close {
         return None;
     }
+    // The standard library's definitions are not read (`macro_definition`): a workspace macro named like one is.
     let (def_text, def_crate) = macro_definition(doc, &starts, file, call.name.0, name, ws)?;
+    // An `expr` fragment is one operand where it goes, which its text alone is not (`$x * 2` of `1 + 2`): no expansion
+    // as source is faithful then.
+    if def_text.replace([' ', '\t', '\n'], "").contains(":expr") {
+        return None;
+    }
     let def = MacroRulesDef::parse_body(&def_text)?;
     let prefix = crate_prefix(ws, file, &masked, &masked[call.path_start..call.name.0], def_crate.as_deref())?;
     let expansion = tidy_spacing(&rejoin_punctuation(&def.expand(&doc[call.open + 1..call.close - 1], &prefix)?)).trim().to_string();
+    // Fully expanded: no call `name!(..)` left, `r#name!` included; `a != b` is none.
     let toks: Vec<_> = ridx_syntax::lex(&expansion).into_iter().filter(|t| !t.is_trivia()).collect();
-    let calls_again = toks.windows(2).any(|w| matches!(w[0].kind, ridx_syntax::TokenKind::Ident) && w[1].kind == ridx_syntax::TokenKind::Bang);
+    let calls_again = toks.windows(3).any(|w| matches!(w[0].kind, T::Ident | T::RawIdent) && w[1].kind == T::Bang && matches!(w[2].kind, T::LParen | T::LBracket | T::LBrace));
     (!expansion.is_empty() && !calls_again).then(|| (name.to_string(), expansion))
 }
 
