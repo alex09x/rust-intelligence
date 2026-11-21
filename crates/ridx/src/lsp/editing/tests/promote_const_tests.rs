@@ -36,6 +36,13 @@ fn test_a_constant_binding_becomes_a_constant() {
     let got = promoted("pub fn h() -> String {\n    let greeting$0 = \"hi\";\n    format!(\"{}!\", greeting)\n}\n", Some("&str")).unwrap();
     assert!(got.contains("const GREETING: &str = \"hi\";") && got.contains("format!(\"{}!\", GREETING)"), "{got}");
     assert_rustc_compiles(&got, "Promote local to constant");
+    // Review of 63f24322: a field shorthand keeps its field; a function of the block named so is not the local.
+    let got = promoted("pub struct S { pub x: i32 }\npub fn s() -> S {\n    let x$0: i32 = 1;\n    S { x }\n}\n", None).unwrap();
+    assert!(got.contains("S { x: X }"), "{got}");
+    assert_rustc_compiles(&got, "Promote local to constant");
+    let got = promoted("pub fn v() -> i32 {\n    let value$0: i32 = 1;\n    fn value() -> i32 {\n        2\n    }\n    value\n}\n", None).unwrap();
+    assert!(got.contains("const VALUE: i32 = 1;") && got.ends_with("    VALUE\n}\n"), "{got}");
+    assert_rustc_compiles(&got, "Promote local to constant");
 }
 
 /// prod-code, m=20226: rust-analyzer promotes `let area = size * scale;`, which reads parameters: no constant can.
@@ -51,6 +58,13 @@ fn test_a_binding_no_constant_can_hold_is_not_promoted() {
         ("const N: u8 = 2;\npub fn f() -> u8 {\n    let n$0 = 1;\n    n + N\n}\n", Some("u8")),
         // No type to write.
         ("pub fn f() -> u8 {\n    let n$0 = 1;\n    n\n}\n", None),
+        // Review of 63f24322: a name taken in raw spelling, a placeholder or generic type, an operator no constant
+        // evaluates.
+        ("const r#N: u8 = 2;\npub fn f() -> u8 {\n    let n$0 = 1u8;\n    n + N\n}\n", Some("u8")),
+        ("pub fn f() -> i32 {\n    let x$0: _ = 1;\n    x\n}\n", None),
+        ("pub fn f<T>() -> usize {\n    let empty$0: [T; 0] = [];\n    empty.len()\n}\n", None),
+        ("pub fn f() -> bool {\n    let same$0 = \"a\" == \"b\";\n    same\n}\n", Some("bool")),
+        ("pub fn f() -> f64 {\n    let x$0 = 1.5 * 2.0;\n    x\n}\n", Some("f64")),
     ] {
         assert_eq!(promoted(doc, ty), None, "{doc}");
     }

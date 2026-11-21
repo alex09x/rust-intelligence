@@ -124,7 +124,9 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
             None => {}
         }
     }
-    let name = (0..).map(|i| if i == 0 { "fun_name".to_string() } else { format!("fun_name{i}") }).find(|n| !tree.tokens.iter().any(|t| t.text(doc) == n.as_str()))?;
+    let name = (0..)
+        .map(|i| if i == 0 { "fun_name".to_string() } else { format!("fun_name{i}") })
+        .find(|n| !tree.tokens.iter().any(|t| ridx_syntax::sema_fn::norm_ident(t.text(doc)) == n.as_str()))?;
     let args: Vec<&str> = params.iter().map(|(p, _)| p.as_str()).collect();
     let sig: Vec<String> = params.iter().map(|(p, t)| format!("{p}: {t}")).collect();
     // After the item of the module that holds the function (the function, or its impl), in that module, so that what

@@ -112,7 +112,7 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
-            for action in super::action_wrap_return::wrap_return_actions(&doc_text, uri, range, doc_version, ws) {
+            for action in super::action_wrap_return::wrap_return_actions(&doc_text, uri, range, doc_version, ws, overlay_mgr) {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }

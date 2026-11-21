@@ -68,13 +68,13 @@ pub(crate) fn find_param_uses(tree: &SyntaxTree<'_>, body: NodeId, target: &str,
 }
 
 /// The uses of `target`, bound by the `let` statement `let_stmt`, in the rest of its block: the statements after it,
-/// up to one that binds the name again.
+/// up to one that binds the name again. An item of the block named so does not end them: a `let` shadows the items
+/// of its block (review of 63f24322: `let value = 1; fn value() {}` then `value` reads the local).
 pub(crate) fn find_let_uses(tree: &SyntaxTree<'_>, let_stmt: NodeId, target: &str, out: &mut ParamUses) {
     let Some(block) = tree.parent(let_stmt) else { return };
     let mut ctx = Ctx { nodes: &tree.nodes, tokens: &tree.tokens, src: tree.src.as_bytes(), src_str: tree.src, target: target.as_bytes(), out };
-    let (u0, m0) = (ctx.out.uses.len(), ctx.out.macro_uses.len());
     let (start, end) = (tree.nodes[let_stmt.0 as usize].subtree_end as usize, tree.nodes[block.0 as usize].subtree_end as usize);
-    scan_range(&mut ctx, block.0, u0, m0, start, end);
+    scan_range(&mut ctx, u32::MAX, 0, 0, start, end);
 }
 
 struct Ctx<'t, 's> {

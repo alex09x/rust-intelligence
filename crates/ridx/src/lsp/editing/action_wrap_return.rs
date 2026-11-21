@@ -68,12 +68,31 @@ pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, called: &dyn Fn(u
     let ty = tree.child(f, K::RetType).and_then(|r| tree.children(r).next())?;
     let ty_text = tree.text(ty);
     let head = ty_text.split('<').next().unwrap_or("").trim();
-    if tree.kind(ty) == K::NeverType || head == "Option" || head == "Result" || head.ends_with("::Option") || head.ends_with("::Result") {
+    // `-> ()` returns by falling through the end too, which no edit wraps (review of 63f24322).
+    if tree.kind(ty) == K::NeverType || ty_text.trim() == "()" || head == "Option" || head == "Result" || head.ends_with("::Option") || head.ends_with("::Result") {
         return None;
     }
-    // Every caller would break: a function named anywhere but at its own name.
-    let fn_name = tree.text(name);
-    if tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && t.text(doc) == fn_name && (t.start as usize) != tree.range(name).start)
+    let body = ridx_syntax::sema_fn::fn_body(&tree, f)?;
+    // Every exit is wrapped: none through `?` (whose type the new one changes), none hidden in a macro's arguments.
+    if !ridx_syntax::sema_fn::own_try_ops(&tree, f).is_empty()
+        || tree.descendants(body).any(|d| tree.kind(d) == K::MacroCall && tree.tokens_of(d).iter().any(|t| t.kind == T::Return || t.kind == T::Question))
+    {
+        return None;
+    }
+    // `Option`, `Some`, `Result` and `Ok` are the prelude's: the file declares or imports none of them.
+    let prelude = ["Option", "Some", "Result", "Ok"];
+    if tree.descendants(tree.root()).any(|d| {
+        (tree.kind(d) == K::Name && prelude.contains(&ridx_syntax::sema_fn::norm_ident(tree.text(d))))
+            || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| prelude.contains(&ridx_syntax::sema_fn::norm_ident(t.text(doc)))))
+    }) {
+        return None;
+    }
+    // Every caller would break: a function named anywhere but at its own name, `r#name` included.
+    let fn_name = ridx_syntax::sema_fn::norm_ident(tree.text(name));
+    if tree
+        .tokens
+        .iter()
+        .any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(doc)) == fn_name && (t.start as usize) != tree.range(name).start)
         || called(tree.range(name).start)
     {
         return None;
@@ -95,7 +114,7 @@ pub(crate) fn wrap_edits(doc: &str, offset: usize, wrap: Wrap, called: &dyn Fn(u
 }
 
 /// The `Wrap return type in Option` and `in Result` actions at the cursor of an empty `range`, with their edits.
-pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, ws: &WorkspaceIndex) -> Vec<Value> {
+pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, ws: &WorkspaceIndex, ov: &crate::overlay::OverlayManager) -> Vec<Value> {
     let mut out = Vec::new();
     if range["start"] != range["end"] {
         return out;
@@ -106,13 +125,20 @@ pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Opt
     };
     let file = crate::lsp::protocol::uri_to_path(uri);
     let canonical = ridx_format::canonicalize_best_effort(std::path::Path::new(&file));
-    // Named in another file of the workspace, by the index (this one's text was read already); a definition the index
-    // does not have is not known to be unused.
+    // Named in another file of the workspace, by the index (this one's text was read already), or in another open
+    // buffer, whose unsaved calls the index may not have yet (review of 63f24322); a definition the index does not have
+    // is not known to be unused.
     let called = |name_start: usize| {
         let line = doc[..name_start].matches('\n').count();
         let char_col = doc[starts[line]..name_start].chars().count();
+        let name_len = doc[name_start..].find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '#')).unwrap_or(doc.len() - name_start);
+        let name = ridx_syntax::sema_fn::norm_ident(&doc[name_start..name_start + name_len]);
+        let in_buffer = ov.open_file_paths().into_iter().filter(|k| ridx_format::canonicalize_best_effort(std::path::Path::new(k)) != canonical).any(|k| {
+            ov.get(&k)
+                .is_some_and(|o| ridx_syntax::lex(&o.text).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(&o.text)) == name))
+        });
         let Some(def) = ws.find_definition_at(&file, line as u32 + 1, char_col as u32 + 1) else { return true };
-        ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
+        in_buffer || ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
     };
     for (wrap, title) in [(Wrap::Option, "Wrap return type in Option"), (Wrap::Result, "Wrap return type in Result")] {
         let Some(edits) = wrap_edits(doc, offset, wrap, &called) else { continue };

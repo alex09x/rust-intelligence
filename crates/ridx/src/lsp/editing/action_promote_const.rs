@@ -20,21 +20,27 @@ use ridx_syntax::{SyntaxKind as K, SyntaxTree, TokenKind as T};
 use serde_json::{json, Value};
 use std::ops::Range;
 
-/// Whether the expression `init` is evaluated at compile time as it is: literals, operators, parentheses, tuples and
-/// arrays, and no name.
+/// Whether the expression `init` is evaluated at compile time as it is: a lone literal, or integer, `bool` and `char`
+/// literals combined by operators, parentheses, tuples, arrays and casts to a primitive, and no name. A string or a
+/// float under an operator is not (`"a" == "b"` calls a trait no constant can, review of 63f24322).
 fn const_evaluable(tree: &SyntaxTree<'_>, init: ridx_syntax::NodeId) -> bool {
-    let kinds_ok = std::iter::once(init).chain(tree.descendants(init)).all(|n| {
-        matches!(
-            tree.kind(n),
-            K::Literal | K::BinExpr | K::PrefixExpr | K::ParenExpr | K::TupleExpr | K::ArrayExpr | K::CastExpr | K::PathType | K::Path | K::PathSegment | K::Name
-        )
+    if tree.kind(init) == K::Literal {
+        return true;
+    }
+    let kinds_ok = std::iter::once(init).chain(tree.descendants(init)).all(|n| match tree.kind(n) {
+        K::Literal => {
+            let t = tree.text(n);
+            let float = t.contains('.') || t.ends_with("f32") || t.ends_with("f64") || (!t.starts_with("0x") && t.contains(['e', 'E']));
+            (t.starts_with(|c: char| c.is_ascii_digit()) && !float) || t == "true" || t == "false" || t.starts_with('\'')
+        }
+        k => matches!(k, K::BinExpr | K::PrefixExpr | K::ParenExpr | K::TupleExpr | K::ArrayExpr | K::CastExpr | K::PathType | K::Path | K::PathSegment | K::Name),
     });
-    // A cast names its type (`1 as u8`), a primitive; no other name.
+    // A cast names its type (`1 as u8`), an integer one; no other name.
     kinds_ok && !tree.tokens_of(init).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::SelfKw) && !is_primitive(t.text(tree.src)))
 }
 
 fn is_primitive(s: &str) -> bool {
-    matches!(s, "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "f32" | "f64" | "bool" | "char")
+    matches!(s, "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "bool" | "char")
 }
 
 /// `name` in upper snake case, as a constant is named.
@@ -74,10 +80,16 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, inferred: &dyn Fn() -> Opt
         return None;
     }
     let ty = written.or_else(inferred)?;
+    // A constant's type is an item's: no placeholder, no generic parameter of the function or impl around it (review
+    // of 63f24322: `const X: _` and `[T; 0]` in `fn f<T>()`).
+    if ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| w == "_") || tree.ancestors(stmt).any(|a| tree.child(a, K::GenericParamList).is_some()) {
+        return None;
+    }
     let var = ridx_syntax::sema_fn::norm_ident(tree.text(name));
     let upper = const_name(var);
-    // The new name is free, and no string formats the binding by name (`{area}`), which the rename would miss.
-    if tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && t.text(doc) == upper)
+    // The new name is free, `r#N` included, and no string formats the binding by name (`{area}`), which the rename
+    // would miss.
+    if tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(doc)) == upper)
         || tree.tokens.iter().filter(|t| t.kind.is_literal() && (t.start as usize) > tree.range(stmt).end).any(|t| {
             let s = t.text(doc);
             s.contains(&format!("{{{var}}}")) || s.contains(&format!("{{{var}:"))
@@ -87,7 +99,9 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, inferred: &dyn Fn() -> Opt
     }
     let uses = ridx_syntax::sema_fn::let_uses(&tree, stmt, var);
     let mut edits = vec![(tree.range(stmt), format!("const {upper}: {ty} = {};", tree.text(init)))];
-    edits.extend(uses.uses.iter().chain(&uses.macro_uses).map(|r| (r.clone(), upper.clone())));
+    // A field shorthand (`S { x }`) keeps its field: `S { x: X }` (review of 63f24322).
+    let shorthand = |r: &Range<usize>| super::action_inline_variable::is_shorthand(&tree, r.start);
+    edits.extend(uses.uses.iter().chain(&uses.macro_uses).map(|r| (r.clone(), if shorthand(r) { format!("{}: {upper}", &doc[r.clone()]) } else { upper.clone() })));
     edits.sort_by_key(|(r, _)| r.start);
     Some(edits)
 }

@@ -57,7 +57,47 @@ fn test_it_is_not_offered_where_the_result_would_not_compile() {
         "pub fn $0f() {\n}\n",
         "pub fn $0f() -> ! {\n    panic!()\n}\n",
         "pub fn f() -> u32 {\n    $01\n}\n",
+        // Review of 63f24322: a caller in raw spelling, a fall-through, `?` through an alias, a return in a macro's
+        // arguments, a user's own `Option`.
+        "pub fn $0foo() -> u8 {\n    1\n}\npub fn caller() -> u8 {\n    r#foo()\n}\n",
+        "pub fn $0f() -> () {\n    let _ = 1;\n}\n",
+        "pub type R = Result<u8, ()>;\npub fn $0f(r: R) -> R {\n    let v = r?;\n    Ok(v)\n}\n",
+        "pub fn $0f(c: bool) -> u8 {\n    println!(\"{}\", if c { return 1 } else { 2 });\n    3\n}\n",
+        "pub struct Option<T>(pub T);\npub fn $0f() -> u8 {\n    1\n}\n",
     ] {
         assert_eq!(wrapped(doc, Wrap::Option), None, "{doc}");
     }
+}
+
+/// Review of 63f24322: a call typed in another open buffer, not saved, keeps the function's signature.
+#[test]
+fn test_a_caller_in_another_open_buffer_keeps_the_signature() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut w = ridx_format::IndexWriter::new("w", "0.1.0");
+    let lib = dir.path().join("src/lib.rs");
+    w.add_definition(ridx_format::RawDefinition {
+        def_id: 1,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: lib.to_string_lossy().to_string(),
+        name: "f".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 9,
+        path: "f".to_string(),
+        signature: None,
+    });
+    let shard = dir.path().join("w.ridx");
+    w.write_to(&mut std::fs::File::create(&shard).unwrap()).unwrap();
+    let ws = ridx_format::WorkspaceIndex::open(&shard).unwrap();
+    let doc = "pub fn f() -> u8 {\n    1\n}\n";
+    let uri = format!("file://{}", lib.display());
+    let range = json!({ "start": { "line": 0, "character": 14 }, "end": { "line": 0, "character": 14 } });
+    let mut ov = crate::overlay::OverlayManager::new();
+    assert_eq!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).len(), 2, "nothing calls it");
+    let other = dir.path().join("src/g.rs");
+    ov.open_document(&format!("file://{}", other.display()), &other.to_string_lossy(), 1, "pub fn g() -> u8 {\n    crate::f()\n}\n".to_string());
+    assert!(wrap_return_actions(doc, &uri, &range, None, &ws, &ov).is_empty(), "a call not saved yet");
 }

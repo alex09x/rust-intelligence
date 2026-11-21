@@ -129,9 +129,12 @@ rust-analyzer), `generate_impl`, `generate_new`, `generate_single_field_struct_f
 `wrap_return_type_in_option`, `wrap_return_type_in_result`; ridx's own: `organize_imports`, `prefix_with_underscore`,
 `remove_unnecessary_mut`. An action is never asked for by its place in the list. Where ridx offers an assist in fewer places than
 rust-analyzer, it is where the result would not compile: `inline_local_variable` inlines a binding used once,
-outside a loop or closure, with nothing in between naming what it reads; `promote_local_to_const` takes an
-initializer of literals and operators; `wrap_return_type_in_*` takes a function nothing else calls and no trait
-fixes, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. `extract_function` extracts a whole
+outside a loop or closure, with nothing in between naming what it reads, whose initializer has no effect, no
+unsuffixed number and no borrowed temporary (one with arithmetic only into the next statement, evaluated first and
+on every path); `promote_local_to_const` takes an initializer of integer, `bool` and `char` literals and operators,
+or a lone literal, in a function with no generics; `wrap_return_type_in_*` takes a function nothing else calls (in
+the index or any open buffer) and no trait fixes, with every exit wrapped (no `-> ()`, no `?`, no return in a
+macro), in a file declaring no `Option`, `Some`, `Result` or `Ok` of its own, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. `extract_function` extracts a whole
 expression of a function with no generics, whose value's type is known (a `let` it initializes, or the tail),
 reading only `Copy` locals of known type, with no `return`, `?`, `break`, `.await`, `self` or macro in it; statements
 are not extracted yet. An assist a tool needs and ridx
