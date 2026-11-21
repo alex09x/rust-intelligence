@@ -288,3 +288,23 @@ fn test_a_buffer_shared_with_a_unit_whose_paths_cannot_be_told_is_left_to_the_ch
     let out = build_session_index_with(&driver(&root, "d", ""), &root, &root.join("target/ridx/sessions/1-1"), &[(lib.clone(), "x".into())]).unwrap();
     assert!(out.report.checked.contains(&lib) && out.report.untold.contains(&lib), "{:?}", out.report);
 }
+
+/// Review of d4541e29: a unit that wrote no sidecar of this compile may own a module the edit added; the module graph
+/// it had is not the one of the buffers.
+#[test]
+fn test_a_unit_without_a_sidecar_of_this_compile_may_own_any_buffer() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let (lib, new) = (root.join("a/src/lib.rs"), root.join("a/src/new.rs"));
+    let own_json = format!(",\"own_sources\":[\"{}\",\"{}\"]", lib.display(), new.display());
+    let env = [("OWN_JSON", own_json.as_str())];
+    let a = UnitSpec { own: Some(&["a/src/lib.rs"]), extra_env: &env, ..A };
+    let a_test = UnitSpec { name: "a_test", own: Some(&["a/src/lib.rs"]), flags: &["--test", "--color", "@flags"], ..A };
+    published(&root, &[a, a_test], VARIANT);
+    std::fs::write(&new, "pub fn n() {}\n").unwrap();
+    let failing_test = driver(&root, "d", r#"[ "$CARGO_CRATE_NAME" = a_test ] && exit 1"#);
+    let buffers = [(lib.clone(), "pub mod new;".to_string()), (new.clone(), "pub fn n() {}\n".to_string())];
+    let out = build_session_index_with(&failing_test, &root, &root.join("target/ridx/sessions/1-1"), &buffers).unwrap();
+    assert!(out.report.checked.contains(&new), "{:?}", out.report);
+    assert!(out.report.unchecked.contains(&new) && out.report.untold.contains(&new), "the failed unit may own new.rs: {:?}", out.report);
+}

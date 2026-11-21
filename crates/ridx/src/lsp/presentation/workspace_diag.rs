@@ -101,7 +101,11 @@ pub fn handle_workspace_diagnostic_with_flycheck(
     let auth_hash = |uri: &str| {
         flycheck.map_or(0, |fc| {
             let file = ridx_format::canonicalize_best_effort(Path::new(&uri_to_path(uri)));
-            hash_of(&(serde_json::to_string(&fc.get_latest_diagnostics(uri)).unwrap_or_default(), fc.get_diagnostic_baseline(uri), fc.session.stamp(&file)))
+            {
+                let key = super::compiler_merge::check_key(&file);
+                let check = |k: &str| (serde_json::to_string(&fc.get_latest_diagnostics(k)).unwrap_or_default(), fc.get_diagnostic_baseline(k));
+                hash_of(&(check(uri), check(&key), fc.session.stamp(&file)))
+            }
         })
     };
 

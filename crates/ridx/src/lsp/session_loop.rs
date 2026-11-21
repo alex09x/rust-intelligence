@@ -78,12 +78,14 @@ pub(crate) fn step(
             // And all the units holding the file agree: a library compiled from the buffer next to its unit tests kept
             // from before is not a compiled text (review of a21afbc0), as `rebase_open_buffers` holds too.
             let compiled = ws.units_agree_on_source(&b.key) && ws.source_hash_for_file(&b.key) == Some(ridx_format::normalized_source_hash(b.text.as_bytes()));
-            if compiled && ov.get(&b.key).is_some() {
+            if compiled && ov.get(&b.key).is_some_and(|o| o.instance == b.instance) {
                 ov.advance_compiled_baseline(&b.key, b.text.clone());
             }
         }
-        // Only buffers still open: one closed while the build ran is the file as saved again (review of fb2bed09).
-        let texts: Vec<(PathBuf, String)> = built.buffers.iter().filter(|b| ov.get(&b.key).is_some()).map(|b| (b.path.clone(), b.text.clone())).collect();
+        // Only buffers still open as they were: one closed while the build ran is the file as saved again, and one opened
+        // again since is another buffer (reviews of fb2bed09 and d4541e29).
+        let texts: Vec<(PathBuf, String)> =
+            built.buffers.iter().filter(|b| ov.get(&b.key).is_some_and(|o| o.instance == b.instance)).map(|b| (b.path.clone(), b.text.clone())).collect();
         touched.extend(diags.replace(&built.root, super::presentation::session_diag::session_files(&built.root, &built.report, &texts), &has_check));
         session.loaded(&built.root, &built.dir, built.stamp);
         replaced = true;
@@ -108,7 +110,7 @@ fn edited_buffers(ov: &crate::overlay::OverlayManager, root: &Path) -> Vec<Snaps
         }
         let Some(o) = ov.get(&key) else { continue };
         if std::fs::read_to_string(&path).ok().as_deref() != Some(o.text.as_str()) {
-            out.push(Snapshot { text: o.text.clone(), key, path });
+            out.push(Snapshot { text: o.text.clone(), instance: o.instance, key, path });
         }
     }
     out.sort_by(|a, b| a.path.cmp(&b.path));

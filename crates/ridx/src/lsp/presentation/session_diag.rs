@@ -134,7 +134,7 @@ impl SessionDiagnostics {
 
 /// Whether the check of the saved files has diagnostics of `file`, under the URI it names files by.
 pub fn check_has(flycheck: &super::flycheck::FlycheckState, file: &Path) -> bool {
-    !flycheck.get_latest_diagnostics(&format!("file://{}", file.display())).is_empty()
+    !flycheck.get_latest_diagnostics(&super::compiler_merge::check_key(file)).is_empty()
 }
 
 /// The buffers of a session of `root`, from the compiler's `report` and the `buffers` compiled (path and text): each
@@ -160,6 +160,24 @@ pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, 
         files.entry(path).or_insert_with(|| SessionFile { diagnostics: Vec::new(), text: (*text).clone() }).diagnostics.push(diag);
     }
     files
+}
+
+/// The buffer `uri` (`file`) was closed: it is the file as saved again, which the check of the saved files speaks for
+/// (review of fb2bed09). The session's result of it goes, and the document is published again whatever changed: what
+/// its buffer alone had (an unbalanced brace typed) goes too (review of d4541e29).
+pub fn on_close<W: Write>(uri: &str, file: &str, lifecycle: &crate::lsp::lifecycle::LifecycleManager, ov: &crate::overlay::OverlayManager, writer: &mut W) -> std::io::Result<()> {
+    let closed = ridx_format::canonicalize_best_effort(Path::new(file));
+    let fc = &lifecycle.flycheck;
+    fc.session.keep_only(&|p| p != closed, &|p| check_has(fc, p));
+    if lifecycle.is_shutdown() {
+        return Ok(());
+    }
+    if lifecycle.client_pull_diagnostics() {
+        return publish_session_files(std::slice::from_ref(&closed), lifecycle, ov, writer);
+    }
+    super::reconcile::publish_reconciled_diagnostics(uri, None, ov, fc, writer)?;
+    fc.session.record_published(&closed, uri, fc.has_active_diagnostics(uri));
+    Ok(())
 }
 
 /// Sends the diagnostics of `files` again after a session changed them: pushed, each under the URI of its open buffer

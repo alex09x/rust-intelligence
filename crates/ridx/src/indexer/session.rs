@@ -126,7 +126,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             let out = staged.finish(unit);
             report.messages.extend(out.messages);
             // A file is certified only when no unit owning it fails to: one that stopped, or whose paths cannot be told,
-            // says nothing of the errors it alone would report (review of fb2bed09). Owning nothing recorded, it may
+            // says nothing of the errors it alone would report (review of fb2bed09). Owning nothing recorded (or no sidecar of this compile), it may
             // own any buffer.
             let owned = || out.owned.clone().unwrap_or_else(|| sources.clone());
             match &out.checked {
@@ -176,7 +176,8 @@ struct Staged {
     /// a process it started could keep a pipe open long after (review of 2e1fcfb1).
     stderr: PathBuf,
     /// Whether the files its diagnostics name may not be the files compiled: then it reports and certifies nothing
-    /// (`session_report::paths_untold`).
+    /// (`session_report::paths_untold`). Told from the arguments as recorded, before any is rewritten: a rewrite can
+    /// take an `@file` for an option's value (review of d4541e29).
     remaps: bool,
     /// The session's copy of the unit's sidecar, set aside before the compile: a sidecar there afterwards is this
     /// compile's, whatever the precision of file times (review of 46ce96f2); with none, the copy goes back.
@@ -206,8 +207,9 @@ impl Staged {
                 let _ = fs::rename(aside, &unit.sidecar);
             }
         }
-        // The sources it owns: this compile's sidecar, else the one it had.
-        let owned = super::session_units::sources_recorded(&unit.sidecar).or_else(|| unit.own_sources().cloned());
+        // The sources it owns, as this compile found them; with no sidecar of this compile, unknown: the one it had is of
+        // the text before, which the buffers may have changed (review of d4541e29: a module the edit added).
+        let owned = if written { super::session_units::sources_recorded(&unit.sidecar) } else { None };
         match (&self.shard, &self.backup) {
             (Some(shard), Some(backup)) if !shard.is_file() => {
                 let _ = fs::rename(backup, shard);
@@ -271,7 +273,7 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
             return Err(format!("ridx-driver: {e}"));
         }
     };
-    Ok(Staged { child, shard, backup, stderr, remaps: paths_untold(&args), sidecar_aside })
+    Ok(Staged { child, shard, backup, stderr, remaps: paths_untold(&unit.args), sidecar_aside })
 }
 
 /// Puts every file of `from` into `to`, never its subdirectories: a shard as a link (they are large and only ever

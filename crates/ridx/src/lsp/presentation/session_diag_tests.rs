@@ -192,3 +192,31 @@ fn test_a_closed_buffer_goes_back_to_the_check() {
     assert!(diags.of(&a).is_none() && diags.of(&lib).is_some());
     assert!(diags.keep_only(&|p| p != a, &|_| true).is_empty());
 }
+
+/// Review of d4541e29: the check's result of `a b.rs` is kept under its path, the client's URI says `a%20b.rs`.
+#[test]
+fn test_the_check_is_found_whatever_the_uri_spelling() {
+    let (_d, root) = workspace();
+    let spaced = root.join("src/a b.rs");
+    std::fs::write(&spaced, "x\n").unwrap();
+    let flycheck = FlycheckState::new();
+    let e0425 = json!({ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }, "code": "E0425", "source": "rustc", "message": "saved" });
+    flycheck.set_latest_diagnostics_with_baseline(&uri(&spaced), vec![e0425], Some("x\n".into()));
+    let encoded = crate::lsp::protocol::path_to_uri(&spaced.to_string_lossy());
+    assert_ne!(encoded, uri(&spaced));
+    assert_eq!(merge_with_compiler(&encoded, &[], "x\n", || Some("x\n".into()), &flycheck).len(), 1);
+}
+
+/// Review of d4541e29: a document closed and opened again is another buffer than the one a build in flight compiled.
+#[test]
+fn test_a_document_opened_again_is_another_buffer() {
+    let (_d, root) = workspace();
+    let a = root.join("src/a.rs");
+    let path = a.to_string_lossy().to_string();
+    let mut ov = crate::overlay::OverlayManager::new();
+    ov.open_with_provenance(&uri(&a), &path, 1, "x".into(), true);
+    let first = ov.get(&path).unwrap().instance;
+    ov.close_document(&path);
+    ov.open_with_provenance(&uri(&a), &path, 1, "x".into(), true);
+    assert_ne!(ov.get(&path).unwrap().instance, first);
+}

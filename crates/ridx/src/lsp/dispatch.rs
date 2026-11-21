@@ -235,11 +235,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let file = uri_to_path(uri);
             ov.close_document(&file);
             conv.invalidate(&file);
-            // A buffer closed is the file as saved again: the check's result is its own (review of fb2bed09).
-            let closed = ridx_format::canonicalize_best_effort(Path::new(&file));
-            let fc = &lifecycle.flycheck;
-            let touched = fc.session.keep_only(&|p| p != closed, &|p| super::presentation::session_diag::check_has(fc, p));
-            super::presentation::session_diag::publish_session_files(&touched, lifecycle, ov, writer)?;
+            super::presentation::session_diag::on_close(uri, &file, lifecycle, ov, writer)?;
             return Ok(true);
         }
 

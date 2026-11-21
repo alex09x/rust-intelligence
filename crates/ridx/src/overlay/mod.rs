@@ -109,6 +109,13 @@ pub struct DocumentOverlay {
     pub(crate) opaque: Vec<(usize, usize)>,
     /// Incremental dirty-function tracker and local type inference cache (`Checkbox 4.1`).
     pub dirty_tracker: ridx_syntax::ty_infer::DirtyFileTracker,
+    /// This opening of the document, never reused: a build of the buffer before a close is not of one opened again.
+    pub instance: u64,
+}
+
+fn next_instance() -> u64 {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
 /// Resolves the compiled baseline text by checking whether the live buffer hash or on-disk file hash matches `expected_hash`.
@@ -139,6 +146,7 @@ impl DocumentOverlay {
             scopes: Vec::new(),
             opaque: Vec::new(),
             dirty_tracker: ridx_syntax::ty_infer::DirtyFileTracker::new(),
+            instance: next_instance(),
         };
         overlay.reparse();
         overlay
@@ -169,6 +177,7 @@ impl DocumentOverlay {
             scopes: Vec::new(),
             opaque: Vec::new(),
             dirty_tracker,
+            instance: next_instance(),
         };
         overlay.reparse();
         overlay
@@ -199,6 +208,7 @@ impl DocumentOverlay {
             scopes: Vec::new(),
             opaque: Vec::new(),
             dirty_tracker,
+            instance: next_instance(),
         };
         overlay.reparse();
         overlay

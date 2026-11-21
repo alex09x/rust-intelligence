@@ -29,6 +29,8 @@ pub struct Snapshot {
     pub key: String,
     pub path: PathBuf,
     pub text: String,
+    /// The opening of the document it was taken from (`DocumentOverlay::instance`).
+    pub instance: u64,
 }
 
 /// What the published index of a root was when a session started: its manifest's change time and length.

@@ -33,6 +33,11 @@ pub fn set_client_moves_rustc(moves: bool) {
     CLIENT_MOVES_RUSTC.with(|c| c.set(moves));
 }
 
+/// The key the check keeps the result of `file` (canonical) under: its path as a raw `file://` URI.
+pub fn check_key(file: &std::path::Path) -> String {
+    format!("file://{}", file.display())
+}
+
 /// The diagnostics of `uri`: the compiler's from `flycheck` and the editor's own (`heuristic`, in the coordinates
 /// of `live`), an editor diagnostic dropped where the compiler reports the same code over the same range. `saved`
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.
@@ -43,16 +48,20 @@ pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: im
     if let Some(session) = flycheck.session.of(&file) {
         return merge_session(uri, heuristic, live, &session);
     }
-    let raw = flycheck.get_latest_diagnostics(uri);
+    // The check names a file by its path as a raw `file://` URI, whatever spelling the client's URI has (`a%20b.rs`,
+    // review of d4541e29): that is where its result is looked up first.
+    let key = check_key(&file);
+    let key = if flycheck.get_latest_diagnostics(&key).is_empty() { uri.to_string() } else { key };
+    let raw = flycheck.get_latest_diagnostics(&key);
     if raw.is_empty() {
         return heuristic.to_vec();
     }
-    let baseline = flycheck.get_diagnostic_baseline(uri);
+    let baseline = flycheck.get_diagnostic_baseline(&key);
     // Overlaps are compared where both kinds sit: in the buffer.
-    let in_live = map_authoritative_diagnostics_to_text(&raw, baseline.as_deref(), live, uri);
+    let in_live = map_authoritative_diagnostics_to_text(&raw, baseline.as_deref(), live, &key);
     let emitted = if CLIENT_MOVES_RUSTC.with(Cell::get) {
         let saved = saved().unwrap_or_else(|| live.to_string());
-        map_authoritative_diagnostics_to_text(&raw, baseline.as_deref(), &saved, uri)
+        map_authoritative_diagnostics_to_text(&raw, baseline.as_deref(), &saved, &key)
     } else {
         in_live.clone()
     };
