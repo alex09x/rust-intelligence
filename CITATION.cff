@@ -2,13 +2,13 @@ cff-version: 1.2.0
 message: "If you use Rust Intelligence (ridx) in research or documentation, please cite the archived release."
 type: software
 title: "Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index"
-version: 0.3.10
-date-released: 2026-11-20
+version: 0.3.11
+date-released: 2026-11-21
 doi: 10.5281/zenodo.24379816
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.24397432
-    description: "Archived release 0.3.10 (version DOI)"
+    value: 10.5281/zenodo.24415350
+    description: "Archived release 0.3.11 (version DOI)"
   - type: doi
     value: 10.5281/zenodo.24379816
     description: "All versions (concept DOI, always resolves to the latest version)"
