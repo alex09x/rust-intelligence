@@ -63,24 +63,23 @@ pub(super) fn is_head_position(line: &str, col: usize) -> bool {
 /// its last type before the `where` clause and the items (`Wrapper<T>` of `impl<T> Tr for Wrapper<T>`, `S` of
 /// `impl S`). It is where rust-analyzer places an implementation (prod-code, m=20226: ridx gave the `impl`). The
 /// syntax tree tells it, never the characters of the line: a comment, `r#where` or `for <'a>` is no keyword there
-/// (review of 465e02ad). `None` when no impl header holds `start` with its `impl` keyword on the line `line` (byte
-/// range) where the index placed it (a file changed since may hold another impl there: review of 7b3076a8), or when its
-/// self type is no type (`impl Tr for {}`, being typed: the parser's recovery).
+/// (review of 465e02ad). `None` when `start` is not on the line `line` (byte range) where the index placed it (a file
+/// changed since may hold another impl on the next one: review of 7b3076a8), when no impl header holds it there (the
+/// compiler may anchor an impl at its self type's line, which need not hold `impl`: review of a1311743), or when its
+/// self type is none (`impl Tr for {}`, being typed: the parser's recovery); a type macro (`self_ty!()`) is one.
 pub(super) fn self_type_range(tree: &ridx_syntax::SyntaxTree<'_>, start: usize, line: std::ops::Range<usize>) -> Option<std::ops::Range<usize>> {
-    use ridx_syntax::{SyntaxKind as K, TokenKind as T};
+    use ridx_syntax::SyntaxKind as K;
     if !line.contains(&start) {
         return None;
     }
     let node = tree.covering(start);
     let imp = std::iter::once(node).chain(tree.ancestors(node)).find(|&n| tree.kind(n) == K::Impl)?;
-    if tree.child(imp, K::ItemList).is_some_and(|items| start >= tree.range(items).start)
-        || !tree.own_tokens(imp).any(|(_, t)| t.kind == T::Impl && line.contains(&(t.start as usize)))
-    {
+    if tree.child(imp, K::ItemList).is_some_and(|items| start >= tree.range(items).start) {
         return None;
     }
     let ty = tree.children(imp).filter(|&c| !matches!(tree.kind(c), K::GenericParamList | K::WhereClause | K::ItemList | K::Attr | K::Visibility)).last()?;
     let range = tree.range(ty);
-    (tree.kind(ty).is_type() && !range.is_empty()).then_some(range)
+    ((tree.kind(ty).is_type() || tree.kind(ty) == K::MacroCall) && !range.is_empty()).then_some(range)
 }
 
 #[cfg(test)]
@@ -112,6 +111,10 @@ mod tests {
         assert_eq!(ty("impl Tr\n    for S\n{}").as_deref(), Some("S"), "a header on several lines");
         // Review of 7b3076a8: no type typed yet is no place; a line that holds no impl any more holds none.
         assert_eq!(ty("impl Tr for {}"), None);
+        // Review of a1311743: a type macro is a self type; the compiler's anchor on the self type's line is in the header.
+        assert_eq!(ty("impl Tr for self_ty!() {}").as_deref(), Some("self_ty!()"));
+        let src = "impl Tr\nfor S {}\n";
+        assert_eq!(self_type_range(&ridx_syntax::parse(src), 8, 8..16).map(|r| &src[r]), Some("S"));
         let src = "//x\nimpl Other for B {}\n";
         let tree = ridx_syntax::parse(src);
         assert_eq!(self_type_range(&tree, 3, 0..3), None, "the line of the index, not the next one");
