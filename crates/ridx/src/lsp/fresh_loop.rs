@@ -249,8 +249,13 @@ fn refusal(msg: &Value, mr: &super::MultiRootWorkspace, reindex: &super::reindex
 
 /// What `initialize` answers in `capabilities.experimental`: the `ridx/*` methods and request options this server
 /// supports, each with the version of its contract (docs/integration.md §7), for clients to detect them.
+///
+/// `textDocument/diagnostic: 1` is the contract of a pull with `minVersion: N`: the compiler's diagnostics of version
+/// `N`, `[]` only when that compile found nothing, else `-32803` (`diagnosticsUnavailable`, or `timeout`). 0.3.10 and
+/// 0.3.11 declared `minVersion` with a pull answered once the index covered the version, which a tool could not tell
+/// from this (prod-code, m=20197).
 pub fn experimental_capabilities() -> Value {
-    json!({ "ridx": { "methods": { "ridx/status": 1 }, "requestOptions": { "minVersion": 1 } } })
+    json!({ "ridx": { "methods": { "ridx/status": 1, "textDocument/diagnostic": 1 }, "requestOptions": { "minVersion": 1 } } })
 }
 
 /// `ridx/status`: every root of the session and its index, and the given document's coverage.
@@ -326,6 +331,8 @@ mod tests {
         let ridx = &caps["capabilities"]["experimental"]["ridx"];
         assert_eq!(ridx["methods"]["ridx/status"], 1, "{caps}");
         assert_eq!(ridx["requestOptions"]["minVersion"], 1, "{caps}");
+        // prod-code (m=20197): the pull's contract, which 0.3.10 and 0.3.11 did not have.
+        assert_eq!(ridx["methods"]["textDocument/diagnostic"], 1, "{caps}");
     }
 
     /// prod-code (m=19837): with `ridx-driver` missing the first index failed, and `references` answered `[]`, which
