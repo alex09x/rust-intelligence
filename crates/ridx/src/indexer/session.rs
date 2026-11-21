@@ -125,9 +125,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
         for (unit, staged) in wave.iter().zip(running) {
             let (messages, checked) = staged.finish(unit);
             report.messages.extend(messages);
-            if checked {
-                report.checked.extend(unit.own_sources().into_iter().flatten().filter(|s| s.starts_with(root)).cloned());
-            }
+            report.checked.extend(checked.into_iter().flatten().filter(|s| s.starts_with(root)));
             if unit.is_lib() {
                 let stem = unit.artifact_stem();
                 if ctx.deps.join(format!("{stem}.rmeta")).is_file() {
@@ -169,22 +167,26 @@ struct Staged {
     stderr: PathBuf,
     /// Its `--remap-path-prefix`es, to name the files of its diagnostics as on disk again.
     remaps: Vec<(PathBuf, PathBuf)>,
+    /// When the compile started: the sidecar written since is this compile's.
+    spawned: std::time::SystemTime,
 }
 
 impl Staged {
-    /// Waits for the compile, and returns what the compiler reported and whether the unit's analysis ran to the end: it
-    /// wrote its shard (a unit with no shard: the compiler succeeded). A unit the driver wrote no shard for (the
-    /// compiler stopped before analysis, on a parse error) gets back the very shard set aside, not the published path
-    /// read again, which a reindex may have replaced meanwhile (review of ca0c1ec7).
-    fn finish(mut self, unit: &super::session_units::Unit) -> (Vec<serde_json::Value>, bool) {
+    /// Waits for the compile, and returns what the compiler reported and, when the unit's analysis ran to the end (it
+    /// wrote its shard; a unit with no shard: the compiler succeeded), the sources this compile found, from the sidecar
+    /// it wrote; none when a file its diagnostics name could not be told for sure (an ambiguous remap). A unit the
+    /// driver wrote no shard for (the compiler stopped before analysis, on a parse error) gets back the very shard set
+    /// aside, not the published path read again, which a reindex may have replaced meanwhile (review of ca0c1ec7).
+    fn finish(mut self, unit: &super::session_units::Unit) -> (Vec<serde_json::Value>, Option<HashSet<PathBuf>>) {
         let success = self.child.wait().is_ok_and(|s| s.success());
         let mut messages = diagnostics_of(&fs::read(&self.stderr).unwrap_or_default());
         let _ = fs::remove_file(&self.stderr);
-        unmap(&mut messages, &self.remaps);
-        let checked = match &self.shard {
+        let resolved = unmap(&mut messages, &self.remaps);
+        let ran = match &self.shard {
             Some(shard) => shard.is_file(),
             None => success,
         };
+        let checked = (ran && resolved).then(|| unit.sources_written_since(self.spawned)).flatten();
         match (&self.shard, &self.backup) {
             (Some(shard), Some(backup)) if !shard.is_file() => {
                 let _ = fs::rename(backup, shard);
@@ -228,8 +230,9 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
     if let Some(ld) = super::cargo::compute_sysroot_ld_path() {
         cmd.env("LD_LIBRARY_PATH", &ld).env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
     }
+    let spawned = std::time::SystemTime::now();
     let child = cmd.spawn().map_err(|e| format!("ridx-driver: {e}"))?;
-    Ok(Staged { child, shard, backup, stderr, remaps: remaps(&args) })
+    Ok(Staged { child, shard, backup, stderr, remaps: remaps(&args), spawned })
 }
 
 /// Puts every file of `from` into `to`, never its subdirectories: a shard as a link (they are large and only ever

@@ -68,27 +68,60 @@ pub(super) fn remaps(args: &[String]) -> Vec<(PathBuf, PathBuf)> {
     out
 }
 
-/// `messages` with every file a span names (its expansions' and its children's too) named as on disk, where the unit
-/// remapped it (review of 2e1fcfb1: a remapped file read as one outside the workspace).
-pub(super) fn unmap(messages: &mut [Value], remaps: &[(PathBuf, PathBuf)]) {
-    if remaps.is_empty() {
-        return;
+/// The file on disk a remapped `name` stands for: a source the compiler would have remapped to `name` (the last remap
+/// whose source prefix it has is the one giving `name`), and when several would, the one that exists. `Err` when that
+/// leaves more than one, or none of several (review of 68375e6e: two sources remapped to one prefix).
+fn local_name(name: &Path, remaps: &[(PathBuf, PathBuf)]) -> Result<Option<PathBuf>, ()> {
+    let mut candidates: Vec<PathBuf> = remaps
+        .iter()
+        .enumerate()
+        .filter_map(|(i, (from, to))| {
+            let local = from.join(name.strip_prefix(to).ok()?);
+            // `remaps` is last first: this one applies to `local` only if no later one does.
+            (remaps.iter().position(|(f, _)| local.starts_with(f)) == Some(i)).then_some(local)
+        })
+        .collect();
+    candidates.dedup();
+    match candidates.len() {
+        0 => Ok(None),
+        1 => Ok(candidates.pop()),
+        _ => {
+            let existing: Vec<PathBuf> = candidates.into_iter().filter(|c| c.is_file()).collect();
+            if existing.len() == 1 {
+                Ok(existing.into_iter().next())
+            } else {
+                Err(())
+            }
+        }
     }
-    fn walk(v: &mut Value, remaps: &[(PathBuf, PathBuf)]) {
+}
+
+/// `messages` with every file a span names (its expansions' and its children's too) named as on disk, where the unit
+/// remapped it (review of 2e1fcfb1: a remapped file read as one outside the workspace). Returns whether every one could
+/// be told for sure; a name that could not is left as it is.
+pub(super) fn unmap(messages: &mut [Value], remaps: &[(PathBuf, PathBuf)]) -> bool {
+    if remaps.is_empty() {
+        return true;
+    }
+    fn walk(v: &mut Value, remaps: &[(PathBuf, PathBuf)], sure: &mut bool) {
         match v {
             Value::Object(map) => {
                 if let Some(Value::String(name)) = map.get_mut("file_name") {
-                    if let Some(local) = remaps.iter().find_map(|(from, to)| Path::new(name.as_str()).strip_prefix(to).ok().map(|rest| from.join(rest))) {
-                        *name = local.display().to_string();
+                    match local_name(Path::new(name.as_str()), remaps) {
+                        Ok(Some(local)) => *name = local.display().to_string(),
+                        Ok(None) => {}
+                        Err(()) => *sure = false,
                     }
                 }
-                map.values_mut().for_each(|c| walk(c, remaps));
+                map.values_mut().for_each(|c| walk(c, remaps, sure));
             }
-            Value::Array(items) => items.iter_mut().for_each(|c| walk(c, remaps)),
+            Value::Array(items) => items.iter_mut().for_each(|c| walk(c, remaps, sure)),
             _ => {}
         }
     }
-    messages.iter_mut().for_each(|m| walk(m, remaps));
+    let mut sure = true;
+    messages.iter_mut().for_each(|m| walk(m, remaps, &mut sure));
+    sure
 }
 
 #[cfg(test)]
@@ -123,5 +156,22 @@ mod tests {
         assert_eq!(m[0]["spans"][0]["file_name"], "/w/sub/a.rs", "the last remap that matches");
         assert_eq!(m[0]["spans"][0]["expansion"]["span"]["file_name"], "/w/m.rs");
         assert_eq!(m[0]["children"][0]["spans"][0]["file_name"], "/elsewhere/x.rs");
+    }
+
+    /// Review of 68375e6e: `A=/m` then `B=/m` named A's file as B's, and the error left the workspace.
+    #[test]
+    fn test_two_sources_remapped_to_one_prefix_are_told_by_the_file_that_exists() {
+        let dir = tempfile::tempdir().unwrap();
+        let (a, b) = (dir.path().join("A"), dir.path().join("B"));
+        std::fs::create_dir_all(a.join("src")).unwrap();
+        std::fs::write(a.join("src/lib.rs"), "x").unwrap();
+        let args: Vec<String> = ["rustc".to_string(), format!("--remap-path-prefix={}=/m", a.display()), format!("--remap-path-prefix={}=/m", b.display())].into();
+        let mut m = vec![serde_json::json!({ "spans": [{ "file_name": "/m/src/lib.rs" }] })];
+        assert!(unmap(&mut m, &remaps(&args)));
+        assert_eq!(m[0]["spans"][0]["file_name"], a.join("src/lib.rs").display().to_string());
+        std::fs::create_dir_all(b.join("src")).unwrap();
+        std::fs::write(b.join("src/lib.rs"), "y").unwrap();
+        let mut m = vec![serde_json::json!({ "spans": [{ "file_name": "/m/src/lib.rs" }] })];
+        assert!(!unmap(&mut m, &remaps(&args)), "both exist: not sure, so nothing is certified");
     }
 }

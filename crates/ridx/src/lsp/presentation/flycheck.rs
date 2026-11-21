@@ -63,9 +63,8 @@ pub struct FlycheckState {
     root_generation: Arc<Mutex<HashMap<PathBuf, u64>>>,
     /// The compiler's diagnostics on the text of the session indexes answering, which stand in for the check's.
     pub session: super::session_diag::SessionDiagnostics,
-    /// Per URI, when the check that last reported on it (diagnostics or their clearing) started, in microseconds since
-    /// the epoch: a check started after a session index was built speaks for the saved text more recently than it.
-    checked_at: Arc<Mutex<HashMap<String, u64>>>,
+    /// Per URI, the last check reporting on it: its start (µs since the epoch), the hash of the text it checked if known.
+    checked_at: Arc<Mutex<HashMap<String, super::session_diag::CheckOf>>>,
 }
 
 #[path = "flycheck_queue.rs"]
@@ -147,13 +146,13 @@ impl FlycheckState {
         }
     }
 
-    /// Records that a check started at `started_us` reported on `uri` (see `checked_at`).
-    pub fn set_checked_at(&self, uri: &str, started_us: u64) {
-        self.checked_at.lock().unwrap().insert(uri.to_string(), started_us);
+    /// Records that a check started at `started_us` reported on `uri`, having checked `text` when known (see `checked_at`).
+    pub fn set_checked_at(&self, uri: &str, started_us: u64, text: Option<&str>) {
+        self.checked_at.lock().unwrap().insert(uri.to_string(), (started_us, text.map(|t| ridx_format::normalized_source_hash(t.as_bytes()))));
     }
 
-    /// When the check that last reported on `uri` started.
-    pub fn checked_at(&self, uri: &str) -> Option<u64> {
+    /// When the check that last reported on `uri` started, and the hash of the text it checked when known.
+    pub fn checked_at(&self, uri: &str) -> Option<(u64, Option<u64>)> {
         self.checked_at.lock().unwrap().get(uri).copied()
     }
 
@@ -369,7 +368,7 @@ where
             let clear_notif = json!({
                 "jsonrpc": "2.0",
                 "method": "textDocument/publishDiagnostics",
-                "params": { "uri": old_uri, "diagnostics": [], "started": started_us }
+                "params": { "uri": old_uri, "diagnostics": [], "started": started_us, "baseline": checked_text(old_uri, started) }
             });
             emit_notif(my_gen, clear_notif)?;
         }
@@ -391,4 +390,11 @@ where
     }
     let total_diags = file_diagnostics.values().map(|d| d.len()).sum();
     Ok(total_diags)
+}
+
+/// The text of `uri` on disk if not written since `started`: the one a check started then read.
+fn checked_text(uri: &str, started: std::time::SystemTime) -> Option<String> {
+    let path = PathBuf::from(super::super::protocol::uri_to_path(uri));
+    let text = std::fs::read_to_string(&path).ok()?;
+    (!modified_since(&path, started)).then_some(text)
 }

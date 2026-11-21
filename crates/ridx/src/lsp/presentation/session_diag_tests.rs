@@ -103,12 +103,37 @@ fn test_the_innermost_session_answers_and_only_changes_are_touched() {
     let outer = HashMap::from([(a.clone(), file(vec![err], "outer", 1)), (m.clone(), file(Vec::new(), "m", 1))]);
     assert_eq!(diags.replace(&root, outer.clone(), NO_CHECK), std::slice::from_ref(&a), "a clean file the check says nothing of changes nothing");
     assert_eq!(diags.replace(&root, outer, &|p| p == m), Vec::<PathBuf>::new(), "the same again");
-    assert_eq!(diags.replace(&root.join("src"), HashMap::from([(a.clone(), file(Vec::new(), "inner", 2))]), NO_CHECK), Vec::<PathBuf>::new());
+    let inner = HashMap::from([(a.clone(), file(Vec::new(), "inner", 2))]);
+    assert_eq!(diags.replace(&root.join("src"), inner, NO_CHECK), std::slice::from_ref(&a), "the inner session answers for a, clean");
     assert_eq!(diags.of(&a).unwrap().text, "inner");
-    assert_eq!(diags.clear(&root.join("src"), NO_CHECK), Vec::<PathBuf>::new());
+    assert_eq!(diags.clear(&root.join("src"), NO_CHECK), std::slice::from_ref(&a), "the outer one's error is back");
     assert_eq!(diags.of(&a).unwrap().text, "outer");
     assert_eq!(diags.clear(&root, &|p| p == m), [a.clone(), m.clone()], "the check's diagnostics of m are back");
     assert!(diags.of(&a).is_none() && diags.roots().is_empty());
+}
+
+/// Review of 68375e6e: the same diagnostics on another text sit elsewhere in the buffer, and were not sent again.
+#[test]
+fn test_the_same_diagnostics_on_another_text_are_sent_again() {
+    let (_d, root) = workspace();
+    let a = root.join("src/a.rs");
+    let err = message(&a, 2, 1, 2, "E0433", "x");
+    let diags = SessionDiagnostics::default();
+    diags.replace(&root, HashMap::from([(a.clone(), file(vec![err.clone()], "a\nb\n", 1))]), NO_CHECK);
+    assert_eq!(diags.replace(&root, HashMap::from([(a.clone(), file(vec![err], "z\na\nb\n", 2))]), NO_CHECK), std::slice::from_ref(&a));
+    assert_eq!(diags.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), "q\n", 3))]), NO_CHECK), std::slice::from_ref(&a));
+    assert!(diags.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), "r\n", 4))]), NO_CHECK).is_empty(), "nothing on either text");
+}
+
+/// Review of 68375e6e: the URI of a publication cleared was used again for the file's next one.
+#[test]
+fn test_a_publication_is_remembered_only_while_it_is_out() {
+    let diags = SessionDiagnostics::default();
+    let f = Path::new("/w/src/a.rs");
+    diags.record_published(f, "file:///w/link/a.rs", true);
+    assert_eq!(diags.published_uri(f).as_deref(), Some("file:///w/link/a.rs"));
+    diags.record_published(f, "file:///w/link/a.rs", false);
+    assert_eq!(diags.published_uri(f), None);
 }
 
 /// prod-code, m=20120: an error typed and never saved was not reported; the check of the saved file was.
@@ -145,20 +170,35 @@ fn test_a_session_stands_in_for_the_check_of_the_saved_file() {
     assert_eq!(got[0]["message"], "of the saved file", "the check answers again once the session ends");
 }
 
-/// Review of 2e1fcfb1: a session's clean result hid the error a check started after it found in the text saved.
+/// Reviews of 2e1fcfb1 and 68375e6e: the result that applies is the one of the text the buffer holds, whatever the
+/// start times say; of two of that text, the newer.
 #[test]
-fn test_a_check_started_after_the_session_on_the_saved_text_wins() {
+fn test_the_result_of_the_text_the_buffer_holds_applies() {
     let (_d, root) = workspace();
     let a = root.join("src/a.rs");
     let saved = std::fs::read_to_string(&a).unwrap();
+    let old = "pub fn value() -> u32 { 2 }\n";
     let flycheck = FlycheckState::new();
-    flycheck.session.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), &saved, 100))]), NO_CHECK);
-    let e0061 = json!({ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 3 } }, "code": "E0061", "source": "rustc", "message": "newer" });
-    flycheck.set_latest_diagnostics_with_baseline(&uri(&a), vec![e0061], Some(saved.clone()));
-    flycheck.set_checked_at(&uri(&a), 50);
-    assert!(merge_with_compiler(&uri(&a), &[], &saved, || Some(saved.clone()), &flycheck).is_empty(), "a check older than the session");
-    flycheck.set_checked_at(&uri(&a), 200);
-    assert_eq!(merge_with_compiler(&uri(&a), &[], &saved, || Some(saved.clone()), &flycheck).len(), 1, "a newer check of the text the buffer holds");
-    let edited = format!("{saved}// more\n");
-    assert!(merge_with_compiler(&uri(&a), &[], &edited, || Some(saved.clone()), &flycheck).is_empty(), "not once the buffer differs from what it checked");
+    let e0061 = json!({ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 3 } }, "code": "E0061", "source": "rustc", "message": "check" });
+    let session_err = message(&a, 1, 1, 4, "E0308", "session");
+    let merge = |live: &str| merge_with_compiler(&uri(&a), &[], live, || Some(saved.clone()), &flycheck);
+    let set_check = |text: &str, at: u64| {
+        flycheck.set_latest_diagnostics_with_baseline(&uri(&a), vec![e0061.clone()], Some(text.to_string()));
+        flycheck.set_checked_at(&uri(&a), at, Some(text));
+    };
+    let set_session = |diagnostics: Vec<Value>, text: &str, at: u64| {
+        let parsed: Vec<Value> = diagnostics.iter().filter_map(|m| parse_compiler_message_at(m, &root)).map(|(_, d)| d).collect();
+        flycheck.session.replace(&root, HashMap::from([(a.clone(), file(parsed, text, at))]), NO_CHECK);
+    };
+
+    set_session(Vec::new(), old, 200);
+    set_check(&saved, 100);
+    assert_eq!(merge(&saved)[0]["message"], "check", "a later session of another text does not hide the check of this one");
+    set_session(vec![session_err], &saved, 100);
+    set_check(old, 200);
+    assert_eq!(merge(&saved)[0]["message"].as_str().map(|m| m.starts_with("session")), Some(true), "a later check of another text does not hide the session of this one");
+    set_check(&saved, 200);
+    assert_eq!(merge(&saved)[0]["message"], "check", "both of this text: the newer");
+    set_check(&saved, 50);
+    assert_eq!(merge(&saved)[0]["message"].as_str().map(|m| m.starts_with("session")), Some(true));
 }

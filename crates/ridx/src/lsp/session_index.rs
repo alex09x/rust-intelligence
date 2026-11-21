@@ -36,8 +36,10 @@ pub(crate) fn published_stamp(root: &Path) -> Option<(SystemTime, u64)> {
     std::fs::metadata(root.join("target/ridx/ridx_manifest.json")).ok().and_then(|m| Some((m.modified().ok()?, m.len())))
 }
 
-#[derive(Default)]
 struct RootState {
+    /// This registration of the root, never reused: a build of a root forgotten and noted again is not this one's
+    /// (review of 68375e6e: its epoch started from 0 again and an old build was taken).
+    id: u64,
     /// The last edit not yet compiled.
     changed_at: Option<Instant>,
     building: bool,
@@ -49,6 +51,14 @@ struct RootState {
     swept: bool,
 }
 
+impl Default for RootState {
+    fn default() -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Self { id, changed_at: None, building: false, epoch: 0, current: None, swept: false }
+    }
+}
+
 /// A session index built, for the server to load, with the exact texts it compiled.
 pub struct SessionBuilt {
     pub root: PathBuf,
@@ -58,6 +68,7 @@ pub struct SessionBuilt {
     /// What the compiler reported on the texts compiled.
     pub report: crate::indexer::session_report::CompilerReport,
     epoch: u64,
+    id: u64,
 }
 
 #[derive(Default)]
@@ -116,7 +127,9 @@ impl SessionIndexer {
                 *c
             };
             let dir = root.join("target/ridx/sessions").join(format!("{}-{n}", std::process::id()));
-            let (epoch, stamp) = (st.epoch, published_stamp(root));
+            let (epoch, id, stamp) = (st.epoch, st.id, published_stamp(root));
+            // The buffers were taken now: the files on disk compiled with them are of this moment or later.
+            let captured = SystemTime::now();
             let (root, roots, built) = (root.clone(), Arc::clone(&self.roots), Arc::clone(&self.built));
             std::thread::spawn(move || {
                 let started = Instant::now();
@@ -127,7 +140,7 @@ impl SessionIndexer {
                     Err(e) => format!("no session index of {}: {e}", root.display()),
                 };
                 crate::lsp::logger::log_info(&msg);
-                if let Some(st) = roots.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&root) {
+                if let Some(st) = roots.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&root).filter(|st| st.id == id) {
                     st.building = false;
                     // A run of `ridx index` held the published index: tried again once the buffers are quiet again.
                     if result.as_ref().is_err_and(|e| e == crate::indexer::session::BUSY) {
@@ -135,7 +148,10 @@ impl SessionIndexer {
                     }
                 }
                 match result {
-                    Ok(out) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir: out.dir, buffers, stamp, report: out.report, epoch }),
+                    Ok(mut out) => {
+                        out.report.started = Some(captured);
+                        built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir: out.dir, buffers, stamp, report: out.report, epoch, id });
+                    }
                     Err(_) => {
                         let _ = std::fs::remove_dir_all(&dir);
                     }
@@ -149,7 +165,7 @@ impl SessionIndexer {
     pub fn take_built(&self) -> Vec<SessionBuilt> {
         let built = std::mem::take(&mut *self.built.lock().unwrap_or_else(|e| e.into_inner()));
         let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-        let (current, stale): (Vec<_>, Vec<_>) = built.into_iter().partition(|b| roots.get(&b.root).is_some_and(|st| st.epoch == b.epoch));
+        let (current, stale): (Vec<_>, Vec<_>) = built.into_iter().partition(|b| roots.get(&b.root).is_some_and(|st| st.id == b.id && st.epoch == b.epoch));
         for b in stale {
             let _ = std::fs::remove_dir_all(&b.dir);
         }
@@ -272,5 +288,24 @@ mod tests {
         assert!(s.forget_unless(|r| r == root).is_empty() && session.exists(), "kept");
         assert_eq!(s.forget_unless(|_| false), vec![root.clone()], "only a root whose session answers");
         assert!(!session.exists() && s.state_of(&root) == (false, false) && s.state_of(&other).0);
+    }
+
+    /// Review of 68375e6e: a build of a root forgotten and noted again (its epoch back at 0) was taken.
+    #[test]
+    fn test_a_build_of_an_earlier_registration_is_dropped() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("w");
+        let s = SessionIndexer::default();
+        s.loaded(&root, &dir.path().join("w/target/ridx/sessions/1-1"), None);
+        let id_of = |s: &SessionIndexer| s.roots.lock().unwrap()[&root].id;
+        let old = id_of(&s);
+        let built = |id: u64| SessionBuilt { root: root.clone(), dir: dir.path().join("gone"), buffers: Vec::new(), stamp: None, report: Default::default(), epoch: 0, id };
+        s.forget_unless(|_| false);
+        s.note_change(&root);
+        assert_ne!(id_of(&s), old);
+        s.built.lock().unwrap().push(built(old));
+        assert!(s.take_built().is_empty(), "the old registration's build");
+        s.built.lock().unwrap().push(built(id_of(&s)));
+        assert_eq!(s.take_built().len(), 1, "this one's");
     }
 }

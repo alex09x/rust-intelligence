@@ -66,7 +66,7 @@ fn published(root: &Path, units: &[UnitSpec], variant_dir: &str) {
 fn driver(dir: &Path, name: &str, extra: &str) -> PathBuf {
     let path = dir.join(name);
     let script = format!(
-        "#!/bin/sh\n{extra}\necho \"$CARGO_CRATE_NAME $*\" >> \"$RIDX_OUT_DIR/calls\"\ncp \"$RIDX_BUFFERS\" \"$RIDX_OUT_DIR/seen.json\"\nprintf NEW > \"$RIDX_OUT_DIR/$CARGO_CRATE_NAME-1.ridx\"\nprintf meta > \"$RIDX_OUT_DIR/../../direct/deps/lib$CARGO_CRATE_NAME.rmeta\"\nprintf '{{\"rewritten\":1}}' > \"$RIDX_OUT_DIR/.deps/$CARGO_CRATE_NAME-1.json\"\n"
+        "#!/bin/sh\n{extra}\necho \"$CARGO_CRATE_NAME $*\" >> \"$RIDX_OUT_DIR/calls\"\ncp \"$RIDX_BUFFERS\" \"$RIDX_OUT_DIR/seen.json\"\nprintf NEW > \"$RIDX_OUT_DIR/$CARGO_CRATE_NAME-1.ridx\"\nprintf meta > \"$RIDX_OUT_DIR/../../direct/deps/lib$CARGO_CRATE_NAME.rmeta\"\nprintf '{{\"rewritten\":1%s}}' \"$OWN_JSON\" > \"$RIDX_OUT_DIR/.deps/$CARGO_CRATE_NAME-1.json\"\n"
     );
     fs::write(&path, script).unwrap();
     #[cfg(unix)]
@@ -237,15 +237,20 @@ fn test_the_compilers_diagnostics_come_back_with_the_session() {
     assert!(read(out.dir.join(VARIANT).join("calls")).contains("--error-format=json"), "asked for JSON");
 }
 
-/// Review of 2e1fcfb1: a unit whose analysis ran certifies its own sources, one that stopped first (no shard) none.
+/// Review of 2e1fcfb1: a unit whose analysis ran certifies its sources, one that stopped first (no shard) none.
+/// Review of 68375e6e: the sources are the ones this compile found (`pub mod new` typed), not the published ones.
 #[test]
 fn test_only_a_unit_that_ran_its_analysis_certifies_its_sources() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().canonicalize().unwrap();
-    published(&root, &[UnitSpec { own: Some(&["a/src/lib.rs", "a/src/m.rs"]), ..A }], VARIANT);
-    let buffer = [(root.join("a/src/lib.rs"), "x".to_string())];
+    let (lib, new) = (root.join("a/src/lib.rs"), root.join("a/src/new.rs"));
+    let own_json = format!(",\"own_sources\":[\"{}\",\"{}\"]", lib.display(), new.display());
+    let env = [("OWN_JSON", own_json.as_str())];
+    published(&root, &[UnitSpec { own: Some(&["a/src/lib.rs"]), extra_env: &env, ..A }], VARIANT);
+    std::fs::write(&new, "pub fn n() {}\n").unwrap();
+    let buffer = [(lib.clone(), "pub mod new;".to_string())];
     let ran = build_session_index_with(&driver(&root, "d", ""), &root, &root.join("target/ridx/sessions/1-1"), &buffer).unwrap();
-    let want: std::collections::HashSet<PathBuf> = [root.join("a/src/lib.rs"), root.join("a/src/m.rs")].into();
+    let want: std::collections::HashSet<PathBuf> = [lib, new].into();
     assert_eq!(ran.report.checked, want);
     assert!(ran.report.started.is_some());
     let failing = driver(&root, "f", "exit 1");

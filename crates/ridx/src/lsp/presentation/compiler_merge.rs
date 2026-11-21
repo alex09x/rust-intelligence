@@ -38,14 +38,19 @@ pub fn set_client_moves_rustc(moves: bool) {
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.
 pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: impl FnOnce() -> Option<String>, flycheck: &FlycheckState) -> Vec<Value> {
     let file = ridx_format::canonicalize_best_effort(std::path::Path::new(&crate::lsp::protocol::uri_to_path(uri)));
-    let mut saved = Some(saved);
-    let mut saved_text: Option<Option<String>> = None;
-    let mut saved = move || saved_text.get_or_insert_with(|| saved.take().and_then(|f| f())).clone();
     if let Some(session) = flycheck.session.of(&file) {
-        // A check started after the session, of the text the buffer holds (saved since), is the newer word on it
-        // (review of 2e1fcfb1: a session's clean result hid the check's error of the text saved).
-        let newer_check = flycheck.checked_at(uri).is_some_and(|t| t > session.started_us) && saved().as_deref() == Some(live);
-        if !newer_check {
+        // The result of the text the buffer holds applies, the session's or the check's; of both, the newer; of
+        // neither, the session's, which compiled the buffer (reviews of 2e1fcfb1 and 68375e6e: a start time alone, or
+        // the saved text being the buffer's, does not say what a check read).
+        let session_applies = session.text == live;
+        let check = flycheck.checked_at(uri);
+        let check_applies = check.is_some_and(|(_, text)| text == Some(ridx_format::normalized_source_hash(live.as_bytes())));
+        let use_session = match (session_applies, check_applies) {
+            (_, false) => true,
+            (false, true) => false,
+            (true, true) => check.is_none_or(|(started, _)| session.started_us >= started),
+        };
+        if use_session {
             return merge_session(uri, heuristic, live, &session);
         }
     }
