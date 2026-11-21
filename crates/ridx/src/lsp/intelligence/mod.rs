@@ -21,6 +21,7 @@ pub(crate) mod fn_params;
 pub mod generic_completion;
 pub mod hints;
 pub mod hover;
+mod hover_binding;
 pub(crate) mod hover_decl;
 pub(crate) mod hover_doc;
 pub mod hover_enrich;

@@ -128,37 +128,10 @@ fn local_binding(d: &ResolvedDefinition<'_>, src: &str, ty: &str) -> Option<Stri
     binding_text(line, d.start_col, d.name, ty)
 }
 
-/// The hover for the binding named at 1-based char column `col` of `line` when the index has its type but no
-/// definition record (the `let` itself): `None` unless the identifier there is a `let` binding. `layout_at` gives
-/// the layout note recorded at a 1-based column (the binding's pattern starts at its name or at its `mut`).
-pub(crate) fn let_binding_hover_with_layout(line: &str, col: u32, ty: &str, layout_at: &dyn Fn(u32) -> Option<String>) -> Option<String> {
-    let block = let_binding_hover(line, col, ty)?;
-    let chars: Vec<char> = line.chars().collect();
-    let at = (col.saturating_sub(1) as usize).min(chars.len().saturating_sub(1));
-    let start = chars[..at].iter().rposition(|&c| !(c.is_alphanumeric() || c == '_')).map_or(0, |p| p + 1) as u32 + 1;
-    let layout = layout_at(start).or_else(|| (start > 4).then(|| layout_at(start - 4)).flatten());
-    Some(match layout {
-        Some(l) => format!("{block}\n\n---\n\n{l}"),
-        None => block,
-    })
-}
+#[cfg(test)]
+pub(crate) use super::hover_binding::{let_binding_hover, let_binding_hover_with_layout};
 
-/// The `let [mut] name: Type` block for the `let` binding at `col` of `line`.
-pub(crate) fn let_binding_hover(line: &str, col: u32, ty: &str) -> Option<String> {
-    let chars: Vec<(usize, char)> = line.char_indices().collect();
-    let at = (col.saturating_sub(1) as usize).min(chars.len().checked_sub(1)?);
-    let is_ident = |c: char| c.is_alphanumeric() || c == '_';
-    if !is_ident(chars[at].1) {
-        return None;
-    }
-    let start = chars[..at].iter().rposition(|&(_, c)| !is_ident(c)).map_or(0, |p| p + 1);
-    let end = chars[at..].iter().position(|&(_, c)| !is_ident(c)).map_or(chars.len(), |p| at + p);
-    let (b0, b1) = (chars[start].0, chars.get(end).map_or(line.len(), |&(b, _)| b));
-    let text = binding_text(line, start as u32 + 1, &line[b0..b1], ty)?;
-    text.starts_with("let ").then(|| format!("```rust\n{text}\n```"))
-}
-
-fn binding_text(line: &str, start_col: u32, name: &str, ty: &str) -> Option<String> {
+pub(crate) fn binding_text(line: &str, start_col: u32, name: &str, ty: &str) -> Option<String> {
     let col = line.char_indices().nth(start_col.saturating_sub(1) as usize).map_or(line.len(), |(i, _)| i);
     let d_name = name;
     let before = line[..col].trim_end();

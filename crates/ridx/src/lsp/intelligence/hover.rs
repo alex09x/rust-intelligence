@@ -61,8 +61,8 @@ pub fn handle_hover(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr
                 }
                 if let (None, Some(ty)) = (&hover.definition, hover.inferred_type) {
                     let layout_at = |c: u32| ws.note_at(&file, il, c, ridx_format::NOTE_LAYOUT).map(str::to_string);
-                    if let Some(text) = line_text.and_then(|l| super::hover_render::let_binding_hover_with_layout(&l, col_1based, ty, &layout_at)) {
-                        return Ok(json!({ "contents": { "kind": "markdown", "value": text } }));
+                    if let Some(h) = line_text.as_deref().and_then(|l| super::hover_binding::binding_hover(l, line_0based, col_1based, ty, &layout_at)) {
+                        return Ok(h);
                     }
                 }
                 let start_col = word_start_col(conv, overlay_opt, &file, line_1based, col_1based);
