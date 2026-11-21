@@ -133,7 +133,7 @@ struct Inventory {
 }
 
 /// The inventory of the indexed sources' workspaces; `None` where Cargo gives no answer for a manifest.
-fn inventory(ws: &WorkspaceIndex, indexed: &HashSet<PathBuf>) -> Option<Inventory> {
+fn inventory(indexed: &HashSet<PathBuf>) -> Option<Inventory> {
     let mut inv = Inventory { roots: Vec::new(), skip: Vec::new(), members: HashSet::new(), named: HashSet::new() };
     let mut dirs: HashSet<PathBuf> = HashSet::new();
     let mut found: Vec<PathBuf> = Vec::new();
@@ -154,21 +154,14 @@ fn inventory(ws: &WorkspaceIndex, indexed: &HashSet<PathBuf>) -> Option<Inventor
             None => found.push(dir.to_path_buf()),
         }
     }
-    // ridx's shards and what sits next to them, unless a source the index read is there.
-    for p in ws.paths() {
-        if let Some(d) = p.parent().map(ridx_format::canonicalize_best_effort) {
-            if !indexed.iter().any(|f| f.starts_with(&d)) {
-                inv.skip.push(d);
-            }
-        }
-    }
+    // Every directory Cargo names and every one holding a source the index read is a starting point of its own, so
+    // that no hidden directory above it hides it (`.cases/deep/caller.rs`, `#[path = ".private/helper.rs"]`: review of
+    // 53031a6e); the walk visits each once. A shard's directory is not skipped: a source may sit beside a manual index.
+    found.extend(dirs);
     found.sort();
+    found.dedup();
     inv.named.extend(found.iter().cloned());
-    for r in found {
-        if !inv.roots.iter().any(|x| r.starts_with(x)) {
-            inv.roots.push(r);
-        }
-    }
+    inv.roots = found;
     Some(inv)
 }
 
@@ -194,10 +187,11 @@ fn rust_files(inv: &Inventory) -> Option<Vec<PathBuf>> {
         for e in std::fs::read_dir(&dir).ok()? {
             let path = e.ok()?.path();
             let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-            // A dangling link points at no source; any other entry that cannot be read is not known to be none.
+            // A dangling link points at no source; any other entry that cannot be read, a link whose target cannot be
+            // searched among them, is not known to be none (review of 53031a6e).
             let meta = match std::fs::metadata(&path) {
                 Ok(m) => m,
-                Err(_) if std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) => continue,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound && std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) => continue,
                 Err(_) => return None,
             };
             if meta.is_dir() && (!name.starts_with('.') || inv.named.contains(&ridx_format::canonicalize_best_effort(&path))) {
@@ -220,12 +214,15 @@ fn rust_files(inv: &Inventory) -> Option<Vec<PathBuf>> {
 /// mentions are no use.
 pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&str], own: (&Path, std::ops::Range<usize>)) -> bool {
     let Some(indexed) = indexed_sources(ws, ov) else { return false };
-    let Some(mut files) = inventory(ws, &indexed).and_then(|inv| rust_files(&inv)) else { return false };
-    // A buffer of a file not saved yet is a source too.
+    let Some(mut files) = inventory(&indexed).and_then(|inv| rust_files(&inv)) else { return false };
+    // A buffer of a file not saved yet is a source too, and so is every source the index read (its gated mentions).
     files.extend(ov.open_file_paths().into_iter().map(PathBuf::from).filter(|p| p.extension().is_some_and(|e| e == "rs")));
+    files.extend(indexed.iter().cloned());
     let mut seen = HashSet::new();
-    let mut unindexed_calls: Vec<String> = Vec::new();
-    let mut defines: Vec<(String, bool, Vec<String>)> = Vec::new();
+    // Macros called from a file the index did not read, and those called under `cfg` from one it did.
+    let mut unseen_calls: Vec<String> = Vec::new();
+    let mut all_calls: Vec<String> = Vec::new();
+    let mut defines: Vec<(String, bool, bool, Vec<String>)> = Vec::new();
     let mut aliases: Vec<(String, String)> = Vec::new();
     while let Some(f) = files.pop() {
         let canonical = ridx_format::canonicalize_best_effort(&f);
@@ -236,33 +233,46 @@ pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&s
         let is_indexed = indexed.contains(&canonical);
         let own_bytes = (canonical == own.0).then_some(&own.1);
         let s = super::safe_delete_scan::scan(&text, names, is_indexed, own_bytes);
-        // What it includes is read as a source of its own.
+        // What it includes is read as a source of its own; an include whose path is not known is a source not known
+        // (review of 53031a6e).
+        if s.unresolved_include {
+            return false;
+        }
         files.extend(s.includes.iter().filter_map(|inc| f.parent().map(|d| d.join(inc))));
         if is_indexed && s.gated_mention {
             return false;
         }
-        if !is_indexed {
-            if s.names_one {
-                return false;
+        if !is_indexed && s.names_one {
+            return false;
+        }
+        for (call, gated) in s.calls {
+            if !is_indexed || gated {
+                unseen_calls.push(call.clone());
             }
-            unindexed_calls.extend(s.calls);
+            all_calls.push(call);
         }
         defines.extend(s.defines);
         aliases.extend(s.aliases);
     }
     // A macro names one when its body does, or calls a macro that does, or renames one that does.
-    let mut naming: HashSet<String> = defines.iter().filter(|d| d.1).map(|d| d.0.clone()).collect();
-    loop {
-        let more: Vec<String> = defines
-            .iter()
-            .filter(|d| !naming.contains(&d.0) && d.2.iter().any(|c| naming.contains(c)))
-            .map(|d| d.0.clone())
-            .chain(aliases.iter().filter(|(from, to)| naming.contains(from) && !naming.contains(to)).map(|(_, to)| to.clone()))
-            .collect();
-        if more.is_empty() {
-            break;
+    let closure = |seed: HashSet<String>| {
+        let mut set = seed;
+        loop {
+            let more: Vec<String> = defines
+                .iter()
+                .filter(|d| !set.contains(&d.0) && d.3.iter().any(|c| set.contains(c)))
+                .map(|d| d.0.clone())
+                .chain(aliases.iter().filter(|(from, to)| set.contains(from) && !set.contains(to)).map(|(_, to)| to.clone()))
+                .collect();
+            if more.is_empty() {
+                return set;
+            }
+            set.extend(more);
         }
-        naming.extend(more);
-    }
-    !unindexed_calls.iter().any(|c| naming.contains(c))
+    };
+    let naming = closure(defines.iter().filter(|d| d.1).map(|d| d.0.clone()).collect());
+    // A naming macro whose expansion depends on the configuration (a `cfg` in its body, or one it calls) may use the
+    // item in another configuration from any call (review of 53031a6e).
+    let gated_naming: HashSet<String> = closure(defines.iter().filter(|d| d.2).map(|d| d.0.clone()).collect()).intersection(&naming).cloned().collect();
+    !unseen_calls.iter().any(|c| naming.contains(c)) && !all_calls.iter().any(|c| gated_naming.contains(c))
 }

@@ -17,19 +17,65 @@ use std::ops::Range;
 /// A file's possible uses of the names.
 pub(super) struct Scan {
     /// An identifier naming one (raw or not), any identifier beyond ASCII (it may be one in another normal form), or a
-    /// format string capturing one (`"{N}"`: review of c5dee55b).
+    /// string holding one as a word (a format capture `"{N}"`, a count `"{:>N$}"`, an escaped `"\u{7b}N}"`: reviews of
+    /// c5dee55b and 53031a6e).
     pub names_one: bool,
     /// For a file the index read: a mention under `cfg` or `cfg_attr`, which another configuration of the same bytes
     /// compiles (a feature turned on in the manifest: review of c5dee55b).
     pub gated_mention: bool,
-    /// The macros it calls.
-    pub calls: Vec<String>,
-    /// Its `macro_rules!`: name, whether the body names one, the macros the body calls.
-    pub defines: Vec<(String, bool, Vec<String>)>,
+    /// The macros it calls, each with whether the call is under `cfg` (in a file the index read).
+    pub calls: Vec<(String, bool)>,
+    /// Its `macro_rules!`: name, whether the body names one, whether the body holds a `cfg` (what it expands to depends
+    /// on the configuration), the macros the body calls.
+    pub defines: Vec<(String, bool, bool, Vec<String>)>,
     /// Its renames `a as b` (`use w::call_it as run`), which call a macro by another name.
     pub aliases: Vec<(String, String)>,
-    /// The files it includes (`include!("body.inc")`), as written.
+    /// The Rust sources it includes (`include!("body.inc")`), decoded; `include_str!` and `include_bytes!` are data.
     pub includes: Vec<String>,
+    /// An `include!` whose path is no plain string (`include!(concat!(..))`): a source not known.
+    pub unresolved_include: bool,
+}
+
+/// The text of the string literal `lit` as Rust reads it: raw ones as written, cooked ones with their escapes
+/// decoded (`"body\u{2e}inc"` is `body.inc`: review of 53031a6e); `None` for another literal.
+pub(super) fn string_value(lit: &str) -> Option<String> {
+    if let Some(raw) = lit.strip_prefix('r') {
+        let hashes = raw.len() - raw.trim_start_matches('#').len();
+        return raw.get(hashes + 1..raw.len().checked_sub(hashes + 1)?).map(str::to_string);
+    }
+    let body = lit.strip_prefix('"')?.strip_suffix('"')?;
+    let mut out = String::new();
+    let mut chars = body.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            out.push(c);
+            continue;
+        }
+        match chars.next()? {
+            'n' => out.push('\n'),
+            't' => out.push('\t'),
+            'r' => out.push('\r'),
+            '0' => out.push('\0'),
+            '\\' => out.push('\\'),
+            '"' => out.push('"'),
+            '\'' => out.push('\''),
+            'x' => {
+                let h: String = chars.by_ref().take(2).collect();
+                out.push(u8::from_str_radix(&h, 16).ok()? as char);
+            }
+            'u' => {
+                let h: String = chars.by_ref().skip(1).take_while(|&c| c != '}').collect();
+                out.push(char::from_u32(u32::from_str_radix(&h.replace('_', ""), 16).ok()?)?);
+            }
+            '\n' => {
+                while chars.peek().is_some_and(|c| c.is_whitespace()) {
+                    chars.next();
+                }
+            }
+            _ => return None,
+        }
+    }
+    Some(out)
 }
 
 /// The scan of `text` for `names`; `indexed`: the index read it, so a mention it compiled is in the index already and
@@ -39,11 +85,16 @@ pub(super) fn scan(text: &str, names: &[&str], indexed: bool, own: Option<&Range
     let ident = |i: usize| toks.get(i).filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(text)));
     let txt = |i: usize| toks.get(i).map_or("", |t| t.text(text));
     let names_word = |w: &str| names.contains(&w) || !w.is_ascii();
-    let captures = |s: &str| names.iter().any(|n| s.contains(&format!("{{{n}}}")) || s.contains(&format!("{{{n}:")));
-    let mut s = Scan { names_one: false, gated_mention: false, calls: Vec::new(), defines: Vec::new(), aliases: Vec::new(), includes: Vec::new() };
+    // A string naming one as a word, decoded or as written (what cannot be decoded is read as written).
+    let words_name = |lit: &str| {
+        let s = string_value(lit).unwrap_or_else(|| lit.to_string());
+        s.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| names.contains(&w)) || lit.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| names.contains(&w))
+    };
+    let mut s = Scan { names_one: false, gated_mention: false, calls: Vec::new(), defines: Vec::new(), aliases: Vec::new(), includes: Vec::new(), unresolved_include: false };
     let mut mentions = Vec::new();
+    let mut call_at = Vec::new();
     for i in 0..toks.len() {
-        if toks[i].kind.is_literal() && captures(txt(i)) {
+        if toks[i].kind.is_literal() && words_name(txt(i)) {
             s.names_one = true;
             mentions.push(toks[i].start as usize);
         }
@@ -63,13 +114,14 @@ pub(super) fn scan(text: &str, names: &[&str], indexed: bool, own: Option<&Range
         if w == "macro_rules" {
             // `macro_rules! m { .. }`: its body up to the delimiter closing the first one.
             let Some(m) = ident(i + 2) else { continue };
-            let (mut depth, mut naming, mut calls) = (0i32, false, Vec::new());
+            let (mut depth, mut naming, mut gated, mut calls) = (0i32, false, false, Vec::new());
             for (j, tok) in toks.iter().enumerate().skip(i + 3) {
                 match txt(j) {
                     "(" | "[" | "{" => depth += 1,
                     ")" | "]" | "}" => depth -= 1,
                     _ => {
-                        naming |= ident(j).is_some_and(names_word) || (tok.kind.is_literal() && captures(txt(j)));
+                        naming |= ident(j).is_some_and(names_word) || (tok.kind.is_literal() && words_name(txt(j)));
+                        gated |= ident(j).is_some_and(|w| w == "cfg" || w == "cfg_attr");
                         if txt(j + 1) == "!" {
                             calls.extend(ident(j).map(str::to_string));
                         }
@@ -79,15 +131,20 @@ pub(super) fn scan(text: &str, names: &[&str], indexed: bool, own: Option<&Range
                     break;
                 }
             }
-            s.defines.push((m.to_string(), naming, calls));
+            s.defines.push((m.to_string(), naming, gated, calls));
         } else if matches!(txt(i + 2), "(" | "[" | "{") {
-            s.calls.push(w.to_string());
-            if matches!(w, "include" | "include_str" | "include_bytes") && toks.get(i + 3).is_some_and(|t| t.kind.is_literal()) {
-                s.includes.push(txt(i + 3).trim_start_matches('r').trim_matches('#').trim_matches('"').to_string());
+            s.calls.push((w.to_string(), false));
+            call_at.push(toks[i].start as usize);
+            if w == "include" {
+                // Only a plain string is a known path.
+                match toks.get(i + 3).filter(|t| t.kind.is_literal() && matches!(txt(i + 4), ")" | "]" | "}")).and_then(|t| string_value(t.text(text))) {
+                    Some(path) => s.includes.push(path),
+                    None => s.unresolved_include = true,
+                }
             }
         }
     }
-    if indexed && !mentions.is_empty() {
+    if indexed && !(mentions.is_empty() && call_at.is_empty()) {
         let tree = ridx_syntax::parse(text);
         let gated = |at: usize| {
             let n = tree.covering(at);
@@ -98,6 +155,9 @@ pub(super) fn scan(text: &str, names: &[&str], indexed: bool, own: Option<&Range
             })
         };
         s.gated_mention = mentions.iter().any(|&at| !own.is_some_and(|r| r.contains(&at)) && gated(at));
+        for (c, &at) in s.calls.iter_mut().zip(&call_at) {
+            c.1 = gated(at);
+        }
     }
     s
 }

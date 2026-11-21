@@ -346,3 +346,54 @@ fn test_stored_edges_keep_their_target_and_whole_characters() {
     let got = handle_safe_delete(&at(&path, 0, 8), Some(&index), &OverlayManager::new(), &mut PositionConverter::new());
     assert_eq!(got["remainingUses"][0]["range"], json!({ "start": { "line": 0, "character": 21 }, "end": { "line": 0, "character": 23 } }), "{got}");
 }
+
+/// Review of 53031a6e: an include whose path is computed, a decoded include path, data includes, macros gated or
+/// expanding under `cfg`, a name in any string, a hidden directory above a declared target, a link whose target cannot
+/// be searched.
+#[test]
+fn test_includes_macros_strings_and_reachability() {
+    let lib = "pub fn used() {}\npub fn unused() {}\nmacro_rules! call_it {\n    () => {\n        $crate::unused()\n    };\n}\nmacro_rules! gen {\n    () => {\n        #[cfg(feature = \"x\")]\n        fn g() { $crate::unused() }\n    };\n}\n";
+    let defs = [("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)];
+    let mut conv = PositionConverter::new();
+    let ask = |caller: &str, files: &[(&str, &str)], conv: &mut PositionConverter| {
+        let (_d, path, index) = workspace_with(lib, caller, &defs, &[], false);
+        let src = path.parent().unwrap().to_path_buf();
+        for (name, text) in files {
+            let f = src.join(name);
+            std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+            std::fs::write(f, text).unwrap();
+        }
+        let got = handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), conv);
+        got["reason"].as_str().map_or("deleted".to_string(), str::to_string)
+    };
+    let plain = "// a caller\n\npub fn caller() {}\n";
+    assert_eq!(ask(plain, &[("inc.rs", "pub fn c() { include!(concat!(\"a\", \".inc\")) }\n")], &mut conv), "staleIndex", "a computed include");
+    assert_eq!(ask(plain, &[("inc.rs", "pub fn c() -> u8 { include!(\"body\\u{2e}inc\") }\n"), ("body.inc", "1u8\n")], &mut conv), "deleted", "a decoded path");
+    assert_eq!(ask(plain, &[("data.rs", "pub const S: &str = include_str!(\"data.txt\");\n"), ("data.txt", "unused\n")], &mut conv), "deleted", "data");
+    assert_eq!(ask("#[cfg(feature = \"x\")]\npub fn c() { call_it!(); }\n", &[], &mut conv), "staleIndex", "a gated call of a naming macro");
+    assert_eq!(ask("gen!();\n", &[], &mut conv), "staleIndex", "a macro expanding under cfg");
+    assert_eq!(ask(plain, &[("fmt.rs", "pub fn c() { println!(\"{:>unused$}\", 1); }\n")], &mut conv), "staleIndex", "a format count");
+    assert_eq!(ask(plain, &[("esc.rs", "pub fn c() { println!(\"\\u{7b}unused}\"); }\n")], &mut conv), "staleIndex", "an escaped capture");
+    // A target under a hidden directory deeper than the dot.
+    let (_d, path, index) = workspace(lib, &defs, &[]);
+    let root = path.parent().unwrap().parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(root.join(".cases/deep")).unwrap();
+    std::fs::write(root.join(".cases/deep/caller.rs"), "fn main() { w::unused() }\n").unwrap();
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\n\n[[test]]\nname = \"caller\"\npath = \".cases/deep/caller.rs\"\n").unwrap();
+    assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv)["reason"], "staleIndex");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let (_d, path, index) = workspace(lib, &defs, &[]);
+        let outside = tempfile::tempdir().unwrap();
+        let locked = outside.path().join("locked");
+        std::fs::create_dir_all(&locked).unwrap();
+        std::fs::write(locked.join("caller.rs"), "pub fn c() {}\n").unwrap();
+        std::os::unix::fs::symlink(locked.join("caller.rs"), path.with_file_name("link.rs")).unwrap();
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+        if std::fs::metadata(path.with_file_name("link.rs")).is_err_and(|e| e.kind() == std::io::ErrorKind::PermissionDenied) {
+            assert_eq!(handle_safe_delete(&at(&path, 1, 8), Some(&index), &OverlayManager::new(), &mut conv)["reason"], "staleIndex", "a link not searchable");
+        }
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+}

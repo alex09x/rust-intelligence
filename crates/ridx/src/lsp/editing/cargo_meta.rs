@@ -25,7 +25,9 @@ type Answers = HashMap<PathBuf, (String, Vec<(PathBuf, String)>, Option<Arc<Valu
 fn fingerprint(manifest: &Path) -> String {
     let mut out = std::fs::read_to_string(manifest).unwrap_or_default();
     if let Some(dir) = manifest.parent() {
-        for sub in ["src", "src/bin", "examples", "tests", "benches"] {
+        // `..` too: a member a glob names (`members = ["../members/*"]`) appears beside the existing ones (review of
+        // 53031a6e).
+        for sub in ["src", "src/bin", "examples", "tests", "benches", ".."] {
             let mut names: Vec<String> = std::fs::read_dir(dir.join(sub)).into_iter().flatten().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
             names.sort();
             out.push_str(&format!("\u{0}{sub}:{}", names.join("/")));
