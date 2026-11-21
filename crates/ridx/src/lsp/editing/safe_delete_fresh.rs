@@ -78,6 +78,26 @@ pub(crate) fn text_of(path: &Path, ov: &OverlayManager) -> Option<String> {
     }
 }
 
+/// The inputs a reader records: its `embedded` files and its loaded source `snapshot`, less the lookup aliases loading
+/// makes, and only those as it makes them (`merge_embedded_hashes_authoritative`): each embedded key joined to the
+/// reader's source `root` as recorded, and that path canonical (`crates/app/crates/app/src/lib.rs`,
+/// `/ws/crates/app/crates/app/src/lib.rs`). Such a spelling is no input of its own, whatever is at that path; every
+/// other entry is, a repeated spelling or an equal hash notwithstanding (reviews of 6b91c9eb, 4d025d17 and 61e7c131).
+fn inputs<'a>(embedded: &std::collections::HashMap<String, u64>, root: Option<&Path>, snapshot: impl Iterator<Item = (&'a str, u64)>) -> Vec<(String, u64)> {
+    let aliases: HashSet<String> = root
+        .into_iter()
+        .flat_map(|root| {
+            embedded.keys().flat_map(move |k| {
+                let abs = root.join(k);
+                [abs.to_string_lossy().into_owned(), ridx_format::canonicalize_best_effort(&abs).to_string_lossy().into_owned()]
+            })
+        })
+        .filter(|a| !embedded.contains_key(a))
+        .collect();
+    let snapshot = snapshot.filter(|(f, _)| !aliases.contains(*f)).map(|(f, h)| (f.to_string(), h));
+    embedded.iter().map(|(f, &h)| (f.clone(), h)).chain(snapshot).collect()
+}
+
 /// The workspace's sources the index read (canonical), when every one is as it read it: on disk, or in its open
 /// buffer (a closed caller changed with nothing telling the server holds uses the index does not have: review of
 /// f4f8b604).
@@ -86,21 +106,7 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
     for (idx, reader) in ws.readers().iter().enumerate() {
         // Every file the compiler read for the shard, not only those holding a definition or a reference: the loaded
         // source snapshot's too, a non-Rust `include!` input among them (review of c5dee55b).
-        let files: Vec<(String, u64)> = reader.embedded_file_hashes().into_iter().chain(ws.reader_source_snapshot(idx).map(|(f, h)| (f.to_string(), h))).collect();
-        // The snapshot also holds the lookup aliases loading makes: a key that repeats another key of this reader after
-        // a prefix, with its hash (`crates/app/crates/app/src/lib.rs` beside `crates/app/src/lib.rs`). Such a spelling
-        // is no input of its own, whatever is at that path, and every other entry is: an equal hash makes no two files
-        // one (reviews of 6b91c9eb and 4d025d17).
-        // The prefix is the key's own beginning again (the overlap joined twice), never just any directory above it.
-        let alias = |f: &str, h: u64| {
-            files.iter().any(|(g, gh)| {
-                *gh == h && g.len() < f.len() && f.ends_with(g.as_str()) && {
-                    let prefix = &f[..f.len() - g.len()];
-                    prefix.ends_with('/') && g.starts_with(prefix)
-                }
-            })
-        };
-        let files: Vec<(String, u64)> = files.iter().filter(|(f, h)| !alias(f, *h)).cloned().collect();
+        let files = inputs(&reader.embedded_file_hashes(), ws.source_root_at(idx), ws.reader_source_snapshot(idx));
         for (f, hash) in files {
             // A file of the workspace whose place is not known is not known to be as it was read.
             let path = match resolve(ws, idx, &f) {

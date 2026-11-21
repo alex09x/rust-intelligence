@@ -44,13 +44,23 @@ pub(crate) fn raw_edges(ws: &WorkspaceIndex, file: &Path, line: u32, col: u32, t
                 // No file: the path names it, unless the recorded unit's own definition of that id is known to be in
                 // another file (review of 6b91c9eb); which reader a file routes to is no evidence of who defines in it
                 // (review of 4d025d17).
-                let elsewhere = unit_reader.is_some_and(|t| {
+                // The definition is looked up in the unit the reference names, or in the referring one when it names
+                // none: by its id, or by its path where no id is recorded (a foreign reference: review of 61e7c131).
+                let path = r.get_str(e.target_path_offset());
+                let owner = unit_reader.or(target_unit.is_empty().then_some(idx));
+                let elsewhere = owner.is_some_and(|t| {
                     let tr = &ws.readers()[t];
-                    tr.definitions().iter().find(|d| d.def_id() == e.target_def_id()).is_some_and(|d| {
+                    let def = if e.target_def_id() == u32::MAX {
+                        let mut by_path = tr.definitions().iter().filter(|d| tr.get_str(d.path_offset()) == path);
+                        by_path.next().filter(|_| by_path.next().is_none())
+                    } else {
+                        tr.definitions().iter().find(|d| d.def_id() == e.target_def_id())
+                    };
+                    def.is_some_and(|d| {
                         super::safe_delete_fresh::resolve(ws, t, tr.get_file(d.span().file_id())).is_some_and(|p| ridx_format::canonicalize_best_effort(&p) != file)
                     })
                 });
-                r.get_str(e.target_path_offset()) == target_path && !elsewhere
+                path == target_path && !elsewhere
             } else {
                 e.target_line() == line
                     && e.target_col() == col
