@@ -97,11 +97,28 @@ pub(crate) fn promote_edits(doc: &str, offset: usize) -> Option<Vec<(Range<usize
     {
         return None;
     }
+    // An identifier beyond ASCII may be, in its normal form, the new name (`K` is `K`): none is in the file (review of
+    // b854363f).
+    if tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && !t.text(doc).is_ascii()) {
+        return None;
+    }
     let uses = ridx_syntax::sema_fn::let_uses(&tree, stmt, var);
+    // A same-spelled token in a macro's arguments is not known to be a use (`matches!(2u8, x)` binds a new `x`), and a
+    // raw borrow needs the local's place, which a constant is not (`&raw const x`: review of b854363f).
+    let raw_borrow = |r: &Range<usize>| {
+        let mut n = tree.covering(r.start);
+        while let Some(p) = tree.parent(n).filter(|&p| matches!(tree.kind(p), K::PathExpr | K::ParenExpr | K::Path | K::PathSegment)) {
+            n = p;
+        }
+        tree.parent(n).is_some_and(|p| tree.kind(p) == K::RefExpr && tree.own_tokens(p).any(|(_, t)| t.text(doc) == "raw"))
+    };
+    if !uses.macro_uses.is_empty() || uses.uses.iter().any(raw_borrow) {
+        return None;
+    }
     let mut edits = vec![(tree.range(stmt), format!("const {upper}: {ty} = {};", tree.text(init)))];
     // A field shorthand (`S { x }`) keeps its field: `S { x: X }` (review of 63f24322).
     let shorthand = |r: &Range<usize>| super::action_inline_variable::is_shorthand(&tree, r.start);
-    edits.extend(uses.uses.iter().chain(&uses.macro_uses).map(|r| (r.clone(), if shorthand(r) { format!("{}: {upper}", &doc[r.clone()]) } else { upper.clone() })));
+    edits.extend(uses.uses.iter().map(|r| (r.clone(), if shorthand(r) { format!("{}: {upper}", &doc[r.clone()]) } else { upper.clone() })));
     edits.sort_by_key(|(r, _)| r.start);
     Some(edits)
 }

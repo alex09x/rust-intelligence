@@ -16,19 +16,27 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
-/// By the nearest manifest: the text of every manifest above it, and what Cargo answered for it.
-type Answers = HashMap<PathBuf, (String, Option<Arc<Value>>)>;
+/// By the nearest manifest: the text of every manifest above it, the manifests Cargo's answer read with their text
+/// (a workspace's elsewhere, `package.workspace = "../control"`: review of b854363f), and the answer.
+type Answers = HashMap<PathBuf, (String, Vec<(PathBuf, String)>, Option<Arc<Value>>)>;
 
-/// `cargo metadata` of the nearest manifest above `file`, cached until the text of a manifest above the file changes;
-/// `None` with no manifest, or where Cargo gives no answer.
+/// The manifests an answer of Cargo rests on: its workspace's and every package's.
+fn read_manifests(v: &Value) -> Vec<(PathBuf, String)> {
+    let root = v["workspace_root"].as_str().map(|r| Path::new(r).join("Cargo.toml"));
+    let packages = v["packages"].as_array().into_iter().flatten().filter_map(|p| p["manifest_path"].as_str().map(PathBuf::from));
+    root.into_iter().chain(packages).map(|m| (m.clone(), std::fs::read_to_string(&m).unwrap_or_default())).collect()
+}
+
+/// `cargo metadata` of the nearest manifest above `file`, cached until the text of a manifest above the file, or of one
+/// the answer read, changes; `None` with no manifest, or where Cargo gives no answer.
 fn metadata(file: &Path) -> Option<Arc<Value>> {
     static CACHE: OnceLock<Mutex<Answers>> = OnceLock::new();
     let manifests: Vec<PathBuf> = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).filter(|m| m.is_file()).collect();
     let nearest = manifests.first()?.clone();
     let key: String = manifests.iter().map(|m| std::fs::read_to_string(m).unwrap_or_default()).collect::<Vec<_>>().join("\u{0}");
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((k, v)) = cache.lock().ok()?.get(&nearest) {
-        if *k == key {
+    if let Some((k, read, v)) = cache.lock().ok()?.get(&nearest) {
+        if *k == key && read.iter().all(|(m, text)| std::fs::read_to_string(m).unwrap_or_default() == *text) {
             return v.clone();
         }
     }
@@ -40,8 +48,26 @@ fn metadata(file: &Path) -> Option<Arc<Value>> {
         .output()
         .ok()?;
     let v = serde_json::from_slice::<Value>(&out.stdout).ok().filter(|_| out.status.success()).map(Arc::new);
-    cache.lock().ok()?.insert(nearest, (key, v.clone()));
+    let read = v.as_deref().map(read_manifests).unwrap_or_default();
+    cache.lock().ok()?.insert(nearest, (key, read, v.clone()));
     v
+}
+
+/// The root files of the targets of the package holding `file` (`src/lib.rs`, `src/main.rs`, ..): where crate-level
+/// declarations such as `extern crate` are.
+pub(crate) fn target_roots(file: &Path) -> Option<Vec<PathBuf>> {
+    let j = metadata(file)?;
+    let file = ridx_format::canonicalize_best_effort(file);
+    let package = j["packages"]
+        .as_array()?
+        .iter()
+        .filter_map(|p| {
+            let dir = ridx_format::canonicalize_best_effort(Path::new(p["manifest_path"].as_str()?).parent()?);
+            file.starts_with(&dir).then(|| (dir.components().count(), p))
+        })
+        .max_by_key(|(depth, _)| *depth)?
+        .1;
+    Some(package["targets"].as_array()?.iter().filter_map(|t| t["src_path"].as_str().map(PathBuf::from)).collect())
 }
 
 /// The edition of the package holding `file`: of the package whose directory holds it most closely.

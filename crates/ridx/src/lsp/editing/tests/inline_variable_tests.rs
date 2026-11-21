@@ -93,6 +93,12 @@ fn test_a_binding_is_not_inlined_where_the_result_would_differ() {
         "pub fn f(n: u8) -> u8 {\n    let x$0 = n;\n    {\n        const n: u8 = 9;\n        x + n\n    }\n}\n",
         "pub fn f(n: u8, c: bool) -> u8 {\n    let x$0 = n;\n    if c {\n        let n = 2u8;\n        return n;\n    }\n    x\n}\n",
         "pub fn f(n: u8) -> u8 {\n    let x$0 = n;\n    let caf\u{e9} = 1u8;\n    x + caf\u{e9}\n}\n",
+        // Review of b854363f: a `ref` pattern and a comparison borrow the binding's storage; a later `use` in a block
+        // may name what the initializer reads; a glob may make `u8` a type with a destructor.
+        "pub fn f(a: u8) -> bool {\n    let x$0 = a;\n    match x {\n        ref r => std::ptr::eq(r, &a),\n    }\n}\n",
+        "pub struct P(pub *const u8);\nimpl PartialEq<P> for u8 {\n    fn eq(&self, p: &P) -> bool { std::ptr::eq(self, p.0) }\n}\npub fn f(a: u8, p: P) -> bool {\n    let x$0 = a;\n    x == p\n}\n",
+        "mod values {\n    pub const n: u8 = 2;\n}\npub fn f(n: u8) -> u8 {\n    let x$0 = n;\n    {\n        use crate::values::n;\n        x + 0\n    }\n}\n",
+        "mod t {\n    pub struct u8;\n}\nuse t::*;\npub fn f(s: u8) -> (u8, u8) {\n    let x$0 = s;\n    (x, u8)\n}\n",
     ] {
         assert_eq!(inlined(doc), None, "{doc}");
     }

@@ -129,15 +129,19 @@ rust-analyzer), `generate_impl`, `generate_new`, `generate_single_field_struct_f
 `wrap_return_type_in_option`, `wrap_return_type_in_result`; ridx's own: `organize_imports`, `prefix_with_underscore`,
 `remove_unnecessary_mut`. An action is never asked for by its place in the list. Where ridx offers an assist in fewer places than
 rust-analyzer, it is where the result would not compile: `inline_local_variable` inlines a binding used once, as
-a value (not borrowed, not a receiver, through parentheses too), outside a loop, a closure or an `async` block, with
+a value copied where it goes (an argument, a `let` by value, a returned, tupled, cast or arithmetic operand, a
+block's value; not a scrutinee a `ref` pattern borrows, a comparison, a receiver or a borrow, through parentheses
+too), outside a loop, a closure or an `async` block, in a function with no `use` and no name beyond ASCII, with
 nothing in between naming what it reads and no other binding or item of the function sharing such a name, whose
 initializer has nothing to evaluate: typed literals and `Copy` locals whose type is written (a parameter, an annotated
 `let`), in parentheses, a tuple, an array or a cast to a primitive, and no operator (so `let area = size * scale` is
 not inlined); `promote_local_to_const` takes a lone literal whose type is written on the binding or spelled by the
 literal (`8u64`, `true`, `'c'`, `"hi"`), no operator (a constant evaluates it at compile time, where `1u8 / 0u8` no
-longer compiles), in a function with no generics and with no `Self` in the type; `wrap_return_type_in_*` takes a
-function nothing else calls (in the index or any open buffer) and no trait fixes, not `main`, with no attribute, with
-every exit wrapped (a tail or a last `return`, no `?`, no macro at all), in a file with no `extern crate`, of a
+longer compiles), in a function with no generics and with no `Self` in the type, used outside macro arguments and
+raw borrows, in a file with no name beyond ASCII, and the literal's own type only where no glob import may rename it; `wrap_return_type_in_*` takes a
+function nothing else calls (in the index, a macro's expansion included, or any open buffer) and no trait fixes, not
+`main`, with no attribute, with every exit wrapped (a tail or a last `return`, no `?`, no macro at all), with no
+`extern crate` in the file or the package's crate roots, of a
 package Cargo resolves (`cargo metadata`) to the 2018 edition or later, and writes `::core::option::Option` and
 `::core::result::Result` paths, which no import or prelude setting changes, and writes `Result<T, ()>` where rust-analyzer leaves a placeholder `_`. `extract_function` extracts a whole
 expression of a function with no generics, whose value's type is known (a `let` it initializes, or the tail),

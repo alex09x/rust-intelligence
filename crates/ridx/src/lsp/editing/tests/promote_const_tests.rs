@@ -33,8 +33,8 @@ fn test_a_constant_binding_becomes_a_constant() {
     let got = promoted("pub fn g() -> u64 {\n    let n$0 = 8u64;\n    n\n}\n", None).unwrap();
     assert_eq!(got, "pub fn g() -> u64 {\n    const N: u64 = 8u64;\n    N\n}\n", "the type the literal spells");
     assert_rustc_compiles(&got, "Promote local to constant");
-    let got = promoted("pub fn h() -> String {\n    let greeting$0 = \"hi\";\n    format!(\"{}!\", greeting)\n}\n", None).unwrap();
-    assert!(got.contains("const GREETING: &str = \"hi\";") && got.contains("format!(\"{}!\", GREETING)"), "{got}");
+    let got = promoted("pub fn h() -> String {\n    let greeting$0 = \"hi\";\n    greeting.to_string()\n}\n", None).unwrap();
+    assert!(got.contains("const GREETING: &str = \"hi\";") && got.contains("GREETING.to_string()"), "{got}");
     assert_rustc_compiles(&got, "Promote local to constant");
     // Review of 63f24322: a field shorthand keeps its field; a function of the block named so is not the local.
     let got = promoted("pub struct S { pub x: i32 }\npub fn s() -> S {\n    let x$0: i32 = 1;\n    S { x }\n}\n", None).unwrap();
@@ -78,6 +78,12 @@ fn test_a_binding_no_constant_can_hold_is_not_promoted() {
         ("pub fn f() -> usize {\n    let n$0: usize = 4 * 8;\n    n\n}\n", None),
         ("pub fn f() -> f64 {\n    let x$0 = 1.5;\n    x\n}\n", None),
         ("type u8 = i64;\npub fn f() -> u8 {\n    let n$0 = 1u8;\n    n\n}\n", None),
+        // Review of b854363f: a glob that may name the literal's type, a token in a macro's arguments (a pattern's new
+        // binding there), a name the new one is in normal form, a raw borrow of the place.
+        ("mod t {\n    pub type u8 = String;\n}\nuse t::*;\npub fn f() -> bool {\n    let n$0 = 1u8;\n    n > 0\n}\n", None),
+        ("pub fn f() -> bool {\n    let x$0: u8 = 1;\n    matches!(2u8, x)\n}\n", None),
+        ("const \u{212a}: i32 = 9;\npub fn f() -> i32 {\n    let k$0: i32 = 1;\n    k + K\n}\n", None),
+        ("pub fn f() -> *const u8 {\n    let x$0: u8 = 1;\n    &raw const x\n}\n", None),
     ] {
         assert_eq!(promoted(doc, ty), None, "{doc}");
     }

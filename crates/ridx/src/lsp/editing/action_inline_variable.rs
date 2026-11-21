@@ -124,7 +124,9 @@ pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Ra
     if !tree.text(name).is_ascii() || idents.iter().any(|i| !i.is_ascii()) || declared.iter().any(|d| !d.is_ascii()) {
         return None;
     }
-    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1) {
+    // A `use` in the function brings names into its whole block, later ones too, whatever they are: none is compared
+    // (review of b854363f).
+    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1) || tree.descendants(f).any(|d| tree.kind(d) == K::Use) {
         return None;
     }
     let uses = ridx_syntax::sema_fn::let_uses(&tree, stmt, ridx_syntax::sema_fn::norm_ident(tree.text(name)));
@@ -142,8 +144,27 @@ pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Ra
         outer = p;
     }
     let holder = tree.parent(outer)?;
-    let receiver = matches!(tree.kind(holder), K::MethodCallExpr | K::FieldExpr | K::IndexExpr | K::CallExpr) && tree.children(holder).next() == Some(outer);
-    if tree.kind(holder) == K::RefExpr || receiver {
+    // Only where the value is copied into a place of its own: an argument, a `let` binding it by value, a returned,
+    // tupled, cast or arithmetic operand, a block's value. Not a `match` or `if let` scrutinee (`ref r` borrows it), a
+    // comparison (`==` takes `&self`, which a user's `PartialEq<P> for u8` may observe), a receiver, a borrow (review of
+    // b854363f).
+    let op = || tree.own_tokens(holder).filter(|(_, t)| !t.is_trivia()).map(|(_, t)| t.text(doc)).collect::<String>();
+    let first = tree.children(holder).next() == Some(outer);
+    let by_value = match tree.kind(holder) {
+        K::ArgList | K::ReturnExpr | K::TupleExpr | K::ArrayExpr | K::CastExpr | K::RecordExprField | K::ExprStmt | K::PrefixExpr => true,
+        K::BlockExpr => ridx_syntax::sema_fn::tail_expr(&tree, f) == Some(outer) || tree.children(holder).filter(|&c| tree.kind(c).is_expr()).last() == Some(outer),
+        K::LetStmt => tree
+            .children(holder)
+            .find(|&c| tree.kind(c) == K::IdentPat)
+            .is_some_and(|p| !tree.own_tokens(p).any(|(_, t)| matches!(t.kind, T::Ref | T::Mut)) && tree.children(p).count() == 1),
+        K::BinExpr => {
+            let o = op();
+            matches!(o.as_str(), "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "&&" | "||")
+                || (o.ends_with('=') && !matches!(o.as_str(), "==" | "!=" | "<=" | ">=") && !first)
+        }
+        _ => false,
+    };
+    if !by_value {
         return None;
     }
     for a in tree.ancestors(path).take_while(|&a| a != block) {

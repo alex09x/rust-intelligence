@@ -158,10 +158,20 @@ pub fn wrap_return_actions(doc: &str, uri: &str, range: &Value, doc_version: Opt
                 .is_some_and(|o| ridx_syntax::lex(&o.text).iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(&o.text)) == name))
         });
         let Some(def) = ws.find_definition_at(&file, line as u32 + 1, char_col as u32 + 1) else { return true };
-        in_buffer || ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
+        // Every edge the shards store, a macro's expansion in any file too (review of b854363f: a closed file's
+        // `call!()` expanding to `f()`).
+        let stored = super::safe_delete_edges::raw_edges(ws, &canonical, line as u32 + 1, char_col as u32 + 1, def.path);
+        in_buffer || !stored.is_empty() || ws.find_references(def.path).iter().any(|r| ridx_format::canonicalize_best_effort(&r.resolved_path()) != canonical)
     };
+    // `::core` is the sysroot crate only where no crate root of the package names another `core` (`extern crate self as
+    // r#core` in `lib.rs` holds for its modules too: review of b854363f): no `extern crate` in any of them.
+    let extern_crate = |text: &str| {
+        let toks: Vec<_> = ridx_syntax::lex(text).into_iter().filter(|t| !t.is_trivia()).collect();
+        toks.windows(2).any(|w| w[0].text(text) == "extern" && w[1].text(text) == "crate")
+    };
+    let roots_plain = super::cargo_meta::target_roots(&canonical).is_some_and(|roots| roots.iter().all(|r| std::fs::read_to_string(r).is_ok_and(|t| !extern_crate(&t))));
     for (wrap, title) in [(Wrap::Option, "Wrap return type in Option"), (Wrap::Result, "Wrap return type in Result")] {
-        let Some(edits) = wrap_edits(doc, offset, wrap, edition_2018(&canonical), &called) else { continue };
+        let Some(edits) = wrap_edits(doc, offset, wrap, roots_plain && edition_2018(&canonical), &called) else { continue };
         let edits: Vec<Value> = edits
             .into_iter()
             .map(|(r, text)| {
