@@ -33,9 +33,11 @@ pub mod presentation;
 pub mod protocol;
 pub mod reindex;
 mod requests;
+mod ridx_methods;
 mod session_index;
 mod session_loop;
 pub mod symbols;
+mod syntax_tree;
 pub mod workspace;
 
 #[cfg(test)]
