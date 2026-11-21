@@ -100,6 +100,14 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
         // names as a primitive borrows what is not `Copy`.
         ("pub trait A { fn address(&self) -> usize; }\nimpl A for u8 { fn address(&self) -> usize { self as *const u8 as usize } }\npub fn f(n: u8) -> usize {\n    let r = $0(n).address() + 1$0;\n    r\n}\n", Some("usize")),
         ("use std::string::String as u32;\npub fn f(a: u32, b: u32) -> bool {\n    let r = $0a == b$0;\n    drop(a);\n    r && b.is_empty()\n}\n", Some("bool")),
+        // Review of 9d489afe: a glob that may bring a primitive's name, an ASCII use of a name declared beyond ASCII
+        // (the Kelvin sign is `K`), a type named with a combining mark, a local `const` or `static` initializer.
+        ("mod types {\n    pub type u32 = String;\n}\nuse types::*;\npub fn f(a: u32, b: u32) -> bool {\n    let r = $0a == b$0;\n    drop(a);\n    r && b.is_empty()\n}\n", Some("bool")),
+        ("const K: i32 = 100;\npub fn f() -> i32 {\n    const \u{212a}: i32 = 3;\n    let r = $0K + 1$0;\n    r\n}\n", Some("i32")),
+        ("pub fn f(\u{212a}: i32) -> i32 {\n    let r = $0K + 1$0;\n    r\n}\n", Some("i32")),
+        ("pub fn f() -> u8 {\n    type cafe\u{301} = u8;\n    let n: cafe\u{301} = $01 + 2$0;\n    n\n}\n", Some("u8")),
+        ("pub fn f() -> i32 {\n    const C: i32 = {\n        let x: i32 = $01 + 2$0;\n        x\n    };\n    C\n}\n", Some("i32")),
+        ("pub fn f() -> i32 {\n    static S: i32 = {\n        let x: i32 = $01 + 2$0;\n        x\n    };\n    S\n}\n", Some("i32")),
         // Not a whole expression.
         ("pub fn f(a: u32, b: u32) -> u32 {\n    let c = $0a * b + $01;\n    c\n}\n", Some("u32")),
     ] {

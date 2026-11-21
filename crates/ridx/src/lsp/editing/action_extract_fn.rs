@@ -29,6 +29,11 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
         return None;
     }
     let tree = ridx_syntax::parse(doc);
+    // An identifier beyond ASCII anywhere in the file may be, in its normal form, the very name an ASCII spelling
+    // reads (`K` is `K`, `cafe\u{301}` is `café`): no name of the file is compared then (review of 9d489afe).
+    if tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::Lifetime) && !t.text(doc).is_ascii()) {
+        return None;
+    }
     let sel = sel.start + (doc[sel.clone()].len() - doc[sel.clone()].trim_start().len())..sel.end - (doc[sel.clone()].len() - doc[sel.clone()].trim_end().len());
     let start = tree.covering(sel.start);
     let expr = std::iter::once(start).chain(tree.ancestors(start)).find(|&n| tree.range(n) == sel)?;
@@ -53,7 +58,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     let in_length = |a: NodeId| tree.kind(a) == K::ArrayExpr && tree.own_tokens(a).any(|(_, t)| t.kind == T::Semi && (t.start as usize) < tree.range(expr).start);
     if tree.ancestors(expr).take_while(|&a| a != f).any(|a| {
         (tree.kind(a) == K::BlockExpr && tree.own_tokens(a).any(|(_, t)| matches!(t.kind, T::Unsafe | T::Const)))
-            || matches!(tree.kind(a), K::ArrayType | K::ConstArg | K::ConstParam)
+            || matches!(tree.kind(a), K::ArrayType | K::ConstArg | K::ConstParam | K::Const | K::Static)
             || in_length(a)
     }) || tree.ancestors(expr).any(|a| {
         tree.children(a)
