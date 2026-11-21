@@ -80,10 +80,12 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     let list_file = session_dir.join("buffers.json");
     fs::write(&list_file, serde_json::Value::Object(list).to_string()).map_err(|e| format!("buffer list: {e}"))?;
 
-    let units = super::session_units::units_holding(&variant.join(".deps"), &sources, root);
-    if units.is_empty() {
-        return Err("no indexed crate holds the buffers".into());
-    }
+    let mut units = super::session_units::units_holding(&variant.join(".deps"), &sources, root);
+    // A buffer no unit of the index owns: an integration test the edit adds is compiled as the target Cargo would build
+    // from it; any other one (a new module) may be included by an edited buffer, which the compile tells; one nothing
+    // compiles is said to be in no crate, at once (prod-code, m=20181). No buffer owned by any unit is no failure.
+    let unowned: Vec<PathBuf> = sources.iter().filter(|s| !units.iter().any(|u| u.may_own(s))).cloned().collect();
+    units.extend(super::session_units::new_test_units(&variant.join(".deps"), root, &unowned));
     let ctx = Ctx { driver, root, variant: &variant, list_file: &list_file, deps: session_dir.join("direct/deps"), incr: session_dir.join("direct/incremental") };
     fs::create_dir_all(&ctx.deps).and_then(|_| fs::create_dir_all(&ctx.incr)).map_err(|e| format!("direct directory: {e}"))?;
 
@@ -97,6 +99,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     let mut settled: HashSet<String> = HashSet::new();
     let mut pending: Vec<&super::session_units::Unit> = units.iter().collect();
     let mut report = CompilerReport::default();
+    let mut held: HashSet<PathBuf> = HashSet::new();
     while !pending.is_empty() {
         let ready = |u: &&super::session_units::Unit| u.extern_edges().iter().all(|(_, stem, _)| !libs.contains(stem) || *stem == u.artifact_stem() || settled.contains(stem));
         let (mut wave, rest): (Vec<_>, Vec<_>) = pending.into_iter().partition(ready);
@@ -129,6 +132,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             // says nothing of the errors it alone would report (review of fb2bed09). Owning nothing recorded (or no sidecar of this compile), it may
             // own any buffer.
             let owned = || out.owned.clone().unwrap_or_else(|| sources.clone());
+            held.extend(owned());
             match &out.checked {
                 Some(c) => report.checked.extend(c.iter().filter(|s| s.starts_with(root)).cloned()),
                 None => report.unchecked.extend(owned()),
@@ -145,6 +149,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             }
         }
     }
+    report.unheld = sources.difference(&held).cloned().collect();
     Ok(SessionOutput { dir: session_dir.to_path_buf(), report })
 }
 
@@ -221,6 +226,11 @@ impl Staged {
                 super::direct::units::refresh_aliases(&unit.sidecar, &unit.aliases);
             }
         }
+        // A unit made for a new test file (`new_tests`) owns that file alone, checked when the compile succeeded.
+        let (checked, owned) = match &unit.synthetic {
+            Some(f) => ((success && !self.remaps).then(|| [f.clone()].into()), Some([f.clone()].into())),
+            None => (checked, owned),
+        };
         UnitOutcome { messages, checked, owned, untold: self.remaps }
     }
 }
@@ -293,8 +303,10 @@ fn link_files(from: &Path, to: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// One spelling for a source, on disk or only a buffer: `src/../tests/unit/moved.rs` of a new module is the buffer
+/// `tests/unit/moved.rs` (prod-code, m=20181: its own source and the buffer did not meet).
 pub(super) fn canonical(path: &Path) -> PathBuf {
-    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+    ridx_format::canonicalize_best_effort(path)
 }
 
 #[cfg(test)]

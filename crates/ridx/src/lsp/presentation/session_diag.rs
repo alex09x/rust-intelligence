@@ -34,7 +34,8 @@ type Roots = HashMap<PathBuf, HashMap<PathBuf, SessionFile>>;
 
 /// What a session's compile of a buffer gave, for the text compiled: its diagnostics (`None`), or why it gave none,
 /// which an empty list would hide (prod-code, m=20178): `notChecked` (no unit owning it checked it to the end, a proc
-/// macro that panicked), `pathsUntold` (a unit owning it remaps paths or reads an `@file`).
+/// macro that panicked), `pathsUntold` (a unit owning it remaps paths or reads an `@file`), `notInAnyCrate` (no unit
+/// compiled includes it, a new file nothing declares: prod-code, m=20181).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Outcome {
     pub text: String,
@@ -230,6 +231,8 @@ pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], 
             let path = ridx_format::canonicalize_best_effort(p);
             let unavailable = if files.contains_key(&path) {
                 None
+            } else if report.unheld.contains(&path) {
+                Some("notInAnyCrate")
             } else if report.untold.contains(&path) {
                 Some("pathsUntold")
             } else {

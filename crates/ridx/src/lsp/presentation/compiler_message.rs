@@ -66,7 +66,7 @@ pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, V
 
     let file_name = primary_span.get("file_name")?.as_str()?;
     let abs_file = if Path::new(file_name).is_absolute() { PathBuf::from(file_name) } else { root.join(file_name) };
-    let canon = abs_file.canonicalize().unwrap_or(abs_file);
+    let canon = ridx_format::canonicalize_best_effort(&abs_file);
 
     let line_start = primary_span.get("line_start")?.as_u64()?.saturating_sub(1);
     let col_start_char = primary_span.get("column_start")?.as_u64()?.saturating_sub(1);
@@ -120,7 +120,7 @@ pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, V
         if s.get("is_primary") != Some(&Value::Bool(true)) {
             if let (Some(rel_file), Some(label)) = (s.get("file_name").and_then(|f| f.as_str()), s.get("label").and_then(|l| l.as_str())) {
                 let rel_abs = if Path::new(rel_file).is_absolute() { PathBuf::from(rel_file) } else { root.join(rel_file) };
-                let rel_canon = rel_abs.canonicalize().unwrap_or(rel_abs);
+                let rel_canon = ridx_format::canonicalize_best_effort(&rel_abs);
                 let r_lstart = s.get("line_start").and_then(|l| l.as_u64()).unwrap_or(1).saturating_sub(1);
                 let r_cstart = s.get("column_start").and_then(|c| c.as_u64()).unwrap_or(1).saturating_sub(1);
                 let r_lend = s.get("line_end").and_then(|l| l.as_u64()).unwrap_or(1).saturating_sub(1);
@@ -143,7 +143,7 @@ pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, V
     if primary_span != raw_primary {
         if let (Some(rel_file), Some(label)) = (raw_primary.get("file_name").and_then(|f| f.as_str()), raw_primary.get("label").and_then(|l| l.as_str())) {
             let rel_abs = if Path::new(rel_file).is_absolute() { PathBuf::from(rel_file) } else { root.join(rel_file) };
-            let rel_canon = rel_abs.canonicalize().unwrap_or(rel_abs);
+            let rel_canon = ridx_format::canonicalize_best_effort(&rel_abs);
             let r_lstart = raw_primary.get("line_start").and_then(|l| l.as_u64()).unwrap_or(1).saturating_sub(1);
             let r_cstart = raw_primary.get("column_start").and_then(|c| c.as_u64()).unwrap_or(1).saturating_sub(1);
             let r_lend = raw_primary.get("line_end").and_then(|l| l.as_u64()).unwrap_or(1).saturating_sub(1);

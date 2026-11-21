@@ -15,6 +15,10 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[path = "session_new_tests.rs"]
+mod new_tests;
+pub(super) use new_tests::new_test_units;
+
 /// A compilation unit of the published index whose sources include one of the buffers.
 pub(super) struct Unit {
     pub(super) name: String,
@@ -25,6 +29,8 @@ pub(super) struct Unit {
     pub(super) aliases: Vec<PathBuf>,
     /// The sources the unit was compiled from itself (`own_sources` of the sidecar), when the driver recorded them.
     own: Option<HashSet<PathBuf>>,
+    /// For a unit no index has, made for a test file the edit adds (`new_tests`): that file.
+    pub(super) synthetic: Option<PathBuf>,
 }
 
 /// The `own_sources` a sidecar records (canonical), if it does.
@@ -38,6 +44,11 @@ pub(super) fn sources_recorded(path: &Path) -> Option<HashSet<PathBuf>> {
 }
 
 impl Unit {
+    /// Whether the unit may own `source` (canonical): it records it among its own sources, or records none.
+    pub(super) fn may_own(&self, source: &Path) -> bool {
+        self.own.as_ref().is_none_or(|own| own.contains(source))
+    }
+
     /// A library unit, whose metadata other units read (not a test harness, a binary or a build script).
     pub(super) fn is_lib(&self) -> bool {
         !self.args.iter().any(|a| a == "--test") && crate_types(&self.args).iter().all(|t| matches!(t.as_str(), "lib" | "rlib" | "dylib" | "proc-macro"))
@@ -149,7 +160,7 @@ pub(super) fn units_holding(deps: &Path, sources: &HashSet<PathBuf>, root: &Path
             None => {
                 let env: HashMap<String, String> = j["env"].as_object().into_iter().flatten().filter_map(|(k, v)| v.as_str().map(|v| (k.clone(), v.to_string()))).collect();
                 let name = crate_name(&args, &env);
-                by_object.insert(key, Unit { name, args, env, object, sidecar: path.clone(), aliases: Vec::new(), own });
+                by_object.insert(key, Unit { name, args, env, object, sidecar: path.clone(), aliases: Vec::new(), own, synthetic: None });
             }
         }
     }

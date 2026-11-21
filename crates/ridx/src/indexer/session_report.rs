@@ -29,6 +29,8 @@ pub struct CompilerReport {
     /// The sources of the units whose diagnostics name files that cannot be told for sure (`paths_untold`): nothing
     /// of the session is said of them, the check of the saved files is.
     pub untold: HashSet<PathBuf>,
+    /// The buffers no unit compiled owns, by what it recorded (a file nothing includes): in no crate.
+    pub unheld: HashSet<PathBuf>,
 }
 
 /// `args` reporting in rustc's JSON, and only its diagnostics: the format and colour the unit was recorded with go.

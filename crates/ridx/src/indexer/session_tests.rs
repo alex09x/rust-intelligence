@@ -109,7 +109,10 @@ fn test_a_session_index_compiles_the_buffers_crates_and_leaves_the_published_ind
     let seen: serde_json::Value = serde_json::from_str(&read(variant.join("seen.json"))).unwrap();
     assert_eq!(read(PathBuf::from(seen[a.display().to_string()].as_str().unwrap())), "pub fn a() { edited() }\n");
     assert_eq!(read(a.clone()), "pub fn a() {}\n", "the file on disk is not written");
-    assert!(build_session_index_with(&driver(&root, "d", ""), &root, &session, &[(root.join("a/src/new.rs"), String::new())]).is_err(), "no crate holds it");
+    // prod-code, m=20181: a buffer no crate holds is said to be in none, at once, not a failed build.
+    let new = root.join("a/src/new.rs");
+    let alone = build_session_index_with(&driver(&root, "d", ""), &root, &session, &[(new.clone(), String::new())]).unwrap();
+    assert!(alone.report.unheld.contains(&new), "{:?}", alone.report);
 }
 
 /// Review of ca0c1ec7: a compile that writes no shard (a parse error) gets back the shard set aside, even when a reindex
@@ -307,4 +310,20 @@ fn test_a_unit_without_a_sidecar_of_this_compile_may_own_any_buffer() {
     let out = build_session_index_with(&failing_test, &root, &root.join("target/ridx/sessions/1-1"), &buffers).unwrap();
     assert!(out.report.checked.contains(&new), "{:?}", out.report);
     assert!(out.report.unchecked.contains(&new) && out.report.untold.contains(&new), "the failed unit may own new.rs: {:?}", out.report);
+}
+
+/// prod-code, m=20181: a test file the edit adds, which Cargo would build as an integration test, waited for
+/// diagnostics no unit gave: it is compiled from an integration test of its package, with its library bound.
+#[test]
+fn test_a_new_integration_test_is_compiled_as_its_target() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let it = UnitSpec { own: Some(&["a/tests/it.rs"]), flags: &["--test"], ..A_IT };
+    published(&root, &[UnitSpec { own: Some(&["a/src/lib.rs"]), ..A }, it], VARIANT);
+    let new = root.join("a/tests/new_it.rs");
+    let out = build_session_index_with(&driver(&root, "d", ""), &root, &root.join("target/ridx/sessions/1-1"), &[(new.clone(), "fn main() {}".into())]).unwrap();
+    let calls = read(out.dir.join(VARIANT).join("calls"));
+    let line = calls.lines().find(|l| l.starts_with("new_it ")).unwrap_or_default();
+    assert!(line.contains(&new.display().to_string()) && line.contains("--test") && line.contains("--extern"), "{calls}");
+    assert!(out.report.checked.contains(&new) && !out.report.unheld.contains(&new), "{:?}", out.report);
 }
