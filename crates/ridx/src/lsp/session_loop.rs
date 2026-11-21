@@ -40,8 +40,7 @@ pub(crate) fn step(
     touched: &mut Vec<PathBuf>,
 ) -> bool {
     let diags = &flycheck.session;
-    // Whether the check has diagnostics of a file, under the URI it names files by.
-    let has_check = |p: &Path| !flycheck.get_latest_diagnostics(&format!("file://{}", p.display())).is_empty();
+    let has_check = |p: &Path| super::presentation::session_diag::check_has(flycheck, p);
     let mut replaced = false;
     // A workspace folder removed takes its session with it (review of 2e1fcfb1: its diagnostics outlived it).
     // A root that had an index and has none any more was removed, also while its first session builds; a root with no
@@ -83,7 +82,8 @@ pub(crate) fn step(
                 ov.advance_compiled_baseline(&b.key, b.text.clone());
             }
         }
-        let texts: Vec<(PathBuf, String)> = built.buffers.iter().map(|b| (b.path.clone(), b.text.clone())).collect();
+        // Only buffers still open: one closed while the build ran is the file as saved again (review of fb2bed09).
+        let texts: Vec<(PathBuf, String)> = built.buffers.iter().filter(|b| ov.get(&b.key).is_some()).map(|b| (b.path.clone(), b.text.clone())).collect();
         touched.extend(diags.replace(&built.root, super::presentation::session_diag::session_files(&built.root, &built.report, &texts), &has_check));
         session.loaded(&built.root, &built.dir, built.stamp);
         replaced = true;

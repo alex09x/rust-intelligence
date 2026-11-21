@@ -87,6 +87,18 @@ impl SessionDiagnostics {
         })
     }
 
+    /// Drops the results of the files `keep` does not keep: a buffer closed is a file as saved, which the check speaks
+    /// for, also while a session of the root's other buffers answers or a build of it is in flight (review of
+    /// fb2bed09). Returns the files whose result changes.
+    pub fn keep_only(&self, keep: &dyn Fn(&Path) -> bool, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
+        let gone: HashSet<PathBuf> = self.roots.lock().unwrap_or_else(|e| e.into_inner()).values().flat_map(|f| f.keys()).filter(|p| !keep(p)).cloned().collect();
+        if gone.is_empty() {
+            return Vec::new();
+        }
+        let drop = gone.clone();
+        self.change(gone, has_check, |roots| roots.values_mut().for_each(|files| files.retain(|p, _| !drop.contains(p))))
+    }
+
     /// The roots with a session's diagnostics.
     pub fn roots(&self) -> Vec<PathBuf> {
         self.roots.lock().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
@@ -120,14 +132,20 @@ impl SessionDiagnostics {
     }
 }
 
+/// Whether the check of the saved files has diagnostics of `file`, under the URI it names files by.
+pub fn check_has(flycheck: &super::flycheck::FlycheckState, file: &Path) -> bool {
+    !flycheck.get_latest_diagnostics(&format!("file://{}", file.display())).is_empty()
+}
+
 /// The buffers of a session of `root`, from the compiler's `report` and the `buffers` compiled (path and text): each
-/// one the compiler checked to the end, with its diagnostics or none, and each one it reported on although it stopped
-/// before the end (a parse error), with what it reported. Diagnostics of other files are left to the check.
+/// one every unit owning it checked to the end, with its diagnostics or none, and each one it reported on although a
+/// unit stopped before the end (a parse error), with what it reported. A buffer owned by a unit whose paths cannot be
+/// told gets nothing (review of fb2bed09); diagnostics of other files are left to the check.
 pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, String)]) -> HashMap<PathBuf, SessionFile> {
-    let buffers: HashMap<PathBuf, &String> = buffers.iter().map(|(p, t)| (ridx_format::canonicalize_best_effort(p), t)).collect();
+    let buffers: HashMap<PathBuf, &String> = buffers.iter().map(|(p, t)| (ridx_format::canonicalize_best_effort(p), t)).filter(|(p, _)| !report.untold.contains(p)).collect();
     let mut files: HashMap<PathBuf, SessionFile> = HashMap::new();
     for (path, text) in &buffers {
-        if report.checked.contains(path) {
+        if report.checked.contains(path) && !report.unchecked.contains(path) {
             files.insert(path.clone(), SessionFile { diagnostics: Vec::new(), text: (*text).clone() });
         }
     }

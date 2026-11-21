@@ -24,6 +24,8 @@ struct UnitSpec<'a> {
     own: Option<&'a [&'a str]>,
     externs: &'a [&'a str],
     extra_env: &'a [(&'a str, &'a str)],
+    /// Compiler arguments recorded besides the usual ones.
+    flags: &'a [&'a str],
 }
 
 /// A published index of the given units, each with its shard (its name in capitals) and sidecar.
@@ -41,6 +43,7 @@ fn published(root: &Path, units: &[UnitSpec], variant_dir: &str) {
             files[root.join(r).display().to_string()] = 1.into();
         }
         let mut args = vec!["rustc".to_string(), "--crate-name".into(), u.name.into(), "--edition=2021".into(), src.display().to_string()];
+        args.extend(u.flags.iter().map(|f| f.to_string()));
         for e in u.externs {
             // `binding=crate` binds a crate under another name, as Cargo does for a renamed dependency.
             // `binding=crate.so`: bound to a dylib, as a proc macro is.
@@ -81,9 +84,9 @@ fn read(p: PathBuf) -> String {
     fs::read_to_string(p).unwrap_or_default()
 }
 
-const A: UnitSpec = UnitSpec { name: "a", package: "a", src: "a/src/lib.rs", also_reads: &[], own: None, externs: &[], extra_env: &[] };
-const A_IT: UnitSpec = UnitSpec { name: "a_it", package: "a", src: "a/tests/it.rs", also_reads: &["a/src/lib.rs"], own: None, externs: &["a"], extra_env: &[] };
-const B: UnitSpec = UnitSpec { name: "b", package: "b", src: "b/src/lib.rs", also_reads: &["a/src/lib.rs"], own: None, externs: &["a"], extra_env: &[] };
+const A: UnitSpec = UnitSpec { name: "a", package: "a", src: "a/src/lib.rs", also_reads: &[], own: None, externs: &[], extra_env: &[], flags: &[] };
+const A_IT: UnitSpec = UnitSpec { name: "a_it", package: "a", src: "a/tests/it.rs", also_reads: &["a/src/lib.rs"], own: None, externs: &["a"], extra_env: &[], flags: &[] };
+const B: UnitSpec = UnitSpec { name: "b", package: "b", src: "b/src/lib.rs", also_reads: &["a/src/lib.rs"], own: None, externs: &["a"], extra_env: &[], flags: &[] };
 
 #[test]
 fn test_a_session_index_compiles_the_buffers_crates_and_leaves_the_published_index() {
@@ -268,4 +271,20 @@ fn test_a_process_left_behind_does_not_hold_the_session() {
     let out = build_session_index_with(&driver(&root, "d", report), &root, &root.join("target/ridx/sessions/1-1"), &[(root.join("a/src/lib.rs"), "x".into())]).unwrap();
     assert!(started.elapsed() < std::time::Duration::from_secs(10), "{:?}", started.elapsed());
     assert_eq!(out.report.messages.len(), 1, "a line that is not UTF-8 costs only itself");
+}
+
+/// Review of fb2bed09: a unit certified a buffer clean that another unit owning it, one that remaps paths, says nothing
+/// of.
+#[test]
+fn test_a_buffer_shared_with_a_unit_whose_paths_cannot_be_told_is_left_to_the_check() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let lib = root.join("a/src/lib.rs");
+    let own_json = format!(",\"own_sources\":[\"{}\"]", lib.display());
+    let env = [("OWN_JSON", own_json.as_str())];
+    let a = UnitSpec { own: Some(&["a/src/lib.rs"]), extra_env: &env, ..A };
+    let a_test = UnitSpec { name: "a_test", own: Some(&["a/src/lib.rs"]), extra_env: &env, flags: &["--test", "--remap-path-prefix=/x=/y"], ..A };
+    published(&root, &[a, a_test], VARIANT);
+    let out = build_session_index_with(&driver(&root, "d", ""), &root, &root.join("target/ridx/sessions/1-1"), &[(lib.clone(), "x".into())]).unwrap();
+    assert!(out.report.checked.contains(&lib) && out.report.untold.contains(&lib), "{:?}", out.report);
 }

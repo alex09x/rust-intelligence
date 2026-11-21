@@ -35,7 +35,7 @@ fn uri(p: &Path) -> String {
 }
 
 fn report(messages: Vec<Value>, checked: &[&Path]) -> CompilerReport {
-    CompilerReport { messages, checked: checked.iter().map(|p| p.to_path_buf()).collect() }
+    CompilerReport { messages, checked: checked.iter().map(|p| p.to_path_buf()).collect(), ..Default::default() }
 }
 
 fn file(diagnostics: Vec<Value>, text: &str) -> SessionFile {
@@ -164,4 +164,31 @@ fn test_a_session_stands_in_for_the_check_of_the_saved_file() {
     flycheck.session.clear(&root, NO_CHECK);
     let got = merge_with_compiler(&uri(&a), &[], &saved, || Some(saved.clone()), &flycheck);
     assert_eq!(got[0]["message"], "of the saved file", "the check answers again once the session ends");
+}
+
+/// Review of fb2bed09: a buffer another unit owning it did not check to the end, or whose paths cannot be told, is not
+/// certified clean by the unit that did.
+#[test]
+fn test_a_buffer_is_certified_only_by_all_its_owners() {
+    let (_d, root) = workspace();
+    let a = root.join("src/a.rs");
+    let buffer = [(a.clone(), "x".to_string())];
+    let mut r = report(Vec::new(), &[&a]);
+    r.unchecked.insert(a.clone());
+    assert!(session_files(&root, &r, &buffer).is_empty(), "an owner stopped first");
+    let mut r = report(vec![message(&a, 1, 1, 2, "E0425", "x")], &[&a]);
+    r.untold.insert(a.clone());
+    assert!(session_files(&root, &r, &buffer).is_empty(), "an owner remaps paths: nothing of the session, even reported");
+}
+
+/// Review of fb2bed09: a buffer closed kept the session's result of its discarded text.
+#[test]
+fn test_a_closed_buffer_goes_back_to_the_check() {
+    let (_d, root) = workspace();
+    let (a, lib) = (root.join("src/a.rs"), root.join("src/lib.rs"));
+    let diags = SessionDiagnostics::default();
+    diags.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), "x")), (lib.clone(), file(Vec::new(), "y"))]), NO_CHECK);
+    assert_eq!(diags.keep_only(&|p| p != a, &|_| true), std::slice::from_ref(&a), "its saved file's errors are back");
+    assert!(diags.of(&a).is_none() && diags.of(&lib).is_some());
+    assert!(diags.keep_only(&|p| p != a, &|_| true).is_empty());
 }

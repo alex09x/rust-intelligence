@@ -23,6 +23,12 @@ pub struct CompilerReport {
     /// The sources (canonical) of the units that ran their analysis to the end: every error and lint in them is in
     /// `messages`. A unit that stopped first (a parse error, a driver that failed) certifies none of its files.
     pub checked: HashSet<PathBuf>,
+    /// The sources of the units that did not run to the end: a unit certifying one of them says nothing of the errors
+    /// the other alone would report.
+    pub unchecked: HashSet<PathBuf>,
+    /// The sources of the units whose diagnostics name files that cannot be told for sure (`paths_untold`): nothing
+    /// of the session is said of them, the check of the saved files is.
+    pub untold: HashSet<PathBuf>,
 }
 
 /// `args` reporting in rustc's JSON, and only its diagnostics: the format and colour the unit was recorded with go.
@@ -51,11 +57,12 @@ pub(super) fn diagnostics_of(stderr: &[u8]) -> Vec<Value> {
         .collect()
 }
 
-/// Whether `args` remap source paths (`--remap-path-prefix`): the files its diagnostics name are then not the files
-/// compiled, and which ones they stand for cannot be told for sure (reviews of 2e1fcfb1 to 710381e0), so a unit
-/// compiled so reports nothing of its own and certifies nothing; its files keep the check of the saved files.
-pub(super) fn remaps_paths(args: &[String]) -> bool {
-    args.iter().any(|a| a == "--remap-path-prefix" || a.starts_with("--remap-path-prefix="))
+/// Whether the files the diagnostics of a compile with `args` name may not be the files compiled: it remaps source paths
+/// (`--remap-path-prefix`), and which files they stand for cannot be told for sure (reviews of 2e1fcfb1 to 710381e0),
+/// or it reads arguments from a file (`@path`) that may (review of fb2bed09). A unit compiled so reports nothing of its
+/// own and certifies nothing; its files keep the check of the saved files.
+pub(super) fn paths_untold(args: &[String]) -> bool {
+    args.iter().skip(1).any(|a| a == "--remap-path-prefix" || a.starts_with("--remap-path-prefix=") || a.starts_with('@'))
 }
 
 #[cfg(test)]
@@ -81,10 +88,12 @@ mod tests {
     }
 
     #[test]
-    fn test_a_remapping_unit_is_told() {
+    fn test_a_unit_whose_paths_cannot_be_told_is() {
         let args = |a: &[&str]| -> Vec<String> { a.iter().map(|s| s.to_string()).collect() };
-        assert!(remaps_paths(&args(&["rustc", "--remap-path-prefix", "/w=/src"])));
-        assert!(remaps_paths(&args(&["rustc", "--remap-path-prefix=/w=/src"])));
-        assert!(!remaps_paths(&args(&["rustc", "--edition=2021"])));
+        assert!(paths_untold(&args(&["rustc", "--remap-path-prefix", "/w=/src"])));
+        assert!(paths_untold(&args(&["rustc", "--remap-path-prefix=/w=/src"])));
+        assert!(paths_untold(&args(&["rustc", "@flags"])), "a response file may remap");
+        assert!(!paths_untold(&args(&["@rustc"])), "the program itself is not an argument");
+        assert!(!paths_untold(&args(&["rustc", "--edition=2021"])));
     }
 }

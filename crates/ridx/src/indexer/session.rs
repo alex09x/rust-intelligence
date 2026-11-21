@@ -16,7 +16,7 @@
 //! session (`SessionOutput::report`).
 
 use super::direct::args::sanitize_compiler_args_for_direct;
-use super::session_report::{diagnostics_of, json_diagnostics, remaps_paths, CompilerReport};
+use super::session_report::{diagnostics_of, json_diagnostics, paths_untold, CompilerReport};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -123,9 +123,19 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             })
             .collect::<Result<Vec<_>, _>>()?;
         for (unit, staged) in wave.iter().zip(running) {
-            let (messages, checked) = staged.finish(unit);
-            report.messages.extend(messages);
-            report.checked.extend(checked.into_iter().flatten().filter(|s| s.starts_with(root)));
+            let out = staged.finish(unit);
+            report.messages.extend(out.messages);
+            // A file is certified only when no unit owning it fails to: one that stopped, or whose paths cannot be told,
+            // says nothing of the errors it alone would report (review of fb2bed09). Owning nothing recorded, it may
+            // own any buffer.
+            let owned = || out.owned.clone().unwrap_or_else(|| sources.clone());
+            match &out.checked {
+                Some(c) => report.checked.extend(c.iter().filter(|s| s.starts_with(root)).cloned()),
+                None => report.unchecked.extend(owned()),
+            }
+            if out.untold {
+                report.untold.extend(owned());
+            }
             if unit.is_lib() {
                 let stem = unit.artifact_stem();
                 if ctx.deps.join(format!("{stem}.rmeta")).is_file() {
@@ -165,7 +175,8 @@ struct Staged {
     /// The file the compiler's standard error goes to, read once it exited: a pipe could fill while nobody reads it, and
     /// a process it started could keep a pipe open long after (review of 2e1fcfb1).
     stderr: PathBuf,
-    /// Whether it remaps source paths: then it reports and certifies nothing (`session_report::remaps_paths`).
+    /// Whether the files its diagnostics name may not be the files compiled: then it reports and certifies nothing
+    /// (`session_report::paths_untold`).
     remaps: bool,
     /// The session's copy of the unit's sidecar, set aside before the compile: a sidecar there afterwards is this
     /// compile's, whatever the precision of file times (review of 46ce96f2); with none, the copy goes back.
@@ -178,7 +189,7 @@ impl Staged {
     /// it wrote; nothing of a unit that remaps source paths. A unit the driver wrote no shard for (the compiler stopped
     /// before analysis, on a parse error) gets back the very shard set aside, not the published path read again, which a
     /// reindex may have replaced meanwhile (review of ca0c1ec7).
-    fn finish(mut self, unit: &super::session_units::Unit) -> (Vec<serde_json::Value>, Option<HashSet<PathBuf>>) {
+    fn finish(mut self, unit: &super::session_units::Unit) -> UnitOutcome {
         let success = self.child.wait().is_ok_and(|s| s.success());
         let messages = if self.remaps { Vec::new() } else { diagnostics_of(&fs::read(&self.stderr).unwrap_or_default()) };
         let _ = fs::remove_file(&self.stderr);
@@ -195,6 +206,8 @@ impl Staged {
                 let _ = fs::rename(aside, &unit.sidecar);
             }
         }
+        // The sources it owns: this compile's sidecar, else the one it had.
+        let owned = super::session_units::sources_recorded(&unit.sidecar).or_else(|| unit.own_sources().cloned());
         match (&self.shard, &self.backup) {
             (Some(shard), Some(backup)) if !shard.is_file() => {
                 let _ = fs::rename(backup, shard);
@@ -206,8 +219,17 @@ impl Staged {
                 super::direct::units::refresh_aliases(&unit.sidecar, &unit.aliases);
             }
         }
-        (messages, checked)
+        UnitOutcome { messages, checked, owned, untold: self.remaps }
     }
+}
+
+/// What one unit's compile says: its diagnostics, the sources it certifies (`None`: it did not run to the end, or its
+/// paths cannot be told), the sources it owns (`None`: not recorded), and whether its paths cannot be told.
+struct UnitOutcome {
+    messages: Vec<serde_json::Value>,
+    checked: Option<HashSet<PathBuf>>,
+    owned: Option<HashSet<PathBuf>>,
+    untold: bool,
 }
 
 /// Starts the compile of `unit` with `args`, its recorded arguments with the externs the session replaces rebound.
@@ -249,7 +271,7 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
             return Err(format!("ridx-driver: {e}"));
         }
     };
-    Ok(Staged { child, shard, backup, stderr, remaps: remaps_paths(&args), sidecar_aside })
+    Ok(Staged { child, shard, backup, stderr, remaps: paths_untold(&args), sidecar_aside })
 }
 
 /// Puts every file of `from` into `to`, never its subdirectories: a shard as a link (they are large and only ever
