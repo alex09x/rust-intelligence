@@ -77,6 +77,18 @@ pub(super) fn self_type_range(tree: &ridx_syntax::SyntaxTree<'_>, start: usize, 
     if tree.child(imp, K::ItemList).is_some_and(|items| start >= tree.range(items).start) {
         return None;
     }
+    // The header begins after the impl's attributes and comments: an anchor on a line of attributes above it is no
+    // anchor of this impl (review of aed1110c: an old anchor of the impl above now on `#[cfg(all())]`). A line that
+    // holds the header's start, indented or after an attribute on it, is one.
+    let header = tree
+        .children(imp)
+        .filter(|&c| tree.kind(c) != K::Attr)
+        .map(|c| tree.range(c).start)
+        .chain(tree.own_tokens(imp).filter(|(_, t)| !t.is_trivia()).map(|(_, t)| t.start as usize))
+        .min()?;
+    if start < header && header > line.end {
+        return None;
+    }
     let ty = tree.children(imp).filter(|&c| !matches!(tree.kind(c), K::GenericParamList | K::WhereClause | K::ItemList | K::Attr | K::Visibility)).last()?;
     let range = tree.range(ty);
     ((tree.kind(ty).is_type() || tree.kind(ty) == K::MacroCall) && !range.is_empty()).then_some(range)
@@ -118,6 +130,15 @@ mod tests {
         let src = "//x\nimpl Other for B {}\n";
         let tree = ridx_syntax::parse(src);
         assert_eq!(self_type_range(&tree, 3, 0..3), None, "the line of the index, not the next one");
+        // Review of aed1110c: a line of attributes above the header is not in it; the header's own line is, indented or
+        // after an attribute on it.
+        let src = "#[cfg(all())]\nimpl Other for B {}\n";
+        assert_eq!(self_type_range(&ridx_syntax::parse(src), 0, 0..13), None);
+        let src = "/// doc\n#[cfg(all())]\n    impl Other for B {}\n";
+        assert_eq!(self_type_range(&ridx_syntax::parse(src), 8, 8..21), None);
+        assert_eq!(self_type_range(&ridx_syntax::parse(src), 22, 22..45).map(|r| &src[r]), Some("B"));
+        let src = "#[cfg(all())] impl Other for B {}\n";
+        assert_eq!(self_type_range(&ridx_syntax::parse(src), 0, 0..33).map(|r| &src[r]), Some("B"));
     }
 
     #[test]
