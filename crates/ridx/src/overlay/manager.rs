@@ -158,6 +158,11 @@ impl OverlayManager {
         }
     }
 
+    /// The text of every open document.
+    pub fn texts(&self) -> impl Iterator<Item = &str> {
+        self.overlays.values().map(|o| o.text.as_str())
+    }
+
     pub fn get(&self, file_path: &str) -> Option<&DocumentOverlay> {
         let key = self.resolve_existing_key(file_path)?;
         self.overlays.get(key)

@@ -84,9 +84,9 @@ pub(crate) fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, 
 /// (review of 5852217f).
 /// A glob import may bring in any name, a primitive's too, from a file not read here (review of 9d489afe: `use
 /// types::*` with `type u32 = String` in types.rs).
-pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>) -> bool {
+pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>, std_only: StdOnly<'_>) -> bool {
     let primitive = |s: &str| PRIMITIVES.contains(&ridx_syntax::sema_fn::norm_ident(s));
-    macro_may_declare(tree, tree.root())
+    macro_may_declare(tree, tree.root(), std_only)
         || tree.descendants(tree.root()).any(|d| {
             (tree.kind(d) == K::Name && primitive(tree.text(d))) || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| t.kind == T::Star || primitive(t.text(tree.src))))
         })
@@ -114,11 +114,83 @@ const STD_STATEMENT_MACROS: &[&str] = &[
     "format",
 ];
 
+/// Whether no macro of a name is known but the standard library's, in the index or in an open document: a bare call in
+/// a file is another file's macro when one is (`println!` defined in main.rs before `mod child;`: review of 651cf0e3).
+pub(crate) type StdOnly<'a> = &'a dyn Fn(&str) -> bool;
+
+/// The [`StdOnly`] of the index `ws` and the open documents of `overlays`.
+pub(crate) fn std_only<'a>(ws: &'a ridx_format::WorkspaceIndex, overlays: &'a crate::overlay::OverlayManager) -> impl Fn(&str) -> bool + 'a {
+    move |n: &str| {
+        let indexed = ws.exact_symbols_by_name(n).iter().filter(|s| s.kind == ridx_format::DefKind::Macro).all(|s| matches!(s.crate_name, "std" | "core" | "alloc"));
+        let typed = overlays.texts().any(|text| {
+            let toks: Vec<_> = ridx_syntax::lex(text).into_iter().filter(|t| !t.is_trivia()).collect();
+            toks.windows(3).any(|w| w[0].text(text) == "macro_rules" && w[1].kind == T::Bang && ridx_syntax::sema_fn::norm_ident(w[2].text(text)) == n)
+        });
+        indexed && !typed
+    }
+}
+
+/// The compiler's own attributes, which expand to no item.
+const BUILTIN_ATTRIBUTES: &[&str] = &[
+    "cfg",
+    "test",
+    "inline",
+    "allow",
+    "warn",
+    "deny",
+    "forbid",
+    "expect",
+    "doc",
+    "must_use",
+    "deprecated",
+    "derive",
+    "repr",
+    "path",
+    "macro_export",
+    "macro_use",
+    "non_exhaustive",
+    "track_caller",
+    "cold",
+    "no_mangle",
+    "export_name",
+    "link_section",
+    "used",
+    "should_panic",
+    "ignore",
+    "automatically_derived",
+    "rustfmt",
+    "clippy",
+    "diagnostic",
+];
+
+/// The derives of the standard library, which implement a trait and declare no name.
+const STD_DERIVES: &[&str] =
+    &["Debug", "Clone", "Copy", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Default", "std", "core", "fmt", "cmp", "hash", "clone", "marker", "default"];
+
+/// Whether an attribute in the file of `tree` may be a macro's, an attribute macro or a derive not the standard
+/// library's, whose expansion may declare any name (`#[maker::make_helper]` emitting `fn fun_name`: review of
+/// 651cf0e3); a `cfg_attr` may apply one.
+pub(crate) fn macro_attribute(tree: &SyntaxTree<'_>) -> bool {
+    tree.descendants(tree.root()).filter(|&d| tree.kind(d) == K::Attr).any(|attr| {
+        let toks: Vec<_> = tree.tokens_of(attr).iter().filter(|t| !t.is_trivia() && !matches!(t.kind, T::Hash | T::Bang | T::LBracket)).collect();
+        let names = |w: &[&ridx_syntax::Token]| {
+            w.iter().filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(tree.src))).collect::<Vec<_>>()
+        };
+        let head = toks.first().filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(tree.src)));
+        match head {
+            Some("derive") => names(&toks[1..]).iter().any(|n| !STD_DERIVES.contains(n)),
+            // A path (`a::b`) is a macro's, but a tool's (`clippy::all`).
+            Some(h) => !BUILTIN_ATTRIBUTES.contains(&h) || (toks.get(1).is_some_and(|t| t.kind == T::Colon) && !matches!(h, "rustfmt" | "clippy" | "diagnostic")),
+            None => true,
+        }
+    })
+}
+
 /// Whether a macro called under `within` in an item's or a statement's place may declare an item or an import there
 /// that the unexpanded tree does not show (`m!();` expanding to `use types::*;` or `const N: i32 = 3;`: review of
 /// 7dca0b11): any in an item's place; in a statement's, any but the standard library's statement macros, unless the
-/// file defines a macro of that name itself.
-pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId) -> bool {
+/// file defines a macro of that name itself or `std_only` knows one elsewhere.
+pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId, std_only: StdOnly<'_>) -> bool {
     // The call's name and whether its path is the name alone (`types::println!` is a user's macro, whatever its last
     // segment: review of 9276edef).
     let name = |mc: NodeId| {
@@ -142,10 +214,11 @@ pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId) -> bool {
         let parent = tree.parent(mc).map(|p| tree.kind(p));
         let item_place = matches!(parent, Some(K::SourceFile | K::ItemList | K::Module)) && name(mc) != Some(("macro_rules", true));
         let statement_place = matches!(parent, Some(K::BlockExpr | K::ExprStmt));
-        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || shadowed(n)))
+        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || shadowed(n) || !std_only(n)))
     });
-    // A raw name's call the parser may not make a node of (`r#declare!();`): any counts.
+    // A raw name's call the parser may not make a node of (`r#declare!();`): any counts, a comparison (`r#type != 0`)
+    // being none.
     let toks: Vec<_> = tree.tokens_of(within).iter().filter(|t| !t.is_trivia()).collect();
-    let raw_call = toks.windows(2).any(|w| w[0].kind == T::RawIdent && w[1].kind == T::Bang);
+    let raw_call = toks.windows(3).any(|w| w[0].kind == T::RawIdent && w[1].kind == T::Bang && matches!(w[2].kind, T::LParen | T::LBracket | T::LBrace));
     by_node || raw_call
 }

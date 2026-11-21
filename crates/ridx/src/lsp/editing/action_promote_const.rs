@@ -49,7 +49,7 @@ fn const_name(name: &str) -> String {
 
 /// The edits promoting the `let` whose name covers byte `offset` of `doc` to a constant of the type written on the
 /// binding, else the one its literal spells, as byte ranges with their new text.
-pub(crate) fn promote_edits(doc: &str, offset: usize) -> Option<Vec<(Range<usize>, String)>> {
+pub(crate) fn promote_edits(doc: &str, offset: usize, std_only: super::assist_locals::StdOnly<'_>) -> Option<Vec<(Range<usize>, String)>> {
     let tree = ridx_syntax::parse(doc);
     let at = |o: usize| Some(tree.covering(o)).filter(|&n| tree.kind(n) == K::Name);
     let name = at(offset).or_else(|| offset.checked_sub(1).and_then(at))?;
@@ -74,7 +74,7 @@ pub(crate) fn promote_edits(doc: &str, offset: usize) -> Option<Vec<(Range<usize
     // The primitive a literal spells is that primitive only while the file names nothing so.
     let ty = match written {
         Some(w) => w,
-        None => literal_type(tree.text(init)).filter(|_| !super::assist_locals::primitive_shadowed(&tree))?.to_string(),
+        None => literal_type(tree.text(init)).filter(|_| !super::assist_locals::primitive_shadowed(&tree, std_only))?.to_string(),
     };
     // A constant's type is an item's: no placeholder, no generic parameter of the function or impl around it (review
     // of 63f24322: `const X: _` and `[T; 0]` in `fn f<T>()`).
@@ -124,13 +124,13 @@ pub(crate) fn promote_edits(doc: &str, offset: usize) -> Option<Vec<(Range<usize
 }
 
 /// The `Promote local to constant` action at the cursor of an empty `range`, with its edit.
-pub fn promote_const_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>) -> Option<Value> {
+pub fn promote_const_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, std_only: super::assist_locals::StdOnly<'_>) -> Option<Value> {
     if range["start"] != range["end"] {
         return None;
     }
     let starts = line_starts_of(doc);
     let offset = utf16_pos_to_byte(doc, &starts, range["start"]["line"].as_u64()? as u32, range["start"]["character"].as_u64()? as u32)?;
-    let edits: Vec<Value> = promote_edits(doc, offset)?
+    let edits: Vec<Value> = promote_edits(doc, offset, std_only)?
         .into_iter()
         .map(|(r, text)| {
             let ((sl, sc), (el, ec)) = (byte_to_utf16_pos(doc, &starts, r.start), byte_to_utf16_pos(doc, &starts, r.end));

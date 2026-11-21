@@ -17,14 +17,14 @@
 //! statements, takes references and writes `-> _` where it cannot name a type; ridx does not offer those yet.
 
 use super::action_parse::{byte_to_utf16_pos, line_starts_of, utf16_pos_to_byte};
-use super::assist_locals::{copy_type, local_of, primitive_shadowed, LetType};
+use super::assist_locals::{copy_type, local_of, primitive_shadowed, LetType, StdOnly};
 use ridx_syntax::{NodeId, SyntaxKind as K, TokenKind as T};
 use serde_json::{json, Value};
 use std::ops::Range;
 
 /// The edits extracting the expression `sel` (byte range) of `doc` into a function: its call in place, and the
 /// function after the item holding it.
-pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> Option<Vec<(Range<usize>, String)>> {
+pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType, std_only: StdOnly<'_>) -> Option<Vec<(Range<usize>, String)>> {
     if sel.start > sel.end || sel.end > doc.len() {
         return None;
     }
@@ -91,7 +91,8 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     // A name beyond ASCII is not compared without its normal form (`café` and `cafe\u{301}` are one name): not
     // extracted (review of 5852217f).
     if tree.descendants(body).any(|d| tree.kind(d) == K::Use)
-        || super::assist_locals::macro_may_declare(&tree, tree.root())
+        || super::assist_locals::macro_may_declare(&tree, tree.root(), std_only)
+        || super::assist_locals::macro_attribute(&tree)
         || tree.tokens_of(expr).iter().any(|t| {
             let name = ridx_syntax::sema_fn::norm_ident(t.text(doc));
             matches!(t.kind, T::Ident | T::RawIdent) && (local_items.contains(&name) || !name.is_ascii())
@@ -101,7 +102,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
     }
     // Nor does a type of the new signature name what the body declares (`type Word = u8` in it).
     let names_local = |ty: &str| ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| local_items.contains(&w) || !w.is_ascii());
-    let primitive_shadowed = primitive_shadowed(&tree);
+    let primitive_shadowed = primitive_shadowed(&tree, std_only);
     // The value's type: the `let` it initializes, or the function's for its tail.
     let parent = tree.parent(expr)?;
     let ret = if tree.kind(parent) == K::LetStmt {
@@ -193,13 +194,13 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType) -> 
 }
 
 /// The `Extract into function` action for a non-empty `range`, with its edit.
-pub fn extract_fn_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, let_type: LetType) -> Option<Value> {
+pub fn extract_fn_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, let_type: LetType, std_only: StdOnly<'_>) -> Option<Value> {
     if range["start"] == range["end"] {
         return None;
     }
     let starts = line_starts_of(doc);
     let pos = |p: &Value| utf16_pos_to_byte(doc, &starts, p["line"].as_u64()? as u32, p["character"].as_u64()? as u32);
-    let edits: Vec<Value> = extract_edits(doc, pos(&range["start"])?..pos(&range["end"])?, let_type)?
+    let edits: Vec<Value> = extract_edits(doc, pos(&range["start"])?..pos(&range["end"])?, let_type, std_only)?
         .into_iter()
         .map(|(r, text)| {
             let ((sl, sc), (el, ec)) = (byte_to_utf16_pos(doc, &starts, r.start), byte_to_utf16_pos(doc, &starts, r.end));

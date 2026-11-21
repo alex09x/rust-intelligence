@@ -21,7 +21,7 @@
 //!   parentheses too, not in a loop, a closure or an `async` block the `let` is outside of.
 
 use super::action_parse::{byte_to_utf16_pos, line_starts_of, utf16_pos_to_byte};
-use super::assist_locals::{copy_type, local_of, primitive_shadowed, PRIMITIVES};
+use super::assist_locals::{copy_type, local_of, primitive_shadowed, StdOnly, PRIMITIVES};
 use ridx_syntax::{NodeId, SyntaxKind as K, SyntaxTree, TokenKind as T};
 use serde_json::{json, Value};
 
@@ -106,7 +106,7 @@ fn plain_let(tree: &SyntaxTree<'_>, offset: usize) -> Option<(NodeId, NodeId, No
 
 /// The edit of `Inline variable` at byte `offset` of `doc`: the deletion of the `let` and the initializer at the use,
 /// as byte ranges with their new text, in order.
-pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Range<usize>, String)>> {
+pub(crate) fn inline_edits(doc: &str, offset: usize, std_only: StdOnly<'_>) -> Option<Vec<(std::ops::Range<usize>, String)>> {
     let tree = ridx_syntax::parse(doc);
     let (stmt, name, init) = plain_let(&tree, offset)?;
     let block = tree.parent(stmt)?;
@@ -128,7 +128,7 @@ pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Ra
     // (review of b854363f).
     if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1)
         || tree.descendants(f).any(|d| tree.kind(d) == K::Use)
-        || super::assist_locals::macro_may_declare(&tree, f)
+        || super::assist_locals::macro_may_declare(&tree, f, std_only)
     {
         return None;
     }
@@ -176,7 +176,7 @@ pub(crate) fn inline_edits(doc: &str, offset: usize) -> Option<Vec<(std::ops::Ra
             return None;
         }
     }
-    let shadowed = primitive_shadowed(&tree);
+    let shadowed = primitive_shadowed(&tree, std_only);
     // Only a type written on the local: one inferred from the index may be stale (review of 03933e37).
     let local = |n: &str, at: usize| local_of(&tree, f, n, at, &|_| None).ok().flatten();
     pure(&tree, init, &local, shadowed)?;
@@ -209,13 +209,13 @@ fn statement_span(doc: &str, range: std::ops::Range<usize>) -> std::ops::Range<u
 }
 
 /// The `Inline variable` action at the cursor of an empty `range`, with its edit.
-pub fn inline_variable_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>) -> Option<Value> {
+pub fn inline_variable_action(doc: &str, uri: &str, range: &Value, doc_version: Option<i32>, std_only: StdOnly<'_>) -> Option<Value> {
     if range["start"] != range["end"] {
         return None;
     }
     let starts = line_starts_of(doc);
     let offset = utf16_pos_to_byte(doc, &starts, range["start"]["line"].as_u64()? as u32, range["start"]["character"].as_u64()? as u32)?;
-    let edits: Vec<Value> = inline_edits(doc, offset)?
+    let edits: Vec<Value> = inline_edits(doc, offset, std_only)?
         .into_iter()
         .map(|(r, text)| {
             let ((sl, sc), (el, ec)) = (byte_to_utf16_pos(doc, &starts, r.start), byte_to_utf16_pos(doc, &starts, r.end));

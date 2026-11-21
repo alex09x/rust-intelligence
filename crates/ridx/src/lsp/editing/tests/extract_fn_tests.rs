@@ -15,12 +15,17 @@ use crate::lsp::editing::tests::code_action_assists_tests::assert_rustc_compiles
 
 /// `doc` with the expression between the two `$0` extracted, the type of an unannotated `let` given by `ty`.
 fn extracted(doc: &str, ty: Option<&str>) -> Option<String> {
+    extracted_with(doc, ty, &|_| true)
+}
+
+/// [`extracted`], with `std_only` telling which macro names are the standard library's alone.
+fn extracted_with(doc: &str, ty: Option<&str>, std_only: StdOnly<'_>) -> Option<String> {
     let start = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let end = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let mut out = doc.clone();
-    let mut edits = extract_edits(&doc, start..end, &|_| ty.map(str::to_string))?;
+    let mut edits = extract_edits(&doc, start..end, &|_| ty.map(str::to_string), std_only)?;
     edits.sort_by_key(|(r, _)| std::cmp::Reverse(r.start));
     for (r, text) in edits {
         out.replace_range(r, &text);
@@ -122,7 +127,7 @@ fn test_an_expression_is_not_extracted_where_the_result_would_not_compile() {
 fn test_a_reversed_range_is_declined() {
     let doc = "pub fn f(a: u32) -> u32 {\n    a + 1\n}\n";
     let range = json!({ "start": { "line": 1, "character": 9 }, "end": { "line": 1, "character": 4 } });
-    assert_eq!(extract_fn_action(doc, "file:///w/src/lib.rs", &range, None, &|_| None), None);
+    assert_eq!(extract_fn_action(doc, "file:///w/src/lib.rs", &range, None, &|_| None, &|_| true), None);
 }
 
 /// Review of 7dca0b11: a macro called where an item or a statement goes may declare an import or an item the tree does
@@ -152,4 +157,26 @@ fn test_macro_identity_and_the_helper_destination() {
     ] {
         assert_eq!(extracted(doc, Some("i32")), None, "{doc}");
     }
+}
+
+/// Review of 651cf0e3: a bare standard name another file defines (`println!` in main.rs before `mod child;`) is that
+/// file's macro; an attribute macro or a derive not the standard library's may declare the helper's name; a raw name
+/// compared (`r#type != 0`) is no call.
+#[test]
+fn test_inherited_macros_attribute_macros_and_raw_comparisons() {
+    let doc = "const N: i32 = 100;\npub fn f() -> i32 {\n    println!();\n    let r = $0N + 1$0;\n    r\n}\n";
+    assert_eq!(extracted_with(doc, Some("i32"), &|n| n != "println"), None);
+    assert!(extracted(doc, Some("i32")).is_some(), "the standard println! declares nothing");
+    for doc in [
+        "#[maker::make_helper]\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n",
+        "#[make_helper]\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n",
+        "#[derive(Debug, maker::Helper)]\npub struct S;\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n",
+        "#[cfg_attr(test, maker::make_helper)]\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n",
+    ] {
+        assert_eq!(extracted(doc, Some("i32")), None, "{doc}");
+    }
+    let doc = "#[derive(Debug, Clone, Copy)]\npub struct S;\n#[allow(dead_code)]\n#[rustfmt::skip]\npub fn f(r#type: u8) -> bool {\n    let x: u8 = $0r#type + 1$0;\n    r#type != 0 && x > 0\n}\n";
+    let got = extracted(doc, Some("u8")).unwrap();
+    assert!(got.contains("fn fun_name(r#type: u8) -> u8"), "{got}");
+    assert_rustc_compiles(&got, "Extract into function");
 }

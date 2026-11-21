@@ -18,7 +18,7 @@ fn inlined(doc: &str) -> Option<String> {
     let offset = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let mut out = doc.clone();
-    for (r, text) in inline_edits(&doc, offset)?.into_iter().rev() {
+    for (r, text) in inline_edits(&doc, offset, &|_| true)?.into_iter().rev() {
         out.replace_range(r, &text);
     }
     Some(out)
@@ -108,7 +108,7 @@ fn test_a_binding_is_not_inlined_where_the_result_would_differ() {
 fn test_the_action_carries_its_edit() {
     let doc = "pub fn f() -> u32 {\n    let a = 2u32;\n    a\n}\n";
     let range = json!({ "start": { "line": 1, "character": 8 }, "end": { "line": 1, "character": 8 } });
-    let action = inline_variable_action(doc, "file:///w/src/lib.rs", &range, Some(3)).unwrap();
+    let action = inline_variable_action(doc, "file:///w/src/lib.rs", &range, Some(3), &|_| true).unwrap();
     assert_eq!(action["title"], "Inline variable");
     let edits = &action["edit"]["documentChanges"][0]["edits"];
     assert_eq!(edits[0]["range"], json!({ "start": { "line": 1, "character": 0 }, "end": { "line": 2, "character": 0 } }));

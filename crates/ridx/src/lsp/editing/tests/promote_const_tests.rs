@@ -18,7 +18,7 @@ fn promoted(doc: &str, _: Option<&str>) -> Option<String> {
     let offset = doc.find("$0").unwrap();
     let doc = doc.replacen("$0", "", 1);
     let mut out = doc.clone();
-    for (r, text) in promote_edits(&doc, offset)?.into_iter().rev() {
+    for (r, text) in promote_edits(&doc, offset, &|_| true)?.into_iter().rev() {
         out.replace_range(r, &text);
     }
     Some(out)
