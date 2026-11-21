@@ -357,6 +357,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/content" | "workspace/textDocumentContent" => Ok(handle_text_document_content(&msg, ov)),
         "textDocument/prepareRename" => handle_prepare_rename(&msg, mr.doc_ws(&msg), ov, conv),
         "textDocument/rename" => handle_rename(&msg, mr.doc_ws(&msg), ov, conv),
+        "ridx/safeDelete" => Ok(crate::lsp::editing::safe_delete::handle_safe_delete(&msg, mr.doc_ws(&msg), ov, conv)),
         "textDocument/linkedEditingRange" => Ok(handle_linked_editing_range(&msg, ov, conv)),
         "textDocument/formatting" => Ok(handle_formatting(&msg, ov)),
         "textDocument/rangeFormatting" => Ok(handle_range_formatting(&msg, ov)),

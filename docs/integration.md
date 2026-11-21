@@ -149,7 +149,7 @@ their versions, in `initialize` → `capabilities.experimental.ridx`: `{methods:
 | `ridx/resolveSymbol` | `{path: "crate::module::Type::method", kind?}` → `Location[]` | planned |
 | `ridx/typeAt` | `{textDocument, range}` → `{type, ...}` for an arbitrary expression range | planned |
 | `ridx/symbols` | `{query, scope: "workspace" \| "dependencies" \| "all", kinds?, limit}` → `SymbolInformation[]` | planned |
-| `ridx/safeDelete` | `{textDocument, position}` → `{edit}` or `{refused, remainingUses: Location[]}` | planned |
+| `ridx/safeDelete` | `{textDocument, position}` (on the name of an item: fn, struct, enum, union, trait, const, static, type alias, `macro_rules!`, inline module) → `{edit}` deleting it with its doc comments and its lines, or `{refused: true, reason, remainingUses: Location[]}`: `used` (every reference the index has, impls and `use`s included), `traitItem` (an item of a trait or a trait impl), `moduleFile` (`mod m;`, whose file would stay), `notAnItem`, `unknownSymbol` (not in the index: its uses are not known). Declared as `methods["ridx/safeDelete"]: 1` | next release |
 | `ridx/expandMacro` | `{textDocument, position}` → `{name, expansion}` | planned |
 | `ridx/syntaxTree` | `{textDocument, range?}` → syntax tree | planned |
 | `ridx/structuralReplace` | `{pattern, replacement?, scope}` → matches or `WorkspaceEdit` | planned |

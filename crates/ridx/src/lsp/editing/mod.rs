@@ -95,6 +95,7 @@ pub mod rename;
 pub mod rename_alias_mod;
 pub mod rename_special;
 pub mod rename_unindexed;
+pub mod safe_delete;
 
 #[cfg(test)]
 mod tests;
