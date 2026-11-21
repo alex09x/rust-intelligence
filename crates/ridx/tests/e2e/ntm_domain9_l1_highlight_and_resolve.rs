@@ -248,7 +248,7 @@ fn test_l1_workspace_symbol_resolve_crate_root_container_name() {
 }
 
 #[test]
-fn test_l1_workspace_symbol_resolve_bare_path_empty_container_name() {
+fn test_l1_workspace_symbol_resolve_bare_path_is_held_by_its_crate() {
     let ws = SyntheticWorkspaceFixture::new().unwrap();
 
     let mut writer = IndexWriter::new("pkg_bare", "0.1.0");
@@ -280,7 +280,8 @@ fn test_l1_workspace_symbol_resolve_bare_path_empty_container_name() {
 
     let res = handle_workspace_symbol_resolve(&req, std::iter::once(&index), &mut conv);
     assert_eq!(res["name"], "BareItem");
-    assert_eq!(res["containerName"], "");
+    // An item of a crate root is held by its crate, as rust-analyzer gives it (prod-code, m=20226).
+    assert_eq!(res["containerName"], "pkg_bare");
 }
 
 #[test]

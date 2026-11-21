@@ -53,7 +53,7 @@ pub fn handle_workspace_symbol<'a>(msg: &Value, workspaces: impl Iterator<Item =
                         "end": { "line": s.span.end_line().saturating_sub(1), "character": end_char }
                     }
                 },
-                "containerName": s.path.rsplit("::").nth(1).unwrap_or("")
+                "containerName": container_name(s.path, s.crate_name, crate_root)
             }));
 
             if results.len() >= WORKSPACE_SYMBOL_LIMIT {
@@ -83,6 +83,16 @@ fn workspace_symbol_kind(kind: ridx_format::DefKind, crate_root: bool) -> u32 {
     }
 }
 
+/// What holds the symbol at `path` (`a::b::Item`: `b`), as rust-analyzer names it: the module, type or trait it is
+/// declared in, and for an item of a crate root its crate (prod-code, m=20226: `Config` of crate `smoke` had none).
+fn container_name<'s>(path: &'s str, crate_name: &'s str, crate_root: bool) -> &'s str {
+    match path.rsplit_once("::") {
+        Some((holder, _)) => holder.rsplit("::").next().unwrap_or(holder),
+        None if crate_root => "",
+        None => crate_name,
+    }
+}
+
 pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {
     let mut item = msg.get("params").cloned().unwrap_or(Value::Null);
     if item.is_null() {
@@ -107,7 +117,8 @@ pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterato
                         "end": { "line": s.span.end_line().saturating_sub(1), "character": end_char }
                     }
                 });
-                item["containerName"] = json!(s.path.rsplit("::").nth(1).unwrap_or(""));
+                let crate_root = s.kind == ridx_format::DefKind::Mod && s.path == s.name;
+                item["containerName"] = json!(container_name(s.path, s.crate_name, crate_root));
                 break;
             }
         }

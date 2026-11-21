@@ -59,9 +59,94 @@ pub(super) fn is_head_position(line: &str, col: usize) -> bool {
     depth == 0
 }
 
+/// The 0-based character range of the self type of the impl header that starts at character `col` of `line`: after
+/// `for` (`impl Tr for S<T>`: `S<T>`), else after the impl's generics (`impl<T> S<T>`), up to `where`, `{` or the end
+/// of the line. It is where rust-analyzer places an implementation (prod-code, m=20226: ridx gave the `impl`). `None`
+/// when the header does not start there or its self type is not on that line.
+pub(super) fn self_type_range(line: &str, col: usize) -> Option<(usize, usize)> {
+    let chars: Vec<char> = line.chars().collect();
+    let rest: String = chars.get(col..)?.iter().collect();
+    if !is_impl_header(&rest) {
+        return None;
+    }
+    // The character just after the `impl` keyword.
+    let at = rest.find("impl")? + 4;
+    let mut i = col + rest[..at].chars().count();
+    let skip_ws = |mut i: usize| {
+        while chars.get(i).is_some_and(|c| c.is_whitespace()) {
+            i += 1;
+        }
+        i
+    };
+    i = skip_ws(i);
+    if chars.get(i) == Some(&'<') {
+        let mut depth = 0i32;
+        while let Some(&c) = chars.get(i) {
+            match c {
+                '<' => depth += 1,
+                '>' if i > 0 && chars[i - 1] != '-' => depth -= 1,
+                _ => {}
+            }
+            i += 1;
+            if depth == 0 {
+                break;
+            }
+        }
+        i = skip_ws(i);
+    }
+    let word_at = |j: usize, w: &str| {
+        let wc: Vec<char> = w.chars().collect();
+        chars.get(j..j + wc.len()) == Some(&wc[..])
+            && (j == 0 || !chars[j - 1].is_alphanumeric() && chars[j - 1] != '_')
+            && chars.get(j + wc.len()).is_none_or(|c| !c.is_alphanumeric() && *c != '_')
+    };
+    // The head's end (`where`, `{`) and a `for` in it, both at depth 0.
+    let (mut depth, mut start, mut end) = (0i32, i, chars.len());
+    let mut j = i;
+    while j < chars.len() {
+        match chars[j] {
+            '<' | '(' | '[' => depth += 1,
+            '>' if chars[j - 1] != '-' => depth -= 1,
+            ')' | ']' => depth -= 1,
+            '{' if depth == 0 => {
+                end = j;
+                break;
+            }
+            _ if depth == 0 && word_at(j, "where") => {
+                end = j;
+                break;
+            }
+            _ if depth == 0 && word_at(j, "for") && chars.get(j + 3) != Some(&'<') => start = skip_ws(j + 3),
+            _ => {}
+        }
+        j += 1;
+    }
+    while end > start && chars[end - 1].is_whitespace() {
+        end -= 1;
+    }
+    (end > start).then_some((start, end))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{is_head_position, is_impl_header};
+    use super::{is_head_position, is_impl_header, self_type_range};
+
+    /// prod-code, m=20226: rust-analyzer places an implementation at the impl's self type.
+    #[test]
+    fn the_self_type_of_an_impl_header_is_found() {
+        let ty = |line: &str| self_type_range(line, 0).map(|(s, e)| line.chars().skip(s).take(e - s).collect::<String>());
+        assert_eq!(ty("impl Shape for Circle {").as_deref(), Some("Circle"));
+        assert_eq!(ty("impl<T: Clone> Tr<T> for Wrapper<T> where T: Copy {").as_deref(), Some("Wrapper<T>"));
+        assert_eq!(ty("impl Config {").as_deref(), Some("Config"));
+        assert_eq!(ty("impl<T> Vec<T> {").as_deref(), Some("Vec<T>"));
+        assert_eq!(ty("unsafe impl Send for S {}").as_deref(), Some("S"));
+        assert_eq!(ty("impl Fn() -> u8 for F {}").as_deref(), Some("F"));
+        assert_eq!(ty("impl<T> From<T> for Box<dyn Fn(T) -> T>").as_deref(), Some("Box<dyn Fn(T) -> T>"));
+        assert_eq!(ty("impl<'a> Tr for &'a S {").as_deref(), Some("&'a S"));
+        assert_eq!(ty("fn f(x: impl Tr) {}"), None);
+        let line = "    impl Shape for Circle {";
+        assert_eq!(self_type_range(line, 4), Some((19, 25)));
+    }
 
     #[test]
     fn impl_headers_are_found() {

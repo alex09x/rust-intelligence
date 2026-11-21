@@ -52,20 +52,21 @@ pub struct Engine;
     let res = handle_implementation(&req, Some(&index), &overlay_mgr, &mut conv);
     let items = res.as_array().expect("impl list");
 
+    // Each at its self type, as rust-analyzer places an implementation (prod-code, m=20226).
     assert_eq!(items.len(), 3, "Must find inherent and both trait impls");
     assert_eq!(items[0]["uri"], uri);
     assert_eq!(items[0]["range"]["start"]["line"], 1);
-    assert_eq!(items[0]["range"]["start"]["character"], 0);
+    assert_eq!(items[0]["range"]["start"]["character"], 5);
     assert_eq!(items[0]["range"]["end"]["character"], 11);
 
     assert_eq!(items[1]["uri"], uri);
     assert_eq!(items[1]["range"]["start"]["line"], 2);
-    assert_eq!(items[1]["range"]["start"]["character"], 0);
+    assert_eq!(items[1]["range"]["start"]["character"], 17);
     assert_eq!(items[1]["range"]["end"]["character"], 23);
 
     assert_eq!(items[2]["uri"], uri);
     assert_eq!(items[2]["range"]["start"]["line"], 3);
-    assert_eq!(items[2]["range"]["start"]["character"], 0);
+    assert_eq!(items[2]["range"]["start"]["character"], 17);
     assert_eq!(items[2]["range"]["end"]["character"], 23);
 }
 
@@ -115,12 +116,12 @@ fn test_l1_implementation_two_separate_files_same_crate() {
     assert_eq!(items.len(), 2, "Must find implementations in both files");
     assert_eq!(items[0]["uri"], console_uri);
     assert_eq!(items[0]["range"]["start"]["line"], 0);
-    assert_eq!(items[0]["range"]["start"]["character"], 0);
+    assert_eq!(items[0]["range"]["start"]["character"], 16);
     assert_eq!(items[0]["range"]["end"]["character"], 29);
 
     assert_eq!(items[1]["uri"], file_uri);
     assert_eq!(items[1]["range"]["start"]["line"], 0);
-    assert_eq!(items[1]["range"]["start"]["character"], 0);
+    assert_eq!(items[1]["range"]["start"]["character"], 16);
     assert_eq!(items[1]["range"]["end"]["character"], 26);
 }
 
@@ -144,11 +145,11 @@ fn test_l1_implementation_cursor_on_impl_header_returns_self_impl() {
     let res = handle_implementation(&req, Some(&index), &overlay_mgr, &mut conv);
     let items = res.as_array().expect("impl list");
 
-    // Current RIDX behavior, pinned: returns the impl block definition itself
+    // The impl itself, placed at its self type `Task` as rust-analyzer places an implementation (prod-code, m=20226)
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["uri"], uri);
     assert_eq!(items[0]["range"]["start"]["line"], 2);
-    assert_eq!(items[0]["range"]["start"]["character"], 0);
+    assert_eq!(items[0]["range"]["start"]["character"], 16);
     assert_eq!(items[0]["range"]["end"]["character"], 20);
 }
 
@@ -175,7 +176,7 @@ fn test_l1_implementation_generic_impl_block() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["uri"], uri);
     assert_eq!(items[0]["range"]["start"]["line"], 2);
-    assert_eq!(items[0]["range"]["start"]["character"], 0);
+    assert_eq!(items[0]["range"]["start"]["character"], 25);
     assert_eq!(items[0]["range"]["end"]["character"], 37);
 }
 
@@ -203,6 +204,6 @@ fn test_l1_implementation_utf16_with_emoji_prefix() {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["uri"], uri);
     assert_eq!(items[0]["range"]["start"]["line"], 1);
-    assert_eq!(items[0]["range"]["start"]["character"], 11);
+    assert_eq!(items[0]["range"]["start"]["character"], 27);
     assert_eq!(items[0]["range"]["end"]["character"], 29);
 }

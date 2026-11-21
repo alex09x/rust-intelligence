@@ -28,6 +28,8 @@ fn make_pos_req(uri: &str, line: u32, col: u32) -> Value {
     })
 }
 
+/// `loc` covers `start_col..end_col` of `line`: an impl's self type, where rust-analyzer places an implementation
+/// (prod-code, m=20226).
 fn assert_range(loc: &Value, line: u32, start_col: u32, end_col: u32) {
     assert_eq!(loc["range"]["start"]["line"], line);
     assert_eq!(loc["range"]["start"]["character"], start_col);
@@ -65,10 +67,10 @@ fn test_l1_implementation_cross_crate_two_shards() {
     let items = res.as_array().expect("impl list");
 
     let item_traits = items.iter().find(|it| it["uri"] == traits_uri).expect("traits impl");
-    assert_range(item_traits, 1, 0, 28);
+    assert_range(item_traits, 1, 17, 28);
 
     let item_consumer = items.iter().find(|it| it["uri"] == consumer_uri).expect("consumer impl");
-    assert_range(item_consumer, 1, 0, 29);
+    assert_range(item_consumer, 1, 17, 29);
 }
 
 #[test]
@@ -106,7 +108,7 @@ fn test_l1_implementation_cursor_on_trait_method_returns_empty() {
     let items_trait = res_trait.as_array().expect("impl list");
     assert_eq!(items_trait.len(), 1, "Cursor on trait definition must find impl in shard");
     assert_eq!(items_trait[0]["uri"], uri);
-    assert_range(&items_trait[0], 3, 0, 24);
+    assert_range(&items_trait[0], 3, 17, 24);
 }
 
 #[test]
@@ -131,7 +133,7 @@ fn test_l1_implementation_generic_impl_indexed_ref() {
 
     assert_eq!(items.len(), 1, "Returns generic impl for T from indexed ref");
     assert_eq!(items[0]["uri"], uri);
-    assert_range(&items[0], 1, 0, 20);
+    assert_range(&items[0], 1, 19, 20);
 }
 
 #[test]
@@ -156,7 +158,7 @@ fn test_l1_implementation_blanket_impl_indexed_ref() {
 
     assert_eq!(items.len(), 1, "Returns blanket impl for &T from indexed ref");
     assert_eq!(items[0]["uri"], uri);
-    assert_range(&items[0], 1, 0, 21);
+    assert_range(&items[0], 1, 19, 21);
 }
 
 #[test]
@@ -214,8 +216,8 @@ pub struct Engine;
 
     assert_eq!(items.len(), 2, "Must find both implementations");
     assert_eq!(items[0]["uri"], uri);
-    assert_range(&items[0], 1, 9, 31);
+    assert_range(&items[0], 1, 25, 31);
 
     assert_eq!(items[1]["uri"], uri);
-    assert_range(&items[1], 2, 9, 31);
+    assert_range(&items[1], 2, 25, 31);
 }

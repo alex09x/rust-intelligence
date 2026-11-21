@@ -115,6 +115,10 @@ pub fn path_to_uri(file: &str) -> String {
         file.to_string()
     } else if let Ok(canon) = Path::new(file).canonicalize() {
         canon.to_string_lossy().to_string()
+    } else if let (true, Some(src)) = (file.starts_with("library/"), crate::lsp::navigation::type_definition_parse::sysroot_rust_src()) {
+        // A standard library file, stored relative by the sysroot shards: the toolchain's `rust-src` holds it, as
+        // rust-analyzer names it (prod-code, m=20226: `file:///library/alloc/src/string.rs` led nowhere).
+        src.join(file).to_string_lossy().to_string()
     } else {
         format!("/{}", file)
     };
@@ -283,6 +287,15 @@ pub fn send_work_done_progress<W: Write>(writer: &mut W, token: &Value, kind: &s
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// prod-code, m=20226: a standard library file is named by its path in the toolchain's `rust-src`.
+    #[test]
+    fn test_a_standard_library_file_is_named_in_rust_src() {
+        let Some(src) = crate::lsp::navigation::type_definition_parse::sysroot_rust_src() else { return };
+        let uri = path_to_uri("library/alloc/src/string.rs");
+        assert_eq!(uri, format!("file://{}", percent_encode_path(&src.join("library/alloc/src/string.rs").to_string_lossy())));
+        assert!(Path::new(&uri_to_path(&uri)).is_file(), "{uri}");
+    }
 
     #[test]
     fn test_lsp_kinds() {

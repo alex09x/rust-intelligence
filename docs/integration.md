@@ -111,7 +111,7 @@ to report.
 | What | Status |
 |---|---|
 | `textDocument/codeAction` with `kind` and title, `codeAction/resolve` | available |
-| A stable id on every action in `data.id`, using rust-analyzer's assist id where the assist is the same (`extract_function`, `inline_local_variable`, ...) | **planned** (next after unsaved text) |
+| A stable id on every action in `data.id`, rust-analyzer's assist id where the assist is the same, with no index (`extract_variable`, `add_explicit_type`, ...) | next release |
 | `ridx/assists` / `ridx/applyAssist` by id | **planned**, same release as the ids |
 
 The first ids, in this order: `extract_function`, `extract_variable`, `inline_local_variable`,
@@ -119,7 +119,14 @@ The first ids, in this order: `extract_function`, `extract_variable`, `inline_lo
 `move_module_to_file`, `extract_module`, `auto_import`, `qualify_path`. An id, once published, keeps its
 meaning in every later version.
 
-The list of assists with their ids will be kept here when the ids land. An assist a tool needs and ridx
+The ids given now: `add_explicit_type`, `add_explicit_enum_discriminant`, `add_hash`, `add_impl_default_members`,
+`auto_import`, `convert_named_struct_to_tuple_struct`, `convert_nested_function_to_closure`,
+`convert_tuple_struct_to_named_struct`, `extract_constant`, `extract_static`, `extract_variable`,
+`generate_default_from_new`, `generate_documentation_template`, `generate_fn_type_alias` (both forms, as
+rust-analyzer), `generate_impl`, `generate_new`, `generate_single_field_struct_from`, `generate_trait_impl`,
+`inline_into_callers`, `inline_macro`, `inline_type_alias_uses`, `make_raw_string`, `make_usual_string`,
+`remove_hash`, `replace_qualified_name_with_use`; ridx's own: `organize_imports`, `prefix_with_underscore`,
+`remove_unnecessary_mut`. An action is never asked for by its place in the list. An assist a tool needs and ridx
 lacks is reported on the [issue tracker](https://github.com/alex09x/rust-intelligence/issues) and
 implemented in order of need.
 

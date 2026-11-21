@@ -75,6 +75,7 @@ mod action_struct_conv_value_use;
 mod action_suggest_name;
 pub mod actions;
 pub mod apply_registry;
+mod assist_ids;
 pub mod atomic_write;
 pub mod commands;
 pub mod detached_rename;

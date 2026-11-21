@@ -251,3 +251,14 @@ fn test_workspace_symbols_generic_fn_excludes_typaram() {
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+/// prod-code, m=20226: `Config` of crate `smoke` had no container; rust-analyzer gives the crate, and prod-code prints
+/// `smoke::Config` from it.
+#[test]
+fn test_a_crate_root_item_is_held_by_its_crate() {
+    use crate::lsp::symbols::container_name;
+    assert_eq!(container_name("Config", "smoke", false), "smoke");
+    assert_eq!(container_name("Config::new", "smoke", false), "Config");
+    assert_eq!(container_name("a::b::Item", "smoke", false), "b");
+    assert_eq!(container_name("smoke", "smoke", true), "", "a crate root has none");
+}

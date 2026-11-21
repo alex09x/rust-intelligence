@@ -151,6 +151,8 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
             }
         }
     }
+    // After the edits were deferred: an action given `data` here for its id keeps its edit.
+    super::assist_ids::set_ids(&mut actions);
 
     Ok(json!(actions))
 }
