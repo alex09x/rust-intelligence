@@ -32,8 +32,8 @@ pub fn handle_diagnostic_with_flycheck(msg: &Value, overlay_mgr: &OverlayManager
     let syntax_res = handle_document_diagnostic_text(&live);
     let h_items = syntax_res["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
     let merged = match open {
-        Some(_) => super::compiler_merge::merge_with_compiler(uri, h_items, &live, || super::reconcile::saved_text(overlay_mgr, &file), fc),
-        None => super::compiler_merge::merge_with_compiler(uri, h_items, &live, || Some(live.clone()), fc),
+        Some(_) => super::compiler_merge::merge_with_compiler(uri, h_items, &live, || super::reconcile::saved_text(overlay_mgr, &file), fc, overlay_mgr),
+        None => super::compiler_merge::merge_with_compiler(uri, h_items, &live, || Some(live.clone()), fc, overlay_mgr),
     };
     json!({ "kind": "full", "items": merged })
 }

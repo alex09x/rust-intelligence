@@ -76,6 +76,8 @@ pub struct SessionIndexer {
     roots: Arc<Mutex<HashMap<PathBuf, RootState>>>,
     built: Arc<Mutex<Vec<SessionBuilt>>>,
     count: Arc<Mutex<u64>>,
+    /// The roots with an index at the last `roots_removed`.
+    known: Mutex<Vec<PathBuf>>,
 }
 
 impl SessionIndexer {
@@ -202,11 +204,21 @@ impl SessionIndexer {
         true
     }
 
-    /// Forgets every root whose session index answers but that `keep` no longer has (a workspace folder removed): its
-    /// directory goes, and a build of it in flight is dropped when it ends (review of 2e1fcfb1). Returns those roots.
+    /// The roots of `live` (the roots with an index now) were the last call's too; returns those of the last call `live`
+    /// no longer has: removed.
+    pub fn roots_removed(&self, live: &[PathBuf]) -> Vec<PathBuf> {
+        let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+        let removed = known.iter().filter(|k| !live.contains(k)).cloned().collect();
+        *known = live.to_vec();
+        removed
+    }
+
+    /// Forgets every root `keep` does not keep (a workspace folder removed), a build of it in flight or done included:
+    /// its directory goes, and a build of it is dropped when it ends (reviews of 2e1fcfb1 and 46ce96f2). Returns those
+    /// roots.
     pub fn forget_unless(&self, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
         let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-        let gone: Vec<PathBuf> = roots.iter().filter(|(r, st)| st.current.is_some() && !keep(r)).map(|(r, _)| r.clone()).collect();
+        let gone: Vec<PathBuf> = roots.keys().filter(|r| !keep(r)).cloned().collect();
         for root in &gone {
             if let Some((dir, _)) = roots.remove(root).and_then(|st| st.current) {
                 let _ = std::fs::remove_dir_all(dir);
@@ -285,9 +297,34 @@ mod tests {
         let s = SessionIndexer::default();
         s.loaded(&root, &session, None);
         s.note_change(&other);
-        assert!(s.forget_unless(|r| r == root).is_empty() && session.exists(), "kept");
-        assert_eq!(s.forget_unless(|_| false), vec![root.clone()], "only a root whose session answers");
+        assert!(s.roots_removed(std::slice::from_ref(&root)).is_empty(), "first look");
+        assert!(s.roots_removed(std::slice::from_ref(&root)).is_empty(), "nothing gone");
+        let removed = s.roots_removed(&[]);
+        assert_eq!(removed, vec![root.clone()], "a root with an index no more; one never indexed is not removed");
+        assert_eq!(s.forget_unless(|r| !removed.iter().any(|g| g == r)), vec![root.clone()]);
         assert!(!session.exists() && s.state_of(&root) == (false, false) && s.state_of(&other).0);
+    }
+
+    /// Review of 46ce96f2: a root removed while its first session built (none answering yet) kept that build.
+    #[test]
+    fn test_a_root_removed_during_its_first_build_drops_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("w");
+        let s = SessionIndexer::default();
+        s.note_change(&root);
+        let old = s.roots.lock().unwrap()[&root].id;
+        s.forget_unless(|_| false);
+        s.note_change(&root);
+        s.built.lock().unwrap().push(SessionBuilt {
+            root: root.clone(),
+            dir: dir.path().join("gone"),
+            buffers: Vec::new(),
+            stamp: None,
+            report: Default::default(),
+            epoch: 0,
+            id: old,
+        });
+        assert!(s.take_built().is_empty());
     }
 
     /// Review of 68375e6e: a build of a root forgotten and noted again (its epoch back at 0) was taken.

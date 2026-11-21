@@ -123,7 +123,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             })
             .collect::<Result<Vec<_>, _>>()?;
         for (unit, staged) in wave.iter().zip(running) {
-            let (messages, checked) = staged.finish(unit);
+            let (messages, checked) = staged.finish(unit, &sources);
             report.messages.extend(messages);
             report.checked.extend(checked.into_iter().flatten().filter(|s| s.starts_with(root)));
             if unit.is_lib() {
@@ -167,8 +167,9 @@ struct Staged {
     stderr: PathBuf,
     /// Its `--remap-path-prefix`es, to name the files of its diagnostics as on disk again.
     remaps: Vec<(PathBuf, PathBuf)>,
-    /// When the compile started: the sidecar written since is this compile's.
-    spawned: std::time::SystemTime,
+    /// The session's copy of the unit's sidecar, set aside before the compile: a sidecar there afterwards is this
+    /// compile's, whatever the precision of file times (review of 46ce96f2); with none, the copy goes back.
+    sidecar_aside: Option<PathBuf>,
 }
 
 impl Staged {
@@ -177,16 +178,29 @@ impl Staged {
     /// it wrote; none when a file its diagnostics name could not be told for sure (an ambiguous remap). A unit the
     /// driver wrote no shard for (the compiler stopped before analysis, on a parse error) gets back the very shard set
     /// aside, not the published path read again, which a reindex may have replaced meanwhile (review of ca0c1ec7).
-    fn finish(mut self, unit: &super::session_units::Unit) -> (Vec<serde_json::Value>, Option<HashSet<PathBuf>>) {
+    fn finish(mut self, unit: &super::session_units::Unit, buffers: &HashSet<PathBuf>) -> (Vec<serde_json::Value>, Option<HashSet<PathBuf>>) {
         let success = self.child.wait().is_ok_and(|s| s.success());
         let mut messages = diagnostics_of(&fs::read(&self.stderr).unwrap_or_default());
         let _ = fs::remove_file(&self.stderr);
-        let resolved = unmap(&mut messages, &self.remaps);
         let ran = match &self.shard {
             Some(shard) => shard.is_file(),
             None => success,
         };
-        let checked = (ran && resolved).then(|| unit.sources_written_since(self.spawned)).flatten();
+        let written = unit.sidecar.is_file();
+        // The sources the unit read, which a remapped file name is told among: the buffers, and what its sidecar (this
+        // compile's, else the one set aside) records.
+        let recorded = if written { Some(unit.sidecar.as_path()) } else { self.sidecar_aside.as_deref() };
+        let mut known = recorded.map(super::session_units::sources_read).unwrap_or_default();
+        known.extend(buffers.iter().cloned());
+        let resolved = unmap(&mut messages, &self.remaps, &known);
+        let checked = (ran && resolved && written).then(|| super::session_units::sources_recorded(&unit.sidecar)).flatten();
+        if let Some(aside) = &self.sidecar_aside {
+            if written {
+                let _ = fs::remove_file(aside);
+            } else {
+                let _ = fs::rename(aside, &unit.sidecar);
+            }
+        }
         match (&self.shard, &self.backup) {
             (Some(shard), Some(backup)) if !shard.is_file() => {
                 let _ = fs::rename(backup, shard);
@@ -230,9 +244,18 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
     if let Some(ld) = super::cargo::compute_sysroot_ld_path() {
         cmd.env("LD_LIBRARY_PATH", &ld).env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
     }
-    let spawned = std::time::SystemTime::now();
-    let child = cmd.spawn().map_err(|e| format!("ridx-driver: {e}"))?;
-    Ok(Staged { child, shard, backup, stderr, remaps: remaps(&args), spawned })
+    let aside = unit.sidecar.with_extension("json.published");
+    let sidecar_aside = fs::rename(&unit.sidecar, &aside).is_ok().then_some(aside);
+    let child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            if let Some(aside) = &sidecar_aside {
+                let _ = fs::rename(aside, &unit.sidecar);
+            }
+            return Err(format!("ridx-driver: {e}"));
+        }
+    };
+    Ok(Staged { child, shard, backup, stderr, remaps: remaps(&args), sidecar_aside })
 }
 
 /// Puts every file of `from` into `to`, never its subdirectories: a shard as a link (they are large and only ever

@@ -32,14 +32,19 @@ fn own_sources_of(sidecar: &serde_json::Value) -> Option<HashSet<PathBuf>> {
     sidecar["own_sources"].as_array().map(|a| a.iter().filter_map(|s| s.as_str()).map(|s| canonical(Path::new(s))).collect())
 }
 
-impl Unit {
-    /// The sources its sidecar records now, if written at `since` or later: what the driver's compile of it then
-    /// found, its module graph of the text compiled, not the one of the index it was taken from (review of 68375e6e).
-    pub(super) fn sources_written_since(&self, since: std::time::SystemTime) -> Option<HashSet<PathBuf>> {
-        let fresh = fs::metadata(&self.sidecar).and_then(|m| m.modified()).is_ok_and(|t| t >= since);
-        fresh.then(|| fs::read(&self.sidecar).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())).flatten().as_ref().and_then(own_sources_of)
-    }
+/// The sources the sidecar at `path` records, if it does.
+pub(super) fn sources_recorded(path: &Path) -> Option<HashSet<PathBuf>> {
+    fs::read(path).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()).as_ref().and_then(own_sources_of)
+}
 
+/// Every source the sidecar at `path` says its unit read (canonical): its own sources and the files it hashed.
+pub(super) fn sources_read(path: &Path) -> HashSet<PathBuf> {
+    let Some(j) = fs::read(path).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { return HashSet::new() };
+    let hashed = j["file_hashes"].as_object().into_iter().flatten().map(|(f, _)| canonical(Path::new(f)));
+    own_sources_of(&j).unwrap_or_default().into_iter().chain(hashed).collect()
+}
+
+impl Unit {
     /// A library unit, whose metadata other units read (not a test harness, a binary or a build script).
     pub(super) fn is_lib(&self) -> bool {
         !self.args.iter().any(|a| a == "--test") && crate_types(&self.args).iter().all(|t| matches!(t.as_str(), "lib" | "rlib" | "dylib" | "proc-macro"))

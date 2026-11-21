@@ -123,6 +123,8 @@ fn test_the_same_diagnostics_on_another_text_are_sent_again() {
     assert_eq!(diags.replace(&root, HashMap::from([(a.clone(), file(vec![err], "z\na\nb\n", 2))]), NO_CHECK), std::slice::from_ref(&a));
     assert_eq!(diags.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), "q\n", 3))]), NO_CHECK), std::slice::from_ref(&a));
     assert!(diags.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), "r\n", 4))]), NO_CHECK).is_empty(), "nothing on either text");
+    // Review of 46ce96f2: a clean result now of another text matters when the check has diagnostics of the file.
+    assert_eq!(diags.replace(&root, HashMap::from([(a.clone(), file(Vec::new(), "s\n", 5))]), &|_| true), std::slice::from_ref(&a));
 }
 
 /// Review of 68375e6e: the URI of a publication cleared was used again for the file's next one.
@@ -150,55 +152,56 @@ fn test_a_session_stands_in_for_the_check_of_the_saved_file() {
     let r = report(vec![message(&a, 2, 5, 8, "E0308", "mismatched types")], &[&a]);
     flycheck.session.replace(&root, session_files(&root, &r, &[(a.clone(), compiled.clone())]), NO_CHECK);
     let editor = json!({ "range": { "start": { "line": 1, "character": 4 }, "end": { "line": 1, "character": 7 } }, "code": "E0308", "source": "ridx", "message": "heuristic" });
+    let ov = edited(&a, &compiled);
 
     set_client_moves_rustc(false);
-    let got = merge_with_compiler(&uri(&a), std::slice::from_ref(&editor), &compiled, || Some(saved.clone()), &flycheck);
+    let got = merge_with_compiler(&uri(&a), std::slice::from_ref(&editor), &compiled, || Some(saved.clone()), &flycheck, &ov);
     assert_eq!(got.len(), 1, "the session's error, the editor's same one shadowed, the saved file's gone: {got:?}");
     assert_eq!((got[0]["source"].as_str(), got[0]["range"]["start"]["line"].as_u64()), (Some("rustc"), Some(1)));
 
     let live = format!("// note\n{compiled}");
-    let got = merge_with_compiler(&uri(&a), &[], &live, || Some(saved.clone()), &flycheck);
+    let got = merge_with_compiler(&uri(&a), &[], &live, || Some(saved.clone()), &flycheck, &ov);
     assert_eq!(got[0]["range"]["start"]["line"], 2, "moved by a line typed above since: {got:?}");
 
     set_client_moves_rustc(true);
-    let got = merge_with_compiler(&uri(&a), &[], &compiled, || Some(saved.clone()), &flycheck);
+    let got = merge_with_compiler(&uri(&a), &[], &compiled, || Some(saved.clone()), &flycheck, &ov);
     set_client_moves_rustc(false);
     assert_eq!((got[0]["source"].as_str(), got[0]["range"]["start"]["line"].as_u64()), (Some("ridx"), Some(1)), "Zed must not move them: {got:?}");
 
     flycheck.session.clear(&root, NO_CHECK);
-    let got = merge_with_compiler(&uri(&a), &[], &saved, || Some(saved.clone()), &flycheck);
+    let got = merge_with_compiler(&uri(&a), &[], &saved, || Some(saved.clone()), &flycheck, &ov);
     assert_eq!(got[0]["message"], "of the saved file", "the check answers again once the session ends");
 }
 
-/// Reviews of 2e1fcfb1 and 68375e6e: the result that applies is the one of the text the buffer holds, whatever the
-/// start times say; of two of that text, the newer.
-#[test]
-fn test_the_result_of_the_text_the_buffer_holds_applies() {
-    let (_d, root) = workspace();
-    let a = root.join("src/a.rs");
-    let saved = std::fs::read_to_string(&a).unwrap();
-    let old = "pub fn value() -> u32 { 2 }\n";
-    let flycheck = FlycheckState::new();
-    let e0061 = json!({ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 3 } }, "code": "E0061", "source": "rustc", "message": "check" });
-    let session_err = message(&a, 1, 1, 4, "E0308", "session");
-    let merge = |live: &str| merge_with_compiler(&uri(&a), &[], live, || Some(saved.clone()), &flycheck);
-    let set_check = |text: &str, at: u64| {
-        flycheck.set_latest_diagnostics_with_baseline(&uri(&a), vec![e0061.clone()], Some(text.to_string()));
-        flycheck.set_checked_at(&uri(&a), at, Some(text));
-    };
-    let set_session = |diagnostics: Vec<Value>, text: &str, at: u64| {
-        let parsed: Vec<Value> = diagnostics.iter().filter_map(|m| parse_compiler_message_at(m, &root)).map(|(_, d)| d).collect();
-        flycheck.session.replace(&root, HashMap::from([(a.clone(), file(parsed, text, at))]), NO_CHECK);
-    };
+/// An overlay manager with `file` open and edited to `text`, not saved.
+fn edited(file: &Path, text: &str) -> crate::overlay::OverlayManager {
+    let mut ov = crate::overlay::OverlayManager::new();
+    let path = file.to_string_lossy();
+    ov.open_with_provenance(&uri(file), &path, 1, std::fs::read_to_string(file).unwrap(), true);
+    ov.apply_content_changes(&path, 2, &[json!({ "text": text })]);
+    ov
+}
 
-    set_session(Vec::new(), old, 200);
-    set_check(&saved, 100);
-    assert_eq!(merge(&saved)[0]["message"], "check", "a later session of another text does not hide the check of this one");
-    set_session(vec![session_err], &saved, 100);
-    set_check(old, 200);
-    assert_eq!(merge(&saved)[0]["message"].as_str().map(|m| m.starts_with("session")), Some(true), "a later check of another text does not hide the session of this one");
-    set_check(&saved, 200);
-    assert_eq!(merge(&saved)[0]["message"], "check", "both of this text: the newer");
-    set_check(&saved, 50);
-    assert_eq!(merge(&saved)[0]["message"].as_str().map(|m| m.starts_with("session")), Some(true));
+/// Review of 46ce96f2: a check of the saved files, later than the session and of the very text of the file it reports
+/// on, still compiled the saved text of a sibling the buffer changes; while a buffer is unsaved the session applies,
+/// once none is the check does.
+#[test]
+fn test_the_session_applies_while_the_workspace_has_unsaved_buffers() {
+    let (_d, root) = workspace();
+    let (a, lib) = (root.join("src/a.rs"), root.join("src/lib.rs"));
+    let lib_text = std::fs::read_to_string(&lib).unwrap();
+    let flycheck = FlycheckState::new();
+    let e0061 =
+        json!({ "range": { "start": { "line": 1, "character": 13 }, "end": { "line": 1, "character": 21 } }, "code": "E0061", "source": "rustc", "message": "of the saved a.rs" });
+    flycheck.set_latest_diagnostics_with_baseline(&uri(&lib), vec![e0061], Some(lib_text.clone()));
+    flycheck.session.replace(&root, HashMap::from([(lib.clone(), file(Vec::new(), &lib_text, 1))]), NO_CHECK);
+    let mut ov = edited(&a, "pub fn value(x: u8) -> u32 { x as u32 }\n");
+    let merge = |ov: &crate::overlay::OverlayManager| merge_with_compiler(&uri(&lib), &[], &lib_text, || Some(lib_text.clone()), &flycheck, ov);
+    assert!(merge(&ov).is_empty(), "the session compiled the buffer of a.rs");
+    assert!(!flycheck.session.note_unsaved(&root, unsaved_in(&ov, &root)), "first look");
+    ov.save_document(&a.to_string_lossy());
+    assert!(!unsaved_in(&ov, &root));
+    assert_eq!(merge(&ov).len(), 1, "saved: the check of the saved files applies");
+    assert!(flycheck.session.note_unsaved(&root, false), "which changes what lib.rs is sent");
+    assert_eq!(flycheck.session.files_of(&root, &|p| p == lib), std::slice::from_ref(&lib));
 }

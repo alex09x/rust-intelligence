@@ -36,21 +36,20 @@ pub fn set_client_moves_rustc(moves: bool) {
 /// The diagnostics of `uri`: the compiler's from `flycheck` and the editor's own (`heuristic`, in the coordinates
 /// of `live`), an editor diagnostic dropped where the compiler reports the same code over the same range. `saved`
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.
-pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: impl FnOnce() -> Option<String>, flycheck: &FlycheckState) -> Vec<Value> {
+pub fn merge_with_compiler(
+    uri: &str,
+    heuristic: &[Value],
+    live: &str,
+    saved: impl FnOnce() -> Option<String>,
+    flycheck: &FlycheckState,
+    ov: &crate::overlay::OverlayManager,
+) -> Vec<Value> {
     let file = ridx_format::canonicalize_best_effort(std::path::Path::new(&crate::lsp::protocol::uri_to_path(uri)));
-    if let Some(session) = flycheck.session.of(&file) {
-        // The result of the text the buffer holds applies, the session's or the check's; of both, the newer; of
-        // neither, the session's, which compiled the buffer (reviews of 2e1fcfb1 and 68375e6e: a start time alone, or
-        // the saved text being the buffer's, does not say what a check read).
-        let session_applies = session.text == live;
-        let check = flycheck.checked_at(uri);
-        let check_applies = check.is_some_and(|(_, text)| text == Some(ridx_format::normalized_source_hash(live.as_bytes())));
-        let use_session = match (session_applies, check_applies) {
-            (_, false) => true,
-            (false, true) => false,
-            (true, true) => check.is_none_or(|(started, _)| session.started_us >= started),
-        };
-        if use_session {
+    if let Some((root, session)) = flycheck.session.of_with_root(&file) {
+        // While the workspace has unsaved buffers, a check of the files as saved compiled other inputs than the buffers
+        // (a sibling's text the file depends on, review of 46ce96f2): the session's result, of the buffers, applies.
+        // With none, the check of the saved files does.
+        if super::session_diag::unsaved_in(ov, &root) {
             return merge_session(uri, heuristic, live, &session);
         }
     }

@@ -44,10 +44,19 @@ pub(crate) fn step(
     let has_check = |p: &Path| !flycheck.get_latest_diagnostics(&format!("file://{}", p.display())).is_empty();
     let mut replaced = false;
     // A workspace folder removed takes its session with it (review of 2e1fcfb1: its diagnostics outlived it).
+    // A root that had an index and has none any more was removed, also while its first session builds; a root with no
+    // index yet (being indexed) is kept (review of 46ce96f2).
     let live: Vec<PathBuf> = mr.roots().map(Path::to_path_buf).collect();
-    session.forget_unless(|r| live.iter().any(|l| l == r));
+    let removed = session.roots_removed(&live);
+    session.forget_unless(|r| !removed.iter().any(|g| g == r));
     for root in diags.roots().into_iter().filter(|r| !live.contains(r)) {
         touched.extend(diags.clear(&root, &has_check));
+    }
+    // Saving the last unsaved buffer of a root, or the first edit after, changes which result applies to its files.
+    for root in diags.roots() {
+        if diags.note_unsaved(&root, super::presentation::session_diag::unsaved_in(ov, &root)) {
+            touched.extend(diags.files_of(&root, &has_check));
+        }
     }
     for root in finished.iter().cloned().chain(session.published_changed()) {
         // The session built next, on the new published index, reports again.
