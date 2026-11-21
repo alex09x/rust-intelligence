@@ -20,6 +20,26 @@ use std::sync::{Arc, Mutex, OnceLock};
 /// (a workspace's elsewhere, `package.workspace = "../control"`: review of b854363f), and the answer.
 type Answers = HashMap<PathBuf, (String, Vec<(PathBuf, String)>, Option<Arc<Value>>)>;
 
+/// The strings of a TOML text, basic (`"a"`) and literal (`'a'`) ones (review of 8c5b025d: `members = ['../m/*']`);
+/// an escaped quote ends no basic string.
+fn quoted(text: &str) -> Vec<String> {
+    let (mut out, mut chars) = (Vec::new(), text.chars());
+    while let Some(c) = chars.next() {
+        if c == '"' || c == '\'' {
+            let mut s = String::new();
+            while let Some(d) = chars.next() {
+                match d {
+                    '\\' if c == '"' => s.extend(chars.next()),
+                    d if d == c => break,
+                    d => s.push(d),
+                }
+            }
+            out.push(s);
+        }
+    }
+    out
+}
+
 /// What Cargo reads of a package: its manifest's text, and the entries of the directories it discovers targets in
 /// (`src/main.rs` added makes another target with no manifest changed: review of 8b38fdc2).
 fn fingerprint(manifest: &Path) -> String {
@@ -42,10 +62,14 @@ fn fingerprint(manifest: &Path) -> String {
         for (sub, depth) in [(".", 0), ("src", 2), ("examples", 1), ("tests", 1), ("benches", 1)] {
             listing(&dir.join(sub), depth, &mut names);
         }
-        for glob in out.split('"').skip(1).step_by(2).filter(|s| s.contains(['*', '?', '['])).map(str::to_string).collect::<Vec<_>>() {
+        for glob in quoted(&out).into_iter().filter(|s| s.contains(['*', '?', '['])) {
             let fixed = glob.split(['*', '?', '[']).next().unwrap_or("");
             let base = fixed.rsplit_once('/').map_or("", |(b, _)| b);
-            listing(&dir.join(if base.is_empty() { "." } else { base }), 3, &mut names);
+            // Every level the pattern walks below its fixed base, one for each later component
+            // (`../groups/*/members/*`: review of 8c5b025d); `**` any number of them.
+            let below = glob[base.len()..].split('/').filter(|c| !c.is_empty()).count() as u32;
+            let depth = if glob.contains("**") { 16 } else { below };
+            listing(&dir.join(if base.is_empty() { "." } else { base }), depth, &mut names);
         }
         names.sort();
         out.push('\u{0}');
@@ -76,13 +100,15 @@ fn run(manifest: &Path) -> Option<Value> {
 /// `cargo metadata` of the nearest manifest above `file`, cached until the fingerprint of a manifest above the file, or
 /// of one the answer rests on, changes; `None` with no manifest, or where Cargo gives no answer (not kept: a member
 /// missing now may be there on the next request, review of c5dee55b).
-fn metadata(file: &Path) -> Option<Arc<Value>> {
+fn metadata(file: &Path, cached: bool) -> Option<Arc<Value>> {
     static CACHE: OnceLock<Mutex<Answers>> = OnceLock::new();
     let manifests: Vec<PathBuf> = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).filter(|m| m.is_file()).collect();
     let nearest = manifests.first()?.clone();
     let key: String = manifests.iter().map(|m| fingerprint(m)).collect::<Vec<_>>().join("\u{1}");
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((k, read, v)) = cache.lock().ok()?.get(&nearest) {
+    // A destructive answer (`layout`) never comes from the cache: what Cargo discovers cannot all be fingerprinted
+    // (review of 8c5b025d).
+    if let Some((k, read, v)) = cache.lock().ok()?.get(&nearest).filter(|_| cached) {
         if *k == key && read.iter().all(|(m, fp)| fingerprint(m) == *fp) {
             return v.clone();
         }
@@ -100,7 +126,9 @@ fn metadata(file: &Path) -> Option<Arc<Value>> {
     // cache (review of f6ee3aa1).
     let after = read_manifests(&v);
     let key_after: String = manifests.iter().map(|m| fingerprint(m)).collect::<Vec<_>>().join("\u{1}");
-    if after != read || key_after != key {
+    // A nearer manifest made during the lookup owns the file now (review of 8c5b025d).
+    let manifests_after: Vec<PathBuf> = file.ancestors().skip(1).map(|d| d.join("Cargo.toml")).filter(|m| m.is_file()).collect();
+    if after != read || key_after != key || manifests_after != manifests {
         return None;
     }
     cache.lock().ok()?.insert(nearest, (key, read, Some(v.clone())));
@@ -110,7 +138,7 @@ fn metadata(file: &Path) -> Option<Arc<Value>> {
 /// The root files of the targets of the package holding `file` (`src/lib.rs`, `src/main.rs`, ..): where crate-level
 /// declarations such as `extern crate` are.
 pub(crate) fn target_roots(file: &Path) -> Option<Vec<PathBuf>> {
-    let j = metadata(file)?;
+    let j = metadata(file, true)?;
     let file = ridx_format::canonicalize_best_effort(file);
     let package = j["packages"]
         .as_array()?
@@ -126,7 +154,7 @@ pub(crate) fn target_roots(file: &Path) -> Option<Vec<PathBuf>> {
 
 /// The edition of the package holding `file`: of the package whose directory holds it most closely.
 pub(crate) fn package_edition(file: &Path) -> Option<String> {
-    let j = metadata(file)?;
+    let j = metadata(file, true)?;
     let file = ridx_format::canonicalize_best_effort(file);
     j["packages"]
         .as_array()?
@@ -156,7 +184,7 @@ pub(crate) fn layout(file: &Path) -> Result<Option<Layout>, ()> {
     if !file.ancestors().skip(1).any(|d| d.join("Cargo.toml").is_file()) {
         return Ok(None);
     }
-    let j = metadata(file).ok_or(())?;
+    let j = metadata(file, false).ok_or(())?;
     let canon = |s: &str| ridx_format::canonicalize_best_effort(Path::new(s));
     let packages = j["packages"].as_array().ok_or(())?;
     Ok(Some(Layout {
@@ -170,3 +198,7 @@ pub(crate) fn layout(file: &Path) -> Result<Option<Layout>, ()> {
             .collect(),
     }))
 }
+
+#[cfg(test)]
+#[path = "tests/cargo_meta_tests.rs"]
+mod tests;
