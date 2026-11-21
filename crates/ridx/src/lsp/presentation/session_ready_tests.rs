@@ -194,3 +194,23 @@ fn test_an_outcome_alone_changing_the_answer_is_published() {
     assert_eq!(merge_with_compiler(&uri(&a), &[], &text, || Some(text.clone()), &flycheck)[0]["code"], "unlinked-file");
     assert_eq!(flycheck.session.clear(&inner, NO_CHECK), vec![a.clone()], "the enclosing root's error answers again");
 }
+
+/// Review of c6b62a99: a new test file a library also includes as a module was certified clean by the library's
+/// compile, though its own test target was not compiled.
+#[test]
+fn test_a_module_compile_does_not_stand_for_an_unresolved_test_target() {
+    let (_d, root) = workspace();
+    let a = root.join("src/a.rs");
+    let text = std::fs::read_to_string(&a).unwrap();
+    let texts = [(a.clone(), text.clone())];
+    let mut r = report(Vec::new(), &[&a]);
+    r.unresolved.insert(a.clone());
+    let files = session_files(&root, &r, &texts);
+    assert!(files.contains_key(&a), "the module's compile checked it");
+    let flycheck = FlycheckState::new();
+    flycheck.session.set_outcomes(&root, session_outcomes(&r, &texts, &files));
+    let mut ov = crate::overlay::OverlayManager::new();
+    let path = a.to_string_lossy().to_string();
+    ov.open_with_provenance(&uri(&a), &path, 1, text, true);
+    assert_eq!(readiness(&flycheck, &ov, &path, &root), Readiness::Unavailable(1, "targetUnresolved"));
+}

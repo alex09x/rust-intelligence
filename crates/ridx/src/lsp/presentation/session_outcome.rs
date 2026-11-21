@@ -44,10 +44,12 @@ pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], 
         .iter()
         .map(|(p, text)| {
             let path = ridx_format::canonicalize_best_effort(p);
-            let unavailable = if files.contains_key(&path) {
-                None
-            } else if report.unresolved.contains(&path) {
+            // A test target not compiled stays unknown whatever another unit including the file as a module reported:
+            // that compile says nothing of the target's (review of c6b62a99).
+            let unavailable = if report.unresolved.contains(&path) {
                 Some("targetUnresolved")
+            } else if files.contains_key(&path) {
+                None
             } else if report.unheld.contains(&path) {
                 Some(UNLINKED)
             } else if report.untold.contains(&path) {

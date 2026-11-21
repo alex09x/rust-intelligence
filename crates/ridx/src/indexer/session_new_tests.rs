@@ -135,12 +135,19 @@ pub(in crate::indexer) fn new_test_units(deps: &Path, root: &Path, files: &[Path
 /// Whether the manifest of the package at `pkg` leaves its tests to Cargo's default discovery: it says nothing of
 /// `autotests` and declares no test target (`[[test]]`, or `test = [...]`), comments aside. Any such setting may
 /// change which file is a test and how it is built, which only Cargo's own reading of TOML tells; a manifest that
-/// cannot be read says nothing of them.
+/// cannot be read says nothing of them. Read conservatively, as TOML spells keys: quoted (`[["test"]]`, review of
+/// c6b62a99) or not, and any key with an escape (`"\u0074est"`) is taken for one that may be `test`; a line that
+/// only looks like one (in a multi-line string) declines too.
 fn plain_autotests(pkg: &Path) -> bool {
     let text = fs::read_to_string(pkg.join("Cargo.toml")).unwrap_or_default();
     !text.lines().any(|line| {
-        let code: String = line.split('#').next().unwrap_or("").chars().filter(|c| !c.is_whitespace()).collect();
-        code.contains("autotests") || code.starts_with("[[test]]") || code.starts_with("test=[")
+        let code: String = line.split('#').next().unwrap_or("").chars().filter(|c| !c.is_whitespace() && !matches!(c, '"' | '\'')).collect();
+        // The key a line sets or the table it opens.
+        let key = match code.strip_prefix('[') {
+            Some(header) => header.trim_start_matches('[').split(']').next().unwrap_or(""),
+            None => code.split('=').next().unwrap_or(""),
+        };
+        code.contains("autotests") || key.contains('\\') || key == "test" || key.starts_with("test.")
     })
 }
 
@@ -232,5 +239,29 @@ mod tests {
             "the package's edition, not the template's: {:?}",
             units[0].args
         );
+    }
+
+    /// Review of c6b62a99: `[["test"]]` is Cargo's `[[test]]`, and was read as no test declared.
+    #[test]
+    fn test_a_test_declared_in_any_spelling_is_seen() {
+        let dir = tempfile::tempdir().unwrap();
+        let plain = |extra: &str| {
+            fs::write(dir.path().join("Cargo.toml"), format!("{PKG}{extra}")).unwrap();
+            plain_autotests(dir.path())
+        };
+        assert!(plain(""));
+        assert!(plain("\n[dependencies]\ntestx = \"1\"\n# [[test]]\n"), "a key that only starts so, a comment");
+        for declared in [
+            "\n[[test]]\nname = \"t\"\n",
+            "\n[[\"test\"]]\nname = \"t\"\nharness = false\n",
+            "\n[[ 'test' ]]\nname = \"t\"\n",
+            "\n\"test\" = [{ name = \"t\" }]\n",
+            "\ntest = [{ name = \"t\" }]\n",
+            "\n[[\"\\u0074est\"]]\nname = \"t\"\n",
+            "autotests = false\n",
+            "\"autotests\" = false\n",
+        ] {
+            assert!(!plain(declared), "{declared}");
+        }
     }
 }
