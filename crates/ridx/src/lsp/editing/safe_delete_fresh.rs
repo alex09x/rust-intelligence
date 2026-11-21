@@ -15,7 +15,6 @@
 
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
-use ridx_syntax::TokenKind as T;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -85,8 +84,10 @@ fn text_of(path: &Path, ov: &OverlayManager) -> Option<String> {
 fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<PathBuf>> {
     let mut out = HashSet::new();
     for (idx, reader) in ws.readers().iter().enumerate() {
-        // Every file the compiler read for the shard, not only those holding a definition or a reference.
-        for (f, hash) in reader.embedded_file_hashes() {
+        // Every file the compiler read for the shard, not only those holding a definition or a reference: the loaded
+        // source snapshot's too, a non-Rust `include!` input among them (review of c5dee55b).
+        let files: Vec<(String, u64)> = reader.embedded_file_hashes().into_iter().chain(ws.reader_source_snapshot(idx).map(|(f, h)| (f.to_string(), h))).collect();
+        for (f, hash) in files {
             // A file of the workspace whose place is not known is not known to be as it was read.
             let path = match resolve(ws, idx, &f) {
                 Some(p) => p,
@@ -109,56 +110,91 @@ fn indexed_sources(ws: &WorkspaceIndex, ov: &OverlayManager) -> Option<HashSet<P
     Some(out)
 }
 
-/// The directories whose Rust files may belong to the indexed crates: for each source, the root of its Cargo workspace
-/// as Cargo resolves it (not a repository or a workspace it is nested in), or its own directory with no manifest above
-/// it; none inside another. With them, the workspaces' build directories, which hold no source (Cargo's, and ridx's
-/// copies of the texts it indexed). `None` where Cargo gives no answer for a manifest.
-fn roots(indexed: &HashSet<PathBuf>) -> Option<(Vec<PathBuf>, Vec<PathBuf>)> {
-    let (mut roots, mut builds): (Vec<PathBuf>, Vec<PathBuf>) = (Vec::new(), Vec::new());
-    let mut by_dir: std::collections::HashMap<PathBuf, PathBuf> = std::collections::HashMap::new();
-    for f in indexed {
-        let Some(dir) = f.parent() else { continue };
-        let root = match by_dir.get(dir) {
-            Some(r) => r.clone(),
-            None => {
-                let r = match super::cargo_meta::workspace_root(f).ok()? {
-                    Some((root, build)) => {
-                        builds.push(build);
-                        root
-                    }
-                    None => dir.to_path_buf(),
-                };
-                by_dir.insert(dir.to_path_buf(), r.clone());
-                r
-            }
-        };
-        if !roots.iter().any(|r| root.starts_with(r)) {
-            roots.retain(|r| !r.starts_with(&root));
-            roots.push(root);
-        }
-    }
-    Some((roots, builds))
+/// Where the sources of the indexed crates may be, as Cargo resolves them: each workspace's root, every member's
+/// directory (outside the root too) and every target's (a declared hidden one too: review of c5dee55b), or a source's
+/// own directory with no manifest above it.
+struct Inventory {
+    roots: Vec<PathBuf>,
+    /// Directories that hold no source: Cargo's build directories and ridx's own (its shards and the copies of the
+    /// texts it indexed), wherever `CARGO_TARGET_DIR` puts the first.
+    skip: Vec<PathBuf>,
+    /// Member directories, never taken for a workspace of their own.
+    members: HashSet<PathBuf>,
+    /// Every directory Cargo names (roots, members, targets'), read even when hidden.
+    named: HashSet<PathBuf>,
 }
 
-/// Every Rust file under `roots`, but in hidden directories, Cargo's build directories (which hold a `CACHEDIR.TAG`:
-/// a source directory named `target` is a source directory) and workspaces of their own nested in a root (a fixture
-/// with its `[workspace]`), and the `builds` directories; `None` past [`MAX_FILES`].
-fn rust_files(roots: &[PathBuf], builds: &[PathBuf]) -> Option<Vec<PathBuf>> {
-    let mut out = Vec::new();
-    let mut stack: Vec<PathBuf> = roots.to_vec();
-    let own_workspace = |dir: &Path| std::fs::read_to_string(dir.join("Cargo.toml")).is_ok_and(|m| m.lines().any(|l| l.trim() == "[workspace]"));
-    while let Some(dir) = stack.pop() {
-        let build = builds.iter().any(|b| ridx_format::canonicalize_best_effort(&dir) == *b);
-        if build || dir.join("CACHEDIR.TAG").is_file() || (!roots.contains(&dir) && own_workspace(&dir)) {
+/// The inventory of the indexed sources' workspaces; `None` where Cargo gives no answer for a manifest.
+fn inventory(ws: &WorkspaceIndex, indexed: &HashSet<PathBuf>) -> Option<Inventory> {
+    let mut inv = Inventory { roots: Vec::new(), skip: Vec::new(), members: HashSet::new(), named: HashSet::new() };
+    let mut dirs: HashSet<PathBuf> = HashSet::new();
+    let mut found: Vec<PathBuf> = Vec::new();
+    for f in indexed {
+        let Some(dir) = f.parent() else { continue };
+        if !dirs.insert(dir.to_path_buf()) {
             continue;
         }
-        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
-        for e in entries.flatten() {
-            let (path, name) = (e.path(), e.file_name().to_string_lossy().into_owned());
-            let Ok(kind) = e.file_type() else { continue };
-            if kind.is_dir() && !name.starts_with('.') {
+        match super::cargo_meta::layout(f).ok()? {
+            Some(l) => {
+                inv.skip.push(l.target_dir.clone());
+                inv.skip.push(l.root.join("target/ridx"));
+                inv.members.extend(l.packages.iter().cloned());
+                found.push(l.root);
+                found.extend(l.packages);
+                found.extend(l.targets);
+            }
+            None => found.push(dir.to_path_buf()),
+        }
+    }
+    // ridx's shards and what sits next to them, unless a source the index read is there.
+    for p in ws.paths() {
+        if let Some(d) = p.parent().map(ridx_format::canonicalize_best_effort) {
+            if !indexed.iter().any(|f| f.starts_with(&d)) {
+                inv.skip.push(d);
+            }
+        }
+    }
+    found.sort();
+    inv.named.extend(found.iter().cloned());
+    for r in found {
+        if !inv.roots.iter().any(|x| r.starts_with(x)) {
+            inv.roots.push(r);
+        }
+    }
+    Some(inv)
+}
+
+/// Every Rust file under the inventory's roots, links followed (once each), but in hidden directories other than a
+/// root, the `skip` directories, any with a `CACHEDIR.TAG`, and a workspace of its own nested in a root (not a
+/// member); `None` past [`MAX_FILES`] or where a directory or an entry cannot be read (review of c5dee55b: what cannot be
+/// inspected is not known to hold no use).
+fn rust_files(inv: &Inventory) -> Option<Vec<PathBuf>> {
+    let mut out = Vec::new();
+    let mut stack: Vec<PathBuf> = inv.roots.clone();
+    let mut visited: HashSet<PathBuf> = HashSet::new();
+    let own_workspace = |dir: &Path| std::fs::read_to_string(dir.join("Cargo.toml")).is_ok_and(|m| m.lines().any(|l| l.trim() == "[workspace]"));
+    while let Some(dir) = stack.pop() {
+        let canonical = ridx_format::canonicalize_best_effort(&dir);
+        let root = inv.roots.contains(&canonical);
+        if !visited.insert(canonical.clone())
+            || inv.skip.contains(&canonical)
+            || dir.join("CACHEDIR.TAG").is_file()
+            || (!root && !inv.members.contains(&canonical) && own_workspace(&dir))
+        {
+            continue;
+        }
+        for e in std::fs::read_dir(&dir).ok()? {
+            let path = e.ok()?.path();
+            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            // A dangling link points at no source; any other entry that cannot be read is not known to be none.
+            let meta = match std::fs::metadata(&path) {
+                Ok(m) => m,
+                Err(_) if std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) => continue,
+                Err(_) => return None,
+            };
+            if meta.is_dir() && (!name.starts_with('.') || inv.named.contains(&ridx_format::canonicalize_best_effort(&path))) {
                 stack.push(path);
-            } else if kind.is_file() && name.ends_with(".rs") {
+            } else if meta.is_file() && name.ends_with(".rs") {
                 out.push(path);
                 if out.len() > MAX_FILES {
                     return None;
@@ -169,84 +205,52 @@ fn rust_files(roots: &[PathBuf], builds: &[PathBuf]) -> Option<Vec<PathBuf>> {
     Some(out)
 }
 
-/// What one file says about uses of `names`: whether it names one (or any identifier beyond ASCII, which may be one
-/// in another normal form), the macros it calls, and the `macro_rules!` it defines: each with whether its body names
-/// one and the macros its body calls.
-struct Scan {
-    names_one: bool,
-    calls: Vec<String>,
-    defines: Vec<(String, bool, Vec<String>)>,
-}
-
-fn scan(text: &str, names: &[&str]) -> Scan {
-    let toks: Vec<_> = ridx_syntax::lex(text).into_iter().filter(|t| !t.is_trivia()).collect();
-    let ident = |i: usize| toks.get(i).filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(text)));
-    let txt = |i: usize| toks.get(i).map_or("", |t| t.text(text));
-    let names_word = |w: &str| names.contains(&w) || !w.is_ascii();
-    let mut s = Scan { names_one: false, calls: Vec::new(), defines: Vec::new() };
-    for i in 0..toks.len() {
-        let Some(w) = ident(i) else { continue };
-        s.names_one |= names_word(w);
-        if txt(i + 1) != "!" {
-            continue;
-        }
-        if w == "macro_rules" {
-            // `macro_rules! m { .. }`: its body up to the delimiter closing the first one.
-            let Some(m) = ident(i + 2) else { continue };
-            let (mut depth, mut naming, mut calls) = (0i32, false, Vec::new());
-            for j in i + 3..toks.len() {
-                match txt(j) {
-                    "(" | "[" | "{" => depth += 1,
-                    ")" | "]" | "}" => depth -= 1,
-                    _ => {
-                        naming |= ident(j).is_some_and(names_word);
-                        if txt(j + 1) == "!" {
-                            calls.extend(ident(j).map(str::to_string));
-                        }
-                    }
-                }
-                if depth <= 0 {
-                    break;
-                }
-            }
-            s.defines.push((m.to_string(), naming, calls));
-        } else if matches!(txt(i + 2), "(" | "[" | "{") {
-            s.calls.push(w.to_string());
-        }
-    }
-    s
-}
-
 /// Whether the index has every use of `names` the workspace's sources hold now. Not when a source it read differs
-/// from what it read, or a Rust file it did not read names one, or calls a macro the workspace defines with a body
-/// naming one (a file added since, a `#[path]` module, a module of a crate the index lacks).
-pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&str]) -> bool {
+/// from what it read, a mention it read is under `cfg` (another configuration compiles it), or a file it did not read
+/// (a file added since, a `#[path]` module, an included input, a module of a crate the index lacks) names one or calls
+/// a macro whose body names one, under its own name or a rename. `own`: the item's file and bytes, whose own
+/// mentions are no use.
+pub(crate) fn uses_covered(ws: &WorkspaceIndex, ov: &OverlayManager, names: &[&str], own: (&Path, std::ops::Range<usize>)) -> bool {
     let Some(indexed) = indexed_sources(ws, ov) else { return false };
-    let Some(mut files) = roots(&indexed).and_then(|(r, b)| rust_files(&r, &b)) else { return false };
+    let Some(mut files) = inventory(ws, &indexed).and_then(|inv| rust_files(&inv)) else { return false };
     // A buffer of a file not saved yet is a source too.
     files.extend(ov.open_file_paths().into_iter().map(PathBuf::from).filter(|p| p.extension().is_some_and(|e| e == "rs")));
     let mut seen = HashSet::new();
     let mut unindexed_calls: Vec<String> = Vec::new();
     let mut defines: Vec<(String, bool, Vec<String>)> = Vec::new();
-    for f in files {
+    let mut aliases: Vec<(String, String)> = Vec::new();
+    while let Some(f) = files.pop() {
         let canonical = ridx_format::canonicalize_best_effort(&f);
         if !seen.insert(canonical.clone()) || cached(&canonical) {
             continue;
         }
-        let Some(text) = text_of(&f, ov) else { continue };
-        let s = scan(&text, names);
-        defines.extend(s.defines);
-        if !indexed.contains(&canonical) {
+        let Some(text) = text_of(&f, ov) else { return false };
+        let is_indexed = indexed.contains(&canonical);
+        let own_bytes = (canonical == own.0).then_some(&own.1);
+        let s = super::safe_delete_scan::scan(&text, names, is_indexed, own_bytes);
+        // What it includes is read as a source of its own.
+        files.extend(s.includes.iter().filter_map(|inc| f.parent().map(|d| d.join(inc))));
+        if is_indexed && s.gated_mention {
+            return false;
+        }
+        if !is_indexed {
             if s.names_one {
                 return false;
             }
             unindexed_calls.extend(s.calls);
         }
+        defines.extend(s.defines);
+        aliases.extend(s.aliases);
     }
-    // A macro names one when its body does, or calls a macro that does.
+    // A macro names one when its body does, or calls a macro that does, or renames one that does.
     let mut naming: HashSet<String> = defines.iter().filter(|d| d.1).map(|d| d.0.clone()).collect();
     loop {
-        let more: Vec<String> = defines.iter().filter(|d| !naming.contains(&d.0) && d.2.iter().any(|c| naming.contains(c))).map(|d| d.0.clone()).collect();
+        let more: Vec<String> = defines
+            .iter()
+            .filter(|d| !naming.contains(&d.0) && d.2.iter().any(|c| naming.contains(c)))
+            .map(|d| d.0.clone())
+            .chain(aliases.iter().filter(|(from, to)| naming.contains(from) && !naming.contains(to)).map(|(_, to)| to.clone()))
+            .collect();
         if more.is_empty() {
             break;
         }

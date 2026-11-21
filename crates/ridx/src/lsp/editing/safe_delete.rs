@@ -154,7 +154,7 @@ pub fn handle_safe_delete(msg: &Value, ws: Option<&WorkspaceIndex>, ov: &Overlay
     }
     // A file saved, changed on disk or added since the index was built may hold a use it lacks (prod-code, m=20268),
     // told by the sources' content, not by what the server was told of (review of 9effe92d).
-    if !super::safe_delete_fresh::uses_covered(ws, ov, &names) {
+    if !super::safe_delete_fresh::uses_covered(ws, ov, &names, (&canonical, plan.span.clone())) {
         return refuse("staleIndex", Vec::new());
     }
     let mut uses = Vec::new();

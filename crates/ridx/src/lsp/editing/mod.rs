@@ -101,6 +101,7 @@ pub mod rename_unindexed;
 pub mod safe_delete;
 mod safe_delete_edges;
 mod safe_delete_fresh;
+mod safe_delete_scan;
 
 #[cfg(test)]
 mod tests;

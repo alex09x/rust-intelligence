@@ -273,6 +273,12 @@ impl WorkspaceIndex {
         true
     }
 
+    /// Every file of reader `idx`'s loaded source snapshot (the sidecar's, a non-Rust `include!` input too) with the
+    /// hash the compiler read it with, as the snapshot spells its path.
+    pub fn reader_source_snapshot(&self, idx: usize) -> impl Iterator<Item = (&str, u64)> {
+        self.reader_file_hashes.get(idx).into_iter().flatten().map(|(f, &h)| (f.as_str(), h))
+    }
+
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         // Fast path: query candidate readers prioritized for this file using in-memory indices

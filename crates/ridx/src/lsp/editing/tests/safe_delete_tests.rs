@@ -261,3 +261,71 @@ fn test_safe_delete_fails_closed() {
     let (_d, path, _index) = workspace(lib, &[], &[]);
     assert_eq!(handle_safe_delete(&at(&path, 0, 9), None, &OverlayManager::new(), &mut conv)["reason"], "unknownSymbol");
 }
+
+/// Review of c5dee55b: a mention another configuration compiles, a format string's capture, a macro called by a
+/// rename, an included input, a source that cannot be read, a linked or a declared hidden target, a Cargo failure since
+/// mended, and ridx's own copies wherever Cargo builds.
+#[test]
+fn test_what_the_content_check_reads() {
+    let lib = "pub fn used() {}\npub fn unused() {}\nmacro_rules! call_it {\n    () => {\n        $crate::unused()\n    };\n}\n";
+    let defs = [("used", DefKind::Fn, 1, 8), ("unused", DefKind::Fn, 2, 8)];
+    let mut conv = PositionConverter::new();
+    let ask = |path: &std::path::Path, index: &WorkspaceIndex, conv: &mut PositionConverter| {
+        let got = handle_safe_delete(&at(path, 1, 8), Some(index), &OverlayManager::new(), conv);
+        got["reason"].as_str().map_or("deleted".to_string(), str::to_string)
+    };
+    let (_d, path, index) = workspace_with(lib, "#[cfg(feature = \"use_it\")]\npub fn caller() { crate::unused() }\n", &defs, &[], false);
+    assert_eq!(ask(&path, &index, &mut conv), "staleIndex", "a gated mention the index did not compile");
+    let fresh = |files: &[(&str, &str)], conv: &mut PositionConverter| {
+        let (d, path, index) = workspace(lib, &defs, &[]);
+        let src = path.parent().unwrap().to_path_buf();
+        for (name, text) in files {
+            let f = src.join(name);
+            std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+            std::fs::write(f, text).unwrap();
+        }
+        (ask(&path, &index, conv), d, path, index)
+    };
+    assert_eq!(fresh(&[("fmt.rs", "pub fn c() { println!(\"{unused}\"); }\n")], &mut conv).0, "staleIndex");
+    assert_eq!(fresh(&[("run.rs", "use crate::call_it as run;\npub fn c() { run!(); }\n")], &mut conv).0, "staleIndex");
+    assert_eq!(fresh(&[("inc.rs", "pub fn c() { include!(\"body.inc\") }\n"), ("body.inc", "crate::unused()\n")], &mut conv).0, "staleIndex");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let (_, d, path, index) = fresh(&[("locked.rs", "pub fn c() {}\n")], &mut conv);
+        let locked = path.with_file_name("locked.rs");
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+        if std::fs::read(&locked).is_err() {
+            assert_eq!(ask(&path, &index, &mut conv), "staleIndex", "a source that cannot be read");
+        }
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::write(outside.path().join("caller.rs"), "pub fn c() { crate::unused() }\n").unwrap();
+        std::os::unix::fs::symlink(outside.path().join("caller.rs"), path.with_file_name("link.rs")).unwrap();
+        assert_eq!(ask(&path, &index, &mut conv), "staleIndex", "a linked source");
+        drop(d);
+    }
+    // A declared hidden target, and a member Cargo could not read yet.
+    let (_, _d, path, index) = fresh(&[], &mut conv);
+    let root = path.parent().unwrap().parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(root.join(".cases")).unwrap();
+    std::fs::write(root.join(".cases/caller.rs"), "fn main() {}\n").unwrap();
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\n\n[[test]]\nname = \"caller\"\npath = \".cases/caller.rs\"\n").unwrap();
+    assert_eq!(ask(&path, &index, &mut conv), "deleted");
+    std::fs::write(root.join(".cases/caller.rs"), "fn main() { w::unused() }\n").unwrap();
+    assert_eq!(ask(&path, &index, &mut conv), "staleIndex", "a declared hidden target");
+    std::fs::write(root.join(".cases/caller.rs"), "fn main() {}\n").unwrap();
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"w\"\nversion = \"0.1.0\"\n\n[workspace]\nmembers = [\"m\"]\n").unwrap();
+    assert_eq!(ask(&path, &index, &mut conv), "staleIndex", "a member Cargo cannot read");
+    std::fs::create_dir_all(root.join("m/src")).unwrap();
+    std::fs::write(root.join("m/Cargo.toml"), "[package]\nname = \"m\"\nversion = \"0.1.0\"\n").unwrap();
+    std::fs::write(root.join("m/src/lib.rs"), "").unwrap();
+    assert_eq!(ask(&path, &index, &mut conv), "deleted", "read again once mended");
+    // Cargo building elsewhere: ridx's copies under target/ridx are still no sources.
+    let elsewhere = tempfile::tempdir().unwrap();
+    std::fs::create_dir_all(root.join(".cargo")).unwrap();
+    std::fs::write(root.join(".cargo/config.toml"), format!("[build]\ntarget-dir = \"{}\"\n", elsewhere.path().display())).unwrap();
+    std::fs::create_dir_all(root.join("target/ridx/sources")).unwrap();
+    std::fs::write(root.join("target/ridx/sources/0.rs"), "pub fn c() { crate::unused() }\n").unwrap();
+    assert_eq!(ask(&path, &index, &mut conv), "deleted", "ridx's copies");
+}

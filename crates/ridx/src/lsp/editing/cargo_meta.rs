@@ -47,10 +47,11 @@ fn metadata(file: &Path) -> Option<Arc<Value>> {
         .stderr(std::process::Stdio::null())
         .output()
         .ok()?;
-    let v = serde_json::from_slice::<Value>(&out.stdout).ok().filter(|_| out.status.success()).map(Arc::new);
-    let read = v.as_deref().map(read_manifests).unwrap_or_default();
-    cache.lock().ok()?.insert(nearest, (key, read, v.clone()));
-    v
+    // A failure is not kept: a member missing now may be there on the next request (review of c5dee55b).
+    let v = Arc::new(serde_json::from_slice::<Value>(&out.stdout).ok().filter(|_| out.status.success())?);
+    let read = read_manifests(&v);
+    cache.lock().ok()?.insert(nearest, (key, read, Some(v.clone())));
+    Some(v)
 }
 
 /// The root files of the targets of the package holding `file` (`src/lib.rs`, `src/main.rs`, ..): where crate-level
@@ -86,13 +87,33 @@ pub(crate) fn package_edition(file: &Path) -> Option<String> {
         .map(|(_, e)| e)
 }
 
-/// The root of the Cargo workspace holding `file` and its build directory (where ridx's indexes are written too),
-/// `Err` when a manifest is above it and Cargo gives no answer, `Ok(None)` with no manifest at all.
-pub(crate) fn workspace_root(file: &Path) -> Result<Option<(PathBuf, PathBuf)>, ()> {
+/// Where the Cargo workspace holding a file keeps its sources, as Cargo resolves them (canonical).
+pub(crate) struct Layout {
+    pub root: PathBuf,
+    pub target_dir: PathBuf,
+    /// Every member's directory, outside the root too (`package.workspace = "../control"`).
+    pub packages: Vec<PathBuf>,
+    /// The directory of every target's root file, a declared hidden one too (`path = ".cases/caller.rs"`).
+    pub targets: Vec<PathBuf>,
+}
+
+/// The layout of the Cargo workspace holding `file`, `Err` when a manifest is above it and Cargo gives no answer,
+/// `Ok(None)` with no manifest at all.
+pub(crate) fn layout(file: &Path) -> Result<Option<Layout>, ()> {
     if !file.ancestors().skip(1).any(|d| d.join("Cargo.toml").is_file()) {
         return Ok(None);
     }
     let j = metadata(file).ok_or(())?;
-    let dir = |k: &str| j[k].as_str().map(|r| ridx_format::canonicalize_best_effort(Path::new(r)));
-    dir("workspace_root").zip(dir("target_directory")).map(Some).ok_or(())
+    let canon = |s: &str| ridx_format::canonicalize_best_effort(Path::new(s));
+    let packages = j["packages"].as_array().ok_or(())?;
+    Ok(Some(Layout {
+        root: j["workspace_root"].as_str().map(canon).ok_or(())?,
+        target_dir: j["target_directory"].as_str().map(canon).ok_or(())?,
+        packages: packages.iter().filter_map(|p| p["manifest_path"].as_str().and_then(|m| canon(m).parent().map(Path::to_path_buf))).collect(),
+        targets: packages
+            .iter()
+            .flat_map(|p| p["targets"].as_array().into_iter().flatten())
+            .filter_map(|t| t["src_path"].as_str().and_then(|s| canon(s).parent().map(Path::to_path_buf)))
+            .collect(),
+    }))
 }
