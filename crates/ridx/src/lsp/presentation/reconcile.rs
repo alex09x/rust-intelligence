@@ -171,7 +171,7 @@ pub fn publish_reconciled_diagnostics<W: Write>(uri: &str, version: Option<i32>,
 
     let heuristic = handle_document_diagnostic_text(text);
     let h_items = heuristic["items"].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
-    let merged = super::compiler_merge::merge_with_compiler(uri, h_items, text, || saved_text(overlay_mgr, &file), flycheck, overlay_mgr);
+    let merged = super::compiler_merge::merge_with_compiler(uri, h_items, text, || saved_text(overlay_mgr, &file), flycheck);
 
     if !merged.is_empty() {
         flycheck.mark_published(uri);

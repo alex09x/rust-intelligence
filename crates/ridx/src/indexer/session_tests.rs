@@ -252,7 +252,6 @@ fn test_only_a_unit_that_ran_its_analysis_certifies_its_sources() {
     let ran = build_session_index_with(&driver(&root, "d", ""), &root, &root.join("target/ridx/sessions/1-1"), &buffer).unwrap();
     let want: std::collections::HashSet<PathBuf> = [lib, new].into();
     assert_eq!(ran.report.checked, want);
-    assert!(ran.report.started.is_some());
     let failing = driver(&root, "f", "exit 1");
     let stopped = build_session_index_with(&failing, &root, &root.join("target/ridx/sessions/1-2"), &buffer).unwrap();
     assert!(stopped.report.checked.is_empty(), "{:?}", stopped.report.checked);

@@ -5,7 +5,7 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 ## [Unreleased]
 
 ### Fixed
-- **Errors in unsaved text**: what the compiler reports when a session index compiles the edited buffers (a wrong return type, an unresolved name, a wrong argument count, every error and lint) is published for those files, in the buffer's coordinates with the document's version, pushed and pulled, in place of the last check of the saved files. 0.3.10 reported in an unsaved buffer only the type mismatches it found itself, and the compiler's errors after a save.
+- **Errors in unsaved text**: what the compiler reports when a session index compiles the edited buffers (a wrong return type, an unresolved name, a wrong argument count, every error and lint) is published for those buffers, in the buffer's coordinates with the document's version, pushed and pulled, in place of the last check of the saved files (other files, and crates compiled with `--remap-path-prefix`, keep that check). 0.3.10 reported in an unsaved buffer only the type mismatches it found itself, and the compiler's errors after a save.
 - **Hover on a binding** (a parameter, a `let`, a closure's parameter, a name in a pattern) shows `name: Type` with its layout (`size = 1, align = 0x1, no Drop`) and the name's range, as rust-analyzer does; a parameter showed `Type: bool`.
 
 ## [0.3.10] - 2026-11-20

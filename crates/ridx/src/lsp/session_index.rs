@@ -130,8 +130,6 @@ impl SessionIndexer {
             };
             let dir = root.join("target/ridx/sessions").join(format!("{}-{n}", std::process::id()));
             let (epoch, id, stamp) = (st.epoch, st.id, published_stamp(root));
-            // The buffers were taken now: the files on disk compiled with them are of this moment or later.
-            let captured = SystemTime::now();
             let (root, roots, built) = (root.clone(), Arc::clone(&self.roots), Arc::clone(&self.built));
             std::thread::spawn(move || {
                 let started = Instant::now();
@@ -150,8 +148,7 @@ impl SessionIndexer {
                     }
                 }
                 match result {
-                    Ok(mut out) => {
-                        out.report.started = Some(captured);
+                    Ok(out) => {
                         built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir: out.dir, buffers, stamp, report: out.report, epoch, id });
                     }
                     Err(_) => {

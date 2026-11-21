@@ -37,13 +37,6 @@ pub(super) fn sources_recorded(path: &Path) -> Option<HashSet<PathBuf>> {
     fs::read(path).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()).as_ref().and_then(own_sources_of)
 }
 
-/// Every source the sidecar at `path` says its unit read (canonical): its own sources and the files it hashed.
-pub(super) fn sources_read(path: &Path) -> HashSet<PathBuf> {
-    let Some(j) = fs::read(path).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) else { return HashSet::new() };
-    let hashed = j["file_hashes"].as_object().into_iter().flatten().map(|(f, _)| canonical(Path::new(f)));
-    own_sources_of(&j).unwrap_or_default().into_iter().chain(hashed).collect()
-}
-
 impl Unit {
     /// A library unit, whose metadata other units read (not a test harness, a binary or a build script).
     pub(super) fn is_lib(&self) -> bool {

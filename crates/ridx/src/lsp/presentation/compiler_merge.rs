@@ -36,22 +36,12 @@ pub fn set_client_moves_rustc(moves: bool) {
 /// The diagnostics of `uri`: the compiler's from `flycheck` and the editor's own (`heuristic`, in the coordinates
 /// of `live`), an editor diagnostic dropped where the compiler reports the same code over the same range. `saved`
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.
-pub fn merge_with_compiler(
-    uri: &str,
-    heuristic: &[Value],
-    live: &str,
-    saved: impl FnOnce() -> Option<String>,
-    flycheck: &FlycheckState,
-    ov: &crate::overlay::OverlayManager,
-) -> Vec<Value> {
+pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: impl FnOnce() -> Option<String>, flycheck: &FlycheckState) -> Vec<Value> {
     let file = ridx_format::canonicalize_best_effort(std::path::Path::new(&crate::lsp::protocol::uri_to_path(uri)));
-    if let Some((root, session)) = flycheck.session.of_with_root(&file) {
-        // While the workspace has unsaved buffers, a check of the files as saved compiled other inputs than the buffers
-        // (a sibling's text the file depends on, review of 46ce96f2): the session's result, of the buffers, applies.
-        // With none, the check of the saved files does.
-        if super::session_diag::unsaved_in(ov, &root) {
-            return merge_session(uri, heuristic, live, &session);
-        }
+    // A buffer a session index compiled has the compiler's result of the buffers, saved since or not: the check of the
+    // saved files is of other inputs until a session no longer has it (reviews of 46ce96f2 and 710381e0).
+    if let Some(session) = flycheck.session.of(&file) {
+        return merge_session(uri, heuristic, live, &session);
     }
     let raw = flycheck.get_latest_diagnostics(uri);
     if raw.is_empty() {

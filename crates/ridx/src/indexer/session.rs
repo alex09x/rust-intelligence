@@ -16,7 +16,7 @@
 //! session (`SessionOutput::report`).
 
 use super::direct::args::sanitize_compiler_args_for_direct;
-use super::session_report::{diagnostics_of, json_diagnostics, remaps, unmap, CompilerReport};
+use super::session_report::{diagnostics_of, json_diagnostics, remaps_paths, CompilerReport};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -96,7 +96,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     let mut fresh: HashSet<String> = HashSet::new();
     let mut settled: HashSet<String> = HashSet::new();
     let mut pending: Vec<&super::session_units::Unit> = units.iter().collect();
-    let mut report = CompilerReport { started: Some(std::time::SystemTime::now()), ..Default::default() };
+    let mut report = CompilerReport::default();
     while !pending.is_empty() {
         let ready = |u: &&super::session_units::Unit| u.extern_edges().iter().all(|(_, stem, _)| !libs.contains(stem) || *stem == u.artifact_stem() || settled.contains(stem));
         let (mut wave, rest): (Vec<_>, Vec<_>) = pending.into_iter().partition(ready);
@@ -123,7 +123,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             })
             .collect::<Result<Vec<_>, _>>()?;
         for (unit, staged) in wave.iter().zip(running) {
-            let (messages, checked) = staged.finish(unit, &sources);
+            let (messages, checked) = staged.finish(unit);
             report.messages.extend(messages);
             report.checked.extend(checked.into_iter().flatten().filter(|s| s.starts_with(root)));
             if unit.is_lib() {
@@ -165,8 +165,8 @@ struct Staged {
     /// The file the compiler's standard error goes to, read once it exited: a pipe could fill while nobody reads it, and
     /// a process it started could keep a pipe open long after (review of 2e1fcfb1).
     stderr: PathBuf,
-    /// Its `--remap-path-prefix`es, to name the files of its diagnostics as on disk again.
-    remaps: Vec<(PathBuf, PathBuf)>,
+    /// Whether it remaps source paths: then it reports and certifies nothing (`session_report::remaps_paths`).
+    remaps: bool,
     /// The session's copy of the unit's sidecar, set aside before the compile: a sidecar there afterwards is this
     /// compile's, whatever the precision of file times (review of 46ce96f2); with none, the copy goes back.
     sidecar_aside: Option<PathBuf>,
@@ -175,25 +175,19 @@ struct Staged {
 impl Staged {
     /// Waits for the compile, and returns what the compiler reported and, when the unit's analysis ran to the end (it
     /// wrote its shard; a unit with no shard: the compiler succeeded), the sources this compile found, from the sidecar
-    /// it wrote; none when a file its diagnostics name could not be told for sure (an ambiguous remap). A unit the
-    /// driver wrote no shard for (the compiler stopped before analysis, on a parse error) gets back the very shard set
-    /// aside, not the published path read again, which a reindex may have replaced meanwhile (review of ca0c1ec7).
-    fn finish(mut self, unit: &super::session_units::Unit, buffers: &HashSet<PathBuf>) -> (Vec<serde_json::Value>, Option<HashSet<PathBuf>>) {
+    /// it wrote; nothing of a unit that remaps source paths. A unit the driver wrote no shard for (the compiler stopped
+    /// before analysis, on a parse error) gets back the very shard set aside, not the published path read again, which a
+    /// reindex may have replaced meanwhile (review of ca0c1ec7).
+    fn finish(mut self, unit: &super::session_units::Unit) -> (Vec<serde_json::Value>, Option<HashSet<PathBuf>>) {
         let success = self.child.wait().is_ok_and(|s| s.success());
-        let mut messages = diagnostics_of(&fs::read(&self.stderr).unwrap_or_default());
+        let messages = if self.remaps { Vec::new() } else { diagnostics_of(&fs::read(&self.stderr).unwrap_or_default()) };
         let _ = fs::remove_file(&self.stderr);
         let ran = match &self.shard {
             Some(shard) => shard.is_file(),
             None => success,
         };
         let written = unit.sidecar.is_file();
-        // The sources the unit read, which a remapped file name is told among: the buffers, and what its sidecar (this
-        // compile's, else the one set aside) records.
-        let recorded = if written { Some(unit.sidecar.as_path()) } else { self.sidecar_aside.as_deref() };
-        let mut known = recorded.map(super::session_units::sources_read).unwrap_or_default();
-        known.extend(buffers.iter().cloned());
-        let resolved = unmap(&mut messages, &self.remaps, &known);
-        let checked = (ran && resolved && written).then(|| super::session_units::sources_recorded(&unit.sidecar)).flatten();
+        let checked = (ran && written && !self.remaps).then(|| super::session_units::sources_recorded(&unit.sidecar)).flatten();
         if let Some(aside) = &self.sidecar_aside {
             if written {
                 let _ = fs::remove_file(aside);
@@ -255,7 +249,7 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
             return Err(format!("ridx-driver: {e}"));
         }
     };
-    Ok(Staged { child, shard, backup, stderr, remaps: remaps(&args), sidecar_aside })
+    Ok(Staged { child, shard, backup, stderr, remaps: remaps_paths(&args), sidecar_aside })
 }
 
 /// Puts every file of `from` into `to`, never its subdirectories: a shard as a link (they are large and only ever

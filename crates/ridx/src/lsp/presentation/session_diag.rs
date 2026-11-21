@@ -8,10 +8,11 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! The compiler's diagnostics on the text a session index compiled (`indexer::session`). For the files of a root
-//! whose session answers they stand in for the last check's (`flycheck`), which read the files as saved: an error typed
-//! and never saved is reported, in the buffer's coordinates (prod-code, m=20120). A file has them only for a text the
-//! session is known to have compiled: a buffer, or a file on disk not written since the session started.
+//! The compiler's diagnostics of the buffers a session index compiled (`indexer::session`): an error typed and never
+//! saved is reported, in the buffer's coordinates (prod-code, m=20120). They are kept for the buffers only, each with
+//! the text compiled, and stand in for the check of the saved files (`flycheck`) for those buffers while a session has
+//! them; every other file keeps the check's (review of 710381e0: what a closed file's text and inputs were could not be
+//! told for sure).
 
 use super::compiler_message::parse_compiler_message_at;
 use crate::indexer::session_report::CompilerReport;
@@ -21,32 +22,23 @@ use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::SystemTime;
 
-/// A file's diagnostics from a session, the text they were reported on, and when the session started (microseconds
-/// since the epoch), to tell it from a check of the root started later.
+/// A buffer's diagnostics from a session, and the text they were reported on.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SessionFile {
     pub diagnostics: Vec<Value>,
     pub text: String,
-    pub started_us: u64,
-}
-
-pub(crate) fn micros(t: SystemTime) -> u64 {
-    t.duration_since(SystemTime::UNIX_EPOCH).map_or(0, |d| d.as_micros() as u64)
-}
-
-/// Per root whose session index answers, its files (canonical) with their diagnostics; and the URI each file's
-/// diagnostics were last published under, to clear them under that one.
-#[derive(Default)]
-pub struct SessionDiagnostics {
-    roots: Mutex<HashMap<PathBuf, HashMap<PathBuf, SessionFile>>>,
-    published: Mutex<HashMap<PathBuf, String>>,
-    /// Per root with a session, whether it had unsaved buffers when last looked at (`note_unsaved`).
-    unsaved: Mutex<HashMap<PathBuf, bool>>,
 }
 
 type Roots = HashMap<PathBuf, HashMap<PathBuf, SessionFile>>;
+
+/// Per root whose session index answers, its buffers (canonical) with their diagnostics; and the URI each file's
+/// diagnostics were last published under, to clear them under that one.
+#[derive(Default)]
+pub struct SessionDiagnostics {
+    roots: Mutex<Roots>,
+    published: Mutex<HashMap<PathBuf, String>>,
+}
 
 /// The root and the session's diagnostics of `file` (canonical) in `roots`: from the innermost root whose session has
 /// the file.
@@ -54,20 +46,14 @@ fn of_in<'a>(roots: &'a Roots, file: &Path) -> Option<(&'a PathBuf, &'a SessionF
     roots.iter().filter(|(r, files)| file.starts_with(r) && files.contains_key(file)).max_by_key(|(r, _)| r.as_os_str().len()).map(|(r, files)| (r, &files[file]))
 }
 
-/// Whether `root` has an open buffer whose text is not the file's as saved: then a check of the saved files compiled
-/// other inputs than the buffers, and a session's result is the one of the code being edited.
-pub fn unsaved_in(ov: &crate::overlay::OverlayManager, root: &Path) -> bool {
-    ov.open_file_paths().into_iter().any(|key| ov.get(&key).is_some_and(|o| !o.is_synced_with_disk()) && ridx_format::canonicalize_cached(Path::new(&key)).starts_with(root))
-}
-
-/// Whether what a client is sent of a file changes from `before` to `after` (the session's result for it, if any):
-/// other diagnostics, or the same ones on another text, which places them elsewhere in the buffer (review of
-/// 68375e6e), or, when the check has diagnostics of the file, any other text (a clean result now of the buffer's,
-/// review of 46ce96f2); a result coming or going matters when it has diagnostics or the check (`has_check`) has some.
-fn differs(before: Option<&SessionFile>, after: Option<&SessionFile>, has_check: bool) -> bool {
+/// Whether what a client is sent of a file changes from `before` to `after` (the session's result for it and the root
+/// giving it, if any): other diagnostics, or the same ones on another text, which places them elsewhere in the buffer;
+/// with the check having diagnostics of the file (`has_check`), any other result or root (reviews of 68375e6e,
+/// 46ce96f2 and 710381e0); a result coming or going matters when it has diagnostics or the check has some.
+fn differs(before: Option<(&PathBuf, &SessionFile)>, after: Option<(&PathBuf, &SessionFile)>, has_check: bool) -> bool {
     match (before, after) {
-        (Some(b), Some(a)) => b.diagnostics != a.diagnostics || (b.text != a.text && (has_check || !a.diagnostics.is_empty())),
-        (Some(x), None) | (None, Some(x)) => !x.diagnostics.is_empty() || has_check,
+        (Some((br, b)), Some((ar, a))) => b.diagnostics != a.diagnostics || ((b.text != a.text || br != ar) && (has_check || !a.diagnostics.is_empty())),
+        (Some((_, x)), None) | (None, Some((_, x))) => !x.diagnostics.is_empty() || has_check,
         (None, None) => false,
     }
 }
@@ -76,9 +62,10 @@ impl SessionDiagnostics {
     /// Applies `change` to the roots and returns the files of `keys` whose result changes.
     fn change(&self, keys: HashSet<PathBuf>, has_check: &dyn Fn(&Path) -> bool, change: impl FnOnce(&mut Roots)) -> Vec<PathBuf> {
         let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-        let before: Vec<(PathBuf, Option<SessionFile>)> = keys.into_iter().map(|k| (of_in(&roots, &k).map(|(_, f)| f.clone()), k)).map(|(b, k)| (k, b)).collect();
+        let before: Vec<(PathBuf, Option<(PathBuf, SessionFile)>)> =
+            keys.into_iter().map(|k| (of_in(&roots, &k).map(|(r, f)| (r.clone(), f.clone())), k)).map(|(b, k)| (k, b)).collect();
         change(&mut roots);
-        let mut out: Vec<PathBuf> = before.into_iter().filter(|(k, b)| differs(b.as_ref(), of_in(&roots, k).map(|(_, f)| f), has_check(k))).map(|(k, _)| k).collect();
+        let mut out: Vec<PathBuf> = before.into_iter().filter(|(k, b)| differs(b.as_ref().map(|(r, f)| (r, f)), of_in(&roots, k), has_check(k))).map(|(k, _)| k).collect();
         out.sort();
         out
     }
@@ -95,17 +82,9 @@ impl SessionDiagnostics {
     /// The session of `root` no longer answers: returns the files whose result changes, back to the check's.
     pub fn clear(&self, root: &Path, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
         let keys = self.roots.lock().unwrap_or_else(|e| e.into_inner()).get(root).map(|f| f.keys().cloned().collect()).unwrap_or_default();
-        self.unsaved.lock().unwrap_or_else(|e| e.into_inner()).remove(root);
         self.change(keys, has_check, |roots| {
             roots.remove(root);
         })
-    }
-
-    /// Records whether `root` has unsaved buffers now; returns whether that changed since it was last recorded (a save,
-    /// or the first edit after one), when the result that applies to its files changes with it.
-    pub fn note_unsaved(&self, root: &Path, now: bool) -> bool {
-        let mut seen = self.unsaved.lock().unwrap_or_else(|e| e.into_inner());
-        seen.insert(root.to_path_buf(), now).is_some_and(|before| before != now)
     }
 
     /// The roots with a session's diagnostics.
@@ -115,28 +94,13 @@ impl SessionDiagnostics {
 
     /// The session's diagnostics of `file` (canonical), from the innermost root whose session has the file.
     pub fn of(&self, file: &Path) -> Option<SessionFile> {
-        self.of_with_root(file).map(|(_, f)| f)
-    }
-
-    /// [`Self::of`], with the root of that session.
-    pub fn of_with_root(&self, file: &Path) -> Option<(PathBuf, SessionFile)> {
-        of_in(&self.roots.lock().unwrap_or_else(|e| e.into_inner()), file).map(|(r, f)| (r.clone(), f.clone()))
-    }
-
-    /// The files of `root`'s session the client is sent anything of from it (with diagnostics, or whose check
-    /// `has_check` has some): what changes when the root's buffers become saved or unsaved, and with it which result
-    /// applies (review of 46ce96f2).
-    pub fn files_of(&self, root: &Path, has_check: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
-        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-        let mut out: Vec<PathBuf> = roots.get(root).into_iter().flatten().filter(|(p, f)| !f.diagnostics.is_empty() || has_check(p)).map(|(p, _)| p.clone()).collect();
-        out.sort();
-        out
+        of_in(&self.roots.lock().unwrap_or_else(|e| e.into_inner()), file).map(|(_, f)| f.clone())
     }
 
     /// What the session says of `file`, for a cache of what was computed from it (`workspace_diag`).
     pub fn stamp(&self, file: &Path) -> u64 {
         let mut h = std::collections::hash_map::DefaultHasher::new();
-        self.of(file).map(|f| (serde_json::to_string(&f.diagnostics).unwrap_or_default(), f.text, f.started_us)).hash(&mut h);
+        self.of(file).map(|f| (serde_json::to_string(&f.diagnostics).unwrap_or_default(), f.text)).hash(&mut h);
         h.finish()
     }
 
@@ -156,51 +120,33 @@ impl SessionDiagnostics {
     }
 }
 
-/// The files of a session of `root`, from the compiler's `report` and the `buffers` compiled (path and text): each
-/// file the compiler checked to the end, with its diagnostics or none, and each other one it reported on. A file's text
-/// is its buffer's, or the file on disk when not written since the session started: a later text is not the one the
-/// diagnostics were reported on, and its file gets none (review of 2e1fcfb1).
+/// The buffers of a session of `root`, from the compiler's `report` and the `buffers` compiled (path and text): each
+/// one the compiler checked to the end, with its diagnostics or none, and each one it reported on although it stopped
+/// before the end (a parse error), with what it reported. Diagnostics of other files are left to the check.
 pub fn session_files(root: &Path, report: &CompilerReport, buffers: &[(PathBuf, String)]) -> HashMap<PathBuf, SessionFile> {
-    let started_us = report.started.map_or(0, micros);
     let buffers: HashMap<PathBuf, &String> = buffers.iter().map(|(p, t)| (ridx_format::canonicalize_best_effort(p), t)).collect();
-    let text_of = |path: &Path| -> Option<String> {
-        if let Some(t) = buffers.get(path) {
-            return Some((*t).clone());
-        }
-        let text = std::fs::read_to_string(path).ok()?;
-        let since = report.started?;
-        (!super::flycheck::modified_since(path, since)).then_some(text)
-    };
     let mut files: HashMap<PathBuf, SessionFile> = HashMap::new();
-    for path in &report.checked {
-        if let Some(text) = text_of(path) {
-            files.insert(path.clone(), SessionFile { diagnostics: Vec::new(), text, started_us });
+    for (path, text) in &buffers {
+        if report.checked.contains(path) {
+            files.insert(path.clone(), SessionFile { diagnostics: Vec::new(), text: (*text).clone() });
         }
     }
     let mut seen = HashSet::new();
     for m in &report.messages {
         let Some((path, diag)) = parse_compiler_message_at(m, root) else { continue };
-        if !path.starts_with(root) {
-            continue;
-        }
+        let Some(text) = buffers.get(&path) else { continue };
         // A file two units compile (a library and its unit tests) reports its error twice; it is one.
         if !seen.insert((path.clone(), diag["range"].to_string(), diag["severity"].to_string(), diag["message"].to_string())) {
             continue;
         }
-        if !files.contains_key(&path) {
-            let Some(text) = text_of(&path) else { continue };
-            files.insert(path.clone(), SessionFile { diagnostics: Vec::new(), text, started_us });
-        }
-        if let Some(f) = files.get_mut(&path) {
-            f.diagnostics.push(diag);
-        }
+        files.entry(path).or_insert_with(|| SessionFile { diagnostics: Vec::new(), text: (*text).clone() }).diagnostics.push(diag);
     }
     files
 }
 
 /// Sends the diagnostics of `files` again after a session changed them: pushed, each under the URI of its open buffer
-/// with its version, else the URI they were last published under, else the file's; or for a client that pulls, a
-/// refresh when it takes one.
+/// with its version, else the URI something of it is still published under, else the file's; or for a client that
+/// pulls, a refresh when it takes one.
 pub fn publish_session_files<W: Write>(
     files: &[PathBuf],
     lifecycle: &crate::lsp::lifecycle::LifecycleManager,
