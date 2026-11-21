@@ -24,6 +24,7 @@ mod lens_test_modules;
 pub mod reconcile;
 pub mod runnables;
 pub mod selection;
+pub mod session_diag;
 pub mod tokens;
 mod tokens_attr;
 mod tokens_detached;

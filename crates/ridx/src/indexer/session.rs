@@ -12,7 +12,8 @@
 //! compiled again from the buffers' text. Nothing of the published index is written: the session's directory links
 //! its shards, and each crate holding a buffer is compiled by `ridx-driver` (the direct path's arguments, recorded in
 //! its sidecar) with `RIDX_BUFFERS` naming the buffers, into the session's directory. A crate with errors still gets
-//! its shard (see the driver's `broken_crate`).
+//! its shard (see the driver's `broken_crate`), and what the compiler reported on the buffers' text comes back with the
+//! session (`SessionOutput::messages`).
 
 use super::direct::args::sanitize_compiler_args_for_direct;
 use std::collections::HashSet;
@@ -22,7 +23,7 @@ use std::process::{Command, Stdio};
 
 /// Builds in `session_dir` the index of `root` with `buffers` (source path, text) in place of their files, and returns
 /// the directory to open it from. Fails when the workspace has no published index or no crate holds a buffer.
-pub fn build_session_index(root: &Path, session_dir: &Path, buffers: &[(PathBuf, String)]) -> Result<PathBuf, String> {
+pub fn build_session_index(root: &Path, session_dir: &Path, buffers: &[(PathBuf, String)]) -> Result<SessionOutput, String> {
     let driver = super::driver::find_driver_binary().ok_or("ridx-driver not found")?;
     build_session_index_with(&driver, root, session_dir, buffers)
 }
@@ -37,7 +38,7 @@ fn published_variant(manifest: &[u8]) -> Result<String, String> {
     plain.then(|| dir.to_string()).ok_or_else(|| format!("manifest names an invalid variant directory {dir:?}"))
 }
 
-fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buffers: &[(PathBuf, String)]) -> Result<PathBuf, String> {
+fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buffers: &[(PathBuf, String)]) -> Result<SessionOutput, String> {
     let base = root.join("target/ridx");
     // The published index is taken under its lock, released before compiling: a run of `ridx index` replaces shards
     // and sidecars in the variant before it publishes the manifest, so without the lock the copy could mix two of its
@@ -94,6 +95,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
     let mut fresh: HashSet<String> = HashSet::new();
     let mut settled: HashSet<String> = HashSet::new();
     let mut pending: Vec<&super::session_units::Unit> = units.iter().collect();
+    let mut messages = Vec::new();
     while !pending.is_empty() {
         let ready = |u: &&super::session_units::Unit| u.extern_edges().iter().all(|(_, stem, _)| !libs.contains(stem) || *stem == u.artifact_stem() || settled.contains(stem));
         let (mut wave, rest): (Vec<_>, Vec<_>) = pending.into_iter().partition(ready);
@@ -120,7 +122,7 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             })
             .collect::<Result<Vec<_>, _>>()?;
         for (unit, staged) in wave.iter().zip(running) {
-            staged.finish(unit);
+            messages.extend(staged.finish(unit));
             if unit.is_lib() {
                 let stem = unit.artifact_stem();
                 if ctx.deps.join(format!("{stem}.rmeta")).is_file() {
@@ -130,11 +132,44 @@ fn build_session_index_with(driver: &Path, root: &Path, session_dir: &Path, buff
             }
         }
     }
-    Ok(session_dir.to_path_buf())
+    Ok(SessionOutput { dir: session_dir.to_path_buf(), messages })
+}
+
+/// A session index built: the directory to open it from, and the compiler's messages (rustc's JSON diagnostics) on
+/// the text it compiled, of every unit, in the order the units ran.
+#[derive(Debug)]
+pub struct SessionOutput {
+    pub dir: PathBuf,
+    pub messages: Vec<serde_json::Value>,
 }
 
 /// The error of a session that waits for a run of `ridx index` holding the index's lock.
 pub const BUSY: &str = "the published index is being rebuilt";
+
+/// `args` reporting in rustc's JSON, and only its diagnostics: the format and colour the unit was recorded with go.
+fn json_diagnostics(args: Vec<String>) -> Vec<String> {
+    let mut out = Vec::with_capacity(args.len() + 1);
+    let mut it = args.into_iter();
+    while let Some(a) = it.next() {
+        if matches!(a.as_str(), "--error-format" | "--json" | "--color") {
+            it.next();
+        } else if !(a.starts_with("--error-format=") || a.starts_with("--json=") || a.starts_with("--color=")) {
+            out.push(a);
+        }
+    }
+    out.push("--error-format=json".into());
+    out
+}
+
+/// The diagnostics among the lines rustc wrote to its standard error (`$message_type` "diagnostic"; a line of another
+/// kind, or not JSON, is left out).
+fn diagnostics_of(stderr: &str) -> Vec<serde_json::Value> {
+    stderr
+        .lines()
+        .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+        .filter(|m| m.get("$message_type").is_none_or(|t| t == "diagnostic") && m.get("spans").is_some())
+        .collect()
+}
 
 struct Ctx<'a> {
     driver: &'a Path,
@@ -150,14 +185,18 @@ struct Staged {
     child: std::process::Child,
     shard: Option<PathBuf>,
     backup: Option<PathBuf>,
+    /// Reads the compiler's standard error as it comes: a unit with many errors would otherwise fill the pipe and wait
+    /// for a reader while the session waits for it.
+    stderr: Option<std::thread::JoinHandle<String>>,
 }
 
 impl Staged {
-    /// Waits for the compile. A unit the driver wrote no shard for (the compiler stopped before analysis, on a parse
-    /// error) gets back the very shard set aside, not the published path read again, which a reindex may have replaced
-    /// meanwhile (review of ca0c1ec7).
-    fn finish(mut self, unit: &super::session_units::Unit) {
+    /// Waits for the compile, and returns what the compiler reported. A unit the driver wrote no shard for (the
+    /// compiler stopped before analysis, on a parse error) gets back the very shard set aside, not the published path
+    /// read again, which a reindex may have replaced meanwhile (review of ca0c1ec7).
+    fn finish(mut self, unit: &super::session_units::Unit) -> Vec<serde_json::Value> {
         let _ = self.child.wait();
+        let messages = self.stderr.take().and_then(|h| h.join().ok()).map(|s| diagnostics_of(&s)).unwrap_or_default();
         match (&self.shard, &self.backup) {
             (Some(shard), Some(backup)) if !shard.is_file() => {
                 let _ = fs::rename(backup, shard);
@@ -169,6 +208,7 @@ impl Staged {
                 super::direct::units::refresh_aliases(&unit.sidecar, &unit.aliases);
             }
         }
+        messages
     }
 }
 
@@ -178,9 +218,9 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
     // and never into the published one.
     let shard = unit.object.as_ref().and_then(|o| o.file_name()).map(|name| ctx.variant.join(name));
     let backup = shard.as_ref().map(|s| s.with_extension("ridx.published")).filter(|b| shard.as_ref().is_some_and(|s| fs::rename(s, b).is_ok()));
-    let args = sanitize_compiler_args_for_direct(args, &ctx.deps, &ctx.incr, &HashSet::new());
+    let args = json_diagnostics(sanitize_compiler_args_for_direct(args, &ctx.deps, &ctx.incr, &HashSet::new()));
     let mut cmd = Command::new(ctx.driver);
-    cmd.args(&args).current_dir(ctx.root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    cmd.args(&args).current_dir(ctx.root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::piped());
     // The environment the unit was built with first, then the session's own over it: a recorded `RIDX_OUT_DIR` (a
     // build script can set any variable) must not send the compile into the published index (review of ca0c1ec7).
     cmd.envs(unit.env.iter().filter(|(k, _)| !k.starts_with("RIDX_")));
@@ -198,8 +238,15 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
     if let Some(ld) = super::cargo::compute_sysroot_ld_path() {
         cmd.env("LD_LIBRARY_PATH", &ld).env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
     }
-    let child = cmd.spawn().map_err(|e| format!("ridx-driver: {e}"))?;
-    Ok(Staged { child, shard, backup })
+    let mut child = cmd.spawn().map_err(|e| format!("ridx-driver: {e}"))?;
+    let stderr = child.stderr.take().map(|mut pipe| {
+        std::thread::spawn(move || {
+            let mut s = String::new();
+            let _ = std::io::Read::read_to_string(&mut pipe, &mut s);
+            s
+        })
+    });
+    Ok(Staged { child, shard, backup, stderr })
 }
 
 /// Puts every file of `from` into `to`, never its subdirectories: a shard as a link (they are large and only ever

@@ -37,6 +37,10 @@ pub fn set_client_moves_rustc(moves: bool) {
 /// of `live`), an editor diagnostic dropped where the compiler reports the same code over the same range. `saved`
 /// gives the file as saved; it is read only when the compiler reported something and the client wants that.
 pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: impl FnOnce() -> Option<String>, flycheck: &FlycheckState) -> Vec<Value> {
+    let file = ridx_format::canonicalize_best_effort(std::path::Path::new(&crate::lsp::protocol::uri_to_path(uri)));
+    if let Some(session) = flycheck.session.of(&file) {
+        return merge_session(uri, heuristic, live, &session);
+    }
     let raw = flycheck.get_latest_diagnostics(uri);
     if raw.is_empty() {
         return heuristic.to_vec();
@@ -52,4 +56,19 @@ pub fn merge_with_compiler(uri: &str, heuristic: &[Value], live: &str, saved: im
     };
     let shadowed = |h: &Value| in_live.iter().any(|a| a.get("code").and_then(Value::as_str) == h.get("code").and_then(Value::as_str) && ranges_overlap(&h["range"], &a["range"]));
     emitted.into_iter().chain(heuristic.iter().filter(|h| !shadowed(h)).cloned()).collect()
+}
+
+/// The diagnostics of a file a session index compiled: the compiler's on the session's text, moved to `live` by its
+/// edits since, always in the buffer's coordinates. For a client that moves `rustc` diagnostics through unsaved edits
+/// itself they say `ridx`: they were reported on the buffer, not on the file as saved, and must stay where they are.
+fn merge_session(uri: &str, heuristic: &[Value], live: &str, session: &super::session_diag::SessionFile) -> Vec<Value> {
+    let mut in_live = map_authoritative_diagnostics_to_text(&session.diagnostics, Some(&session.text), live, uri);
+    if CLIENT_MOVES_RUSTC.with(Cell::get) {
+        for d in &mut in_live {
+            d["source"] = "ridx".into();
+        }
+    }
+    let shadowed = |h: &Value| in_live.iter().any(|a| a.get("code").and_then(Value::as_str) == h.get("code").and_then(Value::as_str) && ranges_overlap(&h["range"], &a["range"]));
+    let editor: Vec<Value> = heuristic.iter().filter(|h| !shadowed(h)).cloned().collect();
+    in_live.into_iter().chain(editor).collect()
 }

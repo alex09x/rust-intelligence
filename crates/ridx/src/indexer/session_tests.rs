@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::build_session_index_with;
+use super::{build_session_index_with, json_diagnostics};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -94,7 +94,8 @@ fn test_a_session_index_compiles_the_buffers_crates_and_leaves_the_published_ind
     let a = root.join("a/src/lib.rs");
 
     let out = build_session_index_with(&driver(&root, "d", ""), &root, &session, &[(a.clone(), "pub fn a() { edited() }\n".to_string())]).unwrap();
-    assert_eq!(out, session);
+    assert_eq!(out.dir, session);
+    assert!(out.messages.is_empty(), "the compiler reported nothing");
     let variant = session.join(VARIANT);
     assert_eq!(read(variant.join("a-1.ridx")), "NEW", "the crate holding the buffer is compiled into the session");
     assert_eq!(read(variant.join("b-1.ridx")), "B", "the other crate is the published one, though it records a's source");
@@ -220,4 +221,26 @@ fn test_each_bound_file_is_rebound_on_its_own() {
     let fresh = session.join("direct/deps/liba.rmeta").display().to_string();
     let saved_dylib = root.join("target/ridx_cargo/liba.so").display().to_string();
     assert!(b_line.contains(&format!("a={fresh}")) && b_line.contains(&format!("a={saved_dylib}")), "{calls}");
+}
+
+/// What the compiler reports on the buffers' text comes back with the session, its diagnostics only (prod-code,
+/// m=20120: errors typed and never saved went unreported).
+#[test]
+fn test_the_compilers_diagnostics_come_back_with_the_session() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    published(&root, &[A], VARIANT);
+    let report = r#"printf '%s\n' '{"$message_type":"diagnostic","message":"mismatched types","spans":[]}' 'warning: not json' '{"$message_type":"artifact","artifact":"x"}' >&2"#;
+    let out = build_session_index_with(&driver(&root, "d", report), &root, &root.join("target/ridx/sessions/1-1"), &[(root.join("a/src/lib.rs"), "x".into())]).unwrap();
+    assert_eq!(out.messages.len(), 1, "{:?}", out.messages);
+    assert_eq!(out.messages[0]["message"], "mismatched types");
+    assert!(read(out.dir.join(VARIANT).join("calls")).contains("--error-format=json"), "asked for JSON");
+}
+
+#[test]
+fn test_the_recorded_format_gives_way_to_json() {
+    let args: Vec<String> = ["rustc", "--error-format", "human", "--json=diagnostic-rendered-ansi,artifacts", "--color", "always", "--color=never", "--edition=2021", "lib.rs"]
+        .map(String::from)
+        .into();
+    assert_eq!(json_diagnostics(args), ["rustc", "--edition=2021", "lib.rs", "--error-format=json"]);
 }

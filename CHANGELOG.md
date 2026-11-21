@@ -2,6 +2,12 @@
 
 All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- **Errors in unsaved text**: what the compiler reports when a session index compiles the edited buffers (a wrong return type, an unresolved name, a wrong argument count, every error and lint) is published for those files, in the buffer's coordinates with the document's version, pushed and pulled, in place of the last check of the saved files. 0.3.10 reported in an unsaved buffer only the type mismatches it found itself, and the compiler's errors after a save.
+- **Hover on a binding** (a parameter, a `let`, a closure's parameter, a name in a pattern) shows `name: Type` with its layout (`size = 1, align = 0x1, no Drop`) and the name's range, as rust-analyzer does; a parameter showed `Type: bool`.
+
 ## [0.3.10] - 2026-11-20
 
 Verified by the workspace test suite and by an LSP session against the release build on a Linux node with `ridx-driver` missing: the progress `end` names the failure, `references` is refused with `indexFailed`, `documentSymbol` is answered. The per-method agreement suite was not re-run for this release. The index format is unchanged.

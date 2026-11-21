@@ -11,6 +11,7 @@
 //! The server loop's side of session indexes (`session_index`): which messages change the edited buffers, when a
 //! session index replaces the published one and back, and the directories of servers that ended.
 
+use super::presentation::session_diag::SessionDiagnostics;
 use super::session_index::{SessionIndexer, Snapshot};
 use std::path::{Path, PathBuf};
 
@@ -28,15 +29,26 @@ pub(crate) fn note_edit(session: &SessionIndexer, msg: &serde_json::Value, mr: &
 
 /// One turn of the server loop: a published index that changed (`finished` by this server's reindex, or by anyone)
 /// replaces the session on it, roots with no edited buffer left go back to their published index, sessions due start,
-/// and the ones built are loaded. Returns whether an index was replaced, for the client to fetch again.
-pub(crate) fn step(session: &SessionIndexer, finished: &[PathBuf], mr: &mut super::MultiRootWorkspace, ov: &mut crate::overlay::OverlayManager) -> bool {
+/// and the ones built are loaded. Returns whether an index was replaced, for the client to fetch again; the files whose
+/// compiler diagnostics a session set or took away (`diags`) go to `touched`.
+pub(crate) fn step(
+    session: &SessionIndexer,
+    finished: &[PathBuf],
+    mr: &mut super::MultiRootWorkspace,
+    ov: &mut crate::overlay::OverlayManager,
+    diags: &SessionDiagnostics,
+    touched: &mut Vec<PathBuf>,
+) -> bool {
     let mut replaced = false;
     for root in finished.iter().cloned().chain(session.published_changed()) {
+        // The session built next, on the new published index, reports again.
+        touched.extend(diags.clear(&root));
         if session.published_loaded(&root) {
             replaced |= back_to_published(mr, ov, &root);
         }
     }
     for root in session.start_due(|root| edited_buffers(ov, root)) {
+        touched.extend(diags.clear(&root));
         if session.retire(&root) {
             replaced |= back_to_published(mr, ov, &root);
         }
@@ -59,6 +71,8 @@ pub(crate) fn step(session: &SessionIndexer, finished: &[PathBuf], mr: &mut supe
                 ov.advance_compiled_baseline(&b.key, b.text.clone());
             }
         }
+        let texts: Vec<(PathBuf, String)> = built.buffers.iter().map(|b| (b.path.clone(), b.text.clone())).collect();
+        touched.extend(diags.replace(&built.root, super::presentation::session_diag::session_files(&built.root, &built.messages, &texts)));
         session.loaded(&built.root, &built.dir, built.stamp);
         replaced = true;
     }

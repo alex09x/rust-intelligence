@@ -55,6 +55,8 @@ pub struct SessionBuilt {
     pub dir: PathBuf,
     pub buffers: Vec<Snapshot>,
     pub stamp: Option<(SystemTime, u64)>,
+    /// What the compiler reported on the texts compiled (rustc's JSON diagnostics).
+    pub messages: Vec<serde_json::Value>,
     epoch: u64,
 }
 
@@ -133,7 +135,7 @@ impl SessionIndexer {
                     }
                 }
                 match result {
-                    Ok(dir) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir, buffers, stamp, epoch }),
+                    Ok(out) => built.lock().unwrap_or_else(|e| e.into_inner()).push(SessionBuilt { root, dir: out.dir, buffers, stamp, messages: out.messages, epoch }),
                     Err(_) => {
                         let _ = std::fs::remove_dir_all(&dir);
                     }
