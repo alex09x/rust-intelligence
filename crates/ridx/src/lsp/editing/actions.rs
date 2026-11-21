@@ -77,7 +77,7 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
         }
         if let Some(ws) = workspace {
             let let_type = |offset: usize| super::action_explicit_type::let_type_at(&doc_text, uri, offset, ws, overlay_mgr);
-            let std_only = super::assist_locals::std_only(ws, overlay_mgr);
+            let std_only = super::assist_locals::std_only(ws, overlay_mgr, &file);
             if let Some(action) = super::action_extract_fn::extract_fn_action(&doc_text, uri, range, doc_version, &let_type, &std_only) {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
@@ -95,7 +95,8 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
-            if let Some(action) = super::action_inline_variable::inline_variable_action(&doc_text, uri, range, doc_version, &super::assist_locals::std_only(ws, overlay_mgr)) {
+            if let Some(action) = super::action_inline_variable::inline_variable_action(&doc_text, uri, range, doc_version, &super::assist_locals::std_only(ws, overlay_mgr, &file))
+            {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
@@ -109,7 +110,7 @@ pub fn handle_code_action_with_options(msg: &Value, workspace: Option<&Workspace
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }
-            if let Some(action) = super::action_promote_const::promote_const_action(&doc_text, uri, range, doc_version, &super::assist_locals::std_only(ws, overlay_mgr)) {
+            if let Some(action) = super::action_promote_const::promote_const_action(&doc_text, uri, range, doc_version, &super::assist_locals::std_only(ws, overlay_mgr, &file)) {
                 validate_workspace_edit(&action["edit"], workspace)?;
                 actions.push(action);
             }

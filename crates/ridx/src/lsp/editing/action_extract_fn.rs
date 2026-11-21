@@ -92,7 +92,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType, std
     // extracted (review of 5852217f).
     if tree.descendants(body).any(|d| tree.kind(d) == K::Use)
         || super::assist_locals::macro_may_declare(&tree, tree.root(), std_only)
-        || super::assist_locals::macro_attribute(&tree)
+        || super::assist_locals::macro_attribute(&tree, std_only)
         || tree.tokens_of(expr).iter().any(|t| {
             let name = ridx_syntax::sema_fn::norm_ident(t.text(doc));
             matches!(t.kind, T::Ident | T::RawIdent) && (local_items.contains(&name) || !name.is_ascii())

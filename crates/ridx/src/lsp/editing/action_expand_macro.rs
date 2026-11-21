@@ -138,7 +138,7 @@ fn definition(doc: &str, tree: &SyntaxTree<'_>, file: &str, name_at: usize, name
         binds && !(bare && super::assist_locals::STD_STATEMENT_MACROS.contains(&toks[0].text(doc))) && !tree.ancestors(d).any(|a| tree.kind(a) == K::MacroRules)
     });
     let macro_use = tree.tokens.iter().any(|t| matches!(t.kind, T::Ident | T::RawIdent) && ridx_syntax::sema_fn::norm_ident(t.text(doc)) == "macro_use");
-    if qualified || other_call || macro_use || super::assist_locals::macro_attribute(tree) {
+    if qualified || other_call || macro_use || super::assist_locals::macro_attribute(tree, &|_| false) {
         return None;
     }
     // The one definition of that name in the file, at its top, before the call, under no attribute: a nearer one in a

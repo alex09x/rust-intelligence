@@ -71,6 +71,10 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, std_only: super::assist_lo
     if tree.kind(init) != K::Literal {
         return None;
     }
+    // Whatever type is written, a macro may declare the constant's name already (review of f60136bc).
+    if super::assist_locals::macro_may_declare(&tree, tree.root(), std_only) {
+        return None;
+    }
     // The primitive a literal spells is that primitive only while the file names nothing so.
     let ty = match written {
         Some(w) => w,

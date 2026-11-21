@@ -106,3 +106,18 @@ fn test_a_qualified_or_raw_macro_call_keeps_the_type_unwritten() {
         assert_eq!(promoted(doc, None), None, "{doc}");
     }
 }
+
+/// Review of f60136bc: a macro known to declare may already hold the constant's name, whatever type is written; an
+/// attribute macro may import a primitive's name.
+#[test]
+fn test_a_known_macro_or_an_attribute_keeps_promotion_out() {
+    let promote = |doc: &str, std_only: super::super::assist_locals::StdOnly<'_>| {
+        let offset = doc.find("$0").unwrap();
+        promote_edits(&doc.replacen("$0", "", 1), offset, std_only)
+    };
+    let doc = "pub fn f() -> i32 {\n    println!();\n    let n$0: i32 = 1;\n    n\n}\n";
+    assert!(promote(doc, &|n| n != "println").is_none(), "a written type");
+    assert!(promote(doc, &|_| true).is_some(), "the standard println!");
+    let doc = "#[maker::imports]\npub fn f() -> bool {\n    let n$0 = 1u8;\n    n > 0\n}\n";
+    assert!(promote(doc, &|_| true).is_none(), "an attribute macro");
+}

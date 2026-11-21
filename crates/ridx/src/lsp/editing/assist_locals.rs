@@ -118,15 +118,18 @@ pub(crate) const STD_STATEMENT_MACROS: &[&str] = &[
 /// a file is another file's macro when one is (`println!` defined in main.rs before `mod child;`: review of 651cf0e3).
 pub(crate) type StdOnly<'a> = &'a dyn Fn(&str) -> bool;
 
-/// The [`StdOnly`] of the index `ws` and the open documents of `overlays`.
-pub(crate) fn std_only<'a>(ws: &'a ridx_format::WorkspaceIndex, overlays: &'a crate::overlay::OverlayManager) -> impl Fn(&str) -> bool + 'a {
+/// The [`StdOnly`] of the index `ws` and the open documents of `overlays`, for `file`: only while the index read every
+/// other source of the crates holding it as they are now, an absence in an older reading of them being no proof
+/// (review of f60136bc: a closed parent changed since).
+pub(crate) fn std_only<'a>(ws: &'a ridx_format::WorkspaceIndex, overlays: &'a crate::overlay::OverlayManager, file: &'a str) -> impl Fn(&str) -> bool + 'a {
+    let current = std::cell::OnceCell::new();
     move |n: &str| {
         let indexed = ws.exact_symbols_by_name(n).iter().filter(|s| s.kind == ridx_format::DefKind::Macro).all(|s| matches!(s.crate_name, "std" | "core" | "alloc"));
         let typed = overlays.texts().any(|text| {
             let toks: Vec<_> = ridx_syntax::lex(text).into_iter().filter(|t| !t.is_trivia()).collect();
             toks.windows(3).any(|w| w[0].text(text) == "macro_rules" && w[1].kind == T::Bang && ridx_syntax::sema_fn::norm_ident(w[2].text(text)) == n)
         });
-        indexed && !typed
+        indexed && !typed && *current.get_or_init(|| super::assist_current::crates_current(ws, overlays, file))
     }
 }
 
@@ -169,8 +172,9 @@ const STD_DERIVES: &[&str] =
 
 /// Whether an attribute in the file of `tree` may be a macro's, an attribute macro or a derive not the standard
 /// library's, whose expansion may declare any name (`#[maker::make_helper]` emitting `fn fun_name`: review of
-/// 651cf0e3); a `cfg_attr` may apply one.
-pub(crate) fn macro_attribute(tree: &SyntaxTree<'_>) -> bool {
+/// 651cf0e3); a `cfg_attr` may apply one. A standard derive's name is the standard library's only where the file
+/// imports nothing by it (`use maker::Debug;`, a glob) and no other macro of it is known (review of f60136bc).
+pub(crate) fn macro_attribute(tree: &SyntaxTree<'_>, std_only: StdOnly<'_>) -> bool {
     tree.descendants(tree.root()).filter(|&d| tree.kind(d) == K::Attr).any(|attr| {
         let toks: Vec<_> = tree.tokens_of(attr).iter().filter(|t| !t.is_trivia() && !matches!(t.kind, T::Hash | T::Bang | T::LBracket)).collect();
         let names = |w: &[&ridx_syntax::Token]| {
@@ -178,7 +182,9 @@ pub(crate) fn macro_attribute(tree: &SyntaxTree<'_>) -> bool {
         };
         let head = toks.first().filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(tree.src)));
         match head {
-            Some("derive") => names(&toks[1..]).iter().any(|n| !STD_DERIVES.contains(n)),
+            Some("derive") => {
+                names(&toks[1..]).iter().any(|n| !STD_DERIVES.contains(n) || (n.starts_with(|c: char| c.is_ascii_uppercase()) && (named_by_file(tree, n) || !std_only(n))))
+            }
             // A path (`a::b`) is a macro's, but a tool's (`clippy::all`).
             Some(h) => !BUILTIN_ATTRIBUTES.contains(&h) || (toks.get(1).is_some_and(|t| t.kind == T::Colon) && !matches!(h, "rustfmt" | "clippy" | "diagnostic")),
             None => true,
@@ -199,26 +205,29 @@ pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId, std_only:
         let name = toks[..bang].iter().rev().find(|t| matches!(t.kind, T::Ident | T::RawIdent))?;
         Some((ridx_syntax::sema_fn::norm_ident(name.text(tree.src)), bang == 1 && name.kind == T::Ident))
     };
-    // A name the file defines or imports is not the standard library's (`use types::println;`).
-    let shadowed = |n: &str| {
-        tree.descendants(tree.root()).any(|d| {
-            (tree.kind(d) == K::MacroRules && tree.child(d, K::Name).is_some_and(|m| ridx_syntax::sema_fn::norm_ident(tree.text(m)) == n))
-                || (tree.kind(d) == K::Use
-                    && tree
-                        .tokens_of(d)
-                        .iter()
-                        .any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::Star) && (t.kind == T::Star || ridx_syntax::sema_fn::norm_ident(t.text(tree.src)) == n)))
-        })
-    };
     let by_node = std::iter::once(within).chain(tree.descendants(within)).filter(|&d| tree.kind(d) == K::MacroCall).any(|mc| {
         let parent = tree.parent(mc).map(|p| tree.kind(p));
         let item_place = matches!(parent, Some(K::SourceFile | K::ItemList | K::Module)) && name(mc) != Some(("macro_rules", true));
         let statement_place = matches!(parent, Some(K::BlockExpr | K::ExprStmt));
-        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || shadowed(n) || !std_only(n)))
+        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || named_by_file(tree, n) || !std_only(n)))
     });
     // A raw name's call the parser may not make a node of (`r#declare!();`): any counts, a comparison (`r#type != 0`)
     // being none.
     let toks: Vec<_> = tree.tokens_of(within).iter().filter(|t| !t.is_trivia()).collect();
     let raw_call = toks.windows(3).any(|w| w[0].kind == T::RawIdent && w[1].kind == T::Bang && matches!(w[2].kind, T::LParen | T::LBracket | T::LBrace));
-    by_node || raw_call
+    // An attribute macro's or a derive's expansion may declare anything too (review of f60136bc: an alias of `u8`).
+    by_node || raw_call || macro_attribute(tree, std_only)
+}
+
+/// Whether the file of `tree` defines or imports a macro by the name `n`, or imports by a glob (`use types::println;`):
+/// then it is not the standard library's.
+fn named_by_file(tree: &SyntaxTree<'_>, n: &str) -> bool {
+    tree.descendants(tree.root()).any(|d| {
+        (tree.kind(d) == K::MacroRules && tree.child(d, K::Name).is_some_and(|m| ridx_syntax::sema_fn::norm_ident(tree.text(m)) == n))
+            || (tree.kind(d) == K::Use
+                && tree
+                    .tokens_of(d)
+                    .iter()
+                    .any(|t| matches!(t.kind, T::Ident | T::RawIdent | T::Star) && (t.kind == T::Star || ridx_syntax::sema_fn::norm_ident(t.text(tree.src)) == n)))
+    })
 }

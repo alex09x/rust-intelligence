@@ -180,3 +180,14 @@ fn test_inherited_macros_attribute_macros_and_raw_comparisons() {
     assert!(got.contains("fn fun_name(r#type: u8) -> u8"), "{got}");
     assert_rustc_compiles(&got, "Extract into function");
 }
+
+/// Review of f60136bc: a standard derive's name imported from a crate is that crate's derive, which may declare the
+/// helper's name; one another macro of that name is known for is not known to be the standard library's.
+#[test]
+fn test_a_derive_named_as_a_standard_one_is_known_by_its_binding() {
+    let doc = "use maker::Debug;\n#[derive(Debug)]\npub struct S;\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n";
+    assert_eq!(extracted(doc, Some("i32")), None);
+    let doc = "#[derive(Debug)]\npub struct S;\npub fn f() -> i32 {\n    let r: i32 = $01 + 2$0;\n    r\n}\n";
+    assert_eq!(extracted_with(doc, Some("i32"), &|n| n != "Debug"), None);
+    assert!(extracted(doc, Some("i32")).is_some());
+}
