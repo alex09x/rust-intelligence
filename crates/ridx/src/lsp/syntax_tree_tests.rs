@@ -211,3 +211,19 @@ fn test_slots_documentation_and_cursors_as_rust_analyzer_has_them() {
     let v: Value = serde_json::from_str(&syntax_tree_json(src, Some(src.len()..src.len()))).unwrap();
     assert_ne!(v["kind"], "SOURCE_FILE", "the end of the text is in what ends there: {v}");
 }
+
+/// Review of 1ed5a310: a type parameter's default is a type, a const parameter's a value; `/**/` is outer to
+/// rust-analyzer's attachment and crosses a blank line.
+#[test]
+fn test_parameter_defaults_and_an_empty_block_comment() {
+    let wrapper = |src: &str| {
+        let v: Value = serde_json::from_str(&syntax_tree_json(src, None)).unwrap();
+        let mut ks = Vec::new();
+        kinds(&v, &mut ks);
+        ks.into_iter().find(|k| k == "MACRO_TYPE" || k == "MACRO_EXPR")
+    };
+    assert_eq!(wrapper("struct S<T = ty!()>(T);").as_deref(), Some("MACRO_TYPE"));
+    assert_eq!(wrapper("struct S<const N: usize = { n!() }>;").as_deref(), Some("MACRO_EXPR"));
+    let v: Value = serde_json::from_str(&syntax_tree_json("/**/\n\nfn f() {}\n", None)).unwrap();
+    assert_eq!(start_of(&v, "FN"), Some(0));
+}

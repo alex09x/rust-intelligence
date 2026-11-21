@@ -50,7 +50,7 @@ fn range_of(tree: &SyntaxTree<'_>, n: NodeId) -> Range<usize> {
         return r;
     }
     let inner = |s: &str| s.starts_with("//!") || s.starts_with("/*!");
-    let outer = |s: &str| (s.starts_with("///") && !s.starts_with("////")) || (s.starts_with("/**") && !s.starts_with("/***") && !s.starts_with("/**/"));
+    let outer = |s: &str| (s.starts_with("///") && !s.starts_with("////")) || (s.starts_with("/**") && !s.starts_with("/***"));
     let mut start = r.start;
     let i = tree.tokens.partition_point(|t| (t.start as usize) < r.start);
     let mut before = tree.tokens[..i].iter().rev().peekable();
@@ -77,7 +77,7 @@ fn macro_wrapper(tree: &SyntaxTree<'_>, mc: NodeId) -> Option<&'static str> {
         // type's length, after its `;`, is a value.
         K::TypeAlias | K::CastExpr if tree.own_tokens(p).any(|(_, t)| matches!(t.kind, T::Eq | T::As) && (t.start as usize) < start) => Some("MACRO_TYPE"),
         K::ArrayType => Some(if tree.own_tokens(p).any(|(_, t)| t.kind == T::Semi && (t.start as usize) < start) { "MACRO_EXPR" } else { "MACRO_TYPE" }),
-        K::RetType | K::Impl | K::TypeArg | K::RefType | K::PtrType | K::SliceType | K::TupleType | K::ParenType => Some("MACRO_TYPE"),
+        K::TypeParam | K::RetType | K::Impl | K::TypeArg | K::RefType | K::PtrType | K::SliceType | K::TupleType | K::ParenType => Some("MACRO_TYPE"),
         // A type before the `=`, a value after it.
         K::LetStmt | K::Const | K::Static | K::TypeAlias | K::Param => {
             let eq_before = tree.own_tokens(p).any(|(_, t)| t.kind == T::Eq && (t.start as usize) < start);
