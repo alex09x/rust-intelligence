@@ -135,3 +135,19 @@ fn test_scope_nesting_and_matcher_fragments() {
     assert_eq!(expand("pub fn g() { decl!(a); }\n", "decl!"), Some(("decl".to_string(), "let a: u32 = 0;".to_string())));
     assert_eq!(expand("pub fn g() -> u8 { max!(u8) }\n", "max!"), Some(("max".to_string(), "u8::MAX".to_string())));
 }
+
+/// Review of b40e1834: a nearer definition of the name may shadow the file's, a `cfg` may compile one out.
+#[test]
+fn test_the_fallback_takes_only_an_unshadowed_ungated_definition() {
+    let expand = |d: &str| {
+        let (_d, file, ws) = indexed(d, &[]);
+        expand_macro_at(d, &file, d.rfind("m!").unwrap(), &ws)
+    };
+    assert_eq!(expand("macro_rules! m {\n    () => { 1u8 };\n}\npub fn g() -> u8 { m!() }\n"), Some(("m".to_string(), "1u8".to_string())));
+    assert_eq!(
+        expand("macro_rules! m {\n    () => { 1u8 };\n}\npub fn g() -> u8 {\n    macro_rules! m {\n        () => { 2u8 };\n    }\n    m!()\n}\n"),
+        None,
+        "shadowed in the block"
+    );
+    assert_eq!(expand("#[cfg(any())]\nmacro_rules! m {\n    () => { 2u8 };\n}\npub fn g() -> u8 { m!() }\n"), None, "compiled out");
+}

@@ -190,8 +190,12 @@ pub(super) fn macro_definition(doc: &str, starts: &[usize], file: &str, name_at:
 /// expect_test::expect;` in a test module, whose dev-dependencies the library unit's extern list leaves out).
 pub(super) fn crate_prefix(ws: &WorkspaceIndex, file: &str, masked_doc: &str, call_path: &str, def_crate: Option<&str>) -> Option<String> {
     let Some(def_crate) = def_crate else { return Some("crate".to_string()) };
+    // The path's head names the defining crate only when it is that crate's name: a local module re-exporting the macro
+    // (`facade::m!`) is no crate (review of b40e1834).
     if let Some(head) = call_path.trim_end_matches("::").split("::").next().filter(|h| !h.is_empty() && *h != "crate" && *h != "self" && *h != "super") {
-        return Some(format!("::{head}"));
+        if head.trim_start_matches("r#") == def_crate {
+            return Some(format!("::{head}"));
+        }
     }
     let b = masked_doc.as_bytes();
     let named_root = masked_doc.match_indices(&format!("{def_crate}::")).any(|(p, _)| p == 0 || !(is_ident_byte(b[p - 1]) || b[p - 1] == b':'));

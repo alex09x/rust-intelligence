@@ -75,19 +75,45 @@ fn definition(doc: &str, tree: &SyntaxTree<'_>, file: &str, name_at: usize, name
     let current = ws.source_hash_for_file(file) == Some(ridx_format::normalized_source_hash(doc.as_bytes()));
     let (line, col) = super::action_struct_conv_index::byte_to_line_col(doc, &starts, name_at);
     if current {
-        if let Some(target) = ws.find_direct_references_at(file, line, col).filter(|r| r.target_kind == DefKind::Macro).map(|r| r.target_symbol.to_string()) {
+        if let Some(r) = ws.find_direct_references_at(file, line, col).filter(|r| r.target_kind == DefKind::Macro) {
+            let (target, path, target_line) = (r.target_symbol.to_string(), r.target_resolved_path(), r.target_line);
+            // The definition's file must be the text the index read too, or its coordinates name another macro; and its
+            // line must hold one definition of that name, the line being all that is looked up (review of b40e1834).
+            let text = std::fs::read_to_string(&path).ok()?;
+            if ws.source_hash_for_file(&path.to_string_lossy()) != Some(ridx_format::normalized_source_hash(text.as_bytes())) {
+                return None;
+            }
+            let on_line = text.lines().nth(target_line.saturating_sub(1) as usize).unwrap_or("");
+            let def_toks: Vec<_> = ridx_syntax::lex(on_line).into_iter().filter(|t| !t.is_trivia()).collect();
+            let defs = def_toks
+                .windows(3)
+                .filter(|w| w[0].text(on_line) == "macro_rules" && w[1].text(on_line) == "!" && ridx_syntax::sema_fn::norm_ident(w[2].text(on_line)) == target)
+                .count();
+            if defs > 1 {
+                return None;
+            }
             return macro_definition(doc, &starts, file, name_at, &target, ws, false);
         }
     }
     if qualified {
         return None;
     }
-    let def = tree
-        .children(tree.root())
-        .filter(|&c| tree.kind(c) == K::MacroRules && tree.range(c).end <= name_at)
+    // The one definition of that name in the file, at its top, before the call, under no attribute: a nearer one in a
+    // block may shadow it, a `cfg` may compile it out (review of b40e1834).
+    let same_name: Vec<_> = tree
+        .descendants(tree.root())
+        .filter(|&c| tree.kind(c) == K::MacroRules)
         .filter(|&c| tree.child(c, K::Name).is_some_and(|n| ridx_syntax::sema_fn::norm_ident(tree.text(n)) == name))
-        .last()?;
-    let body = tree.child(def, K::TokenTree)?;
+        .collect();
+    let [def] = same_name.as_slice() else { return None };
+    let gated = tree
+        .children(*def)
+        .filter(|&c| tree.kind(c) == K::Attr)
+        .any(|a| tree.tokens_of(a).iter().any(|t| matches!(ridx_syntax::sema_fn::norm_ident(t.text(doc)), "cfg" | "cfg_attr")));
+    if tree.parent(*def) != Some(tree.root()) || tree.range(*def).end > name_at || gated {
+        return None;
+    }
+    let body = tree.child(*def, K::TokenTree)?;
     Some((tree.text(body).to_string(), None))
 }
 
