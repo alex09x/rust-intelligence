@@ -191,3 +191,15 @@ fn test_a_derive_named_as_a_standard_one_is_known_by_its_binding() {
     assert_eq!(extracted_with(doc, Some("i32"), &|n| n != "Debug"), None);
     assert!(extracted(doc, Some("i32")).is_some());
 }
+
+/// Issue #1: `use super::*` in `mod tests` names nothing in the module above it; a glob in the selection's own module
+/// still may.
+#[test]
+fn test_a_glob_in_another_module_keeps_extraction() {
+    let doc = "pub fn describe(kind: u8, size: u32, scale: u32) -> String {\n    let area = $0size * scale$0;\n    match kind {\n        0 => format!(\"small {}\", area),\n        _ => format!(\"big {}\", area),\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn small() {\n        assert_eq!(describe(0, 2, 3), \"small 6\");\n    }\n}\n";
+    let got = extracted(doc, Some("u32")).expect("offered");
+    assert!(got.contains("let area = fun_name(size, scale);") && got.contains("fn fun_name(size: u32, scale: u32) -> u32 {\n    size * scale\n}"), "{got}");
+    assert_rustc_compiles(&got, "Extract into function");
+    let doc = "mod types { pub type u32 = String; }\nuse types::*;\npub fn f(size: u32) -> usize {\n    let n = $0size.len()$0;\n    n\n}\n";
+    assert_eq!(extracted(doc, Some("usize")), None);
+}

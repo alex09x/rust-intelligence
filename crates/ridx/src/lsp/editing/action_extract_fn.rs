@@ -91,7 +91,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType, std
     // A name beyond ASCII is not compared without its normal form (`café` and `cafe\u{301}` are one name): not
     // extracted (review of 5852217f).
     if tree.descendants(body).any(|d| tree.kind(d) == K::Use)
-        || super::assist_locals::macro_may_declare(&tree, tree.root(), std_only)
+        || super::assist_locals::macro_may_declare(&tree, tree.root(), sel.start, std_only)
         || super::assist_locals::macro_attribute(&tree, std_only)
         || tree.tokens_of(expr).iter().any(|t| {
             let name = ridx_syntax::sema_fn::norm_ident(t.text(doc));
@@ -102,7 +102,7 @@ pub(crate) fn extract_edits(doc: &str, sel: Range<usize>, let_type: LetType, std
     }
     // Nor does a type of the new signature name what the body declares (`type Word = u8` in it).
     let names_local = |ty: &str| ty.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|w| local_items.contains(&w) || !w.is_ascii());
-    let primitive_shadowed = primitive_shadowed(&tree, std_only);
+    let primitive_shadowed = primitive_shadowed(&tree, tree.range(expr).start, std_only);
     // The value's type: the `let` it initializes, or the function's for its tail.
     let parent = tree.parent(expr)?;
     let ret = if tree.kind(parent) == K::LetStmt {

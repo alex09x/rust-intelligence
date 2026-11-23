@@ -50,6 +50,9 @@ pub fn status(
                 "indexed": generation.is_some(),
                 "generation": generation,
                 "building": building,
+                // A change recorded that no loaded index covers yet: answers from the index may be of the text before
+                // it (prod-code, m=20734).
+                "pendingChanges": reindex.pending_of(&root),
                 "error": error,
                 "sessionIndex": { "answers": session_answers, "building": session_building },
             })

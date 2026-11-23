@@ -72,13 +72,13 @@ pub(crate) fn promote_edits(doc: &str, offset: usize, std_only: super::assist_lo
         return None;
     }
     // Whatever type is written, a macro may declare the constant's name already (review of f60136bc).
-    if super::assist_locals::macro_may_declare(&tree, tree.root(), std_only) {
+    if super::assist_locals::macro_may_declare(&tree, tree.root(), tree.range(init).start, std_only) {
         return None;
     }
     // The primitive a literal spells is that primitive only while the file names nothing so.
     let ty = match written {
         Some(w) => w,
-        None => literal_type(tree.text(init)).filter(|_| !super::assist_locals::primitive_shadowed(&tree, std_only))?.to_string(),
+        None => literal_type(tree.text(init)).filter(|_| !super::assist_locals::primitive_shadowed(&tree, tree.range(init).start, std_only))?.to_string(),
     };
     // A constant's type is an item's: no placeholder, no generic parameter of the function or impl around it (review
     // of 63f24322: `const X: _` and `[T; 0]` in `fn f<T>()`).

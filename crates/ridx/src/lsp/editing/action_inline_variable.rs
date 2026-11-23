@@ -126,14 +126,15 @@ pub(crate) fn inline_edits(doc: &str, offset: usize, std_only: StdOnly<'_>) -> O
     }
     // A `use` in the function brings names into its whole block, later ones too, whatever they are: none is compared
     // (review of b854363f).
-    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1)
-        || tree.descendants(f).any(|d| tree.kind(d) == K::Use)
-        || super::assist_locals::macro_may_declare(&tree, f, std_only)
-    {
+    if idents.iter().any(|i| declared.iter().filter(|d| *d == i).count() > 1) || tree.descendants(f).any(|d| tree.kind(d) == K::Use) {
         return None;
     }
     let uses = ridx_syntax::sema_fn::let_uses(&tree, stmt, ridx_syntax::sema_fn::norm_ident(tree.text(name)));
     let [use_range] = uses.uses.as_slice() else { return None };
+    // Every block holding the `let` holds its use as well.
+    if super::assist_locals::macro_may_declare(&tree, f, use_range.start, std_only) {
+        return None;
+    }
     if !uses.macro_uses.is_empty() || is_shorthand(&tree, use_range.start) {
         return None;
     }
@@ -176,7 +177,7 @@ pub(crate) fn inline_edits(doc: &str, offset: usize, std_only: StdOnly<'_>) -> O
             return None;
         }
     }
-    let shadowed = primitive_shadowed(&tree, std_only);
+    let shadowed = primitive_shadowed(&tree, tree.range(path).start, std_only);
     // Only a type written on the local: one inferred from the index may be stale (review of 03933e37).
     let local = |n: &str, at: usize| local_of(&tree, f, n, at, &|_| None).ok().flatten();
     pure(&tree, init, &local, shadowed)?;

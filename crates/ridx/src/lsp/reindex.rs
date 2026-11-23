@@ -33,8 +33,16 @@ struct RootState {
     running_since: Option<SystemTime>,
     /// Another run was asked for while this one runs.
     again: bool,
-    /// When the last run started: a file written before it is in the index.
-    last_start: Option<SystemTime>,
+    /// The number of the latest run started.
+    run: u64,
+    /// The run that reads the last change recorded (`0`: none recorded).
+    pending: u64,
+    /// The latest run whose index the server took to load.
+    covered: u64,
+    /// The content (a hash; `None`: no file) of each changed file as it was recorded: the run `pending` reads it, so
+    /// the same content again is no change (Zed reports a save twice; a sync keeping the old mtime is one: prod-code,
+    /// m=20734, where the mtime said the last run had read it).
+    seen: HashMap<PathBuf, Option<u64>>,
     /// Why the last run failed, `None` after a run that succeeded (`ridx/status`).
     last_error: Option<String>,
     /// Which registration of the root this is: a run of one removed (and maybe added again) is not taken.
@@ -47,8 +55,8 @@ static REGISTRATIONS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU6
 #[derive(Default)]
 pub struct Reindexer {
     roots: Arc<Mutex<HashMap<PathBuf, RootState>>>,
-    /// The roots whose run ended successfully since the server last looked.
-    finished: Arc<Mutex<Vec<PathBuf>>>,
+    /// The roots whose run ended successfully since the server last looked, with the run's number.
+    finished: Arc<Mutex<Vec<(PathBuf, u64)>>>,
     /// Every run that ended since the progress last looked, failed or not: a run starting and failing between two
     /// looks at `running` still shows in the progress (review of b3d0d293).
     ended: Arc<Mutex<Vec<PathBuf>>>,
@@ -64,8 +72,23 @@ impl Reindexer {
     /// The roots whose run ended successfully since the last call: the server then loads the new index (a first one
     /// as a new root) and asks the client to fetch again what came from the old one (the watched-file events of a
     /// run arrive while it runs).
+    /// The changes recorded before each run are covered from now on: the server loads its index before the next message.
     pub fn take_finished(&self) -> Vec<PathBuf> {
-        std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()))
+        let taken = std::mem::take(&mut *self.finished.lock().unwrap_or_else(|e| e.into_inner()));
+        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        for (root, run) in &taken {
+            if let Some(st) = roots.get_mut(root) {
+                st.covered = st.covered.max(*run);
+            }
+        }
+        taken.into_iter().map(|(r, _)| r).collect()
+    }
+
+    /// For `ridx/status`: whether a change to `root` was recorded (a save, a watched-file event) that no index loaded
+    /// covers yet, a run for it not started, running, or failed (prod-code, m=20734).
+    pub fn pending_of(&self, root: &Path) -> bool {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.get(root).is_some_and(|st| st.pending > st.covered)
     }
 
     /// A workspace folder the client removed: it leaves the roots of the session, with a run's success not yet taken
@@ -73,7 +96,7 @@ impl Reindexer {
     pub fn forget(&self, root: &Path) {
         let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         roots.remove(root);
-        self.finished.lock().unwrap_or_else(|e| e.into_inner()).retain(|r| r != root);
+        self.finished.lock().unwrap_or_else(|e| e.into_inner()).retain(|(r, _)| r != root);
     }
 
     /// The roots indexed this session, running or not, canonical.
@@ -157,8 +180,8 @@ impl Reindexer {
     }
 
     /// Reindexes `root` in the background for the file `changed` on disk (a save, or a watched-file event), when it
-    /// has an index, unless the file lies in a build directory or a run that started after it was written already
-    /// covers it: Zed reports a save as a watched-file change too, just before `didSave`.
+    /// has an index, unless the file lies in a build directory or a run started or asked for since already reads this
+    /// content of it: Zed reports a save as a watched-file change too, just before `didSave`.
     pub fn trigger_for_change(&self, root: &Path, changed: &Path) {
         let (root, changed) = (ridx_format::canonicalize_best_effort(root), ridx_format::canonicalize_best_effort(changed));
         if changed.strip_prefix(&root).unwrap_or(&changed).components().any(|c| c.as_os_str() == "target") {
@@ -170,32 +193,19 @@ impl Reindexer {
         if reindex_off() || !(root.join(MANIFEST).is_file() || first_index_asked) {
             return;
         }
-        let written = std::fs::metadata(&changed).and_then(|m| m.modified()).ok();
-        self.start(&root, written);
+        let content = std::fs::read(&changed).ok().map(|b| {
+            use std::hash::{Hash, Hasher};
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            b.hash(&mut h);
+            h.finish()
+        });
+        self.start(&root, Some((changed, content)));
     }
 
-    /// Runs `ridx index root` in the background, for a change written at `written`.
-    fn start(&self, root: &Path, written: Option<SystemTime>) {
+    /// Runs `ridx index root` in the background, for a file changed to `change`'s content.
+    fn start(&self, root: &Path, change: Option<(PathBuf, Option<u64>)>) {
         let Some(exe) = ridx_exe() else { return };
-        let registration;
-        {
-            let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
-            let st = roots
-                .entry(root.to_path_buf())
-                .or_insert_with(|| RootState { registration: REGISTRATIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed), ..RootState::default() });
-            registration = st.registration;
-            let covered_since = st.running_since.or(st.last_start);
-            if written.is_some_and(|w| covered_since.is_some_and(|s| w <= s)) {
-                return;
-            }
-            if st.running_since.is_some() {
-                st.again = true;
-                return;
-            }
-            let now = SystemTime::now();
-            st.running_since = Some(now);
-            st.last_start = Some(now);
-        }
+        let Some(registration) = self.record(root, change) else { return };
         let roots = Arc::clone(&self.roots);
         let finished = Arc::clone(&self.finished);
         let ended = Arc::clone(&self.ended);
@@ -209,23 +219,62 @@ impl Reindexer {
             let ok = Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(out).status().is_ok_and(|s| s.success());
             let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
             crate::lsp::logger::log_info(&msg);
-            let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
-            // A folder the client removed meanwhile (`forget`), even if added again since, is neither loaded nor run again.
-            let Some(st) = roots.get_mut(&root).filter(|st| st.registration == registration) else { break };
-            if ok {
-                finished.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
-            }
-            st.last_error = (!ok).then(|| failure_reason(&log));
-            ended.lock().unwrap_or_else(|e| e.into_inner()).push(root.clone());
-            if std::mem::take(&mut st.again) {
-                let now = SystemTime::now();
-                st.running_since = Some(now);
-                st.last_start = Some(now);
-            } else {
-                st.running_since = None;
+            let error = (!ok).then(|| failure_reason(&log));
+            if !Self::end_run(&roots, &finished, &ended, &root, registration, error) {
                 break;
             }
         });
+    }
+
+    /// Records a run asked for `root`, for a file changed to `change`'s content (`None`: a first index): the
+    /// registration to start it under, or `None` when none starts (one runs, and another is queued after it, or this
+    /// content is read already).
+    fn record(&self, root: &Path, change: Option<(PathBuf, Option<u64>)>) -> Option<u64> {
+        let mut roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        let st =
+            roots.entry(root.to_path_buf()).or_insert_with(|| RootState { registration: REGISTRATIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed), ..RootState::default() });
+        if let Some((file, content)) = change {
+            if st.seen.get(&file) == Some(&content) {
+                return None;
+            }
+            st.seen.insert(file, content);
+            // The next run reads it: the one queued after a run, or the one starting now.
+            st.pending = st.run + 1;
+        }
+        if st.running_since.is_some() {
+            st.again = true;
+            return None;
+        }
+        st.run += 1;
+        st.running_since = Some(SystemTime::now());
+        Some(st.registration)
+    }
+
+    /// Ends the run of `root` under `registration`, failed with `error` or not; whether another one starts now.
+    fn end_run(
+        roots: &Mutex<HashMap<PathBuf, RootState>>,
+        finished: &Mutex<Vec<(PathBuf, u64)>>,
+        ended: &Mutex<Vec<PathBuf>>,
+        root: &Path,
+        registration: u64,
+        error: Option<String>,
+    ) -> bool {
+        let mut roots = roots.lock().unwrap_or_else(|e| e.into_inner());
+        // A folder the client removed meanwhile (`forget`), even if added again since, is neither loaded nor run again.
+        let Some(st) = roots.get_mut(root).filter(|st| st.registration == registration) else { return false };
+        if error.is_none() {
+            finished.lock().unwrap_or_else(|e| e.into_inner()).push((root.to_path_buf(), st.run));
+        }
+        st.last_error = error;
+        ended.lock().unwrap_or_else(|e| e.into_inner()).push(root.to_path_buf());
+        if std::mem::take(&mut st.again) {
+            st.run += 1;
+            st.running_since = Some(SystemTime::now());
+            true
+        } else {
+            st.running_since = None;
+            false
+        }
     }
 }
 

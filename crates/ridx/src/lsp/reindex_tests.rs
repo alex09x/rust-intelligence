@@ -79,7 +79,7 @@ fn test_refresh_requests_follow_the_client_capabilities() {
     assert!(methods(serde_json::json!({})).is_empty());
     let r = Reindexer::new();
     assert!(r.take_finished().is_empty());
-    r.finished.lock().unwrap().extend([PathBuf::from("/w"), PathBuf::from("/v")]);
+    r.finished.lock().unwrap().extend([(PathBuf::from("/w"), 1), (PathBuf::from("/v"), 1)]);
     assert_eq!(r.take_finished(), [PathBuf::from("/w"), PathBuf::from("/v")]);
     assert!(r.take_finished().is_empty(), "taken once");
 }
@@ -185,4 +185,36 @@ fn test_a_run_is_reported_once_by_the_progress() {
     assert_eq!(text.matches("\"kind\":\"end\"").count(), 1, "{text}");
     assert_eq!(text.matches("\"kind\":\"begin\"").count(), 1, "{text}");
     assert!(text.contains("Indexing failed: a: ridx index failed: no driver"), "{text}");
+}
+
+/// prod-code, m=20734: a change recorded is pending until an index read after it is loaded, whatever its mtime says
+/// (a sync keeping the old one); the same content again is no new change, a run failing covers nothing.
+#[test]
+fn test_a_change_is_pending_until_an_index_read_after_it_is_loaded() {
+    let r = Reindexer::new();
+    let root = Path::new("/w");
+    let lib = || (PathBuf::from("/w/src/lib.rs"), Some(1));
+    let end = |error: Option<&str>| {
+        let registration = r.roots.lock().unwrap()[root].registration;
+        Reindexer::end_run(&r.roots, &r.finished, &r.ended, root, registration, error.map(str::to_string))
+    };
+    assert!(!r.pending_of(root), "nothing recorded");
+    assert!(r.record(root, Some(lib())).is_some(), "a run starts");
+    assert!(r.pending_of(root));
+    assert!(r.record(root, Some(lib())).is_none(), "its second event: no run");
+    assert!(r.record(root, Some((PathBuf::from("/w/src/a.rs"), None))).is_none(), "a removal while it runs: queued");
+    assert!(end(None), "the queued run starts");
+    assert_eq!(r.take_finished(), [root.to_path_buf()]);
+    assert!(r.pending_of(root), "the removal is read by the second run");
+    assert!(!end(None));
+    r.take_finished();
+    assert!(!r.pending_of(root), "loaded");
+    assert!(r.record(root, Some(lib())).is_none(), "content read already: no run, nothing pending");
+    assert!(!r.pending_of(root));
+    assert!(r.record(root, Some((PathBuf::from("/w/src/lib.rs"), Some(2)))).is_some());
+    assert!(!end(Some("error: x")));
+    assert!(r.take_finished().is_empty());
+    assert!(r.pending_of(root), "a failed run covers nothing");
+    let r2 = Reindexer::new();
+    assert!(r2.record(root, None).is_some() && !r2.pending_of(root), "a first index records no change");
 }

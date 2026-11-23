@@ -84,12 +84,30 @@ pub(crate) fn local_of(tree: &SyntaxTree<'_>, f: NodeId, name: &str, at: usize, 
 /// (review of 5852217f).
 /// A glob import may bring in any name, a primitive's too, from a file not read here (review of 9d489afe: `use
 /// types::*` with `type u32 = String` in types.rs).
-pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>, std_only: StdOnly<'_>) -> bool {
+/// Only what the module holding byte `at` declares or imports: another inline module's (`mod tests { use super::*; }`)
+/// names nothing in it (issue #1).
+pub(crate) fn primitive_shadowed(tree: &SyntaxTree<'_>, at: usize, std_only: StdOnly<'_>) -> bool {
     let primitive = |s: &str| PRIMITIVES.contains(&ridx_syntax::sema_fn::norm_ident(s));
-    macro_may_declare(tree, tree.root(), std_only)
+    let here = module_at(tree, at);
+    macro_may_declare(tree, tree.root(), at, std_only)
         || tree.descendants(tree.root()).any(|d| {
-            (tree.kind(d) == K::Name && primitive(tree.text(d))) || (tree.kind(d) == K::Use && tree.tokens_of(d).iter().any(|t| t.kind == T::Star || primitive(t.text(tree.src))))
+            (tree.kind(d) == K::Name && tree.parent(d).is_some_and(|item| module_of(tree, item) == here) && primitive(tree.text(d)))
+                || (tree.kind(d) == K::Use && module_of(tree, d) == here && tree.tokens_of(d).iter().any(|t| t.kind == T::Star || primitive(t.text(tree.src))))
         })
+}
+
+/// The inline module holding node `n` (`None`: the file's own).
+fn module_of(tree: &SyntaxTree<'_>, n: NodeId) -> Option<NodeId> {
+    tree.ancestors(n).find(|&a| tree.kind(a) == K::Module)
+}
+
+/// The inline module holding byte `at`.
+fn module_at(tree: &SyntaxTree<'_>, at: usize) -> Option<NodeId> {
+    let n = tree.covering(at);
+    if tree.kind(n) == K::Module {
+        return Some(n);
+    }
+    module_of(tree, n)
 }
 
 /// The standard library's statement macros, which declare nothing where they are called.
@@ -183,7 +201,7 @@ pub(crate) fn macro_attribute(tree: &SyntaxTree<'_>, std_only: StdOnly<'_>) -> b
         let head = toks.first().filter(|t| matches!(t.kind, T::Ident | T::RawIdent)).map(|t| ridx_syntax::sema_fn::norm_ident(t.text(tree.src)));
         match head {
             Some("derive") => {
-                names(&toks[1..]).iter().any(|n| !STD_DERIVES.contains(n) || (n.starts_with(|c: char| c.is_ascii_uppercase()) && (named_by_file(tree, n) || !std_only(n))))
+                names(&toks[1..]).iter().any(|n| !STD_DERIVES.contains(n) || (n.starts_with(|c: char| c.is_ascii_uppercase()) && (named_by_file(tree, n, attr) || !std_only(n))))
             }
             // A path (`a::b`) is a macro's, but a tool's (`clippy::all`).
             Some(h) => !BUILTIN_ATTRIBUTES.contains(&h) || (toks.get(1).is_some_and(|t| t.kind == T::Colon) && !matches!(h, "rustfmt" | "clippy" | "diagnostic")),
@@ -195,8 +213,9 @@ pub(crate) fn macro_attribute(tree: &SyntaxTree<'_>, std_only: StdOnly<'_>) -> b
 /// Whether a macro called under `within` in an item's or a statement's place may declare an item or an import there
 /// that the unexpanded tree does not show (`m!();` expanding to `use types::*;` or `const N: i32 = 3;`: review of
 /// 7dca0b11): any in an item's place; in a statement's, any but the standard library's statement macros, unless the
-/// file defines a macro of that name itself or `std_only` knows one elsewhere.
-pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId, std_only: StdOnly<'_>) -> bool {
+/// file defines a macro of that name itself or `std_only` knows one elsewhere. A statement's only in a block holding
+/// byte `at`, what it declares being that block's (issue #1: `assert_eq!` in a test function).
+pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId, at: usize, std_only: StdOnly<'_>) -> bool {
     // The call's name and whether its path is the name alone (`types::println!` is a user's macro, whatever its last
     // segment: review of 9276edef).
     let name = |mc: NodeId| {
@@ -208,8 +227,9 @@ pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId, std_only:
     let by_node = std::iter::once(within).chain(tree.descendants(within)).filter(|&d| tree.kind(d) == K::MacroCall).any(|mc| {
         let parent = tree.parent(mc).map(|p| tree.kind(p));
         let item_place = matches!(parent, Some(K::SourceFile | K::ItemList | K::Module)) && name(mc) != Some(("macro_rules", true));
-        let statement_place = matches!(parent, Some(K::BlockExpr | K::ExprStmt));
-        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || named_by_file(tree, n) || !std_only(n)))
+        let statement_place =
+            matches!(parent, Some(K::BlockExpr | K::ExprStmt)) && tree.ancestors(mc).find(|&a| tree.kind(a) == K::BlockExpr).is_none_or(|b| tree.range(b).contains(&at));
+        item_place || (statement_place && name(mc).is_none_or(|(n, bare)| !bare || !STD_STATEMENT_MACROS.contains(&n) || named_by_file(tree, n, mc) || !std_only(n)))
     });
     // A raw name's call the parser may not make a node of (`r#declare!();`): any counts, a comparison (`r#type != 0`)
     // being none.
@@ -220,11 +240,14 @@ pub(crate) fn macro_may_declare(tree: &SyntaxTree<'_>, within: NodeId, std_only:
 }
 
 /// Whether the file of `tree` defines or imports a macro by the name `n`, or imports by a glob (`use types::println;`):
-/// then it is not the standard library's.
-fn named_by_file(tree: &SyntaxTree<'_>, n: &str) -> bool {
+/// then it is not the standard library's. An import counts in the module holding `user` only (issue #1: `use super::*`
+/// in `mod tests`); a `macro_rules!` anywhere, its textual scope reaching into modules after it.
+fn named_by_file(tree: &SyntaxTree<'_>, n: &str, user: NodeId) -> bool {
+    let here = module_of(tree, user);
     tree.descendants(tree.root()).any(|d| {
         (tree.kind(d) == K::MacroRules && tree.child(d, K::Name).is_some_and(|m| ridx_syntax::sema_fn::norm_ident(tree.text(m)) == n))
             || (tree.kind(d) == K::Use
+                && module_of(tree, d) == here
                 && tree
                     .tokens_of(d)
                     .iter()
