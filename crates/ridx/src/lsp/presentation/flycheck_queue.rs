@@ -55,6 +55,10 @@ impl FlycheckState {
 
     /// Checks `roots`, then the roots an earlier request had not finished, one after the other.
     pub fn trigger_checks(&self, roots: Vec<PathBuf>) {
+        // `cargo check` runs build scripts and procedural macros: none with `buildScripts: false`.
+        if crate::indexer::no_build::enabled() {
+            return;
+        }
         self.cancel();
         let my_gen = self.generation.load(Ordering::SeqCst);
         {

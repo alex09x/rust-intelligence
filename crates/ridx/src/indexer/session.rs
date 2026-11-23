@@ -265,6 +265,7 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
     // The environment the unit was built with first, then the session's own over it: a recorded `RIDX_OUT_DIR` (a
     // build script can set any variable) must not send the compile into the published index (review of ca0c1ec7).
     cmd.envs(unit.env.iter().filter(|(k, _)| !k.starts_with("RIDX_")));
+    cmd.envs(super::no_build::envs());
     cmd.env("RIDX_OUT_DIR", ctx.variant)
         .env("RIDX_CACHE_DIR", ridx_format::resolve_cache_dir())
         .env("RIDX_WORKSPACE_ROOT", ctx.root)

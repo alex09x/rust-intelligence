@@ -21,6 +21,10 @@ use std::path::{Path, PathBuf};
 /// The outcome of a buffer no crate includes.
 pub const UNLINKED: &str = "notInAnyCrate";
 
+/// The outcome of every buffer while no build script or procedural macro runs (`buildScripts: false`): what the
+/// compiler reports then is of stubs, not of the code.
+pub const BUILD_SCRIPTS_OFF: &str = "buildScriptsOff";
+
 /// The hint for a file no crate includes, the one rust-analyzer gives (`unlinked-file`), when the session answering
 /// for it (`out`, from `SessionDiagnostics::outcome_root`) found `live`, the buffer's text, in none: in place of an
 /// empty list, which reads as a file without errors (prod-code, m=20185). It is of that compile alone, the disk is not
@@ -46,7 +50,9 @@ pub fn session_outcomes(report: &CompilerReport, buffers: &[(PathBuf, String)], 
             let path = ridx_format::canonicalize_best_effort(p);
             // A test target not compiled stays unknown whatever another unit including the file as a module reported:
             // that compile says nothing of the target's (review of c6b62a99).
-            let unavailable = if report.unresolved.contains(&path) {
+            let unavailable = if crate::indexer::no_build::enabled() {
+                Some(BUILD_SCRIPTS_OFF)
+            } else if report.unresolved.contains(&path) {
                 Some("targetUnresolved")
             } else if files.contains_key(&path) {
                 None

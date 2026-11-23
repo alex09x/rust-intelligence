@@ -88,6 +88,8 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
 
     let profile_name = if release { "release" } else { "dev" };
     let variant_id = compute_variant_id(profile_name, target.as_deref(), package.as_deref(), features.as_deref(), no_default_features, all_features, &manifest_path);
+    // With no build script run, a variant of its own: its recorded compiles name only stub macros.
+    let variant_id = super::no_build::scoped(&variant_id);
 
     let config_target = find_cargo_configs(&work_dir).iter().find_map(|cfg| fs::read_to_string(cfg).ok().and_then(|c| extract_config_target(&c)));
     let effective_target = target.clone().or_else(|| std::env::var("CARGO_BUILD_TARGET").ok()).or(config_target);
@@ -108,7 +110,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         .filter(|d| d != &variant_out_dir && d.is_dir());
 
     let cargo_cache_id = super::feature_graph::compute_shared_cargo_cache_id(profile_name, effective_target.as_deref());
-    let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&cargo_cache_id);
+    let cargo_target_dir = work_dir.join("target/ridx_cargo").join(super::no_build::scoped(&cargo_cache_id));
     let _ = fs::create_dir_all(&cargo_target_dir);
     let check_started = std::time::SystemTime::now();
 
@@ -159,7 +161,8 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         }
     }
 
-    let builder = IndexBuilder::resolve(opts.builder);
+    // Mitts may serve a unit from its cache without the driver: a macro built with its code run.
+    let builder = if super::no_build::enabled() { IndexBuilder::Cargo } else { IndexBuilder::resolve(opts.builder) };
 
     let feature_graph = super::feature_graph::ResolvedFeatureGraph::resolve_with_builder(
         builder,

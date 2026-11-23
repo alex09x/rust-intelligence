@@ -35,6 +35,13 @@ pub use ty_arena::{
 pub use workspace::*;
 pub use writer::{IndexWriter, RawDefinition, RawMacroDef, RawNote, RawReference, RawType};
 
+/// `=1` in the driver's environment: no build script or procedural macro is executed while indexing (prod-code,
+/// m=20739).
+pub const NO_BUILD_ENV: &str = "RIDX_NO_BUILD_SCRIPTS";
+/// The start of the name of the Cargo target directory of an index built so: the procedural macros the driver loads
+/// then are only stubs built under it.
+pub const NO_BUILD_DIR_PREFIX: &str = "nobuild-";
+
 #[cfg(test)]
 mod tests {
     use super::*;

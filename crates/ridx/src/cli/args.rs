@@ -104,6 +104,11 @@ pub enum Commands {
         /// Build tool to run compiler check (cargo or mitts)
         #[arg(long, value_enum)]
         builder: Option<IndexBuilder>,
+
+        /// Run no build script and no procedural macro: they are compiled from stubs (code needing what they make is
+        /// indexed as far as it compiles)
+        #[arg(long)]
+        no_build_scripts: bool,
     },
 
     /// Inspect binary header, record counts, and memory layout of a .ridx index file or workspace

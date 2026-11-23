@@ -262,6 +262,7 @@ pub fn try_direct_crate_indexing(
             return None;
         }
         cmd.args(&sanitized_args);
+        cmd.envs(crate::indexer::no_build::envs());
         cmd.current_dir(work_dir);
         cmd.env("RIDX_OUT_DIR", variant_out_dir);
         cmd.env("RIDX_CACHE_DIR", cache_dir);

@@ -216,7 +216,16 @@ impl Reindexer {
             let log = root.join(REINDEX_LOG);
             let _ = log.parent().map(std::fs::create_dir_all);
             let out = std::fs::File::create(&log).map_or_else(|_| Stdio::null(), Stdio::from);
-            let ok = Command::new(&exe).arg("index").arg(&root).current_dir(&root).stdin(Stdio::null()).stdout(Stdio::null()).stderr(out).status().is_ok_and(|s| s.success());
+            let ok = Command::new(&exe)
+                .arg("index")
+                .arg(&root)
+                .envs(crate::indexer::no_build::envs())
+                .current_dir(&root)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(out)
+                .status()
+                .is_ok_and(|s| s.success());
             let msg = format!("reindexed {} in {:.1} s ({}; log {})", root.display(), started.elapsed().as_secs_f64(), if ok { "ok" } else { "failed" }, log.display());
             crate::lsp::logger::log_info(&msg);
             let error = (!ok).then(|| failure_reason(&log));
@@ -326,8 +335,18 @@ fn reindex_off() -> bool {
 
 /// Whether `root` is a Cargo workspace of the user's without an index: not one the toolchain or Cargo's caches hold
 /// (a library's sources opened as a folder).
+/// With `buildScripts: false`, an index built with them run is no index of this session's either: the compiles of
+/// its buffers would load its macros (the driver refuses them).
 fn needs_first_index(root: &Path) -> bool {
-    !reindex_off() && !is_cached_source(root) && root.join("Cargo.toml").is_file() && !root.join(MANIFEST).is_file()
+    let published_without_build_scripts = || {
+        let manifest: Option<Value> = std::fs::read(root.join(MANIFEST)).ok().and_then(|b| serde_json::from_slice(&b).ok());
+        manifest
+            .is_some_and(|m| m["variant_dir"].as_str().is_some_and(|d| Path::new(d).file_name().is_some_and(|n| n.to_string_lossy().starts_with(ridx_format::NO_BUILD_DIR_PREFIX))))
+    };
+    !reindex_off()
+        && !is_cached_source(root)
+        && root.join("Cargo.toml").is_file()
+        && (!root.join(MANIFEST).is_file() || (crate::indexer::no_build::enabled() && !published_without_build_scripts()))
 }
 
 /// Whether `path` lies in sources the toolchain or Cargo's caches hold, not the user's.

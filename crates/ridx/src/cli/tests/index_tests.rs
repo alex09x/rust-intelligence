@@ -53,6 +53,7 @@ fn test_cli_index_command() {
             all_features: false,
             target: None,
             builder: None,
+            no_build_scripts: false,
         });
 
         // Test auto-reindexing on missing shard in valid workspace

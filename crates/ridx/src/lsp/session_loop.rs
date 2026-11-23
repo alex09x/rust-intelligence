@@ -93,7 +93,9 @@ pub(crate) fn step(
         // again since is another buffer (reviews of fb2bed09 and d4541e29).
         let texts: Vec<(PathBuf, String)> =
             built.buffers.iter().filter(|b| ov.get(&b.key).is_some_and(|o| o.instance == b.instance)).map(|b| (b.path.clone(), b.text.clone())).collect();
-        let files = super::presentation::session_diag::session_files(&built.root, &built.report, &texts);
+        // With no build script or macro run, none of the compiler's: a derive expanded to nothing reports errors the code
+        // does not have.
+        let files = if crate::indexer::no_build::enabled() { Default::default() } else { super::presentation::session_diag::session_files(&built.root, &built.report, &texts) };
         // What each buffer's compile gave, a reason for none included: a request waiting for its diagnostics is answered
         // by it, never with an empty list standing for "clean" (prod-code, m=20178).
         // Both the outcomes and the results say which files change: an outcome alone may change what is answered (an

@@ -47,6 +47,7 @@ pub(crate) mod expr_ty_dump;
 mod hir_visitor;
 pub(crate) mod macro_extract;
 mod metadata;
+mod no_build;
 mod notes;
 mod span_and_kind;
 pub(crate) mod ty_lower;
@@ -242,6 +243,12 @@ pub fn run_driver_with_env(mut args: Vec<String>, env: DriverEnv) -> Result<(), 
     // `build_script_build`).
     let crate_name_arg = args.windows(2).find(|w| w[0] == "--crate-name").map(|w| w[1].as_str());
     let local_package = std::env::var_os("CARGO_MANIFEST_DIR").is_some_and(|d| !metadata::is_immutable_package(Path::new(&d)));
+    // No build script or procedural macro runs (prod-code, m=20739).
+    if no_build::enabled() {
+        if let Some(res) = no_build::compile(&args, local_package) {
+            return res;
+        }
+    }
     let build_script = matches!(crate_name_arg, Some("build_script_build" | "build_script_main"));
     if build_script && !local_package {
         let res = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut NoopCallbacks));

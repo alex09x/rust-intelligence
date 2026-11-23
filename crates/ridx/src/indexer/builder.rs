@@ -194,11 +194,17 @@ pub fn build_check_command_with_no_deps(
     if !no_deps {
         envs.push(("RUSTC_WRAPPER".to_string(), driver_bin.display().to_string()));
         envs.push(("RUSTC_WORKSPACE_WRAPPER".to_string(), String::new()));
+    } else if super::no_build::enabled() {
+        // Every crate through the driver, which runs no build script or macro of any; the dependencies not indexed.
+        envs.push(("RUSTC_WRAPPER".to_string(), driver_bin.display().to_string()));
+        envs.push(("RUSTC_WORKSPACE_WRAPPER".to_string(), String::new()));
+        envs.push(("RIDX_DEPS_UNINDEXED".to_string(), "1".to_string()));
     } else {
         envs.push(("RUSTC_WORKSPACE_WRAPPER".to_string(), driver_bin.display().to_string()));
         envs.push(("RUSTC_WRAPPER".to_string(), String::new()));
     }
 
+    envs.extend(super::no_build::envs());
     if let Some(ld) = ld_path {
         envs.push(("LD_LIBRARY_PATH".to_string(), ld.to_string()));
         envs.push(("DYLD_FALLBACK_LIBRARY_PATH".to_string(), ld.to_string()));

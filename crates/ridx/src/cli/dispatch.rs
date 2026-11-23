@@ -20,7 +20,10 @@ use colored::*;
 
 pub fn run_cli(command: Commands) {
     match command {
-        Commands::Index { path, out_dir, package, release, features, no_default_features, all_features, target, builder } => {
+        Commands::Index { path, out_dir, package, release, features, no_default_features, all_features, target, builder, no_build_scripts } => {
+            if no_build_scripts {
+                crate::indexer::no_build::set(true);
+            }
             run_indexing(IndexOptions {
                 path,
                 out_dir_opt: out_dir,

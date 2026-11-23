@@ -288,7 +288,12 @@ fn diagnostics_of(
 /// 0.3.11 declared `minVersion` with a pull answered once the index covered the version, which a tool could not tell
 /// from this (prod-code, m=20197).
 pub fn experimental_capabilities() -> Value {
-    json!({ "ridx": { "methods": { "ridx/expandMacro": 1, "ridx/safeDelete": 2, "ridx/status": 2, "ridx/syntaxTree": 1, "textDocument/diagnostic": 1 }, "requestOptions": { "minVersion": 1 } } })
+    json!({ "ridx": {
+        "methods": { "ridx/expandMacro": 1, "ridx/safeDelete": 2, "ridx/status": 2, "ridx/syntaxTree": 1, "textDocument/diagnostic": 1 },
+        "requestOptions": { "minVersion": 1 },
+        // `{"buildScripts": false}`: no build script or procedural macro runs (prod-code, m=20739).
+        "initializationOptions": { "buildScripts": 1 }
+    } })
 }
 
 #[path = "fresh_status.rs"]
@@ -316,6 +321,8 @@ mod tests {
         assert_eq!(ridx["requestOptions"]["minVersion"], 1, "{caps}");
         // prod-code (m=20197): the pull's contract, which 0.3.10 and 0.3.11 did not have.
         assert_eq!(ridx["methods"]["textDocument/diagnostic"], 1, "{caps}");
+        // prod-code (m=20739): `{"buildScripts": false}` is honoured.
+        assert_eq!(ridx["initializationOptions"]["buildScripts"], 1, "{caps}");
     }
 
     /// prod-code (m=19837): with `ridx-driver` missing the first index failed, and `references` answered `[]`, which
