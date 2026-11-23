@@ -12,6 +12,7 @@
 //! over indentation; the index would answer there for whatever spans the spot, as a `for` loop's `into_iter` spans
 //! the whole loop body. rust-analyzer answers nothing off a token, and neither does this server.
 
+use super::error::{LspError, LspResult};
 use super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use serde_json::Value;
@@ -27,6 +28,30 @@ pub(crate) const POSITION_METHODS: [&str; 7] = [
     "textDocument/references",
     "textDocument/documentHighlight",
 ];
+
+/// The answer a request gets before its handler runs: `InvalidParams` for a position on a line past the document's
+/// end (any request with `params.position`), `null` for one of `POSITION_METHODS` off a token. rust-analyzer refuses
+/// such a line ("Invalid offset"); `null` read as "nothing here" to a tool whose coordinates were wrong (prod-code,
+/// issue #2). A column past a line's end is the line's end, as the protocol says and rust-analyzer clamps it.
+pub(crate) fn early_answer(method: &str, msg: &Value, ov: &OverlayManager, conv: &mut PositionConverter) -> Option<LspResult<Value>> {
+    if let Some(err) = msg.get("id").and_then(|_| line_past_end(msg, ov)) {
+        return Some(Err(err));
+    }
+    (POSITION_METHODS.contains(&method) && is_off_token(msg, ov, conv)).then_some(Ok(Value::Null))
+}
+
+/// The error for a request whose `params.position` names a line the document (the open buffer, else the file) does
+/// not have. A document that cannot be read is left to the handlers.
+fn line_past_end(msg: &Value, ov: &OverlayManager) -> Option<LspError> {
+    let uri = msg["params"]["textDocument"]["uri"].as_str()?;
+    let (line, character) = (msg["params"]["position"]["line"].as_u64()?, msg["params"]["position"]["character"].as_u64()?);
+    let file = uri_to_path(uri);
+    let lines = match ov.get(&file) {
+        Some(o) => o.text.matches('\n').count() + 1,
+        None => std::fs::read(&file).ok()?.iter().filter(|&&b| b == b'\n').count() + 1,
+    };
+    (line >= lines as u64).then(|| LspError::invalid_params(format!("Invalid position {line}:{character}: the document has {lines} lines")))
+}
 
 /// Whether the request's position lies in whitespace (or past the line's end) with no name ending right before it.
 /// A line that cannot be read counts as on a token: the handlers decide.
@@ -191,6 +216,24 @@ mod tests {
         let at = |line: u32, character: u32| serde_json::json!({ "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": character } } });
         assert!(is_off_token(&at(2, 9), &ov, &mut conv), "`items` on the comment's second line");
         assert!(!is_off_token(&at(3, 8), &ov, &mut conv), "on `y`");
+    }
+
+    #[test]
+    fn test_a_line_past_the_documents_end_is_invalid_params() {
+        let mut ov = OverlayManager::new();
+        let uri = "file:///tmp/off_token_past_end.rs";
+        ov.open_or_update(uri, &uri_to_path(uri), 1, "fn f() {\n    let y = 1;\n}\n".to_string());
+        let mut conv = PositionConverter::new();
+        let at = |method: &str, line: u32, character: u32| serde_json::json!({ "id": 1, "method": method, "params": { "textDocument": { "uri": uri }, "position": { "line": line, "character": character } } });
+        let err = early_answer("textDocument/hover", &at("textDocument/hover", 999_998, 0), &ov, &mut conv).and_then(Result::err).expect("an error");
+        assert_eq!(err.code, crate::lsp::error::INVALID_PARAMS);
+        assert_eq!(err.message, "Invalid position 999998:0: the document has 4 lines");
+        assert!(early_answer("textDocument/completion", &at("textDocument/completion", 4, 0), &ov, &mut conv).is_some_and(|r| r.is_err()), "any request with a position");
+        assert!(early_answer("textDocument/completion", &at("textDocument/completion", 3, 0), &ov, &mut conv).is_none(), "the empty line after the last newline");
+        assert!(early_answer("textDocument/completion", &at("textDocument/completion", 1, 400), &ov, &mut conv).is_none(), "a column past the line's end is its end");
+        let mut note = at("textDocument/hover", 999_998, 0);
+        note.as_object_mut().unwrap().remove("id");
+        assert!(early_answer("textDocument/hover", &note, &ov, &mut conv).is_none_or(|r| r.is_ok()), "a notification gets no error");
     }
 
     #[test]

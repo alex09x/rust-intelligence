@@ -207,8 +207,13 @@ What these methods promise, beyond the signatures:
   names (`FN`, `BLOCK_EXPR`, `STMT_LIST`, `LET_STMT`, `NAME_REF`, `MACRO_CALL`, `TOKEN_TREE`, ...), so tools
   written against rust-analyzer's tree read it unchanged.
 
+`workspace/symbol` searches the workspace, and when nothing of it matches, the dependencies and the standard
+library, as rust-analyzer does (since 0.3.12: `Extend` lists `core::iter::Extend`). A position request whose
+line is past the document's end fails with `-32602 InvalidParams` (a column past a line's end is the line's
+end, as the protocol says).
+
 Standard methods still to complete: `workspace/willRenameFiles` with edits to `mod` declarations and `use`
-paths (today it returns `{}`), and `workspace/symbol` over dependencies.
+paths (today it returns `{}`).
 
 ## 8. Where the index lives and who builds it
 

@@ -114,3 +114,34 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     let items = in_file(&lib, app, "tool_on");
     assert!(items.iter().all(|(l, u)| l != "tool_only" || u.is_none()), "from the library: {items:?}");
 }
+
+/// Completion right after `self.` (`self.|total += amount;`) offers the fields and methods, in an indexed file opened
+/// as it is on disk (prod-code, issue #3: `items: []`).
+#[test]
+fn test_completion_after_self_dot_offers_fields_and_methods() {
+    let _lock = lock_indexer_test();
+    let Some(driver) = find_driver_binary() else { return };
+    let dir = new_test_dir("ridx_completion_self");
+    let (ws, cas) = (dir.0.join("ws"), dir.0.join("cas"));
+    let app = "pub struct Counter {\n    total: u32,\n}\n\nimpl Counter {\n    pub fn add(&mut self, amount: u32) -> u32 {\n        self.total += amount;\n        self.total\n    }\n}\n";
+    write_native_and_app(&ws, app);
+    try_run_indexing(index_opts(&ws, &cas, &driver)).expect("index");
+    let mut server = Server::start(&ws);
+    let uri = server.open(&ws.join("app/src/lib.rs"));
+    let expect = |server: &mut Server, uri: &str, case: &str| {
+        for (line, col) in [(6, 13), (7, 13)] {
+            let labels: Vec<String> = offered(&server.completion(uri, line, col)).into_iter().map(|(l, _)| l).collect();
+            assert!(labels.iter().any(|l| l == "total"), "{case}: the field at {line}:{col}: {labels:?}");
+            assert!(labels.iter().any(|l| l.starts_with("add")), "{case}: the method at {line}:{col}: {labels:?}");
+        }
+    };
+    expect(&mut server, &uri, "as indexed");
+    // The struct typed in a buffer of a file indexed with other text, and in a file the index has not seen.
+    write(&ws, "app/src/lib.rs", "pub fn other() {}\n");
+    try_run_indexing(index_opts(&ws, &cas, &driver)).expect("reindex");
+    let mut server = Server::start(&ws);
+    let uri = server.open_with(&ws.join("app/src/lib.rs"), app);
+    expect(&mut server, &uri, "typed over another text");
+    let uri = server.open_with(&ws.join("app/src/fresh.rs"), app);
+    expect(&mut server, &uri, "a file not indexed");
+}

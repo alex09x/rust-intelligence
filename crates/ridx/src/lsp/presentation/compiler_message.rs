@@ -94,10 +94,11 @@ pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, V
     };
 
     let mut message_text = actual_msg.get("message")?.as_str()?.to_string();
-    // The primary span's label says what is wrong there ("expected `u32`, found `&str`" under "mismatched types"):
-    // rust-analyzer puts it on the line after the message.
+    // The primary span's label says what is wrong there: "mismatched types: expected `u32`, found `&str`", on the
+    // message's first line as `cargo check --message-format=short` prints it. On the line after (as rust-analyzer
+    // shows it) a tool reading the first line saw "mismatched types" alone (prod-code, issue #4).
     if let Some(label) = raw_primary.get("label").and_then(|l| l.as_str()).filter(|l| !l.is_empty()) {
-        message_text.push('\n');
+        message_text.push_str(": ");
         message_text.push_str(label);
     }
 

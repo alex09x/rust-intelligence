@@ -166,8 +166,8 @@ fn test_prepare_rename_out_of_bounds_position_rejected_error() {
     open_test_file(&mut ov, uri, 1, "fn main() {}\n");
 
     let val = send_prepare_rename_req(uri, 99, 99, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(val["error"]["code"], -32803);
-    assert_eq!(val["error"]["message"], "Cannot prepare rename: no identifier found at this position");
+    assert_eq!(val["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {val}");
+    assert_eq!(val["error"]["message"], "Invalid position 99:99: the document has 2 lines");
 }
 
 #[test]

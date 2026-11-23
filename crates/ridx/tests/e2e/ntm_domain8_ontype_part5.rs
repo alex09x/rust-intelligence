@@ -187,9 +187,7 @@ fn test_on_type_formatting_position_out_of_bounds_line() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], 503);
-
-    let edits = resp["result"].as_array().unwrap();
-    assert_eq!(edits.len(), 1);
+    assert_eq!(resp["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {resp}");
 }
 
 #[test]

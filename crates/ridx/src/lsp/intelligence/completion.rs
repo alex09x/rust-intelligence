@@ -37,6 +37,7 @@ pub fn handle_completion(msg: &Value, workspace: Option<&WorkspaceIndex>, overla
     let line_end = text[line_start..].find('\n').map_or(text.len(), |i| line_start + i);
     let line = &text[line_start..line_end];
     let cursor = utf16_to_byte(line, utf16_col_0based);
+    super::self_members::add_buffer_members(&mut response, text, line_0based, &line[..cursor]);
     let site = super::completion_edits::EditSite {
         before: &line[..cursor],
         after: &line[cursor..],

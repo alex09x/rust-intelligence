@@ -169,11 +169,20 @@ fn is_type_or_mod_ws_kind(kind: DefKind) -> bool {
 impl WorkspaceIndex {
     /// Workspace symbols as rust-analyzer lists them: items and imports whose name contains the query as a smart-case
     /// subsequence, plus crates (dependencies included) whose name does, ordered by lowercased name and cut at
-    /// `limit`; types first, every kind only when no type matches.
+    /// `limit`; types first, every kind only when no type matches; the dependencies' and the standard library's
+    /// symbols when nothing of the workspace matches (rust-analyzer's fallback to libraries: `Extend` lists
+    /// `core::iter::Extend`, which prod-code reads to keep a generated name off the prelude's, issue #6).
     fn search_workspace_symbols_like_ra<'a>(&'a self, query: &str, limit: usize) -> Vec<WorkspaceSymbol<'a>> {
         let has_local = self.reader_is_dependency.iter().any(|&d| !d);
-        let cached = get_or_build_ws_defs(self, has_local);
-        // rust-analyzer searches types first and all symbols only when no type matches.
+        let found = self.search_ra_defs(&get_or_build_ws_defs(self, has_local), query, limit);
+        if found.is_empty() && has_local {
+            return self.search_ra_defs(&get_or_build_ws_defs(self, false), query, limit);
+        }
+        found
+    }
+
+    /// rust-analyzer searches types first and all symbols only when no type matches.
+    fn search_ra_defs<'a>(&'a self, cached: &CachedWsDefs, query: &str, limit: usize) -> Vec<WorkspaceSymbol<'a>> {
         let types = self.collect_ra_matches(&cached.types_by_name, query, limit);
         if !types.is_empty() {
             return types;

@@ -90,14 +90,13 @@ fn test_moniker_utf16_coordinates_lookup() {
 }
 
 #[test]
-fn test_moniker_out_of_bounds_line_empty() {
+fn test_moniker_out_of_bounds_line_is_invalid_params() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/oob_line.rs";
     open_test_file(&mut ov, uri, 1, "fn main() {}\n");
 
     let val = send_moniker_req(uri, 999, 0, &mut mr, &mut ov, &mut lc, &can);
-    let items = val["result"].as_array().unwrap();
-    assert_eq!(items.len(), 0);
+    assert_eq!(val["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {val}");
 }
 
 #[test]

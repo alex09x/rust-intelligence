@@ -101,8 +101,9 @@ fn test_completion_self_parameter_method_lookup() {
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
     assert!(res["error"].is_null());
-    // Without workspace index, dot receiver completion returns empty list
-    assert_eq!(res["result"]["items"].as_array().unwrap().len(), 0);
+    // Without a workspace index, the members `self` has in the document (issue #3).
+    let labels: Vec<&str> = res["result"]["items"].as_array().unwrap().iter().filter_map(|i| i["label"].as_str()).collect();
+    assert_eq!(labels, ["helper", "action"], "{res}");
 }
 
 #[test]

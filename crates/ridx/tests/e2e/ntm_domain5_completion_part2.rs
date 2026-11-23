@@ -113,7 +113,7 @@ fn test_completion_nonexistent_file_returns_empty_items() {
 }
 
 #[test]
-fn test_completion_out_of_bounds_line_returns_empty_items() {
+fn test_completion_out_of_bounds_line_is_invalid_params() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/bench_oob_test.rs";
     open_test_file(&mut ov, uri, 1, "fn main() {\n    let x = 42;\n}\n");
@@ -123,9 +123,7 @@ fn test_completion_out_of_bounds_line_returns_empty_items() {
         "position": { "line": 9999, "character": 0 }
     });
     let res = send_completion_req(params, &mut mr, &mut ov, &mut lc, &can);
-    assert!(res["error"].is_null());
-    let items = res["result"]["items"].as_array().expect("items array");
-    assert_eq!(items.len(), 0);
+    assert_eq!(res["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {res}");
 }
 
 #[test]

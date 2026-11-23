@@ -200,7 +200,7 @@ fn test_prepare_call_hierarchy_position_at_fn_name_end() {
 }
 
 #[test]
-fn test_prepare_call_hierarchy_position_beyond_eof_returns_empty() {
+fn test_prepare_call_hierarchy_position_beyond_eof_is_invalid_params() {
     let ts = create_temp_shard("beyond_eof");
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "fn target() {}\n").unwrap();
@@ -215,8 +215,7 @@ fn test_prepare_call_hierarchy_position_beyond_eof_returns_empty() {
     });
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
-    let items = resp["result"].as_array().unwrap();
-    assert_eq!(items.len(), 0);
+    assert_eq!(resp["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {resp}");
 
     // Positive control query on target
     let ctrl_req = json!({

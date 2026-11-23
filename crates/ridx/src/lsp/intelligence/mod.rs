@@ -33,6 +33,7 @@ mod live_completion;
 pub mod owner_completion;
 pub mod scope_cache;
 pub mod self_completion;
+mod self_members;
 pub mod signature;
 mod signature_decl;
 pub(crate) mod signature_fmt;

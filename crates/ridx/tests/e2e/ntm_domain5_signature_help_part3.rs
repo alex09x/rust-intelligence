@@ -168,7 +168,7 @@ fn test_signature_help_unknown_callee_returns_null() {
 }
 
 #[test]
-fn test_signature_help_out_of_bounds_line_returns_null() {
+fn test_signature_help_out_of_bounds_line_is_invalid_params() {
     let (mut mr, mut ov, mut lc, can) = setup_initialized_server();
     let uri = "file:///tmp/sig_oob_l.rs";
     open_test_file(&mut ov, uri, 1, "pub fn helper() {}\n");
@@ -178,8 +178,7 @@ fn test_signature_help_out_of_bounds_line_returns_null() {
         "position": { "line": 9999, "character": 0 }
     });
     let res = send_sig_help_req(params, &mut mr, &mut ov, &mut lc, &can);
-    assert!(res["error"].is_null());
-    assert!(res["result"].is_null());
+    assert_eq!(res["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {res}");
 }
 
 #[test]

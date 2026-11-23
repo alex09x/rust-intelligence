@@ -178,7 +178,7 @@ fn test_moniker_negative_position_handled_gracefully() {
     });
     dispatch_lsp_message(LspMessage::Client(req), &mut out, &mut lc, &mut mr, &mut ov, &can, None).unwrap();
     let res = extract_response(&out);
-    assert_eq!(res["result"], json!([]));
+    assert_eq!(res["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {res}");
 }
 
 #[test]

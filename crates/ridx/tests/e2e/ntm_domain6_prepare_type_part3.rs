@@ -216,7 +216,7 @@ fn test_prepare_type_hierarchy_overlay_did_close_falls_back() {
 }
 
 #[test]
-fn test_prepare_type_hierarchy_position_beyond_eof_returns_empty() {
+fn test_prepare_type_hierarchy_position_beyond_eof_is_invalid_params() {
     let ts = create_temp_shard("beyond_eof");
     let file = ts.dir.join("src/lib.rs");
     std::fs::write(&file, "struct DiskStruct;\n").unwrap();
@@ -231,8 +231,7 @@ fn test_prepare_type_hierarchy_position_beyond_eof_returns_empty() {
     });
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
-    let items = resp["result"].as_array().unwrap();
-    assert_eq!(items.len(), 0);
+    assert_eq!(resp["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {resp}");
 
     // Positive control on valid position
     let ctrl_req = json!({
@@ -302,5 +301,5 @@ fn test_prepare_type_hierarchy_sequential_requests_isolation() {
     assert!(dsp.dispatch(&req2));
     let resp2 = dsp.parse_response();
     assert_eq!(resp2["id"], 700);
-    assert_eq!(resp2["result"].as_array().unwrap().len(), 0);
+    assert_eq!(resp2["error"]["code"], -32602, "a line past the end is invalid params (issue #2): {resp2}");
 }
