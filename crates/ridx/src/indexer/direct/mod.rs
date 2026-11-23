@@ -246,21 +246,23 @@ pub fn try_direct_crate_indexing(
     let direct_dir = work_dir.join("target/ridx-direct");
     let direct_deps = direct_dir.join("deps");
     let direct_incr = direct_dir.join("incremental");
-    let _ = fs::remove_dir_all(&direct_deps);
+    // Kept from run to run: a unit rebuilt here before is named by the sidecars of its dependents (`--extern` into
+    // this directory), and a run after one that rebuilt a dependency failed on its missing `.rmeta` and fell back to
+    // Cargo (prod-code, issue #7). A unit rebuilt now overwrites its own.
     fs::create_dir_all(&direct_deps).ok()?;
     fs::create_dir_all(&direct_incr).ok()?;
 
     let direct_lock_hash = super::feature_graph::compute_cargo_lock_hash(work_dir);
-    // Execute direct indexing on changed targets in topological order
-    for target_id in &sorted_target_ids {
-        let (crate_name, args, env_vars, _, sidecar) = crate_map.get(target_id)?;
+    let target_kinds_file = variant_out_dir.join("target_kinds.json");
+    // Execute direct indexing on changed targets, each once its dependencies are built, several at once.
+    let compile = |target_id: &str| -> bool {
+        let Some((crate_name, args, env_vars, _, sidecar)) = crate_map.get(target_id) else { return false };
         let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
-
-        let mut cmd = Command::new(driver_bin);
         if sanitized_args.is_empty() {
             eprintln!("[ridx-direct] fallback to Cargo: empty sanitized args for '{crate_name}'");
-            return None;
+            return false;
         }
+        let mut cmd = Command::new(driver_bin);
         cmd.args(&sanitized_args);
         cmd.envs(crate::indexer::no_build::envs());
         cmd.current_dir(work_dir);
@@ -271,7 +273,6 @@ pub fn try_direct_crate_indexing(
             cmd.env("RIDX_CARGO_LOCK_HASH", lh);
         }
         cmd.env("RUSTC_BOOTSTRAP", "1");
-        let target_kinds_file = variant_out_dir.join("target_kinds.json");
         if target_kinds_file.is_file() {
             cmd.env("RIDX_TARGET_KINDS_FILE", &target_kinds_file);
         }
@@ -282,13 +283,18 @@ pub fn try_direct_crate_indexing(
             cmd.env("LD_LIBRARY_PATH", ld);
             cmd.env("DYLD_FALLBACK_LIBRARY_PATH", ld);
         }
-
-        let status = cmd.status().ok()?;
-        if !status.success() {
+        let started = Instant::now();
+        let ok = cmd.status().is_ok_and(|s| s.success());
+        eprintln!("[ridx-direct] compiled {target_id} in {:.1} s", started.elapsed().as_secs_f64());
+        if !ok {
             eprintln!("[ridx-direct] fallback to Cargo: direct rustc execution failed for '{crate_name}'");
-            return None;
+            return false;
         }
         units::refresh_aliases(sidecar, aliases.get(target_id).map_or(&[], Vec::as_slice));
+        true
+    };
+    if !graph::run_in_parallel(&sorted_target_ids, &dependencies_of, graph::direct_jobs(), compile) {
+        return None;
     }
 
     let ws = WorkspaceIndex::open(variant_out_dir).ok()?;
