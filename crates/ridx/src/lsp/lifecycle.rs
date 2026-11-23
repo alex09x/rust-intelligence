@@ -148,10 +148,7 @@ impl LifecycleManager {
         crate::lsp::intelligence::owner_completion::item::set_label_details_support(&msg["params"]["capabilities"]);
         crate::lsp::intelligence::completion_call::set_client(&msg["params"]);
         crate::lsp::presentation::compiler_merge::set_client(&msg["params"]);
-        // No build script or procedural macro runs for this session's indexes (prod-code, m=20739).
-        if msg["params"]["initializationOptions"]["buildScripts"] == json!(false) {
-            crate::indexer::no_build::set(true);
-        }
+        crate::indexer::no_build::from_initialize(&msg["params"]);
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {

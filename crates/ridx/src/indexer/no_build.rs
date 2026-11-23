@@ -24,6 +24,13 @@ pub fn set(on: bool) {
     ON.store(on, Ordering::Relaxed);
 }
 
+/// Turns the mode on for an LSP session whose `initialize` params say `initializationOptions: {"buildScripts": false}`.
+pub fn from_initialize(params: &serde_json::Value) {
+    if params["initializationOptions"]["buildScripts"] == serde_json::Value::Bool(false) {
+        set(true);
+    }
+}
+
 /// Whether the mode is on: set, or `RIDX_NO_BUILD_SCRIPTS=1` in the environment.
 pub fn enabled() -> bool {
     ON.load(Ordering::Relaxed) || std::env::var_os(ridx_format::NO_BUILD_ENV).is_some_and(|v| v == "1")
