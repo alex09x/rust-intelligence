@@ -5,16 +5,41 @@
   "version": "0.1.0",
   "publisher": "alex09x",
   "license": "MIT OR Apache-2.0",
-  "author": { "name": "Alexander Panasenko", "email": "alex@prod.codes", "url": "https://prod.codes/about/" },
+  "author": {
+    "name": "Alexander Panasenko",
+    "email": "alex@prod.codes",
+    "url": "https://prod.codes/about/"
+  },
   "homepage": "https://rust-intelligence.com",
-  "repository": { "type": "git", "url": "https://github.com/alex09x/rust-intelligence", "directory": "editors/vscode" },
-  "bugs": { "url": "https://github.com/alex09x/rust-intelligence/issues" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alex09x/rust-intelligence",
+    "directory": "editors/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/alex09x/rust-intelligence/issues"
+  },
   "icon": "icon.png",
-  "categories": ["Programming Languages", "Linters", "Formatters"],
-  "keywords": ["rust", "lsp", "language server", "ridx", "rust-analyzer alternative"],
-  "engines": { "vscode": "^1.85.0" },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "rust",
+    "lsp",
+    "language server",
+    "ridx",
+    "rust-analyzer alternative"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
   "main": "./dist/extension.js",
-  "activationEvents": ["onLanguage:rust", "workspaceContains:Cargo.toml"],
+  "activationEvents": [
+    "onLanguage:rust",
+    "workspaceContains:Cargo.toml"
+  ],
   "contributes": {
     "configuration": {
       "title": "Rust Intelligence",
@@ -26,15 +51,27 @@
         },
         "rustIntelligence.trace.server": {
           "type": "string",
-          "enum": ["off", "messages", "verbose"],
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
           "default": "off",
           "description": "Log the LSP traffic with ridx to the Rust Intelligence output."
         }
       }
     },
     "commands": [
-      { "command": "rustIntelligence.restartServer", "title": "Restart Server", "category": "Rust Intelligence" },
-      { "command": "rustIntelligence.installServer", "title": "Install or Update ridx", "category": "Rust Intelligence" }
+      {
+        "command": "rustIntelligence.restartServer",
+        "title": "Restart Server",
+        "category": "Rust Intelligence"
+      },
+      {
+        "command": "rustIntelligence.installServer",
+        "title": "Install or Update ridx",
+        "category": "Rust Intelligence"
+      }
     ]
   },
   "scripts": {
@@ -50,8 +87,9 @@
   "devDependencies": {
     "@types/node": "18.19.67",
     "@types/vscode": "1.85.0",
-    "@vscode/vsce": "3.2.1",
+    "@vscode/vsce": "4.1.0",
     "esbuild": "0.24.0",
+    "ovsx": "1.4.0",
     "typescript": "5.6.3"
   }
 }

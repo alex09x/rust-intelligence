@@ -1,0 +1,73 @@
+# rust-intelligence — publishes the VS Code extension (editors/vscode)
+# Copyright (c) 2026 Alexander Panasenko
+#
+# Contact: alex@prod.codes
+# Author: https://prod.codes/about/
+# Project: https://github.com/alex09x/rust-intelligence
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
+# A tag `vscode-v<version>` (the version in editors/vscode/package.json) packages the extension and publishes it to the
+# Visual Studio Marketplace through trusted publishing (OIDC, no token) and to Open VSX (secret OVSX_PAT, when set).
+# The `vscode-marketplace` environment holds the publish job until the owner approves it.
+name: VS Code extension
+
+on:
+  push:
+    tags: ["vscode-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: The tag names the version in package.json
+        if: startsWith(github.ref, 'refs/tags/vscode-v')
+        run: test "vscode-v$(node -p 'require("./package.json").version')" = "${GITHUB_REF_NAME}"
+      - run: npx vsce package --no-dependencies --out rust-intelligence.vsix
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: editors/vscode/rust-intelligence.vsix
+
+  publish:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/vscode-v')
+    runs-on: ubuntu-latest
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: editors/vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+          path: editors/vscode
+      - name: Visual Studio Marketplace
+        run: npx vsce publish --oidc --packagePath rust-intelligence.vsix
+      - name: Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then echo "OVSX_PAT is not set: Open VSX skipped"; exit 0; fi
+          npx ovsx publish rust-intelligence.vsix
