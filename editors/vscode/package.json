@@ -1,0 +1,57 @@
+{
+  "name": "rust-intelligence",
+  "displayName": "Rust Intelligence",
+  "description": "Rust language server built on the compiler: ridx lsp for completion, navigation, hover, diagnostics and refactoring.",
+  "version": "0.1.0",
+  "publisher": "alex09x",
+  "license": "MIT OR Apache-2.0",
+  "author": { "name": "Alexander Panasenko", "email": "alex@prod.codes", "url": "https://prod.codes/about/" },
+  "homepage": "https://rust-intelligence.com",
+  "repository": { "type": "git", "url": "https://github.com/alex09x/rust-intelligence", "directory": "editors/vscode" },
+  "bugs": { "url": "https://github.com/alex09x/rust-intelligence/issues" },
+  "icon": "icon.png",
+  "categories": ["Programming Languages", "Linters", "Formatters"],
+  "keywords": ["rust", "lsp", "language server", "ridx", "rust-analyzer alternative"],
+  "engines": { "vscode": "^1.85.0" },
+  "main": "./dist/extension.js",
+  "activationEvents": ["onLanguage:rust", "workspaceContains:Cargo.toml"],
+  "contributes": {
+    "configuration": {
+      "title": "Rust Intelligence",
+      "properties": {
+        "rustIntelligence.server.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to `ridx`. Empty: the extension's own install, then `PATH`, `~/.cargo/bin` and `~/.local/bin`. `ridx-driver` must sit next to it or on `PATH`."
+        },
+        "rustIntelligence.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Log the LSP traffic with ridx to the Rust Intelligence output."
+        }
+      }
+    },
+    "commands": [
+      { "command": "rustIntelligence.restartServer", "title": "Restart Server", "category": "Rust Intelligence" },
+      { "command": "rustIntelligence.installServer", "title": "Install or Update ridx", "category": "Rust Intelligence" }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node18 --external:vscode --outfile=dist/extension.js",
+    "vscode:prepublish": "npm run build -- --minify",
+    "check": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "18.19.67",
+    "@types/vscode": "1.85.0",
+    "@vscode/vsce": "3.2.1",
+    "esbuild": "0.24.0",
+    "typescript": "5.6.3"
+  }
+}
