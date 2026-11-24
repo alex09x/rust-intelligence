@@ -4,6 +4,14 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-11-23
+
+Verified by the workspace test suite and by an LSP session against the release build on a Linux node: a completion asked right after a fresh crate was opened (its build script sleeping 4 s) answered after its first index with `HashMap` and `use std::collections::HashMap;`. The index format is unchanged.
+
+### Fixed
+- **Requests sent before a fresh crate's first index**: a request at a position in a document whose root is being indexed for the first time, with no index holding it, waits for that index (up to 30 s) and is answered from it, as rust-analyzer answers once loaded. Before, completion of `HashMa` in a crate just opened answered `[]` (issue #8). Past the deadline, or when the first index fails, the request is answered as before, never with an error.
+- A completion item that comes with its import also carries it as `data.imports: [{full_import_path, imported_name}]`, in rust-analyzer's shape.
+
 ## [0.3.12] - 2026-11-23
 
 Verified by the workspace test suite (52 suites) and by LSP sessions against builds on Linux nodes: the issues prod-code filed from its live tests (#1 to #6) each with a regression test; `buildScripts: false` indexed a crate whose build script and derive leave marker files, with no marker written; a `minVersion` pull of `pub fn label() -> String { store::fresh() }` answers `mismatched types: expected `String`, found `u32``. The per-method agreement suite was not re-run for this release. The index format is unchanged.
