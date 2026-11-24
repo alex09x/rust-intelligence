@@ -227,19 +227,19 @@ cargo test --workspace
 ## Zitieren
 
 Wenn Sie ridx in Forschung oder Dokumentation verwenden, zitieren Sie bitte das archivierte Release auf Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) für das Projekt (verweist auf die neueste Version), [10.5281/zenodo.24415350](https://doi.org/10.5281/zenodo.24415350) für genau 0.3.11.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) für das Projekt (verweist auf die neueste Version), [10.5281/zenodo.24487028](https://doi.org/10.5281/zenodo.24487028) für genau 0.3.12.
 [`CITATION.cff`](../CITATION.cff) enthält die Metadaten, die GitHubs „Cite this repository“ verwendet.
 
 ```bibtex
-@software{panasenko_2026_24415350,
+@software{panasenko_2026_24487028,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.11},
-  doi       = {10.5281/zenodo.24415350},
-  url       = {https://doi.org/10.5281/zenodo.24415350},
+  version   = {0.3.12},
+  doi       = {10.5281/zenodo.24487028},
+  url       = {https://doi.org/10.5281/zenodo.24487028},
 }
 ```
 
