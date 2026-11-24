@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
-import { findRidx, installRidx, releaseTarget, ridxVersion, TOOLCHAIN } from "./install";
+import { findRidx, installRidx, isOlder, latestRelease, parseVersion, releaseTarget, ridxVersion, TOOLCHAIN } from "./install";
 
 const RUST_ANALYZER = "rust-lang.rust-analyzer";
 let client: LanguageClient | undefined;
@@ -48,7 +48,8 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     ridx = await offerInstall(context);
     if (!ridx) return;
   }
-  output.appendLine(`starting ${ridx} lsp (${(await ridxVersion(ridx)) ?? "version unknown"})`);
+  const version = await ridxVersion(ridx);
+  output.appendLine(`starting ${ridx} lsp (${version ?? "version unknown"})`);
   const serverOptions: ServerOptions = { command: ridx, args: ["lsp"] };
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "rust" }],
@@ -56,6 +57,34 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   };
   client = new LanguageClient("rustIntelligence", "Rust Intelligence", serverOptions, clientOptions);
   await client.start();
+  if (!updateChecked) {
+    updateChecked = true;
+    void offerUpdate(context, ridx, version);
+  }
+}
+
+let updateChecked = false;
+
+/** An older ridx than the latest release (a binary installed long ago) is offered an update, once per session. */
+async function offerUpdate(context: vscode.ExtensionContext, ridx: string, version: string | undefined): Promise<void> {
+  if (!vscode.workspace.getConfiguration("rustIntelligence").get<boolean>("server.checkForUpdates", true)) return;
+  const current = version && parseVersion(version);
+  const tag = await latestRelease();
+  const latest = tag && parseVersion(tag);
+  if (!current || !latest || !isOlder(current, latest)) return;
+  output.appendLine(`${ridx} is ${current.join(".")}; the latest release is ${tag}`);
+  const configured = configuredPath();
+  if (configured || !releaseTarget().target) {
+    const how = configured ? `update ${configured}` : "run `cargo install ridx ridx-driver --locked`";
+    void vscode.window.showInformationMessage(`Rust Intelligence: ridx ${current.join(".")} is in use and ${tag} is out; ${how} to get it.`);
+    return;
+  }
+  const choice = await vscode.window.showInformationMessage(
+    `Rust Intelligence: ridx ${current.join(".")} is in use and ${tag} is out. Install ${tag} for this extension?`,
+    "Update",
+    "Not now",
+  );
+  if (choice === "Update" && (await install(context))) await restart(context);
 }
 
 async function restart(context: vscode.ExtensionContext): Promise<void> {

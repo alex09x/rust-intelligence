@@ -33,6 +33,7 @@ expansion views) are not part of this extension.
 - **Rust Intelligence: Restart Server**
 - **Rust Intelligence: Install or Update ridx** — installs the latest release into the extension's storage.
 - `rustIntelligence.server.path` — a `ridx` of your own; `ridx-driver` must sit next to it or on `PATH`.
+- `rustIntelligence.server.checkForUpdates` — at start, offer to update a `ridx` older than the latest release.
 - `rustIntelligence.trace.server` — log the LSP traffic to the Rust Intelligence output.
 
 Issues: https://github.com/alex09x/rust-intelligence/issues

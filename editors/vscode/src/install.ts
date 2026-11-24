@@ -93,6 +93,29 @@ export async function installRidx(storageDir: string, say: (step: string) => voi
   }
 }
 
+/** `[major, minor, patch]` of `ridx 0.3.6 (commit: …)` or `v0.3.13`, or undefined. */
+export function parseVersion(text: string): number[] | undefined {
+  const m = /(\d+)\.(\d+)\.(\d+)/.exec(text);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : undefined;
+}
+
+/** Whether version `a` comes before `b`. */
+export function isOlder(a: number[], b: number[]): boolean {
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] < b[i];
+  return false;
+}
+
+/** The tag of the latest release (`v0.3.13`), or undefined when GitHub does not answer. */
+export async function latestRelease(): Promise<string | undefined> {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } });
+    if (!response.ok) return undefined;
+    return ((await response.json()) as { tag_name?: string }).tag_name;
+  } catch {
+    return undefined;
+  }
+}
+
 /** `ridx --version`, or undefined when it does not run. */
 export async function ridxVersion(ridx: string): Promise<string | undefined> {
   try {

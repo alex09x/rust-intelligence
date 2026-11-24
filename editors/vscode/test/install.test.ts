@@ -13,7 +13,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { expectedSha, findRidx, releaseTarget } from "../src/install.ts";
+import { expectedSha, findRidx, isOlder, parseVersion, releaseTarget } from "../src/install.ts";
 
 test("a release target for each platform the release builds, a reason for the rest", () => {
   assert.equal(releaseTarget("darwin", "arm64").target, "aarch64-apple-darwin");
@@ -35,4 +35,13 @@ test("the configured path wins, then the extension's own install", () => {
   assert.equal(findRidx(undefined, dir), join(dir, "bin", "ridx"));
   writeFileSync(join(dir, "mine"), "");
   assert.equal(findRidx(join(dir, "mine"), dir), join(dir, "mine"));
+});
+
+test("an installed ridx older than the latest release", () => {
+  const installed = parseVersion("ridx 0.3.6 (commit: a13d9d72, dirty: false)");
+  assert.deepEqual(installed, [0, 3, 6]);
+  assert.equal(isOlder(installed!, parseVersion("v0.3.13")!), true, "0.3.6 < 0.3.13, not compared as text");
+  assert.equal(isOlder([0, 3, 13], [0, 3, 13]), false);
+  assert.equal(isOlder([0, 4, 0], [0, 3, 13]), false);
+  assert.equal(parseVersion("version unknown"), undefined);
 });

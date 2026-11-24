@@ -2,7 +2,7 @@
   "name": "rust-intelligence",
   "displayName": "Rust Intelligence",
   "description": "Rust language server built on the compiler: ridx lsp for completion, navigation, hover, diagnostics and refactoring.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "alex09x",
   "license": "MIT OR Apache-2.0",
   "author": {
@@ -36,6 +36,12 @@
     "vscode": "^1.85.0"
   },
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "ridx builds the workspace to index it, which runs its build scripts and procedural macros."
+    }
+  },
   "activationEvents": [
     "onLanguage:rust",
     "workspaceContains:Cargo.toml"
@@ -48,6 +54,11 @@
           "type": "string",
           "default": "",
           "markdownDescription": "Path to `ridx`. Empty: the extension's own install, then `PATH`, `~/.cargo/bin` and `~/.local/bin`. `ridx-driver` must sit next to it or on `PATH`."
+        },
+        "rustIntelligence.server.checkForUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "At start, compare ridx with the latest GitHub release and offer to update an older one."
         },
         "rustIntelligence.trace.server": {
           "type": "string",
