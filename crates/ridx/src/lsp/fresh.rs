@@ -21,6 +21,16 @@ use std::time::{Duration, Instant};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// Marks a request at a position of a document whose root is being indexed for the first time, with no index answering
+/// for it: it waits for that index (up to `DEFAULT_TIMEOUT`), then is answered as it would have been. A fresh crate's
+/// completion of `HashMa` answered `[]` before its first index, where rust-analyzer answers once loaded (prod-code,
+/// issue #8).
+pub(crate) const FIRST_INDEX: &str = "__ridxFirstIndex";
+
+fn waits_for_first_index(msg: &Value) -> bool {
+    msg[FIRST_INDEX] == true
+}
+
 struct Held {
     msg: Value,
     deadline: Instant,
@@ -43,6 +53,8 @@ pub struct Coverage<'a> {
     /// Whether the compiler's diagnostics of a buffer are known (`session_diag::readiness`): a `textDocument/diagnostic`
     /// waits for those, not for the index (prod-code, m=20178: the answer before them read as clean).
     pub diagnostics: &'a dyn Fn(&str) -> Readiness,
+    /// Whether the file's root is being indexed for the first time and no index answers for the file yet.
+    pub first_index: &'a dyn Fn(&str) -> bool,
 }
 
 use crate::lsp::presentation::session_diag::Readiness;
@@ -54,6 +66,9 @@ fn is_diagnostic(msg: &Value) -> bool {
 /// Whether `msg`, waiting for version `min` of `file`, goes now: a `textDocument/diagnostic` once the compiler's
 /// diagnostics of that version are known, any other request once the index answering covers it.
 fn goes_now(msg: &Value, cov: &Coverage, file: &str, min: i64) -> bool {
+    if waits_for_first_index(msg) {
+        return !(cov.first_index)(file);
+    }
     if !is_diagnostic(msg) || cov.ov.get(file).is_none() {
         return cov.is_covered(file, min);
     }
@@ -97,6 +112,9 @@ pub(super) fn wanted(msg: &Value) -> Option<(String, i64)> {
     if msg.get("id").is_none_or(Value::is_null) || msg.get("method").is_none() {
         return None;
     }
+    if waits_for_first_index(msg) {
+        return Some((super::protocol::uri_to_path(msg["params"]["textDocument"]["uri"].as_str()?), i64::MIN));
+    }
     let min = msg["params"]["minVersion"].as_i64()?;
     let uri = msg["params"]["textDocument"]["uri"].as_str()?;
     Some((super::protocol::uri_to_path(uri), min))
@@ -122,6 +140,10 @@ impl Waiting {
     /// first deadline) is checked again against the index answering now.
     pub fn admit(&mut self, msg: Value, cov: &Coverage, released: Option<Instant>) -> Option<Value> {
         let Some((file, min)) = wanted(&msg) else { return Some(msg) };
+        // Its wait for the first index is over: it is answered from what there is.
+        if waits_for_first_index(&msg) && released.is_some_and(|d| Instant::now() >= d) {
+            return Some(msg);
+        }
         if goes_now(&msg, cov, &file, min) {
             return Some(msg);
         }
@@ -141,6 +163,9 @@ impl Waiting {
             let Some((file, min)) = wanted(&h.msg) else { continue };
             if cancelled.remove(&h.msg["id"]) {
                 answers.push(response(&h.msg["id"], -32800, "Request cancelled".into(), Value::Null));
+            } else if now >= h.deadline && waits_for_first_index(&h.msg) {
+                self.released.insert(h.msg["id"].to_string(), h.deadline);
+                ready.push(h.msg);
             } else if now >= h.deadline && is_diagnostic(&h.msg) {
                 // The version whose diagnostics are known, older than the one asked for, if any.
                 let known = match (cov.diagnostics)(&file) {
@@ -214,7 +239,7 @@ mod tests {
         let mut waiting = Waiting::default();
         macro_rules! cov {
             () => {
-                Coverage { ov: &ov, indexed_hash: &|_| indexed.get(), diagnostics: &|_| Readiness::Pending }
+                Coverage { ov: &ov, indexed_hash: &|_| indexed.get(), diagnostics: &|_| Readiness::Pending, first_index: &|_| false }
             };
         }
         assert!(waiting.admit(request(1, 1, json!({})), &cov!(), None).is_some(), "version 1 is what the index compiled");
@@ -287,7 +312,7 @@ mod tests {
         let cancelled = std::sync::Mutex::new(std::collections::HashSet::new());
         let mut waiting = Waiting::default();
         let pull = |id: u64| json!({ "jsonrpc": "2.0", "id": id, "method": "textDocument/diagnostic", "params": { "textDocument": { "uri": uri }, "minVersion": 1 } });
-        let cov = Coverage { ov: &ov, indexed_hash: &|_| Some(ridx_format::normalized_source_hash(b"x")), diagnostics: &|_| take() };
+        let cov = Coverage { ov: &ov, indexed_hash: &|_| Some(ridx_format::normalized_source_hash(b"x")), diagnostics: &|_| take(), first_index: &|_| false };
         assert!(waiting.admit(pull(1), &cov, None).is_none(), "the index covers it, its diagnostics are not known");
         state.set(Some(Readiness::Ready(1)));
         let (ready, answers) = waiting.release(&cov, &cancelled);
@@ -299,5 +324,38 @@ mod tests {
         assert!(waiting.admit(pull(3), &cov, None).is_none());
         let (ready, answers) = waiting.release(&cov, &cancelled);
         assert!(ready.is_empty() && answers[0]["id"] == 3 && answers[0]["error"]["data"]["reason"] == "diagnosticsUnavailable", "a held one too");
+    }
+
+    /// prod-code (issue #8): a completion asked right after a fresh crate was opened answered `[]` before its first
+    /// index. It waits for that index, and past the deadline it is answered from what there is, never with an error.
+    #[test]
+    fn test_a_request_waits_for_the_first_index_of_its_root() {
+        use std::cell::Cell;
+        let ov = OverlayManager::new();
+        let building = Cell::new(true);
+        let (none, pending, first) = (|_: &str| None, |_: &str| Readiness::Pending, |_: &str| building.get());
+        let cov = || Coverage { ov: &ov, indexed_hash: &none, diagnostics: &pending, first_index: &first };
+        let cancelled = std::sync::Mutex::new(std::collections::HashSet::new());
+        let mut waiting = Waiting::default();
+        let completion = |id: u64| {
+            let mut m = json!({ "id": id, "method": "textDocument/completion", "params": { "textDocument": { "uri": "file:///tmp/fresh8/src/lib.rs" }, "position": { "line": 13, "character": 21 } } });
+            m[FIRST_INDEX] = json!(true);
+            m
+        };
+        assert!(waiting.admit(completion(1), &cov(), None).is_none(), "held while the first index builds");
+        assert_eq!(waiting.release(&cov(), &cancelled).0.len(), 0, "still building");
+        building.set(false);
+        let (ready, answers) = waiting.release(&cov(), &cancelled);
+        assert!(answers.is_empty() && ready.len() == 1, "the index loaded: it goes");
+        let deadline = waiting.take_released(&ready[0]["id"]);
+        assert!(waiting.admit(ready[0].clone(), &cov(), deadline).is_some());
+
+        building.set(true);
+        let past = Some(Instant::now() - Duration::from_secs(1));
+        assert!(waiting.admit(completion(2), &cov(), past).is_some(), "its wait is over: answered from what there is");
+        assert!(waiting.admit(completion(3), &cov(), None).is_none());
+        waiting.held[0].deadline = Instant::now() - Duration::from_secs(1);
+        let (ready, answers) = waiting.release(&cov(), &cancelled);
+        assert!(answers.is_empty() && ready.len() == 1, "a deadline passed releases it, no timeout error");
     }
 }

@@ -110,7 +110,12 @@ pub(crate) fn release_waiting<W: Write>(
     gate.send_answers(writer, refused)?;
     let ov: &crate::overlay::OverlayManager = ov;
     let fc = &lifecycle.flycheck;
-    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f) };
+    let cov = Coverage {
+        ov,
+        indexed_hash: &|f| answering_hash(mr, f),
+        diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f),
+        first_index: &|f| first_index_of(f, mr, &lifecycle.reindex),
+    };
     // A pull held while the workspace its file belongs to changed (a nested folder added) has that one compile it now:
     // it is not asked again (review of 775998ea).
     for msg in gate.waiting.held_diagnostics() {
@@ -183,6 +188,13 @@ pub(crate) fn intercept<W: Write>(
             return Ok(None);
         }
     }
+    // A request at a position of a document whose root has no index yet waits for its first one (`fresh::FIRST_INDEX`).
+    let first = |msg: &Value, mr: &super::MultiRootWorkspace| {
+        msg["params"]["textDocument"]["uri"].as_str().is_some_and(|u| first_index_of(&super::protocol::uri_to_path(u), mr, &lifecycle.reindex))
+    };
+    if msg["params"]["position"].is_object() && msg.get(super::fresh::FIRST_INDEX).is_none() && first(&msg, mr) {
+        msg[super::fresh::FIRST_INDEX] = json!(true);
+    }
     if super::fresh::wanted(&msg).is_none() {
         return Ok(Some(msg));
     }
@@ -190,7 +202,12 @@ pub(crate) fn intercept<W: Write>(
     msg[PINNED] = json!(true);
     let ov: &crate::overlay::OverlayManager = ov;
     let fc = &lifecycle.flycheck;
-    let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f) };
+    let cov = Coverage {
+        ov,
+        indexed_hash: &|f| answering_hash(mr, f),
+        diagnostics: &|f| diagnostics_of(fc, ov, mr, &lifecycle.reindex, f),
+        first_index: &|f| first_index_of(f, mr, &lifecycle.reindex),
+    };
     // A `textDocument/diagnostic` whose version compiled without diagnostics is told so now (prod-code, m=20178).
     if let Some(answer) = super::fresh::unavailable(&msg, &cov) {
         super::protocol::send_response(writer, &answer)?;
@@ -198,6 +215,13 @@ pub(crate) fn intercept<W: Write>(
     }
     demand(&msg, &cov, mr, &lifecycle.reindex, session, true);
     Ok(gate.waiting.admit(msg, &cov, deadline))
+}
+
+/// Whether `file`'s root is being indexed for the first time this session and no loaded index holds the file.
+pub(crate) fn first_index_of(file: &str, mr: &super::MultiRootWorkspace, reindex: &super::reindex::Reindexer) -> bool {
+    let file = ridx_format::canonicalize_best_effort(Path::new(file));
+    let held = mr.all_workspaces().filter_map(|ws| ws.workspace_root()).any(|r| file.starts_with(ridx_format::canonicalize_best_effort(r)));
+    !held && reindex.root_for(&file).is_some_and(|root| reindex.status_of(&root).0)
 }
 
 /// A pull waiting for the diagnostics of a buffer as saved has the sessions compile it: only a compile of its very

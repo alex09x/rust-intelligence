@@ -65,7 +65,12 @@ pub fn status(
         // loaded enclosing workspace was idle while the nested one built).
         let root = owning_root(mr, reindex, &file);
         let building = root.as_ref().is_some_and(|r| session.state_of(r).0 || reindex.status_of(r).0);
-        let cov = Coverage { ov, indexed_hash: &|f| answering_hash(mr, f), diagnostics: &|f| diagnostics_of(flycheck, ov, mr, reindex, f) };
+        let cov = Coverage {
+            ov,
+            indexed_hash: &|f| answering_hash(mr, f),
+            diagnostics: &|f| diagnostics_of(flycheck, ov, mr, reindex, f),
+            first_index: &|f| super::first_index_of(f, mr, reindex),
+        };
         // Whether the compiler's diagnostics of the buffer's text are known (prod-code, m=20178).
         let diagnostics = match (cov.diagnostics)(&file) {
             Readiness::Ready(v) => json!({ "state": "ready", "version": v }),

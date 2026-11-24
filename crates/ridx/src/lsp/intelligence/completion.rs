@@ -303,6 +303,10 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                     let decl_file = crate::lsp::navigation::type_definition_parse::on_disk(s.resolved_path());
                     super::completion_edits::mark_decl(&mut item, &decl_file, s.span.start_line);
                 }
+                // The import in rust-analyzer's shape too, for tools that read it there (prod-code, issue #8).
+                if !in_scope && item.get("additionalTextEdits").is_some() {
+                    item["data"]["imports"] = json!([{ "full_import_path": import_path, "imported_name": s.name }]);
+                }
 
                 items.push(item);
                 if items.len() >= 100 {
