@@ -1,7 +1,7 @@
-<!-- translation-source: dd1f795a87ee6091c77465eb659661c234a70214 -->
+<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [dd1f795](https://github.com/alex09x/rust-intelligence/blob/dd1f795a87ee6091c77465eb659661c234a70214/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -209,19 +209,19 @@ cargo test --workspace
 ## 引用
 
 如果你在研究或文档中使用 ridx，请引用 Zenodo 上的归档版本：
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24487028](https://doi.org/10.5281/zenodo.24487028) 用于精确引用 0.3.12。
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24487370](https://doi.org/10.5281/zenodo.24487370) 用于精确引用 0.3.13。
 [`CITATION.cff`](../CITATION.cff) 包含 GitHub “Cite this repository” 所使用的元数据。
 
 ```bibtex
-@software{panasenko_2026_24487028,
+@software{panasenko_2026_24487370,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.12},
-  doi       = {10.5281/zenodo.24487028},
-  url       = {https://doi.org/10.5281/zenodo.24487028},
+  version   = {0.3.13},
+  doi       = {10.5281/zenodo.24487370},
+  url       = {https://doi.org/10.5281/zenodo.24487370},
 }
 ```
 

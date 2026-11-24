@@ -1,7 +1,7 @@
-<!-- translation-source: dd1f795a87ee6091c77465eb659661c234a70214 -->
+<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
 
 > [!NOTE]
-> Esta é uma tradução do README em inglês no commit [dd1f795](https://github.com/alex09x/rust-intelligence/blob/dd1f795a87ee6091c77465eb659661c234a70214/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Esta é uma tradução do README em inglês no commit [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md). A versão canônica e mais atual é o [README em inglês](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -225,19 +225,19 @@ cargo test --workspace
 ## Como citar
 
 Se você usar o ridx em pesquisa ou documentação, cite a versão arquivada no Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para o projeto (aponta para a versão mais recente), [10.5281/zenodo.24487028](https://doi.org/10.5281/zenodo.24487028) para exatamente a 0.3.12.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) para o projeto (aponta para a versão mais recente), [10.5281/zenodo.24487370](https://doi.org/10.5281/zenodo.24487370) para exatamente a 0.3.13.
 [`CITATION.cff`](../CITATION.cff) contém os metadados usados pelo "Cite this repository" do GitHub.
 
 ```bibtex
-@software{panasenko_2026_24487028,
+@software{panasenko_2026_24487370,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.12},
-  doi       = {10.5281/zenodo.24487028},
-  url       = {https://doi.org/10.5281/zenodo.24487028},
+  version   = {0.3.13},
+  doi       = {10.5281/zenodo.24487370},
+  url       = {https://doi.org/10.5281/zenodo.24487370},
 }
 ```
 

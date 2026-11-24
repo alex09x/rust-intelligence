@@ -56,7 +56,7 @@ T = {
     "h_dev": "开发",
     "dev": "每个源文件不超过 400 行。",
     "h_cite": "引用",
-    "cite": "如果你在研究或文档中使用 ridx，请引用 Zenodo 上的归档版本：\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24487028](https://doi.org/10.5281/zenodo.24487028) 用于精确引用 0.3.12。\n[`CITATION.cff`](../CITATION.cff) 包含 GitHub “Cite this repository” 所使用的元数据。",
+    "cite": "如果你在研究或文档中使用 ridx，请引用 Zenodo 上的归档版本：\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) 用于引用整个项目（指向最新版本），[10.5281/zenodo.24487370](https://doi.org/10.5281/zenodo.24487370) 用于精确引用 0.3.13。\n[`CITATION.cff`](../CITATION.cff) 包含 GitHub “Cite this repository” 所使用的元数据。",
     "h_license": "许可证",
     "license_intro": "可在以下任一许可证下使用：",
     "apache": "Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) 或 http://www.apache.org/licenses/LICENSE-2.0)",
