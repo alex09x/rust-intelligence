@@ -18,11 +18,22 @@ import { findRidx, installRidx, isOlder, latestRelease, parseVersion, releaseTar
 const RUST_ANALYZER = "rust-lang.rust-analyzer";
 let client: LanguageClient | undefined;
 let output: vscode.OutputChannel;
+/** What needs the user's click (ridx missing, an update), kept in the status bar: a notification hides itself. */
+let status: vscode.StatusBarItem;
+
+function showStatus(text: string, tooltip: string): void {
+  status.text = text;
+  status.tooltip = tooltip;
+  status.command = "rustIntelligence.installServer";
+  status.show();
+}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   output = vscode.window.createOutputChannel("Rust Intelligence");
+  status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
   context.subscriptions.push(
     output,
+    status,
     vscode.commands.registerCommand("rustIntelligence.restartServer", () => restart(context)),
     vscode.commands.registerCommand("rustIntelligence.installServer", () => install(context).then(() => restart(context))),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -30,7 +41,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
   );
   warnAboutRustAnalyzer();
-  await start(context);
+  // Not awaited: start may wait for an answer to the install notification, and VS Code holds every command of an
+  // extension (the status bar's install among them) until its activation returns.
+  void start(context).catch((e: Error) => output.appendLine(`start failed: ${e.message}`));
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -45,9 +58,12 @@ function configuredPath(): string | undefined {
 async function start(context: vscode.ExtensionContext): Promise<void> {
   let ridx = findRidx(configuredPath(), context.globalStorageUri.fsPath);
   if (!ridx) {
+    if (releaseTarget().target && !configuredPath()) showStatus("$(warning) ridx not installed", "Rust Intelligence: click to install ridx");
     ridx = await offerInstall(context);
-    if (!ridx) return;
+    // Installed meanwhile through the status bar, which started the server itself.
+    if (!ridx || client) return;
   }
+  status.hide();
   const version = await ridxVersion(ridx);
   output.appendLine(`starting ${ridx} lsp (${version ?? "version unknown"})`);
   const serverOptions: ServerOptions = { command: ridx, args: ["lsp"] };
@@ -79,6 +95,7 @@ async function offerUpdate(context: vscode.ExtensionContext, ridx: string, versi
     void vscode.window.showInformationMessage(`Rust Intelligence: ridx ${current.join(".")} is in use and ${tag} is out; ${how} to get it.`);
     return;
   }
+  showStatus(`$(cloud-download) ridx ${tag}`, `Rust Intelligence: ridx ${current.join(".")} is in use; click to install ${tag}`);
   const choice = await vscode.window.showInformationMessage(
     `Rust Intelligence: ridx ${current.join(".")} is in use and ${tag} is out. Install ${tag} for this extension?`,
     "Update",
@@ -147,6 +164,6 @@ function warnAboutRustAnalyzer(): void {
       "Show rust-analyzer",
     )
     .then((choice) => {
-      if (choice) void vscode.commands.executeCommand("workbench.extensions.search", `@id:${RUST_ANALYZER}`);
+      if (choice) void vscode.commands.executeCommand("extension.open", RUST_ANALYZER);
     });
 }

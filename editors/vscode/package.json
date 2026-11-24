@@ -2,7 +2,7 @@
   "name": "rust-intelligence",
   "displayName": "Rust Intelligence",
   "description": "Rust language server built on the compiler: ridx lsp for completion, navigation, hover, diagnostics and refactoring.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "alex09x",
   "license": "MIT OR Apache-2.0",
   "author": {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- A missing ridx or an available update also shows in the status bar and installs on click: VS Code hides the
+  notification after a while, and a missed one left Rust files without a server and without a sign of why.
+- Commands no longer wait for the install notification to be answered: activation returns at once.
+- "Show rust-analyzer" opens the rust-analyzer extension's page, where it can be disabled; it did nothing before.
+
 ## 0.1.1
 
 - An older ridx than the latest release (one installed long ago in `~/.local/bin`, say) is offered an update; the
