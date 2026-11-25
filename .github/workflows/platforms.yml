@@ -44,10 +44,7 @@ jobs:
           set -euo pipefail
           rustup show active-toolchain || rustup toolchain install
           rustc -vV
-      - name: Compiler libraries on the search path (ridx-driver links librustc_driver dynamically)
-        run: |
-          sysroot=$(rustc --print sysroot)
-          if [ "$RUNNER_OS" = Windows ]; then echo "$(cygpath -w "$sysroot/bin")" >> "$GITHUB_PATH"; fi
+      # No compiler libraries put on the search path here: ridx tells ridx-driver where they are, as on a user's machine.
       - name: Build
         id: build
         run: cargo build --release --locked -p ridx -p ridx-driver
