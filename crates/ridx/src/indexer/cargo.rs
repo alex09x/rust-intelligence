@@ -134,7 +134,8 @@ fn toolchain_name_of_lib(lib: &std::path::Path) -> Option<String> {
 pub(crate) fn build_sysroot_lib() -> Option<std::path::PathBuf> {
     let recorded = option_env!("RIDX_BUILD_SYSROOT_LIB").filter(|s| !s.is_empty())?;
     let set = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
-    let home = set("RUSTUP_HOME").or_else(|| set("HOME").map(|h| h.join(".rustup")));
+    // Windows has no HOME as a rule: rustup lives under %USERPROFILE%\.rustup there.
+    let home = set("RUSTUP_HOME").or_else(|| set("HOME").or_else(|| set("USERPROFILE")).map(|h| h.join(".rustup")));
     relocate_sysroot_lib(recorded, home.as_deref())
 }
 

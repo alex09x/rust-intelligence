@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rust-intelligence — package ridx and ridx-driver of one target as ridx-<target>.tar.gz with its .sha256.
+# rust-intelligence — package ridx and ridx-driver of one target as ridx-<target>.tar.gz (Windows: .zip) with its .sha256.
 # Copyright (c) 2026 Alexander Panasenko
 #
 # Contact: alex@prod.codes
@@ -11,10 +11,18 @@
 set -euo pipefail
 bin=$1 target=$2 out=$3
 name="ridx-$target"
+case "$target" in
+  *windows*) exe=.exe archive="$name.zip" ;;
+  *) exe="" archive="$name.tar.gz" ;;
+esac
 mkdir -p "$out/$name"
-cp "$bin/ridx" "$bin/ridx-driver" LICENSE-MIT LICENSE-APACHE README.md "$out/$name/"
-chmod 0755 "$out/$name/ridx" "$out/$name/ridx-driver"
-tar -C "$out" -czf "$out/$name.tar.gz" "$name"
+cp "$bin/ridx$exe" "$bin/ridx-driver$exe" LICENSE-MIT LICENSE-APACHE README.md "$out/$name/"
+chmod 0755 "$out/$name/ridx$exe" "$out/$name/ridx-driver$exe"
+if [ -n "$exe" ]; then
+  (cd "$out" && 7z a -tzip -bd "$archive" "$name" >/dev/null)
+else
+  tar -C "$out" -czf "$out/$archive" "$name"
+fi
 if command -v sha256sum >/dev/null; then sum="sha256sum"; else sum="shasum -a 256"; fi
-(cd "$out" && $sum "$name.tar.gz" > "$name.tar.gz.sha256")
-cat "$out/$name.tar.gz.sha256"
+(cd "$out" && $sum "$archive" > "$archive.sha256")
+cat "$out/$archive.sha256"

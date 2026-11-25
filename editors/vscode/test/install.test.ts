@@ -13,14 +13,17 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { expectedSha, findRidx, isOlder, parseVersion, releaseTarget } from "../src/install.ts";
+import { expectedSha, findRidx, isOlder, parseVersion, releaseArchive, releaseTarget } from "../src/install.ts";
 
 test("a release target for each platform the release builds, a reason for the rest", () => {
   assert.equal(releaseTarget("darwin", "arm64").target, "aarch64-apple-darwin");
   assert.equal(releaseTarget("linux", "x64").target, "x86_64-unknown-linux-gnu");
   assert.equal(releaseTarget("linux", "arm64").target, "aarch64-unknown-linux-gnu");
-  assert.match(releaseTarget("darwin", "x64").why ?? "", /Intel Macs/);
-  assert.match(releaseTarget("win32", "x64").why ?? "", /win32 x64/);
+  assert.equal(releaseTarget("darwin", "x64").target, "x86_64-apple-darwin");
+  assert.equal(releaseTarget("win32", "x64").target, "x86_64-pc-windows-msvc");
+  assert.match(releaseTarget("win32", "arm64").why ?? "", /win32 arm64/);
+  assert.equal(releaseArchive("x86_64-pc-windows-msvc"), "ridx-x86_64-pc-windows-msvc.zip");
+  assert.equal(releaseArchive("x86_64-apple-darwin"), "ridx-x86_64-apple-darwin.tar.gz");
 });
 
 test("the digest of a .sha256 file", () => {

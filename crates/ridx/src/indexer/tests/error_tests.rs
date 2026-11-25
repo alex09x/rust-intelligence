@@ -120,7 +120,7 @@ fn test_indexer_helpers_and_error_paths() {
         let _ = fs::set_permissions(&dummy_driver, fs::Permissions::from_mode(0o755));
     }
     let found = find_driver_binary_with(dummy_driver.to_str(), None, None, None);
-    assert_eq!(found, dummy_driver.canonicalize().ok());
+    assert_eq!(found, crate::indexer::driver::canonical(&dummy_driver), "canonical, without Windows' \\\\?\\ prefix");
     let _ = find_driver_binary();
 
     // 6. Direct Cargo.toml path and relative out_dir_opt

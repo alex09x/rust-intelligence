@@ -87,7 +87,10 @@ fn test_indexer_cargo_config_and_driver() {
     let cfgs = find_cargo_configs_with_home(&work_dir, Some(&dot_cargo_home));
     assert!(cfgs.iter().any(|c| c.ends_with("config.toml")));
     assert_eq!(extract_config_target("[build]\ntarget = ''\n"), None);
-    assert_eq!(resolve_cargo_home_with(None, Some("   ")), None);
+    // Windows still has %USERPROFILE%\.cargo to fall back on.
+    if cfg!(unix) {
+        assert_eq!(resolve_cargo_home_with(None, Some("   ")), None);
+    }
 
     // Test extract_config_target with empty target and other keys (lines 148-149)
     assert_eq!(extract_config_target("[build]\njobs = 4\ntarget = ''\n"), None);

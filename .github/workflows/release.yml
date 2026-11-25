@@ -41,7 +41,12 @@ jobs:
             target: aarch64-apple-darwin
           - os: macos-15-intel
             target: x86_64-apple-darwin
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
@@ -63,15 +68,20 @@ jobs:
           cargo build --release --locked -p ridx -p ridx-driver
       - name: Smoke test on a small crate
         run: bash tools/release/smoke.sh "$GITHUB_WORKSPACE/target/release"
+      - name: LSP session on a small crate
+        run: |
+          py=python3; python3 -c 1 2>/dev/null || py=python
+          $py tools/release/lsp_smoke.py "$GITHUB_WORKSPACE/target/release"
       - name: Package
-        if: runner.os == 'Linux'
+        if: runner.os != 'macOS'
         run: bash tools/release/package.sh target/release "${{ matrix.target }}" dist
       - uses: actions/upload-artifact@v4
-        if: runner.os == 'Linux'
+        if: runner.os != 'macOS'
         with:
           name: release-${{ matrix.target }}
           path: |
             dist/*.tar.gz
+            dist/*.zip
             dist/*.sha256
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
@@ -192,13 +202,14 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          cat ./*.sha256 | sort -k2 > SHA256SUMS
+          # sha256sum on Windows marks the name binary (`*ridx-....zip`): one form for every line.
+          cat ./*.sha256 | sed 's/ \*/  /' | sort -k2 > SHA256SUMS
           cat SHA256SUMS
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --draft --verify-tag --title "Rust Intelligence ${TAG#v}" --notes "Release notes: CHANGELOG.md"
           fi
           existing=$(gh release view "$TAG" --json assets -q '.assets[].name')
-          for f in ./*.tar.gz ./*.sha256 SHA256SUMS; do
+          for f in ./*.tar.gz ./*.zip ./*.sha256 SHA256SUMS; do
             name=$(basename "$f")
             if grep -qx "$name" <<<"$existing"; then
               echo "keeping the existing $name"

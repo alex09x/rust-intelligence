@@ -30,8 +30,14 @@ export function releaseTarget(platform = process.platform, arch = process.arch):
   if (platform === "linux" && arch === "x64") return { target: "x86_64-unknown-linux-gnu" };
   if (platform === "linux" && arch === "arm64") return { target: "aarch64-unknown-linux-gnu" };
   if (platform === "darwin" && arch === "arm64") return { target: "aarch64-apple-darwin" };
-  if (platform === "darwin") return { why: "there is no prebuilt ridx for Intel Macs" };
+  if (platform === "darwin" && arch === "x64") return { target: "x86_64-apple-darwin" };
+  if (platform === "win32" && arch === "x64") return { target: "x86_64-pc-windows-msvc" };
   return { why: `there is no prebuilt ridx for ${platform} ${arch}` };
+}
+
+/** The release archive of a target: a zip for Windows, a gzipped tar for the rest. */
+export function releaseArchive(target: string): string {
+  return target.includes("windows") ? `ridx-${target}.zip` : `ridx-${target}.tar.gz`;
 }
 
 /** `ridx` from the setting, the extension's own install, the PATH, ~/.cargo/bin or ~/.local/bin, in that order. */
@@ -67,7 +73,8 @@ export async function installRidx(storageDir: string, say: (step: string) => voi
   } catch (e) {
     throw new Error(`rustup failed (is it installed? https://rustup.rs): ${(e as Error).message}`);
   }
-  const archive = `ridx-${target}.tar.gz`;
+  const archive = releaseArchive(target);
+  const exe = process.platform === "win32" ? ".exe" : "";
   const base = `https://github.com/${REPO}/releases/latest/download`;
   say(`downloading ${archive}`);
   const [data, sums] = await Promise.all([download(`${base}/${archive}`), download(`${base}/${archive}.sha256`)]);
@@ -77,17 +84,18 @@ export async function installRidx(storageDir: string, say: (step: string) => voi
   const tmp = await mkdtemp(join(tmpdir(), "ridx-"));
   try {
     await writeFile(join(tmp, archive), data);
-    await run("tar", ["-xzf", join(tmp, archive), "-C", tmp]);
+    // Windows 10 and later ship a tar that reads zip archives too.
+    await run("tar", [exe ? "-xf" : "-xzf", join(tmp, archive), "-C", tmp]);
     const bin = join(storageDir, "bin");
     await mkdir(bin, { recursive: true });
     // ridx finds ridx-driver next to itself.
-    for (const name of ["ridx-driver", "ridx"]) {
+    for (const name of [`ridx-driver${exe}`, `ridx${exe}`]) {
       // Copied next to the old binary, then renamed over it: the tmp dir may be on another volume.
       await copyFile(join(tmp, `ridx-${target}`, name), join(bin, `${name}.new`));
       await chmod(join(bin, `${name}.new`), 0o755);
       await rename(join(bin, `${name}.new`), join(bin, name));
     }
-    return join(bin, "ridx");
+    return join(bin, `ridx${exe}`);
   } finally {
     await rm(tmp, { recursive: true, force: true });
   }
