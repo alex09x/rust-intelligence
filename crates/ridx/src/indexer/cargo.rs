@@ -147,6 +147,23 @@ pub(crate) fn relocate_sysroot_lib(recorded: &str, rustup_home: Option<&std::pat
     lib.is_dir().then_some(lib)
 }
 
+/// What to tell a user whose machine lacks the toolchain a release binary was built with: `ridx-driver` cannot load
+/// that compiler, and `cargo check` then only said its wrapper exited with status 127 (found checking the editor
+/// integrations: a project indexed with no message but "cargo check exited with status 101"). `None` when it is here.
+pub fn missing_driver_toolchain() -> Option<String> {
+    let recorded = option_env!("RIDX_BUILD_SYSROOT_LIB").filter(|s| !s.is_empty())?;
+    build_sysroot_lib().is_none().then(|| missing_toolchain_message(recorded)).flatten()
+}
+
+pub(crate) fn missing_toolchain_message(recorded: &str) -> Option<String> {
+    let name = toolchain_name_of_lib(std::path::Path::new(recorded))?;
+    let version = name.split('-').next().filter(|v| v.starts_with(|c: char| c.is_ascii_digit())).unwrap_or(&name);
+    Some(format!(
+        "Rust {version} is not installed, and ridx-driver runs inside that compiler (your projects keep their own toolchain): \
+         rustup toolchain install {version} --profile minimal --component rust-src"
+    ))
+}
+
 pub fn compute_sysroot_ld_path() -> Option<String> {
     // Prefer the toolchain sysroot recorded when `ridx`/`ridx-driver` was built so CWD
     // outside the workspace cannot resolve a different rustup toolchain whose libLLVM
@@ -193,5 +210,13 @@ mod tests {
         assert_eq!(relocate_sysroot_lib(built_on, Some(home.path())), Some(here.clone()));
         assert_eq!(relocate_sysroot_lib(here.to_str().unwrap(), None), Some(here), "the recorded path is used where it exists");
         assert_eq!(relocate_sysroot_lib("/opt/my-rust/lib", Some(home.path())), None, "a sysroot outside rustup is not relocated");
+    }
+
+    #[test]
+    fn test_a_missing_toolchain_is_named_with_the_command_installing_it() {
+        let message = super::missing_toolchain_message("/home/runner/.rustup/toolchains/1.98.1-x86_64-unknown-linux-gnu/lib").unwrap();
+        assert!(message.starts_with("Rust 1.98.1 is not installed"), "{message}");
+        assert!(message.ends_with("rustup toolchain install 1.98.1 --profile minimal --component rust-src"), "{message}");
+        assert_eq!(super::missing_toolchain_message("/opt/my-rust/lib"), None, "a sysroot outside rustup names no toolchain to install");
     }
 }

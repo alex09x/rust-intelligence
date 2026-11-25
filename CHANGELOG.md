@@ -6,6 +6,7 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ### Fixed
 - **An edit that breaks the build is reindexed without Cargo**: the crate the compiler stops on is indexed as it is, as Cargo's check indexes it, the crates depending on it keep their last index, and the edit fixing it is compiled the same way. Before, both edits fell back to a full `cargo check`. On ridx's own workspace (release build, Linux x86_64), a type error or a missing module file appended to `ridx-format`: 3.8–4.1 s to 1.7–1.8 s, and the edit reverting it 8.8–10.4 s to 6.2–7.8 s (issue #7). A unit is compared with the hashes of its own sources only: those it recorded for a crate it imports could hold an older text and hide a change.
+- A release binary on a machine without the Rust toolchain `ridx-driver` runs inside says so, with the command installing it (`Rust 1.98.1 is not installed … rustup toolchain install 1.98.1 --profile minimal --component rust-src`), in `ridx index` and at the end of the editor's indexing progress. Before, the editor showed only `cargo check exited with status 101`.
 - The SCIP loader of `ridx compare` reads every range encoding of the current SCIP schema: the typed `single_line_range` and `multi_line_range` (taking precedence when set), and the deprecated `range` of three or four elements. Before, an occurrence with only a typed range was skipped, and a four-element range was read with its end line as the end column.
 
 ## [0.3.13] - 2026-11-23

@@ -85,6 +85,9 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             }
         },
     };
+    if let Some(missing) = super::cargo::missing_driver_toolchain() {
+        return Err(missing);
+    }
 
     let profile_name = if release { "release" } else { "dev" };
     let variant_id = compute_variant_id(profile_name, target.as_deref(), package.as_deref(), features.as_deref(), no_default_features, all_features, &manifest_path);
