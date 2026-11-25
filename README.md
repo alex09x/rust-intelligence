@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -34,7 +34,7 @@
 reads that index straight from disk. Your editor gets navigation, hover, completion, references and rename
 without a second compiler held in memory.
 
-Linux and macOS. Not affiliated with the Rust Project or the Rust Foundation.
+Linux, macOS and Windows. Not affiliated with the Rust Project or the Rust Foundation.
 
 ---
 
@@ -85,16 +85,24 @@ and recorded per release in [`CHANGELOG.md`](CHANGELOG.md). The full 78-method m
 
 ## Install
 
-Linux (x86_64, arm64) and macOS on Apple Silicon, with [rustup](https://rustup.rs):
+Linux (x86_64, arm64), macOS (Apple Silicon, Intel) and Windows (x86_64), with
+[rustup](https://rustup.rs):
 
 ```bash
 curl -fsSL https://rust-intelligence.com/install.sh | sh
 ```
 
+On Windows, in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
 The installer adds Rust 1.98.1, the toolchain `ridx-driver` runs inside (it links to that compiler's
 libraries; your own projects keep any toolchain, ridx runs the index build with the right one), downloads
 the release archive for your platform from GitHub, checks its SHA-256 and puts `ridx` and `ridx-driver`
-into `~/.local/bin` (`RIDX_INSTALL_DIR` changes it, `RIDX_VERSION=v0.3.7` pins a release).
+into `~/.local/bin` (`%USERPROFILE%\.local\bin` on Windows, added to your PATH; `RIDX_INSTALL_DIR` changes
+it, `RIDX_VERSION=v0.3.14` pins a release).
 
 Or from [crates.io](https://crates.io/crates/ridx). Build both binaries with Rust 1.98.1: `ridx-driver` links that
 compiler's own libraries, so it needs `rustc-dev` and these two flags, and `ridx` runs the index build on the
@@ -118,11 +126,13 @@ If a desktop editor cannot find `ridx`, give it the full path from `which ridx`.
 `ridx` with no subcommand behaves as `rust-analyzer` on the command line (`--version`, `--stdio`,
 `--log-file`, `--print-config-schema`), so an editor set up for rust-analyzer can start it instead.
 
+- **VS Code**: the [Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence)
+  extension ([`editors/vscode`](editors/vscode)) runs `ridx lsp` and offers to install `ridx` when it is not
+  found. Or point the rust-analyzer extension at `ridx`:
+  [`docs/editors/vscode-settings.json`](docs/editors/vscode-settings.json) (`"rust-analyzer.server.path": "ridx"`).
 - **Zed**: the [`editors/zed`](editors/zed) extension registers `ridx lsp` as the `rust-intelligence`
-  language server (command palette: `zed: install dev extension`), and
-  [`docs/editors/zed-settings.json`](docs/editors/zed-settings.json) selects it for Rust.
-- **VS Code**: [`docs/editors/vscode-settings.json`](docs/editors/vscode-settings.json) points the
-  rust-analyzer extension at `ridx` (`"rust-analyzer.server.path": "ridx"`).
+  language server and downloads `ridx` when it is not on the PATH (command palette: `zed: install dev
+  extension`); [`docs/editors/zed-settings.json`](docs/editors/zed-settings.json) selects it for Rust.
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
   root found by `Cargo.lock` first, so a workspace member opens the workspace's index).
 - **Helix**: [`docs/editors/helix-languages.toml`](docs/editors/helix-languages.toml) declares the `ridx`
@@ -200,7 +210,8 @@ The whole design, with the shard layout and where each part lives in the code:
   edited one see the change after a save.
 - **One cfg.** Like `cargo check`, the index sees one target and one feature set; code behind other
   `#[cfg]`s or features is not indexed. Choose them with `ridx index --all-features` / `--target`.
-- **Windows** is not supported yet.
+- **Prebuilt binaries** cover Linux x86_64 and arm64, macOS on Apple Silicon and Intel, and Windows x86_64;
+  elsewhere, install from crates.io.
 - **Standard library**: navigation and hover into `std`, `core` and `alloc` work; references to them are
   searched in the workspace only, and they cannot be renamed.
 - `vec![]` counts as a reference to `Vec`; rust-analyzer does not count it.
