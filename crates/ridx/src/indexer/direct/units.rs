@@ -13,7 +13,7 @@
 //! naming the same `object_path`; the fast path compiles each unit once and keeps all its names current.
 
 use super::WorkspaceCrateEntry;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -54,8 +54,31 @@ pub(crate) fn refresh_aliases(primary: &Path, aliases: &[PathBuf]) {
     }
 }
 
-/// Whether `bytes` still have the hash recorded for them: the driver records the normalized hash of the text it read
-/// (`normalized_source_hash`), older sidecars the raw one.
-pub(super) fn hash_matches(bytes: &[u8], recorded: u64) -> bool {
-    ridx_format::fnv1a_64(bytes) == recorded || ridx_format::normalized_source_hash(bytes) == recorded
+/// The raw and the normalized hash of a file's text.
+pub(super) fn source_hashes(bytes: &[u8]) -> (u64, u64) {
+    (ridx_format::fnv1a_64(bytes), ridx_format::normalized_source_hash(bytes))
+}
+
+/// Whether a text with the hashes `now` still has the hash recorded for it: the driver records the normalized hash of
+/// the text it read (`normalized_source_hash`), older sidecars the raw one.
+pub(super) fn hash_matches(now: (u64, u64), recorded: u64) -> bool {
+    now.0 == recorded || now.1 == recorded
+}
+
+/// The recorded hashes of the unit's own sources (`own_sources`, canonical paths): `file_hashes` also holds the files
+/// of the workspace crates it imports, as they were when it was compiled, and a unit left out behind a dependency with
+/// errors keeps those of the text before. A file that no longer exists stays, as a change. A sidecar without
+/// `own_sources` (older drivers) keeps all.
+pub(super) fn own_file_hashes(file_hashes: HashMap<String, u64>, own_sources: Option<&serde_json::Value>, work_dir: &Path) -> HashMap<String, u64> {
+    let own: HashSet<&str> = own_sources.and_then(|v| v.as_array()).into_iter().flatten().filter_map(|v| v.as_str()).collect();
+    if own.is_empty() {
+        return file_hashes;
+    }
+    file_hashes
+        .into_iter()
+        .filter(|(file, _)| {
+            let path = work_dir.join(file);
+            path.canonicalize().map_or(true, |canon| own.contains(canon.to_string_lossy().as_ref()))
+        })
+        .collect()
 }

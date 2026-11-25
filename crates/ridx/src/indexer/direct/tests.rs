@@ -43,9 +43,12 @@ fn partly_indexed_workspace(root: &Path, active: &str, complete: bool) {
 
 /// Runs the fast path with a driver that does not exist: any compilation fails it.
 fn reindex(root: &Path) -> bool {
+    reindex_with(root, &root.join("no-driver"))
+}
+
+fn reindex_with(root: &Path, driver: &Path) -> bool {
     let base = root.join("target/ridx");
     let variant = base.join(VARIANT);
-    let missing_driver = root.join("no-driver");
     let opts = IndexOptions::default();
     try_direct_crate_indexing(
         &variant.join(".deps"),
@@ -53,7 +56,7 @@ fn reindex(root: &Path) -> bool {
         &base,
         root,
         &root.join("Cargo.toml"),
-        &missing_driver,
+        driver,
         &root.join("cache"),
         None,
         "dev-1",
@@ -92,6 +95,86 @@ fn test_an_unchanged_workspace_is_not_rebuilt() {
     assert!(!reindex(&root), "the last check did not build every crate: Cargo runs again");
 }
 
+/// prod-code, issue #7: an edit that broke the build fell back to Cargo after the direct compile failed (36 to 40 s on
+/// their workspace), and Cargo stopped on the same errors. The driver indexes a workspace crate with errors and
+/// rewrites its sidecar; only a compile that left no index goes to Cargo.
+#[cfg(unix)]
+#[test]
+fn test_an_edit_with_errors_is_indexed_without_cargo() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let driver = |name: &str, body: &str| {
+        let path = root.join(name);
+        fs::write(&path, format!("#!/bin/sh\n{body}\nexit 1\n")).unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+        path
+    };
+    let indexes_with_errors = driver("errors-driver", "touch \"$RIDX_OUT_DIR/.deps/w-1.json\"");
+    let leaves_nothing = driver("failing-driver", "");
+
+    indexed_workspace(&root, VARIANT);
+    // The crate's shard, which the publication opens.
+    let mut shard = ridx_format::IndexWriter::new("w", "0.1.0");
+    shard.write_to(&mut fs::File::create(root.join("target/ridx").join(VARIANT).join("w-1.ridx")).unwrap()).unwrap();
+    fs::write(root.join("src/lib.rs"), "pub fn a() -> u32 { \"x\" }\n").unwrap();
+    assert!(!reindex_with(&root, &leaves_nothing), "a compile that indexed nothing goes to Cargo");
+    // A sidecar time changes past the filesystem's resolution.
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    assert!(reindex_with(&root, &indexes_with_errors), "a crate with errors indexed by the driver is published");
+    let manifest: serde_json::Value = serde_json::from_slice(&fs::read(root.join("target/ridx/ridx_manifest.json")).unwrap()).unwrap();
+    assert_eq!(manifest["complete"], true, "the edit fixing it is compiled here too");
+}
+
+/// Found by the live probe of the change above: `mod missing;` indexed with errors, its integration test left out,
+/// then the line removed again. The test's sidecar lists the lib's file as it imported it, with the hash of the text
+/// before the error, and when it was read first the revert was taken for "up to date" over an index of the broken text.
+#[test]
+fn test_a_revert_after_errors_is_compiled_whichever_sidecar_is_read_first() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    indexed_workspace(&root, VARIANT);
+    let lib = root.join("src/lib.rs");
+    let (good, broken) = (b"pub fn a() {}\n".as_slice(), b"pub fn a() {}\nmod missing;\n".as_slice());
+    let deps = root.join("target/ridx").join(VARIANT).join(".deps");
+    let sidecar = |name: &str, own: &Path, hashes: serde_json::Value| {
+        let j = serde_json::json!({
+            "name": name,
+            "compiler_args": ["--crate-name", name, own.display().to_string()],
+            "env": { "CARGO_MANIFEST_DIR": root.display().to_string(), "CARGO_PKG_NAME": "w" },
+            "own_sources": [own.display().to_string()],
+            "file_hashes": hashes,
+        });
+        fs::write(deps.join(format!("{name}-1.json")), serde_json::to_vec(&j).unwrap()).unwrap();
+    };
+    let test_file = root.join("tests/t.rs");
+    fs::create_dir_all(test_file.parent().unwrap()).unwrap();
+    fs::write(&test_file, "fn t() {}\n").unwrap();
+    // The lib indexed with errors; its test, left out, still lists the lib's text from before.
+    sidecar("w", &lib, serde_json::json!({ lib.display().to_string(): ridx_format::normalized_source_hash(broken) }));
+    sidecar(
+        "t",
+        &test_file,
+        serde_json::json!({
+            test_file.display().to_string(): ridx_format::normalized_source_hash(b"fn t() {}\n"),
+            lib.display().to_string(): ridx_format::normalized_source_hash(good),
+        }),
+    );
+    fs::write(&lib, good).unwrap();
+    assert!(!reindex(&root), "the lib's own record is of the broken text: compiled, not up to date");
+    // And the imported file is no change of the test's own: with the lib's record current, nothing is compiled.
+    sidecar("w", &lib, serde_json::json!({ lib.display().to_string(): ridx_format::normalized_source_hash(good) }));
+    sidecar(
+        "t",
+        &test_file,
+        serde_json::json!({
+            test_file.display().to_string(): ridx_format::normalized_source_hash(b"fn t() {}\n"),
+            lib.display().to_string(): ridx_format::normalized_source_hash(broken),
+        }),
+    );
+    assert!(reindex(&root), "up to date");
+}
+
 /// On BTCR an edit of one file compiled 53 sidecars: each of ~20 units under its two or three names, and the bare
 /// `name.json`, never rewritten by the driver, kept the hashes of the text before.
 #[test]
@@ -127,6 +210,7 @@ fn test_a_unit_is_compiled_once_and_all_its_names_follow() {
     assert_eq!(fs::read_to_string(dir.path().join("w_00000000000000ff.json")).unwrap(), "{\"fresh\":1}");
 
     let crlf = b"fn a() {}\r\n";
-    assert!(hash_matches(crlf, ridx_format::normalized_source_hash(crlf)), "the driver records the normalized hash");
-    assert!(hash_matches(crlf, ridx_format::fnv1a_64(crlf)) && !hash_matches(b"fn b() {}\n", ridx_format::fnv1a_64(crlf)));
+    let now = super::units::source_hashes(crlf);
+    assert!(hash_matches(now, ridx_format::normalized_source_hash(crlf)), "the driver records the normalized hash");
+    assert!(hash_matches(now, ridx_format::fnv1a_64(crlf)) && !hash_matches(super::units::source_hashes(b"fn b() {}\n"), ridx_format::fnv1a_64(crlf)));
 }

@@ -20,7 +20,7 @@ use super::types::{IndexOptions, PublishedVariant};
 use args::sanitize_compiler_args_for_direct;
 use colored::*;
 use config::{has_untracked_rs_files, verify_build_config_unchanged};
-use graph::{build_workspace_dependency_graphs, topo_sort_crates};
+use graph::{build_workspace_dependency_graphs, topo_sort_crates, UnitOutcome};
 use ridx_format::WorkspaceIndex;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
@@ -81,6 +81,7 @@ pub fn try_direct_crate_indexing(
 
             let file_hashes: HashMap<String, u64> =
                 val.get("file_hashes").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_u64().map(|h| (k.clone(), h))).collect()).unwrap_or_default();
+            let file_hashes = units::own_file_hashes(file_hashes, val.get("own_sources"), work_dir);
 
             let env_vars: HashMap<String, String> =
                 val.get("env").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect()).unwrap_or_default();
@@ -108,23 +109,19 @@ pub fn try_direct_crate_indexing(
         return None;
     }
 
-    // Identify all modified files and tracked files in the workspace
+    // Each unit against the hashes it recorded itself: two units reading one file may have read two texts of it (a
+    // unit left out behind a dependency with errors keeps the hashes of the text before).
     let mut modified_files = HashSet::new();
+    let mut changed_units = HashSet::new();
     let mut all_checked_files = HashSet::new();
-    for (_, _, _, _, file_hashes, _) in &workspace_crates {
+    let mut current: HashMap<String, Option<(u64, u64)>> = HashMap::new();
+    for (target_id, _, _, _, file_hashes, _) in &workspace_crates {
         for (file_str, &recorded_hash) in file_hashes {
-            if !all_checked_files.insert(file_str.clone()) {
-                continue;
-            }
-            let p = Path::new(file_str);
-            if !p.is_file() {
+            all_checked_files.insert(file_str.clone());
+            let now = *current.entry(file_str.clone()).or_insert_with(|| fs::read(work_dir.join(file_str)).ok().map(|b| units::source_hashes(&b)));
+            if !now.is_some_and(|now| units::hash_matches(now, recorded_hash)) {
                 modified_files.insert(file_str.clone());
-            } else if let Ok(bytes) = fs::read(p) {
-                if !units::hash_matches(&bytes, recorded_hash) {
-                    modified_files.insert(file_str.clone());
-                }
-            } else {
-                modified_files.insert(file_str.clone());
+                changed_units.insert(target_id.clone());
             }
         }
     }
@@ -165,16 +162,7 @@ pub fn try_direct_crate_indexing(
     let crate_map: HashMap<String, _> =
         workspace_crates.into_iter().map(|(tid, name, args, env_vars, file_hashes, path)| (tid, (name, args, env_vars, file_hashes, path))).collect();
 
-    // Determine directly modified target_ids
-    let mut initial_changed = HashSet::new();
-    if !modified_files.is_empty() {
-        for (target_id, (_, _, _, file_hashes, _)) in &crate_map {
-            if file_hashes.keys().any(|f| modified_files.contains(f)) {
-                initial_changed.insert(target_id.clone());
-            }
-        }
-    }
-
+    let initial_changed = changed_units;
     if initial_changed.is_empty() {
         eprintln!("[ridx-direct] fallback to Cargo: no workspace crate files modified");
         return None;
@@ -255,12 +243,12 @@ pub fn try_direct_crate_indexing(
     let direct_lock_hash = super::feature_graph::compute_cargo_lock_hash(work_dir);
     let target_kinds_file = variant_out_dir.join("target_kinds.json");
     // Execute direct indexing on changed targets, each once its dependencies are built, several at once.
-    let compile = |target_id: &str| -> bool {
-        let Some((crate_name, args, env_vars, _, sidecar)) = crate_map.get(target_id) else { return false };
+    let compile = |target_id: &str| -> UnitOutcome {
+        let Some((crate_name, args, env_vars, _, sidecar)) = crate_map.get(target_id) else { return UnitOutcome::Failed };
         let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
         if sanitized_args.is_empty() {
             eprintln!("[ridx-direct] fallback to Cargo: empty sanitized args for '{crate_name}'");
-            return false;
+            return UnitOutcome::Failed;
         }
         let mut cmd = Command::new(driver_bin);
         cmd.args(&sanitized_args);
@@ -283,18 +271,31 @@ pub fn try_direct_crate_indexing(
             cmd.env("LD_LIBRARY_PATH", ld);
             cmd.env("DYLD_FALLBACK_LIBRARY_PATH", ld);
         }
-        let started = Instant::now();
+        // Compared with its time after the compile, not with the clock: Linux stamps a file with a coarser clock.
+        let written = || fs::metadata(sidecar).and_then(|m| m.modified()).ok();
+        let (started, before) = (Instant::now(), written());
         let ok = cmd.status().is_ok_and(|s| s.success());
         eprintln!("[ridx-direct] compiled {target_id} in {:.1} s", started.elapsed().as_secs_f64());
-        if !ok {
+        let outcome = if ok {
+            UnitOutcome::Built
+        } else if written().is_some_and(|t| Some(t) != before) {
+            // The driver indexes a workspace crate the compiler stops on (`broken_crate`) and rewrites its sidecar
+            // with the hashes of the text it read: the edit fixing it is seen as a change and compiled here too.
+            // Cargo would stop on the same errors, after 36 to 40 s on prod-code's workspace (issue #7).
+            eprintln!("[ridx-direct] {target_id} has errors: indexed as it is, its dependents keep their last index");
+            UnitOutcome::BuiltWithErrors
+        } else {
             eprintln!("[ridx-direct] fallback to Cargo: direct rustc execution failed for '{crate_name}'");
-            return false;
-        }
+            return UnitOutcome::Failed;
+        };
         units::refresh_aliases(sidecar, aliases.get(target_id).map_or(&[], Vec::as_slice));
-        true
+        outcome
     };
-    if !graph::run_in_parallel(&sorted_target_ids, &dependencies_of, graph::direct_jobs(), compile) {
-        return None;
+    let left_out = graph::run_in_parallel(&sorted_target_ids, &dependencies_of, graph::direct_jobs(), compile)?;
+    if !left_out.is_empty() {
+        let mut left_out: Vec<String> = left_out.into_iter().collect();
+        left_out.sort();
+        eprintln!("[ridx-direct] not compiled, a dependency has errors: {}", left_out.join(", "));
     }
 
     let ws = WorkspaceIndex::open(variant_out_dir).ok()?;
@@ -328,7 +329,8 @@ pub fn try_direct_crate_indexing(
         sysroot_cas_key: sysroot_cas_key.as_deref(),
         cargo_lock_hash: direct_lock_hash.as_deref(),
         crate_features: &prev_crate_features,
-        // Reached only from a complete index, with every changed unit rebuilt.
+        // Reached only from a complete index, and every unit still has its sidecar: rebuilt, or the last one of a unit
+        // with errors or left out behind one, whose next change is compiled here too.
         complete: true,
     };
 

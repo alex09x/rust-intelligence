@@ -119,23 +119,52 @@ mod tests {
     }
 }
 
+/// How the compilation of a unit ended.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum UnitOutcome {
+    Built,
+    /// The compiler stopped on the unit's errors after the driver indexed what resolved: the unit has its index, but
+    /// no metadata for its dependents to compile against.
+    BuiltWithErrors,
+    /// Not compiled, and not indexed: the run goes to Cargo.
+    Failed,
+}
+
 /// Runs `run` on each target of `order` (dependencies before dependents), up to `jobs` at once: a target starts when
-/// each of its dependencies in `order` has finished, as Cargo schedules units. Whether all of them succeeded; after a
-/// failure none starts. One at a time, a comment edit in ridx's own lib took 28 s for its 7 units (lib, lib tests,
-/// test binaries), against 9 s under Cargo (prod-code, issue #7).
-pub(crate) fn run_in_parallel(order: &[String], dependencies_of: &HashMap<String, HashSet<String>>, jobs: usize, run: impl Fn(&str) -> bool + Sync) -> bool {
+/// each of its dependencies in `order` has finished, as Cargo schedules units. One at a time, a comment edit in ridx's
+/// own lib took 28 s for its 7 units (lib, lib tests, test binaries), against 9 s under Cargo (prod-code, issue #7).
+///
+/// A target whose dependency built with errors, or was left out itself, is left out: it keeps its last index. Returns
+/// the targets left out, or `None` after a failure (none starts after it).
+pub(crate) fn run_in_parallel(
+    order: &[String],
+    dependencies_of: &HashMap<String, HashSet<String>>,
+    jobs: usize,
+    run: impl Fn(&str) -> UnitOutcome + Sync,
+) -> Option<HashSet<String>> {
     let in_order: HashSet<&str> = order.iter().map(String::as_str).collect();
-    let (mut started, mut done) = (HashSet::new(), HashSet::new());
+    // `held`: built with errors or left out, so its dependents are left out.
+    let (mut started, mut done, mut held) = (HashSet::new(), HashSet::new(), HashSet::new());
+    let mut left_out = HashSet::new();
     let (mut running, mut failed) = (0usize, false);
-    let (tx, rx) = std::sync::mpsc::channel::<(&str, bool)>();
+    let (tx, rx) = std::sync::mpsc::channel::<(&str, UnitOutcome)>();
     let run = &run;
     std::thread::scope(|s| loop {
+        // `order` puts a dependency first, so one pass leaves out a chain of dependents.
         for t in order.iter().map(String::as_str) {
             if failed || running >= jobs.max(1) {
                 break;
             }
-            let ready = dependencies_of.get(t).is_none_or(|ds| ds.iter().all(|d| !in_order.contains(d.as_str()) || done.contains(d.as_str())));
-            if ready && started.insert(t) {
+            if started.contains(t) {
+                continue;
+            }
+            let deps: Vec<&str> = dependencies_of.get(t).into_iter().flatten().map(String::as_str).filter(|d| in_order.contains(d)).collect();
+            if deps.iter().any(|d| held.contains(d)) {
+                started.insert(t);
+                held.insert(t);
+                left_out.insert(t.to_string());
+            } else if deps.iter().all(|d| done.contains(d)) {
+                started.insert(t);
                 running += 1;
                 let tx = tx.clone();
                 s.spawn(move || {
@@ -146,15 +175,20 @@ pub(crate) fn run_in_parallel(order: &[String], dependencies_of: &HashMap<String
         if running == 0 {
             break;
         }
-        let Ok((t, ok)) = rx.recv() else { break };
+        let Ok((t, outcome)) = rx.recv() else { break };
         running -= 1;
-        if ok {
-            done.insert(t);
-        } else {
-            failed = true;
+        match outcome {
+            UnitOutcome::Built => {
+                done.insert(t);
+            }
+            UnitOutcome::BuiltWithErrors => {
+                done.insert(t);
+                held.insert(t);
+            }
+            UnitOutcome::Failed => failed = true,
         }
     });
-    !failed && done.len() == in_order.len()
+    (!failed && started.len() == in_order.len()).then_some(left_out)
 }
 
 /// How many units compile at once: the machine's cores, as Cargo runs them, at most 8 (a driver takes 1.5–3 GB on a
@@ -173,7 +207,7 @@ mod schedule_tests {
         let order: Vec<String> = ["lib", "lib_test", "e2e", "bin"].map(String::from).to_vec();
         let deps: HashMap<String, HashSet<String>> = ["lib_test", "e2e", "bin"].iter().map(|t| (t.to_string(), HashSet::from(["lib".to_string()]))).collect();
         let (log, live, peak) = (Mutex::new(Vec::new()), Mutex::new(0usize), Mutex::new(0usize));
-        let ok = run_in_parallel(&order, &deps, 4, |t| {
+        let left_out = run_in_parallel(&order, &deps, 4, |t| {
             let n = {
                 let mut l = live.lock().unwrap();
                 *l += 1;
@@ -185,9 +219,9 @@ mod schedule_tests {
             std::thread::sleep(std::time::Duration::from_millis(50));
             *live.lock().unwrap() -= 1;
             log.lock().unwrap().push(t.to_string());
-            true
+            UnitOutcome::Built
         });
-        assert!(ok);
+        assert_eq!(left_out, Some(HashSet::new()));
         let log = log.into_inner().unwrap();
         assert_eq!(log[0], "lib", "the dependency first: {log:?}");
         assert_eq!(log.len(), 4);
@@ -199,11 +233,38 @@ mod schedule_tests {
         let order: Vec<String> = ["lib", "dependent"].map(String::from).to_vec();
         let deps = HashMap::from([("dependent".to_string(), HashSet::from(["lib".to_string()]))]);
         let ran = Mutex::new(Vec::new());
-        assert!(!run_in_parallel(&order, &deps, 4, |t| {
+        let outcome = run_in_parallel(&order, &deps, 4, |t| {
             ran.lock().unwrap().push(t.to_string());
-            t != "lib"
-        }));
+            if t == "lib" {
+                UnitOutcome::Failed
+            } else {
+                UnitOutcome::Built
+            }
+        });
+        assert_eq!(outcome, None);
         assert_eq!(ran.into_inner().unwrap(), ["lib"]);
-        assert!(run_in_parallel(&[], &deps, 4, |_| false), "nothing to run");
+        assert_eq!(run_in_parallel(&[], &deps, 4, |_| UnitOutcome::Failed), Some(HashSet::new()), "nothing to run");
+    }
+
+    /// prod-code, issue #7: an edit that broke the build fell back to Cargo after the direct compile failed, 36 to 40 s
+    /// on their workspace, and the edit fixing it went to Cargo again.
+    #[test]
+    fn test_dependents_of_a_unit_with_errors_keep_their_index() {
+        let order: Vec<String> = ["lib", "lib_test", "e2e", "e2e_helper_user", "other"].map(String::from).to_vec();
+        let deps =
+            HashMap::from([("e2e".to_string(), HashSet::from(["lib".to_string()])), ("e2e_helper_user".to_string(), HashSet::from(["e2e".to_string(), "other".to_string()]))]);
+        let ran = Mutex::new(Vec::new());
+        let left_out = run_in_parallel(&order, &deps, 1, |t| {
+            ran.lock().unwrap().push(t.to_string());
+            if t == "lib" || t == "lib_test" {
+                UnitOutcome::BuiltWithErrors
+            } else {
+                UnitOutcome::Built
+            }
+        });
+        assert_eq!(left_out, Some(HashSet::from(["e2e".to_string(), "e2e_helper_user".to_string()])), "the dependents, and theirs");
+        let mut ran = ran.into_inner().unwrap();
+        ran.sort();
+        assert_eq!(ran, ["lib", "lib_test", "other"], "the units with errors are indexed, the independent one built");
     }
 }
