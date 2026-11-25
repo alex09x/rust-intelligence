@@ -164,25 +164,34 @@ pub(crate) fn missing_toolchain_message(recorded: &str) -> Option<String> {
     ))
 }
 
+/// The variables a process loading `ridx-driver` takes the value of [`compute_sysroot_ld_path`] in: the loader's
+/// search path for the compiler's shared libraries. Windows looks for DLLs on `PATH`.
+pub fn library_path_vars() -> &'static [&'static str] {
+    if cfg!(windows) {
+        &["PATH"]
+    } else {
+        &["LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"]
+    }
+}
+
+/// Where the compiler's shared libraries are, ahead of the search path already set: the sysroot's `lib`, or its
+/// `bin` on Windows, where `rustc_driver-*.dll` sits.
 pub fn compute_sysroot_ld_path() -> Option<String> {
     // Prefer the toolchain sysroot recorded when `ridx`/`ridx-driver` was built so CWD
     // outside the workspace cannot resolve a different rustup toolchain whose libLLVM
     // collides with `librustc_driver`.
-    let mut ld = build_sysroot_lib().map(|p| p.to_string_lossy().into_owned()).or_else(|| {
+    let lib = build_sysroot_lib().or_else(|| {
         let out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().ok()?;
         if !out.status.success() {
             return None;
         }
         let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
-        let lib_dir = std::path::PathBuf::from(sysroot).join("lib");
-        Some(lib_dir.to_string_lossy().into_owned())
+        Some(std::path::PathBuf::from(sysroot).join("lib"))
     })?;
-    if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
-        if !existing.is_empty() {
-            ld = format!("{ld}:{existing}");
-        }
-    }
-    Some(ld)
+    let dir = if cfg!(windows) { lib.with_file_name("bin") } else { lib };
+    let existing = std::env::var_os(library_path_vars()[0]).filter(|v| !v.is_empty());
+    let joined = std::env::join_paths(std::iter::once(dir).chain(existing.iter().flat_map(std::env::split_paths))).ok()?;
+    Some(joined.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]

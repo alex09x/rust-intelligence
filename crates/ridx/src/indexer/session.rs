@@ -278,7 +278,9 @@ fn compile(ctx: &Ctx, unit: &super::session_units::Unit, args: &[String]) -> Res
         cmd.env_remove("RIDX_TARGET_KINDS_FILE");
     }
     if let Some(ld) = super::cargo::compute_sysroot_ld_path() {
-        cmd.env("LD_LIBRARY_PATH", &ld).env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
+        for var in super::cargo::library_path_vars() {
+            cmd.env(var, &ld);
+        }
     }
     let aside = unit.sidecar.with_extension("json.published");
     let sidecar_aside = fs::rename(&unit.sidecar, &aside).is_ok().then_some(aside);

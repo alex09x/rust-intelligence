@@ -122,8 +122,9 @@ pub fn resolve_sysroot_cas_key(deps_dir: &Path, manifest_file: &Path, driver_bin
         cmd.arg("--target").arg(tgt);
     }
     if let Some(ld) = super::cargo::compute_sysroot_ld_path() {
-        cmd.env("LD_LIBRARY_PATH", &ld);
-        cmd.env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
+        for var in super::cargo::library_path_vars() {
+            cmd.env(var, &ld);
+        }
     }
     let driver_key = if let Ok(out) = cmd.output() {
         if out.status.success() {

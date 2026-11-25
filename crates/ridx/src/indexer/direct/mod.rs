@@ -268,8 +268,9 @@ pub fn try_direct_crate_indexing(
             cmd.env(k, v);
         }
         if let Some(ld) = ld_path {
-            cmd.env("LD_LIBRARY_PATH", ld);
-            cmd.env("DYLD_FALLBACK_LIBRARY_PATH", ld);
+            for var in crate::indexer::cargo::library_path_vars() {
+                cmd.env(var, ld);
+            }
         }
         // Compared with its time after the compile, not with the clock: Linux stamps a file with a coarser clock.
         let written = || fs::metadata(sidecar).and_then(|m| m.modified()).ok();

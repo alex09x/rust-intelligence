@@ -238,7 +238,9 @@ where
             // the index build (indexer/builder.rs).
             cmd.env("RUSTC_WRAPPER", driver).env("RUSTC_BOOTSTRAP", "1");
             if let Some(ld) = crate::indexer::cargo::compute_sysroot_ld_path() {
-                cmd.env("LD_LIBRARY_PATH", &ld).env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
+                for var in crate::indexer::cargo::library_path_vars() {
+                    cmd.env(var, &ld);
+                }
             }
             if let (None, Some(tc)) = (std::env::var_os("RUSTUP_TOOLCHAIN"), crate::indexer::cargo::driver_toolchain()) {
                 cmd.env("RUSTUP_TOOLCHAIN", tc);

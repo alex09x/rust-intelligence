@@ -206,8 +206,7 @@ pub fn build_check_command_with_no_deps(
 
     envs.extend(super::no_build::envs());
     if let Some(ld) = ld_path {
-        envs.push(("LD_LIBRARY_PATH".to_string(), ld.to_string()));
-        envs.push(("DYLD_FALLBACK_LIBRARY_PATH".to_string(), ld.to_string()));
+        envs.extend(super::cargo::library_path_vars().iter().map(|var| (var.to_string(), ld.to_string())));
     }
     // The driver's own toolchain, over a workspace pin to another rustc (whose std it cannot load); an explicit
     // RUSTUP_TOOLCHAIN still wins.
