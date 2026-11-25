@@ -54,6 +54,11 @@ jobs:
       - name: Smoke test on a small crate
         if: always() && steps.build.outcome == 'success'
         run: bash tools/release/smoke.sh "$GITHUB_WORKSPACE/target/release"
+      - name: LSP session on a small crate
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          py=python3; python3 -c 1 2>/dev/null || py=python
+          $py tools/release/lsp_smoke.py "$GITHUB_WORKSPACE/target/release"
       - name: Test ridx-format and ridx-syntax
         if: always()
         run: cargo test --locked -p ridx-format -p ridx-syntax --no-fail-fast
