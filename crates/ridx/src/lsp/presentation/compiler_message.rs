@@ -21,6 +21,7 @@ pub fn is_external_or_virtual(file_name: &str, root: &Path) -> bool {
     if p.is_absolute() {
         !p.starts_with(root)
     } else {
+        let file_name = file_name.replace('\\', "/");
         file_name.contains(".cargo/registry") || file_name.contains(".cargo/git")
     }
 }
@@ -46,7 +47,7 @@ pub fn resolve_effective_span<'a>(span: &'a Value, root: &Path) -> &'a Value {
 }
 
 pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value)> {
-    parse_compiler_message_at(msg, root).map(|(path, diag)| (format!("file://{}", path.display()), diag))
+    parse_compiler_message_at(msg, root).map(|(path, diag)| (crate::lsp::uri_windows::raw_file_uri(&path), diag))
 }
 
 /// [`parse_compiler_message`] with the file as a path (canonical), not a URI: a name with `%` in it is the name.
@@ -129,7 +130,7 @@ pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, V
 
                 related.push(json!({
                     "location": {
-                        "uri": format!("file://{}", rel_canon.display()),
+                        "uri": crate::lsp::uri_windows::raw_file_uri(&rel_canon),
                         "range": {
                             "start": { "line": r_lstart, "character": r_cstart },
                             "end": { "line": r_lend, "character": r_cend }
@@ -152,7 +153,7 @@ pub fn parse_compiler_message_at(msg: &Value, root: &Path) -> Option<(PathBuf, V
 
             related.push(json!({
                 "location": {
-                    "uri": format!("file://{}", rel_canon.display()),
+                    "uri": crate::lsp::uri_windows::raw_file_uri(&rel_canon),
                     "range": {
                         "start": { "line": r_lstart, "character": r_cstart },
                         "end": { "line": r_lend, "character": r_cend }

@@ -13,6 +13,9 @@ use ridx_format::{DefKind, IndexWriter, RawDefinition, WorkspaceIndex};
 use std::fs::{self, File};
 use std::io::BufWriter;
 
+/// POSIX semantics: `link/..` is the parent of the link's target. Windows resolves `..` before the link (the
+/// windows-2022 runner canonicalized `shortcut/../file.rs` to `<ws>/file.rs`), so the case does not exist there.
+#[cfg(unix)]
 #[test]
 fn test_symlink_parent_path_uses_filesystem_identity() {
     let test_dir = unique_temp_dir("ridx_symlink_parent_test");

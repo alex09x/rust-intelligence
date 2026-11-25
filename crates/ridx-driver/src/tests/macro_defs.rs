@@ -32,7 +32,7 @@ fn find_def_idx<B: AsRef<[u8]>>(reader: &IndexReader<B>, kind: RDefKind, path_su
 
 #[test]
 fn test_driver_macro_defs_ws_dep_meta_proc_macro_and_sysroot() {
-    let _lock = DRIVER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
     let temp_dir = std::env::temp_dir().join(format!("ridx_test_macro_defs_g8_{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp_dir);
 

@@ -35,12 +35,12 @@ pub fn set_client_moves_rustc(moves: bool) {
 
 /// The key the check keeps the result of `file` (canonical) under: its path as a raw `file://` URI.
 pub fn check_key(file: &std::path::Path) -> String {
-    format!("file://{}", file.display())
+    crate::lsp::uri_windows::raw_file_uri(file)
 }
 
 /// The file a check key names ([`check_key`]): the path after `file://` as it is, never percent-decoded.
 pub fn check_path(key: &str) -> std::path::PathBuf {
-    std::path::PathBuf::from(key.strip_prefix("file://").unwrap_or(key))
+    crate::lsp::uri_windows::path_of_raw_file_uri(key)
 }
 
 /// The diagnostics of `uri`: the compiler's from `flycheck` and the editor's own (`heuristic`, in the coordinates

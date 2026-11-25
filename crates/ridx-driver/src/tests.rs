@@ -125,7 +125,17 @@ fn test_compute_dependency_unit_key() {
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
-static DRIVER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+/// One driver test at a time. A test that fails holding it does not fail the rest: on the first Windows run one
+/// failure turned the 23 tests after it into `PoisonError`s that said nothing of their own.
+static DRIVER_TEST_LOCK: TestLock = TestLock(std::sync::Mutex::new(()));
+
+struct TestLock(std::sync::Mutex<()>);
+
+impl TestLock {
+    fn lock(&self) -> Result<std::sync::MutexGuard<'_, ()>, std::convert::Infallible> {
+        Ok(self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner))
+    }
+}
 
 #[test]
 fn test_run_driver_queries() {

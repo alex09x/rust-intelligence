@@ -20,7 +20,10 @@ use std::path::Path;
 
 #[test]
 fn test_classification_manifest_relative_fallback() {
-    let manifest_dir = Path::new("/workspace/crates/my_crate");
+    // An absolute path on this platform (`/workspace` has no drive on Windows).
+    let root = if cfg!(windows) { "C:/workspace" } else { "/workspace" };
+    let manifest_dir_buf = format!("{root}/crates/my_crate");
+    let manifest_dir = Path::new(&manifest_dir_buf);
 
     // 1. Bench relative to manifest
     let args = vec!["rustc".to_string(), "benches/main.rs".to_string()];
@@ -39,7 +42,7 @@ fn test_classification_manifest_relative_fallback() {
     assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::CustomBuild);
 
     // 5. Absolute bench path stripped relative to manifest_dir
-    let abs_bench = "/workspace/crates/my_crate/benches/bench_ops.rs".to_string();
+    let abs_bench = format!("{root}/crates/my_crate/benches/bench_ops.rs");
     let args = vec!["rustc".to_string(), abs_bench];
     assert_eq!(classify_target_with_manifest(None, &args, Some(manifest_dir)), TargetKind::Bench);
 

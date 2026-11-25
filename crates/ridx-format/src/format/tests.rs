@@ -158,7 +158,10 @@ fn test_resolve_cache_dir_and_object_path() {
     assert!(home_res.starts_with("/custom/home/.cache/ridx"));
 
     let fallback_res = resolve_cache_dir_with(Some("   "), Some("   "), Some("   "));
-    assert!(fallback_res.starts_with(".ridx_cache"));
+    // Windows, with no HOME, keeps it under %LOCALAPPDATA%.
+    let local_app_data = std::env::var("LOCALAPPDATA").ok().filter(|v| cfg!(windows) && !v.trim().is_empty());
+    let expected = local_app_data.map_or_else(|| std::path::PathBuf::from(".ridx_cache"), |l| std::path::PathBuf::from(l.trim()).join("ridx"));
+    assert!(fallback_res.starts_with(&expected), "{fallback_res:?}");
 
     let _ = resolve_cache_dir();
 

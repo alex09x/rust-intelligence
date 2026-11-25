@@ -370,16 +370,9 @@ pub fn is_external_dependency_path(path: &Path) -> bool {
         }
     }
 
-    let path_str = path.to_string_lossy();
-    path_str.contains("/.cargo/registry/")
-        || path_str.contains(r"\.cargo\registry\")
-        || path_str.contains("/.cargo/git/")
-        || path_str.contains(r"\.cargo\git\")
-        || path_str.contains("/.rustup/toolchains/")
-        || path_str.contains(r"\.rustup\toolchains\")
-        || path_str.contains("/lib/rustlib/")
-        || path_str.contains(r"\lib\rustlib\")
-        || path_str.contains("/target/ridx/dependencies/")
+    // One separator: a Windows path can mix them (`<temp>\.cargo/registry\...`).
+    let path_str = path.to_string_lossy().replace('\\', "/");
+    ["/.cargo/registry/", "/.cargo/git/", "/.rustup/toolchains/", "/lib/rustlib/", "/target/ridx/dependencies/"].iter().any(|c| path_str.contains(c))
 }
 
 #[cfg(test)]

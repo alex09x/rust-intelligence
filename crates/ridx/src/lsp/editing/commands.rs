@@ -243,7 +243,7 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
     }
 
     for (fp, text) in &plan.closed_writes {
-        let uri = format!("file://{fp}");
+        let uri = crate::lsp::uri_windows::raw_file_uri(std::path::Path::new(fp));
         overlay_mgr.open_with_provenance(&uri, fp, 0, text.clone(), false);
     }
 

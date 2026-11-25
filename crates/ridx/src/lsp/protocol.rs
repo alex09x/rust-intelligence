@@ -107,10 +107,22 @@ pub fn percent_encode_path(s: &str) -> String {
 
 pub fn uri_to_path(uri: &str) -> String {
     let stripped = uri.strip_prefix("file://localhost").or_else(|| uri.strip_prefix("file://")).unwrap_or(uri);
-    percent_decode(stripped)
+    let decoded = percent_decode(stripped);
+    if cfg!(windows) {
+        windows_path_of_uri_path(&decoded)
+    } else {
+        decoded
+    }
 }
 
+pub use super::uri_windows::{uri_path_of_windows_path, windows_path_of_uri_path};
+
 pub fn path_to_uri(file: &str) -> String {
+    if cfg!(windows) {
+        if let Some(uri) = super::uri_windows::windows_file_uri(file) {
+            return uri;
+        }
+    }
     let abs_path = if file.starts_with('/') {
         file.to_string()
     } else if let Ok(canon) = Path::new(file).canonicalize() {

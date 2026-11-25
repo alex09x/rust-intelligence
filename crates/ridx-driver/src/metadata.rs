@@ -28,8 +28,9 @@ pub(crate) fn is_immutable_package_with_home(manifest_dir: &Path, cargo_home: Op
             return true;
         }
     }
-    let s = manifest_dir.to_string_lossy();
-    s.contains("/.cargo/registry/") || s.contains("\\.cargo\\registry\\") || s.contains("/.cargo/git/") || s.contains("\\.cargo\\git\\")
+    // One separator: a Windows path can mix them.
+    let s = manifest_dir.to_string_lossy().replace('\\', "/");
+    s.contains("/.cargo/registry/") || s.contains("/.cargo/git/")
 }
 
 /// The source files this crate itself was compiled from (canonical paths): the local crate's files in the source map,

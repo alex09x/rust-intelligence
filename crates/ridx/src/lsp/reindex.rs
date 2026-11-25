@@ -351,7 +351,7 @@ fn needs_first_index(root: &Path) -> bool {
 
 /// Whether `path` lies in sources the toolchain or Cargo's caches hold, not the user's.
 pub fn is_cached_source(path: &Path) -> bool {
-    let s = path.to_string_lossy();
+    let s = path.to_string_lossy().replace('\\', "/");
     [".cargo/registry/", ".cargo/git/", ".rustup/toolchains/"].iter().any(|c| s.contains(c))
 }
 

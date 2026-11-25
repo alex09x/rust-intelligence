@@ -39,6 +39,7 @@ mod session_loop;
 pub mod symbols;
 mod syntax_tree;
 mod syntax_tree_kinds;
+pub mod uri_windows;
 pub mod workspace;
 
 #[cfg(test)]

@@ -34,7 +34,7 @@ pub fn alias_note(d: &ResolvedDefinition<'_>) -> Option<String> {
 /// complete such items outside their crate.
 pub fn is_hidden_library_item(d: &ResolvedDefinition<'_>) -> bool {
     let path = crate::lsp::intelligence::hover_render::def_file(d);
-    let p = path.to_string_lossy();
+    let p = path.to_string_lossy().replace('\\', "/");
     (p.contains("/library/") || p.contains("/registry/src/")) && attribute_lines(d).is_some_and(|ls| ls.iter().any(|l| l.contains("doc(hidden)")))
 }
 

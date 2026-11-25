@@ -13,7 +13,7 @@ use ridx_format::IndexReader;
 
 #[test]
 fn test_driver_records_active_cfgs_features_target_and_lock_hash_key() {
-    let _lock = DRIVER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
 
     let temp_dir = std::env::temp_dir().join(format!("ridx_driver_cfg_feat_{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp_dir);
