@@ -19,7 +19,7 @@ from pathlib import Path
 REPO = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
 HERE = Path(__file__).parent
 FENCES = re.findall(r"^```[^\n]*\n.*?^```[ \t]*$", (REPO / "README.md").read_text(), re.MULTILINE | re.DOTALL)
-assert len(FENCES) == 5, len(FENCES)
+assert len(FENCES) == 6, len(FENCES)
 SHA = subprocess.check_output(["git", "-C", str(REPO), "log", "-1", "--format=%H", "--", "README.md"], text=True).strip()
 BASE = "https://github.com/alex09x/rust-intelligence/blob/main/"
 ARCH_IMG = ('<p align="center"><img src="../site/assets/architecture.svg" width="900" alt="How ridx works: at build time cargo check '
@@ -59,7 +59,7 @@ def render(code, t):
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -105,11 +105,15 @@ def render(code, t):
 
 {fence(0)}
 
+{o}{t['install_windows']}{c}
+
+{fence(1)}
+
 {o}{t['install_explain']}
 
 {t['install_source']}{c}
 
-{fence(1)}
+{fence(2)}
 
 {o}{t['install_then']}
 
@@ -119,14 +123,14 @@ def render(code, t):
 
 {t['editors']}
 
-- {t['zed']}
 - {t['vscode']}
+- {t['zed']}
 - {t['nvim']}
 - {t['helix']}
 
 ## {t['h_shell']}{c}
 
-{fence(2)}
+{fence(3)}
 
 {o}---
 
@@ -164,13 +168,13 @@ def render(code, t):
 
 {t['dev']}{c}
 
-{fence(3)}
+{fence(4)}
 
 {o}## {t['h_cite']}
 
 {t['cite']}{c}
 
-{fence(4)}
+{fence(5)}
 
 {o}## {t['h_license']}
 

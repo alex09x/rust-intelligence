@@ -1,7 +1,7 @@
-<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
+<!-- translation-source: 3fa2b8b43e14f2a477be9a5de758418064665c67 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [3fa2b8b](https://github.com/alex09x/rust-intelligence/blob/3fa2b8b43e14f2a477be9a5de758418064665c67/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -39,7 +39,7 @@
 바로 읽습니다. 에디터는 두 번째 컴파일러를 메모리에 띄우지 않고도 이동, 호버, 자동 완성, 참조 찾기,
 이름 바꾸기를 사용할 수 있습니다.
 
-Linux와 macOS를 지원합니다. Rust Project 및 Rust Foundation과 무관합니다.
+Linux, macOS, Windows를 지원합니다. Rust Project 및 Rust Foundation과 무관합니다.
 
 ---
 
@@ -87,16 +87,24 @@ LSP 메서드별로 rust-analyzer와 답이 일치하는 정도는 [`bench/`](..
 
 ## 설치
 
-Linux(x86_64, arm64)와 Apple Silicon의 macOS, [rustup](https://rustup.rs)이 필요합니다:
+Linux(x86_64, arm64), macOS(Apple Silicon, Intel), Windows(x86_64)에서
+[rustup](https://rustup.rs)이 필요합니다:
 
 ```bash
 curl -fsSL https://rust-intelligence.com/install.sh | sh
 ```
 
+Windows에서는 PowerShell에서:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
 설치 스크립트는 Rust 1.98.1(`ridx-driver`가 그 안에서 실행되는 툴체인으로, 해당 컴파일러의 라이브러리에
 링크됩니다. 여러분의 프로젝트는 어떤 툴체인을 써도 되며, ridx가 올바른 툴체인으로 인덱스를 빌드합니다)을
 추가하고, GitHub에서 플랫폼용 릴리스 아카이브를 받아 SHA-256을 확인한 뒤 `ridx`와 `ridx-driver`를
-`~/.local/bin`에 둡니다(`RIDX_INSTALL_DIR`로 변경, `RIDX_VERSION=v0.3.7`로 릴리스 고정).
+`~/.local/bin`에 둡니다(Windows에서는 `%USERPROFILE%\.local\bin`에 두고 PATH에 추가합니다.
+`RIDX_INSTALL_DIR`로 변경, `RIDX_VERSION=v0.3.14`로 릴리스 고정).
 
 또는 [crates.io](https://crates.io/crates/ridx)에서 설치합니다. 두 바이너리 모두 Rust 1.98.1로 빌드하세요. `ridx-driver`는
 그 컴파일러 자체의 라이브러리에 링크되므로 `rustc-dev`와 아래 두 플래그가 필요하고, `ridx`는 자신을 빌드한
@@ -120,11 +128,13 @@ RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-drive
 하위 명령 없이 실행한 `ridx`는 명령줄에서 `rust-analyzer`처럼 동작하므로(`--version`, `--stdio`,
 `--log-file`, `--print-config-schema`), rust-analyzer용으로 설정한 에디터가 대신 ridx를 실행할 수 있습니다.
 
-- **Zed**: [`editors/zed`](../editors/zed) 확장이 `ridx lsp`를 `rust-intelligence` 언어 서버로 등록하고
-  (명령 팔레트: `zed: install dev extension`),
+- **VS Code**: [Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence) 확장
+  ([`editors/vscode`](../editors/vscode))이 `ridx lsp`를 실행하고, `ridx`를 찾지 못하면 설치를 제안합니다.
+  또는 rust-analyzer 확장을 `ridx`로 향하게 할 수 있습니다:
+  [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)(`"rust-analyzer.server.path": "ridx"`).
+- **Zed**: [`editors/zed`](../editors/zed) 확장이 `ridx lsp`를 `rust-intelligence` 언어 서버로 등록하고,
+  PATH에 `ridx`가 없으면 내려받습니다(명령 팔레트: `zed: install dev extension`).
   [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json)이 Rust에 이를 선택합니다.
-- **VS Code**: [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)이
-  rust-analyzer 확장을 `ridx`로 향하게 합니다(`"rust-analyzer.server.path": "ridx"`).
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)(`cmd = { "ridx" }`,
   루트를 먼저 `Cargo.lock`으로 찾으므로 워크스페이스 멤버를 열어도 워크스페이스 전체 인덱스를 씁니다).
 - **Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) 가 언어 서버 `ridx` 를 선언하고 `languages.toml` 에서 Rust용으로 선택합니다.
@@ -198,7 +208,8 @@ rustc는 이미 `cargo check`를 할 때마다 모든 이름을 해석하고, �
   대응한 결과에서 옵니다. 편집된 크레이트에 의존하는 크레이트는 저장 후에 변경을 봅니다.
 - **cfg는 하나뿐입니다.** `cargo check`처럼 인덱스는 하나의 타깃과 하나의 피처 집합만 봅니다. 다른
   `#[cfg]`나 피처 뒤의 코드는 인덱싱되지 않습니다. `ridx index --all-features` / `--target`으로 선택합니다.
-- **Windows**는 아직 지원하지 않습니다.
+- **미리 빌드된 바이너리**는 Linux x86_64와 arm64, Apple Silicon과 Intel의 macOS, Windows x86_64용입니다.
+  그 밖의 플랫폼에서는 crates.io에서 설치하세요.
 - **표준 라이브러리**: `std`, `core`, `alloc`으로의 이동과 호버는 동작합니다. 이에 대한 참조는 워크스페이스
   안에서만 찾으며 이름을 바꿀 수 없습니다.
 - `vec![]`는 `Vec`에 대한 참조로 셉니다. rust-analyzer는 세지 않습니다.

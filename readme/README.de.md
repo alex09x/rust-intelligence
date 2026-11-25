@@ -1,7 +1,7 @@
-<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
+<!-- translation-source: 3fa2b8b43e14f2a477be9a5de758418064665c67 -->
 
 > [!NOTE]
-> Dies ist eine Übersetzung der englischen README im Commit [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Dies ist eine Übersetzung der englischen README im Commit [3fa2b8b](https://github.com/alex09x/rust-intelligence/blob/3fa2b8b43e14f2a477be9a5de758418064665c67/README.md). Maßgeblich und aktuell ist die [englische README](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -39,7 +39,7 @@
 diesen Index direkt von der Festplatte. Ihr Editor bekommt Navigation, Hover, Vervollständigung, Referenzen und
 Umbenennen, ohne einen zweiten Compiler im Speicher zu halten.
 
-Linux und macOS. Nicht mit dem Rust Project oder der Rust Foundation verbunden.
+Linux, macOS und Windows. Nicht mit dem Rust Project oder der Rust Foundation verbunden.
 
 ---
 
@@ -90,16 +90,24 @@ gemessen und je Release in [`CHANGELOG.md`](../CHANGELOG.md) festgehalten. Die v
 
 ## Installation
 
-Linux (x86_64, arm64) und macOS auf Apple Silicon, mit [rustup](https://rustup.rs):
+Linux (x86_64, arm64), macOS (Apple Silicon, Intel) und Windows (x86_64), mit
+[rustup](https://rustup.rs):
 
 ```bash
 curl -fsSL https://rust-intelligence.com/install.sh | sh
 ```
 
+Unter Windows in der PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
 Der Installer fügt Rust 1.98.1 hinzu, die Toolchain, in der `ridx-driver` läuft (er linkt gegen die Bibliotheken
 dieses Compilers; Ihre Projekte behalten jede Toolchain, ridx baut den Index mit der richtigen), lädt das
 Release-Archiv für Ihre Plattform von GitHub, prüft dessen SHA-256 und legt `ridx` und `ridx-driver` nach
-`~/.local/bin` (`RIDX_INSTALL_DIR` ändert das, `RIDX_VERSION=v0.3.7` legt ein Release fest).
+`~/.local/bin` (unter Windows nach `%USERPROFILE%\.local\bin`, das er in Ihren PATH aufnimmt;
+`RIDX_INSTALL_DIR` ändert das, `RIDX_VERSION=v0.3.14` legt ein Release fest).
 
 Oder von [crates.io](https://crates.io/crates/ridx). Bauen Sie beide Programme mit Rust 1.98.1: `ridx-driver` linkt gegen
 die Bibliotheken dieses Compilers und braucht deshalb `rustc-dev` und diese beiden Flags, und `ridx` führt den
@@ -124,11 +132,13 @@ Findet ein Desktop-Editor `ridx` nicht, geben Sie ihm den vollen Pfad aus `which
 `ridx` ohne Unterbefehl verhält sich auf der Kommandozeile wie `rust-analyzer` (`--version`, `--stdio`,
 `--log-file`, `--print-config-schema`), daher kann ein für rust-analyzer eingerichteter Editor stattdessen ridx starten.
 
+- **VS Code**: Die Erweiterung [Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence)
+  ([`editors/vscode`](../editors/vscode)) startet `ridx lsp` und bietet an, `ridx` zu installieren, wenn sie es nicht findet.
+  Oder richten Sie die rust-analyzer-Erweiterung auf `ridx`:
+  [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) (`"rust-analyzer.server.path": "ridx"`).
 - **Zed**: Die Erweiterung [`editors/zed`](../editors/zed) registriert `ridx lsp` als Language Server
-  `rust-intelligence` (Befehlspalette: `zed: install dev extension`), und
-  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) wählt ihn für Rust aus.
-- **VS Code**: [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) richtet die
-  rust-analyzer-Erweiterung auf `ridx` (`"rust-analyzer.server.path": "ridx"`).
+  `rust-intelligence` und lädt `ridx` herunter, wenn es nicht im PATH liegt (Befehlspalette: `zed: install dev
+  extension`); [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) wählt ihn für Rust aus.
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
   die Wurzel wird zuerst über `Cargo.lock` gesucht, sodass ein Workspace-Mitglied den Index des Workspaces öffnet).
 - **Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) deklariert den Language Server `ridx` und wählt ihn in `languages.toml` für Rust aus.
@@ -207,7 +217,8 @@ Das ganze Design, mit dem Aufbau eines Shards und wo jeder Teil im Code liegt:
   abgebildet. Crates, die von einem geänderten abhängen, sehen die Änderung nach dem Speichern.
 - **Ein cfg.** Wie `cargo check` sieht der Index ein Target und einen Feature-Satz; Code hinter anderen
   `#[cfg]`s oder Features wird nicht indexiert. Auswahl mit `ridx index --all-features` / `--target`.
-- **Windows** wird noch nicht unterstützt.
+- **Vorgefertigte Binaries** gibt es für Linux x86_64 und arm64, macOS auf Apple Silicon und Intel sowie
+  Windows x86_64; auf anderen Plattformen installieren Sie von crates.io.
 - **Standardbibliothek**: Navigation und Hover nach `std`, `core` und `alloc` funktionieren; Referenzen darauf
   werden nur im Workspace gesucht, und sie lassen sich nicht umbenennen.
 - `vec![]` zählt als Referenz auf `Vec`; rust-analyzer zählt es nicht.

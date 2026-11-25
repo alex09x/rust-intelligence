@@ -1,7 +1,7 @@
-<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
+<!-- translation-source: 3fa2b8b43e14f2a477be9a5de758418064665c67 -->
 
 > [!NOTE]
-> Это перевод англоязычного README на коммите [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Это перевод англоязычного README на коммите [3fa2b8b](https://github.com/alex09x/rust-intelligence/blob/3fa2b8b43e14f2a477be9a5de758418064665c67/README.md). Каноническая и самая актуальная версия — [README на английском](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -39,7 +39,7 @@
 этот индекс прямо с диска. Редактор получает навигацию, подсказки при наведении, автодополнение, поиск ссылок
 и переименование без второго компилятора в памяти.
 
-Linux и macOS. Проект не связан с Rust Project и Rust Foundation.
+Linux, macOS и Windows. Проект не связан с Rust Project и Rust Foundation.
 
 ---
 
@@ -91,16 +91,24 @@ Linux и macOS. Проект не связан с Rust Project и Rust Foundatio
 
 ## Установка
 
-Linux (x86_64, arm64) и macOS на Apple Silicon, с [rustup](https://rustup.rs):
+Linux (x86_64, arm64), macOS (Apple Silicon, Intel) и Windows (x86_64), с
+[rustup](https://rustup.rs):
 
 ```bash
 curl -fsSL https://rust-intelligence.com/install.sh | sh
 ```
 
+В Windows — в PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
 Установщик ставит Rust 1.98.1 — toolchain, внутри которого работает `ridx-driver` (он линкуется с
 библиотеками этого компилятора; ваши проекты остаются на любом своём toolchain, ridx сам запускает сборку
 индекса на нужном), скачивает с GitHub архив релиза для вашей платформы, проверяет его SHA-256 и кладёт
-`ridx` и `ridx-driver` в `~/.local/bin` (`RIDX_INSTALL_DIR` меняет каталог, `RIDX_VERSION=v0.3.7` фиксирует релиз).
+`ridx` и `ridx-driver` в `~/.local/bin` (в Windows — в `%USERPROFILE%\.local\bin`, добавляя его в PATH;
+`RIDX_INSTALL_DIR` меняет каталог, `RIDX_VERSION=v0.3.14` фиксирует релиз).
 
 Или из [crates.io](https://crates.io/crates/ridx). Оба бинарника собирайте на Rust 1.98.1: `ridx-driver` линкуется с
 библиотеками самого этого компилятора, поэтому ему нужны `rustc-dev` и эти два флага, а `ridx` строит индекс
@@ -125,11 +133,13 @@ RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-drive
 `ridx` без подкоманды ведёт себя в командной строке как `rust-analyzer` (`--version`, `--stdio`,
 `--log-file`, `--print-config-schema`), поэтому редактор, настроенный на rust-analyzer, может запускать его вместо него.
 
+- **VS Code**: расширение [Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence)
+  ([`editors/vscode`](../editors/vscode)) запускает `ridx lsp` и предлагает установить `ridx`, если не находит его.
+  Или направьте расширение rust-analyzer на `ridx`:
+  [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) (`"rust-analyzer.server.path": "ridx"`).
 - **Zed**: расширение [`editors/zed`](../editors/zed) регистрирует `ridx lsp` как языковой сервер
-  `rust-intelligence` (палитра команд: `zed: install dev extension`), а
-  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) выбирает его для Rust.
-- **VS Code**: [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) направляет
-  расширение rust-analyzer на `ridx` (`"rust-analyzer.server.path": "ridx"`).
+  `rust-intelligence` и скачивает `ridx`, если его нет в PATH (палитра команд: `zed: install dev
+  extension`); [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) выбирает его для Rust.
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
   корень ищется сначала по `Cargo.lock`, поэтому крейт воркспейса открывает индекс всего воркспейса).
 - **Helix**: [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) объявляет языковой сервер `ridx` и выбирает его для Rust в `languages.toml`.
@@ -207,7 +217,8 @@ rustc и так на каждом `cargo check` разрешает все име
   изменённого, видят изменение после сохранения.
 - **Один cfg.** Как и `cargo check`, индекс видит одну цель и один набор фич; код под другими
   `#[cfg]` или фичами не индексируется. Они выбираются через `ridx index --all-features` / `--target`.
-- **Windows** пока не поддерживается.
+- **Готовые бинарники** есть для Linux x86_64 и arm64, macOS на Apple Silicon и Intel и Windows x86_64;
+  на остальных платформах ставьте с crates.io.
 - **Стандартная библиотека**: навигация и hover в `std`, `core` и `alloc` работают; ссылки на них ищутся
   только в воркспейсе, и переименовать их нельзя.
 - `vec![]` считается ссылкой на `Vec`; rust-analyzer так не считает.

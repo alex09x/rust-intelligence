@@ -1,7 +1,7 @@
-<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
+<!-- translation-source: 3fa2b8b43e14f2a477be9a5de758418064665c67 -->
 
 > [!NOTE]
-> 本文是英文 README 在提交 [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
+> 本文是英文 README 在提交 [3fa2b8b](https://github.com/alex09x/rust-intelligence/blob/3fa2b8b43e14f2a477be9a5de758418064665c67/README.md) 时的翻译。权威且最新的版本是[英文 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)。
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -38,7 +38,7 @@
 `ridx` 在 `cargo check` 期间一次性把定义、引用和类型记录到二进制索引中，并直接从磁盘读取该索引。
 编辑器由此获得跳转、悬停提示、补全、查找引用和重命名，而无需在内存中常驻第二个编译器。
 
-支持 Linux 和 macOS。本项目与 Rust Project 和 Rust Foundation 无关联。
+支持 Linux、macOS 和 Windows。本项目与 Rust Project 和 Rust Foundation 无关联。
 
 ---
 
@@ -85,15 +85,23 @@ inlay 提示，然后在抽样位置请求悬停、跳转到定义、跳转到�
 
 ## 安装
 
-Linux（x86_64、arm64）和 Apple Silicon 上的 macOS，需要 [rustup](https://rustup.rs)：
+Linux（x86_64、arm64）、macOS（Apple Silicon、Intel）和 Windows（x86_64），需要
+[rustup](https://rustup.rs)：
 
 ```bash
 curl -fsSL https://rust-intelligence.com/install.sh | sh
 ```
 
+在 Windows 上，于 PowerShell 中运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
 安装脚本会安装 Rust 1.98.1，即 `ridx-driver` 运行所在的工具链（它链接该编译器的库；你的项目可以继续
 使用任何工具链，ridx 会用正确的工具链构建索引），从 GitHub 下载适合你平台的发布包，校验其 SHA-256，
-并把 `ridx` 和 `ridx-driver` 放到 `~/.local/bin`（`RIDX_INSTALL_DIR` 可更改目录，`RIDX_VERSION=v0.3.7` 可固定版本）。
+并把 `ridx` 和 `ridx-driver` 放到 `~/.local/bin`（Windows 上为 `%USERPROFILE%\.local\bin`，并加入 PATH；
+`RIDX_INSTALL_DIR` 可更改目录，`RIDX_VERSION=v0.3.14` 可固定版本）。
 
 或者从 [crates.io](https://crates.io/crates/ridx) 安装。两个可执行文件都用 Rust 1.98.1 构建：`ridx-driver` 链接该编译器
 自身的库，因此需要 `rustc-dev` 和下面两个参数；`ridx` 会用构建它的工具链来构建索引。从仓库检出构建时，用
@@ -116,11 +124,13 @@ RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-drive
 不带子命令的 `ridx` 在命令行上的行为与 `rust-analyzer` 相同（`--version`、`--stdio`、
 `--log-file`、`--print-config-schema`），因此为 rust-analyzer 配置的编辑器可以改为启动它。
 
+- **VS Code**：[Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence) 扩展
+  （[`editors/vscode`](../editors/vscode)）运行 `ridx lsp`，找不到 `ridx` 时会提示安装。
+  也可以让 rust-analyzer 扩展指向 `ridx`：
+  [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)（`"rust-analyzer.server.path": "ridx"`）。
 - **Zed**：[`editors/zed`](../editors/zed) 扩展把 `ridx lsp` 注册为 `rust-intelligence`
-  语言服务器（命令面板：`zed: install dev extension`），
+  语言服务器，PATH 中没有 `ridx` 时会自动下载（命令面板：`zed: install dev extension`）；
   [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) 为 Rust 选择它。
-- **VS Code**：[`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) 让
-  rust-analyzer 扩展指向 `ridx`（`"rust-analyzer.server.path": "ridx"`）。
 - **Neovim**：[`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua)（`cmd = { "ridx" }`，
   优先按 `Cargo.lock` 查找根目录，因此工作区成员会打开整个工作区的索引）。
 - **Helix**：[`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) 声明语言服务器 `ridx`，并在 `languages.toml` 中将其选为 Rust 的语言服务器。
@@ -189,7 +199,8 @@ rustc 在每次 `cargo check` 时本来就会解析所有名称、展开所有�
   到几秒；在此之前，引用和导航来自上一个索引并按修改做了映射。依赖被修改 crate 的 crate 在保存后才能看到变化。
 - **只有一种 cfg。** 与 `cargo check` 一样，索引只看到一个目标和一组特性；其他
   `#[cfg]` 或特性下的代码不会被索引。可用 `ridx index --all-features` / `--target` 选择。
-- 暂不支持 **Windows**。
+- **预编译二进制文件**覆盖 Linux x86_64 和 arm64、Apple Silicon 与 Intel 上的 macOS，以及 Windows x86_64；
+  其他平台请从 crates.io 安装。
 - **标准库**：可以跳转到 `std`、`core` 和 `alloc` 并显示悬停；对它们的引用只在工作区内查找，
   且不能重命名。
 - `vec![]` 被算作对 `Vec` 的引用；rust-analyzer 不这样算。

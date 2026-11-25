@@ -1,7 +1,7 @@
-<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
+<!-- translation-source: 3fa2b8b43e14f2a477be9a5de758418064665c67 -->
 
 > [!NOTE]
-> هذه ترجمة لملف README الإنجليزي عند الإيداع [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> هذه ترجمة لملف README الإنجليزي عند الإيداع [3fa2b8b](https://github.com/alex09x/rust-intelligence/blob/3fa2b8b43e14f2a477be9a5de758418064665c67/README.md). النسخة المرجعية والأحدث هي [ملف README باللغة الإنجليزية](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -41,7 +41,7 @@
 مباشرة من القرص. يحصل محرّرك على التنقّل والتلميحات عند المرور والإكمال التلقائي والمراجع وإعادة التسمية من دون
 مترجم ثانٍ مقيم في الذاكرة.
 
-يعمل على Linux وmacOS. لا ينتمي إلى Rust Project ولا إلى Rust Foundation.
+يعمل على Linux وmacOS وWindows. لا ينتمي إلى Rust Project ولا إلى Rust Foundation.
 
 ---
 
@@ -92,7 +92,8 @@
 
 ## التثبيت
 
-على Linux ‏(x86_64، arm64) وmacOS على Apple Silicon، مع [rustup](https://rustup.rs):
+على Linux ‏(x86_64، arm64) وmacOS ‏(Apple Silicon، Intel) وWindows ‏(x86_64)، مع
+[rustup](https://rustup.rs):
 
 </div>
 
@@ -106,10 +107,24 @@ curl -fsSL https://rust-intelligence.com/install.sh | sh
 
 <div dir="rtl">
 
+على Windows، في PowerShell:
+
+</div>
+
+<div dir="ltr">
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
+</div>
+
+<div dir="rtl">
+
 يضيف المثبّت Rust 1.98.1، وهي سلسلة الأدوات التي يعمل داخلها `ridx-driver` (يرتبط بمكتبات ذلك المترجم؛ تحتفظ
 مشاريعك بأي سلسلة أدوات، ويبني ridx الفهرس بالسلسلة الصحيحة)، وينزّل من GitHub أرشيف الإصدار لمنصتك، ويتحقق من
-SHA-256 الخاص به، ويضع `ridx` و`ridx-driver` في `~/.local/bin` (يغيّره `RIDX_INSTALL_DIR`، ويثبّت
-`RIDX_VERSION=v0.3.7` إصدارًا محددًا).
+SHA-256 الخاص به، ويضع `ridx` و`ridx-driver` في `~/.local/bin` (وعلى Windows في `%USERPROFILE%\.local\bin`
+ويضيفه إلى PATH؛ يغيّره `RIDX_INSTALL_DIR`، ويثبّت `RIDX_VERSION=v0.3.14` إصدارًا محددًا).
 
 أو من [crates.io](https://crates.io/crates/ridx). ابنِ الملفين التنفيذيين بـ Rust 1.98.1: يرتبط `ridx-driver` بمكتبات ذلك المترجم نفسه، لذا يحتاج إلى `rustc-dev` وإلى هذين الخيارين، ويشغّل `ridx` بناء الفهرس بسلسلة الأدوات التي بُني بها. من نسخة مستنسخة من المستودع، استخدم `--path crates/ridx` و`--path crates/ridx-driver` بدل اسمي الحزمتين.
 
@@ -138,11 +153,13 @@ RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C prefer-dynamic" cargo +1.98.1 install ridx-drive
 يتصرّف `ridx` من دون أمر فرعي مثل `rust-analyzer` في سطر الأوامر (`--version` و`--stdio` و
 `--log-file` و`--print-config-schema`)، لذا يمكن لمحرّر مُعدّ لـ rust-analyzer أن يشغّله بدلًا منه.
 
+- **VS Code**: تشغّل إضافة [Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence)
+  ‏([`editors/vscode`](../editors/vscode)) الأمر `ridx lsp` وتعرض تثبيت `ridx` إذا لم تجده.
+  أو وجّه إضافة rust-analyzer إلى `ridx`:
+  [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) (`"rust-analyzer.server.path": "ridx"`).
 - **Zed**: تسجّل الإضافة [`editors/zed`](../editors/zed) الأمر `ridx lsp` بوصفه خادم اللغة
-  `rust-intelligence` (لوحة الأوامر: `zed: install dev extension`)، ويختاره
+  `rust-intelligence` وتنزّل `ridx` إذا لم يكن في PATH (لوحة الأوامر: `zed: install dev extension`)، ويختاره
   [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) للغة Rust.
-- **VS Code**: يوجّه [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json)
-  إضافة rust-analyzer إلى `ridx` (`"rust-analyzer.server.path": "ridx"`).
 - **Neovim**: [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`،
   يُبحث عن الجذر أولًا عبر `Cargo.lock`، فيفتح عضو مساحة العمل فهرس مساحة العمل كلها).
 - **Helix**: يعرّف [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) خادم اللغة `ridx` ويختاره للغة Rust في `languages.toml`.
@@ -228,7 +245,8 @@ ridx compare -c all . my_crate::run   # side by side with rust-analyzer
   مطابَقًا على التعديل. والصناديق التي تعتمد على صندوق معدّل ترى التغيير بعد الحفظ.
 - **cfg واحد.** مثل `cargo check`، يرى الفهرس هدفًا واحدًا ومجموعة ميزات واحدة؛ الشيفرة خلف
   `#[cfg]` أو ميزات أخرى لا تُفهرَس. اخترها عبر `ridx index --all-features` / `--target`.
-- **Windows** غير مدعوم بعد.
+- **تتوفر ملفات تنفيذية جاهزة** لـ Linux ‏x86_64 وarm64، وmacOS على Apple Silicon وIntel، وWindows ‏x86_64؛
+  على المنصات الأخرى ثبّته من crates.io.
 - **المكتبة القياسية**: يعمل التنقّل والمرور إلى `std` و`core` و`alloc`؛ ويُبحث عن المراجع إليها داخل مساحة
   العمل فقط، ولا يمكن إعادة تسميتها.
 - يُحتسب `vec![]` مرجعًا إلى `Vec`؛ ولا يحتسبه rust-analyzer.

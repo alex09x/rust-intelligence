@@ -1,7 +1,7 @@
-<!-- translation-source: 272031158e380b3c990769ad55301f4df78c5f1d -->
+<!-- translation-source: 3fa2b8b43e14f2a477be9a5de758418064665c67 -->
 
 > [!NOTE]
-> Ceci est une traduction du README anglais au commit [2720311](https://github.com/alex09x/rust-intelligence/blob/272031158e380b3c990769ad55301f4df78c5f1d/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
+> Ceci est une traduction du README anglais au commit [3fa2b8b](https://github.com/alex09x/rust-intelligence/blob/3fa2b8b43e14f2a477be9a5de758418064665c67/README.md). La version de référence, et la plus à jour, est le [README en anglais](https://github.com/alex09x/rust-intelligence/blob/main/README.md).
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://rust-intelligence.com"><img src="https://img.shields.io/badge/site-rust--intelligence.com-f74c00" alt="Website"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-c9ced4" alt="License: MIT OR Apache-2.0">
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-1b1d20" alt="Platforms: Linux, macOS">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-1b1d20" alt="Platforms: Linux, macOS, Windows">
   <img src="https://img.shields.io/badge/protocol-LSP-1b1d20" alt="Language Server Protocol">
   <a href="https://doi.org/10.5281/zenodo.24379816"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24379816.svg" alt="DOI: 10.5281/zenodo.24379816"></a>
 </p>
@@ -39,7 +39,7 @@
 puis lit cet index directement sur le disque. Votre éditeur obtient navigation, survol, complétion, références et
 renommage sans un second compilateur résident en mémoire.
 
-Linux et macOS. Sans lien avec le Rust Project ni la Rust Foundation.
+Linux, macOS et Windows. Sans lien avec le Rust Project ni la Rust Foundation.
 
 ---
 
@@ -91,16 +91,24 @@ et consignée à chaque version dans [`CHANGELOG.md`](../CHANGELOG.md). La matri
 
 ## Installation
 
-Linux (x86_64, arm64) et macOS sur Apple Silicon, avec [rustup](https://rustup.rs) :
+Linux (x86_64, arm64), macOS (Apple Silicon, Intel) et Windows (x86_64), avec
+[rustup](https://rustup.rs) :
 
 ```bash
 curl -fsSL https://rust-intelligence.com/install.sh | sh
 ```
 
+Sous Windows, dans PowerShell :
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://rust-intelligence.com/install.ps1 | iex"
+```
+
 L'installeur ajoute Rust 1.98.1, la toolchain dans laquelle s'exécute `ridx-driver` (il se lie aux bibliothèques de
 ce compilateur ; vos projets gardent n'importe quelle toolchain, ridx construit l'index avec la bonne), télécharge
 depuis GitHub l'archive de la version pour votre plateforme, vérifie son SHA-256 et place `ridx` et `ridx-driver`
-dans `~/.local/bin` (`RIDX_INSTALL_DIR` le change, `RIDX_VERSION=v0.3.7` fixe une version).
+dans `~/.local/bin` (sous Windows, `%USERPROFILE%\.local\bin`, qu'il ajoute à votre PATH ; `RIDX_INSTALL_DIR`
+le change, `RIDX_VERSION=v0.3.14` fixe une version).
 
 Ou depuis [crates.io](https://crates.io/crates/ridx). Compilez les deux binaires avec Rust 1.98.1 : `ridx-driver` se
 lie aux bibliothèques de ce compilateur, il lui faut donc `rustc-dev` et ces deux options, et `ridx` construit
@@ -125,11 +133,13 @@ Si un éditeur de bureau ne trouve pas `ridx`, donnez-lui le chemin complet renv
 Sans sous-commande, `ridx` se comporte comme `rust-analyzer` en ligne de commande (`--version`, `--stdio`,
 `--log-file`, `--print-config-schema`), donc un éditeur configuré pour rust-analyzer peut le lancer à la place.
 
+- **VS Code** : l'extension [Rust Intelligence](https://marketplace.visualstudio.com/items?itemName=alex09x.rust-intelligence)
+  ([`editors/vscode`](../editors/vscode)) lance `ridx lsp` et propose d'installer `ridx` si elle ne le trouve pas.
+  Ou faites pointer l'extension rust-analyzer vers `ridx` :
+  [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) (`"rust-analyzer.server.path": "ridx"`).
 - **Zed** : l'extension [`editors/zed`](../editors/zed) enregistre `ridx lsp` comme serveur de langage
-  `rust-intelligence` (palette de commandes : `zed: install dev extension`), et
-  [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) le sélectionne pour Rust.
-- **VS Code** : [`docs/editors/vscode-settings.json`](../docs/editors/vscode-settings.json) fait pointer
-  l'extension rust-analyzer vers `ridx` (`"rust-analyzer.server.path": "ridx"`).
+  `rust-intelligence` et télécharge `ridx` s'il n'est pas dans le PATH (palette de commandes : `zed: install dev
+  extension`) ; [`docs/editors/zed-settings.json`](../docs/editors/zed-settings.json) le sélectionne pour Rust.
 - **Neovim** : [`docs/editors/neovim-lspconfig.lua`](../docs/editors/neovim-lspconfig.lua) (`cmd = { "ridx" }`,
   la racine est cherchée d'abord par `Cargo.lock`, ainsi un membre du workspace ouvre l'index du workspace).
 - **Helix** : [`docs/editors/helix-languages.toml`](../docs/editors/helix-languages.toml) déclare le serveur de langage `ridx` et le sélectionne pour Rust dans `languages.toml`.
@@ -211,7 +221,8 @@ La conception complète, avec la structure d'un shard et l'emplacement de chaque
   modification. Les crates qui dépendent d'un crate modifié voient le changement après l'enregistrement.
 - **Un seul cfg.** Comme `cargo check`, l'index voit une cible et un jeu de features ; le code derrière d'autres
   `#[cfg]` ou features n'est pas indexé. Choisissez-les avec `ridx index --all-features` / `--target`.
-- **Windows** n'est pas encore pris en charge.
+- **Des binaires précompilés** existent pour Linux x86_64 et arm64, macOS sur Apple Silicon et Intel, et
+  Windows x86_64 ; sur les autres plateformes, installez depuis crates.io.
 - **Bibliothèque standard** : la navigation et le survol vers `std`, `core` et `alloc` fonctionnent ; les
   références vers eux sont cherchées dans le workspace seulement, et ils ne peuvent pas être renommés.
 - `vec![]` compte comme une référence à `Vec` ; rust-analyzer ne le compte pas.
