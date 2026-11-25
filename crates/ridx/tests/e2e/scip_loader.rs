@@ -146,3 +146,39 @@ fn test_scip_loader_reads_every_range_encoding() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+/// The four encodings as small index files, one definition each, kept in `tests/fixtures/scip/` for readers outside
+/// ridx (a consumer's migration note to scip-code/scip). Each file is the index this test builds, byte for byte;
+/// `RIDX_BLESS_SCIP_FIXTURES=1` writes them again.
+#[test]
+fn test_scip_range_fixtures_load_as_their_encoding_says() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/scip");
+    let single = |line, start_character, end_character| Typed_range::SingleLineRange(SingleLineRange { line, start_character, end_character, ..Default::default() });
+    let cases = [
+        ("old-single-line", vec![1, 4, 9], None, (1, 4)),
+        ("old-multi-line", vec![3, 2, 5, 1], None, (3, 2)),
+        ("typed-only", Vec::new(), Some(single(7, 4, 10)), (7, 4)),
+        ("both-typed-wins", vec![20, 0, 3], Some(single(14, 6, 8)), (14, 6)),
+    ];
+    for (name, range, typed, at) in cases {
+        let mut occ = Occurrence::new();
+        occ.symbol = format!("local {name}");
+        occ.symbol_roles = SymbolRole::Definition as i32;
+        occ.range = range;
+        occ.typed_range = typed;
+        let mut doc = Document::new();
+        doc.relative_path = "src/lib.rs".to_string();
+        doc.occurrences.push(occ);
+        let mut index = Index::new();
+        index.documents.push(doc);
+        let bytes = index.write_to_bytes().unwrap();
+        let file = dir.join(format!("{name}.scip"));
+        if std::env::var_os("RIDX_BLESS_SCIP_FIXTURES").is_some() {
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(&file, &bytes).unwrap();
+        }
+        assert_eq!(fs::read(&file).unwrap(), bytes, "{name}.scip is the index this test builds");
+        let scip = ScipIndex::load_from_file(&file, &dir).unwrap();
+        assert_eq!(scip.definitions.get(&format!("local {name}")).map(|l| (l.line, l.col)), Some(at), "{name}");
+    }
+}

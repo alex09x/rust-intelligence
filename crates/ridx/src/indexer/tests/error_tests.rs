@@ -234,6 +234,7 @@ fn test_indexer_helpers_and_error_paths() {
         capture_child_output: false,
         builder: None,
     });
-    assert!(err_open.is_err());
-    assert!(err_open.unwrap_err().contains("failed to open generated variant index"));
+    // Which error: the dummy driver is a shell script, which Windows cannot run (the build fails before the open).
+    let err_open = err_open.unwrap_err();
+    assert!(cfg!(windows) || err_open.contains("failed to open generated variant index"), "{err_open}");
 }

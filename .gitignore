@@ -12,6 +12,7 @@ bench/storage/
 bench_repos/
 bench_scenarios.json
 *.scip
+!crates/ridx/tests/fixtures/scip/*.scip
 index.scip
 *.jsonl
 !crates/ridx/tests/fixtures/diagnostics/*.jsonl
