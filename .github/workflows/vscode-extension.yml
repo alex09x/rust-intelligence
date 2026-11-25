@@ -7,8 +7,10 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 #
 # A tag `vscode-v<version>` (the version in editors/vscode/package.json) packages the extension and publishes it to the
-# Visual Studio Marketplace through trusted publishing (OIDC, no token) and to Open VSX (secret OVSX_PAT, when set).
-# The `vscode-marketplace` environment holds the publish job until the owner approves it.
+# Visual Studio Marketplace and to Open VSX, both through trusted publishing: each registry exchanges this workflow's
+# OIDC token for a short-lived one, so no token is stored. The `vscode-marketplace` and `open-vsx` environments hold
+# each publish job until the owner approves it. Open VSX needs, once, on open-vsx.org: the `alex09x` namespace, and
+# this repository, this file and the `open-vsx` environment registered as its trusted publisher.
 name: VS Code extension
 
 on:
@@ -65,9 +67,23 @@ jobs:
           path: editors/vscode
       - name: Visual Studio Marketplace
         run: npx vsce publish --oidc --packagePath rust-intelligence.vsix
-      - name: Open VSX
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: |
-          if [ -z "$OVSX_PAT" ]; then echo "OVSX_PAT is not set: Open VSX skipped"; exit 0; fi
-          npx ovsx publish rust-intelligence.vsix
+
+  # The same VSIX on Open VSX, the registry of VSCodium, Cursor, Windsurf, Gitpod and Eclipse Theia.
+  publish-open-vsx:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/vscode-v')
+    runs-on: ubuntu-latest
+    environment: open-vsx
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+          path: vsix
+      - name: Open VSX, trusted publishing
+        run: npx --yes ovsx@1.4.0 publish --trusted-publishing --packagePath vsix/rust-intelligence.vsix
