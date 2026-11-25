@@ -187,12 +187,16 @@ mod tests {
         session.want(&PathBuf::from(&path), &root);
         assert!(session.is_wanted(&root, &PathBuf::from(&path)) && session.state_of(&root).0, "a session is due");
         assert_eq!(edited_buffers(&ov, &root, &|p| session.is_wanted(&root, p)).len(), 1);
-        // Review of 7501440b: opened through a link, wanted by its path: the same buffer.
-        let link = root.join("link.rs");
-        std::os::unix::fs::symlink(root.join("a.rs"), &link).unwrap();
-        let mut by_link = crate::overlay::OverlayManager::new();
-        by_link.open_with_provenance("file:///link.rs", &link.to_string_lossy(), 1, "x".into(), true);
-        assert_eq!(edited_buffers(&by_link, &root, &|p| session.is_wanted(&root, p)).len(), 1);
+        // Review of 7501440b: opened through a link, wanted by its path: the same buffer. (Unix: a symlink on Windows
+        // needs a privilege the user may not have.)
+        #[cfg(unix)]
+        {
+            let link = root.join("link.rs");
+            std::os::unix::fs::symlink(root.join("a.rs"), &link).unwrap();
+            let mut by_link = crate::overlay::OverlayManager::new();
+            by_link.open_with_provenance("file:///link.rs", &link.to_string_lossy(), 1, "x".into(), true);
+            assert_eq!(edited_buffers(&by_link, &root, &|p| session.is_wanted(&root, p)).len(), 1);
+        }
     }
 
     /// Review of 88fe53d0: a build of a buffer closed or opened again since is not installed.
