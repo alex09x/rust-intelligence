@@ -1,0 +1,65 @@
+# rust-intelligence — build, smoke-index and test on the platforms without release binaries yet.
+# Copyright (c) 2026 Alexander Panasenko
+# Contact: alex@prod.codes
+# Author: https://prod.codes/about/
+# Project: https://github.com/alex09x/rust-intelligence
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
+# Windows x86_64 and macOS x86_64 (Intel): every step runs even after a failure, so one run shows all
+# that breaks there.
+name: Platforms
+
+on:
+  push:
+    branches: [platforms]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+          - os: macos-13
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Toolchain pinned in rust-toolchain.toml
+        run: |
+          set -euo pipefail
+          rustup show active-toolchain || rustup toolchain install
+          rustc -vV
+      - name: Compiler libraries on the search path (ridx-driver links librustc_driver dynamically)
+        run: |
+          sysroot=$(rustc --print sysroot)
+          if [ "$RUNNER_OS" = Windows ]; then echo "$(cygpath -w "$sysroot/bin")" >> "$GITHUB_PATH"; fi
+      - name: Build
+        id: build
+        run: cargo build --release --locked -p ridx -p ridx-driver
+      - name: Smoke test on a small crate
+        if: always() && steps.build.outcome == 'success'
+        run: bash tools/release/smoke.sh "$GITHUB_WORKSPACE/target/release"
+      - name: Test ridx-format and ridx-syntax
+        if: always()
+        run: cargo test --locked -p ridx-format -p ridx-syntax --no-fail-fast
+      - name: Test ridx (lib)
+        if: always()
+        run: cargo test --locked -p ridx --lib --no-fail-fast
+      - name: Test ridx-driver
+        if: always()
+        run: cargo test --locked -p ridx-driver --no-fail-fast
