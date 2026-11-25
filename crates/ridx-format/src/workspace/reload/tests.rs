@@ -47,8 +47,13 @@ pub(super) fn write_test_index(path: &Path, crate_name: &str) {
         end_line: 2,
         end_col: 2,
     });
-    let mut f = File::create(path).unwrap();
+    // Beside it, then renamed over it, as the indexer publishes a shard: writing into a mapped file is refused on
+    // Windows (os error 1224).
+    let tmp = path.with_extension("ridx.tmp");
+    let mut f = File::create(&tmp).unwrap();
     writer.write_to(&mut f).unwrap();
+    drop(f);
+    fs::rename(&tmp, path).unwrap();
 }
 
 #[test]

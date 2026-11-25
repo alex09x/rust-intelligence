@@ -76,10 +76,24 @@ pub struct IndexReader<B> {
 impl IndexReader<Mmap> {
     /// Opens and memory-maps a `.ridx` file from disk.
     pub fn open(path: impl AsRef<Path>) -> io::Result<IndexReader<Mmap>> {
-        let file = File::open(path)?;
+        let file = open_shared(path.as_ref())?;
         let mmap = unsafe { Mmap::map(&file)? };
         Self::from_buffer(mmap)
     }
+}
+
+/// Opens a shard for reading so that a reindex can still replace it: a new shard is written beside it and renamed over
+/// it while the server holds this one mapped. Windows refuses that rename unless every open handle shares delete
+/// access (Unix always allows it; the mapping keeps the old file's data).
+fn open_shared(path: &Path) -> io::Result<File> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        // FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
+        std::fs::OpenOptions::new().read(true).share_mode(0x1 | 0x2 | 0x4).open(path)
+    }
+    #[cfg(not(windows))]
+    File::open(path)
 }
 
 impl<B: AsRef<[u8]>> IndexReader<B> {

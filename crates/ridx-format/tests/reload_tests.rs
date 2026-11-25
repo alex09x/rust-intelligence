@@ -144,7 +144,10 @@ fn test_single_shard_reload_refreshes_metadata_and_hashes() {
         end_line: 1,
         end_col: 15,
     });
-    writer2.write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap())).unwrap();
+    // Published as the indexer does, beside the mapped shard and renamed over it.
+    let tmp = ridx_file.with_extension("ridx.tmp");
+    writer2.write_to(&mut BufWriter::new(File::create(&tmp).unwrap())).unwrap();
+    fs::rename(&tmp, &ridx_file).unwrap();
 
     let reloaded = ws.reload_if_modified().expect("reload failed");
     assert!(reloaded, "expected reload_if_modified to return true");
