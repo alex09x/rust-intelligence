@@ -56,6 +56,18 @@ jobs:
         run: |
           py=python3; python3 -c 1 2>/dev/null || py=python
           $py tools/release/lsp_smoke.py "$GITHUB_WORKSPACE/target/release"
+      - name: Package as the release does, and unpack it again
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          set -euo pipefail
+          bash tools/release/package.sh target/release "${{ matrix.target }}" dist
+          mkdir unpacked
+          case "${{ matrix.target }}" in
+            *windows*) (cd unpacked && 7z x -bd ../dist/ridx-${{ matrix.target }}.zip >/dev/null) ;;
+            *) tar -xzf dist/ridx-${{ matrix.target }}.tar.gz -C unpacked ;;
+          esac
+          ls -la unpacked/ridx-${{ matrix.target }}
+          bash tools/release/smoke.sh "$GITHUB_WORKSPACE/unpacked/ridx-${{ matrix.target }}"
       - name: Test ridx-format and ridx-syntax
         if: always()
         run: cargo test --locked -p ridx-format -p ridx-syntax --no-fail-fast
