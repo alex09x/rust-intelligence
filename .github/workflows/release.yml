@@ -39,6 +39,8 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - os: macos-15
             target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -83,6 +85,9 @@ jobs:
 
   sign-macos:
     needs: build
+    strategy:
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
     runs-on: macos-15
     timeout-minutes: 40
     environment: release-signing
@@ -95,7 +100,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: unsigned-aarch64-apple-darwin
+          name: unsigned-${{ matrix.target }}
           path: unsigned
       - name: Sign with the Developer ID and notarize, without running the binaries
         env:
@@ -114,12 +119,12 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: notary-evidence-failed
+          name: notary-evidence-failed-${{ matrix.target }}
           path: notary-evidence/*.json
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
-          name: signed-aarch64-apple-darwin
+          name: signed-${{ matrix.target }}
           path: |
             signed/ridx
             signed/ridx-driver
@@ -128,7 +133,15 @@ jobs:
 
   verify-macos:
     needs: sign-macos
-    runs-on: macos-15
+    strategy:
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+    # Each on its own architecture: the smoke test runs the signed binaries.
+    runs-on: ${{ matrix.os }}
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
@@ -139,7 +152,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: signed-aarch64-apple-darwin
+          name: signed-${{ matrix.target }}
           path: in
       - name: Developer ID, hardened runtime, entitlements and Apple's ticket
         run: |
@@ -151,10 +164,10 @@ jobs:
       - name: Smoke test on the signed binaries
         run: bash tools/release/smoke.sh "$GITHUB_WORKSPACE/in/signed"
       - name: Package the signed binaries
-        run: bash tools/release/package.sh in/signed aarch64-apple-darwin dist
+        run: bash tools/release/package.sh in/signed ${{ matrix.target }} dist
       - uses: actions/upload-artifact@v4
         with:
-          name: release-aarch64-apple-darwin
+          name: release-${{ matrix.target }}
           path: |
             dist/*.tar.gz
             dist/*.sha256

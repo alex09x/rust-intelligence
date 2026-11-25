@@ -51,14 +51,16 @@ class ReleaseRules(unittest.TestCase):
             {"path": "submission.zip/ridx/ridx", "arch": "arm64", "cdhash": "AA"},
             {"path": "submission.zip/ridx/ridx-driver", "arch": "arm64", "cdhash": "BB"},
         ]}
-        apple_verify.accepted_ticket(receipt, "j", "ridx", "aa")
-        apple_verify.accepted_ticket(receipt, "j", "ridx-driver", "bb")
+        apple_verify.accepted_ticket(receipt, "j", "ridx", "aa", "arm64")
+        apple_verify.accepted_ticket(receipt, "j", "ridx-driver", "bb", "arm64")
         with self.assertRaises(ValueError):
-            apple_verify.accepted_ticket(receipt, "j", "ridx-driver", "aa")
+            apple_verify.accepted_ticket(receipt, "j", "ridx-driver", "aa", "arm64")
         with self.assertRaises(ValueError):
-            apple_verify.accepted_ticket(receipt, "other", "ridx", "aa")
+            apple_verify.accepted_ticket(receipt, "other", "ridx", "aa", "arm64")
         with self.assertRaises(ValueError):
-            apple_verify.accepted_ticket(dict(receipt, status="Invalid"), "j", "ridx", "aa")
+            apple_verify.accepted_ticket(dict(receipt, status="Invalid"), "j", "ridx", "aa", "arm64")
+        with self.assertRaises(ValueError, msg="an Intel binary needs an Intel ticket"):
+            apple_verify.accepted_ticket(receipt, "j", "ridx", "aa", "x86_64")
 
     @unittest.skipUnless(sys.platform == "darwin" and shutil.which("codesign"), "needs codesign")
     def test_codesign_accepts_the_entitlements_file(self):

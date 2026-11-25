@@ -48,11 +48,16 @@ def check_entitlements(name, actual):
         raise ValueError(f"{name}: entitlements {sorted(actual)} differ from the expected {sorted(expected)}")
 
 
-def accepted_ticket(receipt, job, name, cdhash):
+def accepted_ticket(receipt, job, name, cdhash, arch):
     if receipt.get("status") != "Accepted" or receipt.get("jobId") != job or receipt.get("issues") not in (None, []):
         raise ValueError("Apple did not accept this exact submission")
-    if not any(t.get("cdhash", "").lower() == cdhash and t.get("arch") == "arm64" and t.get("path", "").endswith("ridx/" + name) for t in receipt.get("ticketContents", [])):
-        raise ValueError(f"Apple's ticket does not cover the final {name}")
+    if not any(t.get("cdhash", "").lower() == cdhash and t.get("arch") == arch and t.get("path", "").endswith("ridx/" + name) for t in receipt.get("ticketContents", [])):
+        raise ValueError(f"Apple's ticket does not cover the final {name} ({arch})")
+
+
+def architecture(binary):
+    """The binary's one architecture as Apple's ticket names it (arm64, x86_64)."""
+    return run(["lipo", "-archs", binary]).stdout.strip()
 
 
 def verify(signed, evidence):
@@ -63,7 +68,7 @@ def verify(signed, evidence):
         binary = signed / name
         cdhash = signature(binary, team)
         check_entitlements(name, entitlements(binary))
-        accepted_ticket(receipt, job, name, cdhash)
+        accepted_ticket(receipt, job, name, cdhash, architecture(binary))
         for attempt in range(6):
             if run(["codesign", "--verify", "--strict", "-R=notarized", "--check-notarization", binary], timeout=90, check=False).returncode == 0:
                 break

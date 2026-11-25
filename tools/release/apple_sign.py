@@ -20,7 +20,7 @@ import zipfile
 from pathlib import Path
 
 from apple_keychain import credentials, expected_team, run
-from apple_verify import BINARIES, IDENTIFIERS, accepted_ticket, signature
+from apple_verify import BINARIES, IDENTIFIERS, accepted_ticket, architecture, signature
 
 ENTITLEMENTS = Path(__file__).resolve().parent / "ridx-driver.entitlements"
 
@@ -67,7 +67,7 @@ def sign_release(source, output, evidence):
         if receipt.get("sha256", "").lower() != zip_sha:
             raise ValueError("Apple's receipt does not describe the submitted ZIP")
     for name in BINARIES:
-        accepted_ticket(receipt, job, name, cdhashes[name])
+        accepted_ticket(receipt, job, name, cdhashes[name], architecture(output / name))
     (evidence / "submission.json").write_text(json.dumps({"id": job, "status": "Accepted", "zip_sha256": zip_sha, "cdhash": cdhashes, "team": team}, indent=2) + "\n")
     print("ridx and ridx-driver signed with Developer ID and notarized: Accepted", job)
 
