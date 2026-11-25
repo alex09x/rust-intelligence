@@ -11,7 +11,8 @@
 use protobuf::Message;
 use ridx::compare::scip_loader::{run_scip_session, ScipIndex};
 use ridx::compare::types::SymmetricScenario;
-use scip::types::{Document, Index, Occurrence, SymbolInformation, SymbolRole};
+use scip::types::occurrence::Typed_range;
+use scip::types::{Document, Index, MultiLineRange, Occurrence, SingleLineRange, SymbolInformation, SymbolRole};
 use std::fs;
 
 #[test]
@@ -93,6 +94,55 @@ fn test_scip_loader_and_queries() {
     assert!(metrics.query_results["test_def"].found);
     assert!(metrics.query_results["test_hover"].found);
     assert_eq!(metrics.query_results["test_hover"].span, "Documentation for my_func");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+/// Reported by the EB-1A workspace against the SCIP schema since scip-code/scip PR 387: an occurrence with only the
+/// typed range was skipped, and a four-element `range` was read with its end line as the end column.
+#[test]
+fn test_scip_loader_reads_every_range_encoding() {
+    let temp_dir = std::env::temp_dir().join(format!("scip_ranges_{}", std::process::id()));
+    fs::create_dir_all(&temp_dir).unwrap();
+    let scip_file = temp_dir.join("index.scip");
+    let occ = |symbol: &str, range: Vec<i32>, typed: Option<Typed_range>| {
+        let mut o = Occurrence::new();
+        o.symbol = symbol.to_string();
+        o.symbol_roles = SymbolRole::Definition as i32;
+        o.range = range;
+        o.typed_range = typed;
+        o
+    };
+    let single = |line, start_character, end_character| Typed_range::SingleLineRange(SingleLineRange { line, start_character, end_character, ..Default::default() });
+    let multi = |start_line, start_character, end_line, end_character| {
+        Typed_range::MultiLineRange(MultiLineRange { start_line, start_character, end_line, end_character, ..Default::default() })
+    };
+    let mut doc = Document::new();
+    doc.relative_path = "src/lib.rs".to_string();
+    doc.occurrences = vec![
+        occ("old_single", vec![1, 4, 9], None),
+        occ("old_multi", vec![3, 2, 5, 1], None),
+        occ("typed_single", Vec::new(), Some(single(7, 4, 10))),
+        occ("typed_multi", Vec::new(), Some(multi(9, 0, 12, 1))),
+        // Both set: the typed range takes precedence.
+        occ("both", vec![20, 0, 3], Some(single(14, 6, 8))),
+    ];
+    let mut index = Index::new();
+    index.documents.push(doc);
+    fs::write(&scip_file, index.write_to_bytes().unwrap()).unwrap();
+
+    let scip = ScipIndex::load_from_file(&scip_file, &temp_dir).unwrap();
+    let at = |symbol: &str| scip.definitions.get(symbol).map(|l| (l.line, l.col));
+    assert_eq!(at("old_single"), Some((1, 4)));
+    assert_eq!(at("old_multi"), Some((3, 2)));
+    assert_eq!(at("typed_single"), Some((7, 4)), "a typed-only occurrence is kept");
+    assert_eq!(at("typed_multi"), Some((9, 0)));
+    assert_eq!(at("both"), Some((14, 6)));
+    // A range going on past its first line holds the rest of that line, not up to its end line's number.
+    assert_eq!(scip.find_symbol_at("src/lib.rs", 3, 40), Some("old_multi"));
+    assert_eq!(scip.find_symbol_at("src/lib.rs", 9, 40), Some("typed_multi"));
+    assert_eq!(scip.occurrences_by_line[&("src/lib.rs".to_string(), 1)][0].1, 9, "a single-line range ends at its end column");
+    assert!(!scip.occurrences_by_line.contains_key(&("src/lib.rs".to_string(), 20)), "the deprecated range of an occurrence with a typed one is ignored");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
