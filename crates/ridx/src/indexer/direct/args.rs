@@ -161,6 +161,8 @@ mod tests {
         assert!(!sanitized.contains(&"--emit=dep-info,link".to_string()));
     }
 
+    // Unix: the expected arguments spell Unix paths; Windows joins them with `\`.
+    #[cfg(unix)]
     #[test]
     fn test_sanitize_compiler_args_rewrites_recompiled_externs() {
         let original = vec![
@@ -185,6 +187,7 @@ mod tests {
         assert!(sanitized.contains(&"noprelude:serde_core=/target/ridx-direct/deps/libserde_core-789.rmeta".to_string()));
     }
 
+    #[cfg(unix)]
     #[test]
     fn test_sanitize_compiler_args_rewrites_rlib_to_rmeta_and_handles_dashes() {
         let original = vec!["rustc".to_string(), "src/main.rs".to_string(), "--extern".to_string(), "my_crate=/old/target/debug/deps/libmy_crate-abc.rlib".to_string()];

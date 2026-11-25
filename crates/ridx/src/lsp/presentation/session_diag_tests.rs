@@ -30,8 +30,9 @@ pub(super) fn workspace() -> (tempfile::TempDir, PathBuf) {
     (dir, root)
 }
 
+/// The check's key of `p`: its raw file URI (`file:///C:/...` on Windows).
 pub(super) fn uri(p: &Path) -> String {
-    format!("file://{}", p.display())
+    crate::lsp::uri_windows::raw_file_uri(p)
 }
 
 pub(super) fn report(messages: Vec<Value>, checked: &[&Path]) -> CompilerReport {

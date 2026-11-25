@@ -80,6 +80,8 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
 
     // 3. Stale file mismatch check: write corrupted/mismatched data into shard2_path
     // When driver runs again, it must detect the mismatch, remove the stale file, and rebuild
+    // Unmapped first: Windows refuses to write into a mapped file (os error 1224).
+    drop(reader2);
     fs::write(&shard2_path, b"corrupted header bytes").unwrap();
     let res3 = run_driver_with_env(args.clone(), env);
     assert!(res3.is_ok());

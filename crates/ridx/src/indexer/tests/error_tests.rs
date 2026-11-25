@@ -105,8 +105,11 @@ fn test_indexer_helpers_and_error_paths() {
     // 4. resolve_cargo_home_with with CARGO_HOME and HOME variants
     assert_eq!(resolve_cargo_home_with(Some("/custom/cargo/home"), Some("/custom/home")), Some(PathBuf::from("/custom/cargo/home")));
     assert_eq!(resolve_cargo_home_with(None, Some("/custom/home")), Some(PathBuf::from("/custom/home/.cargo")));
-    assert_eq!(resolve_cargo_home_with(Some(""), Some("")), None);
-    assert_eq!(resolve_cargo_home_with(Some("   "), Some("   ")), None);
+    // Windows still has %USERPROFILE%\.cargo to fall back on.
+    if cfg!(unix) {
+        assert_eq!(resolve_cargo_home_with(Some(""), Some("")), None);
+        assert_eq!(resolve_cargo_home_with(Some("   "), Some("   ")), None);
+    }
 
     // 5. find_driver_binary_with with RIDX_DRIVER_BIN override and fallbacks
     let dummy_driver = temp.0.join("mock_driver");

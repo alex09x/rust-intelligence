@@ -110,6 +110,8 @@ fn test_root_package_shard_does_not_claim_nested_crate_file() {
     assert_eq!(ws.find_definition_at("/ws/src/lib.rs", 3, 2).map(|d| d.name), Some("root_item"));
 }
 
+// Unix: the roots are Unix absolute paths (`/ws`), and the stored forms use `/`.
+#[cfg(unix)]
 #[test]
 fn test_relative_inputs_anchor_to_a_root_and_match_whole_paths() {
     let dir = tempfile::tempdir().unwrap();

@@ -16,6 +16,8 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::path::PathBuf;
 
+// Unix: the roots are Unix absolute paths (`/workspace`), and the stored forms use `/`.
+#[cfg(unix)]
 #[test]
 fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match() {
     let temp_dir = tempfile::tempdir().unwrap();

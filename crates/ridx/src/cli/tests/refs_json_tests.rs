@@ -27,6 +27,8 @@ fn reference(is_macro_expansion: bool) -> WorkspaceReference<'static> {
     }
 }
 
+// Unix: the fixture's paths are Unix absolute paths (`/ws/...`), not absolute on Windows.
+#[cfg(unix)]
 #[test]
 fn test_reference_json_carries_span_file_and_macro_expansion_flag() {
     let plain = reference_json(&reference(false));

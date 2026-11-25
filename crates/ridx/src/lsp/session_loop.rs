@@ -160,8 +160,13 @@ pub(crate) fn sweep_ended_servers(sessions: &Path) {
 }
 
 /// Whether `kill -0 <pid>` says there is no such process (ESRCH); `false` when it exists, is not ours (EPERM), or
-/// the check failed.
+/// the check failed. On Windows, whether `tasklist` lists no process of that id: Git's `kill` there knows only MSYS
+/// processes and called a live server ended (windows-2022 runner).
 fn process_ended(pid: &str) -> bool {
+    if cfg!(windows) {
+        let listed = std::process::Command::new("tasklist").args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"]).stdin(std::process::Stdio::null()).output();
+        return listed.is_ok_and(|o| o.status.success() && !String::from_utf8_lossy(&o.stdout).contains(&format!("\"{pid}\"")));
+    }
     std::process::Command::new("kill")
         .args(["-0", pid])
         .stdin(std::process::Stdio::null())

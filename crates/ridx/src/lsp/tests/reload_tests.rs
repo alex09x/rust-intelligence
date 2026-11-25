@@ -84,8 +84,12 @@ fn test_sync_reloaded_index_advances_compiled_baseline() {
         end_col: 20,
     });
     {
-        let mut f = std::fs::File::create(&ridx_file).unwrap();
+        // Beside the mapped shard and renamed over it (Windows refuses a write into a mapped file).
+        let tmp = ridx_file.with_extension("ridx.tmp");
+        let mut f = std::fs::File::create(&tmp).unwrap();
         writer2.write_to(&mut f).unwrap();
+        drop(f);
+        std::fs::rename(&tmp, &ridx_file).unwrap();
     }
 
     // Now call sync_reloaded_index!

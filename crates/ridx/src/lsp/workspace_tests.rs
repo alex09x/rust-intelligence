@@ -110,9 +110,12 @@ fn test_multi_root_with_valid_index() {
     mr_reload.add_root(sub_ridx.clone());
     let mut w_new = IndexWriter::new("sub_crate", "0.1.0");
     std::thread::sleep(std::time::Duration::from_millis(50));
-    let mut f_new = std::fs::File::create(&sub_ridx).unwrap();
+    // Beside the mapped shard and renamed over it (Windows refuses a write into a mapped file).
+    let tmp = sub_ridx.with_extension("ridx.tmp");
+    let mut f_new = std::fs::File::create(&tmp).unwrap();
     w_new.write_to(&mut f_new).unwrap();
     drop(f_new);
+    std::fs::rename(&tmp, &sub_ridx).unwrap();
     assert!(mr_reload.reload_all_if_modified());
 
     let _ = std::fs::remove_dir_all(&temp_dir);

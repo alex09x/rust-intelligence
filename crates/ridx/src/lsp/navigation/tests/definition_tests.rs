@@ -290,7 +290,7 @@ fn test_def_file_backed_mod_jumps_to_backing_file_root() {
     });
     let def_res = handle_definition(&def_req, Some(&ws), &overlay_mgr, &mut conv);
     assert!(!def_res.is_null());
-    assert_eq!(def_res["uri"].as_str().unwrap(), format!("file://{}", sub_file.to_str().unwrap()));
+    assert_eq!(def_res["uri"].as_str().unwrap(), crate::lsp::uri_windows::raw_file_uri(&sub_file));
     assert_eq!(def_res["range"]["start"]["line"], 0);
     assert_eq!(def_res["range"]["start"]["character"], 0);
 

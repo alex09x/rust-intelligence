@@ -53,9 +53,12 @@ fn test_lsp_server_stream_sync_and_unopened_change() {
 
     // Trigger reload
     std::thread::sleep(std::time::Duration::from_millis(50));
-    let mut f2 = std::fs::File::create(&index_file).unwrap();
+    // Beside the mapped shard and renamed over it (Windows refuses a write into a mapped file).
+    let tmp = index_file.with_extension("ridx.tmp");
+    let mut f2 = std::fs::File::create(&tmp).unwrap();
     writer.write_to(&mut f2).unwrap();
     drop(f2);
+    std::fs::rename(&tmp, &index_file).unwrap();
 
     crate::lsp::sync_reloaded_index(&mut ws, &mut overlay_mgr);
 

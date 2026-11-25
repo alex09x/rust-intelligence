@@ -22,7 +22,10 @@ fn write_index(path: &Path, file: &str, hash: u64) {
     let mut w = IndexWriter::new("demo", "0.1.0");
     w.get_or_insert_file(file);
     w.add_file_hash(file, hash);
-    w.write_to(&mut std::fs::File::create(path).unwrap()).unwrap();
+    // Beside the mapped shard and renamed over it, as the indexer publishes: Windows refuses a write into it.
+    let tmp = path.with_extension("ridx.tmp");
+    w.write_to(&mut std::fs::File::create(&tmp).unwrap()).unwrap();
+    std::fs::rename(&tmp, path).unwrap();
 }
 
 fn refreshes(out: &[u8]) -> usize {

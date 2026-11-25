@@ -52,6 +52,8 @@ fn test_builder_display_and_parse() {
     assert!("unknown".parse::<IndexBuilder>().is_err());
 }
 
+// Unix: the expected environment spells Unix paths and the Unix library variables.
+#[cfg(unix)]
 #[test]
 fn test_build_check_command_cargo_and_mitts_parity() {
     let opts = IndexOptions {

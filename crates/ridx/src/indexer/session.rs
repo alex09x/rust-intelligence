@@ -319,6 +319,7 @@ pub(super) fn canonical(path: &Path) -> PathBuf {
     ridx_format::canonicalize_best_effort(path)
 }
 
-#[cfg(test)]
+// Unix: the tests stand a shell script in for ridx-driver, which Windows cannot run (os error 193).
+#[cfg(all(test, unix))]
 #[path = "session_tests.rs"]
 mod tests;

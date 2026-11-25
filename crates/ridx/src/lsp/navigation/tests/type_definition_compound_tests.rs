@@ -152,7 +152,9 @@ fn setup_compound_workspace() -> (PathBuf, WorkspaceIndex, String, String, Strin
 }
 
 fn assert_loc(res: &Value, expected_uri: &str, line: u64, col: u64) {
-    assert_eq!(res["uri"].as_str().unwrap(), expected_uri);
+    // The file each names: on Windows the answer is `file:///C:/...`, the fixture's `file://C:\...`.
+    let file = |uri: &str| crate::lsp::protocol::uri_to_path(uri).replace('\\', "/");
+    assert_eq!(file(res["uri"].as_str().unwrap()), file(expected_uri));
     assert_eq!(res["range"]["start"]["line"].as_u64().unwrap(), line);
     assert_eq!(res["range"]["start"]["character"].as_u64().unwrap(), col);
 }

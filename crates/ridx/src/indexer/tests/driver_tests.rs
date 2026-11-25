@@ -25,19 +25,22 @@ fn test_indexer_cargo_config_and_driver() {
     let _ = find_driver_binary();
     let _ = find_driver_binary_with(None, None, None, None);
 
+    // `ridx-driver.exe` on Windows, canonical without the `\\?\` prefix.
+    let name = crate::indexer::driver::driver_file_name();
+    let canonical = |p: &std::path::Path| crate::indexer::driver::canonical(p);
     let exe_dir = temp.0.join("exe_test_dir/nested");
     fs::create_dir_all(&exe_dir).unwrap();
-    let mock_driver_sibling = exe_dir.join("ridx-driver");
+    let mock_driver_sibling = exe_dir.join(&name);
     fs::write(&mock_driver_sibling, b"").unwrap();
     let dummy_exe = exe_dir.join("dummy_exe");
     let found_sibling = find_driver_binary_with(None, Some(&dummy_exe), None, None);
-    assert_eq!(found_sibling, mock_driver_sibling.canonicalize().ok());
+    assert_eq!(found_sibling, canonical(&mock_driver_sibling));
     let _ = fs::remove_file(&mock_driver_sibling);
 
-    let mock_driver_parent = temp.0.join("exe_test_dir/ridx-driver");
+    let mock_driver_parent = temp.0.join("exe_test_dir").join(&name);
     fs::write(&mock_driver_parent, b"").unwrap();
     let found_parent = find_driver_binary_with(None, Some(&dummy_exe), None, None);
-    assert_eq!(found_parent, mock_driver_parent.canonicalize().ok());
+    assert_eq!(found_parent, canonical(&mock_driver_parent));
     let _ = fs::remove_file(&mock_driver_parent);
     let _ = find_driver_binary_with(None, Some(&dummy_exe), None, None);
 
@@ -45,14 +48,14 @@ fn test_indexer_cargo_config_and_driver() {
     let temp_empty = new_test_dir("empty_for_which");
     let mock_target_debug = temp_empty.0.join("target/debug");
     fs::create_dir_all(&mock_target_debug).unwrap();
-    let mock_target_driver = mock_target_debug.join("ridx-driver");
+    let mock_target_driver = mock_target_debug.join(&name);
     fs::write(&mock_target_driver, b"").unwrap();
     let found_cand = find_driver_binary_with(None, None, Some(&temp_empty.0), Some(""));
-    assert_eq!(found_cand, mock_target_driver.canonicalize().ok());
+    assert_eq!(found_cand, canonical(&mock_target_driver));
     let _ = fs::remove_file(&mock_target_driver);
 
     let mock_bin_dir = new_test_dir("mock_bin_for_which");
-    let mock_bin_driver = mock_bin_dir.0.join("ridx-driver");
+    let mock_bin_driver = mock_bin_dir.0.join(&name);
     fs::write(&mock_bin_driver, b"#!/bin/sh\nexit 0\n").unwrap();
     #[cfg(unix)]
     {
@@ -60,7 +63,8 @@ fn test_indexer_cargo_config_and_driver() {
         let _ = fs::set_permissions(&mock_bin_driver, fs::Permissions::from_mode(0o755));
     }
     let orig_path = std::env::var("PATH").ok();
-    let new_path = format!("{}:{}", mock_bin_dir.0.display(), orig_path.as_deref().unwrap_or(""));
+    let new_path =
+        std::env::join_paths(std::iter::once(mock_bin_dir.0.clone()).chain(std::env::split_paths(orig_path.as_deref().unwrap_or("")))).unwrap().to_string_lossy().into_owned();
     let found_which = find_driver_binary_with(None, None, Some(&temp_empty.0), Some(&new_path));
     assert!(found_which.is_some());
 

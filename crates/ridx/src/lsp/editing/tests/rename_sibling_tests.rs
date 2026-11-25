@@ -299,5 +299,7 @@ fn test_rename_overlapping_different_edits_returns_internal_error() {
     let err = res.unwrap_err();
     assert_eq!(err.code, -32603, "Must return JSON-RPC internal error code -32603");
     assert!(err.message.contains("Overlapping rename edits in file:"), "Error message must specify overlapping rename edits");
-    assert!(err.message.contains(&lib_str), "Error message must include the file path");
+    // Named with the platform's separators (the fixture joins `src/lib.rs` onto a Windows directory).
+    let shown = if cfg!(windows) { lib_str.replace('/', "\\") } else { lib_str.to_string() };
+    assert!(err.message.contains(&shown), "Error message must include the file path: {}", err.message);
 }

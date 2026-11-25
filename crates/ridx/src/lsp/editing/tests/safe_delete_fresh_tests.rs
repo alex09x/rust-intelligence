@@ -41,6 +41,8 @@ fn test_a_declared_target_under_the_build_directory_is_searched() {
 
 /// Review of 61e7c131: a lookup alias is what loading makes of a key and the source root, an absolute root's too; a
 /// real input whose path repeats another's (`src/src/shared.inc` beside `src/shared.inc`, equal contents) is checked.
+// Unix: the fixture's source root is a Unix absolute path.
+#[cfg(unix)]
 #[test]
 fn test_only_the_aliases_loading_makes_are_no_inputs() {
     let embedded: std::collections::HashMap<String, u64> = [("crates/app/src/lib.rs".to_string(), 7), ("src/shared.inc".to_string(), 9)].into_iter().collect();

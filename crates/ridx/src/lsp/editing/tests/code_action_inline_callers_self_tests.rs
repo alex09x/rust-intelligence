@@ -179,15 +179,14 @@ fn test_inline_method_cross_file() {
     let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
     ws.set_workspace_root(Some(temp_dir.clone()));
     let mut ov = OverlayManager::new();
-    let worker_uri = format!("file://{}", worker_str);
-    let _main_uri = format!("file://{}", main_str);
+    let worker_uri = crate::lsp::protocol::path_to_uri(&worker_str);
     ov.open_document(&worker_uri, &worker_str, 1, worker_cleaned.clone());
 
     let actions = query_actions_with_multi_file_resolve(&worker_uri, 2, 18, &ws, &ov);
     let inline_action = actions.iter().find(|(t, _)| t == "Inline into all callers");
     assert!(inline_action.is_some(), "Expected cross-file method to produce 'Inline into all callers'");
     let (_, changes) = inline_action.unwrap();
-    let main_uri = format!("file://{}", main_str);
+    let main_uri = crate::lsp::protocol::path_to_uri(&main_str);
     let main_edits = changes.get(&main_uri).expect("main.rs edits missing");
     let updated_main = apply_text_edits(main_code, main_edits);
     assert!(updated_main.contains("42"), "Expected call site in main.rs to be inlined with 42");

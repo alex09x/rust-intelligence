@@ -54,7 +54,7 @@ fn test_find_declaration_ident_col() {
 fn test_rename_and_prepare_rename() {
     let (temp_dir, ws, mut overlay_mgr, mut conv) = setup_test_editing();
     let file_path = temp_dir.join("src/lib.rs");
-    let uri = format!("file://{}", file_path.to_str().unwrap());
+    let uri = crate::lsp::protocol::path_to_uri(file_path.to_str().unwrap());
 
     let code = "pub fn add_values(x: i32, y: i32) -> i32 {\n    let sum = x + y;\n    sum\n}\n";
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.to_string());
@@ -128,7 +128,7 @@ fn test_rename_and_prepare_rename() {
     assert!(!linked_res.is_null());
 
     let caller_file = temp_dir.join("src/caller.rs");
-    let caller_uri = format!("file://{}", caller_file.to_str().unwrap());
+    let caller_uri = crate::lsp::protocol::path_to_uri(caller_file.to_str().unwrap());
     let rename_from_caller = json!({
         "params": {
             "textDocument": { "uri": &caller_uri },
@@ -217,7 +217,7 @@ fn test_rename_special_shorthand_lifetime_alias_and_keyword_refusal() {
     let src_text = "pub mod sub_mod;\nuse crate::sub_mod::Orig as MyAlias;\npub fn borrow<'a>(s: &'a str) -> &'a str { let _x = MyAlias; s }\n";
     fs::write(&lib_file, src_text).unwrap();
     let lib_str = lib_file.to_str().unwrap();
-    let lib_uri = format!("file://{lib_str}");
+    let lib_uri = crate::lsp::protocol::path_to_uri(lib_str);
     let ov_mgr = OverlayManager::new();
     let mut conv = crate::lsp::protocol::PositionConverter::new();
 

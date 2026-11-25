@@ -44,7 +44,8 @@ pub fn compute_workspace_config_hashes(work_dir: &Path) -> HashMap<String, u64> 
                     stack.push(p);
                 } else if fname_str == "Cargo.toml" || fname_str == "build.rs" {
                     if let Ok(rel) = p.strip_prefix(work_dir) {
-                        let rel_str = rel.to_string_lossy().to_string();
+                        // One spelling on every platform (`crates/sub/Cargo.toml`, not `crates\sub\Cargo.toml`).
+                        let rel_str = rel.to_string_lossy().replace('\\', "/");
                         if let Ok(bytes) = fs::read(&p) {
                             hashes.insert(rel_str, ridx_format::fnv1a_64(&bytes));
                         }

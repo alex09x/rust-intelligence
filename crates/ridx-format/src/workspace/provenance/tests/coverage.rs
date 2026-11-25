@@ -12,6 +12,8 @@ use super::super::*;
 use super::*;
 use crate::workspace::DependencyShardInfo;
 
+// Unix: the fixture's paths are Unix absolute paths, which have no file on Windows to take a time from.
+#[cfg(unix)]
 #[test]
 fn test_provenance_additional_coverage() {
     // Line 142: both entry and req are relative and match

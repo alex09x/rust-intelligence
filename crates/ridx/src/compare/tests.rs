@@ -34,6 +34,8 @@ fn test_capability_kind_parse() {
     assert_eq!(CapabilityKind::parse_str("unknown"), None);
 }
 
+// Unix: the benchmark harness reads process memory from /proc or ps.
+#[cfg(unix)]
 #[test]
 fn test_compare_capabilities_and_print() {
     let _lock = crate::indexer::tests::lock_indexer_test();

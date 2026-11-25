@@ -11,6 +11,8 @@
 use super::super::*;
 use super::*;
 
+// Unix: the fixture's paths are Unix absolute paths; on Windows they gain a drive.
+#[cfg(unix)]
 #[test]
 fn test_navigation_edge_cases() {
     let test_dir = new_test_dir("ridx_nav_edges");
