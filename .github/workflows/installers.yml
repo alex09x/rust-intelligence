@@ -1,0 +1,60 @@
+# rust-intelligence — the installers against a published release, on a clean runner of each platform.
+# Copyright (c) 2026 Alexander Panasenko
+# Contact: alex@prod.codes
+# Author: https://prod.codes/about/
+# Project: https://github.com/alex09x/rust-intelligence
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
+# Run by hand after a release is published: site/install.sh or site/install.ps1 of this commit installs the
+# release named by `version`, then the installed binaries index a small crate and answer an LSP session.
+name: Installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to install (v0.3.14)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-15, macos-15-intel, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      RIDX_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install with site/install.ps1
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File site/install.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          "$env:USERPROFILE\.local\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Install with site/install.sh
+        if: runner.os != 'Windows'
+        run: |
+          sh site/install.sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: The installed binaries index a crate and answer an LSP session
+        run: |
+          set -euo pipefail
+          # Outside the checkout, whose rust-toolchain.toml would choose the toolchain.
+          cd "$RUNNER_TEMP"
+          bin=$(dirname "$(command -v ridx)")
+          ridx --version
+          ridx --version | grep -q "${RIDX_VERSION#v}"
+          bash "$GITHUB_WORKSPACE/tools/release/smoke.sh" "$bin"
+          py=python3; python3 -c 1 2>/dev/null || py=python
+          $py "$GITHUB_WORKSPACE/tools/release/lsp_smoke.py" "$bin"
