@@ -10,13 +10,20 @@
 
 //! rust-intelligence for Zed: `ridx lsp` as the Rust language server, under its own name.
 //!
-//! The server is found on the worktree's `PATH` (next to `ridx-driver`, which indexing runs), or at
-//! `lsp.rust-intelligence.binary.path`. Its `initialization_options` and `settings` are its own, or else
-//! those written for rust-analyzer, whose options `ridx lsp` reads.
+//! The server is `lsp.rust-intelligence.binary.path`, else `ridx` on the worktree's `PATH` (next to `ridx-driver`,
+//! which indexing runs), else the latest GitHub release for this platform, downloaded into the extension's own
+//! directory. Its `initialization_options` and `settings` are its own, or else those written for rust-analyzer, whose
+//! options `ridx lsp` reads.
+
+mod release;
 
 use zed_extension_api::{self as zed, serde_json, settings::LspSettings, LanguageServerId, Result};
 
-struct RustIntelligence;
+#[derive(Default)]
+struct RustIntelligence {
+    /// The downloaded `ridx` of this session.
+    downloaded: Option<String>,
+}
 
 /// The settings of this server, or else rust-analyzer's.
 fn settings(server: &LanguageServerId, worktree: &zed::Worktree) -> (Option<LspSettings>, Option<LspSettings>) {
@@ -25,17 +32,15 @@ fn settings(server: &LanguageServerId, worktree: &zed::Worktree) -> (Option<LspS
 
 impl zed::Extension for RustIntelligence {
     fn new() -> Self {
-        RustIntelligence
+        Self::default()
     }
 
     fn language_server_command(&mut self, server: &LanguageServerId, worktree: &zed::Worktree) -> Result<zed::Command> {
         let binary = LspSettings::for_worktree(server.as_ref(), worktree).ok().and_then(|s| s.binary);
-        let command = binary.as_ref().and_then(|b| b.path.clone()).or_else(|| worktree.which("ridx")).ok_or_else(|| {
-            "ridx is not on the PATH: install it with `cargo install --path crates/ridx --locked` and \
-             `cargo install --path crates/ridx-driver --locked` from https://github.com/alex09x/rust-intelligence, \
-             or set lsp.rust-intelligence.binary.path in the settings"
-                .to_string()
-        })?;
+        let command = match binary.as_ref().and_then(|b| b.path.clone()).or_else(|| worktree.which("ridx")) {
+            Some(path) => path,
+            None => release::ridx(server, &mut self.downloaded)?,
+        };
         let args = binary.as_ref().and_then(|b| b.arguments.clone()).unwrap_or_else(|| vec!["lsp".to_string()]);
         let mut env = worktree.shell_env();
         if let Some(extra) = binary.and_then(|b| b.env) {

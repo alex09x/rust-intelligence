@@ -1,6 +1,6 @@
-id = "rust-intelligence"
-name = "rust-intelligence"
-version = "0.1.0"
+id = "rust-intelligence-language-server"
+name = "Rust Intelligence"
+version = "0.2.0"
 schema_version = 1
 authors = ["Alexander Panasenko <alex@prod.codes>"]
 description = "Compiler-backed, mmap-indexed Rust code intelligence: ridx lsp as the Rust language server."
