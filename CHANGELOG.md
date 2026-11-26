@@ -4,13 +4,18 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-11-25
+
+Verified on GitHub's runners for each released platform: the release build indexes a small crate, `ridx def` resolves a method call, and an LSP session (initialize, didOpen, definition, hover and references of a method call, shutdown, exit) answers with the file URIs each client writes; on Windows x86_64 and Intel macOS the ridx-format, ridx-syntax, ridx and ridx-driver tests pass. The index format is unchanged.
+
 ### Added
+- **Windows x86_64 and Intel macOS**: release archives `ridx-x86_64-pc-windows-msvc.zip` and `ridx-x86_64-apple-darwin.tar.gz` (signed and notarized, as the Apple Silicon build), a PowerShell installer (`irm https://rust-intelligence.com/install.ps1 | iex`, into `%USERPROFILE%\.local\bin`, added to the user's PATH), and `install.sh` for Intel Macs. On Windows, ridx finds `ridx-driver.exe`, gives it the compiler's DLLs on `PATH`, finds the rustup toolchain under `%USERPROFILE%\.rustup`, replaces a shard while the server holds it mapped (opened with delete sharing), reads `file:///c%3A/...` and `file:///C:/...` URIs as `C:\...` paths and answers with `file:///C:/...`, recognises Cargo's registry by a path with either separator, and tells a live server's session from an ended one with `tasklist` (Git's `kill` there knows only MSYS processes and swept live sessions).
 - **The Zed extension installs ridx itself** (0.2.0, id `rust-intelligence-language-server` as Zed's registry asks of an extension that only provides a language server): with no `lsp.rust-intelligence.binary.path` and no `ridx` on the PATH, it downloads the latest GitHub release for the platform into its own directory and runs it from there, removing older versions. Checked in Zed 1.30.2 on macOS arm64 with `ridx` taken off the PATH: release 0.3.13 downloaded, the crate indexed by the downloaded `ridx-driver`, hover answered.
 
 ### Fixed
 - **An edit that breaks the build is reindexed without Cargo**: the crate the compiler stops on is indexed as it is, as Cargo's check indexes it, the crates depending on it keep their last index, and the edit fixing it is compiled the same way. Before, both edits fell back to a full `cargo check`. On ridx's own workspace (release build, Linux x86_64), a type error or a missing module file appended to `ridx-format`: 3.8–4.1 s to 1.7–1.8 s, and the edit reverting it 8.8–10.4 s to 6.2–7.8 s (issue #7). A unit is compared with the hashes of its own sources only: those it recorded for a crate it imports could hold an older text and hide a change.
 - A release binary on a machine without the Rust toolchain `ridx-driver` runs inside says so, with the command installing it (`Rust 1.98.1 is not installed … rustup toolchain install 1.98.1 --profile minimal --component rust-src`), in `ridx index` and at the end of the editor's indexing progress. Before, the editor showed only `cargo check exited with status 101`.
-- The SCIP loader of `ridx compare` reads every range encoding of the current SCIP schema: the typed `single_line_range` and `multi_line_range` (taking precedence when set), and the deprecated `range` of three or four elements. Before, an occurrence with only a typed range was skipped, and a four-element range was read with its end line as the end column.
+- The SCIP loader of `ridx compare` reads every range encoding of the current SCIP schema: the typed `single_line_range` and `multi_line_range` (taking precedence when set), and the deprecated `range` of three or four elements. Before, an occurrence with only a typed range was skipped, and a four-element range was read with its end line as the end column. One small index per encoding is in `crates/ridx/tests/fixtures/scip/`.
 
 ## [0.3.13] - 2026-11-23
 
