@@ -11,8 +11,12 @@
 use super::*;
 
 pub(crate) fn is_immutable_package(manifest_dir: &Path) -> bool {
+    is_immutable_package_dir(manifest_dir) || built_as_non_local_package(std::env::args(), std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some())
+}
+
+/// A package unpacked into Cargo's registry or git checkouts.
+pub(crate) fn is_immutable_package_dir(manifest_dir: &Path) -> bool {
     is_immutable_package_with_home(manifest_dir, std::env::var("CARGO_HOME").ok().as_deref().map(Path::new))
-        || built_as_non_local_package(std::env::args(), std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some())
 }
 
 /// Cargo caps lints only for packages that are not local (registry, git, or a source cache a build tool

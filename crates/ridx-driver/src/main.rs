@@ -50,6 +50,7 @@ mod metadata;
 mod no_build;
 mod notes;
 mod span_and_kind;
+mod stand_in;
 pub(crate) mod ty_lower;
 mod unit_key;
 
@@ -261,8 +262,16 @@ pub fn run_driver_with_env(mut args: Vec<String>, env: DriverEnv) -> Result<(), 
         disambiguator = Some(format!("_{pkg}{}", disambiguator.unwrap_or_default()));
     }
 
+    let manifest_dir = env.manifest_dir.clone();
     let mut callbacks = IndexCallbacks { env, disambiguator, compiler_args: args.clone(), crate_cfg: Vec::new() };
-    run_with_callbacks(&args, &mut callbacks)
+    let res = run_with_callbacks(&args, &mut callbacks);
+    if res.is_err() {
+        // A dependency that does not compile must not keep cargo from building (and indexing) its dependents.
+        if let Some(stand_in) = stand_in::compile(&args, manifest_dir.as_deref()) {
+            return stand_in;
+        }
+    }
+    res
 }
 
 #[allow(clippy::result_unit_err)]

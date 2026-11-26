@@ -99,7 +99,11 @@ fn test_driver_does_not_index_a_dependency_that_does_not_compile() {
     let mut env = DriverEnv::for_test(&out_dir);
     env.cache_dir = cache_dir.clone();
     env.manifest_dir = Some(reg_dir);
-    assert!(run_driver_with_env(args, env).is_err());
+    // An empty stand-in compiles in its place, so that cargo goes on to build (and index) its dependents.
+    assert!(run_driver_with_env(args, env).is_ok());
+    let stand_in = temp_dir.join(format!("{}dep_broken.rs", ridx_format::STAND_IN_PREFIX));
+    assert!(fs::read_to_string(&stand_in).unwrap().contains("`dep_broken`"), "stand-in source {stand_in:?}");
+    assert!(temp_dir.join("libdep_broken.rmeta").is_file(), "the stand-in's metadata where cargo expects the crate's");
     let mut found = Vec::new();
     let mut stack = vec![out_dir, cache_dir];
     while let Some(dir) = stack.pop() {
@@ -113,4 +117,68 @@ fn test_driver_does_not_index_a_dependency_that_does_not_compile() {
     }
     assert!(found.is_empty(), "no index of a dependency that failed: {found:?}");
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+fn strings(args: &[&str]) -> Vec<String> {
+    args.iter().map(|a| a.to_string()).collect()
+}
+
+/// Cargo's command line for a registry dependency: the crate root replaced, every other argument kept.
+#[test]
+fn test_stand_in_plan_keeps_cargo_arguments_and_outputs() {
+    let args = strings(&[
+        "rustc",
+        "--crate-name",
+        "trybuild",
+        "--edition=2021",
+        "/reg/trybuild-1.0.125/src/lib.rs",
+        "--error-format=json",
+        "--crate-type",
+        "lib",
+        "--emit=dep-info,metadata",
+        "-C",
+        "metadata=0a1b",
+        "-C",
+        "extra-filename=-0a1b",
+        "--out-dir",
+        "/t/debug/deps",
+        "-L",
+        "dependency=/t/debug/deps",
+        "--extern",
+        "serde=/t/debug/deps/libserde-9.rmeta",
+        "--cap-lints",
+        "allow",
+    ]);
+    let plan = stand_in::plan(&args, Some(Path::new("/home/u/.cargo/registry/src/x/trybuild-1.0.125"))).expect("a dependency's library");
+    assert_eq!(plan.crate_name, "trybuild");
+    assert_eq!(plan.source, Path::new("/t/debug/deps").join(format!("{}trybuild-0a1b.rs", ridx_format::STAND_IN_PREFIX)));
+    let mut expected = args.clone();
+    expected[4] = plan.source.to_string_lossy().into_owned();
+    assert_eq!(plan.args, expected);
+    // `-Cextra-filename=` in one argument, and `-o` instead of `--out-dir`.
+    let joined = strings(&[
+        "rustc",
+        "/reg/src/lib.rs",
+        "--crate-name",
+        "trybuild",
+        "--crate-type=lib",
+        "-Cextra-filename=-0a1b",
+        "-o",
+        "/t/deps/libtrybuild-0a1b.rmeta",
+        "--cap-lints=allow",
+    ]);
+    let plan = stand_in::plan(&joined, None).expect("capped lints: a dependency");
+    assert_eq!(plan.source, Path::new("/t/deps").join(format!("{}trybuild-0a1b.rs", ridx_format::STAND_IN_PREFIX)));
+    assert_eq!(plan.args[1], plan.source.to_string_lossy());
+}
+
+/// No stand-in for a crate of the workspace (indexed with its errors instead), a binary or a test harness.
+#[test]
+fn test_stand_in_plan_only_for_a_dependency_library() {
+    let lib = strings(&["rustc", "--crate-name", "app", "src/lib.rs", "--crate-type", "lib", "--emit=metadata", "--out-dir", "/t/deps"]);
+    assert_eq!(stand_in::plan(&lib, Some(Path::new("/ws/app"))), None, "a local package");
+    let capped = |extra: &[&str]| [lib.clone(), strings(extra), strings(&["--cap-lints", "allow"])].concat();
+    assert!(stand_in::plan(&capped(&[]), Some(Path::new("/ws/vendor/app"))).is_some(), "capped lints: a dependency wherever unpacked");
+    assert_eq!(stand_in::plan(&capped(&["--crate-type", "bin"]), None), None, "a binary");
+    assert_eq!(stand_in::plan(&capped(&["--test"]), None), None, "a test harness");
 }

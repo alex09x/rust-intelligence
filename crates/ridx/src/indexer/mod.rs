@@ -26,6 +26,7 @@ pub mod session_report;
 mod session_units;
 pub mod shards;
 pub mod source_snapshots;
+pub mod stand_ins;
 pub mod types;
 pub mod variant;
 

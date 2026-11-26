@@ -25,6 +25,7 @@ mod domain3_sync_edits;
 mod domain3_sync_lifecycle;
 mod domain3_sync_open;
 mod domain3_sync_open_baseline;
+mod failed_dependency;
 mod l2_cases;
 mod l2_harness;
 mod ntm_compare_harness;

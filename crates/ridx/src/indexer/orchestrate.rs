@@ -244,6 +244,13 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let stale = variant_out_dir.join(super::feature_seed::STALE_DIR);
     settle_after_check(&variant_out_dir, check_started, ok, &stale, previous_variant.as_deref());
     let _ = fs::remove_dir_all(&stale);
+    let stand_ins = super::stand_ins::active(&cargo_target_dir);
+    if !stand_ins.is_empty() {
+        eprintln!(
+            "  warning: {} did not compile; the targets using it were indexed against an empty stand-in, and their uses of it are unresolved",
+            stand_ins.iter().map(|c| format!("`{c}`")).collect::<Vec<_>>().join(", ")
+        );
+    }
     if !ok && variant_has_shards(&variant_out_dir) {
         eprintln!("  warning: {} check exited with status {status}; publishing the crates that built", builder.as_str());
     } else if !ok {

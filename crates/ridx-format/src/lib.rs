@@ -41,6 +41,9 @@ pub const NO_BUILD_ENV: &str = "RIDX_NO_BUILD_SCRIPTS";
 /// The start of the name of the Cargo target directory of an index built so: the procedural macros the driver loads
 /// then are only stubs built under it.
 pub const NO_BUILD_DIR_PREFIX: &str = "nobuild-";
+/// The start of the name of the source the driver compiles in place of a dependency that did not compile
+/// (`ridx-stand-in-<crate><extra-filename>.rs`, next to the crate's outputs in the Cargo target directory).
+pub const STAND_IN_PREFIX: &str = "ridx-stand-in-";
 
 #[cfg(test)]
 mod tests {
