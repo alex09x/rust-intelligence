@@ -1,0 +1,28 @@
+# rust-intelligence — CodeRabbit review settings for pull requests
+# Copyright (c) 2026 Alexander Panasenko
+#
+# Contact: alex@prod.codes
+# Author: https://prod.codes/about/
+# Project: https://github.com/alex09x/rust-intelligence
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    # Recorded benchmark data and test fixtures are generated, not reviewed line by line.
+    - "!bench/published/**"
+    - "!crates/ridx/tests/fixtures/**"
+    - "!**/Cargo.lock"
+chat:
+  auto_reply: true
