@@ -274,7 +274,7 @@ cargo test --workspace
 ## الاستشهاد
 
 إذا استخدمت ridx في بحث أو توثيق، فيُرجى الاستشهاد بالإصدار المؤرشف على Zenodo:
-[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) للمشروع (يشير إلى أحدث إصدار)، و[10.5281/zenodo.24546413](https://doi.org/10.5281/zenodo.24546413) للإصدار 0.3.14 تحديدًا.
+[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) للمشروع (يشير إلى أحدث إصدار)، و[10.5281/zenodo.24571342](https://doi.org/10.5281/zenodo.24571342) للإصدار 0.3.15 تحديدًا.
 يحتوي [`CITATION.cff`](../CITATION.cff) على البيانات الوصفية التي يستخدمها زر "Cite this repository" في GitHub.
 
 </div>
@@ -282,15 +282,15 @@ cargo test --workspace
 <div dir="ltr">
 
 ```bibtex
-@software{panasenko_2026_24546413,
+@software{panasenko_2026_24571342,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.14},
-  doi       = {10.5281/zenodo.24546413},
-  url       = {https://doi.org/10.5281/zenodo.24546413},
+  version   = {0.3.15},
+  doi       = {10.5281/zenodo.24571342},
+  url       = {https://doi.org/10.5281/zenodo.24571342},
 }
 ```
 
