@@ -81,6 +81,11 @@ pub(super) fn type_context(before: &str) -> TypeContext {
     };
     match open.map(|at| (at, t.as_bytes()[at])) {
         Some((_, b'<')) => TypeContext::Possible,
+        // A function pointer's or an `Fn` trait's parameters are types (`fn(u8, u`, `impl Fn(u`); a function's own
+        // (`fn name(a`) are not, and `fn name` ends with its name.
+        Some((at, b'(')) if ["fn", "Fn", "FnMut", "FnOnce"].iter().any(|w| last_word(&t[..at], w).is_some_and(|i| t[..at][i + w.len()..].trim().is_empty())) => {
+            TypeContext::Certain
+        }
         Some((at, _)) => type_context(&t[..at]),
         None => TypeContext::No,
     }
@@ -93,7 +98,7 @@ fn innermost_open(t: &str) -> Option<usize> {
     for i in 0..b.len() {
         match b[i] {
             b'(' | b'[' => open.push(i),
-            b'<' if i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_' || b[i - 1] == b':') => open.push(i),
+            b'<' if t[..i].ends_with(|c: char| is_ident_char(c) || c == ':') => open.push(i),
             b')' | b']' => {
                 // Closes its bracket, and any `<` left open inside it (a comparison).
                 while let Some(o) = open.pop() {
@@ -235,6 +240,14 @@ mod tests {
             ("    consume(", No),
             ("    xs[", No),
             ("    let t = (1, ", No),
+            // Function pointers, `Fn` traits, identifiers past ASCII (review of adb611a7).
+            ("    let cb: fn(", Certain),
+            ("    let cb: fn(u8, ", Certain),
+            ("fn f(g: impl Fn(", Certain),
+            ("fn f(g: &dyn FnMut(u8, ", Certain),
+            ("    callback(", No),
+            ("fn run(", No),
+            ("    let v: 容器<u8, ", Possible),
             // A value.
             ("    let x = ", No),
             ("    foo(", No),
