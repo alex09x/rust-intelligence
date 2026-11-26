@@ -4,7 +4,13 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-11-26
+
+Verified by the workspace test suite and by the e2e tests of each fix: completion of built-in types with and without an index, a workspace whose dependency fails to compile, and the first edit after a Cargo index. The index format is unchanged.
+
 ### Fixed
+- **Built-in types are completed where a type is typed**: `bool`, `char`, `str`, the integer and the float types come first, ordered by width (`u8` before `u128`), after `let x: u`, a parameter's or a closure parameter's `:`, `->`, `as`, `const`/`static` items, `fn(u`, `impl Fn(u`, and inside a tuple or an array type; also in a generic argument (`Vec<u`, `HashMap<String, u`, on the next line too), a struct's field and a struct literal's field. They come with no index too, in a crate that did not build. Where only a type can follow, functions, macros, constants and locals are left out; where a value may follow as well (`Vec<u` may be a const argument, `S { a: u` a value), nothing is. Before, `let x: u` offered `unreachable!`, `unimplemented!` and the workspace's names, and no `u8`.
+- **A dependency that does not compile no longer leaves its dependents unindexed**: when a registry or git dependency's library or procedural macro fails, `ridx-driver` compiles an empty crate of the same name in its place, so Cargo goes on to the crates using it; they are indexed, their uses of that crate unresolved. `ridx index` names the crates standing in. On serde 69072f24, whose `test_suite` dev-dependency `trybuild` fails after a fresh resolve, the 18 test targets are indexed and 34 positions with no answer before resolve as rust-analyzer's do.
 - **The first edit after a Cargo index is compiled from Cargo's incremental cache**: the direct path used an empty cache of its own and `--emit=metadata` in place of Cargo's `--emit=dep-info,metadata`, which makes rustc ignore a cache. It now emits `dep-info` as Cargo's check does and uses the cache each unit was last compiled with, when that lies under the workspace's `target`. On ridx's own workspace (release build, Linux x86_64, two runs per binary), a comment appended to `ridx-format`, 34 units compiled: 20.0–20.1 s to 7.8–7.9 s (issue #7). The second cache under `target/ridx-direct/incremental` (about 600 MB there) is no longer filled.
 - A unit compiled by the direct path records the direct search path once: each run added another `-L` to its recorded arguments.
 
