@@ -17,7 +17,8 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    # ridx versions only: `v*` also matched the extension's `vscode-v0.2.0` and started a release of it.
+    tags: ['v[0-9]*']
   workflow_dispatch:
     inputs:
       tag:
