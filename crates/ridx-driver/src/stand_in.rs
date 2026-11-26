@@ -28,7 +28,7 @@ use ridx_format::STAND_IN_PREFIX as PREFIX;
 /// Compiles a stand-in for the dependency `args` failed to build; `None` when it is not a dependency library
 /// or the stand-in did not compile either (the original failure stands).
 pub(crate) fn compile(args: &[String], manifest_dir: Option<&Path>) -> Option<Result<(), ()>> {
-    let plan = plan(args, manifest_dir)?;
+    let plan = plan(args, manifest_dir, std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some())?;
     fs::create_dir_all(plan.source.parent()?).ok()?;
     let note = format!("// ridx: stand-in for `{}`, which did not compile; its dependents are indexed without it.\n", plan.crate_name);
     fs::write(&plan.source, note).ok()?;
@@ -56,9 +56,10 @@ pub(crate) struct Plan {
 }
 
 /// Plans the stand-in for a failed compilation, if it is one of a dependency's library or procedural macro.
-pub(crate) fn plan(args: &[String], manifest_dir: Option<&Path>) -> Option<Plan> {
-    let dependency = manifest_dir.is_some_and(super::metadata::is_immutable_package_dir)
-        || super::metadata::built_as_non_local_package(args.iter().cloned(), std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some());
+/// `primary_package`: cargo selected the package for the build (`CARGO_PRIMARY_PACKAGE`), passed in rather than
+/// read here because a test harness run by cargo has that variable set too.
+pub(crate) fn plan(args: &[String], manifest_dir: Option<&Path>, primary_package: bool) -> Option<Plan> {
+    let dependency = manifest_dir.is_some_and(super::metadata::is_immutable_package_dir) || super::metadata::built_as_non_local_package(args.iter().cloned(), primary_package);
     if !dependency {
         return None;
     }

@@ -149,7 +149,7 @@ fn test_stand_in_plan_keeps_cargo_arguments_and_outputs() {
         "--cap-lints",
         "allow",
     ]);
-    let plan = stand_in::plan(&args, Some(Path::new("/home/u/.cargo/registry/src/x/trybuild-1.0.125"))).expect("a dependency's library");
+    let plan = stand_in::plan(&args, Some(Path::new("/home/u/.cargo/registry/src/x/trybuild-1.0.125")), false).expect("a dependency's library");
     assert_eq!(plan.crate_name, "trybuild");
     assert_eq!(plan.source, Path::new("/t/debug/deps").join(format!("{}trybuild-0a1b.rs", ridx_format::STAND_IN_PREFIX)));
     let mut expected = args.clone();
@@ -167,7 +167,7 @@ fn test_stand_in_plan_keeps_cargo_arguments_and_outputs() {
         "/t/deps/libtrybuild-0a1b.rmeta",
         "--cap-lints=allow",
     ]);
-    let plan = stand_in::plan(&joined, None).expect("capped lints: a dependency");
+    let plan = stand_in::plan(&joined, None, false).expect("capped lints: a dependency");
     assert_eq!(plan.source, Path::new("/t/deps").join(format!("{}trybuild-0a1b.rs", ridx_format::STAND_IN_PREFIX)));
     assert_eq!(plan.args[1], plan.source.to_string_lossy());
 }
@@ -176,9 +176,11 @@ fn test_stand_in_plan_keeps_cargo_arguments_and_outputs() {
 #[test]
 fn test_stand_in_plan_only_for_a_dependency_library() {
     let lib = strings(&["rustc", "--crate-name", "app", "src/lib.rs", "--crate-type", "lib", "--emit=metadata", "--out-dir", "/t/deps"]);
-    assert_eq!(stand_in::plan(&lib, Some(Path::new("/ws/app"))), None, "a local package");
+    assert_eq!(stand_in::plan(&lib, Some(Path::new("/ws/app")), false), None, "a local package");
     let capped = |extra: &[&str]| [lib.clone(), strings(extra), strings(&["--cap-lints", "allow"])].concat();
-    assert!(stand_in::plan(&capped(&[]), Some(Path::new("/ws/vendor/app"))).is_some(), "capped lints: a dependency wherever unpacked");
-    assert_eq!(stand_in::plan(&capped(&["--crate-type", "bin"]), None), None, "a binary");
-    assert_eq!(stand_in::plan(&capped(&["--test"]), None), None, "a test harness");
+    assert!(stand_in::plan(&capped(&[]), Some(Path::new("/ws/vendor/app")), false).is_some(), "capped lints: a dependency wherever unpacked");
+    // CI ran these tests under a harness with CARGO_PRIMARY_PACKAGE set: the plan must not read it itself.
+    assert_eq!(stand_in::plan(&capped(&[]), Some(Path::new("/ws/vendor/app")), true), None, "capped but primary: a package of the build");
+    assert_eq!(stand_in::plan(&capped(&["--crate-type", "bin"]), None, false), None, "a binary");
+    assert_eq!(stand_in::plan(&capped(&["--test"]), None, false), None, "a test harness");
 }
