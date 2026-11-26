@@ -282,7 +282,7 @@ fn test_completion_builtin_types_where_a_type_is_typed() {
     let (temp_dir, ws, mut overlay_mgr, mut conv) = setup_test_intelligence();
     let file = temp_dir.join("src/main.rs");
     let uri = format!("file://{}", file.to_str().unwrap());
-    let doc = "type uint = u32;\nfn used() {}\nfn main() {\n    let a: u\n    let b = u\n    let c = 5 as i\n    let d = Rec { f: us\n    let e: Result<\n        u\n}\n";
+    let doc = "type uint = u32;\nfn used() {}\nfn main() {\n    let a: u\n    let b = u\n    let c = 5 as i\n    let d = Rec { f: us\n    let e: Result<\n        u\n    let f: (u8, i\n}\n";
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, doc.to_string());
     let labels_at = |ws, line: u32, character: u32, conv: &mut _| -> Vec<String> {
         let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character } } });
@@ -310,8 +310,26 @@ fn test_completion_builtin_types_where_a_type_is_typed() {
         assert_eq!(field.first().map(String::as_str), Some("usize"), "{field:?}");
         assert!(field.contains(&"used".to_string()), "{field:?}");
 
+        // A tuple's element (review of c697ee37).
+        let tuple = labels_at(ws, 9, 17, &mut conv);
+        assert_eq!(tuple[..3], ["i8", "i16", "i32"], "{tuple:?}");
+
         // A type argument on the line after its `<`.
         let next_line = labels_at(ws, 8, 9, &mut conv);
         assert_eq!(next_line[..6], ["u8", "u16", "u32", "u64", "u128", "usize"], "{next_line:?}");
     }
+}
+
+/// A long comment with a quote in it before the annotation: the comment is still read as one (review of c697ee37).
+#[test]
+fn test_completion_builtin_types_after_a_long_comment() {
+    let (temp_dir, _ws, mut overlay_mgr, mut conv) = setup_test_intelligence();
+    let file = temp_dir.join("src/main.rs");
+    let uri = format!("file://{}", file.to_str().unwrap());
+    let doc = format!("/* {} \" */\nfn main() {{\n    let value: u\n}}\n", "a".repeat(5000));
+    overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, doc);
+    let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": 2, "character": 16 } } });
+    let res = handle_completion(&req, None, &overlay_mgr, &mut conv).unwrap();
+    let labels: Vec<&str> = res["items"].as_array().unwrap().iter().filter_map(|i| i["label"].as_str()).collect();
+    assert!(labels.contains(&"u8") && labels.contains(&"usize"), "{labels:?}");
 }

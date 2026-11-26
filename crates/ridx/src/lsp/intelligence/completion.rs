@@ -57,20 +57,13 @@ fn is_documented_kind(kind: ridx_format::DefKind) -> bool {
     !matches!(kind, ridx_format::DefKind::Local | ridx_format::DefKind::TyParam | ridx_format::DefKind::LifetimeParam | ridx_format::DefKind::ConstParam)
 }
 
-/// Up to 4 KiB of the document before line `line` (0-based), for the statement a name is typed in.
+/// The document before line `line` (0-based), for the statement a name is typed in. Whole, not a window of it: a
+/// window could start inside a comment or a string, and blanking them would then go wrong.
 fn text_before_line(overlay: Option<&crate::overlay::DocumentOverlay>, file: &str, line: usize) -> String {
-    const WINDOW: usize = 4096;
-    let tail = |text: &str, end: usize| {
-        let end = end.min(text.len());
-        let mut start = end.saturating_sub(WINDOW);
-        while !text.is_char_boundary(start) {
-            start += 1;
-        }
-        text[start..end].to_string()
-    };
+    let head = |text: &str, end: usize| text[..end.min(text.len())].to_string();
     match overlay {
-        Some(o) => o.line_starts.get(line).map_or_else(String::new, |&s| tail(&o.text, s)),
-        None => super::scope_cache::get_or_parse_file_scopes(file, None).and_then(|s| s.line_starts.get(line).map(|&at| tail(&s.text, at))).unwrap_or_default(),
+        Some(o) => o.line_starts.get(line).map_or_else(String::new, |&s| head(&o.text, s)),
+        None => super::scope_cache::get_or_parse_file_scopes(file, None).and_then(|s| s.line_starts.get(line).map(|&at| head(&s.text, at))).unwrap_or_default(),
     }
 }
 

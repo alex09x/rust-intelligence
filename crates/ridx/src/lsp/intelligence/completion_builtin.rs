@@ -65,12 +65,50 @@ pub(super) fn type_context(before: &str) -> TypeContext {
             return TypeContext::Certain;
         }
     }
-    // `Vec<` and `::<` (not `a < b`), and the next argument of an open list: a type, a const or, after a
-    // comparison without spaces, a value.
-    if t.strip_suffix('<').is_some_and(|rest| rest.ends_with(|c: char| is_ident_char(c) || c == ':')) || (t.ends_with(',') && open_angle_brackets(t) > 0) {
+    // `Vec<` and `::<` (not `a < b`): a type, or a const argument.
+    if t.strip_suffix('<').is_some_and(|rest| rest.ends_with(|c: char| is_ident_char(c) || c == ':')) {
         return TypeContext::Possible;
     }
-    TypeContext::No
+    // The first element of a tuple or an array, or the next element of a list still open: as the list itself
+    // (`let p: (u`, `let p: (u8, u`, `let b: [u`), not a call's or an index's argument (`f(u`, `xs[u`). The next
+    // argument of a generic list may be a const too, or a value after a comparison without spaces (`f(a<b, c`).
+    let open = if t.ends_with(['(', '[']) {
+        Some(t.len() - 1)
+    } else if t.ends_with(',') {
+        innermost_open(t)
+    } else {
+        None
+    };
+    match open.map(|at| (at, t.as_bytes()[at])) {
+        Some((_, b'<')) => TypeContext::Possible,
+        Some((at, _)) => type_context(&t[..at]),
+        None => TypeContext::No,
+    }
+}
+
+/// The offset of the innermost `(`, `[` or generic `<` (after a name) still open at the end of `t`.
+fn innermost_open(t: &str) -> Option<usize> {
+    let b = t.as_bytes();
+    let mut open: Vec<usize> = Vec::new();
+    for i in 0..b.len() {
+        match b[i] {
+            b'(' | b'[' => open.push(i),
+            b'<' if i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_' || b[i - 1] == b':') => open.push(i),
+            b')' | b']' => {
+                // Closes its bracket, and any `<` left open inside it (a comparison).
+                while let Some(o) = open.pop() {
+                    if b[o] != b'<' {
+                        break;
+                    }
+                }
+            }
+            b'>' if (i == 0 || !matches!(b[i - 1], b'-' | b'=')) && open.last().is_some_and(|&o| b[o] == b'<') => {
+                open.pop();
+            }
+            _ => {}
+        }
+    }
+    open.pop()
 }
 
 /// Whether the `:` after `rest` (the statement up to it) annotates a binding or an item, so that a type follows:
@@ -125,21 +163,6 @@ fn lifetime_suffix(t: &str) -> Option<&str> {
 
 fn is_ident_char(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
-}
-
-/// How many generic argument lists are open at the end of `t`: a `<` after a name, closed by a `>` that ends no
-/// `->` or `=>`.
-fn open_angle_brackets(t: &str) -> i32 {
-    let b = t.as_bytes();
-    let mut depth = 0i32;
-    for i in 0..b.len() {
-        match b[i] {
-            b'<' if i > 0 && (b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_' || b[i - 1] == b':') => depth += 1,
-            b'>' if i == 0 || !matches!(b[i - 1], b'-' | b'=') => depth = (depth - 1).max(0),
-            _ => {}
-        }
-    }
-    depth
 }
 
 /// Whether a name of `kind` is a value, never a type: left out where only a type can follow.
@@ -202,6 +225,16 @@ mod tests {
             ("    let r = Record { field: ", Possible),
             ("    let b: Buffer<u8, ", Possible),
             ("    consume(a<b, ", Possible),
+            // Inside a tuple or an array: as the list itself (review of c697ee37).
+            ("    let p: (", Certain),
+            ("    let p: (u8, ", Certain),
+            ("    let b: [", Certain),
+            ("fn f() -> (bool, ", Certain),
+            ("    let v: Vec<(", Possible),
+            ("fn f(a: u8, ", No),
+            ("    consume(", No),
+            ("    xs[", No),
+            ("    let t = (1, ", No),
             // A value.
             ("    let x = ", No),
             ("    foo(", No),
