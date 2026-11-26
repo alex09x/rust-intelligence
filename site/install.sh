@@ -26,8 +26,9 @@ case "$(uname -s)-$(uname -m)" in
   Linux-x86_64) target=x86_64-unknown-linux-gnu ;;
   Linux-aarch64 | Linux-arm64) target=aarch64-unknown-linux-gnu ;;
   Darwin-arm64) target=aarch64-apple-darwin ;;
-  Darwin-x86_64) die "no prebuilt binary for Intel Macs; build from source: https://github.com/$REPO#install" ;;
-  *) die "unsupported platform $(uname -s) $(uname -m); Linux and macOS (Apple Silicon) are supported" ;;
+  Darwin-x86_64) target=x86_64-apple-darwin ;;
+  MINGW* | MSYS* | CYGWIN*) die "on Windows, run in PowerShell: irm https://rust-intelligence.com/install.ps1 | iex" ;;
+  *) die "unsupported platform $(uname -s) $(uname -m); prebuilt binaries cover Linux, macOS and Windows (x86_64): https://github.com/$REPO#install" ;;
 esac
 
 command -v rustup >/dev/null 2>&1 || die "rustup is required: https://rustup.rs, then run this again"
