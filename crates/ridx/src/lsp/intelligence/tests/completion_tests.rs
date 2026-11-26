@@ -274,3 +274,35 @@ fn test_completion_at_line_end_and_eof() {
     let items = res["items"].as_array().unwrap();
     assert!(items.iter().any(|i| i["label"] == "calculate"));
 }
+
+/// Where a type is typed, the built-in types lead the list and no function is offered; where a value is, neither the
+/// types nor anything changes. They need no index: a crate that did not build gets them too.
+#[test]
+fn test_completion_builtin_types_where_a_type_is_typed() {
+    let (temp_dir, ws, mut overlay_mgr, mut conv) = setup_test_intelligence();
+    let file = temp_dir.join("src/main.rs");
+    let uri = format!("file://{}", file.to_str().unwrap());
+    let doc = "type uint = u32;\nfn used() {}\nfn main() {\n    let a: u\n    let b = u\n    let c = 5 as i\n}\n";
+    overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, doc.to_string());
+    let labels_at = |ws, line: u32, character: u32, conv: &mut _| -> Vec<String> {
+        let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character } } });
+        let mut items = handle_completion(&req, ws, &overlay_mgr, conv).unwrap()["items"].as_array().unwrap().clone();
+        // The order an editor shows: by `sortText`, else by label.
+        items.sort_by_key(|i| i["sortText"].as_str().or(i["label"].as_str()).unwrap_or_default().to_string());
+        items.iter().map(|i| i["label"].as_str().unwrap().to_string()).collect()
+    };
+
+    for ws in [Some(&ws), None] {
+        let typed = labels_at(ws, 3, 12, &mut conv);
+        assert_eq!(typed[..6], ["u8", "u16", "u32", "u64", "u128", "usize"], "{typed:?}");
+        assert!(typed.contains(&"uint".to_string()), "a type alias stays: {typed:?}");
+        assert!(!typed.contains(&"used".to_string()), "no function where a type is typed: {typed:?}");
+
+        let cast = labels_at(ws, 5, 18, &mut conv);
+        assert_eq!(cast[..5], ["i8", "i16", "i32", "i64", "i128"], "{cast:?}");
+
+        let value = labels_at(ws, 4, 13, &mut conv);
+        assert!(value.contains(&"used".to_string()), "{value:?}");
+        assert!(!value.contains(&"u8".to_string()), "no built-in type where a value is typed: {value:?}");
+    }
+}

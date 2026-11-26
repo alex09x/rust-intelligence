@@ -12,6 +12,7 @@
 
 pub mod auto_import;
 pub mod completion;
+mod completion_builtin;
 pub mod completion_call;
 pub(crate) mod completion_docs;
 pub mod completion_edits;

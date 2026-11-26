@@ -183,6 +183,15 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
         }));
     }
 
+    // Where a type is typed, the language's own types come first and no value is offered.
+    let type_position = super::completion_builtin::in_type_position(trimmed_before);
+    if type_position {
+        for item in super::completion_builtin::builtin_type_items(&prefix) {
+            seen_names.insert(item["label"].as_str().unwrap_or_default().to_string());
+            items.push(item);
+        }
+    }
+
     // 1. Overlay symbols: ONLY in-scope symbols, excluding nested items from other scopes
     if let Some(overlay) = overlay_opt {
         let cursor_byte = overlay.line_char_col_to_byte(line_1based, col_1based);
@@ -212,6 +221,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                 continue;
             }
             if !prefix.is_empty() && !s.name.starts_with(&prefix) {
+                continue;
+            }
+            if type_position && super::completion_builtin::is_value_kind(s.kind) {
                 continue;
             }
 
@@ -245,7 +257,7 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
 
         for s in ws_symbols {
             // Only what a name brings in: no impl block, associated item, field, local or another module's import.
-            if !super::completion_import::importable(&s) {
+            if !super::completion_import::importable(&s) || (type_position && super::completion_builtin::is_value_kind(s.kind)) {
                 continue;
             }
             let resolved = s.resolved_path();
