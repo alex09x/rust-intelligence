@@ -4,6 +4,10 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **The first edit after a Cargo index is compiled from Cargo's incremental cache**: the direct path used an empty cache of its own and `--emit=metadata` in place of Cargo's `--emit=dep-info,metadata`, which makes rustc ignore a cache. It now emits `dep-info` as Cargo's check does and uses the cache each unit was last compiled with, when that lies under the workspace's `target`. On ridx's own workspace (release build, Linux x86_64, two runs per binary), a comment appended to `ridx-format`, 34 units compiled: 20.0–20.1 s to 7.8–7.9 s (issue #7). The second cache under `target/ridx-direct/incremental` (about 600 MB there) is no longer filled.
+- A unit compiled by the direct path records the direct search path once: each run added another `-L` to its recorded arguments.
+
 ## [0.3.14] - 2026-11-25
 
 Verified on GitHub's runners for each released platform: the release build indexes a small crate, `ridx def` resolves a method call, and an LSP session (initialize, didOpen, definition, hover and references of a method call, shutdown, exit) answers with the file URIs each client writes; on Windows x86_64 and Intel macOS the ridx-format, ridx-syntax, ridx and ridx-driver tests pass. The index format is unchanged.

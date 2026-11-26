@@ -175,6 +175,39 @@ fn test_a_revert_after_errors_is_compiled_whichever_sidecar_is_read_first() {
     assert!(reindex(&root), "up to date");
 }
 
+/// prod-code, issue #7: the first edit after a Cargo index compiled with an incremental cache of the direct path's own,
+/// empty. A unit goes on with the cache its last compile recorded, Cargo's after a Cargo index; one outside the
+/// workspace's `target` is not written to.
+#[cfg(unix)]
+#[test]
+fn test_a_unit_keeps_the_incremental_cache_it_was_compiled_with() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    let driver = root.join("recording-driver");
+    fs::write(&driver, "#!/bin/sh\nprintf '%s\\n' \"$@\" > args.txt\ntouch \"$RIDX_OUT_DIR/.deps/w-1.json\"\n").unwrap();
+    fs::set_permissions(&driver, fs::Permissions::from_mode(0o755)).unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    let cargo_cache = root.join("target/ridx_cargo/dev/debug/incremental");
+    let own_cache = root.join("target/ridx-direct/incremental");
+    for (recorded, used) in [(cargo_cache.clone(), cargo_cache), (outside.path().to_path_buf(), own_cache)] {
+        indexed_workspace(&root, VARIANT);
+        let variant = root.join("target/ridx").join(VARIANT);
+        // The crate's shard, which the publication opens.
+        let mut shard = ridx_format::IndexWriter::new("w", "0.1.0");
+        shard.write_to(&mut fs::File::create(variant.join("w-1.ridx")).unwrap()).unwrap();
+        let sidecar = variant.join(".deps/w-1.json");
+        let mut j: serde_json::Value = serde_json::from_slice(&fs::read(&sidecar).unwrap()).unwrap();
+        j["compiler_args"] = serde_json::json!(["rustc", "src/lib.rs", "-C", format!("incremental={}", recorded.display())]);
+        fs::write(&sidecar, serde_json::to_vec(&j).unwrap()).unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn a() { let _x = 1; }\n").unwrap();
+        assert!(reindex_with(&root, &driver));
+        let args = fs::read_to_string(root.join("args.txt")).unwrap();
+        let expected = format!("incremental={}", used.display());
+        assert!(args.lines().any(|a| a == expected), "{expected} among {args}");
+    }
+}
+
 /// On BTCR an edit of one file compiled 53 sidecars: each of ~20 units under its two or three names, and the bare
 /// `name.json`, never rewritten by the driver, kept the hashes of the text before.
 #[test]

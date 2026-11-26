@@ -17,7 +17,7 @@ pub(crate) mod units;
 
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
-use args::sanitize_compiler_args_for_direct;
+use args::{recorded_incremental_dir, sanitize_compiler_args_for_direct};
 use colored::*;
 use config::{has_untracked_rs_files, verify_build_config_unchanged};
 use graph::{build_workspace_dependency_graphs, topo_sort_crates, UnitOutcome};
@@ -230,7 +230,8 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // Prepare private isolated directories for direct build artifacts and incremental cache
+    // Prepare the private directory for direct build artifacts, and an incremental cache for a unit that has none of its
+    // own under `target`
     let direct_dir = work_dir.join("target/ridx-direct");
     let direct_deps = direct_dir.join("deps");
     let direct_incr = direct_dir.join("incremental");
@@ -245,7 +246,12 @@ pub fn try_direct_crate_indexing(
     // Execute direct indexing on changed targets, each once its dependencies are built, several at once.
     let compile = |target_id: &str| -> UnitOutcome {
         let Some((crate_name, args, env_vars, _, sidecar)) = crate_map.get(target_id) else { return UnitOutcome::Failed };
-        let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
+        // The unit goes on with the cache of its last compile, Cargo's after a Cargo index, which a Cargo run after this
+        // one finds updated. rustc locks a session while it uses it and never rewrites a finished one. Starting from an
+        // empty cache of the direct path's own, the first edit after a Cargo index recompiled every unit from nothing
+        // (prod-code, issue #7).
+        let incr = recorded_incremental_dir(args).filter(|dir| dir.starts_with(work_dir.join("target"))).unwrap_or(&direct_incr);
+        let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, incr, &recompiled_crates);
         if sanitized_args.is_empty() {
             eprintln!("[ridx-direct] fallback to Cargo: empty sanitized args for '{crate_name}'");
             return UnitOutcome::Failed;
