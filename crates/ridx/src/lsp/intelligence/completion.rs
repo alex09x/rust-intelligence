@@ -57,6 +57,23 @@ fn is_documented_kind(kind: ridx_format::DefKind) -> bool {
     !matches!(kind, ridx_format::DefKind::Local | ridx_format::DefKind::TyParam | ridx_format::DefKind::LifetimeParam | ridx_format::DefKind::ConstParam)
 }
 
+/// Up to 4 KiB of the document before line `line` (0-based), for the statement a name is typed in.
+fn text_before_line(overlay: Option<&crate::overlay::DocumentOverlay>, file: &str, line: usize) -> String {
+    const WINDOW: usize = 4096;
+    let tail = |text: &str, end: usize| {
+        let end = end.min(text.len());
+        let mut start = end.saturating_sub(WINDOW);
+        while !text.is_char_boundary(start) {
+            start += 1;
+        }
+        text[start..end].to_string()
+    };
+    match overlay {
+        Some(o) => o.line_starts.get(line).map_or_else(String::new, |&s| tail(&o.text, s)),
+        None => super::scope_cache::get_or_parse_file_scopes(file, None).and_then(|s| s.line_starts.get(line).map(|&at| tail(&s.text, at))).unwrap_or_default(),
+    }
+}
+
 fn line_start_byte(text: &str, line: usize) -> Option<usize> {
     if line == 0 {
         return Some(0);
@@ -183,9 +200,11 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
         }));
     }
 
-    // Where a type is typed, the language's own types come first and no value is offered.
-    let type_position = super::completion_builtin::in_type_position(trimmed_before);
-    if type_position {
+    // Where a type is typed, the language's own types come first; where only a type can follow, no value is offered.
+    let before_name = format!("{}{}", text_before_line(overlay_opt, &file, line_0based as usize), &line_slice[..line_slice.len() - prefix.len()]);
+    let type_ctx = super::completion_builtin::type_context(&crate::lsp::editing::action_parse::mask_comments_and_strings(&before_name));
+    let type_position = type_ctx == super::completion_builtin::TypeContext::Certain;
+    if type_ctx != super::completion_builtin::TypeContext::No {
         for item in super::completion_builtin::builtin_type_items(&prefix) {
             seen_names.insert(item["label"].as_str().unwrap_or_default().to_string());
             items.push(item);

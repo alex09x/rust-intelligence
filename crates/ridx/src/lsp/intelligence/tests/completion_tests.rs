@@ -282,7 +282,7 @@ fn test_completion_builtin_types_where_a_type_is_typed() {
     let (temp_dir, ws, mut overlay_mgr, mut conv) = setup_test_intelligence();
     let file = temp_dir.join("src/main.rs");
     let uri = format!("file://{}", file.to_str().unwrap());
-    let doc = "type uint = u32;\nfn used() {}\nfn main() {\n    let a: u\n    let b = u\n    let c = 5 as i\n}\n";
+    let doc = "type uint = u32;\nfn used() {}\nfn main() {\n    let a: u\n    let b = u\n    let c = 5 as i\n    let d = Rec { f: us\n    let e: Result<\n        u\n}\n";
     overlay_mgr.open_document(&uri, file.to_str().unwrap(), 1, doc.to_string());
     let labels_at = |ws, line: u32, character: u32, conv: &mut _| -> Vec<String> {
         let req = json!({ "params": { "textDocument": { "uri": &uri }, "position": { "line": line, "character": character } } });
@@ -304,5 +304,14 @@ fn test_completion_builtin_types_where_a_type_is_typed() {
         let value = labels_at(ws, 4, 13, &mut conv);
         assert!(value.contains(&"used".to_string()), "{value:?}");
         assert!(!value.contains(&"u8".to_string()), "no built-in type where a value is typed: {value:?}");
+
+        // A struct literal's field takes a value: the types lead, the function stays (review of b789093b).
+        let field = labels_at(ws, 6, 23, &mut conv);
+        assert_eq!(field.first().map(String::as_str), Some("usize"), "{field:?}");
+        assert!(field.contains(&"used".to_string()), "{field:?}");
+
+        // A type argument on the line after its `<`.
+        let next_line = labels_at(ws, 8, 9, &mut conv);
+        assert_eq!(next_line[..6], ["u8", "u16", "u32", "u64", "u128", "usize"], "{next_line:?}");
     }
 }

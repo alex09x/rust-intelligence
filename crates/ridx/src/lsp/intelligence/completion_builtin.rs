@@ -8,9 +8,11 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Where a type is typed (`let x: u`, `-> i`, `as u`, `Vec<u`): the language's own types first, and no function,
-//! macro or value among the names. The built-in types are no item of any index, so a crate that did not build, or
-//! has no index yet, still gets them; and the index's matches, capped, no longer crowd them out.
+//! Where a type is typed (`let x: u`, `-> i`, `as u`, `Vec<u`): the language's own types first. The built-in types
+//! are no item of any index, so a crate that did not build, or has no index yet, still gets them; and the index's
+//! matches, capped, no longer crowd them out. Only where nothing but a type can follow (a binding's annotation, a
+//! return type, a cast) are functions, macros and other values left out: a struct literal's field (`S { a: x }`), a
+//! const generic argument (`Buf<u8, CAP>`) or a comparison (`f(a<b, c)`) reads the same as a type up to the cursor.
 
 use ridx_format::DefKind;
 use serde_json::{json, Value};
@@ -21,36 +23,98 @@ const BUILTIN_TYPES: [&str; 17] = ["bool", "char", "str", "u8", "u16", "u32", "u
 /// LSP `CompletionItemKind.Struct`, rust-analyzer's kind for a built-in type.
 const STRUCT_KIND: u32 = 22;
 
-/// Whether the name being typed after `before` (the line up to it, the name's own characters removed) is a type.
-pub(super) fn in_type_position(before: &str) -> bool {
-    let mut t = before.trim_end();
+/// What the name being typed is, as far as the text before it tells.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum TypeContext {
+    /// No sign of a type.
+    No,
+    /// Maybe a type, maybe a value: the built-in types lead, nothing is left out.
+    Possible,
+    /// Only a type can follow: values are left out too.
+    Certain,
+}
+
+/// The context of the name typed after `before`: the document up to it (the name's own characters removed), comments
+/// and strings blanked. Only the statement the name is in is read, across lines.
+pub(super) fn type_context(before: &str) -> TypeContext {
+    let statement = before.rfind([';', '{', '}']).map_or(before, |i| &before[i + 1..]);
+    let mut t = statement.trim_end();
     // `&`, `&mut`, `&'a`, `*const`, `*mut`, `dyn`, `impl` lead into a type and are part of it.
     loop {
         let stripped =
             ["&", "mut", "*const", "*mut", "dyn", "impl"].iter().find_map(|p| t.strip_suffix(p).filter(|rest| p.starts_with(['&', '*']) || !rest.ends_with(is_ident_char)));
-        let stripped = stripped.or_else(|| lifetime_suffix(t));
-        match stripped {
+        match stripped.or_else(|| lifetime_suffix(t)) {
             Some(rest) if rest.len() < t.len() => t = rest.trim_end(),
             _ => break,
         }
     }
     if t.ends_with("->") {
-        return true;
+        return TypeContext::Certain;
     }
     if let Some(rest) = t.strip_suffix(':') {
-        return !rest.ends_with(':');
+        return if rest.ends_with(':') {
+            TypeContext::No
+        } else if annotates_a_binding(rest) {
+            TypeContext::Certain
+        } else {
+            TypeContext::Possible
+        };
     }
     if let Some(rest) = t.strip_suffix("as") {
-        return rest.ends_with(|c: char| c.is_whitespace() || c == ')');
+        if rest.ends_with(|c: char| c.is_whitespace() || c == ')') && !rest.trim().is_empty() {
+            return TypeContext::Certain;
+        }
     }
-    if let Some(rest) = t.strip_suffix('<') {
-        // `Vec<` and `::<`, not a comparison `a < b`.
-        return rest.ends_with(|c: char| is_ident_char(c) || c == ':');
+    // `Vec<` and `::<` (not `a < b`), and the next argument of an open list: a type, a const or, after a
+    // comparison without spaces, a value.
+    if t.strip_suffix('<').is_some_and(|rest| rest.ends_with(|c: char| is_ident_char(c) || c == ':')) || (t.ends_with(',') && open_angle_brackets(t) > 0) {
+        return TypeContext::Possible;
     }
-    if t.ends_with(',') {
-        return open_angle_brackets(t) > 0;
+    TypeContext::No
+}
+
+/// Whether the `:` after `rest` (the statement up to it) annotates a binding or an item, so that a type follows:
+/// `let x:`, `|a, b:`, a function's parameter, `const N:`, `static S:`. Not a field of a struct or of its literal.
+fn annotates_a_binding(rest: &str) -> bool {
+    let words: Vec<&str> = rest.split(|c: char| !is_ident_char(c)).filter(|w| !w.is_empty()).collect();
+    if words.len() >= 2 && matches!(words[words.len() - 2], "const" | "static") {
+        return true;
     }
-    false
+    if let Some(at) = last_word(rest, "let") {
+        if !rest[at..].contains('=') {
+            return true;
+        }
+    }
+    if let Some(bar) = rest.rfind('|') {
+        if rest[bar + 1..].chars().all(|c| is_ident_char(c) || c.is_whitespace() || matches!(c, ',' | '&')) {
+            return true;
+        }
+    }
+    // The parameter list of a function: its `(` still open, after `fn name`.
+    open_paren(rest).is_some_and(|open| last_word(&rest[..open], "fn").is_some())
+}
+
+/// The offset of the last `word` in `text` standing as a whole word.
+fn last_word(text: &str, word: &str) -> Option<usize> {
+    text.rmatch_indices(word).map(|(i, _)| i).find(|&i| {
+        let before_ok = text[..i].chars().next_back().is_none_or(|c| !is_ident_char(c));
+        let after_ok = text[i + word.len()..].chars().next().is_none_or(|c| !is_ident_char(c));
+        before_ok && after_ok
+    })
+}
+
+/// The offset of the last `(` of `text` not closed in it.
+fn open_paren(text: &str) -> Option<usize> {
+    let mut depth = 0i32;
+    for (i, c) in text.char_indices().rev() {
+        match c {
+            ')' => depth += 1,
+            '(' if depth == 0 => return Some(i),
+            '(' => depth -= 1,
+            _ => {}
+        }
+    }
+    None
 }
 
 /// The text before a trailing lifetime (`&'a`), if `t` ends with one.
@@ -78,7 +142,7 @@ fn open_angle_brackets(t: &str) -> i32 {
     depth
 }
 
-/// Whether a name of `kind` is a value, never a type: left out where a type is typed.
+/// Whether a name of `kind` is a value, never a type: left out where only a type can follow.
 pub(super) fn is_value_kind(kind: DefKind) -> bool {
     matches!(
         kind,
@@ -111,27 +175,47 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_type_positions() {
-        for before in [
-            "    let x: ",
-            "fn f(a: ",
-            "fn f() -> ",
-            "    let n = x as ",
-            "    let v: Vec<",
-            "    let m: HashMap<String, ",
-            "fn f(s: &",
-            "fn f(s: &mut ",
-            "fn f(s: &'a ",
-            "fn f(p: *const ",
-            "fn f(x: impl ",
-            "    let b: Box<dyn ",
-            "    x.parse::<",
-            "struct S { a: ",
-        ] {
-            assert!(in_type_position(before), "{before:?}");
-        }
-        for before in ["    let x = ", "    foo(", "    foo(a, ", "    if a < ", "    std::", "    x.", "    let mutable = ", "    let x = &", "    match x { A => "] {
-            assert!(!in_type_position(before), "{before:?}");
+    fn test_type_contexts() {
+        use TypeContext::*;
+        let cases = [
+            // Only a type can follow.
+            ("    let x: ", Certain),
+            ("    let (a, mut b): ", Certain),
+            ("fn f(a: ", Certain),
+            ("pub fn f<T: Clone>(a: T, b: ", Certain),
+            ("fn f() -> ", Certain),
+            ("    let n = x as ", Certain),
+            ("    xs.iter().map(|a, b: ", Certain),
+            ("const MAX: ", Certain),
+            ("fn f(s: &", Certain),
+            ("fn f(s: &mut ", Certain),
+            ("fn f(s: &'a ", Certain),
+            ("fn f(p: *const ", Certain),
+            ("fn f(x: impl ", Certain),
+            // A type, or a value read the same way up to the cursor.
+            ("    let v: Vec<", Possible),
+            ("    let m: HashMap<String, ", Possible),
+            ("    let r: Result<\n        ", Possible),
+            ("    let b: Box<dyn ", Possible),
+            ("    x.parse::<", Possible),
+            ("struct S {\n    a: ", Possible),
+            ("    let r = Record { field: ", Possible),
+            ("    let b: Buffer<u8, ", Possible),
+            ("    consume(a<b, ", Possible),
+            // A value.
+            ("    let x = ", No),
+            ("    foo(", No),
+            ("    foo(a, ", No),
+            ("    if a < ", No),
+            ("    std::", No),
+            ("    x.", No),
+            ("    let mutable = ", No),
+            ("    let x = &", No),
+            ("    match x { A => ", No),
+            ("    let x: u8 = 1;\n    ", No),
+        ];
+        for (before, expected) in cases {
+            assert_eq!(type_context(before), expected, "{before:?}");
         }
     }
 
