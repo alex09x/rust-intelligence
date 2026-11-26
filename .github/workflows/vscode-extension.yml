@@ -10,7 +10,10 @@
 # Visual Studio Marketplace and to Open VSX, both through trusted publishing: each registry exchanges this workflow's
 # OIDC token for a short-lived one, so no token is stored. The `vscode-marketplace` and `open-vsx` environments hold
 # each publish job until the owner approves it. Open VSX needs, once, on open-vsx.org: the `alex09x` namespace, and
-# this repository, this file and the `open-vsx` environment registered as its trusted publisher.
+# this repository, this file and the `open-vsx` environment registered as its trusted publisher. Only a namespace owner
+# can register one, and ownership is granted on a claim the Eclipse Foundation reviews; until then the `open-vsx`
+# environment holds an access token, OVSX_PAT, and the job publishes with it. Deleting the secret returns the job to
+# trusted publishing. A manual run publishes the extension of the branch it runs on to Open VSX only.
 name: VS Code extension
 
 on:
@@ -71,7 +74,7 @@ jobs:
   # The same VSIX on Open VSX, the registry of VSCodium, Cursor, Windsurf, Gitpod and Eclipse Theia.
   publish-open-vsx:
     needs: package
-    if: startsWith(github.ref, 'refs/tags/vscode-v')
+    if: startsWith(github.ref, 'refs/tags/vscode-v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: open-vsx
     permissions:
@@ -85,5 +88,12 @@ jobs:
         with:
           name: vsix
           path: vsix
-      - name: Open VSX, trusted publishing
-        run: npx --yes ovsx@1.4.0 publish --trusted-publishing --packagePath vsix/rust-intelligence.vsix
+      - name: Open VSX, with the access token while the namespace has no owner, else trusted publishing
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -n "$OVSX_PAT" ]; then
+            npx --yes ovsx@1.4.0 publish --packagePath vsix/rust-intelligence.vsix
+          else
+            npx --yes ovsx@1.4.0 publish --trusted-publishing --packagePath vsix/rust-intelligence.vsix
+          fi
