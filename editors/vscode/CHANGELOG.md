@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- Installs ridx on Windows (x86_64) and on Intel Macs too, from the release archives ridx 0.3.14 added; the Windows
+  archive is a zip, unpacked with the tar Windows 10 and later ship.
+- Published on Open VSX as well (VSCodium, Cursor, Windsurf, Gitpod, Eclipse Theia).
+
 ## 0.1.2
 
 - A missing ridx or an available update also shows in the status bar and installs on click: VS Code hides the

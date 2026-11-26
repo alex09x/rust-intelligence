@@ -14,8 +14,8 @@ latest GitHub release for your platform, checks it against the release's SHA-256
 `rustup toolchain install 1.98.1 --profile minimal --component rust-src` (the compiler `ridx-driver` links to; your
 projects keep their own toolchain).
 
-Prebuilt binaries exist for macOS on Apple Silicon and Linux on x86_64 and arm64. On other platforms install from
-crates.io and restart the server:
+Prebuilt binaries exist for Linux on x86_64 and arm64, macOS on Apple Silicon and Intel, and Windows on x86_64. On
+other platforms install from crates.io and restart the server:
 
 ```sh
 cargo install ridx ridx-driver --locked
