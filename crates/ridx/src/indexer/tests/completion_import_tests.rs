@@ -51,7 +51,8 @@ fn test_name_completion_imports_only_what_a_use_reaches() {
     let lib = ws.join("app/src/lib.rs");
 
     let mut at = |typed: &str| {
-        let text = format!("{app}pub fn typed() -> {typed}");
+        // Typed where a value goes: a type position offers no function (`helper` below).
+        let text = format!("{app}pub fn typed() {{ let _ = {typed}");
         let uri = server.open_with(&lib, &text);
         let line = text.lines().count() as u32 - 1;
         offered(&server.completion(&uri, line, text.lines().last().unwrap().len() as u32))

@@ -57,6 +57,16 @@ fn is_documented_kind(kind: ridx_format::DefKind) -> bool {
     !matches!(kind, ridx_format::DefKind::Local | ridx_format::DefKind::TyParam | ridx_format::DefKind::LifetimeParam | ridx_format::DefKind::ConstParam)
 }
 
+/// The document before line `line` (0-based), for the statement a name is typed in. Whole, not a window of it: a
+/// window could start inside a comment or a string, and blanking them would then go wrong.
+fn text_before_line(overlay: Option<&crate::overlay::DocumentOverlay>, file: &str, line: usize) -> String {
+    let head = |text: &str, end: usize| text[..end.min(text.len())].to_string();
+    match overlay {
+        Some(o) => o.line_starts.get(line).map_or_else(String::new, |&s| head(&o.text, s)),
+        None => super::scope_cache::get_or_parse_file_scopes(file, None).and_then(|s| s.line_starts.get(line).map(|&at| head(&s.text, at))).unwrap_or_default(),
+    }
+}
+
 fn line_start_byte(text: &str, line: usize) -> Option<usize> {
     if line == 0 {
         return Some(0);
@@ -183,6 +193,17 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
         }));
     }
 
+    // Where a type is typed, the language's own types come first; where only a type can follow, no value is offered.
+    let before_name = format!("{}{}", text_before_line(overlay_opt, &file, line_0based as usize), &line_slice[..line_slice.len() - prefix.len()]);
+    let type_ctx = super::completion_builtin::type_context(&crate::lsp::editing::action_parse::mask_comments_and_strings(&before_name));
+    let type_position = type_ctx == super::completion_builtin::TypeContext::Certain;
+    if type_ctx != super::completion_builtin::TypeContext::No {
+        for item in super::completion_builtin::builtin_type_items(&prefix) {
+            seen_names.insert(item["label"].as_str().unwrap_or_default().to_string());
+            items.push(item);
+        }
+    }
+
     // 1. Overlay symbols: ONLY in-scope symbols, excluding nested items from other scopes
     if let Some(overlay) = overlay_opt {
         let cursor_byte = overlay.line_char_col_to_byte(line_1based, col_1based);
@@ -212,6 +233,9 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
                 continue;
             }
             if !prefix.is_empty() && !s.name.starts_with(&prefix) {
+                continue;
+            }
+            if type_position && super::completion_builtin::is_value_kind(s.kind) {
                 continue;
             }
 
@@ -245,7 +269,7 @@ fn completion_list(msg: &Value, workspace: Option<&WorkspaceIndex>, overlay_mgr:
 
         for s in ws_symbols {
             // Only what a name brings in: no impl block, associated item, field, local or another module's import.
-            if !super::completion_import::importable(&s) {
+            if !super::completion_import::importable(&s) || (type_position && super::completion_builtin::is_value_kind(s.kind)) {
                 continue;
             }
             let resolved = s.resolved_path();
