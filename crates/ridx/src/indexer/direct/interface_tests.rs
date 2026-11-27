@@ -21,6 +21,10 @@ fn test_a_body_or_a_comment_is_no_change_of_the_interface() {
     assert!(same(BASE, &BASE.replace("a + b", "let s = a + b;\n    // sum\n    s")), "a body, lines added to it");
     assert!(same(BASE, &BASE.replace("a + b", "/// in a body\n    a + b")), "a doc comment in a body left out");
     assert!(same(BASE, &format!("// header\n\n{BASE}// trailer\n//// not a doc\n/* block */\n")), "comments and blank lines");
+    assert!(same("pub fn f() { #[allow(unused)] let x = 1; }", "pub fn f() { #[allow(unused)] let x = 2; }"), "a built-in attribute in a body");
+    // Review of 6b27649c: `line!()` kept moves with the text; in a body left out it is no interface.
+    assert!(!same("pub const N: u32 = line!();", "\npub const N: u32 = line!();"), "a line above `line!()`");
+    assert!(same("pub fn f() -> u32 { line!() }", "\npub fn f() -> u32 { line!() }"));
     assert!(same(BASE, &BASE.replace("a + b", "println!(\"{a}\");\n    assert!(a > 0);\n    a + b")), "the standard library's macros");
     assert!(same("trait T { fn f(&self) -> u8 { 1 } }", "trait T { fn f(&self) -> u8 { 2 } }"), "a trait's default body");
 }
@@ -54,6 +58,8 @@ fn test_bodies_a_dependent_can_see_into_stay() {
         // Review of 2a030462: not cut at the `,` of its generics.
         ("#[my_attr] impl<T, U> S<T, U> { pub fn n(&self) -> u8 { 3 } }", "#[my_attr] impl<T, U> S<T, U> { pub fn n(&self) -> u8 { 4 } }"),
         ("pub fn f() { add!(u8); }", "pub fn f() { add!(i8); }"),
+        // Review of 6b27649c: an attribute macro inside a body.
+        ("pub fn f() { #[make_impl(u8)] fn local() {} }", "pub fn f() { #[make_impl(u16)] fn local() {} }"),
         ("pub fn f() { other::add!(u8); }", "pub fn f() { other::add!(i8); }"),
         ("macro_rules! m { () => { fn f() { 1 } } }", "macro_rules! m { () => { fn f() { 2 } } }"),
         ("m! { fn f() { 1 } }", "m! { fn f() { 2 } }"),

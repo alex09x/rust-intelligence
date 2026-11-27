@@ -137,10 +137,11 @@ fn test_dependents_of_an_edit_that_keeps_the_interface_are_not_compiled() {
 /// Review of 2a030462: a target file named as no file on disk (`--remap-path-prefix`) was taken for one not moved.
 #[test]
 fn test_a_target_file_no_path_resolves_compiles_the_dependent() {
-    let dir = tempfile::tempdir().unwrap();
-    let mut ws = Ws::new(dir.path());
-    let mut shard = ridx_format::IndexWriter::new("b", "0.1.0");
-    for (file, line) in [("/virtual-source/lib.rs", 1), ("/rustc/0000/library/core/src/option.rs", 572)] {
+    // Each case alone (review of 6b27649c): `lib.rs` may be `a`'s moved file; `option.rs` is no file of `a`.
+    for (file, line, expected) in [("/virtual-source/lib.rs", 1, vec!["a", "b"]), ("/rustc/0000/library/core/src/option.rs", 572, vec!["a"])] {
+        let dir = tempfile::tempdir().unwrap();
+        let mut ws = Ws::new(dir.path());
+        let mut shard = ridx_format::IndexWriter::new("b", "0.1.0");
         shard.add_reference(ridx_format::RawReference {
             file: "b/lib.rs".into(),
             start_line: 2,
@@ -157,11 +158,11 @@ fn test_a_target_file_no_path_resolves_compiles_the_dependent() {
             is_write: false,
             is_macro_expansion: false,
         });
+        shard.write_to(&mut fs::File::create(ws.root.join("b.ridx")).unwrap()).unwrap();
+        ws.run(&["a"]);
+        ws.edit("a", "\npub fn f() -> u32 {\n    1\n}\n");
+        assert_eq!(ws.run(&["a"]).0, expected, "{file}");
     }
-    shard.write_to(&mut fs::File::create(ws.root.join("b.ridx")).unwrap()).unwrap();
-    ws.run(&["a"]);
-    ws.edit("a", "\npub fn f() -> u32 {\n    1\n}\n");
-    assert_eq!(ws.run(&["a"]).0, ["a", "b"], "`lib.rs` may be `a`'s moved file; `option.rs` is no file of `a`");
 }
 
 #[test]

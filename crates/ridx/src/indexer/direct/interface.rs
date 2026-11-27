@@ -124,6 +124,14 @@ impl Scan<'_> {
         (self.kind(open) == Some(TokenKind::LBracket)).then(|| self.close[open] + 1)
     }
 
+    /// Whether the attribute in the `[` at `open` may be a procedural macro: not built in, nor a tool's.
+    fn is_macro_like(&self, open: usize) -> bool {
+        let inner: Vec<&str> = (open + 1..self.close[open]).take(3).map(|k| self.text(k)).collect();
+        // `#[unsafe(no_mangle)]` names the attribute inside.
+        let name = if inner.first() == Some(&"unsafe") { inner.get(2) } else { inner.first() };
+        !name.is_some_and(|n| PLAIN_ATTRIBUTES.contains(n) || *n == "cfg")
+    }
+
     /// The outer attributes from `i` and the item they are on.
     fn attributed(&mut self, i: usize, end: usize) -> usize {
         let first = self.attribute_end(i).unwrap_or(i + 1);
@@ -134,11 +142,8 @@ impl Scan<'_> {
         let (mut j, mut cfg_test, mut macro_like) = (i, false, false);
         while self.kind(j) == Some(TokenKind::Hash) && self.kind(j + 1) == Some(TokenKind::LBracket) {
             let close = self.close[j + 1];
-            let inner: Vec<&str> = (j + 2..close).map(|k| self.text(k)).collect();
-            cfg_test |= inner == ["cfg", "(", "test", ")"];
-            // `#[unsafe(no_mangle)]` names the attribute inside.
-            let name = if inner.first() == Some(&"unsafe") { inner.get(2) } else { inner.first() };
-            macro_like |= !name.is_some_and(|n| PLAIN_ATTRIBUTES.contains(n) || *n == "cfg");
+            cfg_test |= (j + 2..close).map(|k| self.text(k)).eq(["cfg", "(", "test", ")"]);
+            macro_like |= self.is_macro_like(j + 1);
             j = close + 1;
         }
         if cfg_test {
@@ -231,13 +236,18 @@ impl Scan<'_> {
         };
         let close = self.close[open];
         // A macro called in the body may expand to an item seen outside it (`add!(u8)` to `impl T for u8 {}`, review
-        // of 2a030462), but for the standard library's, which never do.
-        sees_body |= (open + 1..close).any(|k| {
-            self.kind(k) == Some(TokenKind::Impl)
-                || (self.kind(k) == Some(TokenKind::Ident)
-                    && self.kind(k + 1) == Some(TokenKind::Bang)
-                    && (is_open(self.kind(k + 2)) || self.kind(k + 2) == Some(TokenKind::Ident))
-                    && !STD_MACROS.contains(&self.text(k)))
+        // of 2a030462), but for the standard library's, which never do; so may an attribute macro on an item or a
+        // statement in it (`#[make_impl(u8)] fn local() {}`, review of 6b27649c).
+        sees_body |= (open + 1..close).any(|k| match self.kind(k) {
+            Some(TokenKind::Impl) => true,
+            Some(TokenKind::Ident) => {
+                self.kind(k + 1) == Some(TokenKind::Bang) && (is_open(self.kind(k + 2)) || self.kind(k + 2) == Some(TokenKind::Ident)) && !STD_MACROS.contains(&self.text(k))
+            }
+            Some(TokenKind::Hash) => {
+                let open = if self.kind(k + 1) == Some(TokenKind::Bang) { k + 2 } else { k + 1 };
+                self.kind(open) == Some(TokenKind::LBracket) && self.is_macro_like(open)
+            }
+            _ => false,
         });
         self.keep(i, open);
         if sees_body {
@@ -252,6 +262,11 @@ impl Scan<'_> {
         let mut hash = Fnv::new();
         let mut positions = Vec::with_capacity(self.kept.len());
         let mut lines = LineCols::new(self.src);
+        // `line!()` and `column!()` kept give values that move with the text: its positions are its interface then
+        // (`pub const N: usize = line!() as usize;`, review of 6b27649c).
+        let located = self.kept.iter().any(
+            |k| matches!(*k, Kept::Token(i) if self.kind(i) == Some(TokenKind::Ident) && matches!(self.text(i), "line" | "column") && self.kind(i + 1) == Some(TokenKind::Bang)),
+        );
         for k in &self.kept {
             let i = match *k {
                 Kept::Token(i) => {
@@ -266,7 +281,12 @@ impl Scan<'_> {
                     i
                 }
             };
-            positions.push(lines.at(self.t[i].start as usize));
+            let at = lines.at(self.t[i].start as usize);
+            if located {
+                hash.write(&at.0.to_le_bytes());
+                hash.write(&at.1.to_le_bytes());
+            }
+            positions.push(at);
         }
         FileInterface { hash: hash.finish(), positions }
     }

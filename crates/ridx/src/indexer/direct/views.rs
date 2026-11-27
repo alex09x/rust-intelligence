@@ -61,24 +61,57 @@ pub(crate) fn sources_digest(own_hashes: &HashMap<String, u64>) -> u64 {
 pub(crate) fn read_interface(work_dir: &Path, own_hashes: &HashMap<String, u64>) -> Option<UnitInterface> {
     let mut names: Vec<&String> = own_hashes.keys().collect();
     names.sort();
-    let mut fingerprint = Fnv::new();
-    let mut files = BTreeMap::new();
+    let mut texts = Vec::with_capacity(names.len());
     for name in names {
         let bytes = fs::read(work_dir.join(name)).ok()?;
         if !hash_matches(source_hashes(&bytes), own_hashes[name]) {
             return None;
         }
+        texts.push((name, work_dir.join(name).canonicalize().ok(), bytes));
+    }
+    let embedded = embedded_files(&texts);
+    let mut fingerprint = Fnv::new();
+    let mut files = BTreeMap::new();
+    for (name, path, bytes) in &texts {
         fingerprint.write(name.as_bytes());
         fingerprint.write(&[0]);
+        let is_data = embedded.as_ref().is_none_or(|e| path.as_ref().is_some_and(|p| e.contains(p)));
         if name.ends_with(".rs") {
-            let file = file_interface(std::str::from_utf8(&bytes).ok()?)?;
-            fingerprint.write(&file.hash.to_le_bytes());
-            files.insert(name.clone(), file.positions);
+            let file = file_interface(std::str::from_utf8(bytes).ok()?)?;
+            // A Rust file the unit embeds (`include_str!`) is its data too, compared whole (review of 6b27649c).
+            let hash = if is_data { ridx_format::fnv1a_64(bytes) } else { file.hash };
+            fingerprint.write(&[u8::from(is_data)]);
+            fingerprint.write(&hash.to_le_bytes());
+            files.insert(name.to_string(), file.positions);
         } else {
-            fingerprint.write(&ridx_format::fnv1a_64(&bytes).to_le_bytes());
+            fingerprint.write(&ridx_format::fnv1a_64(bytes).to_le_bytes());
         }
     }
     Some(UnitInterface { sources: sources_digest(own_hashes), fingerprint: fingerprint.finish(), files })
+}
+
+/// The files the unit's Rust sources embed as text or bytes (`include_str!("..")`, `include_bytes!("..")`), by canonical
+/// path; `None` when one names its file other than by a plain literal (`concat!(env!(..), ..)`): it may be any.
+fn embedded_files(texts: &[(&String, Option<PathBuf>, Vec<u8>)]) -> Option<std::collections::HashSet<PathBuf>> {
+    use ridx_syntax::TokenKind;
+    let mut out = std::collections::HashSet::new();
+    for (name, path, bytes) in texts {
+        let Some(text) = name.ends_with(".rs").then(|| std::str::from_utf8(bytes).ok()).flatten() else { continue };
+        let tokens: Vec<ridx_syntax::Token> = ridx_syntax::lex(text).into_iter().filter(|t| !t.is_trivia()).collect();
+        let at = |i: usize| tokens.get(i).map(|t| (t.kind, &text[t.start as usize..t.end as usize]));
+        for i in 0..tokens.len() {
+            if !matches!(at(i), Some((TokenKind::Ident, "include_str" | "include_bytes"))) || at(i + 1).map(|t| t.0) != Some(TokenKind::Bang) {
+                continue;
+            }
+            let literal = match (at(i + 2), at(i + 3), at(i + 4)) {
+                (Some((TokenKind::LParen, _)), Some((TokenKind::Str, lit)), Some((TokenKind::RParen | TokenKind::Comma, _))) if !lit.contains('\\') => lit.trim_matches('"'),
+                _ => return None,
+            };
+            let dir = path.as_ref().and_then(|p| p.parent())?;
+            out.extend(dir.join(literal).canonicalize().ok());
+        }
+    }
+    Some(out)
 }
 
 /// Where the records of the fast path live, for a workspace.
@@ -270,5 +303,24 @@ mod tests {
 
         fs::write(root.join("lib.rs"), "pub fn f() { 1; }\n").unwrap();
         assert!(read_interface(root, &own).is_none(), "the file moved on from the recorded text");
+    }
+
+    /// Review of 6b27649c: a Rust file the unit embeds as text is data, and a body edit of it changes the interface.
+    #[test]
+    fn test_a_rust_file_embedded_as_text_is_compared_whole() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let fingerprint = |lib: &str, data: &str| {
+            fs::write(root.join("lib.rs"), lib).unwrap();
+            fs::write(root.join("data.rs"), data).unwrap();
+            let own: HashMap<String, u64> = [("lib.rs", lib), ("data.rs", data)].iter().map(|(f, t)| (f.to_string(), ridx_format::normalized_source_hash(t.as_bytes()))).collect();
+            read_interface(root, &own).unwrap().fingerprint
+        };
+        let plain = "mod data;\n";
+        assert_eq!(fingerprint(plain, "pub fn d() { 1; }\n"), fingerprint(plain, "pub fn d() { 2; }\n"), "a module's body");
+        let embeds = "mod data;\npub const SRC: &str = include_str!(\"data.rs\");\n";
+        assert_ne!(fingerprint(embeds, "pub fn d() { 1; }\n"), fingerprint(embeds, "pub fn d() { 2; }\n"), "the text embedded");
+        let any = "mod data;\npub const SRC: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/x\"));\n";
+        assert_ne!(fingerprint(any, "pub fn d() { 1; }\n"), fingerprint(any, "pub fn d() { 2; }\n"), "a path no literal names: any file");
     }
 }
