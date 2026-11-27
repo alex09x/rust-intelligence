@@ -148,10 +148,13 @@ impl Records {
         write_atomically(&self.interface_path(unit), &out);
     }
 
-    /// The view recorded for `unit`, if it describes the sidecar at `sidecar` as it is now.
+    /// The view recorded for `unit`, if it describes the sidecar at `sidecar` and the shard it names as they are now:
+    /// a shard whose references were moved by a run that stopped before recording the view is no longer the one the
+    /// view describes (review of bbc2b3aa).
     pub(crate) fn view(&self, unit: &str, sidecar: &Path) -> Option<UnitView> {
         let v: Value = serde_json::from_slice(&fs::read(self.path("views", unit)).ok()?).ok()?;
-        if hex(&v["sidecar"])? != sidecar_digest(sidecar)? {
+        let (digest, shard) = sidecar_state(sidecar)?;
+        if hex(&v["sidecar"])? != digest || v["shard"].as_str()? != shard {
             return None;
         }
         let deps = v["deps"].as_object()?.iter().map(|(d, s)| Some((d.clone(), hex(s)?))).collect::<Option<_>>()?;
@@ -159,9 +162,9 @@ impl Records {
     }
 
     pub(crate) fn store_view(&self, unit: &str, sidecar: &Path, view: &UnitView) {
-        let Some(digest) = sidecar_digest(sidecar) else { return };
+        let Some((digest, shard)) = sidecar_state(sidecar) else { return };
         let deps: serde_json::Map<String, Value> = view.deps.iter().map(|(d, s)| (d.clone(), json!(format!("{s:016x}")))).collect();
-        let v = json!({ "sidecar": format!("{digest:016x}"), "deps": deps, "built": view.built });
+        let v = json!({ "sidecar": format!("{digest:016x}"), "shard": shard, "deps": deps, "built": view.built });
         if let Ok(bytes) = serde_json::to_vec(&v) {
             write_atomically(&self.path("views", unit), &bytes);
         }
@@ -172,8 +175,17 @@ impl Records {
     }
 }
 
-fn sidecar_digest(sidecar: &Path) -> Option<u64> {
-    fs::read(sidecar).ok().map(|b| ridx_format::fnv1a_64(&b))
+/// The digest of the sidecar's text, and the size and modification time of the shard it names: a shard is replaced
+/// whole (written next to it, then renamed) whenever it changes, compiled or moved.
+fn sidecar_state(sidecar: &Path) -> Option<(u64, String)> {
+    let bytes = fs::read(sidecar).ok()?;
+    let object = serde_json::from_slice::<Value>(&bytes).ok().and_then(|v| v["object_path"].as_str().map(PathBuf::from));
+    let shard = match object.map(fs::metadata) {
+        None => "none".to_string(),
+        Some(Ok(m)) => format!("{}:{}", m.len(), m.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_nanos()),
+        Some(Err(_)) => return None,
+    };
+    Some((ridx_format::fnv1a_64(&bytes), shard))
 }
 
 fn hex(v: &Value) -> Option<u64> {
@@ -240,9 +252,21 @@ mod tests {
         fs::write(&sidecar, "{}").unwrap();
         let view = UnitView { deps: [("b-1".to_string(), 7)].into(), built: 3 };
         records.store_view("a-1", &sidecar, &view);
-        assert_eq!(records.view("a-1", &sidecar), Some(view));
+        assert_eq!(records.view("a-1", &sidecar), Some(view.clone()));
         fs::write(&sidecar, "{\"rewritten\":1}").unwrap();
         assert!(records.view("a-1", &sidecar).is_none(), "a sidecar rewritten since (Cargo)");
+
+        // Review of bbc2b3aa: a shard replaced after the view was recorded (references moved by a run that stopped
+        // before recording its view) is not the shard the view describes.
+        let shard = root.join("a-1.ridx");
+        fs::write(&shard, "one").unwrap();
+        fs::write(&sidecar, serde_json::to_vec(&json!({ "object_path": shard.display().to_string() })).unwrap()).unwrap();
+        records.store_view("a-1", &sidecar, &view);
+        assert!(records.view("a-1", &sidecar).is_some());
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(root.join("a-1.ridx.tmp"), "two").unwrap();
+        fs::rename(root.join("a-1.ridx.tmp"), &shard).unwrap();
+        assert!(records.view("a-1", &sidecar).is_none(), "the shard was replaced since");
 
         fs::write(root.join("lib.rs"), "pub fn f() { 1; }\n").unwrap();
         assert!(read_interface(root, &own).is_none(), "the file moved on from the recorded text");
