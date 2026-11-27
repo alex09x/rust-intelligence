@@ -309,6 +309,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         crate_features,
         complete: ok,
     })?;
+    // What the next edit's dependents are compared with on the fast path (prod-code, issue #7).
+    if ok {
+        super::direct::cutoff::record_after_cargo(&variant_out_dir, &work_dir);
+    }
 
     eprintln!("\n{} Indexed workspace in {:.2} s (active variant: {})", "Success:".green().bold(), elapsed.as_secs_f64(), variant_id.cyan().bold());
 

@@ -74,6 +74,12 @@ The server starts `ridx index` in the background after each save and after a sou
 (a checkout, a pull), one run per workspace at a time; changes made during a run are folded into one more
 run. When only workspace sources changed, a fast path calls the driver directly on the changed crates and
 their dependents in topological order, with the arguments Cargo used last time, without starting Cargo.
+A dependent is compiled only when the interface of a crate it depends on changed: the crate's tokens
+without comments, without the bodies of ordinary functions and without positions
+(`direct/interface.rs`). When only positions moved (a body edit, lines added above a definition), the
+references in the dependent's shard are moved to the new positions of their definitions in place
+(`ridx_format::relocate`). A dependent left uncompiled keeps metadata built against the crate's older
+build, so it is compiled before anything that is compiled against both (`direct/cutoff.rs`).
 It falls back to Cargo when the build configuration changed, a new `.rs` file appeared, the previous check
 had failed crates, a changed target is a `proc-macro`, or more than ten packages are affected. The server
 watches the manifest and swaps in the new index when it is published.

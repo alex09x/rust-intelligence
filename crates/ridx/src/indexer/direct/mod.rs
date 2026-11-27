@@ -12,8 +12,11 @@
 
 pub mod args;
 pub mod config;
+pub(crate) mod cutoff;
 pub mod graph;
+pub(crate) mod interface;
 pub(crate) mod units;
+pub(crate) mod views;
 
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
@@ -51,48 +54,7 @@ pub fn try_direct_crate_indexing(
         return None;
     }
 
-    let mut dep_shards = Vec::new();
-    let mut sidecars: Vec<(WorkspaceCrateEntry, Option<String>)> = Vec::new();
-
-    let entries = fs::read_dir(deps_dir).ok()?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) != Some("json") {
-            continue;
-        }
-
-        let content = fs::read(&path).ok()?;
-        let val: serde_json::Value = serde_json::from_slice(&content).ok()?;
-
-        let is_dep = val.get("is_dependency").and_then(|v| v.as_bool()).unwrap_or(false);
-        if is_dep {
-            if let Ok(info) = serde_json::from_value::<ridx_format::DependencyShardInfo>(val) {
-                dep_shards.push(info);
-            }
-        } else {
-            let crate_name = val.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let args: Vec<String> =
-                val.get("compiler_args").and_then(|v| v.as_array()).map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect()).unwrap_or_default();
-
-            if args.is_empty() {
-                eprintln!("[ridx-direct] fallback to Cargo: compiler args missing for crate '{crate_name}'");
-                return None;
-            }
-
-            let file_hashes: HashMap<String, u64> =
-                val.get("file_hashes").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_u64().map(|h| (k.clone(), h))).collect()).unwrap_or_default();
-            let file_hashes = units::own_file_hashes(file_hashes, val.get("own_sources"), work_dir);
-
-            let env_vars: HashMap<String, String> =
-                val.get("env").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect()).unwrap_or_default();
-
-            let object = val.get("object_path").and_then(|v| v.as_str()).map(str::to_string);
-            let target_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or(&crate_name).to_string();
-            sidecars.push(((target_id, crate_name, args, env_vars, file_hashes, path), object));
-        }
-    }
-    // On BTCR an edit of one file compiled 53 sidecars, each of the ~20 units two or three times over.
-    let (workspace_crates, aliases) = units::group_by_unit(sidecars);
+    let (dep_shards, workspace_crates, aliases) = units::read_units(deps_dir, work_dir)?;
 
     if workspace_crates.is_empty() {
         eprintln!("[ridx-direct] fallback to Cargo: no workspace crates found in .deps");
@@ -170,7 +132,7 @@ pub fn try_direct_crate_indexing(
 
     // Expand with reverse dependencies
     let mut affected_target_ids = initial_changed.clone();
-    let mut queue: VecDeque<String> = initial_changed.into_iter().collect();
+    let mut queue: VecDeque<String> = initial_changed.iter().cloned().collect();
     while let Some(tid) = queue.pop_front() {
         if let Some(rdeps) = rdeps_of.get(&tid) {
             for rdep in rdeps {
@@ -213,23 +175,6 @@ pub fn try_direct_crate_indexing(
         }
     };
 
-    let mut recompiled_crates = HashSet::new();
-    for tid in &affected_target_ids {
-        if let Some((name, args, env, ..)) = crate_map.get(tid) {
-            let is_lib = !args.contains(&"--test".to_string());
-            if is_lib {
-                recompiled_crates.insert(tid.clone());
-                recompiled_crates.insert(name.clone());
-                let norm = name.replace('-', "_");
-                recompiled_crates.insert(norm);
-                if let Some(pkg) = env.get("CARGO_PKG_NAME") {
-                    recompiled_crates.insert(pkg.clone());
-                    recompiled_crates.insert(pkg.replace('-', "_"));
-                }
-            }
-        }
-    }
-
     // Prepare the private directory for direct build artifacts, and an incremental cache for a unit that has none of its
     // own under `target`
     let direct_dir = work_dir.join("target/ridx-direct");
@@ -241,6 +186,17 @@ pub fn try_direct_crate_indexing(
     fs::create_dir_all(&direct_deps).ok()?;
     fs::create_dir_all(&direct_incr).ok()?;
 
+    // The libraries whose metadata is here, compiled by an earlier run (their sidecar records this `--out-dir`) or by
+    // this one: a unit compiled now takes them from here. A dependent left uncompiled still names Cargo's (cutoff).
+    let direct_libs: std::sync::Mutex<HashSet<String>> = std::sync::Mutex::new(
+        crate_map
+            .iter()
+            .filter(|(_, (_, args, ..))| is_lib(args) && args::recorded_out_dir(args) == Some(direct_deps.as_path()))
+            .flat_map(|(tid, (name, _, env, ..))| lib_names(tid, name, env))
+            .collect(),
+    );
+    let compiled = std::sync::atomic::AtomicUsize::new(0);
+
     let direct_lock_hash = super::feature_graph::compute_cargo_lock_hash(work_dir);
     let target_kinds_file = variant_out_dir.join("target_kinds.json");
     // Execute direct indexing on changed targets, each once its dependencies are built, several at once.
@@ -251,6 +207,7 @@ pub fn try_direct_crate_indexing(
         // empty cache of the direct path's own, the first edit after a Cargo index recompiled every unit from nothing
         // (prod-code, issue #7).
         let incr = recorded_incremental_dir(args).filter(|dir| dir.starts_with(work_dir.join("target"))).unwrap_or(&direct_incr);
+        let recompiled_crates = direct_libs.lock().unwrap().clone();
         let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, incr, &recompiled_crates);
         if sanitized_args.is_empty() {
             eprintln!("[ridx-direct] fallback to Cargo: empty sanitized args for '{crate_name}'");
@@ -296,9 +253,14 @@ pub fn try_direct_crate_indexing(
             return UnitOutcome::Failed;
         };
         units::refresh_aliases(sidecar, aliases.get(target_id).map_or(&[], Vec::as_slice));
+        compiled.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if outcome == UnitOutcome::Built && is_lib(args) {
+            direct_libs.lock().unwrap().extend(lib_names(target_id, crate_name, env_vars));
+        }
         outcome
     };
-    let left_out = graph::run_in_parallel(&sorted_target_ids, &dependencies_of, graph::direct_jobs(), compile)?;
+    let cutoff = cutoff::Cutoff::new(&crate_map, &initial_changed, &dependencies_of, &rdeps_of, views::Records::new(&direct_dir), work_dir);
+    let left_out = graph::run_in_parallel(&sorted_target_ids, &dependencies_of, graph::direct_jobs(), |t| cutoff.visit(t, &compile))?;
     if !left_out.is_empty() {
         let mut left_out: Vec<String> = left_out.into_iter().collect();
         left_out.sort();
@@ -344,9 +306,24 @@ pub fn try_direct_crate_indexing(
     publish_manifest(params).ok()?;
 
     let dur = start.elapsed().as_secs_f64() * 1000.0;
-    eprintln!("  {} Direct fast-path indexing finished in {:.1} ms ({} changed crates)", "RIDX Success:".green().bold(), dur, sorted_target_ids.len());
+    let compiled = compiled.into_inner();
+    eprintln!("  {} Direct fast-path indexing finished in {:.1} ms ({compiled} of {} affected units compiled)", "RIDX Success:".green().bold(), dur, sorted_target_ids.len());
 
     Some(PublishedVariant { base_out_dir: base_out_dir.to_path_buf(), variant_out_dir: variant_out_dir.to_path_buf(), variant_id: variant_id.to_string() })
+}
+
+/// Whether the unit compiled with `args` is a library (or another target), not a test harness.
+fn is_lib(args: &[String]) -> bool {
+    !args.iter().any(|a| a == "--test")
+}
+
+/// The names a library is passed under in `--extern` (crate and package name, with `-` or `_`), and its unit id.
+fn lib_names(target_id: &str, name: &str, env: &HashMap<String, String>) -> Vec<String> {
+    let mut names = vec![target_id.to_string(), name.to_string(), name.replace('-', "_")];
+    if let Some(pkg) = env.get("CARGO_PKG_NAME") {
+        names.extend([pkg.clone(), pkg.replace('-', "_")]);
+    }
+    names
 }
 
 /// The variant the published manifest names (`variants/<id>`), the index a server reads, and whether its check built
