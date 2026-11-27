@@ -126,10 +126,20 @@ impl Scan<'_> {
 
     /// Whether the attribute in the `[` at `open` may be a procedural macro: not built in, nor a tool's.
     fn is_macro_like(&self, open: usize) -> bool {
-        let inner: Vec<&str> = (open + 1..self.close[open]).take(3).map(|k| self.text(k)).collect();
+        let inner: Vec<&str> = (open + 1..self.close[open]).map(|k| self.text(k)).collect();
         // `#[unsafe(no_mangle)]` names the attribute inside.
         let name = if inner.first() == Some(&"unsafe") { inner.get(2) } else { inner.first() };
-        !name.is_some_and(|n| PLAIN_ATTRIBUTES.contains(n) || *n == "cfg")
+        match name {
+            // A derive is a procedural macro but for the standard library's (review of 92d9b7b6: `#[derive(Make)]` on
+            // a type in a body may implement a trait for another).
+            Some(&"derive") => {
+                // Each derived path by its last segment (`core::hash::Hash`).
+                let args = inner.get(2..inner.len().saturating_sub(1)).unwrap_or_default();
+                !args.split(|t| *t == ",").filter(|path| !path.is_empty()).all(|path| path.last().is_some_and(|n| STD_DERIVES.contains(n)))
+            }
+            Some(n) => !(PLAIN_ATTRIBUTES.contains(n) || *n == "cfg"),
+            None => true,
+        }
     }
 
     /// The outer attributes from `i` and the item they are on.
@@ -291,6 +301,9 @@ impl Scan<'_> {
         FileInterface { hash: hash.finish(), positions }
     }
 }
+
+/// The standard library's derives, each implementing its own trait for the type alone.
+const STD_DERIVES: &[&str] = &["Clone", "Copy", "Debug", "Default", "Eq", "Hash", "Ord", "PartialEq", "PartialOrd"];
 
 /// The standard library's macros callable in a body, none of which expands to an item.
 const STD_MACROS: &[&str] = &[

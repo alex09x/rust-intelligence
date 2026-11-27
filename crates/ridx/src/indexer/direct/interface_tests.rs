@@ -22,6 +22,10 @@ fn test_a_body_or_a_comment_is_no_change_of_the_interface() {
     assert!(same(BASE, &BASE.replace("a + b", "/// in a body\n    a + b")), "a doc comment in a body left out");
     assert!(same(BASE, &format!("// header\n\n{BASE}// trailer\n//// not a doc\n/* block */\n")), "comments and blank lines");
     assert!(same("pub fn f() { #[allow(unused)] let x = 1; }", "pub fn f() { #[allow(unused)] let x = 2; }"), "a built-in attribute in a body");
+    assert!(
+        same("pub fn f() { #[derive(Clone, Debug, core::hash::Hash)] struct L(u8); }", "pub fn f() { #[derive(Clone, Debug, core::hash::Hash)] struct L(u16); }"),
+        "standard derives"
+    );
     // Review of 6b27649c: `line!()` kept moves with the text; in a body left out it is no interface.
     assert!(!same("pub const N: u32 = line!();", "\npub const N: u32 = line!();"), "a line above `line!()`");
     assert!(same("pub fn f() -> u32 { line!() }", "\npub fn f() -> u32 { line!() }"));
@@ -60,6 +64,9 @@ fn test_bodies_a_dependent_can_see_into_stay() {
         ("pub fn f() { add!(u8); }", "pub fn f() { add!(i8); }"),
         // Review of 6b27649c: an attribute macro inside a body.
         ("pub fn f() { #[make_impl(u8)] fn local() {} }", "pub fn f() { #[make_impl(u16)] fn local() {} }"),
+        // Review of 92d9b7b6: a derive other than the standard library's.
+        ("pub fn f() { #[derive(Make)] struct Local(u8); }", "pub fn f() { #[derive(Make)] struct Local(u16); }"),
+        ("pub fn f() { #[derive(Clone, serde::Serialize)] struct Local(u8); }", "pub fn f() { #[derive(Clone, serde::Serialize)] struct Local(u16); }"),
         ("pub fn f() { other::add!(u8); }", "pub fn f() { other::add!(i8); }"),
         ("macro_rules! m { () => { fn f() { 1 } } }", "macro_rules! m { () => { fn f() { 2 } } }"),
         ("m! { fn f() { 1 } }", "m! { fn f() { 2 } }"),
