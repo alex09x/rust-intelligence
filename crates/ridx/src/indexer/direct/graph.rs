@@ -126,6 +126,8 @@ pub(crate) enum UnitOutcome {
     /// The compiler stopped on the unit's errors after the driver indexed what resolved: the unit has its index, but
     /// no metadata for its dependents to compile against.
     BuiltWithErrors,
+    /// Not compiled: nothing it depends on changed what it sees (see `cutoff`). Its dependents go on.
+    Skipped,
     /// Not compiled, and not indexed: the run goes to Cargo.
     Failed,
 }
@@ -178,7 +180,7 @@ pub(crate) fn run_in_parallel(
         let Ok((t, outcome)) = rx.recv() else { break };
         running -= 1;
         match outcome {
-            UnitOutcome::Built => {
+            UnitOutcome::Built | UnitOutcome::Skipped => {
                 done.insert(t);
             }
             UnitOutcome::BuiltWithErrors => {

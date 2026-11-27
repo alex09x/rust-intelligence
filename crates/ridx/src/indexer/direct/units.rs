@@ -17,6 +17,45 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// The dependency shards and the workspace units the sidecars of `deps_dir` describe (see [`group_by_unit`]); `None`
+/// when one cannot be read, or a workspace sidecar records no compiler arguments.
+#[allow(clippy::type_complexity)]
+pub(super) fn read_units(deps_dir: &Path, work_dir: &Path) -> Option<(Vec<ridx_format::DependencyShardInfo>, Vec<WorkspaceCrateEntry>, HashMap<String, Vec<PathBuf>>)> {
+    let mut dep_shards = Vec::new();
+    let mut sidecars: Vec<(WorkspaceCrateEntry, Option<String>)> = Vec::new();
+    for entry in fs::read_dir(deps_dir).ok()?.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) != Some("json") {
+            continue;
+        }
+        let val: serde_json::Value = serde_json::from_slice(&fs::read(&path).ok()?).ok()?;
+        if val.get("is_dependency").and_then(|v| v.as_bool()).unwrap_or(false) {
+            if let Ok(info) = serde_json::from_value::<ridx_format::DependencyShardInfo>(val) {
+                dep_shards.push(info);
+            }
+            continue;
+        }
+        let crate_name = val.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let args: Vec<String> =
+            val.get("compiler_args").and_then(|v| v.as_array()).map(|arr| arr.iter().filter_map(|x| x.as_str().map(str::to_string)).collect()).unwrap_or_default();
+        if args.is_empty() {
+            eprintln!("[ridx-direct] fallback to Cargo: compiler args missing for crate '{crate_name}'");
+            return None;
+        }
+        let file_hashes: HashMap<String, u64> =
+            val.get("file_hashes").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_u64().map(|h| (k.clone(), h))).collect()).unwrap_or_default();
+        let file_hashes = own_file_hashes(file_hashes, val.get("own_sources"), work_dir);
+        let env_vars: HashMap<String, String> =
+            val.get("env").and_then(|v| v.as_object()).map(|obj| obj.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect()).unwrap_or_default();
+        let object = val.get("object_path").and_then(|v| v.as_str()).map(str::to_string);
+        let target_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or(&crate_name).to_string();
+        sidecars.push(((target_id, crate_name, args, env_vars, file_hashes, path), object));
+    }
+    // On BTCR an edit of one file compiled 53 sidecars, each of the ~20 units two or three times over.
+    let (units, aliases) = group_by_unit(sidecars);
+    Some((dep_shards, units, aliases))
+}
+
 /// One entry per unit, and the other sidecars naming it, by the unit's target id. The unit is described by the sidecar
 /// named after its object (`name-<extra>.json` for `name-<extra>.ridx`), the one the driver always rewrites; the bare
 /// `name.json` is written only once and goes stale after a direct rebuild. Entries without an object stay apart.
@@ -63,6 +102,13 @@ pub(super) fn source_hashes(bytes: &[u8]) -> (u64, u64) {
 /// the text it read (`normalized_source_hash`), older sidecars the raw one.
 pub(super) fn hash_matches(now: (u64, u64), recorded: u64) -> bool {
     now.0 == recorded || now.1 == recorded
+}
+
+/// The hashes of the unit's own sources as the sidecar at `sidecar` records them now (see [`own_file_hashes`]).
+pub(super) fn recorded_own_hashes(sidecar: &Path, work_dir: &Path) -> Option<HashMap<String, u64>> {
+    let val: serde_json::Value = serde_json::from_slice(&fs::read(sidecar).ok()?).ok()?;
+    let hashes = val.get("file_hashes")?.as_object()?.iter().filter_map(|(k, v)| v.as_u64().map(|h| (k.clone(), h))).collect();
+    Some(own_file_hashes(hashes, val.get("own_sources"), work_dir))
 }
 
 /// The recorded hashes of the unit's own sources (`own_sources`, canonical paths): `file_hashes` also holds the files

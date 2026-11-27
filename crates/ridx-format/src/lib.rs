@@ -20,6 +20,7 @@ pub mod driver_hash;
 pub mod format;
 pub(crate) mod paths;
 pub mod reader;
+pub mod relocate;
 pub mod ty_arena;
 pub mod workspace;
 pub mod writer;

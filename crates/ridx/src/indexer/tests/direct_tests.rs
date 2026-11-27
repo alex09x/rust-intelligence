@@ -109,6 +109,84 @@ fn test_direct_reindex_cross_crate_line_shift() {
     assert_eq!(cross_def1.start_line, 11, "cross def after shift at line 11");
 }
 
+/// prod-code, issue #7: every dependent of an edited crate was compiled again, though only a body changed. An edit that
+/// keeps what the dependents see (a body, lines above a definition) compiles the crate alone and moves the dependents'
+/// references; the next compile of a dependent first compiles the one whose metadata names the crate's older build.
+#[test]
+fn test_dependents_of_a_body_edit_are_not_compiled() {
+    let _lock = lock_indexer_test();
+    if find_driver_binary().is_none() {
+        return;
+    }
+    let test_dir = new_test_dir("ridx_direct_cutoff_test");
+    let root = test_dir.0.clone();
+    fs::write(root.join("Cargo.toml"), "[workspace]\nmembers = [\"crate_a\", \"crate_b\", \"crate_c\"]\nresolver = \"2\"\n").unwrap();
+    let krate = |name: &str, deps: &str, lib: &str| {
+        fs::create_dir_all(root.join(name).join("src")).unwrap();
+        fs::write(root.join(name).join("Cargo.toml"), format!("[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n{deps}")).unwrap();
+        fs::write(root.join(name).join("src/lib.rs"), lib).unwrap();
+    };
+    krate("crate_a", "", "pub fn target_func() -> i32 {\n    42\n}\n");
+    krate("crate_b", "crate_a = { path = \"../crate_a\" }\n", "pub fn caller() -> i32 {\n    crate_a::target_func()\n}\n");
+    krate("crate_c", "crate_a = { path = \"../crate_a\" }\ncrate_b = { path = \"../crate_b\" }\n", "pub fn top() -> i32 {\n    crate_b::caller() + crate_a::target_func()\n}\n");
+    let _ = std::process::Command::new("cargo").arg("generate-lockfile").current_dir(&root).status();
+    let a_lib = root.join("crate_a/src/lib.rs");
+    let (b_lib, c_lib) = (root.join("crate_b/src/lib.rs").display().to_string(), root.join("crate_c/src/lib.rs").display().to_string());
+
+    let index = |base: Option<std::path::PathBuf>| try_run_indexing(IndexOptions { path: root.clone(), out_dir_opt: base, ..Default::default() }).expect("index");
+    let pv = index(None);
+    // The sidecars of a crate's units, as written: a compiled unit's are rewritten.
+    let sidecars = |name: &str| -> Vec<Vec<u8>> {
+        let mut out: Vec<(std::path::PathBuf, Vec<u8>)> = fs::read_dir(pv.variant_out_dir.join(".deps"))
+            .unwrap()
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().is_some_and(|x| x == "json"))
+            .filter_map(|p| fs::read(&p).ok().map(|b| (p, b)))
+            .filter(|(_, b)| serde_json::from_slice::<serde_json::Value>(b).is_ok_and(|v| v["name"] == name && v["is_dependency"] != true))
+            .collect();
+        out.sort();
+        out.into_iter().map(|(_, b)| b).collect()
+    };
+
+    // The first edit after a Cargo index too: the dependents' sidecars record the text of crate_a they read.
+    let (b0, c0) = (sidecars("crate_b"), sidecars("crate_c"));
+    fs::write(&a_lib, "pub fn target_func() -> i32 {\n    41 + 1\n}\n").unwrap();
+    index(Some(pv.base_out_dir.clone()));
+    assert_eq!(sidecars("crate_b"), b0, "crate_b not compiled after a body edit");
+    assert_eq!(sidecars("crate_c"), c0, "crate_c not compiled after a body edit");
+
+    fs::write(&a_lib, "// one\n// two\npub fn target_func() -> i32 {\n    let x = 42;\n    x\n}\n").unwrap();
+    index(Some(pv.base_out_dir.clone()));
+    assert_eq!(sidecars("crate_b"), b0, "crate_b not compiled");
+    assert_eq!(sidecars("crate_c"), c0, "crate_c not compiled");
+    let ws = WorkspaceIndex::open(&pv.variant_out_dir).expect("open");
+    assert_eq!(ws.find_definition_at(&b_lib, 2, 14).expect("definition from crate_b").start_line, 3, "to the definition's new line");
+    let refs = ws.find_references_at(a_lib.to_str().unwrap(), 3, 8).expect("references of target_func");
+    let mut referrers: Vec<(String, u32)> = refs.references.iter().map(|r| (r.crate_name.to_string(), r.span.start_line())).collect();
+    referrers.sort();
+    assert!(referrers.contains(&("crate_b".into(), 2)) && referrers.contains(&("crate_c".into(), 2)), "the moved references are found: {referrers:?}");
+    drop(ws);
+
+    // crate_c compiled against crate_b compiled anew: the crate_b it was compiled against named crate_a's older build.
+    fs::write(&c_lib, "pub fn top() -> i32 {\n    crate_b::caller() * crate_a::target_func()\n}\n").unwrap();
+    index(Some(pv.base_out_dir.clone()));
+    assert_ne!(sidecars("crate_b"), b0, "crate_b compiled before crate_c");
+    let ws = WorkspaceIndex::open(&pv.variant_out_dir).expect("open");
+    assert_eq!(ws.find_definition_at(&c_lib, 2, 14).expect("crate_b::caller from crate_c").start_line, 1);
+    assert_eq!(ws.find_definition_at(&c_lib, 2, 34).expect("crate_a::target_func from crate_c").start_line, 3);
+    drop(ws);
+
+    // An item added changes what the dependents see: they are compiled.
+    let (b1, c1) = (sidecars("crate_b"), sidecars("crate_c"));
+    fs::write(&a_lib, "// one\n// two\npub fn extra() {}\npub fn target_func() -> i32 {\n    42\n}\n").unwrap();
+    index(Some(pv.base_out_dir.clone()));
+    assert_ne!(sidecars("crate_b"), b1);
+    assert_ne!(sidecars("crate_c"), c1);
+    let ws = WorkspaceIndex::open(&pv.variant_out_dir).expect("open");
+    assert_eq!(ws.find_definition_at(&b_lib, 2, 14).expect("definition from crate_b").start_line, 4);
+}
+
 #[test]
 fn test_direct_fallback_on_proc_macro() {
     let _lock = lock_indexer_test();

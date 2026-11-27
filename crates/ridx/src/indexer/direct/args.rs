@@ -135,6 +135,11 @@ pub fn recorded_incremental_dir(args: &[String]) -> Option<&Path> {
         .map(Path::new)
 }
 
+/// The output directory the unit was last compiled into: `target/ridx-direct/deps` after a direct compile.
+pub fn recorded_out_dir(args: &[String]) -> Option<&Path> {
+    args.iter().enumerate().filter_map(|(i, arg)| if arg == "--out-dir" { args.get(i + 1).map(String::as_str) } else { arg.strip_prefix("--out-dir=") }).next_back().map(Path::new)
+}
+
 fn rewrite_extern_arg(extern_spec: &str, direct_deps_dir: &Path, recompiled_crates: &HashSet<String>) -> String {
     if let Some((prefix, cpath)) = extern_spec.split_once('=') {
         let cname = prefix.rsplit(':').next().unwrap_or(prefix);
