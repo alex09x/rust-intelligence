@@ -1,6 +1,6 @@
 [package]
 name = "ridx-test-support"
-version = "0.3.15"
+version = "0.3.16"
 edition = "2021"
 description = "Test harness, DSL, and fixture helpers for Rust Intelligence (ridx)"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-ridx-format = { version = "0.3.15", path = "../ridx-format" }
+ridx-format = { version = "0.3.16", path = "../ridx-format" }
 serde_json = "1.0"
 tempfile = "3"
 
