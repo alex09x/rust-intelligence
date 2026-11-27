@@ -134,12 +134,42 @@ fn test_dependents_of_an_edit_that_keeps_the_interface_are_not_compiled() {
     assert_eq!(compiled, ["a", "b", "c"]);
 }
 
+/// Review of 2a030462: a target file named as no file on disk (`--remap-path-prefix`) was taken for one not moved.
+#[test]
+fn test_a_target_file_no_path_resolves_compiles_the_dependent() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut ws = Ws::new(dir.path());
+    let mut shard = ridx_format::IndexWriter::new("b", "0.1.0");
+    for (file, line) in [("/virtual-source/lib.rs", 1), ("/rustc/0000/library/core/src/option.rs", 572)] {
+        shard.add_reference(ridx_format::RawReference {
+            file: "b/lib.rs".into(),
+            start_line: 2,
+            start_col: 8,
+            end_line: 2,
+            end_col: 9,
+            target_def_id: None,
+            target_path: "a::f".into(),
+            target_file: Some(file.into()),
+            target_unit: None,
+            target_line: line,
+            target_col: 8,
+            kind: ridx_format::DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+    }
+    shard.write_to(&mut fs::File::create(ws.root.join("b.ridx")).unwrap()).unwrap();
+    ws.run(&["a"]);
+    ws.edit("a", "\npub fn f() -> u32 {\n    1\n}\n");
+    assert_eq!(ws.run(&["a"]).0, ["a", "b"], "`lib.rs` may be `a`'s moved file; `option.rs` is no file of `a`");
+}
+
 #[test]
 fn test_a_reference_that_cannot_be_placed_compiles_the_dependent() {
     let dir = tempfile::tempdir().unwrap();
     let mut ws = Ws::new(dir.path());
-    ws.run(&["a"]);
-    // `b`'s reference names a position no interface token of `a` starts at.
+    // `b`'s reference names a position no interface token of `a` starts at. Its view is recorded after (review of
+    // 2a030462: recorded before, the shard written since made it no view, and `b` was compiled for that).
     let mut shard = ridx_format::IndexWriter::new("b", "0.1.0");
     shard.add_reference(ridx_format::RawReference {
         file: "b/lib.rs".into(),
@@ -158,6 +188,7 @@ fn test_a_reference_that_cannot_be_placed_compiles_the_dependent() {
         is_macro_expansion: false,
     });
     shard.write_to(&mut fs::File::create(ws.root.join("b.ridx")).unwrap()).unwrap();
+    ws.run(&["a"]);
     ws.edit("a", "\npub fn f() -> u32 {\n    1\n}\n");
     let (compiled, outcomes) = ws.run(&["a"]);
     assert_eq!(compiled, ["a", "b"], "`b` compiled");

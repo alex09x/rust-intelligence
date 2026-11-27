@@ -201,6 +201,9 @@ impl<'a> Cutoff<'a> {
             let candidates = resolved.entry(target_file.to_string()).or_insert_with(|| candidate_files(target_file, self.work_dir, manifest_dir.as_deref()));
             let hits: Vec<&PathBuf> = candidates.iter().filter(|c| files.contains_key(*c)).collect();
             match hits.as_slice() {
+                // A name no file stands for (rewritten by `--remap-path-prefix`, review of 2a030462) may be a moved
+                // file's when it ends as one does.
+                [] if candidates.is_empty() && Path::new(target_file).file_name().is_some_and(|n| files.keys().any(|f| f.file_name() == Some(n))) => Placement::Unknown,
                 [] => Placement::Same,
                 [file] if candidates.len() == 1 => files[*file].get(&(line, col)).map_or(Placement::Unknown, |&(l, c)| Placement::Moved(l, c)),
                 // Two files the name may stand for, one of them moved: not told apart.

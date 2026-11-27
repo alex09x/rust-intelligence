@@ -19,8 +19,9 @@ const BASE: &str = "/// Adds.\npub fn add(a: u32, b: u32) -> u32 {\n    a + b\n}
 #[test]
 fn test_a_body_or_a_comment_is_no_change_of_the_interface() {
     assert!(same(BASE, &BASE.replace("a + b", "let s = a + b;\n    // sum\n    s")), "a body, lines added to it");
-    assert!(same(BASE, &BASE.replace("/// Adds.", "/// Adds two numbers.\n/// Wrapping.")), "a doc comment");
-    assert!(same(BASE, &format!("// header\n\n{BASE}// trailer\n")), "comments and blank lines");
+    assert!(same(BASE, &BASE.replace("a + b", "/// in a body\n    a + b")), "a doc comment in a body left out");
+    assert!(same(BASE, &format!("// header\n\n{BASE}// trailer\n//// not a doc\n/* block */\n")), "comments and blank lines");
+    assert!(same(BASE, &BASE.replace("a + b", "println!(\"{a}\");\n    assert!(a > 0);\n    a + b")), "the standard library's macros");
     assert!(same("trait T { fn f(&self) -> u8 { 1 } }", "trait T { fn f(&self) -> u8 { 2 } }"), "a trait's default body");
 }
 
@@ -31,7 +32,11 @@ fn test_what_a_dependent_sees_changes_the_interface() {
     assert!(!same(BASE, &BASE.replace("pub fn add", "fn add")), "a visibility");
     assert!(!same(BASE, &format!("{BASE}pub fn more() {{}}\n")), "an item added");
     assert!(!same("pub const N: usize = 3;", "pub const N: usize = 4;"), "a constant's value");
-    assert!(!same("#[doc(hidden)] pub fn f() {}", "pub fn f() {}"), "an attribute other than a doc comment");
+    assert!(!same("#[doc(hidden)] pub fn f() {}", "pub fn f() {}"), "an attribute");
+    // Review of 2a030462: what a macro is given.
+    assert!(!same(BASE, &BASE.replace("/// Adds.", "/// Adds two numbers.")), "a doc comment is an attribute a derive or a macro reads");
+    assert!(!same("make! { /// One.\n pub struct S; }", "make! { /// Two.\n pub struct S; }"), "a doc comment in a macro call");
+    assert!(!same("make!(>>);", "make!(> >);"), "joint punctuation");
 }
 
 #[test]
@@ -46,6 +51,10 @@ fn test_bodies_a_dependent_can_see_into_stay() {
         ("pub fn n() { macro_rules! m { () => {} } }", "pub fn n() { macro_rules! m { (x) => {} } }"),
         ("#[tracing::instrument] pub fn n() -> u8 { 3 }", "#[tracing::instrument] pub fn n() -> u8 { 4 }"),
         ("#[my_attr] impl S { pub fn n(&self) -> u8 { 3 } }", "#[my_attr] impl S { pub fn n(&self) -> u8 { 4 } }"),
+        // Review of 2a030462: not cut at the `,` of its generics.
+        ("#[my_attr] impl<T, U> S<T, U> { pub fn n(&self) -> u8 { 3 } }", "#[my_attr] impl<T, U> S<T, U> { pub fn n(&self) -> u8 { 4 } }"),
+        ("pub fn f() { add!(u8); }", "pub fn f() { add!(i8); }"),
+        ("pub fn f() { other::add!(u8); }", "pub fn f() { other::add!(i8); }"),
         ("macro_rules! m { () => { fn f() { 1 } } }", "macro_rules! m { () => { fn f() { 2 } } }"),
         ("m! { fn f() { 1 } }", "m! { fn f() { 2 } }"),
         ("pub fn n<const N: usize>() -> [u8; { N }] where [u8; { N }]: Sized { [0; N] }", "pub fn n<const N: usize>() -> [u16; { N }] where [u8; { N }]: Sized { [0; N] }"),

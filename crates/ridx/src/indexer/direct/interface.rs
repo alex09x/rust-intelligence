@@ -8,15 +8,15 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! What a crate shows the crates depending on it, read from its text: every token but the comments and the bodies of
-//! ordinary functions, without positions. Two texts with the same interface give a dependent the same index, but for
+//! What a crate shows the crates depending on it, read from its text: every token but the comments (doc comments are
+//! attributes, and stay) and the bodies of ordinary functions, without positions. Two texts with the same interface give a dependent the same index, but for
 //! the positions of the definitions it references, and the tokens kept in both, in the same order, are where those
 //! definitions start (a definition is recorded at its name, or at the start of an item without one).
 //!
 //! A body stays in the interface where a dependent can see into it: a `const fn` (evaluated in a dependent's types),
 //! an `async fn` or one returning `impl Trait` (the hidden type and its auto traits leak), a body holding an `impl` or
-//! a `macro_rules!`, and every item under an attribute that may be a procedural macro, which may make anything of a
-//! body. A macro call is kept whole, its input being anything. An item under `#[cfg(test)]` is no part of the library
+//! a call of a macro other than the standard library's (which may expand to one), and every item under an attribute
+//! that may be a procedural macro, which may make anything of a body. A macro call is kept whole, its input being anything. An item under `#[cfg(test)]` is no part of the library
 //! its dependents compile against, and is left out.
 
 use ridx_syntax::{lex, Token, TokenKind, JOINT_NEXT};
@@ -62,7 +62,9 @@ const PLAIN_ATTRIBUTES: &[&str] = &[
 /// The interface of the Rust source `src`, or `None` when its delimiters do not balance (a text being typed): no part
 /// of it can then be told from the rest.
 pub(crate) fn file_interface(src: &str) -> Option<FileInterface> {
-    let tokens: Vec<Token> = lex(src).into_iter().filter(|t| !t.is_trivia()).collect();
+    // A doc comment is an attribute (`#[doc = ".."]`) a macro or a derive is given: kept, but in a body left out
+    // (review of 2a030462).
+    let tokens: Vec<Token> = lex(src).into_iter().filter(|t| !t.is_trivia() || is_doc_comment(&src[t.start as usize..t.end as usize])).collect();
     let close = matching_delimiters(&tokens)?;
     let mut scan = Scan { src, t: &tokens, close: &close, kept: Vec::with_capacity(tokens.len()) };
     scan.walk(0, tokens.len());
@@ -139,11 +141,14 @@ impl Scan<'_> {
             macro_like |= !name.is_some_and(|n| PLAIN_ATTRIBUTES.contains(n) || *n == "cfg");
             j = close + 1;
         }
-        let item_end = self.item_end(j, end);
         if cfg_test {
-            return item_end;
+            // Left out: an end found early leaves the rest of the item in, never the item after it out.
+            return self.item_end(j, end, false);
         }
         if macro_like {
+            // Kept whole: an end found late keeps more, never less, of what the macro is given (review of 2a030462:
+            // `impl<T, U>` ended at its first `,`, and the bodies inside were left out).
+            let item_end = self.item_end(j, end, true);
             self.keep(i, item_end);
             return item_end;
         }
@@ -151,15 +156,27 @@ impl Scan<'_> {
         j
     }
 
-    /// Where the item, field or variant starting at `j` ends: its block or its `;`, `,` or the group holding it closing.
-    /// It may end early (a `,` of generic arguments), never past its own end: what follows is read as usual.
-    fn item_end(&self, mut k: usize, end: usize) -> usize {
+    /// Where the item, field or variant starting at `k` ends: its block or its `;`, `,` or the group holding it closing.
+    /// Without `generics` it may end early (a `,` of generic arguments); with them, a `,` inside `<..>` is no end, and
+    /// it may end late (a `<` that is a comparison). Never past the group holding it.
+    fn item_end(&self, mut k: usize, end: usize, generics: bool) -> usize {
+        let mut angle = 0i32;
         while k < end {
             match self.kind(k) {
                 Some(TokenKind::LParen | TokenKind::LBracket) => k = self.close[k] + 1,
                 Some(TokenKind::LBrace) => return self.close[k] + 1,
-                Some(TokenKind::Semi | TokenKind::Comma) => return k + 1,
+                Some(TokenKind::Semi) => return k + 1,
+                Some(TokenKind::Comma) if !generics || angle <= 0 => return k + 1,
                 Some(TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace) => return k,
+                Some(TokenKind::Lt) => {
+                    angle += 1;
+                    k += 1;
+                }
+                // Not the `>` of `->` or `=>`.
+                Some(TokenKind::Gt) if !(k > 0 && matches!(self.kind(k - 1), Some(TokenKind::Minus | TokenKind::Eq)) && self.t[k - 1].flags & JOINT_NEXT != 0) => {
+                    angle -= 1;
+                    k += 1;
+                }
                 _ => k += 1,
             }
         }
@@ -213,7 +230,15 @@ impl Scan<'_> {
             return to;
         };
         let close = self.close[open];
-        sees_body |= (open + 1..close).any(|k| self.kind(k) == Some(TokenKind::Impl) || (self.kind(k) == Some(TokenKind::Ident) && self.text(k) == "macro_rules"));
+        // A macro called in the body may expand to an item seen outside it (`add!(u8)` to `impl T for u8 {}`, review
+        // of 2a030462), but for the standard library's, which never do.
+        sees_body |= (open + 1..close).any(|k| {
+            self.kind(k) == Some(TokenKind::Impl)
+                || (self.kind(k) == Some(TokenKind::Ident)
+                    && self.kind(k + 1) == Some(TokenKind::Bang)
+                    && (is_open(self.kind(k + 2)) || self.kind(k + 2) == Some(TokenKind::Ident))
+                    && !STD_MACROS.contains(&self.text(k)))
+        });
         self.keep(i, open);
         if sees_body {
             self.walk(open, close + 1);
@@ -230,7 +255,8 @@ impl Scan<'_> {
         for k in &self.kept {
             let i = match *k {
                 Kept::Token(i) => {
-                    hash.write(&[self.t[i].kind as u8]);
+                    // Whether a punctuation is joint to the next (`>>`, not `> >`): a procedural macro sees it.
+                    hash.write(&[self.t[i].kind as u8, self.t[i].flags & JOINT_NEXT]);
                     hash.write(self.text(i).as_bytes());
                     hash.write(&[0]);
                     i
@@ -244,6 +270,52 @@ impl Scan<'_> {
         }
         FileInterface { hash: hash.finish(), positions }
     }
+}
+
+/// The standard library's macros callable in a body, none of which expands to an item.
+const STD_MACROS: &[&str] = &[
+    "assert",
+    "assert_eq",
+    "assert_matches",
+    "assert_ne",
+    "cfg",
+    "column",
+    "compile_error",
+    "concat",
+    "dbg",
+    "debug_assert",
+    "debug_assert_eq",
+    "debug_assert_ne",
+    "env",
+    "eprint",
+    "eprintln",
+    "file",
+    "format",
+    "format_args",
+    "include_bytes",
+    "include_str",
+    "line",
+    "matches",
+    "module_path",
+    "option_env",
+    "panic",
+    "print",
+    "println",
+    "stringify",
+    "todo",
+    "unimplemented",
+    "unreachable",
+    "vec",
+    "write",
+    "writeln",
+];
+
+/// `///`, `//!`, `/** */` and `/*! */`, not `////` or `/***/`.
+fn is_doc_comment(text: &str) -> bool {
+    (text.starts_with("///") && !text.starts_with("////"))
+        || text.starts_with("//!")
+        || (text.starts_with("/**") && !text.starts_with("/***") && text != "/**/")
+        || text.starts_with("/*!")
 }
 
 fn is_open(kind: Option<TokenKind>) -> bool {
