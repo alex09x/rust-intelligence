@@ -95,6 +95,7 @@ pub mod explicit_type_tests;
 pub mod failed_build_tests;
 pub mod feature_invalidation_tests;
 pub mod feature_seed_targets_tests;
+pub mod feature_seed_unindexed_tests;
 pub mod inlay_shift_tests;
 pub mod last_good_tests;
 pub mod library_symbol_tests;

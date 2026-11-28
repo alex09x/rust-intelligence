@@ -11,7 +11,7 @@
 //! Sidecar invariance checks and selective Cargo `.fingerprint` pruning for feature switches.
 
 use super::feature_graph::{ResolvedFeatureGraph, ResolvedPackageNode};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -201,7 +201,7 @@ pub(super) fn prune_invalidated_artifacts(
         for entry in entries.flatten() {
             let fname = entry.file_name();
             let s = fname.to_string_lossy();
-            if inv_prefixes.iter().any(|pref| s.starts_with(pref)) {
+            if inv_prefixes.iter().any(|pref| is_fingerprint_of(&s, pref)) {
                 let p = entry.path();
                 if p.is_dir() {
                     let _ = fs::remove_dir_all(&p);
@@ -213,16 +213,19 @@ pub(super) fn prune_invalidated_artifacts(
     }
 }
 
-pub(super) fn propagate_invalidation(graph: &ResolvedFeatureGraph, dirty: &mut HashSet<String>, feat_dirty: &mut HashSet<String>) {
+/// Spreads invalidation along the graph; `reasons` gets why each package it adds is checked again.
+pub(super) fn propagate_invalidation(graph: &ResolvedFeatureGraph, dirty: &mut HashSet<String>, feat_dirty: &mut HashSet<String>, reasons: &mut BTreeMap<String, String>) {
     // 1. Forward propagation for packages whose subfeatures could be toggled across a resolver v2 host/target split
     loop {
         let mut progressed = false;
-        let current: Vec<String> = feat_dirty.iter().cloned().collect();
+        let mut current: Vec<String> = feat_dirty.iter().cloned().collect();
+        current.sort();
         for pkg_id in current {
             let Some(node) = graph.nodes.get(&pkg_id) else { continue };
             for dep_id in &node.feature_activated_deps {
                 if graph.active_ids.contains(dep_id) && feat_dirty.insert(dep_id.clone()) {
                     dirty.insert(dep_id.clone());
+                    reasons.entry(dep_id.clone()).or_insert_with(|| format!("its features may be set by {}", short_id(&pkg_id)));
                     progressed = true;
                 }
             }
@@ -241,7 +244,8 @@ pub(super) fn propagate_invalidation(graph: &ResolvedFeatureGraph, dirty: &mut H
             }
             let Some(node) = graph.nodes.get(pkg_id) else { continue };
             let deps = if node.is_workspace_member { &node.all_deps } else { &node.normal_or_build_deps };
-            if deps.iter().any(|d| dirty.contains(d)) {
+            if let Some(d) = deps.iter().find(|d| dirty.contains(*d)) {
+                reasons.entry(pkg_id.clone()).or_insert_with(|| format!("depends on {}", short_id(d)));
                 dirty.insert(pkg_id.clone());
                 progressed = true;
             }
@@ -250,6 +254,48 @@ pub(super) fn propagate_invalidation(graph: &ResolvedFeatureGraph, dirty: &mut H
             break;
         }
     }
+}
+
+/// Whether a Cargo `.fingerprint` entry is a unit of the package whose name is `prefix` without its `-`: the name, a dash
+/// and a 16-digit hash. A prefix match took `tokio-macros-…` for `tokio`, `futures-core-…` for `futures` and
+/// `regex-syntax-…` for `regex`, and Cargo checked those again too (prod-code #2101).
+pub(super) fn is_fingerprint_of(entry: &str, prefix: &str) -> bool {
+    entry.strip_prefix(prefix).is_some_and(|h| h.len() == 16 && h.bytes().all(|b| b.is_ascii_hexdigit()))
+}
+
+/// One line in the index log: how many packages a new variant took from earlier ones and how many Cargo checks again,
+/// with the reasons of the first few; `RIDX_SEED_LOG=1` lists every one. A run that checks everything again shows why
+/// (prod-code #2101: every dependency checked again on each reindex).
+pub(super) fn report_seeding(s: &super::feature_graph::SeedSummary) {
+    if s.seeded_pkg_ids.is_empty() && s.invalidated_pkg_ids.is_empty() {
+        return;
+    }
+    eprintln!(
+        "  Seeded         : {} packages from earlier variants, {} checked again, {} never indexed (left to Cargo)",
+        s.seeded_pkg_ids.len(),
+        s.invalidated_pkg_ids.len(),
+        s.left_to_cargo
+    );
+    let all = std::env::var_os("RIDX_SEED_LOG").is_some_and(|v| v == "1");
+    // The direct reasons first: the propagated ones follow from them.
+    let mut rows: Vec<(&String, &String)> = s.reasons.iter().collect();
+    rows.sort_by_key(|(_, why)| why.starts_with("depends on ") || why.starts_with("its features may be set by "));
+    for (pkg, why) in rows.iter().take(if all { usize::MAX } else { 5 }) {
+        eprintln!("    {}: {why}", short_id(pkg));
+    }
+    if !all && rows.len() > 5 {
+        eprintln!("    … {} more (RIDX_SEED_LOG=1 lists them)", rows.len() - 5);
+    }
+}
+
+/// `name@version` of a Cargo package id (`registry+https://…#name@1.2.3`, `path+file:///…/name#0.1.0`), for messages.
+pub(super) fn short_id(pkg_id: &str) -> String {
+    let tail = pkg_id.rsplit('#').next().unwrap_or(pkg_id);
+    if tail.contains('@') {
+        return tail.to_string();
+    }
+    let name = pkg_id.split('#').next().unwrap_or(pkg_id).trim_end_matches('/').rsplit('/').next().unwrap_or(pkg_id);
+    format!("{name}@{tail}")
 }
 
 pub(super) fn copy_seeded_group(group: &[(PathBuf, PathBuf, serde_json::Value)], variant_out_dir: &Path, dst_deps: &Path, cargo_lock_hash: Option<&str>) -> bool {

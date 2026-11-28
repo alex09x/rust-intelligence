@@ -218,3 +218,29 @@ fn test_a_change_is_pending_until_an_index_read_after_it_is_loaded() {
     let r2 = Reindexer::new();
     assert!(r2.record(root, None).is_some() && !r2.pending_of(root), "a first index records no change");
 }
+
+/// prod-code #2101: while a run rebuilds a root, `ridx/status` says which files the loaded index does not cover yet and
+/// how long the run has been going, so a client can answer from the loaded index meanwhile.
+#[test]
+fn test_status_names_the_files_no_loaded_index_covers_yet() {
+    let r = Reindexer::new();
+    let root = Path::new("/w");
+    let end = |error: Option<&str>| {
+        let registration = r.roots.lock().unwrap()[root].registration;
+        Reindexer::end_run(&r.roots, &r.finished, &r.ended, root, registration, error.map(str::to_string))
+    };
+    assert_eq!(r.staleness_of(root), (vec![], None), "an unknown root");
+    r.record(root, Some((PathBuf::from("/w/src/lib.rs"), Some(1))));
+    let (files, running) = r.staleness_of(root);
+    assert_eq!(files, [PathBuf::from("/w/src/lib.rs")]);
+    assert!(running.is_some(), "a run is going");
+    r.record(root, Some((PathBuf::from("/w/src/a.rs"), Some(2))));
+    assert!(end(None), "the run queued for a.rs starts");
+    r.take_finished();
+    assert_eq!(r.staleness_of(root).0, [PathBuf::from("/w/src/a.rs")], "lib.rs is covered, a.rs is read by the next run");
+    assert!(!end(Some("error: x")));
+    r.take_finished();
+    let (files, running) = r.staleness_of(root);
+    assert_eq!(files, [PathBuf::from("/w/src/a.rs")], "a failed run covers nothing");
+    assert_eq!(running, None, "idle");
+}

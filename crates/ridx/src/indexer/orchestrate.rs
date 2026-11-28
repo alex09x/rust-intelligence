@@ -178,7 +178,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     );
     let initial_lock_hash = super::feature_graph::compute_cargo_lock_hash(&work_dir);
     if let Some(ref fg) = feature_graph {
-        super::feature_graph::seed_unaffected_and_prune_invalidated(
+        let seeded = super::feature_graph::seed_unaffected_and_prune_invalidated(
             fg,
             &base_out_dir,
             &variant_out_dir,
@@ -187,6 +187,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
             profile_name,
             initial_lock_hash.as_deref(),
         );
+        super::feature_seed::report_seeding(&seeded);
     } else if !variant_has_shards(&variant_out_dir) {
         let _ = fs::remove_dir_all(&cargo_target_dir);
         let _ = fs::create_dir_all(&cargo_target_dir);
