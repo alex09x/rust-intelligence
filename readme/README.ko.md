@@ -1,7 +1,7 @@
-<!-- translation-source: a23435e39ef0f3e231c89e3860254dfdddb82f38 -->
+<!-- translation-source: 9e3bc41ba3a84e4b75fe83756c197a084caf8642 -->
 
 > [!NOTE]
-> 이 문서는 커밋 [a23435e](https://github.com/alex09x/rust-intelligence/blob/a23435e39ef0f3e231c89e3860254dfdddb82f38/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
+> 이 문서는 커밋 [9e3bc41](https://github.com/alex09x/rust-intelligence/blob/9e3bc41ba3a84e4b75fe83756c197a084caf8642/README.md) 시점의 영어 README 번역입니다. 공식적이고 가장 최신인 버전은 [영어 README](https://github.com/alex09x/rust-intelligence/blob/main/README.md)입니다.
 
 <p align="center">
   <img src="../site/assets/logo-minimal.svg" width="96" height="96" alt="ridx logo">
@@ -229,19 +229,19 @@ cargo test --workspace
 ## 인용
 
 연구나 문서에서 ridx를 사용한다면 Zenodo에 보관된 릴리스를 인용해 주세요:
-프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.16은 [10.5281/zenodo.24576729](https://doi.org/10.5281/zenodo.24576729).
+프로젝트 전체는 [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)(최신 버전으로 연결), 정확히 0.3.17은 [10.5281/zenodo.24615794](https://doi.org/10.5281/zenodo.24615794).
 [`CITATION.cff`](../CITATION.cff)에 GitHub의 "Cite this repository"가 사용하는 메타데이터가 있습니다.
 
 ```bibtex
-@software{panasenko_2026_24576729,
+@software{panasenko_2026_24615794,
   author    = {Panasenko, Alexander},
   title     = {Rust Intelligence (ridx) — a Rust language server answering from a compiler-built on-disk index},
   month     = nov,
   year      = 2026,
   publisher = {Zenodo},
-  version   = {0.3.16},
-  doi       = {10.5281/zenodo.24576729},
-  url       = {https://doi.org/10.5281/zenodo.24576729},
+  version   = {0.3.17},
+  doi       = {10.5281/zenodo.24615794},
+  url       = {https://doi.org/10.5281/zenodo.24615794},
 }
 ```
 
