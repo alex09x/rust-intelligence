@@ -230,13 +230,13 @@ pub fn path_without_generics(path: &str) -> std::borrow::Cow<'_, str> {
 /// in front (`rapidfire::mpsc::Receiver::<T>::recv_many`, `Receiver::recv_many`).
 fn path_matches(crate_name: &str, path: &str, query: &str) -> bool {
     // Every form below holds the query's last segment's name as written: skip the rest without building them.
-    let last = query.rsplit("::").next().unwrap_or(query);
-    let last = last.split('<').next().unwrap_or(last).to_ascii_lowercase();
+    // Taken from the query without its generic lists: `Map::get::<K, a::Key>` ends in `get`, not `Key>` (review of #14).
+    let q_plain = path_without_generics(query);
+    let last = q_plain.rsplit("::").next().unwrap_or(&q_plain).to_ascii_lowercase();
     if !last.is_empty() && !contains_ascii_ci(path.as_bytes(), last.as_bytes()) {
         return false;
     }
     let plain = path_without_generics(path);
-    let q_plain = path_without_generics(query);
     let candidates = [path.to_string(), plain.to_string(), format!("{crate_name}::{path}"), format!("{crate_name}::{plain}")];
     let queries = [query.to_ascii_lowercase(), q_plain.to_ascii_lowercase()];
     candidates.iter().any(|c| queries.iter().any(|q| contains_ascii_ci(c.as_bytes(), q.as_bytes())))

@@ -64,7 +64,7 @@ fn test_a_path_query_finds_a_dependencys_item_by_its_crate_and_type() {
         let found: Vec<&str> = ws.search_workspace_symbols(q, 128).iter().map(|s| s.path).collect();
         assert_eq!(found, ["mpsc::bounded"], "{q}");
     }
-    for q in ["Receiver::recv_many", "rapidfire::mpsc::Receiver::<T>::recv_many", "mpsc::Receiver::<T>::recv_many"] {
+    for q in ["Receiver::recv_many", "rapidfire::mpsc::Receiver::<T>::recv_many", "mpsc::Receiver::<T>::recv_many", "Receiver::recv_many::<a::Key>"] {
         let found: Vec<&str> = ws.search_workspace_symbols(q, 128).iter().map(|s| s.name).collect();
         assert_eq!(found, ["recv_many"], "{q}");
     }
