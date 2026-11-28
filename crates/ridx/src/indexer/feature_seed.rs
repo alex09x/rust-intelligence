@@ -11,12 +11,33 @@
 //! Sidecar invariance checks and selective Cargo `.fingerprint` pruning for feature switches.
 
 use super::feature_graph::{ResolvedFeatureGraph, ResolvedPackageNode};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 /// The subdirectory of a variant holding, during a run, the shards of the crates that run rebuilds.
 pub(crate) const STALE_DIR: &str = ".stale";
+
+/// Hashes (normalized, raw) of the source files read while seeding, so that a file tracked by many sidecars is read
+/// once a run: every example of a package like Bevy's root has its own sidecar, 1,391 of them tracking 741,678 files.
+#[derive(Default)]
+pub(super) struct SourceHashes {
+    known: HashMap<PathBuf, Option<(u64, u64)>>,
+    /// Files read from disk.
+    pub(super) reads: usize,
+}
+
+impl SourceHashes {
+    fn of(&mut self, path: &Path) -> Option<(u64, u64)> {
+        if let Some(h) = self.known.get(path) {
+            return *h;
+        }
+        self.reads += 1;
+        let h = fs::read(path).ok().map(|b| (ridx_format::normalized_source_hash(&b), ridx_format::fnv1a_64(&b)));
+        self.known.insert(path.to_path_buf(), h);
+        h
+    }
+}
 
 pub(super) fn variant_node_feature_state(vm: Option<&ridx_format::VariantManifest>, node: &ResolvedPackageNode, effective_target: &str, host_triple: Option<&str>) -> Option<bool> {
     let vm = vm?;
@@ -44,7 +65,7 @@ pub(super) fn variant_node_feature_state(vm: Option<&ridx_format::VariantManifes
     }
 }
 
-pub(super) fn sidecar_matches_node(val: &serde_json::Value, node: &ResolvedPackageNode, effective_target: &str, variant_feats_matched: bool) -> bool {
+pub(super) fn sidecar_matches_node(val: &serde_json::Value, node: &ResolvedPackageNode, effective_target: &str, variant_feats_matched: bool, hashes: &mut SourceHashes) -> bool {
     if val.get("version").and_then(|v| v.as_str()).unwrap_or("") != node.version {
         return false;
     }
@@ -115,11 +136,9 @@ pub(super) fn sidecar_matches_node(val: &serde_json::Value, node: &ResolvedPacka
         if let Ok(canon) = resolved.canonicalize() {
             tracked_canon.insert(canon);
         }
-        let Ok(bytes) = fs::read(&resolved) else {
+        let Some((norm_h, raw_h)) = hashes.of(&resolved) else {
             return false;
         };
-        let norm_h = ridx_format::normalized_source_hash(&bytes);
-        let raw_h = ridx_format::fnv1a_64(&bytes);
         if norm_h != expected && raw_h != expected {
             return false;
         }
