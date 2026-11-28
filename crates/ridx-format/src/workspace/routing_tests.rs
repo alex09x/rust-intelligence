@@ -17,7 +17,7 @@ use std::fs::File;
 use std::path::PathBuf;
 
 #[allow(clippy::type_complexity)]
-fn build_mock_workspace(readers_info: Vec<(&PathBuf, Option<PathBuf>, Option<String>, HashMap<String, u64>)>, workspace_root: PathBuf) -> WorkspaceIndex {
+pub(crate) fn build_mock_workspace(readers_info: Vec<(&PathBuf, Option<PathBuf>, Option<String>, HashMap<String, u64>)>, workspace_root: PathBuf) -> WorkspaceIndex {
     let mut readers = Vec::with_capacity(readers_info.len());
     let mut paths = Vec::with_capacity(readers_info.len());
     let mut mtimes = Vec::with_capacity(readers_info.len());

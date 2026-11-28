@@ -293,3 +293,18 @@ fn test_resolve_gives_a_top_level_module_its_crate() {
     let root = crate::lsp::symbols::handle_workspace_symbol_resolve(&json!({ "params": { "name": "app" } }), std::iter::once(&index), &mut conv);
     assert_eq!(root["containerName"], "", "the crate root itself has none");
 }
+
+/// prod-code, m=23269: a method of a generic impl is recorded as `mpsc::Receiver::<T>::recv_many`, and its container
+/// came back as `<T>`; it is the type, as rust-analyzer gives it, and for a trait impl the implementing type.
+#[test]
+fn test_the_container_of_a_method_in_a_generic_impl_is_its_type() {
+    use crate::lsp::symbols::container_name;
+    assert_eq!(container_name("mpsc::Receiver::<T>::recv_many", "rapidfire", false), "Receiver");
+    assert_eq!(container_name("queue::Queue::<T, N>::claim_bounded", "rapidfire", false), "Queue");
+    assert_eq!(container_name("a::Map<K, V>::get", "app", false), "Map");
+    assert_eq!(container_name("<a::Foo<T> as core::fmt::Debug>::fmt", "app", false), "Foo");
+    assert_eq!(container_name("m::Handler::<fn() -> a::B>::call", "app", false), "Handler", "the `>` of `->` closes nothing");
+    assert_eq!(container_name("batch::sym_10", "app", false), "batch");
+    assert_eq!(container_name("Config", "smoke", false), "smoke", "an item of a crate root: its crate");
+    assert_eq!(container_name("smoke", "smoke", true), "", "the crate root itself");
+}

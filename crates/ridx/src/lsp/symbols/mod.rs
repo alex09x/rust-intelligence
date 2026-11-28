@@ -85,12 +85,27 @@ fn workspace_symbol_kind(kind: ridx_format::DefKind, crate_root: bool) -> u32 {
 
 /// What holds the symbol at `path` (`a::b::Item`: `b`), as rust-analyzer names it: the module, type or trait it is
 /// declared in, and for an item of a crate root its crate (prod-code, m=20226: `Config` of crate `smoke` had none).
-fn container_name<'s>(path: &'s str, crate_name: &'s str, crate_root: bool) -> &'s str {
-    match path.rsplit_once("::") {
-        Some((holder, _)) => holder.rsplit("::").next().unwrap_or(holder),
-        None if crate_root => "",
-        None => crate_name,
+/// A method of a generic impl is recorded under the impl's generic list (`mpsc::Receiver::<T>::recv_many`): its
+/// container is the type, `Receiver`, not `<T>` (prod-code, m=23269); of a trait impl (`<Foo as Bar>::f`), `Foo`.
+pub(crate) fn container_name<'s>(path: &'s str, crate_name: &'s str, crate_root: bool) -> std::borrow::Cow<'s, str> {
+    use ridx_format::navigation::{path_segments, path_without_generics, qualified_self_type};
+    use std::borrow::Cow;
+    let segments = path_segments(path);
+    let Some((_, holders)) = segments.split_last() else { return Cow::Borrowed(crate_name) };
+    for seg in holders.iter().rev() {
+        let seg = seg.trim();
+        if seg.starts_with('<') {
+            // `<Foo as Bar>`: the type; `<T>`, a generic list only: the segment before it.
+            if let Some(ty) = qualified_self_type(seg) {
+                let ty = path_without_generics(ty).into_owned();
+                return Cow::Owned(ty.rsplit("::").next().unwrap_or(&ty).to_string());
+            }
+            continue;
+        }
+        return Cow::Borrowed(seg.split('<').next().unwrap_or(seg));
     }
+    // An item of a crate root: its crate, unless it is the root itself.
+    Cow::Borrowed(if crate_root && holders.is_empty() { "" } else { crate_name })
 }
 
 pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {
