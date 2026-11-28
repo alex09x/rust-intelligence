@@ -9,6 +9,8 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ### Added
 - **`ridx/status` says what the loaded index does not cover yet**: per root, `changedFiles` (at most 100) and `changedFileCount`, the files changed since the index the server loaded, and `buildingForMs`, how long the current run has been going. A client can answer from the loaded index while a run rebuilds it, knowing which files its answers may be older than (prod-code #2101).
+- **`workspace/symbol` gives a method of a generic impl its type as container**: `recv_many` in `impl<T> Receiver<T>` came back with `containerName: "<T>"`, the impl's generic list, and now with `Receiver`; a method of a trait impl gets the implementing type (prod-code, on rapidfire).
+- **A path query of `workspace/symbol` finds a dependency's item**: `rapidfire::mpsc::bounded` and `mpsc::bounded` came back empty in a crate depending on rapidfire while `bounded` found it. A path query now matches an item's path with its crate's name in front and without the generic lists of its impl (`Receiver::recv_many` finds `mpsc::Receiver::<T>::recv_many`), and searches the dependencies when nothing of the workspace matches, as a plain name does.
 
 ## [0.3.17] - 2026-11-27
 

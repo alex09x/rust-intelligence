@@ -166,6 +166,38 @@ fn is_type_or_mod_ws_kind(kind: DefKind) -> bool {
     )
 }
 
+/// `path` without the generic lists of its segments: `mpsc::Receiver::<T>::recv_many` is `mpsc::Receiver::recv_many`.
+pub fn path_without_generics(path: &str) -> std::borrow::Cow<'_, str> {
+    if !path.contains('<') {
+        return std::borrow::Cow::Borrowed(path);
+    }
+    let mut out = String::with_capacity(path.len());
+    let mut depth = 0usize;
+    for c in path.chars() {
+        match c {
+            '<' => depth += 1,
+            '>' if depth > 0 => depth -= 1,
+            _ if depth == 0 => out.push(c),
+            _ => {}
+        }
+    }
+    // A segment that was only a generic list leaves `::::`; one ending in it leaves a trailing `::`.
+    while out.contains("::::") {
+        out = out.replace("::::", "::");
+    }
+    std::borrow::Cow::Owned(out.trim_matches(':').to_string())
+}
+
+/// Whether a lowercased path query is in `path`, read without its generic lists and with or without its crate's name
+/// in front.
+fn path_matches(crate_name: &str, path: &str, q_lower: &[u8]) -> bool {
+    if contains_ascii_ci(path.as_bytes(), q_lower) {
+        return true;
+    }
+    let plain = path_without_generics(path);
+    contains_ascii_ci(plain.as_bytes(), q_lower) || contains_ascii_ci(format!("{crate_name}::{plain}").as_bytes(), q_lower)
+}
+
 impl WorkspaceIndex {
     /// Workspace symbols as rust-analyzer lists them: items and imports whose name contains the query as a smart-case
     /// subsequence, plus crates (dependencies included) whose name does, ordered by lowercased name and cut at
@@ -260,9 +292,23 @@ impl WorkspaceIndex {
         if !query.is_empty() && !query.contains("::") {
             return self.search_workspace_symbols_like_ra(query, limit);
         }
+        let found = self.search_symbols_by_substring(query, limit, true);
+        // A path naming a dependency's item (`rapidfire::mpsc::bounded`) is found there when nothing local matches, as
+        // a plain name is (prod-code, m=23269: it came back empty, and only `bounded` found it).
+        if found.is_empty() && query.contains("::") {
+            return self.search_symbols_by_substring(query, limit, false);
+        }
+        found
+    }
+
+    /// The substring search of `search_workspace_symbols`: the workspace's crates only when `local_first` and it has
+    /// any, every crate otherwise. A path query matches an item's path with its crate's name in front and the generic
+    /// lists of its impl left out (`Receiver::recv_many` matches `mpsc::Receiver::<T>::recv_many`).
+    fn search_symbols_by_substring<'a>(&'a self, query: &str, limit: usize, local_first: bool) -> Vec<WorkspaceSymbol<'a>> {
         let q_lower = query.to_ascii_lowercase();
         let q_bytes = q_lower.as_bytes();
-        let has_local = self.reader_is_dependency.iter().any(|&d| !d);
+        let is_path_query = query.contains("::");
+        let has_local = local_first && self.reader_is_dependency.iter().any(|&d| !d);
         let multi_reader = self.readers.len() > 1;
         let mut results: Vec<WorkspaceSymbol<'a>> = Vec::new();
         let mut seen = std::collections::HashSet::new();
@@ -332,7 +378,8 @@ impl WorkspaceIndex {
                         true
                     } else if pass == 0 || pass == 2 {
                         contains_ascii_ci(name.as_bytes(), q_bytes)
-                            || ((query.contains("::") || (!multi_reader && crate_name.eq_ignore_ascii_case(query))) && contains_ascii_ci(path.as_bytes(), q_bytes))
+                            || (!multi_reader && crate_name.eq_ignore_ascii_case(query) && contains_ascii_ci(path.as_bytes(), q_bytes))
+                            || (is_path_query && path_matches(crate_name, path, q_bytes))
                     } else {
                         is_fuzzy_subseq(name, query)
                     };

@@ -37,6 +37,7 @@ mod workspace_symbol_match;
 mod workspace_symbol_use;
 
 pub use blast_radius::{BlastRadiusIndex, DirectBlastRadius};
+pub use workspace_symbol::path_without_generics;
 
 use super::manifest::{LocationReferences, WorkspaceHover, WorkspaceReference, WorkspaceSymbol};
 use super::std_map;
