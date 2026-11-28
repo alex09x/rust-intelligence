@@ -57,7 +57,7 @@ T = {
     "h_dev": "開発",
     "dev": "すべてのソースファイルは 400 行以内です。",
     "h_cite": "引用",
-    "cite": "研究やドキュメントで ridx を使う場合は、Zenodo にアーカイブされたリリースを引用してください：\nプロジェクト全体には [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)（最新版に解決されます）、0.3.17 そのものには [10.5281/zenodo.24615794](https://doi.org/10.5281/zenodo.24615794)。\n[`CITATION.cff`](../CITATION.cff) には GitHub の「Cite this repository」が使うメタデータがあります。",
+    "cite": "研究やドキュメントで ridx を使う場合は、Zenodo にアーカイブされたリリースを引用してください：\nプロジェクト全体には [10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816)（最新版に解決されます）、0.3.18 そのものには [10.5281/zenodo.24624961](https://doi.org/10.5281/zenodo.24624961)。\n[`CITATION.cff`](../CITATION.cff) には GitHub の「Cite this repository」が使うメタデータがあります。",
     "h_license": "ライセンス",
     "license_intro": "次のいずれかのライセンスで提供されます：",
     "apache": "Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) または http://www.apache.org/licenses/LICENSE-2.0)",
