@@ -11,7 +11,7 @@
 //! Feature/cfg graph resolution (`cargo metadata`), `Cargo.lock` fingerprinting,
 //! and DAG-exact partial invalidation across feature switches.
 
-use super::feature_seed::{copy_seeded_group, propagate_invalidation, prune_invalidated_artifacts, sidecar_matches_node, variant_node_feature_state};
+use super::feature_seed::{copy_seeded_group, propagate_invalidation, prune_invalidated_artifacts, sidecar_matches_node, variant_node_feature_state, SourceHashes};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -256,6 +256,10 @@ pub fn compute_shared_cargo_cache_id(profile: &str, effective_target: Option<&st
 pub struct SeedSummary {
     pub seeded_pkg_ids: HashSet<String>,
     pub invalidated_pkg_ids: HashSet<String>,
+    /// Source files read from disk to check the candidate sidecars.
+    pub source_reads: usize,
+    /// Candidate sidecars checked against the resolved graph.
+    pub sidecar_checks: usize,
 }
 
 /// Seeds unaffected workspace shards and `.deps` sidecars into `variant_out_dir` from existing
@@ -320,6 +324,8 @@ pub fn seed_unaffected_and_prune_invalidated(
     let mut matched: HashMap<String, Vec<(PathBuf, PathBuf, serde_json::Value)>> = HashMap::new();
     let mut dirty: HashSet<String> = HashSet::new();
     let mut feat_dirty: HashSet<String> = HashSet::new();
+    let mut hashes = SourceHashes::default();
+    let mut sidecar_checks = 0;
 
     for pkg_id in &graph.active_ids {
         let Some(node) = graph.nodes.get(pkg_id) else { continue };
@@ -330,8 +336,11 @@ pub fn seed_unaffected_and_prune_invalidated(
         };
         let mut chosen_vdir: Option<PathBuf> = None;
         let mut any_feats_matched = false;
+        // Each variant's group once: `cands` holds one entry per sidecar, and a variant whose group did not match was
+        // checked again for every sidecar it has (Bevy's root package: 1,391 times, hours of reading).
+        let mut tried: HashSet<&PathBuf> = HashSet::new();
         for (vdir, _, _) in cands {
-            if chosen_vdir.as_ref() == Some(vdir) {
+            if !tried.insert(vdir) {
                 continue;
             }
             let fstate = variant_node_feature_state(vm_by_vdir.get(vdir), node, &graph.effective_target, graph.host_triple.as_deref());
@@ -341,7 +350,10 @@ pub fn seed_unaffected_and_prune_invalidated(
             let feats_matched = fstate == Some(true);
             any_feats_matched |= feats_matched;
             let group: Vec<&(PathBuf, PathBuf, serde_json::Value)> = cands.iter().filter(|(vd, _, _)| vd == vdir).collect();
-            if group.iter().all(|(_, _, val)| sidecar_matches_node(val, node, &graph.effective_target, feats_matched)) {
+            if group.iter().all(|(_, _, val)| {
+                sidecar_checks += 1;
+                sidecar_matches_node(val, node, &graph.effective_target, feats_matched, &mut hashes)
+            }) {
                 chosen_vdir = Some(vdir.clone());
                 break;
             }
@@ -361,7 +373,7 @@ pub fn seed_unaffected_and_prune_invalidated(
 
     let dst_deps = variant_out_dir.join(".deps");
     let _ = fs::create_dir_all(&dst_deps);
-    let mut summary = SeedSummary::default();
+    let mut summary = SeedSummary { source_reads: hashes.reads, sidecar_checks, ..SeedSummary::default() };
 
     for pkg_id in &graph.active_ids {
         if dirty.contains(pkg_id) {
