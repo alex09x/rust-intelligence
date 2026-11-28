@@ -127,6 +127,20 @@ fn test_a_dependency_never_compiled_keeps_the_fingerprint_of_another_version() {
 }
 
 #[test]
+fn test_a_dependency_never_compiled_keeps_the_fingerprint_of_one_spelled_with_an_underscore() {
+    let _lock = lock_indexer_test();
+    let w = ws("ridx_seed_unindexed_spelling", &[("foo_bar", "1.0.0")]);
+    let never = w.base_out.parent().unwrap().join("registry/foo-bar-0.1.0");
+    fs::create_dir_all(&never).unwrap();
+    let g = graph(vec![node("foo_bar", "1.0.0", &src(&w, "foo_bar", "1.0.0"), &[]), node("foo-bar", "0.1.0", &never, &[])]);
+    let fp = w.cargo_tgt.join("debug/.fingerprint/foo_bar-0123456789abcdef");
+    fs::create_dir_all(&fp).unwrap();
+    let s = seed_unaffected_and_prune_invalidated(&g, &w.base_out, &w.cur, Some(&w.prev), &w.cargo_tgt, "dev", None);
+    assert!(s.seeded_pkg_ids.contains("foo_bar"), "{s:?}");
+    assert!(fp.exists(), "pruning `foo-bar` takes `foo_bar-` too, so it is left alone");
+}
+
+#[test]
 fn test_without_an_earlier_variant_a_dependency_without_a_sidecar_is_checked_again() {
     let _lock = lock_indexer_test();
     // A new output directory: no variant to read, while the shared Cargo target directory may hold the crate fresh.

@@ -422,14 +422,16 @@ pub fn seed_unaffected_and_prune_invalidated(
     // A package left to Cargo still loses its own fingerprint, so that one Cargo holds fresh with no sidecar in any
     // variant (variants removed, the target directory shared) is compiled by the driver; a no-op when it never was.
     // Not when another package of the graph has its name: Cargo's entries do not say the version, and removing those of
-    // a `hashbrown` that was compiled for a `hashbrown` that never is checked it and its dependents again (#2101).
+    // a `hashbrown` that was compiled for a `hashbrown` that never is checked it and its dependents again (#2101). The
+    // names compare with `-` and `_` alike, as pruning takes both spellings (review of #13: `foo-bar` and `foo_bar`).
+    let norm = |n: &ResolvedPackageNode| n.name.replace('-', "_");
     let mut prune = summary.invalidated_pkg_ids.clone();
     prune.extend(
         unindexed
             .iter()
             .filter(|id| {
-                let name = graph.nodes.get(*id).map(|n| n.name.as_str());
-                graph.nodes.iter().filter(|(_, n)| Some(n.name.as_str()) == name).count() == 1
+                let Some(name) = graph.nodes.get(*id).map(norm) else { return false };
+                graph.nodes.values().filter(|n| norm(n) == name).count() == 1
             })
             .cloned(),
     );
