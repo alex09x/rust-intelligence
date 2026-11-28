@@ -88,48 +88,24 @@ fn workspace_symbol_kind(kind: ridx_format::DefKind, crate_root: bool) -> u32 {
 /// A method of a generic impl is recorded under the impl's generic list (`mpsc::Receiver::<T>::recv_many`): its
 /// container is the type, `Receiver`, not `<T>` (prod-code, m=23269); of a trait impl (`<Foo as Bar>::f`), `Foo`.
 pub(crate) fn container_name<'s>(path: &'s str, crate_name: &'s str, crate_root: bool) -> std::borrow::Cow<'s, str> {
+    use ridx_format::navigation::{path_segments, path_without_generics, qualified_self_type};
     use std::borrow::Cow;
-    let segments = top_level_segments(path);
+    let segments = path_segments(path);
     let Some((_, holders)) = segments.split_last() else { return Cow::Borrowed(crate_name) };
     for seg in holders.iter().rev() {
         let seg = seg.trim();
-        if let Some(inner) = seg.strip_prefix('<').and_then(|s| s.strip_suffix('>')) {
+        if seg.starts_with('<') {
             // `<Foo as Bar>`: the type; `<T>`, a generic list only: the segment before it.
-            if let Some((ty, _)) = inner.split_once(" as ") {
-                let ty = ridx_format::navigation::path_without_generics(ty).into_owned();
+            if let Some(ty) = qualified_self_type(seg) {
+                let ty = path_without_generics(ty).into_owned();
                 return Cow::Owned(ty.rsplit("::").next().unwrap_or(&ty).to_string());
             }
             continue;
         }
-        return match seg.find('<') {
-            Some(i) => Cow::Borrowed(&seg[..i]),
-            None => Cow::Borrowed(seg),
-        };
+        return Cow::Borrowed(seg.split('<').next().unwrap_or(seg));
     }
     // An item of a crate root: its crate, unless it is the root itself.
     Cow::Borrowed(if crate_root && holders.is_empty() { "" } else { crate_name })
-}
-
-/// `path` split at the `::`s outside angle brackets (`<Foo as a::Bar>::f` is two segments).
-fn top_level_segments(path: &str) -> Vec<&str> {
-    let (mut out, mut depth, mut start) = (Vec::new(), 0usize, 0usize);
-    let bytes = path.as_bytes();
-    let mut i = 0;
-    while i < bytes.len() {
-        match bytes[i] {
-            b'<' => depth += 1,
-            b'>' if depth > 0 => depth -= 1,
-            b':' if depth == 0 && bytes.get(i + 1) == Some(&b':') => {
-                out.push(&path[start..i]);
-                start = i + 2;
-                i += 1;
-            }
-            _ => {}
-        }
-        i += 1;
-    }
-    out.push(&path[start..]);
-    out
 }
 
 pub fn handle_workspace_symbol_resolve<'a>(msg: &Value, workspaces: impl Iterator<Item = &'a WorkspaceIndex>, conv: &mut PositionConverter) -> Value {

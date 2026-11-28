@@ -303,6 +303,7 @@ fn test_the_container_of_a_method_in_a_generic_impl_is_its_type() {
     assert_eq!(container_name("queue::Queue::<T, N>::claim_bounded", "rapidfire", false), "Queue");
     assert_eq!(container_name("a::Map<K, V>::get", "app", false), "Map");
     assert_eq!(container_name("<a::Foo<T> as core::fmt::Debug>::fmt", "app", false), "Foo");
+    assert_eq!(container_name("m::Handler::<fn() -> a::B>::call", "app", false), "Handler", "the `>` of `->` closes nothing");
     assert_eq!(container_name("batch::sym_10", "app", false), "batch");
     assert_eq!(container_name("Config", "smoke", false), "smoke", "an item of a crate root: its crate");
     assert_eq!(container_name("smoke", "smoke", true), "", "the crate root itself");

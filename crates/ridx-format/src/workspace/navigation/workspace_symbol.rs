@@ -166,36 +166,80 @@ fn is_type_or_mod_ws_kind(kind: DefKind) -> bool {
     )
 }
 
-/// `path` without the generic lists of its segments: `mpsc::Receiver::<T>::recv_many` is `mpsc::Receiver::recv_many`.
+/// `path` split at its `::`s outside angle brackets: `<Foo as a::Bar>::f` is two segments. The `>` of a `->` inside
+/// one (`Handler::<fn() -> a::B>::call`) closes nothing (review of #14).
+pub fn path_segments(path: &str) -> Vec<&str> {
+    let (mut out, mut depth, mut start) = (Vec::new(), 0usize, 0usize);
+    let bytes = path.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'<' => depth += 1,
+            b'>' if depth > 0 && (i == 0 || bytes[i - 1] != b'-') => depth -= 1,
+            b':' if depth == 0 && bytes.get(i + 1) == Some(&b':') => {
+                out.push(&path[start..i]);
+                start = i + 2;
+                i += 1;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    out.push(&path[start..]);
+    out
+}
+
+/// The type of a qualified-self segment, `a::Foo<T>` of `<a::Foo<T> as Debug>`; `None` for a generic list only (`<T>`).
+pub fn qualified_self_type(segment: &str) -> Option<&str> {
+    let inner = segment.strip_prefix('<')?.strip_suffix('>')?;
+    // ` as ` outside the type's own brackets.
+    let mut depth = 0usize;
+    let bytes = inner.as_bytes();
+    for i in 0..bytes.len() {
+        match bytes[i] {
+            b'<' => depth += 1,
+            b'>' if depth > 0 && (i == 0 || bytes[i - 1] != b'-') => depth -= 1,
+            b' ' if depth == 0 && inner[i..].starts_with(" as ") => return Some(&inner[..i]),
+            _ => {}
+        }
+    }
+    None
+}
+
+/// `path` without the generic lists of its segments: `mpsc::Receiver::<T>::recv_many` is `mpsc::Receiver::recv_many`,
+/// `<a::Foo<T> as Debug>::fmt` is `a::Foo::fmt`.
 pub fn path_without_generics(path: &str) -> std::borrow::Cow<'_, str> {
     if !path.contains('<') {
         return std::borrow::Cow::Borrowed(path);
     }
-    let mut out = String::with_capacity(path.len());
-    let mut depth = 0usize;
-    for c in path.chars() {
-        match c {
-            '<' => depth += 1,
-            '>' if depth > 0 => depth -= 1,
-            _ if depth == 0 => out.push(c),
-            _ => {}
+    let mut parts: Vec<String> = Vec::new();
+    for seg in path_segments(path) {
+        let seg = seg.trim();
+        if seg.starts_with('<') {
+            if let Some(ty) = qualified_self_type(seg) {
+                parts.push(path_without_generics(ty).into_owned());
+            }
+            continue;
         }
+        parts.push(seg.split('<').next().unwrap_or(seg).to_string());
     }
-    // A segment that was only a generic list leaves `::::`; one ending in it leaves a trailing `::`.
-    while out.contains("::::") {
-        out = out.replace("::::", "::");
-    }
-    std::borrow::Cow::Owned(out.trim_matches(':').to_string())
+    std::borrow::Cow::Owned(parts.into_iter().filter(|p| !p.is_empty()).collect::<Vec<_>>().join("::"))
 }
 
-/// Whether a lowercased path query is in `path`, read without its generic lists and with or without its crate's name
-/// in front.
-fn path_matches(crate_name: &str, path: &str, q_lower: &[u8]) -> bool {
-    if contains_ascii_ci(path.as_bytes(), q_lower) {
-        return true;
+/// Whether a path query is in `path`, both read as written and without generic lists, with or without the crate's name
+/// in front (`rapidfire::mpsc::Receiver::<T>::recv_many`, `Receiver::recv_many`).
+fn path_matches(crate_name: &str, path: &str, query: &str) -> bool {
+    // Every form below holds the query's last segment's name as written: skip the rest without building them.
+    let last = query.rsplit("::").next().unwrap_or(query);
+    let last = last.split('<').next().unwrap_or(last).to_ascii_lowercase();
+    if !last.is_empty() && !contains_ascii_ci(path.as_bytes(), last.as_bytes()) {
+        return false;
     }
     let plain = path_without_generics(path);
-    contains_ascii_ci(plain.as_bytes(), q_lower) || contains_ascii_ci(format!("{crate_name}::{plain}").as_bytes(), q_lower)
+    let q_plain = path_without_generics(query);
+    let candidates = [path.to_string(), plain.to_string(), format!("{crate_name}::{path}"), format!("{crate_name}::{plain}")];
+    let queries = [query.to_ascii_lowercase(), q_plain.to_ascii_lowercase()];
+    candidates.iter().any(|c| queries.iter().any(|q| contains_ascii_ci(c.as_bytes(), q.as_bytes())))
 }
 
 impl WorkspaceIndex {
@@ -379,7 +423,7 @@ impl WorkspaceIndex {
                     } else if pass == 0 || pass == 2 {
                         contains_ascii_ci(name.as_bytes(), q_bytes)
                             || (!multi_reader && crate_name.eq_ignore_ascii_case(query) && contains_ascii_ci(path.as_bytes(), q_bytes))
-                            || (is_path_query && path_matches(crate_name, path, q_bytes))
+                            || (is_path_query && path_matches(crate_name, path, query))
                     } else {
                         is_fuzzy_subseq(name, query)
                     };

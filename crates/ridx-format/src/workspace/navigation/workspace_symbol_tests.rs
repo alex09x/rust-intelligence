@@ -21,6 +21,10 @@ fn test_a_path_reads_without_the_generic_lists_of_its_segments() {
     assert_eq!(path_without_generics("queue::Queue::<T, N>::claim_bounded"), "queue::Queue::claim_bounded");
     assert_eq!(path_without_generics("a::Map<K, Vec<V>>::get"), "a::Map::get");
     assert_eq!(path_without_generics("plain::path"), "plain::path");
+    // Review of #14: a qualified self keeps its type, and the `>` of a `->` closes nothing.
+    assert_eq!(path_without_generics("<a::Foo<T> as core::fmt::Debug>::fmt"), "a::Foo::fmt");
+    assert_eq!(path_without_generics("m::Handler::<fn() -> a::B>::call"), "m::Handler::call");
+    assert_eq!(super::path_segments("m::Handler::<fn() -> a::B>::call"), ["m", "Handler", "<fn() -> a::B>", "call"]);
 }
 
 /// prod-code, m=23269: in a crate depending on rapidfire, `rapidfire::mpsc::bounded` and `mpsc::bounded` came back
@@ -60,8 +64,10 @@ fn test_a_path_query_finds_a_dependencys_item_by_its_crate_and_type() {
         let found: Vec<&str> = ws.search_workspace_symbols(q, 128).iter().map(|s| s.path).collect();
         assert_eq!(found, ["mpsc::bounded"], "{q}");
     }
-    let found: Vec<&str> = ws.search_workspace_symbols("Receiver::recv_many", 128).iter().map(|s| s.name).collect();
-    assert_eq!(found, ["recv_many"]);
+    for q in ["Receiver::recv_many", "rapidfire::mpsc::Receiver::<T>::recv_many", "mpsc::Receiver::<T>::recv_many"] {
+        let found: Vec<&str> = ws.search_workspace_symbols(q, 128).iter().map(|s| s.name).collect();
+        assert_eq!(found, ["recv_many"], "{q}");
+    }
     assert!(ws.search_workspace_symbols("app::main", 128).iter().any(|s| s.name == "main"), "a local path still matches first");
     let _ = std::fs::remove_dir_all(&dir);
 }
