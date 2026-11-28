@@ -43,6 +43,9 @@ struct RootState {
     /// the same content again is no change (Zed reports a save twice; a sync keeping the old mtime is one: prod-code,
     /// m=20734, where the mtime said the last run had read it).
     seen: HashMap<PathBuf, Option<u64>>,
+    /// Each file changed that no loaded index covers yet, with the run that reads it (`ridx/status`: what answers from
+    /// the loaded index may not see, while a run rebuilds it; prod-code #2101).
+    changed: std::collections::BTreeMap<PathBuf, u64>,
     /// Why the last run failed, `None` after a run that succeeded (`ridx/status`).
     last_error: Option<String>,
     /// Which registration of the root this is: a run of one removed (and maybe added again) is not taken.
@@ -79,6 +82,8 @@ impl Reindexer {
         for (root, run) in &taken {
             if let Some(st) = roots.get_mut(root) {
                 st.covered = st.covered.max(*run);
+                let covered = st.covered;
+                st.changed.retain(|_, read_by| *read_by > covered);
             }
         }
         taken.into_iter().map(|(r, _)| r).collect()
@@ -89,6 +94,18 @@ impl Reindexer {
     pub fn pending_of(&self, root: &Path) -> bool {
         let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         roots.get(root).is_some_and(|st| st.pending > st.covered)
+    }
+
+    /// For `ridx/status`: the files changed that no loaded index covers yet (sorted), and how long the current run of
+    /// `root` has been going, in milliseconds. A client can answer from the loaded index meanwhile, knowing what it may
+    /// not see (prod-code #2101: a large workspace rebuilt for most of an hour and every lookup was declined).
+    pub fn staleness_of(&self, root: &Path) -> (Vec<PathBuf>, Option<u64>) {
+        let roots = self.roots.lock().unwrap_or_else(|e| e.into_inner());
+        roots.get(root).map_or((Vec::new(), None), |st| {
+            let files = st.changed.keys().cloned().collect();
+            let running = st.running_since.map(|t| t.elapsed().map_or(0, |d| d.as_millis() as u64));
+            (files, running)
+        })
     }
 
     /// A workspace folder the client removed: it leaves the roots of the session, with a run's success not yet taken
@@ -246,9 +263,10 @@ impl Reindexer {
             if st.seen.get(&file) == Some(&content) {
                 return None;
             }
-            st.seen.insert(file, content);
             // The next run reads it: the one queued after a run, or the one starting now.
             st.pending = st.run + 1;
+            st.changed.insert(file.clone(), st.pending);
+            st.seen.insert(file, content);
         }
         if st.running_since.is_some() {
             st.again = true;

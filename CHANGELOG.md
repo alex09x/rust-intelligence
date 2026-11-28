@@ -4,6 +4,12 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **A change of `Cargo.toml` or `Cargo.lock` no longer makes Cargo check dependencies again** (prod-code #2101: on a large workspace whose agent was adding a dependency, every reindex took 45–60 s, one after the other). Such a change gives the index a new variant, which takes what it can from the earlier ones; for the packages it cannot take, ridx removes Cargo's fingerprints so the driver runs on them. Two things made that set far too large. A dependency `cargo metadata` resolves but `cargo check` never compiles (another platform's, one only an unchecked target uses) has no sidecar in any variant, and was invalidated every time with everything depending on it; it is now left to Cargo, which compiles it, and the crates depending on it, if it is new. And the fingerprints were removed by name prefix, so `tokio` took `tokio-macros-…`, `futures` all the `futures-*` crates, and a `hashbrown` never compiled the fingerprints of another `hashbrown` that was; they now match the package's name exactly. On tokio (b2636752, Linux x86_64), with `Cargo.lock` removed and back so each run indexes a new variant: 0.3.16 checked 56 of 151 units again in 14–15 s, the fix none in 6–7 s, with the same 616 shards published (only the build-script probe crates of `autocfg`, rebuilt by 0.3.16, differ). The index log says, under `Seeded`, how many packages a new variant took, how many Cargo checks again and why (`RIDX_SEED_LOG=1` lists every one).
+
+### Added
+- **`ridx/status` says what the loaded index does not cover yet**: per root, `changedFiles` (at most 100) and `changedFileCount`, the files changed since the index the server loaded, and `buildingForMs`, how long the current run has been going. A client can answer from the loaded index while a run rebuilds it, knowing which files its answers may be older than (prod-code #2101).
+
 ## [0.3.17] - 2026-11-27
 
 Verified by the workspace test suite, by regression tests of seeding a package with 300 targets, and on Bevy (68c80f3b, Linux x86_64): from the same state (a variant built with `Cargo.lock`, then the lock removed so the next run seeds a new variant from it), 0.3.16 had not started `cargo check` after 15 minutes, and the fixed build started it after 7 s and finished the index in 304 s. The index format is unchanged.

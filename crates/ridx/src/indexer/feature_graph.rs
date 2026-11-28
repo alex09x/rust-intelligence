@@ -260,6 +260,10 @@ pub struct SeedSummary {
     pub source_reads: usize,
     /// Candidate sidecars checked against the resolved graph.
     pub sidecar_checks: usize,
+    /// Why each invalidated package is checked again.
+    pub reasons: BTreeMap<String, String>,
+    /// Packages of the graph no earlier variant indexed, neither seeded nor invalidated: Cargo builds them if it needs to.
+    pub left_to_cargo: usize,
 }
 
 /// Seeds unaffected workspace shards and `.deps` sidecars into `variant_out_dir` from existing
@@ -326,12 +330,29 @@ pub fn seed_unaffected_and_prune_invalidated(
     let mut feat_dirty: HashSet<String> = HashSet::new();
     let mut hashes = SourceHashes::default();
     let mut sidecar_checks = 0;
+    let mut reasons: BTreeMap<String, String> = BTreeMap::new();
+    let mut unindexed: HashSet<String> = HashSet::new();
 
+    // Without any earlier variant to read, a package without a sidecar says nothing about what Cargo built: the target
+    // directory may hold it fresh from another output directory, and the driver must run on it (review of #13).
+    let history = !vm_by_vdir.is_empty();
     for pkg_id in &graph.active_ids {
         let Some(node) = graph.nodes.get(pkg_id) else { continue };
         let Some(cands) = sidecars_by_root.get(&node.manifest_dir) else {
+            if history && !node.is_workspace_member {
+                // No earlier variant indexed this dependency: `cargo metadata` resolves packages `cargo check` never
+                // compiles (another platform's, one only a target not checked uses), so it has no sidecar in any of them.
+                // Invalidating it invalidated everything depending on it, and pruning by name the fingerprints of another
+                // version of it, on every new variant (prod-code #2101: 47 of tokio's 160 packages each time Cargo.lock
+                // changed). Cargo compiles it if it is new, and the crates depending on it, whose manifest changed too.
+                unindexed.insert(pkg_id.clone());
+                continue;
+            }
+            // A workspace member is always checked, so one without a sidecar is new: everything it reaches may change.
             dirty.insert(pkg_id.clone());
             feat_dirty.insert(pkg_id.clone());
+            let why = if history { "no earlier variant indexed this workspace member" } else { "no earlier variant to take it from" };
+            reasons.insert(pkg_id.clone(), why.into());
             continue;
         };
         let mut chosen_vdir: Option<PathBuf> = None;
@@ -366,16 +387,22 @@ pub fn seed_unaffected_and_prune_invalidated(
             if !any_feats_matched {
                 feat_dirty.insert(pkg_id.clone());
             }
+            let why = if any_feats_matched { "its sources or build differ from every earlier index" } else { "its features differ from every earlier index" };
+            reasons.insert(pkg_id.clone(), why.into());
         }
     }
 
-    propagate_invalidation(graph, &mut dirty, &mut feat_dirty);
+    propagate_invalidation(graph, &mut dirty, &mut feat_dirty, &mut reasons);
 
     let dst_deps = variant_out_dir.join(".deps");
     let _ = fs::create_dir_all(&dst_deps);
     let mut summary = SeedSummary { source_reads: hashes.reads, sidecar_checks, ..SeedSummary::default() };
 
+    summary.left_to_cargo = unindexed.len();
     for pkg_id in &graph.active_ids {
+        if unindexed.contains(pkg_id) {
+            continue;
+        }
         if dirty.contains(pkg_id) {
             summary.invalidated_pkg_ids.insert(pkg_id.clone());
             continue;
@@ -387,10 +414,29 @@ pub fn seed_unaffected_and_prune_invalidated(
         if copy_seeded_group(group, variant_out_dir, &dst_deps, cargo_lock_hash) {
             summary.seeded_pkg_ids.insert(pkg_id.clone());
         } else {
+            reasons.insert(pkg_id.clone(), "its shard could not be copied".into());
             summary.invalidated_pkg_ids.insert(pkg_id.clone());
         }
     }
 
-    prune_invalidated_artifacts(graph, &summary.invalidated_pkg_ids, variant_out_dir, cargo_target_dir, profile_name);
+    // A package left to Cargo still loses its own fingerprint, so that one Cargo holds fresh with no sidecar in any
+    // variant (variants removed, the target directory shared) is compiled by the driver; a no-op when it never was.
+    // Not when another package of the graph has its name: Cargo's entries do not say the version, and removing those of
+    // a `hashbrown` that was compiled for a `hashbrown` that never is checked it and its dependents again (#2101). The
+    // names compare with `-` and `_` alike, as pruning takes both spellings (review of #13: `foo-bar` and `foo_bar`).
+    let norm = |n: &ResolvedPackageNode| n.name.replace('-', "_");
+    let mut prune = summary.invalidated_pkg_ids.clone();
+    prune.extend(
+        unindexed
+            .iter()
+            .filter(|id| {
+                let Some(name) = graph.nodes.get(*id).map(norm) else { return false };
+                graph.nodes.values().filter(|n| norm(n) == name).count() == 1
+            })
+            .cloned(),
+    );
+    prune_invalidated_artifacts(graph, &prune, variant_out_dir, cargo_target_dir, profile_name);
+    reasons.retain(|k, _| summary.invalidated_pkg_ids.contains(k));
+    summary.reasons = reasons;
     summary
 }

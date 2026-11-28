@@ -45,6 +45,7 @@ pub fn status(
         .map(|(root, generation)| {
             let (building, error) = reindex.status_of(&root);
             let (session_building, session_answers) = session.state_of(&root);
+            let (changed, building_ms) = reindex.staleness_of(&root);
             json!({
                 "root": root.display().to_string(),
                 "indexed": generation.is_some(),
@@ -53,6 +54,11 @@ pub fn status(
                 // A change recorded that no loaded index covers yet: answers from the index may be of the text before
                 // it (prod-code, m=20734).
                 "pendingChanges": reindex.pending_of(&root),
+                // Which files those are (at most 100) and how many, and how long the current run has been going: answers
+                // from the loaded index are of the text before them (prod-code #2101).
+                "changedFiles": changed.iter().take(100).map(|p| p.display().to_string()).collect::<Vec<_>>(),
+                "changedFileCount": changed.len(),
+                "buildingForMs": building_ms,
                 "error": error,
                 "sessionIndex": { "answers": session_answers, "building": session_building },
             })
