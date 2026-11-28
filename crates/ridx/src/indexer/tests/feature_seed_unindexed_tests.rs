@@ -97,10 +97,50 @@ fn test_a_dependency_never_compiled_leaves_the_packages_depending_on_it_seeded()
     let never = w.base_out.parent().unwrap().join("registry/never-built-0.2.0");
     fs::create_dir_all(&never).unwrap();
     let g = graph(vec![node("uses-it", "1.0.0", &src(&w, "uses-it", "1.0.0"), &["never-built"]), node("never-built", "0.2.0", &never, &[])]);
+    // Had Cargo built it after all (its sidecar lost with a removed variant), its own fingerprint goes so the driver runs.
+    let fp = w.cargo_tgt.join("debug/.fingerprint");
+    for d in ["never-built-0123456789abcdef", "uses-it-fedcba9876543210"] {
+        fs::create_dir_all(fp.join(d)).unwrap();
+    }
     let s = seed_unaffected_and_prune_invalidated(&g, &w.base_out, &w.cur, Some(&w.prev), &w.cargo_tgt, "dev", None);
     assert!(s.seeded_pkg_ids.contains("uses-it"), "{s:?}");
     assert!(s.invalidated_pkg_ids.is_empty(), "{s:?}");
     assert_eq!(s.left_to_cargo, 1);
+    assert!(!fp.join("never-built-0123456789abcdef").exists(), "its own fingerprint is pruned");
+    assert!(fp.join("uses-it-fedcba9876543210").exists(), "the seeded package's is kept");
+}
+
+#[test]
+fn test_a_dependency_never_compiled_keeps_the_fingerprint_of_another_version() {
+    let _lock = lock_indexer_test();
+    let w = ws("ridx_seed_unindexed_dup", &[("hashbrown", "0.15.0")]);
+    let never = w.base_out.parent().unwrap().join("registry/hashbrown-0.17.0");
+    fs::create_dir_all(&never).unwrap();
+    let mut newer = node("hashbrown", "0.17.0", &never, &[]);
+    newer.id = "hashbrown@0.17.0".into();
+    let g = graph(vec![node("hashbrown", "0.15.0", &src(&w, "hashbrown", "0.15.0"), &[]), newer]);
+    let fp = w.cargo_tgt.join("debug/.fingerprint/hashbrown-0123456789abcdef");
+    fs::create_dir_all(&fp).unwrap();
+    let s = seed_unaffected_and_prune_invalidated(&g, &w.base_out, &w.cur, Some(&w.prev), &w.cargo_tgt, "dev", None);
+    assert!(s.seeded_pkg_ids.contains("hashbrown"), "{s:?}");
+    assert!(fp.exists(), "the compiled hashbrown keeps its fingerprint: Cargo's entries do not say which version they are");
+}
+
+#[test]
+fn test_without_an_earlier_variant_a_dependency_without_a_sidecar_is_checked_again() {
+    let _lock = lock_indexer_test();
+    // A new output directory: no variant to read, while the shared Cargo target directory may hold the crate fresh.
+    let w = ws("ridx_seed_no_history", &[]);
+    fs::remove_dir_all(&w.prev).unwrap();
+    let dir = w.base_out.parent().unwrap().join("registry/built-elsewhere-1.0.0");
+    fs::create_dir_all(&dir).unwrap();
+    let g = graph(vec![node("built-elsewhere", "1.0.0", &dir, &[])]);
+    let fp = w.cargo_tgt.join("debug/.fingerprint/built-elsewhere-0123456789abcdef");
+    fs::create_dir_all(&fp).unwrap();
+    let s = seed_unaffected_and_prune_invalidated(&g, &w.base_out, &w.cur, None, &w.cargo_tgt, "dev", None);
+    assert!(s.invalidated_pkg_ids.contains("built-elsewhere"), "{s:?}");
+    assert_eq!(s.left_to_cargo, 0);
+    assert!(!fp.exists(), "its fingerprint goes, so the driver runs on it");
 }
 
 #[test]
