@@ -4,6 +4,10 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.17] - 2026-11-27
+
+Verified by the workspace test suite, by regression tests of seeding a package with 300 targets, and on Bevy (68c80f3b, Linux x86_64): from the same state (a variant built with `Cargo.lock`, then the lock removed so the next run seeds a new variant from it), 0.3.16 had not started `cargo check` after 15 minutes, and the fixed build started it after 7 s and finished the index in 304 s. The index format is unchanged.
+
 ### Fixed
 - **A second index of a workspace without a committed `Cargo.lock` no longer hangs for hours before `cargo check` starts.** The first `cargo check` writes `Cargo.lock`, which is part of the variant id, so the second run indexes a new variant and seeds it from the earlier one. Seeding checked the earlier variant's sidecars of a package once for each sidecar the package has, each check reading every file they track: on Bevy (68c80f3b), whose root package has 1,391 sidecars (one per example) tracking 741,678 files, `ridx index` read 860 GB in 50 minutes on one core and had not finished. Each variant is now checked once per package and each source file is read once per run. Regression tests: a package with 300 targets is seeded with 300 sidecar checks and each file read once, and one stale sidecar among them invalidates the package in one pass (33,000 checks before the fix).
 
