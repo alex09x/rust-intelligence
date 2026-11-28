@@ -57,7 +57,7 @@ T = {
     "h_dev": "التطوير",
     "dev": "لا يتجاوز أي ملف مصدر 400 سطر.",
     "h_cite": "الاستشهاد",
-    "cite": "إذا استخدمت ridx في بحث أو توثيق، فيُرجى الاستشهاد بالإصدار المؤرشف على Zenodo:\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) للمشروع (يشير إلى أحدث إصدار)، و[10.5281/zenodo.24576729](https://doi.org/10.5281/zenodo.24576729) للإصدار 0.3.16 تحديدًا.\nيحتوي [`CITATION.cff`](../CITATION.cff) على البيانات الوصفية التي يستخدمها زر \"Cite this repository\" في GitHub.",
+    "cite": "إذا استخدمت ridx في بحث أو توثيق، فيُرجى الاستشهاد بالإصدار المؤرشف على Zenodo:\n[10.5281/zenodo.24379816](https://doi.org/10.5281/zenodo.24379816) للمشروع (يشير إلى أحدث إصدار)، و[10.5281/zenodo.24615794](https://doi.org/10.5281/zenodo.24615794) للإصدار 0.3.17 تحديدًا.\nيحتوي [`CITATION.cff`](../CITATION.cff) على البيانات الوصفية التي يستخدمها زر \"Cite this repository\" في GitHub.",
     "h_license": "الترخيص",
     "license_intro": "مرخّص بموجب أيٍّ من:",
     "apache": "Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) أو http://www.apache.org/licenses/LICENSE-2.0)",
